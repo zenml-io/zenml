@@ -86,8 +86,10 @@ To provision VMs on AWS, your VM Orchestrator stack component needs to be config
 
 First, check that the AWS service connector type is available using the following command:
 
-```
+```shell
 zenml service-connector list-types --type aws
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
@@ -131,8 +133,10 @@ To provision VMs on GCP, your VM Orchestrator stack component needs to be config
 
 To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
-```
+```shell
 zenml service-connector list-types --type gcp
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
@@ -184,8 +188,10 @@ To provision VMs on Azure, your VM Orchestrator stack component needs to be conf
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
-```
+```shell
 zenml service-connector list-types --type azure
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE      │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠─────────────────────────┼───────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -229,7 +235,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-The Lambda Labs orchestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](skypilot-vm.md#configuring-step-specific-resources).
+The Lambda Labs orchestrator does not support some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](skypilot-vm.md#configuring-step-specific-resources).
 {% endhint %}
 
 {% hint style="warning" %}
@@ -248,7 +254,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `accelerators`: The accelerators required. If a string, must be a string of the form `'V100'` or `'V100:2'`, where the `:2` indicates that the task requires 2 V100 GPUs. If a dict, must be a dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
 * `accelerator_args`: Accelerator-specific arguments. For example, `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
 * `use_spot`: Whether to use spot instances. If None, defaults to False.
-* `spot_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption. Read more about the available strategies [here](https://skypilot.readthedocs.io/en/latest/reference/api.html?highlight=instance\_type#resources)
+* `job_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption. Read more about the available strategies [here](https://skypilot.readthedocs.io/en/latest/reference/api.html?highlight=instance\_type#resources)
 * `region`: The cloud region to use.
 * `zone`: The cloud zone to use within the region.
 * `image_id`: The image ID to use. If a string, must be a string of the image id from the cloud, such as AWS: `'ami-1234567890abcdef0'`, GCP: `'projects/my-project-id/global/images/my-image-name'`; Or, a image tag provided by SkyPilot, such as AWS: `'skypilot:gpu-ubuntu-2004'`. If a dict, must be a dict mapping from region to image ID.
@@ -276,7 +282,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    spot_recovery="recovery_strategy",
+    job_recovery="recovery_strategy",
     region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
@@ -312,7 +318,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    spot_recovery="recovery_strategy",
+    job_recovery="recovery_strategy",
     region="us-west1",
     zone="us-west1-a",
     image_id="ubuntu-pro-2004-focal-v20231101",
@@ -347,7 +353,7 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    spot_recovery="recovery_strategy",
+    job_recovery="recovery_strategy",
     region="West Europe",
     image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,

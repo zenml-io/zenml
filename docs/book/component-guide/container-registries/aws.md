@@ -15,12 +15,21 @@ You should use the AWS container registry if:
 
 ### How to deploy it
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including an AWS ECR container registry? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 The ECR registry is automatically activated once you create an AWS account. However, you'll need to create a `Repository` in order to push container images to it:
 
 * Go to the [ECR website](https://console.aws.amazon.com/ecr).
 * Make sure the correct region is selected on the top right.
 * Click on `Create repository`.
-* Create a private repository. The name of the repository depends on the \[orchestrator] (../orchestrators/orchestrators.md or [step operator](../step-operators/step-operators.md) you're using in your stack.
+* Create a private repository. The name of the repository depends on the [orchestrator](../orchestrators/orchestrators.md) or [step operator](../step-operators/step-operators.md) you're using in your stack.
 
 ### URI format
 

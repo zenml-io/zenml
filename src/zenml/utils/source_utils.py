@@ -35,13 +35,19 @@ from typing import (
 from zenml.config.source import (
     CodeRepositorySource,
     DistributionPackageSource,
+    NotebookSource,
     Source,
     SourceType,
 )
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.environment import Environment
 from zenml.logger import get_logger
+from zenml.utils import notebook_utils
 
 logger = get_logger(__name__)
+
+ZENML_SOURCE_ATTRIBUTE_NAME = "__zenml_source__"
+
 NoneType = type(None)
 NoneTypeSource = Source(
     module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
@@ -57,7 +63,12 @@ BuiltinFunctionTypeSource = Source(
     type=SourceType.BUILTIN,
 )
 
-_CUSTOM_SOURCE_ROOT: Optional[str] = None
+
+_CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
+    ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+)
+
+_SHARED_TEMPDIR: Optional[str] = None
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -102,6 +113,14 @@ def load(source: Union[Source, str]) -> Any:
                     source.version,
                     source.import_path,
                 )
+    elif source.type == SourceType.NOTEBOOK:
+        if Environment.in_notebook():
+            # If we're in a notebook, we don't need to do anything as the
+            # loading from the __main__ module should work just fine.
+            pass
+        else:
+            notebook_source = NotebookSource.model_validate(dict(source))
+            return _try_to_load_notebook_source(notebook_source)
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
@@ -149,6 +168,9 @@ def resolve(
         return FunctionTypeSource
     elif obj is BuiltinFunctionType:
         return BuiltinFunctionTypeSource
+    elif source := getattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, None):
+        assert isinstance(source, Source)
+        return source
     elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
@@ -213,6 +235,16 @@ def resolve(
         else:
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
+    elif source_type == SourceType.NOTEBOOK:
+        source = NotebookSource(
+            module=module_name,
+            attribute=attribute_name,
+            type=source_type,
+        )
+        # Private attributes are ignored by pydantic if passed in the __init__
+        # method, so we set this afterwards
+        source._cell_code = notebook_utils.load_notebook_cell_code(obj)
+        return source
 
     return Source(
         module=module_name, attribute=attribute_name, type=source_type
@@ -359,7 +391,7 @@ def get_source_type(module: ModuleType) -> SourceType:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
         if module.__name__ == "__main__" and Environment.in_notebook():
-            return SourceType.USER
+            return SourceType.NOTEBOOK
 
         return SourceType.BUILTIN
 
@@ -524,6 +556,85 @@ def _load_module(
             return importlib.import_module(module_name)
     else:
         return importlib.import_module(module_name)
+
+
+def _get_shared_temp_dir() -> str:
+    """Get path to a shared temporary directory.
+
+    Returns:
+        Path to a shared temporary directory.
+    """
+    global _SHARED_TEMPDIR
+
+    if not _SHARED_TEMPDIR:
+        import tempfile
+
+        _SHARED_TEMPDIR = tempfile.mkdtemp()
+
+    return _SHARED_TEMPDIR
+
+
+def _try_to_load_notebook_source(source: NotebookSource) -> Any:
+    """Helper function to load a notebook source outside of a notebook.
+
+    Args:
+        source: The source to load.
+
+    Raises:
+        RuntimeError: If the source can't be loaded.
+
+    Returns:
+        The loaded object.
+    """
+    if not source.code_path or not source.replacement_module:
+        raise RuntimeError(
+            f"Failed to load {source.import_path}. This object was defined in "
+            "a notebook and you're trying to load it outside of a notebook. "
+            "This is currently only enabled for ZenML steps."
+        )
+
+    extract_dir = _get_shared_temp_dir()
+    file_path = os.path.join(extract_dir, f"{source.replacement_module}.py")
+
+    if not os.path.exists(file_path):
+        from zenml.utils import code_utils
+
+        logger.info(
+            "Downloading notebook cell content from `%s` to load `%s`.",
+            source.code_path,
+            source.import_path,
+        )
+
+        code_utils.download_and_extract_code(
+            code_path=source.code_path, extract_dir=extract_dir
+        )
+
+    try:
+        module = _load_module(
+            module_name=source.replacement_module, import_root=extract_dir
+        )
+    except ImportError:
+        raise RuntimeError(
+            f"Unable to load {source.import_path}. This object was defined in "
+            "a notebook and you're trying to load it outside of a notebook. "
+            "To enable this, ZenML extracts the code of your cell into a "
+            "python file. This means your cell code needs to be "
+            "self-contained:\n"
+            "  * All required imports must be done in this cell, even if the "
+            "same imports already happen in previous notebook cells.\n"
+            "  * The cell can't use any code defined in other notebook cells."
+        )
+
+    if source.attribute:
+        obj = getattr(module, source.attribute)
+    else:
+        obj = module
+
+    # Store the original notebook source so resolving this object works as
+    # expected
+    setattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, source)
+
+    return obj
 
 
 def _get_package_for_module(module_name: str) -> Optional[str]:

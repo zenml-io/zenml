@@ -27,6 +27,7 @@ from zenml.stack import Flavor
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
+AZUREML_ORCHESTRATOR_FLAVOR = "azureml"
 
 # Service connector constants
 AZURE_CONNECTOR_TYPE = "azure"
@@ -42,12 +43,14 @@ class AzureIntegration(Integration):
         "adlfs>=2021.10.0",
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
-        "azure-identity==1.10.0",
-        "azureml-core==1.54.0.post1",
+        "azure-identity",
+        "azureml-core==1.56.0",
         "azure-mgmt-containerservice>=20.0.0",
         "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
         "kubernetes",
+        "azure-ai-ml==1.18.0"
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @staticmethod
     def activate() -> None:
@@ -64,11 +67,13 @@ class AzureIntegration(Integration):
         from zenml.integrations.azure.flavors import (
             AzureArtifactStoreFlavor,
             AzureMLStepOperatorFlavor,
+            AzureMLOrchestratorFlavor,
         )
 
         return [
             AzureArtifactStoreFlavor,
             AzureMLStepOperatorFlavor,
+            AzureMLOrchestratorFlavor,
         ]
 
 

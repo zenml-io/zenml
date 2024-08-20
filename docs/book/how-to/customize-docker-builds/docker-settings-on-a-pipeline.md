@@ -74,6 +74,29 @@ steps:
 
 Check out [this page](../use-configuration-files/configuration-hierarchy.md) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
+### Specifying Docker build options
+
+If you want to specify build options that get passed to the build method of the [image builder](../configure-python-environments/README.md#image-builder-environment). For the default local image builder, these options get passed to the [`docker build` command](https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build).
+
+```python
+docker_settings = DockerSettings(build_config={"build_options": {...}})
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+
+{% hint style="info" %}
+If you're running your pipelines on MacOS with ARM architecture, the local Docker caching does not work unless you specify the target platform of the image:
+```python
+docker_settings = DockerSettings(build_config={"build_options": {"platform": "linux/amd64"}})
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+{% endhint %}
+
 ### Using a custom parent image
 
 By default, ZenML performs all the steps described above on top of the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version in the active Python environment. To have more control over the entire environment used to execute your pipelines, you can either specify a custom pre-built parent image or a Dockerfile that ZenML uses to build a parent image for you.

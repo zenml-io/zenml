@@ -30,17 +30,16 @@ from typing import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from types import FunctionType
-
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
     from zenml.steps import BaseStep
+    from zenml.types import HookSpecification
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
-    HookSpecification = Union[str, Source, FunctionType]
+
     OutputMaterializersSpecification = Union[
         MaterializerClassOrSource,
         Sequence[MaterializerClassOrSource],

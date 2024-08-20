@@ -17,11 +17,9 @@ import itertools
 import os
 import subprocess
 import sys
-from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
-    DefaultDict,
     Dict,
     List,
     Optional,
@@ -32,6 +30,7 @@ from typing import (
 import zenml
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import (
+    DockerBuildConfig,
     PythonEnvironmentExportMethod,
     PythonPackageInstaller,
 )
@@ -65,6 +64,7 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
     f"py{sys.version_info.major}.{sys.version_info.minor}"
 )
+DEFAULT_ZENML_DOCKER_REPOSITORY = "zenml"
 
 PIP_DEFAULT_ARGS = {
     "no-cache-dir": None,
@@ -197,10 +197,15 @@ class PipelineDockerImageBuilder:
                 # We will build an additional image on top of this one later
                 # to include user files and/or install requirements. The image
                 # we build now will be used as the parent for the next build.
-                user_image_name = (
-                    f"{docker_settings.target_repository}:"
-                    f"{tag}-intermediate-build"
-                )
+                repository = docker_settings.target_repository
+                if not repository:
+                    if container_registry:
+                        repository = (
+                            container_registry.config.default_repository
+                        )
+
+                repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
+                user_image_name = f"{repository}:" f"{tag}-intermediate-build"
                 if push and container_registry:
                     user_image_name = (
                         f"{container_registry.config.uri}/{user_image_name}"
@@ -212,8 +217,13 @@ class PipelineDockerImageBuilder:
                 # used directly, so we tag it with the requested target name.
                 user_image_name = target_image_name
 
+            build_config = (
+                docker_settings.parent_image_build_config
+                or DockerBuildConfig()
+            )
             build_context = build_context_class(
-                root=docker_settings.build_context_root
+                root=docker_settings.build_context_root,
+                dockerignore_file=build_config.dockerignore,
             )
             build_context.add_file(
                 source=docker_settings.dockerfile, destination="Dockerfile"
@@ -222,7 +232,8 @@ class PipelineDockerImageBuilder:
             image_name_or_digest = image_builder.build(
                 image_name=user_image_name,
                 build_context=build_context,
-                docker_build_options=docker_settings.build_options,
+                docker_build_options=build_config.build_options
+                or docker_settings.build_options,
                 container_registry=container_registry if push else None,
             )
 
@@ -247,21 +258,24 @@ class PipelineDockerImageBuilder:
 
         if requires_zenml_build:
             logger.info("Building Docker image `%s`.", target_image_name)
+            build_config = docker_settings.build_config or DockerBuildConfig()
+
             # Leave the build context empty if we don't want to include any files
             build_context_root = (
                 source_utils.get_source_root() if include_files else None
             )
+            dockerignore = (
+                build_config.dockerignore or docker_settings.dockerignore
+            )
             build_context = build_context_class(
                 root=build_context_root,
-                dockerignore_file=docker_settings.dockerignore,
+                dockerignore_file=dockerignore,
             )
 
             requirements_files = self.gather_requirements_files(
                 docker_settings=docker_settings,
                 stack=stack,
-                # Only pass code repo to include its dependencies if we actually
-                # need to download code
-                code_repository=code_repository if download_files else None,
+                code_repository=code_repository,
             )
 
             self._add_requirements_files(
@@ -278,6 +292,14 @@ class PipelineDockerImageBuilder:
             apt_packages = docker_settings.apt_packages.copy()
             if docker_settings.install_stack_requirements:
                 apt_packages += stack.apt_packages
+
+            # include apt packages from all required integrations
+            for integration in docker_settings.required_integrations:
+                # get the integration
+                integration_cls = integration_registry.integrations[
+                    integration
+                ]
+                apt_packages += integration_cls.APT_PACKAGES
 
             if apt_packages:
                 logger.info(
@@ -304,8 +326,11 @@ class PipelineDockerImageBuilder:
                     parent_image
                 )
 
-            build_options = {"pull": pull_parent_image, "rm": False}
-
+            build_options = {
+                "pull": pull_parent_image,
+                "rm": False,
+                **build_config.build_options,
+            }
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
@@ -351,7 +376,14 @@ class PipelineDockerImageBuilder:
         Returns:
             The docker image name.
         """
-        target_image_name = f"{docker_settings.target_repository}:{tag}"
+        repository = docker_settings.target_repository
+        if not repository:
+            if container_registry:
+                repository = container_registry.config.default_repository
+
+        repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
+
+        target_image_name = f"{repository}:{tag}"
         if container_registry:
             target_image_name = (
                 f"{container_registry.config.uri}/{target_image_name}"
@@ -408,8 +440,9 @@ class PipelineDockerImageBuilder:
             requirements files.
             The files will be in the following order:
             - Packages installed in the local Python environment
+            - Requirements defined by stack integrations
+            - Requirements defined by user integrations
             - User-defined requirements
-            - Requirements defined by user-defined and/or stack integrations
         """
         requirements_files: List[Tuple[str, str, List[str]]] = []
 
@@ -445,6 +478,56 @@ class PipelineDockerImageBuilder:
                     "- Including python packages from local environment"
                 )
 
+        if docker_settings.install_stack_requirements:
+            stack_requirements = stack.requirements()
+            if code_repository:
+                stack_requirements.update(code_repository.requirements)
+
+            if stack_requirements:
+                stack_requirements_list = sorted(stack_requirements)
+                stack_requirements_file = "\n".join(stack_requirements_list)
+                requirements_files.append(
+                    (
+                        ".zenml_stack_integration_requirements",
+                        stack_requirements_file,
+                        [],
+                    )
+                )
+                if log:
+                    logger.info(
+                        "- Including stack requirements: %s",
+                        ", ".join(f"`{r}`" for r in stack_requirements_list),
+                    )
+
+        # Generate requirements file for all required integrations
+        integration_requirements = set(
+            itertools.chain.from_iterable(
+                integration_registry.select_integration_requirements(
+                    integration_name=integration,
+                    target_os=OperatingSystemType.LINUX,
+                )
+                for integration in docker_settings.required_integrations
+            )
+        )
+
+        if integration_requirements:
+            integration_requirements_list = sorted(integration_requirements)
+            integration_requirements_file = "\n".join(
+                integration_requirements_list
+            )
+            requirements_files.append(
+                (
+                    ".zenml_integration_requirements",
+                    integration_requirements_file,
+                    [],
+                )
+            )
+            if log:
+                logger.info(
+                    "- Including integration requirements: %s",
+                    ", ".join(f"`{r}`" for r in integration_requirements_list),
+                )
+
         # Generate/Read requirements file for user-defined requirements
         if isinstance(docker_settings.requirements, str):
             path = os.path.abspath(docker_settings.requirements)
@@ -474,131 +557,7 @@ class PipelineDockerImageBuilder:
                 (".zenml_user_requirements", user_requirements, [])
             )
 
-        # Generate requirements file for all required integrations
-        integration_requirements = set(
-            itertools.chain.from_iterable(
-                integration_registry.select_integration_requirements(
-                    integration_name=integration,
-                    target_os=OperatingSystemType.LINUX,
-                )
-                for integration in docker_settings.required_integrations
-            )
-        )
-
-        if docker_settings.install_stack_requirements:
-            integration_requirements.update(stack.requirements())
-            if code_repository:
-                integration_requirements.update(code_repository.requirements)
-
-        if integration_requirements:
-            integration_requirements_list = sorted(integration_requirements)
-            integration_requirements_file = "\n".join(
-                integration_requirements_list
-            )
-            requirements_files.append(
-                (
-                    ".zenml_integration_requirements",
-                    integration_requirements_file,
-                    [],
-                )
-            )
-            if log:
-                logger.info(
-                    "- Including integration requirements: %s",
-                    ", ".join(f"`{r}`" for r in integration_requirements_list),
-                )
-
-        # Generate requirements files for all ZenML Hub plugins
-        if docker_settings.required_hub_plugins:
-            (
-                hub_internal_requirements,
-                hub_pypi_requirements,
-            ) = PipelineDockerImageBuilder._get_hub_requirements(
-                docker_settings.required_hub_plugins
-            )
-
-            # Plugin packages themselves
-            for i, (index, packages) in enumerate(
-                hub_internal_requirements.items()
-            ):
-                file_name = f".zenml_hub_internal_requirements_{i}"
-                file_lines = [f"-i {index}", *packages]
-                file_contents = "\n".join(file_lines)
-                requirements_files.append(
-                    (file_name, file_contents, ["--no-deps"])
-                )
-                if log:
-                    logger.info(
-                        "- Including internal hub packages from index `%s`: %s",
-                        index,
-                        ", ".join(f"`{r}`" for r in packages),
-                    )
-
-            # PyPI requirements of plugin packages
-            if hub_pypi_requirements:
-                file_name = ".zenml_hub_pypi_requirements"
-                file_contents = "\n".join(hub_pypi_requirements)
-                requirements_files.append((file_name, file_contents, []))
-                if log:
-                    logger.info(
-                        "- Including hub requirements from PyPI: %s",
-                        ", ".join(f"`{r}`" for r in hub_pypi_requirements),
-                    )
-
         return requirements_files
-
-    @staticmethod
-    def _get_hub_requirements(
-        required_hub_plugins: List[str],
-    ) -> Tuple[Dict[str, List[str]], List[str]]:
-        """Get package requirements for ZenML Hub plugins.
-
-        Args:
-            required_hub_plugins: List of hub plugin names in the format
-                `(<author_username>/)<plugin_name>(==<version>)`.
-
-        Returns:
-            - A dict of the hub plugin packages themselves (which need to be
-                installed from a custom index, mapping index URLs to lists of
-                package names.
-            - A list of all unique dependencies of the required hub plugins
-                (which can be installed from PyPI).
-        """
-        from zenml._hub.client import HubClient
-        from zenml._hub.utils import parse_plugin_name, plugin_display_name
-
-        client = HubClient()
-
-        internal_requirements: DefaultDict[str, List[str]] = defaultdict(list)
-        pypi_requirements: List[str] = []
-
-        for plugin_str in required_hub_plugins:
-            author, name, version = parse_plugin_name(
-                plugin_str, version_separator="=="
-            )
-
-            plugin = client.get_plugin(
-                name=name,
-                version=version,
-                author=author,
-            )
-
-            if plugin and plugin.index_url and plugin.package_name:
-                internal_requirements[plugin.index_url].append(
-                    plugin.package_name
-                )
-                if plugin.requirements:
-                    pypi_requirements.extend(plugin.requirements)
-            else:
-                display_name = plugin_display_name(name, version, author)
-                logger.warning(
-                    "Hub plugin `%s` does not exist or cannot be installed."
-                    "Skipping installation of this plugin.",
-                    display_name,
-                )
-
-        pypi_requirements = sorted(set(pypi_requirements))
-        return dict(internal_requirements), pypi_requirements
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(

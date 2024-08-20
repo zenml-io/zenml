@@ -28,10 +28,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]"
-
-    # TODO: Remove. Temporary installation from the upgrade branch.
-    uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-to-pydantic-v2
+    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
 }
 
 install_integrations() {
@@ -62,6 +59,9 @@ install_integrations() {
     # TODO: remove after torch 2.3.0+ is released
     # https://github.com/pytorch/pytorch/issues/124897
     echo "torch<2.3.0" >> integration-requirements.txt
+
+    # workaround to make yamlfix work
+    echo "maison<2" >> integration-requirements.txt
 
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt

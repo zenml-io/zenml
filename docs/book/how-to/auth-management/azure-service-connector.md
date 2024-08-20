@@ -13,8 +13,10 @@ This connector also supports [automatic configuration and detection of credentia
 
 This connector serves as a general means of accessing any Azure service by issuing credentials to clients. Additionally, the connector can handle specialized authentication for Azure blob storage, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
-```
+```shell
 $ zenml service-connector list-types --type azure
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -811,8 +813,7 @@ Active repository stack set to:'gcp-demo'
 {% code title="Example Command Output" %}
 ````
 ```
-$ python run.py 
-Registered pipeline simple_pipeline (version 1).
+$ python run.py
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0

@@ -15,17 +15,35 @@
 
 import getpass
 import os
+import re
+import time
+import webbrowser
+from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Union,
+)
 from uuid import UUID
 
 import click
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.prompt import Confirm
+from rich.style import Style
+from rich.syntax import Syntax
 
 import zenml
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
     confirmation,
@@ -45,7 +63,11 @@ from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
     STACK_RECIPE_MODULAR_RECIPES,
 )
-from zenml.enums import CliCategories, StackComponentType
+from zenml.enums import (
+    CliCategories,
+    StackComponentType,
+    StackDeploymentProvider,
+)
 from zenml.exceptions import (
     IllegalOperationError,
     ProvisioningError,
@@ -53,7 +75,20 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilter
-from zenml.utils.dashboard_utils import get_stack_url
+from zenml.models.v2.core.service_connector import (
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+)
+from zenml.models.v2.misc.full_stack import (
+    ComponentInfo,
+    FullStackRequest,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+)
+from zenml.service_connectors.service_connector_utils import (
+    get_resources_options_from_resource_model_for_full_stack,
+)
+from zenml.utils.dashboard_utils import get_component_url, get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
@@ -93,7 +128,7 @@ def stack() -> None:
     "artifact_store",
     help="Name of the artifact store for this stack.",
     type=str,
-    required=True,
+    required=False,
 )
 @click.option(
     "-o",
@@ -101,7 +136,7 @@ def stack() -> None:
     "orchestrator",
     help="Name of the orchestrator for this stack.",
     type=str,
-    required=True,
+    required=False,
 )
 @click.option(
     "-c",
@@ -190,10 +225,24 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "-p",
+    "--provider",
+    help="Name of the cloud provider for this stack.",
+    type=click.Choice(["aws", "azure", "gcp"]),
+    required=False,
+)
+@click.option(
+    "-sc",
+    "--connector",
+    help="Name of the service connector for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
-    artifact_store: str,
-    orchestrator: str,
+    artifact_store: Optional[str] = None,
+    orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
     model_registry: Optional[str] = None,
     step_operator: Optional[str] = None,
@@ -205,6 +254,8 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     set_stack: bool = False,
+    provider: Optional[str] = None,
+    connector: Optional[str] = None,
 ) -> None:
     """Register a stack.
 
@@ -223,50 +274,269 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
+        provider: Name of the cloud provider for this stack.
+        connector: Name of the service connector for this stack.
     """
+    if (provider is None and connector is None) and (
+        artifact_store is None or orchestrator is None
+    ):
+        cli_utils.error(
+            "Only stack using service connector can be registered "
+            "without specifying an artifact store and an orchestrator. "
+            "Please specify the artifact store and the orchestrator or "
+            "the service connector or cloud type settings."
+        )
+
+    client = Client()
+
+    if provider is not None or connector is not None:
+        if client.zen_store.is_local_store():
+            cli_utils.error(
+                "You are registering a stack using a service connector, but "
+                "this feature cannot be used with a local ZenML deployment. "
+                "ZenML needs to be accessible from the cloud provider to allow the "
+                "stack and its components to be registered automatically. "
+                "Please deploy ZenML in a remote environment as described in the "
+                "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+                "or use a managed ZenML Pro server instance for quick access to "
+                "this feature and more: https://www.zenml.io/pro"
+            )
+
+    try:
+        client.get_stack(
+            name_id_or_prefix=stack_name,
+            allow_name_prefix_match=False,
+        )
+        cli_utils.error(
+            f"A stack with name `{stack_name}` already exists, "
+            "please use a different name."
+        )
+    except KeyError:
+        pass
+
+    labels: Dict[str, str] = {}
+    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
+    # cloud flow
+    created_objects: Set[str] = set()
+    service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
+    if provider is not None and connector is None:
+        service_connector_response = None
+        use_auto_configure = False
+        try:
+            service_connector_response, _ = client.create_service_connector(
+                name=stack_name,
+                connector_type=provider,
+                register=False,
+                auto_configure=True,
+                verify=False,
+            )
+        except NotImplementedError:
+            cli_utils.warning(
+                f"The {provider.upper()} service connector libraries are not "
+                "installed properly. Please run `zenml integration install "
+                f"{provider}` and try again to enable auto-discovery of the "
+                "connection configuration."
+            )
+        except Exception:
+            pass
+        if service_connector_response:
+            use_auto_configure = Confirm.ask(
+                f"[bold]{provider.upper()} cloud service connector[/bold] "
+                "has detected connection credentials in your environment.\n"
+                "Would you like to use these credentials or create a new "
+                "configuration by providing connection details?",
+                default=True,
+                show_choices=True,
+                show_default=True,
+            )
+
+        connector_selected: Optional[int] = None
+        if not use_auto_configure:
+            service_connector_response = None
+            existing_connectors = client.list_service_connectors(
+                connector_type=provider, size=100
+            )
+            if existing_connectors.total:
+                connector_selected = cli_utils.multi_choice_prompt(
+                    object_type=f"{provider.upper()} service connectors",
+                    choices=[
+                        [connector.name]
+                        for connector in existing_connectors.items
+                    ],
+                    headers=["Name"],
+                    prompt_text=f"We found these {provider.upper()} service connectors. "
+                    "Do you want to create a new one or use one of the existing ones?",
+                    default_choice="0",
+                    allow_zero_be_a_new_object=True,
+                )
+        if use_auto_configure or connector_selected is None:
+            service_connector = _get_service_connector_info(
+                cloud_provider=provider,
+                connector_details=service_connector_response,
+            )
+            created_objects.add("service_connector")
+        else:
+            selected_connector = existing_connectors.items[connector_selected]
+            service_connector = selected_connector.id
+            connector = selected_connector.name
+            if isinstance(selected_connector.connector_type, str):
+                provider = selected_connector.connector_type
+            else:
+                provider = selected_connector.connector_type.connector_type
+    elif connector is not None:
+        service_connector_response = client.get_service_connector(connector)
+        service_connector = service_connector_response.id
+        if provider:
+            if service_connector_response.type != provider:
+                cli_utils.warning(
+                    f"The service connector `{connector}` is not of type `{provider}`."
+                )
+        else:
+            provider = service_connector_response.type
+
+    if service_connector:
+        labels["zenml:wizard"] = "true"
+        if provider:
+            labels["zenml:provider"] = provider
+        resources_info = None
+        # explore the service connector
+        with console.status(
+            "Exploring resources available to the service connector...\n"
+        ):
+            resources_info = (
+                get_resources_options_from_resource_model_for_full_stack(
+                    connector_details=service_connector
+                )
+            )
+        if resources_info is None:
+            cli_utils.error(
+                f"Failed to fetch service connector resources information for {service_connector}..."
+            )
+
+        # create components
+        needed_components = (
+            (StackComponentType.ARTIFACT_STORE, artifact_store),
+            (StackComponentType.ORCHESTRATOR, orchestrator),
+            (StackComponentType.CONTAINER_REGISTRY, container_registry),
+        )
+        for component_type, preset_name in needed_components:
+            component_info: Optional[Union[UUID, ComponentInfo]] = None
+            if preset_name is not None:
+                component_response = client.get_stack_component(
+                    component_type, preset_name
+                )
+                component_info = component_response.id
+            else:
+                if isinstance(service_connector, UUID):
+                    # find existing components under same connector
+                    if (
+                        component_type
+                        in resources_info.components_resources_info
+                    ):
+                        existing_components = [
+                            existing_response
+                            for res_info in resources_info.components_resources_info[
+                                component_type
+                            ]
+                            for existing_response in res_info.connected_through_service_connector
+                        ]
+
+                        # if some existing components are found - prompt user what to do
+                        component_selected: Optional[int] = None
+                        component_selected = cli_utils.multi_choice_prompt(
+                            object_type=component_type.value.replace("_", " "),
+                            choices=[
+                                [
+                                    component.flavor,
+                                    component.name,
+                                    component.configuration or "",
+                                    component.connector_resource_id,
+                                ]
+                                for component in existing_components
+                            ],
+                            headers=[
+                                "Type",
+                                "Name",
+                                "Configuration",
+                                "Connected as",
+                            ],
+                            prompt_text=f"We found these {component_type.value.replace('_', ' ')} "
+                            "connected using the current service connector. Do you "
+                            "want to create a new one or use existing one?",
+                            default_choice="0",
+                            allow_zero_be_a_new_object=True,
+                        )
+                else:
+                    component_selected = None
+
+                if component_selected is None:
+                    component_info = _get_stack_component_info(
+                        component_type=component_type.value,
+                        cloud_provider=provider
+                        or resources_info.connector_type,
+                        resources_info=resources_info,
+                        service_connector_index=0,
+                    )
+                    component_name = stack_name
+                    created_objects.add(component_type.value)
+                else:
+                    selected_component = existing_components[
+                        component_selected
+                    ]
+                    component_info = selected_component.id
+                    component_name = selected_component.name
+
+            components[component_type] = component_info
+            if component_type == StackComponentType.ARTIFACT_STORE:
+                artifact_store = component_name
+            if component_type == StackComponentType.ORCHESTRATOR:
+                orchestrator = component_name
+            if component_type == StackComponentType.CONTAINER_REGISTRY:
+                container_registry = component_name
+
+    # normal flow once all components are defined
     with console.status(f"Registering stack '{stack_name}'...\n"):
-        client = Client()
-
-        components: Dict[StackComponentType, Union[str, UUID]] = dict()
-
-        components[StackComponentType.ARTIFACT_STORE] = artifact_store
-        components[StackComponentType.ORCHESTRATOR] = orchestrator
-
-        if alerter:
-            components[StackComponentType.ALERTER] = alerter
-        if annotator:
-            components[StackComponentType.ANNOTATOR] = annotator
-        if data_validator:
-            components[StackComponentType.DATA_VALIDATOR] = data_validator
-        if feature_store:
-            components[StackComponentType.FEATURE_STORE] = feature_store
-        if image_builder:
-            components[StackComponentType.IMAGE_BUILDER] = image_builder
-        if model_deployer:
-            components[StackComponentType.MODEL_DEPLOYER] = model_deployer
-        if model_registry:
-            components[StackComponentType.MODEL_REGISTRY] = model_registry
-        if step_operator:
-            components[StackComponentType.STEP_OPERATOR] = step_operator
-        if experiment_tracker:
-            components[StackComponentType.EXPERIMENT_TRACKER] = (
-                experiment_tracker
-            )
-        if container_registry:
-            components[StackComponentType.CONTAINER_REGISTRY] = (
-                container_registry
-            )
+        for component_type_, component_name_ in [
+            (StackComponentType.ARTIFACT_STORE, artifact_store),
+            (StackComponentType.ORCHESTRATOR, orchestrator),
+            (StackComponentType.ALERTER, alerter),
+            (StackComponentType.ANNOTATOR, annotator),
+            (StackComponentType.DATA_VALIDATOR, data_validator),
+            (StackComponentType.FEATURE_STORE, feature_store),
+            (StackComponentType.IMAGE_BUILDER, image_builder),
+            (StackComponentType.MODEL_DEPLOYER, model_deployer),
+            (StackComponentType.MODEL_REGISTRY, model_registry),
+            (StackComponentType.STEP_OPERATOR, step_operator),
+            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
+            (StackComponentType.CONTAINER_REGISTRY, container_registry),
+        ]:
+            if component_name_ and component_type_ not in components:
+                components[component_type_] = client.get_stack_component(
+                    component_type_, component_name_
+                ).id
 
         try:
-            created_stack = client.create_stack(
-                name=stack_name,
-                components=components,
+            created_stack = client.zen_store.create_full_stack(
+                full_stack=FullStackRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    name=stack_name,
+                    components=components,
+                    service_connectors=[service_connector]
+                    if service_connector
+                    else [],
+                    labels=labels,
+                )
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
 
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
+        )
+        cli_utils.print_stack_configuration(
+            stack=created_stack,
+            active=created_stack.id == client.active_stack_model.id,
         )
 
     if set_stack:
@@ -276,6 +546,30 @@ def register_stack(
         cli_utils.declare(
             f"Active {scope} stack set to:'{created_stack.name}'"
         )
+
+    delete_commands = []
+    if "service_connector" in created_objects:
+        created_objects.remove("service_connector")
+        connectors = set()
+        for each in created_objects:
+            if comps_ := created_stack.components[StackComponentType(each)]:
+                if conn_ := comps_[0].connector:
+                    connectors.add(conn_.name)
+        for connector in connectors:
+            delete_commands.append(
+                "zenml service-connector delete " + connector
+            )
+    for each in created_objects:
+        if comps_ := created_stack.components[StackComponentType(each)]:
+            delete_commands.append(
+                f"zenml {each.replace('_', '-')} delete {comps_[0].name}"
+            )
+    delete_commands.append("zenml stack delete -y " + created_stack.name)
+
+    Console().print(
+        "To delete the objects created by this command run, please run in a sequence:\n"
+    )
+    Console().print(Syntax("\n".join(delete_commands[::-1]), "bash"))
 
     print_model_url(get_stack_url(created_stack))
 
@@ -1286,7 +1580,259 @@ def _get_deployment_params_interactively(
     return deployment_values
 
 
-@stack.command(help="Deploy a stack using mlstacks.")
+def validate_name(ctx: click.Context, param: str, value: str) -> str:
+    """Validate the name of the stack.
+
+    Args:
+        ctx: The click context.
+        param: The parameter name.
+        value: The value of the parameter.
+
+    Returns:
+        The validated value.
+
+    Raises:
+        BadParameter: If the name is invalid.
+    """
+    if not value:
+        return value
+
+    if not re.match(r"^[a-zA-Z0-9-]*$", value):
+        raise click.BadParameter(
+            "Stack name must contain only alphanumeric characters and hyphens."
+        )
+
+    if len(value) > 16:
+        raise click.BadParameter(
+            "Stack name must have a maximum length of 16 characters."
+        )
+
+    return value
+
+
+@stack.command(
+    help="""Deploy a fully functional ZenML stack in one of the cloud providers.
+
+Running this command will initiate an assisted process that will walk you
+through automatically provisioning all the cloud infrastructure resources
+necessary for a fully functional ZenML stack in the cloud provider of your
+choice. A corresponding ZenML stack will also be automatically registered along
+with all the necessary components and properly authenticated through service
+connectors.
+"""
+)
+@click.option(
+    "--provider",
+    "-p",
+    "provider",
+    required=True,
+    type=click.Choice(StackDeploymentProvider.values()),
+)
+@click.option(
+    "--name",
+    "-n",
+    "stack_name",
+    type=click.STRING,
+    required=False,
+    help="Custom string to use as a prefix to generate names for the ZenML "
+    "stack, its components service connectors as well as provisioned cloud "
+    "infrastructure resources. May only contain alphanumeric characters and "
+    "hyphens and have a maximum length of 16 characters.",
+    callback=validate_name,
+)
+@click.option(
+    "--location",
+    "-l",
+    type=click.STRING,
+    required=False,
+    help="The location to deploy the stack to.",
+)
+@click.option(
+    "--set",
+    "set_stack",
+    is_flag=True,
+    help="Immediately set this stack as active.",
+    type=click.BOOL,
+)
+@click.pass_context
+def deploy(
+    ctx: click.Context,
+    provider: str,
+    stack_name: Optional[str] = None,
+    location: Optional[str] = None,
+    set_stack: bool = False,
+) -> None:
+    """Deploy and register a fully functional cloud ZenML stack.
+
+    Args:
+        ctx: The click context.
+        provider: The cloud provider to deploy the stack to.
+        stack_name: A name for the ZenML stack that gets imported as a result
+            of the recipe deployment.
+        location: The location to deploy the stack to.
+        set_stack: Immediately set the deployed stack as active.
+
+    Raises:
+        Abort: If the user aborts the deployment.
+        KeyboardInterrupt: If the user interrupts the deployment.
+    """
+    stack_name = stack_name or f"zenml-{provider}-stack"
+
+    # Set up the markdown renderer to use the old-school markdown heading
+    Markdown.elements.update(
+        {
+            "heading_open": OldSchoolMarkdownHeading,
+        }
+    )
+
+    client = Client()
+    if client.zen_store.is_local_store():
+        cli_utils.error(
+            "This feature cannot be used with a local ZenML deployment. "
+            "ZenML needs to be accessible from the cloud provider to allow the "
+            "stack and its components to be registered automatically. "
+            "Please deploy ZenML in a remote environment as described in the "
+            "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+            "or use a managed ZenML Pro server instance for quick access to "
+            "this feature and more: https://www.zenml.io/pro"
+        )
+
+    with track_handler(
+        event=AnalyticsEvent.DEPLOY_FULL_STACK,
+    ) as analytics_handler:
+        analytics_handler.metadata = {
+            "provider": provider,
+        }
+
+        deployment = client.zen_store.get_stack_deployment_info(
+            provider=StackDeploymentProvider(provider),
+        )
+
+        if location and location not in deployment.locations.values():
+            cli_utils.error(
+                f"Invalid location '{location}' for provider '{provider}'. "
+                f"Valid locations are: {', '.join(deployment.locations.values())}"
+            )
+
+        console.print(
+            Markdown(
+                f"# {provider.upper()} ZenML Cloud Stack Deployment\n"
+                + deployment.description
+            )
+        )
+        console.print(Markdown("## Details\n" + deployment.instructions))
+
+        deployment_config = client.zen_store.get_stack_deployment_config(
+            provider=StackDeploymentProvider(provider),
+            stack_name=stack_name,
+            location=location,
+        )
+
+        if deployment_config.instructions:
+            console.print(
+                Markdown("## Instructions\n" + deployment_config.instructions),
+                "\n",
+            )
+
+        if deployment_config.configuration:
+            console.print(
+                deployment_config.configuration,
+                no_wrap=True,
+                overflow="ignore",
+                crop=False,
+                style=Style(bgcolor="grey15"),
+            )
+
+        if not cli_utils.confirmation(
+            "\n\nProceed to continue with the deployment. You will be "
+            f"automatically redirected to "
+            f"{deployment_config.deployment_url_text} in your browser.",
+        ):
+            raise click.Abort()
+
+        date_start = datetime.utcnow()
+
+        webbrowser.open(deployment_config.deployment_url)
+        console.print(
+            Markdown(
+                f"If your browser did not open automatically, please open "
+                f"the following URL into your browser to deploy the stack to "
+                f"{provider.upper()}: "
+                f"[{deployment_config.deployment_url_text}]"
+                f"({deployment_config.deployment_url}).\n\n"
+            )
+        )
+
+        try:
+            cli_utils.declare(
+                "\n\nWaiting for the deployment to complete and the stack to be "
+                "registered. Press CTRL+C to abort...\n"
+            )
+
+            while True:
+                deployed_stack = client.zen_store.get_stack_deployment_stack(
+                    provider=StackDeploymentProvider(provider),
+                    stack_name=stack_name,
+                    location=location,
+                    date_start=date_start,
+                )
+                if deployed_stack:
+                    break
+                time.sleep(10)
+
+            analytics_handler.metadata.update(
+                {
+                    "stack_id": deployed_stack.stack.id,
+                }
+            )
+
+        except KeyboardInterrupt:
+            cli_utils.declare("Stack deployment aborted.")
+            raise
+
+    stack_desc = f"""## Stack successfully registered! 🚀
+Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
+
+    for component_type, components in deployed_stack.stack.components.items():
+        if components:
+            component = components[0]
+            stack_desc += (
+                f" * `{component.flavor}` {component_type.value}: "
+                f"[{component.name}]({get_component_url(component)})\n"
+            )
+
+    if deployed_stack.service_connector:
+        stack_desc += (
+            f" * Service Connector: {deployed_stack.service_connector.name}\n"
+        )
+
+    console.print(Markdown(stack_desc))
+
+    follow_up = f"""
+## Follow-up
+
+{deployment.post_deploy_instructions}
+
+To use the `{deployed_stack.stack.name}` stack to run pipelines:
+
+* install the required ZenML integrations by running: `zenml integration install {" ".join(deployment.integrations)}`
+"""
+    if set_stack:
+        client.activate_stack(deployed_stack.stack.id)
+        follow_up += f"""
+* the `{deployed_stack.stack.name}` stack has already been set as active
+"""
+    else:
+        follow_up += f"""
+* set the `{deployed_stack.stack.name}` stack as active by running: `zenml stack set {deployed_stack.stack.name}`
+"""
+
+    console.print(
+        Markdown(follow_up),
+    )
+
+
+@stack.command(help="[DEPRECATED] Deploy a stack using mlstacks.")
 @click.option(
     "--provider",
     "-p",
@@ -1426,7 +1972,7 @@ def _get_deployment_params_interactively(
     help="Deploy the stack interactively.",
 )
 @click.pass_context
-def deploy(
+def deploy_mlstack(
     ctx: click.Context,
     provider: str,
     stack_name: str,
@@ -1476,6 +2022,13 @@ def deploy(
         region: The region to deploy the stack to.
         interactive: Deploy the stack interactively.
     """
+    cli_utils.warning(
+        "The `zenml stack deploy-mlstack` (former `zenml stack deploy`) CLI "
+        "command has been deprecated and will be removed in a future release. "
+        "Please use `zenml stack deploy` instead for a simplified "
+        "experience."
+    )
+
     with track_handler(
         event=AnalyticsEvent.DEPLOY_STACK,
     ) as analytics_handler:
@@ -1727,3 +2280,221 @@ def connect_stack(
             interactive=interactive,
             no_verify=no_verify,
         )
+
+
+def _get_service_connector_info(
+    cloud_provider: str,
+    connector_details: Optional[
+        Union[ServiceConnectorResponse, ServiceConnectorRequest]
+    ],
+) -> ServiceConnectorInfo:
+    """Get a service connector info with given cloud provider.
+
+    Args:
+        cloud_provider: The cloud provider to use.
+        connector_details: Whether to use implicit credentials.
+
+    Returns:
+        The info model of the created service connector.
+
+    Raises:
+        ValueError: If the cloud provider is not supported.
+    """
+    from rich.prompt import Prompt
+
+    if cloud_provider not in {"aws", "gcp", "azure"}:
+        raise ValueError(f"Unknown cloud provider {cloud_provider}")
+
+    client = Client()
+    auth_methods = client.get_service_connector_type(
+        cloud_provider
+    ).auth_method_dict
+    if not connector_details:
+        fixed_auth_methods = list(
+            [
+                (key, value)
+                for key, value in auth_methods.items()
+                if key != "implicit"
+            ]
+        )
+        choices = []
+        headers = ["Name", "Required"]
+        for _, value in fixed_auth_methods:
+            schema = value.config_schema
+            required = ""
+            for each_req in schema["required"]:
+                field = schema["properties"][each_req]
+                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
+            choices.append([value.name, required])
+
+        selected_auth_idx = cli_utils.multi_choice_prompt(
+            object_type=f"authentication methods for {cloud_provider.upper()}",
+            choices=choices,
+            headers=headers,
+            prompt_text="Please choose one of the authentication option above",
+        )
+        if selected_auth_idx is None:
+            cli_utils.error("No authentication method selected.")
+        auth_type = fixed_auth_methods[selected_auth_idx][0]
+    else:
+        auth_type = connector_details.auth_method
+
+    selected_auth_model = auth_methods[auth_type]
+
+    required_fields = selected_auth_model.config_schema["required"]
+    properties = selected_auth_model.config_schema["properties"]
+
+    answers = {}
+    for req_field in required_fields:
+        if connector_details:
+            if conf_value := connector_details.configuration.get(
+                req_field, None
+            ):
+                answers[req_field] = conf_value
+            elif secret_value := connector_details.secrets.get(
+                req_field, None
+            ):
+                answers[req_field] = secret_value.get_secret_value()
+        if req_field not in answers:
+            answers[req_field] = Prompt.ask(
+                f"Please enter value for `{req_field}`:",
+                password="format" in properties[req_field]
+                and properties[req_field]["format"] == "password",
+            )
+
+    return ServiceConnectorInfo(
+        type=cloud_provider,
+        auth_method=auth_type,
+        configuration=answers,
+    )
+
+
+def _get_stack_component_info(
+    component_type: str,
+    cloud_provider: str,
+    resources_info: ServiceConnectorResourcesInfo,
+    service_connector_index: Optional[int] = None,
+) -> ComponentInfo:
+    """Get a stack component info with given type and service connector.
+
+    Args:
+        component_type: The type of component to create.
+        cloud_provider: The cloud provider to use.
+        resources_info: The resources info of the service connector.
+        service_connector_index: The index of the service connector to use.
+
+    Returns:
+        The info model of the stack component.
+
+    Raises:
+        ValueError: If the cloud provider is not supported.
+        ValueError: If the component type is not supported.
+    """
+    from rich.prompt import Prompt
+
+    if cloud_provider not in {"aws", "azure", "gcp"}:
+        raise ValueError(f"Unknown cloud provider {cloud_provider}")
+
+    flavor = "undefined"
+    service_connector_resource_id = None
+    config = {}
+    choices = [
+        [cri.flavor, resource_id]
+        for cri in resources_info.components_resources_info[
+            StackComponentType(component_type)
+        ]
+        for resource_id in cri.accessible_by_service_connector
+    ]
+    if component_type == "artifact_store":
+        selected_storage_idx = cli_utils.multi_choice_prompt(
+            object_type=f"{cloud_provider.upper()} storages",
+            choices=choices,
+            headers=["Artifact Store Type", "Storage"],
+            prompt_text="Please choose one of the storages for the new artifact store:",
+        )
+        if selected_storage_idx is None:
+            cli_utils.error("No storage selected.")
+
+        selected_storage = choices[selected_storage_idx]
+
+        flavor = selected_storage[0]
+        config = {"path": selected_storage[1]}
+        service_connector_resource_id = selected_storage[1]
+    elif component_type == "orchestrator":
+
+        def query_region(
+            provider: StackDeploymentProvider,
+            compute_type: str,
+            is_skypilot: bool = False,
+        ) -> str:
+            deployment_info = Client().zen_store.get_stack_deployment_info(
+                provider
+            )
+            region = Prompt.ask(
+                f"Select the location for your {compute_type}:",
+                choices=sorted(
+                    deployment_info.skypilot_default_regions.values()
+                    if is_skypilot
+                    else deployment_info.locations.values()
+                ),
+                show_choices=True,
+            )
+            return region
+
+        selected_orchestrator_idx = cli_utils.multi_choice_prompt(
+            object_type=f"orchestrators on {cloud_provider.upper()}",
+            choices=choices,
+            headers=["Orchestrator Type", "Details"],
+            prompt_text="Please choose one of the orchestrators for the new orchestrator:",
+        )
+        if selected_orchestrator_idx is None:
+            cli_utils.error("No orchestrator selected.")
+
+        selected_orchestrator = choices[selected_orchestrator_idx]
+
+        config = {}
+        flavor = selected_orchestrator[0]
+        if flavor == "sagemaker":
+            execution_role = Prompt.ask("Enter an execution role ARN:")
+            config["execution_role"] = execution_role
+        elif flavor == "vm_aws":
+            config["region"] = selected_orchestrator[1]
+        elif flavor == "vm_gcp":
+            config["region"] = query_region(
+                StackDeploymentProvider.GCP,
+                "Skypilot cluster",
+                is_skypilot=True,
+            )
+        elif flavor == "vm_azure":
+            config["region"] = query_region(
+                StackDeploymentProvider.AZURE,
+                "Skypilot cluster",
+                is_skypilot=True,
+            )
+        elif flavor == "vertex":
+            config["location"] = query_region(
+                StackDeploymentProvider.GCP, "Vertex AI job"
+            )
+        service_connector_resource_id = selected_orchestrator[1]
+    elif component_type == "container_registry":
+        selected_registry_idx = cli_utils.multi_choice_prompt(
+            object_type=f"{cloud_provider.upper()} registries",
+            choices=choices,
+            headers=["Container Registry Type", "Container Registry"],
+            prompt_text="Please choose one of the registries for the new container registry:",
+        )
+        if selected_registry_idx is None:
+            cli_utils.error("No container registry selected.")
+        selected_registry = choices[selected_registry_idx]
+        flavor = selected_registry[0]
+        config = {"uri": selected_registry[1]}
+        service_connector_resource_id = selected_registry[1]
+    else:
+        raise ValueError(f"Unknown component type {component_type}")
+
+    return ComponentInfo(
+        flavor=flavor,
+        configuration=config,
+        service_connector_index=service_connector_index,
+        service_connector_resource_id=service_connector_resource_id,
+    )

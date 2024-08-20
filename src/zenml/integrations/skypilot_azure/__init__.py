@@ -19,12 +19,10 @@ orchestrator for a remote orchestration of ZenML pipelines on VMs.
 from typing import List, Type
 
 from zenml.integrations.constants import (
-
     SKYPILOT_AZURE,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
-
 
 SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
 
@@ -33,7 +31,7 @@ class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot (Azure) Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]<=0.5.0"]
+    REQUIREMENTS = ["skypilot[azure]>=0.6.1"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod

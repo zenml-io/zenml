@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from contextlib import ExitStack as does_not_raise
+
 import pytest
 
 from tests.unit.conftest_new import empty_pipeline  # noqa: F401
@@ -120,28 +122,20 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     assert pipeline_instance.enable_cache is True
 
 
-def test_compiling_pipeline_with_invalid_run_configuration(
+def test_compiling_pipeline_with_extra_step_config_does_not_fail(
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that compiling with a run configuration containing invalid steps
-    fails."""
+    """Tests that compiling with a run configuration containing extra steps
+    does not fail."""
     run_config = PipelineRunConfiguration(
         steps={
             "non_existent_step": StepConfigurationUpdate(enable_cache=False)
         }
     )
-    with pytest.raises(KeyError):
+    with does_not_raise():
         Compiler()._apply_run_configuration(
             pipeline=empty_pipeline, config=run_config
         )
-
-
-def test_default_run_name():
-    """Tests the default run name value."""
-    assert (
-        Compiler()._get_default_run_name(pipeline_name="my_pipeline")
-        == "my_pipeline-{date}-{time}"
-    )
 
 
 def test_step_sorting(empty_step, local_stack):
@@ -158,7 +152,7 @@ def test_step_sorting(empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
@@ -214,7 +208,7 @@ def test_stack_component_settings_merging(
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -264,7 +258,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -312,7 +306,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
     with pipeline_instance:
         pipeline_instance.entrypoint()
 
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -368,7 +362,7 @@ def test_success_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -420,7 +414,7 @@ def test_failure_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -465,7 +459,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -501,10 +495,14 @@ def test_spec_compilation(local_stack):
     pipeline_instance = p(step_1=s1(), step_2=s2())
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    _, spec = Compiler().compile(
-        pipeline=pipeline_instance,
-        stack=local_stack,
-        run_configuration=PipelineRunConfiguration(),
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
     )
     other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
 

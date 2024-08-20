@@ -21,9 +21,15 @@ You should use the GCS Artifact Store when you decide to keep your ZenML artifac
 
 ### How do you deploy it?
 
-{% hint style="warning" %}
-The GCP artifact store (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including a GCS Artifact Store? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
 {% endhint %}
+
 
 The GCS Artifact Store flavor is provided by the GCP ZenML integration, you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
@@ -167,7 +173,7 @@ zenml stack register <STACK_NAME> -a <GCS_STORE_NAME> ... --set
 {% endtab %}
 
 {% tab title="GCP Credentials" %}
-When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) , store it in a [ZenML Secret](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md) and then reference it in the Artifact Store configuration.
+When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](../../getting-started/deploying-zenml/secret-management.md) and then reference it in the Artifact Store configuration.
 
 This method has some advantages over the implicit authentication method:
 

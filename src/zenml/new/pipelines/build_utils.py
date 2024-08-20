@@ -15,7 +15,6 @@
 
 import hashlib
 import platform
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -36,12 +35,10 @@ from zenml.models import (
     PipelineBuildRequest,
     PipelineBuildResponse,
     PipelineDeploymentBase,
-    PipelineDeploymentRequest,
+    StackResponse,
 )
 from zenml.stack import Stack
-from zenml.utils import (
-    source_utils,
-)
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -51,53 +48,6 @@ if TYPE_CHECKING:
     from zenml.config.build_configuration import BuildConfiguration
 
 logger = get_logger(__name__)
-
-
-def _create_deployment(
-    deployment: "PipelineDeploymentBase",
-    pipeline_id: Optional[UUID] = None,
-    code_repository: Optional["BaseCodeRepository"] = None,
-) -> UUID:
-    """Creates a deployment in the ZenStore.
-
-    Args:
-        deployment: Base of the deployment to create.
-        pipeline_id: Pipeline ID to use for the deployment.
-        code_repository: Code repository to use for the deployment.
-
-    Returns:
-        The ID of the deployment.
-    """
-    source_root = source_utils.get_source_root()
-
-    code_reference = None
-    local_repo_context = (
-        code_repository.get_local_context(source_root)
-        if code_repository
-        else None
-    )
-    if local_repo_context and not local_repo_context.is_dirty:
-        subdirectory = (
-            Path(source_root).resolve().relative_to(local_repo_context.root)
-        )
-
-        code_reference = CodeReferenceRequest(
-            commit=local_repo_context.current_commit,
-            subdirectory=subdirectory.as_posix(),
-            code_repository=local_repo_context.code_repository_id,
-        )
-
-    deployment_request = PipelineDeploymentRequest(
-        user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
-        stack=Client().active_stack.id,
-        pipeline=pipeline_id,
-        code_reference=code_reference,
-        **deployment.model_dump(),
-    )
-    return (
-        Client().zen_store.create_deployment(deployment=deployment_request).id
-    )
 
 
 def build_required(deployment: "PipelineDeploymentBase") -> bool:
@@ -111,6 +61,93 @@ def build_required(deployment: "PipelineDeploymentBase") -> bool:
     """
     stack = Client().active_stack
     return bool(stack.get_docker_builds(deployment=deployment))
+
+
+def requires_included_code(
+    deployment: "PipelineDeploymentBase",
+    code_repository: Optional["BaseCodeRepository"] = None,
+) -> bool:
+    """Checks whether the deployment requires included code.
+
+    Args:
+        deployment: The deployment.
+        code_repository: If provided, this code repository can be used to
+            download the code inside the container images.
+
+    Returns:
+        If the deployment requires code included in the container images.
+    """
+    for step in deployment.step_configurations.values():
+        docker_settings = step.config.docker_settings
+
+        if docker_settings.allow_download_from_artifact_store:
+            return False
+
+        if docker_settings.allow_download_from_code_repository:
+            if code_repository:
+                continue
+
+        if docker_settings.allow_including_files_in_images:
+            return True
+
+    return False
+
+
+def requires_download_from_code_repository(
+    deployment: "PipelineDeploymentBase",
+) -> bool:
+    """Checks whether the deployment needs to download code from a repository.
+
+    Args:
+        deployment: The deployment.
+
+    Returns:
+        If the deployment needs to download code from a code repository.
+    """
+    for step in deployment.step_configurations.values():
+        docker_settings = step.config.docker_settings
+
+        if docker_settings.allow_download_from_artifact_store:
+            return False
+
+        if docker_settings.allow_including_files_in_images:
+            return False
+
+        if docker_settings.allow_download_from_code_repository:
+            # The other two options are false, which means download from a
+            # code repo is required.
+            return True
+
+    return False
+
+
+def code_download_possible(
+    deployment: "PipelineDeploymentBase",
+    code_repository: Optional["BaseCodeRepository"] = None,
+) -> bool:
+    """Checks whether code download is possible for the deployment.
+
+    Args:
+        deployment: The deployment.
+        code_repository: If provided, this code repository can be used to
+            download the code inside the container images.
+
+    Returns:
+        Whether code download is possible for the deployment.
+    """
+    for step in deployment.step_configurations.values():
+        if step.config.docker_settings.allow_download_from_artifact_store:
+            continue
+
+        if (
+            step.config.docker_settings.allow_download_from_code_repository
+            and code_repository
+        ):
+            continue
+
+        return False
+
+    return True
 
 
 def reuse_or_create_pipeline_build(
@@ -131,8 +168,8 @@ def reuse_or_create_pipeline_build(
         build: Optional existing build. If given, the build will be fetched
             (or registered) in the database. If not given, a new build will
             be created.
-        code_repository: If provided, this code repository will be used to
-            download inside the build images.
+        code_repository: If provided, this code repository can be used to
+            download code inside the container images.
 
     Returns:
         The build response.
@@ -140,8 +177,10 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
-            and code_repository
-            and not deployment.requires_included_files
+            and not deployment.should_prevent_build_reuse
+            and not requires_included_code(
+                deployment=deployment, code_repository=code_repository
+            )
             and build_required(deployment=deployment)
         ):
             existing_build = find_existing_build(
@@ -157,17 +196,13 @@ def reuse_or_create_pipeline_build(
                 return existing_build
             else:
                 logger.info(
-                    "Unable to find a build to reuse. When using a code "
-                    "repository, a previous build can be reused when the "
-                    "following conditions are met:\n"
+                    "Unable to find a build to reuse. A previous build can be "
+                    "reused when the following conditions are met:\n"
                     "  * The existing build was created for the same stack, "
                     "ZenML version and Python version\n"
                     "  * The stack contains a container registry\n"
                     "  * The Docker settings of the pipeline and all its steps "
-                    "are the same as for the existing build\n"
-                    "  * The build does not include code. This will only be "
-                    "the case if the existing build was created with a clean "
-                    "code repository."
+                    "are the same as for the existing build."
                 )
 
         return create_pipeline_build(
@@ -199,7 +234,7 @@ def reuse_or_create_pipeline_build(
 
 def find_existing_build(
     deployment: "PipelineDeploymentBase",
-    code_repository: "BaseCodeRepository",
+    code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Find an existing build for a deployment.
 
@@ -269,6 +304,7 @@ def create_pipeline_build(
             settings were specified.
     """
     client = Client()
+    stack_model = Client().active_stack_model
     stack = client.active_stack
     required_builds = stack.get_docker_builds(deployment=deployment)
 
@@ -328,6 +364,11 @@ def create_pipeline_build(
             download_files = build_config.should_download_files(
                 code_repository=code_repository,
             )
+            pass_code_repo = (
+                build_config.should_download_files_from_code_repository(
+                    code_repository=code_repository
+                )
+            )
 
             (
                 image_name_or_digest,
@@ -341,7 +382,7 @@ def create_pipeline_build(
                 download_files=download_files,
                 entrypoint=build_config.entrypoint,
                 extra_files=build_config.extra_files,
-                code_repository=code_repository,
+                code_repository=code_repository if pass_code_repo else None,
             )
             contains_code = include_files
 
@@ -362,16 +403,11 @@ def create_pipeline_build(
     build_checksum = compute_build_checksum(
         required_builds, stack=stack, code_repository=code_repository
     )
-    template_deployment_id = _create_deployment(
-        deployment=deployment,
-        pipeline_id=pipeline_id,
-        code_repository=code_repository,
-    )
-
+    stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
         user=client.active_user.id,
         workspace=client.active_workspace.id,
-        stack=client.active_stack_model.id,
+        stack=stack_model.id,
         pipeline=pipeline_id,
         is_local=is_local,
         contains_code=contains_code,
@@ -379,7 +415,7 @@ def create_pipeline_build(
         zenml_version=zenml.__version__,
         python_version=platform.python_version(),
         checksum=build_checksum,
-        template_deployment_id=template_deployment_id,
+        stack_checksum=stack_checksum,
     )
     return client.zen_store.create_build(build_request)
 
@@ -442,30 +478,30 @@ def verify_local_repository_context(
         deployment, or None if code download is not possible.
     """
     if build_required(deployment=deployment):
-        if deployment.requires_code_download:
+        if requires_download_from_code_repository(deployment=deployment):
             if not local_repo_context:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but there is no "
-                    "code repository active at your current source root "
-                    f"`{source_utils.get_source_root()}`."
+                    "steps specify that code should be downloaded from a "
+                    "code repository, but "
+                    "there is no code repository active at your current source "
+                    f"root `{source_utils.get_source_root()}`."
                 )
             elif local_repo_context.is_dirty:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
+                    "steps specify that code should be downloaded from a "
+                    "code repository, but "
+                    "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has uncommitted "
                     "changes."
                 )
             elif local_repo_context.has_local_changes:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
+                    "steps specify that code should be downloaded from a "
+                    "code repository, but "
+                    "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has unpushed "
                     "changes."
                 )
@@ -473,13 +509,13 @@ def verify_local_repository_context(
         if local_repo_context:
             if local_repo_context.is_dirty:
                 logger.warning(
-                    "Unable to use code repository to download code for this run "
-                    "as there are uncommitted changes."
+                    "Unable to use code repository to download code for this "
+                    "run as there are uncommitted changes."
                 )
             elif local_repo_context.has_local_changes:
                 logger.warning(
-                    "Unable to use code repository to download code for this run "
-                    "as there are unpushed changes."
+                    "Unable to use code repository to download code for this "
+                    "run as there are unpushed changes."
                 )
 
     code_repository = None
@@ -528,13 +564,41 @@ def verify_custom_build(
             "might differ from the local code in your client environment."
         )
 
-    if build.requires_code_download and not code_repository:
-        raise RuntimeError(
-            "The build you specified does not include code but code download "
-            "not possible. This might be because you don't have a code "
-            "repository registered or the code repository contains local "
-            "changes."
-        )
+    if build.requires_code_download:
+        if requires_included_code(
+            deployment=deployment, code_repository=code_repository
+        ):
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be included in the Docker "
+                "image, but the build you "
+                "specified requires code download. Either update your "
+                "`DockerSettings` or specify a different build and try "
+                "again."
+            )
+
+        if (
+            requires_download_from_code_repository(deployment=deployment)
+            and not code_repository
+        ):
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be downloaded from a "
+                "code repository but "
+                "there is no code repository active at your current source "
+                f"root `{source_utils.get_source_root()}`."
+            )
+
+        if not code_download_possible(
+            deployment=deployment, code_repository=code_repository
+        ):
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code can not be downloaded from the "
+                "artifact store, but the build you specified requires code "
+                "download. Either update your `DockerSettings` or specify a "
+                "different build and try again."
+            )
 
     if build.checksum:
         build_checksum = compute_build_checksum(
@@ -585,3 +649,70 @@ def verify_custom_build(
             "your local machine or the image tags have been "
             "overwritten since the original build happened."
         )
+
+
+def compute_stack_checksum(stack: StackResponse) -> str:
+    """Compute a stack checksum.
+
+    Args:
+        stack: The stack for which to compute the checksum.
+
+    Returns:
+        The checksum.
+    """
+    hash_ = hashlib.md5()  # nosec
+
+    # This checksum is used to see if the stack has been updated since a build
+    # was created for it. We create this checksum not with specific requirements
+    # as these might change with new ZenML releases, but they don't actually
+    # invalidate those Docker images.
+    required_integrations = sorted(
+        {
+            component.integration
+            for components in stack.components.values()
+            for component in components
+            if component.integration and component.integration != "built-in"
+        }
+    )
+    for integration in required_integrations:
+        hash_.update(integration.encode())
+
+    return hash_.hexdigest()
+
+
+def should_upload_code(
+    deployment: PipelineDeploymentBase,
+    build: Optional[PipelineBuildResponse],
+    code_reference: Optional[CodeReferenceRequest],
+) -> bool:
+    """Checks whether the current code should be uploaded for the deployment.
+
+    Args:
+        deployment: The deployment.
+        build: The build for the deployment.
+        code_reference: The code reference for the deployment.
+
+    Returns:
+        Whether the current code should be uploaded for the deployment.
+    """
+    if not build:
+        # No build means we don't need to download code into a Docker container
+        # for step execution. In other remote orchestrators that don't use
+        # Docker containers but instead use e.g. Wheels to run, the code should
+        # already be included.
+        return False
+
+    for step in deployment.step_configurations.values():
+        docker_settings = step.config.docker_settings
+
+        if (
+            code_reference
+            and docker_settings.allow_download_from_code_repository
+        ):
+            # No upload needed for this step
+            continue
+
+        if docker_settings.allow_download_from_artifact_store:
+            return True
+
+    return False

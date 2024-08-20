@@ -22,7 +22,11 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -52,6 +56,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class PipelineRunSchema(NamedSchema, table=True):
@@ -187,6 +192,13 @@ class PipelineRunSchema(NamedSchema, table=True):
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
     )
+    tags: List["TagResourceSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
+    )
 
     @classmethod
     def from_request(
@@ -310,15 +322,29 @@ class PipelineRunSchema(NamedSchema, table=True):
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
+                code_path=self.deployment.code_path
+                if self.deployment
+                else None,
+                template_id=self.deployment.template_id
+                if self.deployment
+                else None,
             )
 
         resources = None
         if include_resources:
             model_version = None
             if config.model and config.model.model_version_id:
-                model_version = config.model._get_model_version(hydrate=False)
+                try:
+                    model_version = config.model._get_model_version(
+                        hydrate=False
+                    )
+                except KeyError:
+                    # Unable to find the model version, it was probably deleted
+                    pass
+
             resources = PipelineRunResponseResources(
-                model_version=model_version
+                model_version=model_version,
+                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return PipelineRunResponse(

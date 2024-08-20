@@ -39,6 +39,7 @@ from zenml.config.step_configurations import (
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
+from zenml.new.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -74,7 +75,7 @@ class Compiler:
         pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> Tuple[PipelineDeploymentBase, PipelineSpec]:
+    ) -> PipelineDeploymentBase:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -83,7 +84,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline deployment and spec
+            The compiled pipeline deployment.
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -127,11 +128,16 @@ class Compiler:
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
 
-        run_name = run_configuration.run_name or self._get_default_run_name(
+        run_name = run_configuration.run_name or get_default_run_name(
             pipeline_name=pipeline.name
         )
 
         client_version, server_version = get_zenml_versions()
+
+        step_specs = [step.spec for step in steps.values()]
+        pipeline_spec = self._compute_pipeline_spec(
+            pipeline=pipeline, step_specs=step_specs
+        )
 
         deployment = PipelineDeploymentBase(
             run_name_template=run_name,
@@ -140,17 +146,15 @@ class Compiler:
             client_environment=get_run_environment_dict(),
             client_version=client_version,
             server_version=server_version,
-        )
-
-        step_specs = [step.spec for step in steps.values()]
-        pipeline_spec = self._compute_pipeline_spec(
-            pipeline=pipeline, step_specs=step_specs
+            pipeline_version_hash=pipeline._compute_unique_identifier(
+                pipeline_spec=pipeline_spec
+            ),
+            pipeline_spec=pipeline_spec,
         )
 
         logger.debug("Compiled pipeline deployment: %s", deployment)
-        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
 
-        return deployment, pipeline_spec
+        return deployment
 
     def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
@@ -192,10 +196,6 @@ class Compiler:
         Args:
             pipeline: The pipeline to configure.
             config: The run configurations.
-
-        Raises:
-            KeyError: If the run configuration contains options for a
-                non-existent step.
         """
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(
@@ -209,11 +209,16 @@ class Compiler:
                 parameters=config.parameters,
             )
 
-        for invocation_id in config.steps:
-            if invocation_id not in pipeline.invocations:
-                raise KeyError(
-                    f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline."
-                )
+        invalid_step_configs = set(config.steps) - set(pipeline.invocations)
+        if invalid_step_configs:
+            logger.warning(
+                f"Configuration for step invocations {invalid_step_configs} "
+                "cannot be applied to any pipeline step invocations, "
+                "ignoring..."
+            )
+
+        for key in invalid_step_configs:
+            config.steps.pop(key)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -472,18 +477,6 @@ class Compiler:
             parameters_to_ignore=parameters_to_ignore
         )
         return Step(spec=step_spec, config=complete_step_configuration)
-
-    @staticmethod
-    def _get_default_run_name(pipeline_name: str) -> str:
-        """Gets the default name for a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline which will be run.
-
-        Returns:
-            Run name.
-        """
-        return f"{pipeline_name}-{{date}}-{{time}}"
 
     def _get_sorted_invocations(
         self,

@@ -46,6 +46,7 @@ class Action(StrEnum):
 class ResourceType(StrEnum):
     """Resource types of the server API."""
 
+    ACTION = "action"
     ARTIFACT = "artifact"
     ARTIFACT_VERSION = "artifact_version"
     CODE_REPOSITORY = "code_repository"
@@ -57,6 +58,7 @@ class ResourceType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     PIPELINE_DEPLOYMENT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
+    RUN_TEMPLATE = "run_template"
     USER = "user"
     SERVICE = "service"
     RUN_METADATA = "run_metadata"

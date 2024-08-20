@@ -20,7 +20,7 @@ import math
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -33,6 +33,7 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -51,7 +52,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc, case, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -95,6 +96,7 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -107,16 +109,19 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
+    OnboardingStep,
     SecretScope,
     SecretsStoreType,
     SorterOps,
     StackComponentType,
+    StackDeploymentProvider,
     StepRunInputArtifactType,
     StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
 )
 from zenml.exceptions import (
+    ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
@@ -130,6 +135,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -159,6 +168,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -167,6 +177,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -196,9 +207,6 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
-    PipelineNamespaceFilter,
-    PipelineNamespaceResponse,
-    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -209,6 +217,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -237,6 +249,8 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -274,6 +288,7 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.stack.flavor_registry import FlavorRegistry
+from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.utils import uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -281,6 +296,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str, validate_name
+from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -289,6 +305,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
+    ActionSchema,
     APIKeySchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -308,6 +325,7 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSchema,
     RunMetadataSchema,
+    RunTemplateSchema,
     ScheduleSchema,
     SecretSchema,
     ServerSettingsSchema,
@@ -786,6 +804,7 @@ class SqlZenStore(BaseZenStore):
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
+    _cached_onboarding_state: Optional[Set[str]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -976,16 +995,7 @@ class SqlZenStore(BaseZenStore):
                 total = 0
 
         # Sorting
-        column, operand = filter_model.sorting_params
-        if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
-        else:
-            sort_clause = asc(getattr(table, column))
-
-        # We always add the `id` column as a tiebreaker to ensure a stable,
-        # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        query = filter_model.apply_sorting(query=query, table=table)
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -1025,7 +1035,9 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model(include_metadata=hydrate))
+                items.append(
+                    to_model(include_metadata=hydrate, include_resources=True)
+                )
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -1542,12 +1554,18 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if current_revisions and version.parse(
-                current_revisions[0]
-            ) < version.parse("0.57.1"):
-                # We want to send the missing user enriched events for users
-                # which were created pre 0.57.1 and only on one upgrade
-                self._should_send_user_enriched_events = True
+            try:
+                if current_revisions and version.parse(
+                    current_revisions[0]
+                ) < version.parse("0.57.1"):
+                    # We want to send the missing user enriched events for users
+                    # which were created pre 0.57.1 and only on one upgrade
+                    self._should_send_user_enriched_events = True
+            except version.InvalidVersion:
+                # This can happen if the database is not currently
+                # stamped with an official ZenML version (e.g. in
+                # development environments).
+                pass
 
             self._sync_flavors()
 
@@ -1569,6 +1587,7 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
+        model.last_user_activity = settings.last_user_activity
         if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
             model.analytics_enabled = settings.enable_analytics
         return model
@@ -1671,6 +1690,83 @@ class SqlZenStore(BaseZenStore):
 
             return settings.to_model(include_metadata=True)
 
+    def _update_last_user_activity_timestamp(
+        self, last_user_activity: datetime
+    ) -> None:
+        """Update the last user activity timestamp.
+
+        Args:
+            last_user_activity: The timestamp of latest user activity
+                traced by server instance.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            if last_user_activity < settings.last_user_activity.replace(
+                tzinfo=timezone.utc
+            ):
+                return
+
+            settings.last_user_activity = last_user_activity
+            # `updated` kept intentionally unchanged here
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
+
+    def get_onboarding_state(self) -> List[str]:
+        """Get the server onboarding state.
+
+        Returns:
+            The server onboarding state.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            if settings.onboarding_state:
+                self._cached_onboarding_state = set(
+                    json.loads(settings.onboarding_state)
+                )
+                return list(self._cached_onboarding_state)
+            else:
+                return []
+
+    def _update_onboarding_state(
+        self, completed_steps: Set[str], session: Session
+    ) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+            session: DB session.
+        """
+        if self._cached_onboarding_state and completed_steps.issubset(
+            self._cached_onboarding_state
+        ):
+            # All the onboarding steps are already completed, no need to query
+            # the DB
+            return
+
+        settings = self._get_server_settings(session=session)
+        settings.update_onboarding_state(completed_steps=completed_steps)
+        session.add(settings)
+        session.commit()
+        session.refresh(settings)
+
+        assert settings.onboarding_state
+        self._cached_onboarding_state = set(
+            json.loads(settings.onboarding_state)
+        )
+
+    def update_onboarding_state(self, completed_steps: Set[str]) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+        """
+        with Session(self.engine) as session:
+            self._update_onboarding_state(
+                completed_steps=completed_steps, session=session
+            )
+
     def activate_server(
         self, request: ServerActivationRequest
     ) -> Optional[UserResponse]:
@@ -1738,6 +1834,205 @@ class SqlZenStore(BaseZenStore):
             )
 
         self.activate_server(request)
+
+    # -------------------- Actions  --------------------
+
+    def _fail_if_action_with_name_exists(
+        self, action_name: str, workspace_id: UUID, session: Session
+    ) -> None:
+        """Raise an exception if an action with same name exists.
+
+        Args:
+            action_name: The name of the action.
+            workspace_id: Workspace ID of the action.
+            session: DB Session.
+
+        Raises:
+            ActionExistsError: If an action with the given name already exists.
+        """
+        existing_domain_action = session.exec(
+            select(ActionSchema)
+            .where(ActionSchema.name == action_name)
+            .where(ActionSchema.workspace_id == workspace_id)
+        ).first()
+        if existing_domain_action is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=workspace_id, session=session
+            )
+            raise ActionExistsError(
+                f"Unable to register action with name "
+                f"'{action_name}': Found an existing action with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_action_with_name_exists(
+                action_name=action.name,
+                workspace_id=action.workspace,
+                session=session,
+            )
+
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=action.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
+            new_action = ActionSchema.from_request(action)
+            session.add(new_action)
+            session.commit()
+            session.refresh(new_action)
+
+            return new_action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_action(
+        self,
+        action_id: UUID,
+        session: Session,
+    ) -> ActionSchema:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            session: The DB session.
+
+        Returns:
+            The action schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=action_id,
+            schema_class=ActionSchema,
+            schema_name="action",
+            session=session,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            return action.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of actions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ActionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ActionSchema,
+                filter_model=action_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(session=session, action_id=action_id)
+
+            if action_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=action_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
+            # In case of a renaming update, make sure no action already exists
+            # with that name
+            if action_update.name:
+                if action.name != action_update.name:
+                    self._fail_if_action_with_name_exists(
+                        action_name=action_update.name,
+                        workspace_id=action.workspace.id,
+                        session=session,
+                    )
+
+            action.update(action_update=action_update)
+            session.add(action)
+            session.commit()
+
+            session.refresh(action)
+
+            return action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            IllegalOperationError: If the action can't be deleted
+                because it's used by triggers.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            # Prevent deletion of action if it is used by a trigger
+            if action.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete action with ID `{action_id}` "
+                    f"as it is used by {len(action.triggers)} triggers."
+                )
+
+            session.delete(action)
+            session.commit()
 
     # ------------------------- API Keys -------------------------
 
@@ -2153,7 +2448,7 @@ class SqlZenStore(BaseZenStore):
                     "service with this ID found."
                 )
             return service.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_services(
@@ -2492,7 +2787,7 @@ class SqlZenStore(BaseZenStore):
                     f"found."
                 )
             return artifact_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_artifact_versions(
@@ -2910,6 +3205,29 @@ class SqlZenStore(BaseZenStore):
                     raise KeyError(
                         f"Service connector with ID {component.connector} not "
                         "found."
+                    )
+
+            # warn about skypilot regions, if needed
+            if component.flavor in {"vm_gcp", "vm_azure"}:
+                stack_deployment_class = get_stack_deployment_class(
+                    StackDeploymentProvider.GCP
+                    if component.flavor == "vm_gcp"
+                    else StackDeploymentProvider.AZURE
+                )
+                skypilot_regions = (
+                    stack_deployment_class.skypilot_default_regions().values()
+                )
+                if (
+                    component.configuration.get("region", None)
+                    and component.configuration["region"]
+                    not in skypilot_regions
+                ):
+                    logger.warning(
+                        f"Region `{component.configuration['region']}` is not enabled in Skypilot "
+                        f"by default. Supported regions by default are: {skypilot_regions}. "
+                        "Check the Skypilot documentation to learn how to enable regions rather "
+                        "than default ones. (If you have already extended your configuration - "
+                        "simply ignore this warning)"
                     )
 
             # Create the component
@@ -3687,23 +4005,32 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version_hash == pipeline.version_hash)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name and "
-                    f"version already exists."
+                    f"'{pipeline.workspace}': A pipeline with this name "
+                    "already exists."
                 )
 
             # Create the pipeline
             new_pipeline = PipelineSchema.from_request(pipeline)
+
+            if pipeline.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline.tags,
+                    resource_id=new_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+
             session.add(new_pipeline)
             session.commit()
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model(include_metadata=True)
+            return new_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -3732,80 +4059,8 @@ class SqlZenStore(BaseZenStore):
                     "No pipeline with this ID found."
                 )
 
-            return pipeline.to_model(include_metadata=hydrate)
-
-    def list_pipeline_namespaces(
-        self,
-        filter_model: PipelineNamespaceFilter,
-        hydrate: bool = False,
-    ) -> Page[PipelineNamespaceResponse]:
-        """List all pipeline namespaces matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all pipeline namespaces matching the filter criteria.
-        """
-
-        def _custom_conversion(
-            row: Tuple[str, UUID, str],
-        ) -> PipelineNamespaceResponse:
-            name, latest_run_id, latest_run_status = row
-
-            body = PipelineNamespaceResponseBody(
-                latest_run_id=latest_run_id,
-                latest_run_status=latest_run_status,
-            )
-
-            return PipelineNamespaceResponse(name=name, body=body)
-
-        def _custom_fetch(
-            session: Session,
-            query: Union[Select[Any], SelectOfScalar[Any]],
-            filter: BaseFilter,
-        ) -> Sequence[Any]:
-            return session.exec(query).all()
-
-        with Session(self.engine) as session:
-            max_date_subquery = (
-                select(
-                    PipelineSchema.name,
-                    func.max(PipelineRunSchema.created).label("max_created"),
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                )
-                .group_by(PipelineSchema.name)
-                .subquery()
-            )
-
-            query = (
-                select(
-                    max_date_subquery.c.name,
-                    PipelineRunSchema.id,
-                    PipelineRunSchema.status,
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineRunSchema.created  # type: ignore[arg-type]
-                    == max_date_subquery.c.max_created,
-                )
-                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
-            )
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSchema,
-                filter_model=filter_model,
-                hydrate=hydrate,
-                custom_fetch=_custom_fetch,
-                custom_schema_to_model_conversion=_custom_conversion,
+            return pipeline.to_model(
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_pipelines(
@@ -3824,8 +4079,48 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
+        query = select(PipelineSchema)
+
+        column, operand = pipeline_filter_model.sorting_params
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            with Session(self.engine) as session:
+                max_date_subquery = (
+                    # If no run exists for the pipeline yet, we use the pipeline
+                    # creation date as a fallback, otherwise newly created
+                    # pipeline would always be at the top/bottom
+                    select(
+                        PipelineSchema.id,
+                        case(
+                            (
+                                func.max(PipelineRunSchema.created).is_(None),
+                                PipelineSchema.created,
+                            ),
+                            else_=func.max(PipelineRunSchema.created),
+                        ).label("run_or_created"),
+                    )
+                    .outerjoin(
+                        PipelineRunSchema,
+                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
+                    )
+                    .group_by(col(PipelineSchema.id))
+                    .subquery()
+                )
+
+                if operand == SorterOps.DESCENDING:
+                    sort_clause = desc
+                else:
+                    sort_clause = asc
+
+                query = (
+                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
+                    # We always add the `id` column as a tiebreaker to ensure a
+                    # stable, repeatable order of items, otherwise subsequent
+                    # pages might contain the same items.
+                    .order_by(col(PipelineSchema.id))
+                )
+
         with Session(self.engine) as session:
-            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -3875,13 +4170,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline with this ID found."
                 )
 
-            # Update the pipeline
-            existing_pipeline.update(pipeline_update)
+            if pipeline_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_update.add_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.add_tags = None
+            if pipeline_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=pipeline_update.remove_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.remove_tags = None
 
+            existing_pipeline.update(pipeline_update)
             session.add(existing_pipeline)
             session.commit()
+            session.refresh(existing_pipeline)
 
-            return existing_pipeline.to_model(include_metadata=True)
+            return existing_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -4011,24 +4322,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> NoReturn:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError(
-            "Running a build is not possible with a local store."
-        )
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -4139,37 +4432,235 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(deployment)
+            session.commit()
 
-            # Look for all pipeline builds that reference this deployment
-            # and remove the reference
-            pipeline_builds = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.template_deployment_id == deployment_id
+    # -------------------- Run templates --------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_RUN_TEMPLATE)
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+            ValueError: If the source deployment does not exist or does not
+                have an associated build.
+        """
+        with Session(self.engine) as session:
+            existing_template = session.exec(
+                select(RunTemplateSchema)
+                .where(RunTemplateSchema.name == template.name)
+                .where(RunTemplateSchema.workspace_id == template.workspace)
+            ).first()
+            if existing_template is not None:
+                raise EntityExistsError(
+                    f"Unable to create run template in workspace "
+                    f"'{existing_template.workspace.name}': A run template "
+                    "with this name already exists."
+                )
+
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id
+                    == template.source_deployment_id
+                )
+            ).first()
+            if not deployment:
+                raise ValueError(
+                    f"Source deployment {template.source_deployment_id} not "
+                    "found."
+                )
+
+            template_utils.validate_deployment_is_templatable(deployment)
+
+            template_schema = RunTemplateSchema.from_request(request=template)
+
+            if template.tags:
+                self._attach_tags_to_resource(
+                    tag_names=template.tags,
+                    resource_id=template_schema.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+
+            session.add(template_schema)
+            session.commit()
+            session.refresh(template_schema)
+
+            return template_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to get run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            return template.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(RunTemplateSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunTemplateSchema,
+                filter_model=template_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to update run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            if template_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=template_update.add_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.add_tags = None
+
+            if template_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=template_update.remove_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.remove_tags = None
+
+            template.update(template_update)
+            session.add(template)
+            session.commit()
+            session.refresh(template)
+
+            return template.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to delete run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            session.delete(template)
+            # We set the reference of all deployments to this template to null
+            # manually as we can't have a foreign key there to avoid a cycle
+            deployments = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.template_id == template_id
                 )
             ).all()
-
-            for pipeline_build in pipeline_builds:
-                pipeline_build.template_deployment_id = None
-                session.add(pipeline_build)
+            for deployment in deployments:
+                deployment.template_id = None
+                session.add(deployment)
 
             session.commit()
 
-    def run_deployment(
+    def run_template(
         self,
-        deployment_id: UUID,
+        template_id: UUID,
         run_configuration: Optional[PipelineRunConfiguration] = None,
     ) -> NoReturn:
-        """Run a pipeline from a deployment.
+        """Run a template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.
         """
         raise NotImplementedError(
-            "Running a deployment is not possible with a local store."
+            "Running a template is not possible with a local store."
         )
 
     # -------------------- Event Sources  --------------------
@@ -4183,11 +4674,9 @@ class SqlZenStore(BaseZenStore):
             event_source: The event_source to create.
             session: The Session
 
-        Returns:
-            None
-
         Raises:
-            EventSourceExistsError: In case the event source already exists
+            EventSourceExistsError: If an event source with the given name
+                already exists.
         """
         existing_domain_event_source = session.exec(
             select(EventSourceSchema)
@@ -4203,7 +4692,6 @@ class SqlZenStore(BaseZenStore):
                 f"'{event_source.name}': Found an existing event source with "
                 f"the same name in the active workspace, '{workspace.name}'."
             )
-        return None
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -4333,6 +4821,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the event_source doesn't exist.
+            IllegalOperationError: If the event source can't be deleted
+                because it's used by triggers.
         """
         with Session(self.engine) as session:
             event_source = self._get_event_source(
@@ -4343,11 +4833,16 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to delete event_source with ID `{event_source_id}`: "
                     f"No event_source with this ID found."
                 )
+
+            # Prevent deletion of event source if it is used by a trigger
+            if event_source.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete event_source with ID `{event_source_id}`"
+                    f" as it is used by {len(event_source.triggers)} triggers."
+                )
+
             session.delete(event_source)
             session.commit()
-
-            # TODO: catch and throw proper error if it can't be deleted due to
-            #  not-null constraints on triggers
 
     # ----------------------------- Pipeline runs -----------------------------
 
@@ -4380,10 +4875,20 @@ class SqlZenStore(BaseZenStore):
 
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=new_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model(include_metadata=True)
+            return new_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -4401,7 +4906,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def _replace_placeholder_run(
         self,
@@ -4450,10 +4955,20 @@ class SqlZenStore(BaseZenStore):
             if pre_replacement_hook:
                 pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=run_schema.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(run_schema)
             session.commit()
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
@@ -4487,7 +5002,9 @@ class SqlZenStore(BaseZenStore):
                     f"{orchestrator_run_id} and deployment ID {deployment_id}."
                 )
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_or_create_run(
         self,
@@ -4648,13 +5165,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run
+            if run_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=run_update.add_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.add_tags = None
+            if run_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=run_update.remove_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.remove_tags = None
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model(include_metadata=True)
+            return existing_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -5936,6 +6469,7 @@ class SqlZenStore(BaseZenStore):
 
             connector = new_service_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
+
             return connector
 
     def get_service_connector(
@@ -6702,13 +7236,287 @@ class SqlZenStore(BaseZenStore):
                 name=stack.name,
                 description=stack.description,
                 components=defined_components,
+                labels=base64.b64encode(
+                    json.dumps(stack.labels).encode("utf-8")
+                ),
             )
 
             session.add(new_stack_schema)
             session.commit()
             session.refresh(new_stack_schema)
 
+            for component in defined_components:
+                if component.type == StackComponentType.ORCHESTRATOR:
+                    if component.flavor not in {"local", "local_docker"}:
+                        self._update_onboarding_state(
+                            completed_steps={
+                                OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                            },
+                            session=session,
+                        )
+
             return new_stack_schema.to_model(include_metadata=True)
+
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+
+        Raises:
+            ValueError: If the full stack creation fails, due to the corrupted
+                input.
+            RuntimeError: If the full stack creation fails, due to unforeseen
+                errors.
+        """
+        # For clean-up purposes, each created entity is tracked here
+        service_connectors_created_ids: List[UUID] = []
+        components_created_ids: List[UUID] = []
+
+        try:
+            # Validate the name of the new stack
+            validate_name(full_stack)
+
+            if full_stack.labels is None:
+                full_stack.labels = {}
+
+            full_stack.labels.update({"zenml:full_stack": True})
+
+            # Service Connectors
+            service_connectors: List[ServiceConnectorResponse] = []
+
+            need_to_generate_permanent_tokens = False
+            orchestrator_component = full_stack.components[
+                StackComponentType.ORCHESTRATOR
+            ]
+            if isinstance(orchestrator_component, UUID):
+                orchestrator = self.get_stack_component(
+                    orchestrator_component,
+                    hydrate=False,
+                )
+                need_to_generate_permanent_tokens = (
+                    orchestrator.flavor.startswith("vm_")
+                )
+            else:
+                need_to_generate_permanent_tokens = (
+                    orchestrator_component.flavor.startswith("vm_")
+                )
+
+            for connector_id_or_info in full_stack.service_connectors:
+                # Fetch an existing service connector
+                if isinstance(connector_id_or_info, UUID):
+                    existing_service_connector = self.get_service_connector(
+                        connector_id_or_info
+                    )
+                    if need_to_generate_permanent_tokens:
+                        if (
+                            existing_service_connector.configuration.get(
+                                "generate_temporary_tokens", None
+                            )
+                            is not False
+                        ):
+                            connector_config = (
+                                existing_service_connector.configuration
+                            )
+                            connector_config["generate_temporary_tokens"] = (
+                                False
+                            )
+                            self.update_service_connector(
+                                existing_service_connector.id,
+                                ServiceConnectorUpdate(
+                                    configuration=connector_config
+                                ),
+                            )
+                    service_connectors.append(
+                        self.get_service_connector(connector_id_or_info)
+                    )
+                # Create a new service connector
+                else:
+                    connector_name = full_stack.name
+                    connector_config = connector_id_or_info.configuration
+                    connector_config[
+                        "generate_temporary_tokens"
+                    ] = not need_to_generate_permanent_tokens
+
+                    while True:
+                        try:
+                            service_connector_request = ServiceConnectorRequest(
+                                name=connector_name,
+                                connector_type=connector_id_or_info.type,
+                                auth_method=connector_id_or_info.auth_method,
+                                configuration=connector_config,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels={
+                                    k: str(v)
+                                    for k, v in full_stack.labels.items()
+                                },
+                            )
+                            service_connector_response = (
+                                self.create_service_connector(
+                                    service_connector=service_connector_request
+                                )
+                            )
+                            service_connectors.append(
+                                service_connector_response
+                            )
+                            service_connectors_created_ids.append(
+                                service_connector_response.id
+                            )
+                            break
+                        except EntityExistsError:
+                            connector_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+            # Stack Components
+            components_mapping: Dict[StackComponentType, List[UUID]] = {}
+            for (
+                component_type,
+                component_info,
+            ) in full_stack.components.items():
+                # Fetch an existing component
+                if isinstance(component_info, UUID):
+                    component = self.get_stack_component(
+                        component_id=component_info
+                    )
+                # Create a new component
+                else:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_type,
+                        )
+                    )
+                    if not len(flavor_list):
+                        raise ValueError(
+                            f"Flavor '{component_info.flavor}' not found "
+                            f"for component type '{component_type}'."
+                        )
+
+                    flavor_model = flavor_list[0]
+
+                    component_name = full_stack.name
+                    while True:
+                        try:
+                            component_request = ComponentRequest(
+                                name=component_name,
+                                type=component_type,
+                                flavor=component_info.flavor,
+                                configuration=component_info.configuration,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels=full_stack.labels,
+                            )
+                            component = self.create_stack_component(
+                                component=component_request
+                            )
+                            components_created_ids.append(component.id)
+                            break
+                        except EntityExistsError:
+                            component_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+                    if component_info.service_connector_index is not None:
+                        service_connector = service_connectors[
+                            component_info.service_connector_index
+                        ]
+
+                        requirements = flavor_model.connector_requirements
+
+                        if not requirements:
+                            raise ValueError(
+                                f"The '{flavor_model.name}' implementation "
+                                "does not support using a service connector to "
+                                "connect to resources."
+                            )
+
+                        if component_info.service_connector_resource_id:
+                            resource_id = (
+                                component_info.service_connector_resource_id
+                            )
+                        else:
+                            resource_id = None
+                            resource_type = requirements.resource_type
+                            if requirements.resource_id_attr is not None:
+                                resource_id = component_info.configuration.get(
+                                    requirements.resource_id_attr
+                                )
+
+                        satisfied, msg = requirements.is_satisfied_by(
+                            connector=service_connector,
+                            component=component,
+                        )
+
+                        if not satisfied:
+                            raise ValueError(
+                                "Please pick a connector that is "
+                                "compatible with the component flavor and "
+                                "try again.."
+                            )
+
+                        if not resource_id:
+                            if service_connector.resource_id:
+                                resource_id = service_connector.resource_id
+                            elif service_connector.supports_instances:
+                                raise ValueError(
+                                    f"Multiple {resource_type} resources "
+                                    "are available for the selected "
+                                    "connector. Please use a `resource_id` "
+                                    "to configure a "
+                                    f"{resource_type} resource."
+                                )
+
+                        component_update = ComponentUpdate(
+                            connector=service_connector.id,
+                            connector_resource_id=resource_id,
+                        )
+                        self.update_stack_component(
+                            component_id=component.id,
+                            component_update=component_update,
+                        )
+
+                components_mapping[component_type] = [
+                    component.id,
+                ]
+
+            # Stack
+            stack_name = full_stack.name
+            while True:
+                try:
+                    stack_request = StackRequest(
+                        user=full_stack.user,
+                        workspace=full_stack.workspace,
+                        name=stack_name,
+                        description=full_stack.description,
+                        components=components_mapping,
+                        labels=full_stack.labels,
+                    )
+                    stack_response = self.create_stack(stack_request)
+
+                    break
+                except EntityExistsError:
+                    stack_name = f"{full_stack.name}-{random_str(4)}".lower()
+
+            return stack_response
+
+        except Exception as e:
+            for component_id in components_created_ids:
+                self.delete_stack_component(component_id=component_id)
+            for service_connector_id in service_connectors_created_ids:
+                self.delete_service_connector(
+                    service_connector_id=service_connector_id
+                )
+            raise RuntimeError(
+                f"Full Stack creation has failed {e}. Cleaning up the "
+                f"created entities."
+            ) from e
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -6986,6 +7794,69 @@ class SqlZenStore(BaseZenStore):
                 workspace_id=workspace.id,
             )
 
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_config(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
     # ----------------------------- Step runs -----------------------------
 
     def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
@@ -7105,7 +7976,7 @@ class SqlZenStore(BaseZenStore):
                     "run with this ID found."
                 )
             return step_run.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_run_steps(
@@ -7453,6 +8324,7 @@ class SqlZenStore(BaseZenStore):
                 ) as analytics_handler:
                     analytics_handler.metadata = {
                         "pipeline_run_id": pipeline_run_id,
+                        "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
                         "num_steps": num_steps,
                         "start_time": start_time_str,
@@ -7462,6 +8334,25 @@ class SqlZenStore(BaseZenStore):
                         "duration_seconds": duration_seconds,
                         **stack_metadata,
                     }
+
+                completed_onboarding_steps: Set[str] = {
+                    OnboardingStep.PIPELINE_RUN,
+                    OnboardingStep.STARTER_SETUP_COMPLETED,
+                }
+                if stack_metadata["orchestrator"] not in {
+                    "local",
+                    "local_docker",
+                }:
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        }
+                    )
+
+                self._update_onboarding_state(
+                    completed_steps=completed_onboarding_steps, session=session
+                )
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 
@@ -7478,19 +8369,19 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
         """
         with Session(self.engine) as session:
-            # Verify that the given event_source exists
-            self._get_event_source(
-                event_source_id=trigger.event_source_id, session=session
-            )
+            # Verify that the given action exists
+            self._get_action(action_id=trigger.action_id, session=session)
 
-            # Verify that the given service account exists
-            self._get_account_schema(
-                account_name_or_id=trigger.service_account_id,
-                session=session,
-                service_account=True,
-            )
+            if trigger.event_source_id:
+                # Verify that the given event_source exists
+                self._get_event_source(
+                    event_source_id=trigger.event_source_id, session=session
+                )
 
-            # Verify that the trigger won't validate Unique
+            # Verify that the action exists
+            self._get_action(action_id=trigger.action_id, session=session)
+
+            # Verify that the trigger name is unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
                 workspace_id=trigger.workspace,
@@ -7520,7 +8411,7 @@ class SqlZenStore(BaseZenStore):
             The trigger with the given ID.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
         """
         with Session(self.engine) as session:
             trigger = session.exec(
@@ -7530,7 +8421,7 @@ class SqlZenStore(BaseZenStore):
             if trigger is None:
                 raise KeyError(f"Trigger with ID {trigger_id} not found.")
             return trigger.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_triggers(
@@ -7573,7 +8464,8 @@ class SqlZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
+            ValueError: If both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
@@ -7583,16 +8475,16 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_trigger is None:
                 raise KeyError(
-                    f"Unable to update trigger with id '{trigger_id}': Found no"
-                    f"existing trigger with this id."
+                    f"Unable to update trigger with id '{trigger_id}': No "
+                    f"existing trigger with this id exists."
                 )
 
-            if trigger_update.service_account_id:
-                # Verify that the given service account exists
-                self._get_account_schema(
-                    account_name_or_id=trigger_update.service_account_id,
-                    session=session,
-                    service_account=True,
+            # Verify that either a schedule or an event source is provided, not
+            # both
+            if existing_trigger.event_source and trigger_update.schedule:
+                raise ValueError(
+                    "Unable to update trigger: A trigger cannot have both a "
+                    "schedule and an event source."
                 )
 
             # In case of a renaming update, make sure no trigger already exists
@@ -9118,7 +10010,7 @@ class SqlZenStore(BaseZenStore):
                     f"ID found."
                 )
             return model_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_model_versions(

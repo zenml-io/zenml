@@ -12,8 +12,10 @@ To ensure heightened security measures, this connector also enables [the generat
 
 This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
-```
+```shell
 $ zenml service-connector list-types --type aws
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
@@ -1713,7 +1715,6 @@ Active repository stack set to:'aws-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
 - Including user-defined requirements: boto3==1.26.76

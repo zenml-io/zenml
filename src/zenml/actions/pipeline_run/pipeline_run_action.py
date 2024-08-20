@@ -24,19 +24,20 @@ from zenml.actions.base_action import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
+from zenml.logger import get_logger
 from zenml.models import (
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     TriggerExecutionResponse,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
-from zenml.zen_server.pipeline_deployment.utils import run_pipeline
-from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
-    ResourceType,
-)
+from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.template_execution.utils import run_template
 from zenml.zen_server.utils import server_config
+
+logger = get_logger(__name__)
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -44,7 +45,7 @@ from zenml.zen_server.utils import server_config
 class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
-    pipeline_deployment_id: UUID
+    template_id: UUID
     run_config: Optional[PipelineRunConfiguration] = None
 
 
@@ -94,10 +95,10 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         assert isinstance(config, PipelineRunActionConfiguration)
 
-        deployment = zen_store().get_deployment(config.pipeline_deployment_id)
-        print("Running deployment:", deployment)
-        run_pipeline(
-            deployment=deployment,
+        template = zen_store().get_run_template(config.template_id)
+        logger.debug("Running template:", template)
+        run_template(
+            template=template,
             run_config=config.run_config,
             auth_context=auth_context,
         )
@@ -113,21 +114,22 @@ class PipelineRunActionHandler(BaseActionHandler):
         Raises:
             ValueError: In case no deployment can be found with the deployment_id
         """
-        deployment_id = config.pipeline_deployment_id
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            zen_store.get_deployment(deployment_id=deployment_id)
+            zen_store.get_run_template(template_id=config.template_id)
         except KeyError:
-            raise ValueError(f"No deployment found with id {deployment_id}.")
+            raise ValueError(
+                f"No template found with id {config.template_id}."
+            )
 
-    def _validate_trigger_request(
-        self, trigger: TriggerRequest, config: ActionConfig
+    def _validate_action_request(
+        self, action: ActionRequest, config: ActionConfig
     ) -> None:
-        """Validate a trigger request before it is created in the database.
+        """Validate an action request before it is created in the database.
 
         Args:
-            trigger: Trigger request.
+            action: Action request.
             config: Action configuration instantiated from the request.
         """
         assert isinstance(config, PipelineRunActionConfiguration)
@@ -135,25 +137,25 @@ class PipelineRunActionHandler(BaseActionHandler):
         self._validate_configuration(config)
 
         # If an expiration window is not set, we set it to the default value
-        if trigger.auth_window is None:
-            trigger.auth_window = server_config().pipeline_run_auth_window
+        if action.auth_window is None:
+            action.auth_window = server_config().pipeline_run_auth_window
 
-    def _validate_trigger_update(
+    def _validate_action_update(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         config: ActionConfig,
-        trigger_update: TriggerUpdate,
+        action_update: ActionUpdate,
         config_update: ActionConfig,
     ) -> None:
-        """Validate a trigger update before it is reflected in the database.
+        """Validate an action update before it is reflected in the database.
 
         Args:
-            trigger: Original trigger before the update.
+            action: Original action before the update.
             config: Action configuration instantiated from the original
-                trigger.
-            trigger_update: Trigger update request.
+                action.
+            action_update: Action update request.
             config_update: Action configuration instantiated from the
-                updated trigger.
+                updated action.
         """
         assert isinstance(config, PipelineRunActionConfiguration)
 
@@ -162,36 +164,41 @@ class PipelineRunActionHandler(BaseActionHandler):
     def extract_resources(
         self,
         action_config: ActionConfig,
+        hydrate: bool = False,
     ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
         """Extract related resources for this action.
 
         Args:
             action_config: Action configuration from which to extract related
                 resources.
+            hydrate: Flag deciding whether to hydrate the resources.
 
         Returns:
             List of resources related to the action.
 
         Raises:
-            ValueError: In case the deployment_id does not exist.
+            ValueError: In case the specified template does not exist.
         """
         assert isinstance(action_config, PipelineRunActionConfiguration)
 
-        deployment_id = action_config.pipeline_deployment_id
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            deployment = zen_store.get_deployment(deployment_id=deployment_id)
+            template = zen_store.get_run_template(
+                template_id=action_config.template_id, hydrate=hydrate
+            )
         except KeyError:
-            raise ValueError(f"No deployment found with id {deployment_id}.")
+            raise ValueError(
+                f"No template found with id {action_config.template_id}."
+            )
 
         resources: Dict[ResourceType, BaseResponse[Any, Any, Any]] = {
-            ResourceType.PIPELINE_DEPLOYMENT: deployment
+            ResourceType.RUN_TEMPLATE: template
         }
 
-        if deployment.pipeline is not None:
+        if template.pipeline is not None:
             pipeline = zen_store.get_pipeline(
-                pipeline_id=deployment.pipeline.id
+                pipeline_id=template.pipeline.id, hydrate=hydrate
             )
             resources[ResourceType.PIPELINE] = pipeline
 

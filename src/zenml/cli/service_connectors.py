@@ -1109,6 +1109,7 @@ def describe_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
+                verify=True,
             )
         except (
             KeyError,

@@ -65,6 +65,9 @@ def generate_jwt_secret_key() -> str:
 class ServerConfiguration(BaseModel):
     """ZenML Server configuration attributes.
 
+    All these attributes can be set through the environment with the `ZENML_SERVER_`-Prefix.
+    The value of the `ZENML_SERVER_DEPLOYMENT_TYPE` environment variable will be extracted to deployment_type.
+
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
         server_url: The URL where the ZenML server API is reachable. Must be
@@ -377,6 +380,36 @@ class ServerConfiguration(BaseModel):
                 if v.lower() in ["enabled", "yes", "true", "on"]:
                     # Revert to the default value if the header is enabled
                     del data[k]
+
+        # Handle merging of user-defined secure_headers_csp value with the default value
+        if "secure_headers_csp" in data:
+            user_defined_csp = data["secure_headers_csp"]
+            if isinstance(user_defined_csp, str):
+                # Parse the user-defined CSP string into a dictionary
+                user_defined_csp_dict = {}
+                for directive in user_defined_csp.split(";"):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        user_defined_csp_dict[key] = value.strip("'\"")
+
+                # Merge the user-defined CSP dictionary with the default CSP dictionary
+                default_csp_dict = {}
+                for directive in DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP.split(
+                    ";"
+                ):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        default_csp_dict[key] = value.strip("'\"")
+
+                merged_csp_dict = {**default_csp_dict, **user_defined_csp_dict}
+
+                # Convert the merged CSP dictionary back to a string
+                merged_csp_str = "; ".join(
+                    f"{key} {value}" for key, value in merged_csp_dict.items()
+                )
+                data["secure_headers_csp"] = merged_csp_str
 
         return data
 

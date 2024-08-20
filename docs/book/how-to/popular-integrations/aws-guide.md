@@ -6,6 +6,17 @@ description: A simple guide to create an AWS stack to run your ZenML pipelines
 
 This page aims to quickly set up a minimal production stack on AWS. With just a few simple steps, you will set up an IAM role with specifically-scoped permissions that ZenML can use to authenticate with the relevant AWS resources.
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full AWS ZenML cloud stack already?
+
+Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack.
+{% endhint %}
+
+
 ## 1) Set up credentials and local environment
 
 To follow this guide, you need:
@@ -201,7 +212,7 @@ def hello_world() -> str:
 
 @pipeline
 def aws_sagemaker_pipeline():
-    hello_step()
+    hello_world()
 
 if __name__ == "__main__":
     aws_sagemaker_pipeline()

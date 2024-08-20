@@ -15,8 +15,6 @@
 
 from datetime import datetime
 from typing import (
-    Any,
-    Dict,
     Optional,
 )
 from uuid import UUID
@@ -57,10 +55,6 @@ class ServerSettingsUpdate(BaseZenModel):
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
-    onboarding_state: Optional[Dict[str, Any]] = Field(
-        default=None,
-        title="The server's onboarding state.",
-    )
 
 
 # ------------------ Response Model ------------------
@@ -88,6 +82,9 @@ class ServerSettingsResponseBody(BaseResponseBody):
     display_updates: Optional[bool] = Field(
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
+    last_user_activity: datetime = Field(
+        title="The timestamp when the last user activity was detected.",
+    )
     updated: datetime = Field(
         title="The timestamp when this resource was last updated."
     )
@@ -95,11 +92,6 @@ class ServerSettingsResponseBody(BaseResponseBody):
 
 class ServerSettingsResponseMetadata(BaseResponseMetadata):
     """Response metadata for server settings."""
-
-    onboarding_state: Dict[str, Any] = Field(
-        default={},
-        title="The server's onboarding state.",
-    )
 
 
 class ServerSettingsResponseResources(BaseResponseResources):
@@ -191,6 +183,15 @@ class ServerSettingsResponse(
         return self.get_body().active
 
     @property
+    def last_user_activity(self) -> datetime:
+        """The `last_user_activity` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().last_user_activity
+
+    @property
     def updated(self) -> datetime:
         """The `updated` property.
 
@@ -198,15 +199,6 @@ class ServerSettingsResponse(
             the value of the property.
         """
         return self.get_body().updated
-
-    @property
-    def onboarding_state(self) -> Dict[str, Any]:
-        """The `onboarding_state` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().onboarding_state
 
 
 # ------------------ Filter Model ------------------

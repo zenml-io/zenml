@@ -103,7 +103,9 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in dict(model).items():
+    # See `get_subresources_for_model(...)` for a detailed explanation why we
+    # need to use `model.__iter__()` here
+    for key, value in model.__iter__():
         dehydrated_values[key] = _dehydrate_value(
             value, permissions=permissions
         )
@@ -189,7 +191,12 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
         The permission denied model.
     """
     return model.model_copy(
-        update={"body": None, "metadata": None, "permission_denied": True}
+        update={
+            "body": None,
+            "metadata": None,
+            "resources": None,
+            "permission_denied": True,
+        }
     )
 
 
@@ -384,10 +391,12 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
+        ActionResponse,
         ArtifactResponse,
         ArtifactVersionResponse,
         CodeRepositoryResponse,
         ComponentResponse,
+        EventSourceResponse,
         FlavorResponse,
         ModelResponse,
         ModelVersionResponse,
@@ -396,12 +405,15 @@ def get_resource_type_for_model(
         PipelineResponse,
         PipelineRunResponse,
         RunMetadataResponse,
+        RunTemplateResponse,
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
         ServiceResponse,
         StackResponse,
         TagResponse,
+        TriggerExecutionResponse,
+        TriggerResponse,
         UserResponse,
         WorkspaceResponse,
     )
@@ -410,6 +422,8 @@ def get_resource_type_for_model(
         Any,
         ResourceType,
     ] = {
+        ActionResponse: ResourceType.ACTION,
+        EventSourceResponse: ResourceType.EVENT_SOURCE,
         FlavorResponse: ResourceType.FLAVOR,
         ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
         ComponentResponse: ResourceType.STACK_COMPONENT,
@@ -427,7 +441,10 @@ def get_resource_type_for_model(
         PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
+        RunTemplateResponse: ResourceType.RUN_TEMPLATE,
         TagResponse: ResourceType.TAG,
+        TriggerResponse: ResourceType.TRIGGER,
+        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
         ServiceResponse: ResourceType.SERVICE,
     }
@@ -471,7 +488,13 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for value in dict(model).values():
+    # We don't want to use `model.model_dump()` here as that recursively
+    # converts models to dicts, but we want to preserve those classes for
+    # the recursive `_get_subresources_for_value` calls.
+    # We previously used `dict(model)` here, but that lead to issues with
+    # models overwriting `__getattr__`, this `model.__iter__()` has the same
+    # results though.
+    for _, value in model.__iter__():
         resources.update(_get_subresources_for_value(value))
 
     return resources
@@ -522,9 +545,11 @@ def get_schema_for_resource_type(
         The database schema.
     """
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -533,12 +558,15 @@ def get_schema_for_resource_type(
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
+        RunTemplateSchema,
         SecretSchema,
         ServiceConnectorSchema,
         ServiceSchema,
         StackComponentSchema,
         StackSchema,
         TagSchema,
+        TriggerExecutionSchema,
+        TriggerSchema,
         UserSchema,
         WorkspaceSchema,
     )
@@ -562,8 +590,13 @@ def get_schema_for_resource_type(
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
+        ResourceType.RUN_TEMPLATE: RunTemplateSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.USER: UserSchema,
+        ResourceType.ACTION: ActionSchema,
+        ResourceType.EVENT_SOURCE: EventSourceSchema,
+        ResourceType.TRIGGER: TriggerSchema,
+        ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
     }
 
     return mapping[resource_type]

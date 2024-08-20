@@ -37,6 +37,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         APIKeySchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
@@ -76,7 +77,6 @@ class UserSchema(NamedSchema, table=True):
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-    hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
@@ -87,6 +87,13 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
+    actions: List["ActionSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==ActionSchema.user_id",
+        },
+    )
     event_sources: List["EventSourceSchema"] = Relationship(
         back_populates="user"
     )
@@ -114,11 +121,11 @@ class UserSchema(NamedSchema, table=True):
             "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
         },
     )
-    auth_triggers: List["TriggerSchema"] = Relationship(
+    auth_actions: List["ActionSchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={
             "cascade": "delete",
-            "primaryjoin": "UserSchema.id==TriggerSchema.service_account_id",
+            "primaryjoin": "UserSchema.id==ActionSchema.service_account_id",
         },
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
@@ -273,7 +280,6 @@ class UserSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = UserResponseMetadata(
                 email=self.email if include_private else None,
-                hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
                 user_metadata=json.loads(self.user_metadata)
                 if self.user_metadata

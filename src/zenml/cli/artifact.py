@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from functools import partial
 from typing import Any, Dict, List, Optional
 
 import click
@@ -258,7 +257,7 @@ def prune_artifacts(
     """
     client = Client()
     unused_artifact_versions = depaginate(
-        partial(client.list_artifact_versions, only_unused=True)
+        client.list_artifact_versions, only_unused=True
     )
 
     if not unused_artifact_versions:

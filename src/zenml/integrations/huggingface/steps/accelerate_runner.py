@@ -17,7 +17,8 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Optional, TypeVar, cast
+import inspect
+from typing import Any, Callable, Dict, TypeVar, cast
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (  # type: ignore[import-untyped]
@@ -35,8 +36,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def run_with_accelerate(
     step_function: BaseStep,
-    num_processes: Optional[int] = None,
-    use_cpu: bool = False,
+    **accelerate_launch_kwargs: Any,
 ) -> BaseStep:
     """Run a function with accelerate.
 
@@ -57,14 +57,23 @@ def run_with_accelerate(
 
     Args:
         step_function: The step function to run.
-        num_processes: The number of processes to use.
-        use_cpu: Whether to use the CPU.
+        accelerate_launch_kwargs: A dictionary of arguments to pass along to the
+            `accelerate launch` command, including hardware selection, resource
+            allocation, and training paradigm options. Visit
+            https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch
+            for more details.
 
     Returns:
         The accelerate-enabled version of the step.
+
+    Raises:
+        RuntimeError: If the decorator is misused.
+
     """
 
-    def _decorator(entrypoint: F) -> F:
+    def _decorator(
+        entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+    ) -> F:
         @functools.wraps(entrypoint)
         def inner(*args: Any, **kwargs: Any) -> Any:
             if args:
@@ -72,61 +81,36 @@ def run_with_accelerate(
                     "Accelerated steps do not support positional arguments."
                 )
 
-            if not use_cpu:
-                import torch
-
-                logger.info("Starting accelerate job...")
-
-                device_count = torch.cuda.device_count()
-                if num_processes is None:
-                    _num_processes = device_count
-                else:
-                    if num_processes > device_count:
-                        logger.warning(
-                            f"Number of processes ({num_processes}) is greater than "
-                            f"the number of available GPUs ({device_count}). Using all GPUs."
-                        )
-                        _num_processes = device_count
-                    else:
-                        _num_processes = num_processes
-            else:
-                _num_processes = num_processes or 1
-
             with create_cli_wrapped_script(
                 entrypoint, flavour="accelerate"
             ) as (
                 script_path,
                 output_path,
             ):
-                commands = ["--num_processes", str(_num_processes)]
-                if use_cpu:
-                    commands += [
-                        "--cpu",
-                        "--num_cpu_threads_per_process",
-                        "10",
-                    ]
-                commands.append(str(script_path.absolute()))
+                commands = [str(script_path.absolute())]
                 for k, v in kwargs.items():
                     k = _cli_arg_name(k)
                     if isinstance(v, bool):
                         if v:
                             commands.append(f"--{k}")
-                    elif isinstance(v, str):
-                        commands += [f"--{k}", '"{v}"']
                     elif type(v) in (list, tuple, set):
                         for each in v:
-                            commands.append(f"--{k}")
-                            if isinstance(each, str):
-                                commands.append(f'"{each}"')
-                            else:
-                                commands.append(f"{each}")
+                            commands += [f"--{k}", f"{each}"]
                     else:
                         commands += [f"--{k}", f"{v}"]
-
                 logger.debug(commands)
 
                 parser = launch_command_parser()
                 args = parser.parse_args(commands)
+                for k, v in accelerate_launch_kwargs.items():
+                    if k in args:
+                        setattr(args, k, v)
+                    else:
+                        logger.warning(
+                            f"You passed in `{k}` as an `accelerate launch` argument, but it was not accepted. "
+                            "Please check https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch "
+                            "to find out more about supported arguments and retry."
+                        )
                 try:
                     launch_command(args)
                 except Exception as e:
@@ -144,6 +128,37 @@ def run_with_accelerate(
 
         return cast(F, inner)
 
-    setattr(step_function, "entrypoint", _decorator(step_function.entrypoint))
+    import __main__
+
+    if __main__.__file__ == inspect.getsourcefile(step_function.entrypoint):
+        raise RuntimeError(
+            f"`{run_with_accelerate.__name__}` decorator cannot be used "
+            "with steps defined inside the entrypoint script, please move "
+            f"your step `{step_function.name}` code to another file and retry."
+        )
+    if f"@{run_with_accelerate.__name__}" in inspect.getsource(
+        step_function.entrypoint
+    ):
+        raise RuntimeError(
+            f"`{run_with_accelerate.__name__}` decorator cannot be used "
+            "directly on steps using '@' syntax, please use a functional "
+            "decoration in your pipeline script instead.\n"
+            "Example (not allowed):\n"
+            f"@{run_with_accelerate.__name__}\n"
+            f"def {step_function.name}(...):\n"
+            "    ...\n"
+            "Example (allowed):\n"
+            "def my_pipeline(...):\n"
+            f"    run_with_accelerate({step_function.name})(...)\n"
+        )
+
+    setattr(
+        step_function,
+        "entrypoint",
+        _decorator(
+            step_function.entrypoint,
+            accelerate_launch_kwargs=accelerate_launch_kwargs,
+        ),
+    )
 
     return step_function

@@ -171,7 +171,6 @@ class CliCategories(StrEnum):
 
     STACK_COMPONENTS = "Stack Components"
     MODEL_DEPLOYMENT = "Model Deployment"
-    HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
     MODEL_CONTROL_PLANE = "Model Control Plane"
@@ -303,6 +302,7 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+    LIGHTNING_AI_STUDIO = "lightning_ai_studio"
 
 
 class ModelStages(StrEnum):
@@ -338,6 +338,9 @@ class TaggableResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
     MODEL_VERSION = "model_version"
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+    RUN_TEMPLATE = "run_template"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -384,3 +387,26 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class OnboardingStep(StrEnum):
+    """All onboarding steps."""
+
+    DEVICE_VERIFIED = "device_verified"
+    PIPELINE_RUN = "pipeline_run"
+    STARTER_SETUP_COMPLETED = "starter_setup_completed"
+    STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
+        "stack_with_remote_orchestrator_created"
+    )
+    PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR = (
+        "pipeline_run_with_remote_orchestrator"
+    )
+    PRODUCTION_SETUP_COMPLETED = "production_setup_completed"
+
+
+class StackDeploymentProvider(StrEnum):
+    """All possible stack deployment providers."""
+
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"

@@ -22,6 +22,7 @@ To run this file locally, execute:
 
 import os
 from asyncio.log import logger
+from datetime import datetime, timedelta, timezone
 from genericpath import isfile
 from typing import Any, List
 
@@ -36,10 +37,15 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, HEALTH
+from zenml.constants import (
+    API,
+    DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
+    HEALTH,
+)
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -54,6 +60,7 @@ from zenml.zen_server.routers import (
     pipelines_endpoints,
     plugin_endpoints,
     run_metadata_endpoints,
+    run_templates_endpoints,
     runs_endpoints,
     schedule_endpoints,
     secrets_endpoints,
@@ -62,6 +69,7 @@ from zenml.zen_server.routers import (
     service_connectors_endpoints,
     service_endpoints,
     stack_components_endpoints,
+    stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
     tags_endpoints,
@@ -77,8 +85,10 @@ from zenml.zen_server.utils import (
     initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
+    is_user_request,
     secure_headers,
     server_config,
+    zen_store,
 )
 
 if server_config().use_legacy_dashboard:
@@ -104,6 +114,12 @@ app = FastAPI(
     version=zenml.__version__,
     root_path=server_config().root_url_path,
     default_response_class=ORJSONResponse,
+)
+
+# Initialize last_user_activity
+last_user_activity: datetime = datetime.now(timezone.utc)
+last_user_activity_reported: datetime = datetime.now(timezone.utc) + timedelta(
+    seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
 
 
@@ -154,6 +170,44 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     response = await call_next(request)
     secure_headers().framework.fastapi(response)
     return response
+
+
+@app.middleware("http")
+async def track_last_user_activity(request: Request, call_next: Any) -> Any:
+    """A middleware to track last user activity.
+
+    This middleware checks if the incoming request is a user request and
+    updates the last activity timestamp if it is.
+
+    Args:
+        request: The incoming request object.
+        call_next: A function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        The response to the request.
+    """
+    global last_user_activity
+    global last_user_activity_reported
+
+    try:
+        if is_user_request(request):
+            last_user_activity = datetime.now(timezone.utc)
+    except Exception as e:
+        logger.debug(
+            f"An unexpected error occurred while checking user activity: {e}"
+        )
+    if (
+        (
+            datetime.now(timezone.utc) - last_user_activity_reported
+        ).total_seconds()
+        > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
+    ):
+        last_user_activity_reported = datetime.now(timezone.utc)
+        zen_store()._update_last_user_activity_timestamp(
+            last_user_activity=last_user_activity
+        )
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -262,6 +316,7 @@ async def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -275,11 +330,11 @@ app.include_router(model_versions_endpoints.router)
 app.include_router(model_versions_endpoints.model_version_artifacts_router)
 app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(pipelines_endpoints.router)
-app.include_router(pipelines_endpoints.namespace_router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
+app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
 app.include_router(secrets_endpoints.op_router)
@@ -288,6 +343,7 @@ app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
 app.include_router(service_endpoints.router)
+app.include_router(stack_deployment_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

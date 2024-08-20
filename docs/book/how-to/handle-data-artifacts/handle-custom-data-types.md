@@ -274,7 +274,7 @@ To create visualizations, you need to:
 
 As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
 
-Read more about visualizations [here](visualize-artifacts.md).
+Read more about visualizations [here](../visualize-artifacts/creating-custom-visualizations.md).
 
 #### (Optional) Which Metadata to Extract for the Artifact
 
@@ -302,82 +302,7 @@ If you would like to disable artifact metadata extraction altogether, you can se
 
 ## Skipping materialization
 
-{% hint style="warning" %}
-Skipping materialization might have unintended consequences for downstream tasks that rely on materialized artifacts. Only skip materialization if there is no other way to do what you want to do.
-{% endhint %}
-
-While materializers should in most cases be used to control how artifacts are returned and consumed from pipeline steps, you might sometimes need to have a completely unmaterialized artifact in a step, e.g., if you need to know the exact path to where your artifact is stored.
-
-An unmaterialized artifact is a `zenml.materializers.UnmaterializedArtifact`. Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
-
-```python
-from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
-from zenml import step
-
-
-@step
-def my_step(my_artifact: UnmaterializedArtifact):  # rather than pd.DataFrame
-    pass
-```
-
-#### Example
-
-The following shows an example of how unmaterialized artifacts can be used in the steps of a pipeline. The pipeline we define will look like this:
-
-```shell
-s1 -> s3 
-s2 -> s4
-```
-
-`s1` and `s2` produce identical artifacts, however `s3` consumes materialized artifacts while `s4` consumes unmaterialized artifacts. `s4` can now use the `dict_.uri` and `list_.uri` paths directly rather than their materialized counterparts.
-
-```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
-from typing import Dict, List, Tuple
-
-from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
-from zenml import pipeline, step
-
-
-@step
-def step_1() -> Tuple[
-    Annotated[Dict[str, str], "dict_"],
-    Annotated[List[str], "list_"],
-]:
-    return {"some": "data"}, []
-
-
-@step
-def step_2() -> Tuple[
-    Annotated[Dict[str, str], "dict_"],
-    Annotated[List[str], "list_"],
-]:
-    return {"some": "data"}, []
-
-
-@step
-def step_3(dict_: Dict, list_: List) -> None:
-    assert isinstance(dict_, dict)
-    assert isinstance(list_, list)
-
-
-@step
-def step_4(
-        dict_: UnmaterializedArtifact,
-        list_: UnmaterializedArtifact,
-) -> None:
-    print(dict_.uri)
-    print(list_.uri)
-
-
-@pipeline
-def example_pipeline():
-    step_3(*step_1())
-    step_4(*step_2())
-
-
-example_pipeline()
-```
+You can learn more about skipping materialization [here](unmaterialized-artifacts.md).
 
 ## Interaction with custom artifact stores
 

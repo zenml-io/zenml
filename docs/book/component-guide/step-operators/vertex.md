@@ -20,10 +20,6 @@ You should use the Vertex step operator if:
 
 ### How to use it
 
-{% hint style="warning" %}
-The GCP step operator (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
-
 To use the Vertex step operator, we need:
 
 *   The ZenML `gcp` integration installed. If you haven't done so, run
@@ -89,7 +85,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator= <NAME>)
+@step(step_operator=<NAME>)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Vertex.
@@ -119,13 +115,13 @@ For additional configuration of the Vertex step operator, you can pass `VertexSt
 from zenml import step
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
 
-@step(step_operator= <NAME>, settings=settings= {"step_operator.vertex": vertex_operator_settings = VertexStepOperatorSettings(
-    accelerator_type  = "NVIDIA_TESLA_T4" # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-    accelerator_count = 1
-    machine_type = "n1-standard-2"        # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-    disk_type = "pd-ssd"                  # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-types
-    disk_size_gb = 100                    # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-size
-    )})
+@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator.vertex": VertexStepOperatorSettings(
+    accelerator_type= "NVIDIA_TESLA_T4",  # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+    accelerator_count = 1,
+    machine_type = "n1-standard-2",       # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    disk_type = "pd-ssd",                 # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-types
+    disk_size_gb = 100,                   # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-size
+)})
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Vertex.

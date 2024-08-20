@@ -1,0 +1,25 @@
+---
+name: Publish Cloud Stack Templates
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  publish_stack_templates:
+    name: Publish Cloud Stack Templates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4.1.1
+      # Setup AWS CLI
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-stack-cf-templates
+          aws-region: eu-central-1
+      # Publish the CloudFormation template to S3
+      - name: Push CloudFormation template to S3
+        run: |-
+          aws s3 cp infra/aws/aws-ecr-s3-sagemaker.yaml s3://zenml-cf-templates/aws-ecr-s3-sagemaker.yaml

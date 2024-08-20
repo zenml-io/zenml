@@ -18,7 +18,6 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -55,6 +54,7 @@ from zenml.steps.utils import (
 )
 from zenml.utils import (
     dict_utils,
+    notebook_utils,
     pydantic_utils,
     settings_utils,
     source_code_utils,
@@ -76,10 +76,10 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
-    HookSpecification = Union[str, Source, FunctionType]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],
@@ -249,6 +249,8 @@ class BaseStep(metaclass=BaseStepMeta):
             retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
+
+        notebook_utils.try_to_save_notebook_cell_code(self.source_object)
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
@@ -480,7 +482,7 @@ class BaseStep(metaclass=BaseStepMeta):
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
-                f"Wrong arguments when calling step `{self.name}`: {e}"
+                f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
         artifacts = {}
@@ -981,7 +983,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
         if conflicting_parameters:
             is_plural = "s" if len(conflicting_parameters) > 1 else ""
-            msg = f"Configured parameter{is_plural} for the step `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+            msg = f"Configured parameter{is_plural} for the step '{self.name}' conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
             for key, values in conflicting_parameters.items():
                 msg += (
                     f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
@@ -1024,7 +1026,7 @@ To avoid this consider setting step parameters only in one place (config or code
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
                     f"Got unexpected materializers for non-existent "
-                    f"output '{output_name}' in step `{self.name}`. "
+                    f"output '{output_name}' in step '{self.name}'. "
                     f"Only materializers for the outputs "
                     f"{allowed_output_names} of this step can"
                     f" be registered."
@@ -1037,7 +1039,7 @@ To avoid this consider setting step parameters only in one place (config or code
                     ):
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
-                            f"for output '{output_name}' of step `{self.name}` "
+                            f"for output '{output_name}' of step '{self.name}' "
                             "does not resolve to a `BaseMaterializer` subclass."
                         )
 
@@ -1071,7 +1073,9 @@ To avoid this consider setting step parameters only in one place (config or code
                 or key in client_lazy_loaders
             ):
                 continue
-            raise StepInterfaceError(f"Missing entrypoint input {key}.")
+            raise StepInterfaceError(
+                f"Missing entrypoint input '{key}' in step '{self.name}'."
+            )
 
     def _finalize_configuration(
         self,

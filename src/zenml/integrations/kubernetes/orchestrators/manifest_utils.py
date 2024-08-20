@@ -139,24 +139,42 @@ def build_pod_manifest(
         ],
         security_context=security_context,
     )
+    image_pull_secrets = []
+    if pod_settings:
+        image_pull_secrets = [
+            k8s_client.V1LocalObjectReference(name=name)
+            for name in pod_settings.image_pull_secrets
+        ]
 
     pod_spec = k8s_client.V1PodSpec(
         containers=[container_spec],
         restart_policy="Never",
+        image_pull_secrets=image_pull_secrets,
     )
 
     if service_account_name is not None:
         pod_spec.service_account_name = service_account_name
 
+    labels = {}
+
     if pod_settings:
         add_pod_settings(pod_spec, pod_settings)
 
-    pod_metadata = k8s_client.V1ObjectMeta(
-        name=pod_name,
-        labels={
+        # Add pod_settings.labels to the labels
+        if pod_settings.labels:
+            labels.update(pod_settings.labels)
+
+    # Add run_name and pipeline_name to the labels
+    labels.update(
+        {
             "run": run_name,
             "pipeline": pipeline_name,
-        },
+        }
+    )
+
+    pod_metadata = k8s_client.V1ObjectMeta(
+        name=pod_name,
+        labels=labels,
     )
 
     if pod_settings and pod_settings.annotations:

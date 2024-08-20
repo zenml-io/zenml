@@ -1411,6 +1411,34 @@ zenml stack register STACK_NAME \
 Each corresponding argument should be the name, id or even the first few letters
  of the id that uniquely identify the artifact store or orchestrator.
 
+To create a new stack using the new service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -p CLOUD_PROVIDER
+```
+
+To create a new stack using the existing service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME
+```
+
+To create a new stack using the existing service connector with existing components (
+important, that the components are already registered in the service connector), use the 
+following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME \
+       -a ARTIFACT_STORE_NAME \
+       -o ORCHESTRATOR_NAME \
+       ...
+```
+
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 
@@ -1656,7 +1684,7 @@ def my_pipeline(...):
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register my_pipeline
+zenml pipeline register run.my_pipeline
 ```
 
 To list all registered pipelines, use:
@@ -1665,21 +1693,15 @@ To list all registered pipelines, use:
 zenml pipeline list
 ```
 
-Since every pipeline run creates a new pipeline by default, you might
-occasionally want to delete a pipeline, which you can do via:
+To delete a pipeline, run:
 
 ```bash
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete the latest pipeline version and change all corresponding
+This will delete the pipeline and change all corresponding
 pipeline runs to become unlisted (not linked to any pipeline).
 
-If you want to delete all versions of a pipeline, you can do so as follows:
-
-```bash
-zenml pipeline delete <PIPELINE_NAME> --all-versions
-```
 
 To list all pipeline runs that you have executed, use:
 
@@ -2350,11 +2372,30 @@ zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 Building an image without Runs
 ------------------------------
 
+To build or run a pipeline from the CLI, you need to know the source path of
+your pipeline. Let's imagine you have defined your pipeline in a python file
+called `run.py` like this:
+
+```python
+from zenml import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+```
+
+The source path of your pipeline will be `run.my_pipeline`. In a generalized
+way, this will be `<MODULE_PATH>.<PIPELINE_FUNCTION_NAME>`. If the python file
+defining the pipeline is not in your current directory, the module path consists
+of the full path to the file, separated by dots, e.g.
+`some_directory.some_file.my_pipeline`.
+
 To [build Docker images for your pipeline](https://docs.zenml.io/how-to/customize-docker-builds)
 without actually running the pipeline, use:
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME>
+zenml pipeline build <PIPELINE_SOURCE_PATH>
 ```
 
 To specify settings for the Docker builds, use the `--config/-c` option of the
@@ -2362,20 +2403,20 @@ command. For more information about the structure of this configuration file,
 check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+zenml pipeline build <PIPELINE_SOURCE_PATH> --config=<PATH_TO_CONFIG_YAML>
 ```
 
 If you want to build the pipeline for a stack other than your current active
 stack, use the `--stack` option.
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+zenml pipeline build <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
 ```
 
 To run a pipeline that was previously registered, use:
 
 ```bash
-zenml pipeline run  <PIPELINE_ID_OR_NAME>
+zenml pipeline run <PIPELINE_SOURCE_PATH>
 ```
 
 To specify settings for the pipeline, use the `--config/-c` option of the
@@ -2383,14 +2424,14 @@ command. For more information about the structure of this configuration file,
 check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
 
 ```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+zenml pipeline run <PIPELINE_SOURCE_PATH> --config=<PATH_TO_CONFIG_YAML>
 ```
 
 If you want to run the pipeline on a stack different than your current active
 stack, use the `--stack` option.
 
 ```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+zenml pipeline run <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
 ```
 
 Tagging your resources with ZenML
@@ -2500,66 +2541,6 @@ zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core b
 
 For full documentation on this functionality, please refer to [the dedicated
 documentation on stack component deploy](https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-component).
-
-Interacting with the ZenML Hub
-------------------------------
-
-The ZenML Hub is a central location for discovering and sharing third-party 
-ZenML code, such as custom integrations, components, steps, pipelines, 
-materializers, and more. 
-You can browse the ZenML Hub at [https://hub.zenml.io](https://hub.zenml.io).
-
-The ZenML CLI provides various commands to interact with the ZenML Hub:
-
-- Listing all plugins available on the Hub:
-```bash
-zenml hub list
-```
-
-- Installing a Hub plugin:
-```bash
-zenml hub install
-```
-Installed plugins can be imported via `from zenml.hub.<plugin_name> import ...`. 
-
-
-- Uninstalling a Hub plugin:
-```bash
-zenml hub uninstall
-```
-
-- Cloning the source code of a Hub plugin (without installing it):
-```bash
-zenml hub clone
-```
-This is useful, e.g., for extending an existing plugin or for getting the 
-examples of a plugin.
-
-- Submitting/contributing a plugin to the Hub (requires login, see below):
-```bash
-zenml hub submit
-```
-If you are unsure about which arguments you need to set, you can run the
-command in interactive mode:
-```bash
-zenml hub submit --interactive
-```
-This will ask for and validate inputs one at a time.
-
-- Logging in to the Hub:
-```bash
-zenml hub login
-```
-
-- Logging out of the Hub:
-```bash
-zenml hub logout
-```
-
-- Viewing the build logs of a plugin you submitted to the Hub:
-```bash
-zenml hub logs
-```
 """
 
 from zenml.cli.version import *  # noqa
@@ -2571,7 +2552,6 @@ from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
-from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa

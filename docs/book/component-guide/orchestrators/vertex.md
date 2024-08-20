@@ -22,6 +22,15 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including a Vertex AI orchestrator? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/README.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
@@ -29,10 +38,6 @@ The only other thing necessary to use the ZenML Vertex orchestrator is enabling 
 In order to quickly enable APIs, and create other resources necessary for using this integration, you can also consider using [mlstacks](https://mlstacks.zenml.io/vertex), which helps you set up the infrastructure with one click.
 
 ## How to use it
-
-{% hint style="warning" %}
-The Vertex Orchestrator (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
 
 To use the Vertex orchestrator, we need:
 
@@ -227,40 +232,14 @@ In order to cancel a scheduled Vertex pipeline, you need to manually delete the 
 
 ### Additional configuration
 
-For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure labels for your Vertex Pipeline jobs or specify which GPU to use.
 
 ```python
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
 from kubernetes.client.models import V1Toleration
 
 vertex_settings = VertexOrchestratorSettings(
-    pod_settings={
-        "affinity": {
-            "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                    "nodeSelectorTerms": [
-                        {
-                            "matchExpressions": [
-                                {
-                                    "key": "node.kubernetes.io/name",
-                                    "operator": "In",
-                                    "values": ["my_powerful_node_group"],
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
-        "tolerations": [
-            V1Toleration(
-                key="node.kubernetes.io/name",
-                operator="Equal",
-                value="",
-                effect="NoSchedule"
-            )
-        ]
-    }
+    labels={"key": "value"}
 )
 ```
 
@@ -269,6 +248,20 @@ If your pipelines steps have certain hardware requirements, you can specify them
 ```python
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
+
+To run your pipeline (or some steps of it) on a GPU, you will need to set both a node selector
+and the gpu count as follows:
+```python
+vertex_settings = VertexOrchestratorSettings(
+    pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-accelerator": "NVIDIA_TESLA_A100"
+        },
+    }
+)
+resource_settings = ResourceSettings(gpu_count=1)
+```
+You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
 These settings can then be specified on either pipeline-level or step-level:
 

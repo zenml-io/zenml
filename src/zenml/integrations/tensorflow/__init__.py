@@ -18,6 +18,9 @@ import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TensorflowIntegration(Integration):
@@ -25,19 +28,26 @@ class TensorflowIntegration(Integration):
 
     NAME = TENSORFLOW
     REQUIREMENTS = []
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["typing-extensions"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
-        if (
-            not platform.system() == "Darwin"
-            or not platform.machine() == "arm64"
-        ):
+        if not platform.system() == "Darwin" or not platform.machine() == "arm64":
             import tensorflow_io  # type: ignore
 
         from zenml.integrations.tensorflow import materializers  # noqa
+
+        if sys.version_info.minor == 8:
+            logger.warning(
+                "Python 3.8 with TensorFlow is not fully "
+                "compatible with Pydantic 2 requirements. "
+                "Consider upgrading to a higher Python "
+                "version if you would like to use the "
+                "Tensorflow integration."
+            )
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
@@ -52,13 +62,15 @@ class TensorflowIntegration(Integration):
         target_os = target_os or platform.system()
         if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                f"tensorflow-macos>=2.12,<=2.15",
+                "tensorflow-macos>=2.12,<=2.15",
             ]
         else:
             requirements = [
-                f"tensorflow>=2.12,<=2.15",
+                "tensorflow>=2.12,<=2.15",
                 "tensorflow_io>=0.24.0",
             ]
+        if sys.version_info.minor == 8:
+            requirements.append("typing-extensions>=4.6.1")
         return requirements
 
 
