@@ -31,9 +31,6 @@ from zenml.integrations.lightning.orchestrators.lightning_orchestrator import (
     ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID,
     LightningOrchestrator,
 )
-from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
-    LightningEntrypointConfiguration,
-)
 from zenml.integrations.lightning.orchestrators.utils import (
     gather_requirements,
     sanitize_studio_name,

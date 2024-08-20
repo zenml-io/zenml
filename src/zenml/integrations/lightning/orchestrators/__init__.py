@@ -16,9 +16,6 @@
 from zenml.integrations.lightning.orchestrators.lightning_orchestrator import (  # noqa
     LightningOrchestrator,
 )
-from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
-    LightningEntrypointConfiguration,
-)
 from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
     LightningOrchestratorEntrypointConfiguration,
 )
