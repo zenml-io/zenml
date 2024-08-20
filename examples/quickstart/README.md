@@ -25,8 +25,8 @@ shift in how you approach ML development.
 
 
 However, ZenML is not just about deployment into compute. The ZenML Dashboard opens up a world of insights, allowing you
-to dive deep into the metadata of your runs. This level of observability is crucial for maintaining, debugging, a
-nd optimizing your ML pipelines in production environments with full reproducibility and auditability. The diagram 
+to dive deep into the metadata of your runs. This level of observability is crucial for maintaining, debugging, 
+a nd optimizing your ML pipelines in production environments with full reproducibility and auditability. The diagram 
 below shows the steps that we will take to demonstrate this.
 
 <img src=".assets/Overview.png" width="70%" alt="Pipelines Overview">
