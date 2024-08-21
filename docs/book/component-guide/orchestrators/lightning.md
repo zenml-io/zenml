@@ -89,8 +89,10 @@ from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import L
 
 
 lightning_settings = LightningOrchestratorSettings(
+    main_studio_name="my_studio",
     machine_type="cpu",
-    async_mode=True
+    async_mode=True,
+    custom_commands=["pip install -r requirements.txt", "do something else"]
 )
 
 @pipeline(
@@ -137,8 +139,10 @@ For additional configuration of the Lightning AI orchestrator, you can pass `Lig
 from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import LightningOrchestratorSettings
 
 lightning_settings = LightningOrchestratorSettings(
+    main_studio_name="my_studio",
     machine_type="cpu",
-    async_mode=True
+    async_mode=True,
+    custom_commands=["pip install -r requirements.txt", "do something else"]
 )
 ```
 
