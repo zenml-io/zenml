@@ -20,8 +20,8 @@ from typing import Dict, cast
 from lightning_sdk import Machine, Studio
 
 from zenml.client import Client
-from zenml.constants import (
-    ENV_ZENML_WHEEL_PACKAGE_NAME,
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
 )
 from zenml.enums import ExecutionStatus
 from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import (
@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--deployment_id", type=str, required=True)
-    parser.add_argument("--wheel_package", type=str, required=True)
+    # parser.add_argument("--wheel_package", type=str, required=True)
     return parser.parse_args()
 
 
@@ -78,23 +78,27 @@ def main() -> None:
     orchestrator_run_id = os.environ.get(
         ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID
     )
-    wheel_package_name = os.environ.get(ENV_ZENML_WHEEL_PACKAGE_NAME)
-    if not orchestrator_run_id or not wheel_package_name:
+    # wheel_package_name = os.environ.get(ENV_ZENML_WHEEL_PACKAGE_NAME)
+    # if not orchestrator_run_id or not wheel_package_name:
+    #    raise ValueError(
+    #        f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' or '{ENV_ZENML_WHEEL_PACKAGE_NAME}' is not set."
+    #    )
+    if not orchestrator_run_id:
         raise ValueError(
-            f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' or '{ENV_ZENML_WHEEL_PACKAGE_NAME}' is not set."
+            f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' is not set."
         )
 
     logger.info(f"Orchestrator run id: {orchestrator_run_id}")
-    logger.info(f"Wheel package name: {wheel_package_name}")
-    logger.info(f"args: {args}")
+    # logger.info(f"Wheel package name: {wheel_package_name}")
 
     deployment = Client().get_deployment(args.deployment_id)
+    filename = f"{args.run_name}.tar.gz"
 
     pipeline_dag = {
         step_name: step.spec.upstream_steps
         for step_name, step in deployment.step_configurations.items()
     }
-    command = LightningEntrypointConfiguration.get_entrypoint_command()
+    entrypoint_command = StepEntrypointConfiguration.get_entrypoint_command()
 
     active_stack = Client().active_stack
 
@@ -106,7 +110,7 @@ def main() -> None:
 
     # Set up credentials
     orchestrator._get_lightning_client(deployment)
-    orchestrator.package_name = wheel_package_name
+    # orchestrator.package_name = wheel_package_name
 
     pipeline_settings = cast(
         LightningOrchestratorSettings, orchestrator.get_settings(deployment)
@@ -143,10 +147,13 @@ def main() -> None:
     else:
         main_studio.start()
 
-    logger.info(
-        f"Uploading wheel package {args.wheel_package.rsplit('/', 1)[-1]} and installing dependencies on main studio {main_studio_name}"
+    main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+    main_studio.upload_file(
+        f"zenml_codes/{filename}", remote_path=f"./zenml_codes/{filename}"
     )
-    main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+    main_studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
+
+    # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
     main_studio.upload_file(
         ".lightning_studio/.studiorc",
         remote_path=".lightning_studio/.studiorc",
@@ -156,10 +163,13 @@ def main() -> None:
     main_studio.run(
         "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
     )
-    logger.info(
-        f"Installing wheel package {args.wheel_package.rsplit('/', 1)[-1]} on main studio {main_studio_name}"
-    )
-    main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
+
+    for command in pipeline_settings.custom_commands or []:
+        output = main_studio.run(
+            f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+        )
+        logger.info(f"Custom command output: {output}")
+    # main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
 
     run = Client().list_pipeline_runs(
         sort_by="asc:created",
@@ -176,12 +186,12 @@ def main() -> None:
         Args:
             step_name: Name of the step.
         """
-        step_args = LightningEntrypointConfiguration.get_entrypoint_arguments(
+        step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
             deployment_id=args.deployment_id,
-            wheel_package=wheel_package_name,
+            # wheel_package=wheel_package_name,
         )
-        entrypoint = command + step_args
+        entrypoint = entrypoint_command + step_args
         entrypoint_string = " ".join(entrypoint)
         run_command = f"{entrypoint_string}"
 
@@ -209,7 +219,14 @@ def main() -> None:
             studio = Studio(name=unique_resource_configs[step_name])
             try:
                 studio.start(Machine(step_settings.machine_type))
-                studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+                studio.run(
+                    f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}"
+                )
+                studio.upload_file(
+                    f"zenml_codes/{filename}",
+                    remote_path=f"./zenml_codes/{filename}",
+                )
+                studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
                 studio.upload_file(
                     ".lightning_studio/.studiorc",
                     remote_path=".lightning_studio/.studiorc",
@@ -219,10 +236,14 @@ def main() -> None:
                 studio.run(
                     "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
                 )
+                for command in step_settings.custom_commands or []:
+                    output = main_studio.run(
+                        f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                    )
+                    logger.info(f"Custom command output: {output}")
                 studio.run(
-                    f"pip install {args.wheel_package.rsplit('/', 1)[-1]}"
+                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
                 )
-                studio.run(run_command)
             except Exception as e:
                 logger.error(
                     f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}"
@@ -232,7 +253,9 @@ def main() -> None:
                 studio.delete()
                 main_studio.delete()
         else:
-            main_studio.run(run_command)
+            main_studio.run(
+                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
+            )
 
             # Pop the resource configuration for this step
         unique_resource_configs.pop(step_name)

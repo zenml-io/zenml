@@ -258,7 +258,8 @@ class LightningOrchestrator(WheeledOrchestrator):
             root=source_utils.get_source_root()
         )
         logger.info("Archiving pipeline code...")
-        code_path, filename = code_utils.zip_and_hash_code(code_archive)
+        code_path, _ = code_utils.zip_and_hash_code(code_archive)
+        filename = f"{orchestrator_run_name}.tar.gz"
 
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
@@ -299,14 +300,16 @@ class LightningOrchestrator(WheeledOrchestrator):
             for step_name, step in deployment.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                command = StepEntrypointConfiguration.get_entrypoint_command()
-                arguments = (
+                entrypoint_command = (
+                    StepEntrypointConfiguration.get_entrypoint_command()
+                )
+                entrypoint_arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
                         deployment_id=deployment_id,
                     )
                 )
-                entrypoint = command + arguments
+                entrypoint = entrypoint_command + entrypoint_arguments
                 entrypoint_string = " ".join(entrypoint)
 
                 step_settings = cast(
@@ -333,13 +336,12 @@ class LightningOrchestrator(WheeledOrchestrator):
             return steps
 
         if settings.async_mode:
-            command = LightningOrchestratorEntrypointConfiguration.get_entrypoint_command()
-            arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+            entrypoint_command = LightningOrchestratorEntrypointConfiguration.get_entrypoint_command()
+            entrypoint_arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 deployment_id=deployment.id,
-                wheel_package=filename,
             )
-            entrypoint = command + arguments
+            entrypoint = entrypoint_command + entrypoint_arguments
             entrypoint_string = " ".join(entrypoint)
             logger.info("Setting up Lightning AI client")
             self._get_lightning_client(deployment)
@@ -357,7 +359,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
-            studio.run("mkdir ./zenml_codes")
+            studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
             studio.upload_file(
                 code_path, remote_path=f"./zenml_codes/{filename}"
             )
@@ -370,11 +372,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run(
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
-            for command in settings.custom_commands or []:
-                output = studio.run(
-                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+
+            for custom_command in settings.custom_commands or []:
+                studio.run(
+                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {custom_command}"
                 )
-                logger.info(f"Custom command output: {output}")
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             logger.info("Running pipeline in async mode")
             studio.run(f"nohup {entrypoint_string} > /dev/null 2>&1 &")
