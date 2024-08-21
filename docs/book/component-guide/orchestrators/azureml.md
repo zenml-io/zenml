@@ -134,6 +134,7 @@ from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
 azureml_settings = AzureMLOrchestratorSettings(
     mode="compute-instance",
     compute_name="MyComputeInstance",
+    compute_size="Standard_NC6s_v3",
 )
 
 
