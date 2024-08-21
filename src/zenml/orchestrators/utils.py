@@ -342,7 +342,7 @@ class artifact_store_handler:
         """Instantiate the target artifact store and return it.
 
         Returns:
-            the python object
+            the artifact store object.
         """
         try:
             if self.target_artifact_store_id is not None:
@@ -350,7 +350,7 @@ class artifact_store_handler:
                     self.active_artifact_store_id
                     != self.target_artifact_store_id
                 ):
-                    get_logger(__name__).warning(
+                    get_logger(__name__).debug(
                         f"Trying to use the artifact store with ID:"
                         f"'{self.target_artifact_store_id}'"
                         f"which is currently not the active artifact store."
