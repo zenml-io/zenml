@@ -147,12 +147,14 @@ def main() -> None:
     else:
         main_studio.start()
 
+    logger.info("Main studio started.")
+    logger.info("Uploading code to main studio.")
     main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
     main_studio.upload_file(
         f"zenml_codes/{filename}", remote_path=f"./zenml_codes/{filename}"
     )
-    main_studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
-
+    main_studio.run(f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}")
+    logger.info("Installing requirements... ")
     # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
     main_studio.upload_file(
         ".lightning_studio/.studiorc",
@@ -226,7 +228,7 @@ def main() -> None:
                     f"zenml_codes/{filename}",
                     remote_path=f"./zenml_codes/{filename}",
                 )
-                studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
+                main_studio.run(f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}")
                 studio.upload_file(
                     ".lightning_studio/.studiorc",
                     remote_path=".lightning_studio/.studiorc",
