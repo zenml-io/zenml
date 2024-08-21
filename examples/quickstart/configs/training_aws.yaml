@@ -1,3 +1,5 @@
+enable_cache: True
+
 # Environment configuration
 settings:
   resources:
@@ -5,8 +7,8 @@ settings:
   docker:
     parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.64.0-py3.11"
 # Uncomment the following two lines to specify the accelerator for your aws orchestrator
-#  orchestrator.sagemaker:
-#    instance_type: ml.p3.2xlarge
+  orchestrator.sagemaker:
+    instance_type: ml.m5.4xlarge
 
 # Model Control Plane configuration
 model:

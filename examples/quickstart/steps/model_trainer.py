@@ -65,7 +65,6 @@ def train_model(
         logging_steps=10,
         save_steps=500,
         fp16=True,  # Mixed precision training
-        # warmup_steps=500,
         learning_rate=3e-5,
         max_grad_norm=0.5,  # Gradient clipping
         dataloader_num_workers=dataloader_num_workers,  # Adjust based on your system
