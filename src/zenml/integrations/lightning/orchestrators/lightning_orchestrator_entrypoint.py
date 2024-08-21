@@ -149,9 +149,10 @@ def main() -> None:
 
     logger.info("Main studio started.")
     logger.info("Uploading code to main studio.")
+    logger.info("Uploading code to main studio the code path: %s", filename)
     main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
     main_studio.upload_file(
-        f"zenml_codes/{filename}", remote_path=f"./zenml_codes/{filename}"
+        f"zenml_codes/{filename}", remote_path=f"zenml_codes/{filename}"
     )
     main_studio.run(
         f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
@@ -228,7 +229,7 @@ def main() -> None:
                 )
                 studio.upload_file(
                     f"zenml_codes/{filename}",
-                    remote_path=f"./zenml_codes/{filename}",
+                    remote_path=f"zenml_codes/{filename}",
                 )
                 main_studio.run(
                     f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
