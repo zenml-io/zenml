@@ -37,7 +37,9 @@ class ModalStepOperatorSettings(BaseSettings):
     memory: Optional[int] = None
 
 
-class ModalStepOperatorConfig(BaseStepOperatorConfig, ModalStepOperatorSettings):
+class ModalStepOperatorConfig(
+    BaseStepOperatorConfig, ModalStepOperatorSettings
+):
     """Configuration for the Modal step operator."""
 
     @property
