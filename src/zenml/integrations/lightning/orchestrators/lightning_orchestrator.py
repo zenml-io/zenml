@@ -15,6 +15,7 @@
 
 import os
 import tempfile
+import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import uuid4
 
@@ -351,24 +352,25 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             logger.info(f"Creating main studio: {studio_name}")
             studio = Studio(name=studio_name)
-            if settings.machine_type:
-                studio.start(Machine(settings.machine_type))
-            else:
-                studio.start()
+            studio.start()
 
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
-            studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
-            studio.upload_file(
-                code_path, remote_path=f"/zenml_codes/{filename}"
-            )
-
             studio.run(
-                f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+                f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
             studio.upload_file(
-                env_file_path, remote_path=".lightning_studio/.studiorc"
+                code_path,
+                remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
+            )
+            time.sleep(10)
+            studio.run(
+                f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
+            )
+            studio.upload_file(
+                env_file_path,
+                remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
             )
             studio.run("pip install uv")
             logger.info(
@@ -381,12 +383,12 @@ class LightningOrchestrator(WheeledOrchestrator):
 
             for custom_command in settings.custom_commands or []:
                 studio.run(
-                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {custom_command}"
+                    f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {custom_command}"
                 )
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             logger.info("Running pipeline in async mode")
             studio.run(
-                f"nohup bash -c 'cd zenml_codes/{filename.rsplit('.', 2)[0]} && {entrypoint_string}' > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
+                f"nohup bash -c 'cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {entrypoint_string}' > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
             )
         else:
             self._upload_and_run_pipeline(
@@ -450,18 +452,22 @@ class LightningOrchestrator(WheeledOrchestrator):
             else:
                 studio.start()
         try:
-            studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+            studio.run(
+                f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
+            )
             studio.upload_file(
-                code_path, remote_path=f"/zenml_codes/{filename}"
+                code_path,
+                remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
             )
             studio.run(
-                f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+                f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
             studio.upload_file(
-                env_file_path, remote_path=".lightning_studio/.studiorc"
+                env_file_path,
+                remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
             )
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
@@ -471,7 +477,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
                 output = studio.run(
-                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                    f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
                 )
                 logger.info(f"Custom command output: {output}")
 
@@ -528,10 +534,12 @@ class LightningOrchestrator(WheeledOrchestrator):
         logger.info(f"Creating new studio for step {step_name}: {studio_name}")
         studio = Studio(name=studio_name)
         studio.start(Machine(details["machine"]))
-        studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+        studio.run(
+            f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
+        )
         studio.upload_file(code_path, remote_path=f"/zenml_codes/{filename}")
         studio.run(
-            f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+            f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
         )
         studio.upload_file(
             env_file_path, remote_path=".lightning_studio/.studiorc"
@@ -544,12 +552,12 @@ class LightningOrchestrator(WheeledOrchestrator):
         # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
         for command in custom_commands or []:
             output = studio.run(
-                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
             )
             logger.info(f"Custom command output: {output}")
         for command in details["commands"]:
             output = studio.run(
-                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
             )
             logger.info(f"Step {step_name} output: {output}")
         studio.delete()
@@ -566,6 +574,6 @@ class LightningOrchestrator(WheeledOrchestrator):
         """
         for command in details["commands"]:
             output = studio.run(
-                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
             )
             logger.info(f"Step output: {output}")

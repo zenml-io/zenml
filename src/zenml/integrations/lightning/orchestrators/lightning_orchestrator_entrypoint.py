@@ -236,7 +236,7 @@ def main() -> None:
                     f"/teamspace/studios/this_studio/zenml_codes/{filename}",
                     remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
                 )
-                main_studio.run(
+                studio.run(
                     f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
                 )
                 studio.upload_file(
@@ -249,7 +249,7 @@ def main() -> None:
                     "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
                 )
                 for command in step_settings.custom_commands or []:
-                    output = main_studio.run(
+                    output = studio.run(
                         f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
                     )
                     logger.info(f"Custom command output: {output}")
@@ -263,7 +263,7 @@ def main() -> None:
                 raise e
             finally:
                 studio.delete()
-                main_studio.delete()
+                studio.delete()
         else:
             main_studio.run(
                 f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
