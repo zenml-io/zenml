@@ -310,7 +310,7 @@ def _get_model_versions_from_artifacts(
     return models
 
 
-class artifact_store_handler:
+class register_artifact_store_filesystem:
     """Context manager for the artifact_store/filesystem_registry dependency.
 
     Even though it is rare, sometimes we bump into cases where we are trying to
