@@ -379,9 +379,9 @@ class LightningOrchestrator(WheeledOrchestrator):
                 )
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             logger.info("Running pipeline in async mode")
-            studio.run(f"{entrypoint_string} > log.txt &")
-            studio.auto_sleep = True
-            studio.auto_sleep_time = 120
+            studio.run(
+                f"nohup {entrypoint_string} > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
+            )
         else:
             self._upload_and_run_pipeline(
                 deployment,
