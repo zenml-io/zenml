@@ -361,9 +361,9 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
             studio.upload_file(
-                code_path, remote_path=f"./zenml_codes/{filename}"
+                code_path, remote_path=f"/zenml_codes/{filename}"
             )
-            studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
+            # studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
@@ -490,7 +490,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         finally:
             if (
                 studio.status != studio.status.NotCreated
-                and settings.main_studio_name
+                and settings.main_studio_name is None
             ):
                 logger.info("Deleting main studio")
                 studio.delete()
