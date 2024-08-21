@@ -60,6 +60,9 @@ install_integrations() {
     # https://github.com/pytorch/pytorch/issues/124897
     echo "torch<2.3.0" >> integration-requirements.txt
 
+    # workaround to make yamlfix work
+    echo "maison<2" >> integration-requirements.txt
+
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
 }
