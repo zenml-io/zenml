@@ -153,7 +153,9 @@ def main() -> None:
     main_studio.upload_file(
         f"zenml_codes/{filename}", remote_path=f"./zenml_codes/{filename}"
     )
-    main_studio.run(f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}")
+    main_studio.run(
+        f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+    )
     logger.info("Installing requirements... ")
     # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
     main_studio.upload_file(
@@ -228,7 +230,9 @@ def main() -> None:
                     f"zenml_codes/{filename}",
                     remote_path=f"./zenml_codes/{filename}",
                 )
-                main_studio.run(f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}")
+                main_studio.run(
+                    f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+                )
                 studio.upload_file(
                     ".lightning_studio/.studiorc",
                     remote_path=".lightning_studio/.studiorc",
