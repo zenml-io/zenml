@@ -148,7 +148,7 @@ from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
 azureml_settings = AzureMLOrchestratorSettings(
     mode="compute-instance",
     compute_name="my-gpu-instance",  # Will fetch or create this instance
-    size="Standard_NC6s_v3",
+    size="Standard_NC6s_v3",  # Using a NVIDIA Tesla V100 GPU
     idle_time_before_shutdown_minutes=20,
 )
 
@@ -182,12 +182,12 @@ from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
 
 azureml_settings = AzureMLOrchestratorSettings(
     mode="compute-cluster",
-    compute_name="my-gpu-cluster", # Will fetch or create this instance
-    size="Standard_NC6s_v3",
-    idle_time_before_scaledown_down=60,
+    compute_name="my-gpu-cluster",  # Will fetch or create this instance
+    size="Standard_NC6s_v3",  # Using a NVIDIA Tesla V100 GPU
+    tier="Dedicated",  # Can be set to either "Dedicated" or "LowPriority"
     min_instances=2,
     max_instances=10,
-    tier="Dedicated", # Can be set to either "Dedicated" or "LowPriority"
+    idle_time_before_scaledown_down=60,
 )
 
 @step
