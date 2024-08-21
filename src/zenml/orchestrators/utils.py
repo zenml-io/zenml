@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for the orchestrator."""
 
+import os
 import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
@@ -26,6 +27,7 @@ from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
@@ -335,7 +337,6 @@ class register_artifact_store_filesystem:
         Args:
             target_artifact_store_id: the ID of the artifact store to load.
         """
-        self.active_artifact_store_id = Client().active_stack.artifact_store.id
         self.target_artifact_store_id = target_artifact_store_id
 
     def __enter__(self) -> "BaseArtifactStore":
@@ -347,7 +348,7 @@ class register_artifact_store_filesystem:
         try:
             if self.target_artifact_store_id is not None:
                 if (
-                    self.active_artifact_store_id
+                    Client().active_stack.artifact_store.id
                     != self.target_artifact_store_id
                 ):
                     get_logger(__name__).debug(
@@ -395,8 +396,8 @@ class register_artifact_store_filesystem:
             exc_value: The instance of the exception
             traceback: The traceback of the exception
         """
-        active_artifact_store_response = Client().get_stack_component(
-            component_type=StackComponentType.ARTIFACT_STORE,
-            name_id_or_prefix=self.active_artifact_store_id,
-        )
-        _ = StackComponent.from_model(active_artifact_store_response)
+        # As we exist the handler, we have to re-register the filesystem
+        # that belongs to the active artifact store as it may have been
+        # overwritten.
+        if ENV_ZENML_SERVER not in os.environ:
+            Client().active_stack.artifact_store._register()
