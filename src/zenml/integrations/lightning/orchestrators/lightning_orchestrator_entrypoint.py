@@ -150,16 +150,19 @@ def main() -> None:
     logger.info("Main studio started.")
     logger.info("Uploading code to main studio the code path: %s", filename)
     main_studio.upload_file(
-        ".lightning_studio/.studiorc",
-        remote_path=".lightning_studio/.studiorc",
+        "/teamspace/studios/this_studio/.lightning_studio/.studiorc",
+        remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
     )
-    main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+    main_studio.run(
+        f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
+    )
     main_studio.upload_file(
-        f"zenml_codes/{filename}", remote_path=f"zenml_codes/{filename}"
+        f"/teamspace/studios/this_studio/zenml_codes/{filename}",
+        remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
     )
     logger.info("Extracting code... ")
     output = main_studio.run(
-        f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+        f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
     )
     logger.info(f"Code extraction output: {output}")
     logger.info("Installing requirements... ")
@@ -173,7 +176,7 @@ def main() -> None:
 
     for command in pipeline_settings.custom_commands or []:
         output = main_studio.run(
-            f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+            f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
         )
         logger.info(f"Custom command output: {output}")
     # main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
@@ -227,18 +230,18 @@ def main() -> None:
             try:
                 studio.start(Machine(step_settings.machine_type))
                 studio.run(
-                    f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}"
+                    f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
                 )
                 studio.upload_file(
-                    f"zenml_codes/{filename}",
-                    remote_path=f"zenml_codes/{filename}",
+                    f"/teamspace/studios/this_studio/zenml_codes/{filename}",
+                    remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
                 )
                 main_studio.run(
-                    f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+                    f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
                 )
                 studio.upload_file(
-                    ".lightning_studio/.studiorc",
-                    remote_path=".lightning_studio/.studiorc",
+                    "/teamspace/studios/this_studio/.lightning_studio/.studiorc",
+                    remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
                 )
                 studio.run("pip install uv")
                 studio.run(f"uv pip install {step_requirements_to_string}")
@@ -247,11 +250,11 @@ def main() -> None:
                 )
                 for command in step_settings.custom_commands or []:
                     output = main_studio.run(
-                        f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                        f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
                     )
                     logger.info(f"Custom command output: {output}")
                 studio.run(
-                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
+                    f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
                 )
             except Exception as e:
                 logger.error(
@@ -263,7 +266,7 @@ def main() -> None:
                 main_studio.delete()
         else:
             main_studio.run(
-                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
+                f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
             )
 
             # Pop the resource configuration for this step

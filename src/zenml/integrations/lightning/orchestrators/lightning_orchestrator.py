@@ -363,11 +363,17 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.upload_file(
                 code_path, remote_path=f"/zenml_codes/{filename}"
             )
-            # studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
+
+            studio.run(
+                f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+            )
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
             studio.run("pip install uv")
+            logger.info(
+                f"Installing requirements: {pipeline_requirements_to_string}"
+            )
             studio.run(f"uv pip install {pipeline_requirements_to_string}")
             studio.run(
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
@@ -380,7 +386,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             logger.info("Running pipeline in async mode")
             studio.run(
-                f"nohup {entrypoint_string} > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
+                f"nohup bash -c 'cd zenml_codes/{filename.rsplit('.', 2)[0]} && {entrypoint_string}' > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
             )
         else:
             self._upload_and_run_pipeline(
