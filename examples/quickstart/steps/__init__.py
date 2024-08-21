@@ -21,6 +21,9 @@ from .data_loader import (
 from .data_tokenizer import (
     tokenize_data
 )
+from .data_splitter import (
+    split_dataset
+)
 from .model_trainer import (
     train_model
 )

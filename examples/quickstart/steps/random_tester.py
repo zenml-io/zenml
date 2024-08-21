@@ -32,8 +32,8 @@ logger = get_logger(__name__)
 @step
 def model_tester(
     model: T5ForConditionalGeneration,
-    tokenizer: T5Tokenizer,
-    test_dataset: Dataset,
+    tokenized_test_dataset: Dataset,
+    tokenizer: T5Tokenizer
 ) -> None:
     """Test the model on some generated Old English-style sentences."""
 
@@ -41,19 +41,15 @@ def model_tester(
 
     test_collection = {}
 
-    for index in range(len(test_dataset)):
-        sentence = test_dataset[index]["input"]
-        input_ids = tokenizer(
-            sentence,
-            return_tensors="pt",
-            max_length=128,
-            truncation=True,
-            padding="max_length",
-        ).input_ids
+    for index in range(len(tokenized_test_dataset)):
+        input_ids = tokenized_test_dataset[index]["input_ids"]
+
+        # Convert input_ids to a tensor and add a batch dimension
+        input_ids_tensor = torch.tensor(input_ids).unsqueeze(0)
 
         with torch.no_grad():
             outputs = model.generate(
-                input_ids,
+                input_ids_tensor,
                 max_length=128,
                 num_return_sequences=1,
                 no_repeat_ngram_size=2,
@@ -64,7 +60,9 @@ def model_tester(
 
         decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        sentence_without_prompt = sentence.strip(PROMPT)
+        # Decode the input_ids to get the original sentence
+        original_sentence = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        sentence_without_prompt = original_sentence.strip(PROMPT)
 
         test_collection[f"Prompt {index}"] = {
             sentence_without_prompt: decoded_output

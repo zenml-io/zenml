@@ -26,18 +26,12 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 PROMPT = ""  # In case you want to also use a prompt you can set it here
-DEFAULT_TRAIN_DATA = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt"
-DEFAULT_TEST_DATA = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/test-translations.txt"
 
 
 @step(output_materializers=HFDatasetMaterializer)
 def load_data(
-    train_url: str = DEFAULT_TRAIN_DATA,
-    test_url: str = DEFAULT_TRAIN_DATA
-) -> Tuple[
-    Annotated[Dataset, "dataset"],
-    Annotated[Dataset, "test_dataset"],
-]:
+    data_url: str,
+) -> Annotated[Dataset, "full_dataset"]:
     """Load and prepare the dataset."""
 
     def read_data_from_url(url):
@@ -55,7 +49,7 @@ def load_data(
         return {"input": inputs, "target": targets}
 
     # Fetch and process the data
-    data = read_data_from_url(train_url)
-    test_data = read_data_from_url(test_url)
+    data = read_data_from_url(data_url)
 
-    return Dataset.from_dict(data), Dataset.from_dict(test_data)
+    # Convert to Dataset
+    return Dataset.from_dict(data)

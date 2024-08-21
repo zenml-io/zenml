@@ -20,6 +20,7 @@ from steps import (
     evaluate_model,
     load_data,
     model_tester,
+    split_dataset,
     tokenize_data,
     train_model,
 )
@@ -40,15 +41,19 @@ def english_translation_pipeline(
     num_train_epochs: int = 5,
 ):
     """Define a pipeline that connects the steps."""
-    dataset, test_dataset = load_data()
-    tokenized_dataset, tokenizer = tokenize_data(dataset, model_type)
-    model = train_model(
+    full_dataset = load_data()
+    tokenized_dataset, tokenizer = tokenize_data(dataset=full_dataset, model_type=model_type)
+    tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = split_dataset(
         tokenized_dataset,
-        model_type,
-        num_train_epochs,
-        per_device_train_batch_size,
-        gradient_accumulation_steps,
-        dataloader_num_workers,
+
     )
-    evaluate_model(model, tokenized_dataset)
-    model_tester(model, tokenizer, test_dataset)
+    model = train_model(
+        tokenized_dataset=tokenized_train_dataset,
+        model_type=model_type,
+        num_train_epochs=num_train_epochs,
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        dataloader_num_workers=dataloader_num_workers,
+    )
+    evaluate_model(model=model, tokenized_dataset=tokenized_eval_dataset)
+    model_tester(model=model, tokenized_test_dataset=tokenized_test_dataset, tokenizer=tokenizer)
