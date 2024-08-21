@@ -148,21 +148,23 @@ def main() -> None:
         main_studio.start()
 
     logger.info("Main studio started.")
-    logger.info("Uploading code to main studio.")
     logger.info("Uploading code to main studio the code path: %s", filename)
-    main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
-    main_studio.upload_file(
-        f"zenml_codes/{filename}", remote_path=f"zenml_codes/{filename}"
-    )
-    main_studio.run(
-        f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
-    )
-    logger.info("Installing requirements... ")
-    # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
     main_studio.upload_file(
         ".lightning_studio/.studiorc",
         remote_path=".lightning_studio/.studiorc",
     )
+    main_studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+    main_studio.upload_file(
+        f"zenml_codes/{filename}", remote_path=f"zenml_codes/{filename}"
+    )
+    logger.info("Extracting code... ")
+    output = main_studio.run(
+        f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+    )
+    logger.info(f"Code extraction output: {output}")
+    logger.info("Installing requirements... ")
+    # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+
     main_studio.run("pip install uv")
     main_studio.run(f"uv pip install {pipeline_requirements_to_string}")
     main_studio.run(
