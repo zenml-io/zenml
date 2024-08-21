@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from modal import Image, Stub, gpu
 
@@ -40,14 +40,29 @@ MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 class ModalStepOperator(BaseStepOperator):
     @property
     def config(self) -> ModalStepOperatorConfig:
+        """Get the Modal step operator configuration.
+
+        Returns:
+            The Modal step operator configuration.
+        """
         return cast(ModalStepOperatorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Get the settings class for the Modal step operator.
+
+        Returns:
+            The Modal step operator settings class.
+        """
         return ModalStepOperatorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
+        """Get the stack validator for the Modal step operator.
+
+        Returns:
+            The stack validator.
+        """
         def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
             # ... validation logic ...
             return True, ""
@@ -63,6 +78,14 @@ class ModalStepOperator(BaseStepOperator):
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
+        """Get the Docker build configurations for the Modal step operator.
+
+        Args:
+            deployment: The pipeline deployment.
+
+        Returns:
+            A list of Docker build configurations.
+        """
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.step_operator == self.name:
@@ -81,6 +104,13 @@ class ModalStepOperator(BaseStepOperator):
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
+        """Launch a step run on Modal.
+
+        Args:
+            info: The step run information.
+            entrypoint_command: The entrypoint command for the step.
+            environment: The environment variables for the step.
+        """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
