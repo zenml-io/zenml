@@ -105,7 +105,7 @@ existing or deploy a new environment. Choose on of the options presented to you 
 stack ready to go. Then proceed to the appropriate section below. **Do not** run all three. Also be sure that you
 are running with a remote ZenML server (see Step 1 above).
 
-<img src=".assets/StackCreate.png" width="20%" alt="Stack creation in the ZenML Dashboard">
+<img src=".assets/StackCreate.png" width="50%" alt="Stack creation in the ZenML Dashboard">
 
 #### AWS
 
@@ -138,7 +138,7 @@ You can edit `configs/training_gcp.yaml` to adjust the settings.
 #### Azure
 
 ```bash
-!zenml integration install azure skypilot
+!zenml integration install azure
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
 python run.py --model_type=t5-small --orchestration_environment azure
@@ -146,18 +146,18 @@ python run.py --model_type=t5-small --orchestration_environment azure
 
 You can edit `configs/training_azure.yaml` to adjust the settings.
 
+No matter which of these you choose, you should end up with a running pipeline on the backend of your choice. 
+
+<img src=".assets/CloudDAGs.png" width="100%" alt="Pipeline running on Cloud orchestrator.">
+
 ## Further exploration
 
 This was just the tip of the iceberg of what ZenML can do; check out the [**docs**](https://docs.zenml.io/) to learn
 more
 about the capabilities of ZenML. For example, you might want to:
 
-- [Deploy ZenML](https://docs.zenml.io/user-guide/production-guide/connect-deployed-zenml) to collaborate with your
-  colleagues.
-- Run the same pipeline on
-  a [cloud MLOps stack in production](https://docs.zenml.io/user-guide/production-guide/cloud-stack).
-- Track your metrics in an experiment tracker
-  like [MLflow](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers/mlflow).
+* Learn more about ZenML by following our [guides](https://docs.zenml.io/user-guide) or more generally our [docs](https://docs.zenml.io/)
+* Explore our [projects repository](https://github.com/zenml-io/zenml-projects) to find interesting use cases that leverage zenml
 
 ## What next?
 
