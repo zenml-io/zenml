@@ -378,9 +378,9 @@ class register_artifact_store_filesystem:
         except KeyError:
             raise RuntimeError(
                 "Unable to fetch the artifact store with id: "
-                f"'{self.target_artifact_store_id}'. Check whether the artifact"
-                "store still exists and you have the right permissions to "
-                "access it."
+                f"'{self.target_artifact_store_id}'. Check whether the "
+                "artifact store still exists and you have the right "
+                "permissions to access it."
             )
         except ImportError:
             raise RuntimeError(

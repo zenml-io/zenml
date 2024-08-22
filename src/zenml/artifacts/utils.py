@@ -713,7 +713,7 @@ def _get_artifact_store_from_response_or_from_active_stack(
         except KeyError:
             raise RuntimeError(
                 "Unable to fetch the artifact store with id: "
-                f"'{artifact.artifact_store_id}'. Check whether the artifact"
+                f"'{artifact.artifact_store_id}'. Check whether the artifact "
                 "store still exists and you have the right permissions to "
                 "access it."
             )
