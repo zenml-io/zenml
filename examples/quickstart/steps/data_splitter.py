@@ -14,7 +14,7 @@ def split_dataset(
     test_size: float,
     eval_size: float,
     subset_size: float = 1.0,
-    random_state: int = 42
+    random_state: int = 42,
 ) -> Tuple[
     Annotated[Dataset, "train_dataset"],
     Annotated[Dataset, "eval_dataset"],
@@ -39,8 +39,10 @@ def split_dataset(
         raise ValueError("Split proportions must sum to 1.0")
     # Validate split proportions
     if subset_size > 1.0 or subset_size < 0.0:
-        print(f"Subset_size should be in the range [0.0, 1.0], {subset_size} was supplied. "
-              f"Defaulting subset_size to 1.0")
+        print(
+            f"Subset_size should be in the range [0.0, 1.0], {subset_size} was supplied. "
+            f"Defaulting subset_size to 1.0"
+        )
         subset_size = 1.0
 
     # Set random seed for reproducibility
@@ -56,9 +58,6 @@ def split_dataset(
     all_indices = list(range(total_samples))
     subset_indices = random.sample(all_indices, subset_samples)
 
-    # Create the subset
-    subset = dataset.select(subset_indices)
-
     # Calculate split sizes
     train_samples = int(subset_samples * train_size)
     eval_samples = int(subset_samples * eval_size)
@@ -68,7 +67,11 @@ def split_dataset(
 
     # Split the indices
     train_indices = subset_indices[:train_samples]
-    eval_indices = subset_indices[train_samples:train_samples + eval_samples]
-    test_indices = subset_indices[train_samples + eval_samples:]
+    eval_indices = subset_indices[train_samples : train_samples + eval_samples]
+    test_indices = subset_indices[train_samples + eval_samples :]
 
-    return dataset.select(train_indices), dataset.select(eval_indices), dataset.select(test_indices)
+    return (
+        dataset.select(train_indices),
+        dataset.select(eval_indices),
+        dataset.select(test_indices),
+    )

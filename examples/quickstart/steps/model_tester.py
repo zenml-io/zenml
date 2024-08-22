@@ -18,7 +18,7 @@ import torch
 from datasets import Dataset
 from transformers import (
     T5ForConditionalGeneration,
-    T5Tokenizer, T5TokenizerFast,
+    T5TokenizerFast,
 )
 
 from zenml import log_model_metadata, step
@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 def test_model(
     model: T5ForConditionalGeneration,
     tokenized_test_dataset: Dataset,
-    tokenizer: T5TokenizerFast
+    tokenizer: T5TokenizerFast,
 ) -> None:
     """Test the model on some generated Old English-style sentences."""
 
@@ -61,7 +61,9 @@ def test_model(
         decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         # Decode the input_ids to get the original sentence
-        original_sentence = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        original_sentence = tokenizer.decode(
+            input_ids[0], skip_special_tokens=True
+        )
         sentence_without_prompt = original_sentence.strip(PROMPT)
 
         test_collection[f"Prompt {index}"] = {

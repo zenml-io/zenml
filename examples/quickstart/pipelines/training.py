@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import materializers  # this import needs to stay to ensure materializers are loaded
 from steps import (
     evaluate_model,
     load_data,
-    test_model,
     split_dataset,
+    test_model,
     tokenize_data,
     train_model,
 )
@@ -41,9 +40,11 @@ def english_translation_pipeline(
 ):
     """Define a pipeline that connects the steps."""
     full_dataset = load_data()
-    tokenized_dataset, tokenizer = tokenize_data(dataset=full_dataset, model_type=model_type)
-    tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = split_dataset(
-        tokenized_dataset
+    tokenized_dataset, tokenizer = tokenize_data(
+        dataset=full_dataset, model_type=model_type
+    )
+    tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = (
+        split_dataset(tokenized_dataset)
     )
     model = train_model(
         tokenized_dataset=tokenized_train_dataset,
@@ -54,4 +55,8 @@ def english_translation_pipeline(
         dataloader_num_workers=dataloader_num_workers,
     )
     evaluate_model(model=model, tokenized_dataset=tokenized_eval_dataset)
-    test_model(model=model, tokenized_test_dataset=tokenized_test_dataset, tokenizer=tokenizer)
+    test_model(
+        model=model,
+        tokenized_test_dataset=tokenized_test_dataset,
+        tokenizer=tokenizer,
+    )

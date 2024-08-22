@@ -20,7 +20,6 @@ import requests
 from datasets import Dataset
 
 from zenml import step
-import datasets
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)

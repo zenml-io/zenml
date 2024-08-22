@@ -17,7 +17,11 @@ import os
 import tempfile
 from typing import Any, ClassVar, Type, Union
 
-from transformers import T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast
+from transformers import (
+    T5ForConditionalGeneration,
+    T5Tokenizer,
+    T5TokenizerFast,
+)
 
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -30,7 +34,7 @@ class HFT5Materializer(BaseMaterializer):
     ASSOCIATED_TYPES = (
         T5ForConditionalGeneration,
         T5Tokenizer,
-        T5TokenizerFast
+        T5TokenizerFast,
     )
 
     def load(
@@ -74,7 +78,8 @@ class HFT5Materializer(BaseMaterializer):
                 raise ValueError(f"Unsupported data type: {data_type}")
 
     def save(
-        self, obj: Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast]
+        self,
+        obj: Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast],
     ) -> None:
         """Creates a serialization for a T5ForConditionalGeneration model or T5Tokenizer.
 

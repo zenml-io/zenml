@@ -17,9 +17,7 @@
 from typing import Annotated, Tuple
 
 from datasets import Dataset
-from transformers import (
-    T5Tokenizer
-)
+from transformers import T5Tokenizer
 
 from steps.model_trainer import T5_Model
 from zenml import step

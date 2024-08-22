@@ -36,7 +36,7 @@ def evaluate_model(
     num_batches = 0
 
     for i in range(0, len(tokenized_dataset), 8):  # batch size of 8
-        batch = tokenized_dataset[i: i + 8]
+        batch = tokenized_dataset[i : i + 8]
         inputs = {
             "input_ids": torch.tensor(batch["input_ids"]),
             "attention_mask": torch.tensor(batch["attention_mask"]),
