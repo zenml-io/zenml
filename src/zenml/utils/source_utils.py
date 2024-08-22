@@ -638,7 +638,7 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
         except FileNotFoundError:
             if not source.artifact_store_id:
                 raise FileNotFoundError(
-                    "Unable to find notebook code file. This might be becuase "
+                    "Unable to find notebook code file. This might be because "
                     "the file is stored in a different artifact store."
                 )
 
