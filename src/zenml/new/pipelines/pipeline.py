@@ -73,6 +73,7 @@ from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
     prepare_model_versions,
+    upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -82,6 +83,7 @@ from zenml.steps.entrypoint_function_utils import (
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
+    code_utils,
     dashboard_utils,
     dict_utils,
     pydantic_utils,
@@ -579,7 +581,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
 
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
@@ -667,6 +670,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             stack = Client().active_stack
             stack.validate()
+            upload_notebook_cell_code_if_necessary(
+                deployment=deployment, stack=stack
+            )
 
             prepare_model_versions(deployment)
 
@@ -676,6 +682,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo_context
             )
+
+            if prevent_build_reuse:
+                logger.warning(
+                    "Passing `prevent_build_reuse=True` to "
+                    "`pipeline.with_opitions(...)` is deprecated. Use "
+                    "`DockerSettings.prevent_build_reuse` instead."
+                )
 
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
@@ -701,6 +714,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     code_repository=local_repo_context.code_repository_id,
                 )
 
+            code_path = None
+            if build_utils.should_upload_code(
+                deployment=deployment,
+                build=build_model,
+                code_reference=code_reference,
+            ):
+                code_archive = code_utils.CodeArchive(
+                    root=source_utils.get_source_root()
+                )
+                logger.info("Archiving pipeline code...")
+                code_path = code_utils.upload_code_if_necessary(code_archive)
+
             deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
@@ -709,6 +734,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
+                code_path=code_path,
                 **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
@@ -727,7 +753,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if run:
                 run_url = dashboard_utils.get_run_url(run)
                 if run_url:
-                    logger.info(f"Dashboard URL: {run_url}")
+                    logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
                 else:
                     logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
@@ -1271,7 +1297,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
             **kwargs: Pipeline configuration options. These will be passed
                 to the `pipeline.configure(...)` method.
 

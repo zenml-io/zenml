@@ -361,13 +361,6 @@ from zenml.models.v2.core.event_source import (
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
-from zenml.models.v2.misc.hub_plugin_models import (
-    HubPluginRequestModel,
-    HubPluginResponseModel,
-    HubUserResponseModel,
-    HubPluginBaseModel,
-    PluginStatus,
-)
 from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -733,11 +726,6 @@ __all__ = [
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
-    "HubPluginRequestModel",
-    "HubPluginResponseModel",
-    "HubUserResponseModel",
-    "HubPluginBaseModel",
-    "PluginStatus",
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",

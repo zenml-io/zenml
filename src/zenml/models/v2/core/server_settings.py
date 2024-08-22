@@ -82,6 +82,9 @@ class ServerSettingsResponseBody(BaseResponseBody):
     display_updates: Optional[bool] = Field(
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
+    last_user_activity: datetime = Field(
+        title="The timestamp when the last user activity was detected.",
+    )
     updated: datetime = Field(
         title="The timestamp when this resource was last updated."
     )
@@ -178,6 +181,15 @@ class ServerSettingsResponse(
             the value of the property.
         """
         return self.get_body().active
+
+    @property
+    def last_user_activity(self) -> datetime:
+        """The `last_user_activity` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().last_user_activity
 
     @property
     def updated(self) -> datetime:

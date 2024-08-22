@@ -171,7 +171,6 @@ class CliCategories(StrEnum):
 
     STACK_COMPONENTS = "Stack Components"
     MODEL_DEPLOYMENT = "Model Deployment"
-    HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
     MODEL_CONTROL_PLANE = "Model Control Plane"
@@ -303,6 +302,7 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+    LIGHTNING_AI_STUDIO = "lightning_ai_studio"
 
 
 class ModelStages(StrEnum):

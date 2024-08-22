@@ -212,7 +212,7 @@ def hello_world() -> str:
 
 @pipeline
 def aws_sagemaker_pipeline():
-    hello_step()
+    hello_world()
 
 if __name__ == "__main__":
     aws_sagemaker_pipeline()

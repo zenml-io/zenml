@@ -69,7 +69,9 @@ permissions and are aware of any potential costs:
 - An Azure Resource Group to contain all the resources required for the ZenML stack
 - An Azure Storage Account and Blob Storage Container registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/azure).
 - An Azure Container Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/azure).
-- SkyPilot will be registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/skypilot-vm) and used to run pipelines in your Azure subscription.
+- An AzureML Workspace registered as both a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml) and a
+[ZenML step operator](https://docs.zenml.io/stack-components/step-operators/azureml) and used to run pipelines.
+A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
 - An Azure Service Principal with the minimum necessary permissions to access
 the above resources.
 - An Azure Service Principal client secret used to give access to ZenML to
@@ -119,7 +121,7 @@ ZenML's access to your Azure subscription.
             The list of ZenML integrations that need to be installed for the
             stack to be usable.
         """
-        return ["azure", "skypilot_azure"]
+        return ["azure"]
 
     @classmethod
     def permissions(cls) -> Dict[str, List[str]]:
@@ -138,8 +140,9 @@ ZenML's access to your Azure subscription.
                 "AcrPush",
                 "Contributor",
             ],
-            "Subscription": [
-                "Owner (required by SkyPilot)",
+            "AzureML Workspace": [
+                "AzureML Compute Operator",
+                "AzureML Data Scientist",
             ],
         }
 
@@ -260,6 +263,7 @@ ZenML's access to your Azure subscription.
     source  = "zenml-io/zenml-stack/azure"
 
     location = "{self.location or "eastus"}"
+    orchestrator = "azureml"
     zenml_server_url = "{self.zenml_server_url}"
     zenml_api_key = ""
     zenml_api_token = "{self.zenml_server_api_token}"

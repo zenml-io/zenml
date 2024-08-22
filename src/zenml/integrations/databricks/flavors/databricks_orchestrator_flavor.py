@@ -93,6 +93,15 @@ class DatabricksOrchestratorConfig(
         """
         return False
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return True
+
 
 class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
     """Databricks orchestrator flavor."""

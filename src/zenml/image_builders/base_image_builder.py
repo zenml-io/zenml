@@ -119,7 +119,7 @@ class BaseImageBuilder(StackComponent, ABC):
 
         hash_ = hashlib.sha1()  # nosec
         with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as f:
-            build_context.write_archive(f, gzip=True)
+            build_context.write_archive(f, use_gzip=True)
 
             while True:
                 data = f.read(64 * 1024)

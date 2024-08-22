@@ -73,13 +73,6 @@ class UserAuthModel(BaseZenModel):
         "`false` if skipped.",
     )
 
-    hub_token: Optional[str] = Field(
-        default=None,
-        title="JWT Token for the connected Hub account. Only relevant for user "
-        "accounts.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
         """Returns the password encryption context.

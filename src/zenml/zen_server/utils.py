@@ -17,8 +17,10 @@ import inspect
 import os
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    List,
     Optional,
     Tuple,
     Type,
@@ -33,7 +35,10 @@ from pydantic import BaseModel, ValidationError
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
+    API,
     ENV_ZENML_SERVER,
+    INFO,
+    VERSION_1,
 )
 from zenml.enums import ServerProviderType
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -52,6 +57,9 @@ from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 logger = get_logger(__name__)
 
@@ -570,3 +578,70 @@ def verify_admin_status_if_no_rbac(
                 "without RBAC enabled.",
             )
     return
+
+
+def is_user_request(request: "Request") -> bool:
+    """Determine if the incoming request is a user request.
+
+    This function checks various aspects of the request to determine
+    if it's a user-initiated request or a system request.
+
+    Args:
+        request: The incoming FastAPI request object.
+
+    Returns:
+        True if it's a user request, False otherwise.
+    """
+    # Define system paths that should be excluded
+    system_paths: List[str] = [
+        "/health",
+        "/metrics",
+        "/system",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    ]
+
+    user_prefix = f"{API}{VERSION_1}"
+    excluded_user_apis = [INFO]
+    # Check if this is not an excluded endpoint
+    if request.url.path in [
+        user_prefix + suffix for suffix in excluded_user_apis
+    ]:
+        return False
+
+    # Check if this is other user request
+    if request.url.path.startswith(user_prefix):
+        return True
+
+    # Exclude system paths
+    if any(request.url.path.startswith(path) for path in system_paths):
+        return False
+
+    # Exclude requests with specific headers
+    if request.headers.get("X-System-Request") == "true":
+        return False
+
+    # Exclude requests from certain user agents (e.g., monitoring tools)
+    user_agent = request.headers.get("User-Agent", "").lower()
+    system_agents = ["prometheus", "datadog", "newrelic", "pingdom"]
+    if any(agent in user_agent for agent in system_agents):
+        return False
+
+    # Check for internal IP addresses
+    client_host = request.client.host if request.client else None
+    if client_host and (
+        client_host.startswith("10.") or client_host.startswith("192.168.")
+    ):
+        return False
+
+    # Exclude OPTIONS requests (often used for CORS preflight)
+    if request.method == "OPTIONS":
+        return False
+
+    # Exclude specific query parameters that might indicate system requests
+    if request.query_params.get("system_check"):
+        return False
+
+    # If none of the above conditions are met, consider it a user request
+    return True

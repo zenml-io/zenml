@@ -1314,7 +1314,6 @@ def test_get_service_account():
         assert user.is_service_account is True
         assert user.full_name == ""
         assert user.email_opted_in is False
-        assert user.hub_token is None
 
         # Get a service account as a user account by name
         with pytest.raises(KeyError):
