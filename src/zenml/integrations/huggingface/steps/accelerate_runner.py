@@ -35,7 +35,6 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def run_with_accelerate(
-    step_function: BaseStep,
     **accelerate_launch_kwargs: Any,
 ) -> BaseStep:
     """Run a function with accelerate.
@@ -56,7 +55,6 @@ def run_with_accelerate(
         ```
 
     Args:
-        step_function: The step function to run.
         accelerate_launch_kwargs: A dictionary of arguments to pass along to the
             `accelerate launch` command, including hardware selection, resource
             allocation, and training paradigm options. Visit
@@ -71,94 +69,92 @@ def run_with_accelerate(
 
     """
 
-    def _decorator(
-        entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
-    ) -> F:
-        @functools.wraps(entrypoint)
-        def inner(*args: Any, **kwargs: Any) -> Any:
-            if args:
-                raise ValueError(
-                    "Accelerated steps do not support positional arguments."
-                )
+    def _decorator(step_function: BaseStep):
+        def _wrapper(
+            entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+        ) -> F:
+            @functools.wraps(entrypoint)
+            def inner(*args: Any, **kwargs: Any) -> Any:
+                if args:
+                    raise ValueError(
+                        "Accelerated steps do not support positional arguments."
+                    )
 
-            with create_cli_wrapped_script(
-                entrypoint, flavour="accelerate"
-            ) as (
-                script_path,
-                output_path,
-            ):
-                commands = [str(script_path.absolute())]
-                for k, v in kwargs.items():
-                    k = _cli_arg_name(k)
-                    if isinstance(v, bool):
-                        if v:
-                            commands.append(f"--{k}")
-                    elif type(v) in (list, tuple, set):
-                        for each in v:
-                            commands += [f"--{k}", f"{each}"]
-                    else:
-                        commands += [f"--{k}", f"{v}"]
-                logger.debug(commands)
+                with create_cli_wrapped_script(
+                    entrypoint, flavour="accelerate"
+                ) as (
+                    script_path,
+                    output_path,
+                ):
+                    commands = [str(script_path.absolute())]
+                    for k, v in kwargs.items():
+                        k = _cli_arg_name(k)
+                        if isinstance(v, bool):
+                            if v:
+                                commands.append(f"--{k}")
+                        elif type(v) in (list, tuple, set):
+                            for each in v:
+                                commands += [f"--{k}", f"{each}"]
+                        else:
+                            commands += [f"--{k}", f"{v}"]
+                    logger.debug(commands)
 
-                parser = launch_command_parser()
-                args = parser.parse_args(commands)
-                for k, v in accelerate_launch_kwargs.items():
-                    if k in args:
-                        setattr(args, k, v)
-                    else:
-                        logger.warning(
-                            f"You passed in `{k}` as an `accelerate launch` argument, but it was not accepted. "
-                            "Please check https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch "
-                            "to find out more about supported arguments and retry."
+                    parser = launch_command_parser()
+                    args = parser.parse_args(commands)
+                    for k, v in accelerate_launch_kwargs.items():
+                        if k in args:
+                            setattr(args, k, v)
+                        else:
+                            logger.warning(
+                                f"You passed in `{k}` as an `accelerate launch` argument, but it was not accepted. "
+                                "Please check https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch "
+                                "to find out more about supported arguments and retry."
+                            )
+                    try:
+                        launch_command(args)
+                    except Exception as e:
+                        logger.error(
+                            "Accelerate training job failed... See error message for details."
                         )
-                try:
-                    launch_command(args)
-                except Exception as e:
-                    logger.error(
-                        "Accelerate training job failed... See error message for details."
-                    )
-                    raise RuntimeError(
-                        "Accelerate training job failed."
-                    ) from e
-                else:
-                    logger.info(
-                        "Accelerate training job finished successfully."
-                    )
-                    return pickle.load(open(output_path, "rb"))
+                        raise RuntimeError(
+                            "Accelerate training job failed."
+                        ) from e
+                    else:
+                        logger.info(
+                            "Accelerate training job finished successfully."
+                        )
+                        return pickle.load(open(output_path, "rb"))
 
-        return cast(F, inner)
+            return cast(F, inner)
 
-    import __main__
+        if f"@{run_with_accelerate.__name__}" not in inspect.getsource(
+            step_function.entrypoint
+        ):
+            raise RuntimeError(
+                f"`{run_with_accelerate.__name__}` decorator cannot be used "
+                "in a functional way with steps, please apply decoration "
+                "directly to a step instead.\n"
+                "Example (allowed):\n"
+                f"@{run_with_accelerate.__name__}(...)\n"
+                f"def {step_function.name}(...):\n"
+                "    ...\n"
+                "Example (not allowed):\n"
+                "def my_pipeline(...):\n"
+                f"    run_with_accelerate({step_function.name},...)(...)\n"
+            )
 
-    if __main__.__file__ == inspect.getsourcefile(step_function.entrypoint):
-        raise RuntimeError(
-            f"`{run_with_accelerate.__name__}` decorator cannot be used "
-            "with steps defined inside the entrypoint script, please move "
-            f"your step `{step_function.name}` code to another file and retry."
+        setattr(
+            step_function, "unwrapped_entrypoint", step_function.entrypoint
         )
-    if f"@{run_with_accelerate.__name__}" in inspect.getsource(
-        step_function.entrypoint
-    ):
-        raise RuntimeError(
-            f"`{run_with_accelerate.__name__}` decorator cannot be used "
-            "directly on steps using '@' syntax, please use a functional "
-            "decoration in your pipeline script instead.\n"
-            "Example (not allowed):\n"
-            f"@{run_with_accelerate.__name__}\n"
-            f"def {step_function.name}(...):\n"
-            "    ...\n"
-            "Example (allowed):\n"
-            "def my_pipeline(...):\n"
-            f"    run_with_accelerate({step_function.name})(...)\n"
+        setattr(
+            step_function,
+            "entrypoint",
+            _wrapper(
+                step_function.entrypoint,
+                accelerate_launch_kwargs=accelerate_launch_kwargs,
+            ),
         )
 
-    setattr(
-        step_function,
-        "entrypoint",
-        _decorator(
-            step_function.entrypoint,
-            accelerate_launch_kwargs=accelerate_launch_kwargs,
-        ),
-    )
+        return step_function
 
-    return step_function
+    return _decorator

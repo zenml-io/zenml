@@ -34,12 +34,9 @@ from zenml.utils.function_utils import _cli_wrapped_function
 import sys
 sys.path.append(r"{func_path}")
 
-from {func_module} import {func_name} as func_to_wrap
+from {func_module} import {func_name} as step_function
 
-if entrypoint:=getattr(func_to_wrap, "entrypoint", None):
-    func = _cli_wrapped_function(entrypoint)
-else:
-    func = _cli_wrapped_function(func_to_wrap)
+func = _cli_wrapped_function(step_function.unwrapped_entrypoint)
 """
 _CLI_WRAPPED_MAINS = {
     "accelerate": """
