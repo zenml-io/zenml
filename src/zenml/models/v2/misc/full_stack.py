@@ -22,12 +22,6 @@ from zenml.enums import StackComponentType
 if TYPE_CHECKING:
     from zenml.models.v2.core.component import ComponentResponse
 
-# TODO: This can be cleaned up even further I think:
-#   ServiceConnectorInfo -> simply a service connector request?
-#   ComponentInfo -> simply a component request?
-#      (the only thing we would miss here would be a matching between the
-#      connectors and the components.)
-
 
 class ServiceConnectorInfo(BaseModel):
     """Information about the service connector when creating a full stack."""
