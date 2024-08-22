@@ -22,8 +22,6 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFas
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_MODEL_DIR = "hf_t5_model"
-
 
 class HFT5Materializer(BaseMaterializer):
     """Base class for huggingface t5 models."""
@@ -45,6 +43,9 @@ class HFT5Materializer(BaseMaterializer):
 
         Returns:
             A T5ForConditionalGeneration or T5Tokenizer object.
+
+        Raises:
+            ValueError: Unsupported data type used
         """
         filepath = self.uri
 
