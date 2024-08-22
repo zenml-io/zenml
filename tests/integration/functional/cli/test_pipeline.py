@@ -128,12 +128,10 @@ def s() -> None:
 
 
 @pipeline
-def p(s1):
-    s1()
+def pipeline_instance():
+    s()
 
 
-step_instance = s()
-pipeline_instance = p(step_instance)
 pipeline_instance_source = f"{pipeline_instance.__module__}.pipeline_instance"
 
 

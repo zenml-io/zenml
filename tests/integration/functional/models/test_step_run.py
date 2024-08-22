@@ -29,27 +29,25 @@ from zenml.enums import ExecutionStatus
 if TYPE_CHECKING:
     from zenml.client import Client
     from zenml.models import StepRunResponse
-    from zenml.pipelines.base_pipeline import BasePipeline
 
 
 def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     """Integration test for `step.run` property."""
-    step_ = constant_int_output_test_step()
-    pipe: "BasePipeline" = one_step_pipeline(step_)
-    pipe.run()
+    pipe = one_step_pipeline(constant_int_output_test_step)
+    pipe()
 
     # Non-cached run
     pipeline_run = pipe.model.last_run
-    step_run = pipeline_run.steps["step_"]
+    step_run = pipeline_run.steps["constant_int_output_test_step"]
 
     run = clean_client.get_pipeline_run(step_run.pipeline_run_id)
 
     assert run == pipeline_run
 
     # Cached run
-    pipe.run()
+    pipe()
     pipeline_run_2 = pipe.model.last_run
-    step_run_2 = pipeline_run_2.steps["step_"]
+    step_run_2 = pipeline_run_2.steps["constant_int_output_test_step"]
     assert step_run_2.status == ExecutionStatus.CACHED
 
 
@@ -58,13 +56,13 @@ def test_step_run_parent_steps_linkage(
 ):
     """Integration test for `step.parent_steps` property."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = pipeline_instance.model.last_run
-    step_1 = pipeline_run.steps["step_1"]
-    step_2 = pipeline_run.steps["step_2"]
+    step_1 = pipeline_run.steps["constant_int_output_test_step"]
+    step_2 = pipeline_run.steps["int_plus_one_test_step"]
 
     parent_steps = [
         clean_client.get_run_step(step_id)
@@ -82,15 +80,15 @@ def test_step_run_parent_steps_linkage(
 def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
     """Test that the step run has correct source code."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps["step_1"]
-    step_2 = pipeline_run.steps["step_2"]
+    step_1 = pipeline_run.steps["constant_int_output_test_step"]
+    step_2 = pipeline_run.steps["int_plus_one_test_step"]
     assert step_1.source_code == inspect.getsource(
         constant_int_output_test_step.entrypoint
     )
@@ -107,15 +105,15 @@ def test_step_run_with_too_long_source_code_is_truncated(
     random_source = "".join(random.choices(string.ascii_uppercase, k=1000000))
     mocker.patch("zenml.steps.base_step.BaseStep.source_code", random_source)
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps["step_1"]
-    step_2 = pipeline_run.steps["step_2"]
+    step_1 = pipeline_run.steps["constant_int_output_test_step"]
+    step_2 = pipeline_run.steps["int_plus_one_test_step"]
     assert len(step_1.source_code) == TEXT_FIELD_MAX_LENGTH
     assert len(step_2.source_code) == TEXT_FIELD_MAX_LENGTH
     assert (
@@ -131,15 +129,15 @@ def test_step_run_with_too_long_source_code_is_truncated(
 def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
     """Test that the step run has correct docstring."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps["step_1"]
-    step_2 = pipeline_run.steps["step_2"]
+    step_1 = pipeline_run.steps["constant_int_output_test_step"]
+    step_2 = pipeline_run.steps["int_plus_one_test_step"]
     assert step_1.docstring == constant_int_output_test_step.entrypoint.__doc__
     assert step_2.docstring == int_plus_one_test_step.entrypoint.__doc__
 
@@ -153,15 +151,15 @@ def test_step_run_with_too_long_docstring_is_truncated(
     )
     mocker.patch("zenml.steps.base_step.BaseStep.docstring", random_docstring)
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps["step_1"]
-    step_2 = pipeline_run.steps["step_2"]
+    step_1 = pipeline_run.steps["constant_int_output_test_step"]
+    step_2 = pipeline_run.steps["int_plus_one_test_step"]
     assert len(step_1.docstring) == TEXT_FIELD_MAX_LENGTH
     assert len(step_2.docstring) == TEXT_FIELD_MAX_LENGTH
     assert (
@@ -178,54 +176,52 @@ def test_disabling_step_logs(clean_client: "Client", one_step_pipeline):
     """Test that disabling step logs works."""
 
     # By default, step logs should be enabled
-    step_ = step_with_logs()
-    pipe: "BasePipeline" = one_step_pipeline(step_)
+    step_ = step_with_logs.copy()
+    pipe = one_step_pipeline(step_)
     pipe.configure(enable_cache=False)
-    pipe.run()
+    pipe()
     _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on pipeline level
     pipe.configure(enable_step_logs=False)
-    pipe.run()
+    pipe()
     _assert_step_logs_disabled(pipe)
 
     pipe.configure(enable_step_logs=True)
-    pipe.run()
+    pipe()
     _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on step level
     # This should override the pipeline level setting
     step_.configure(enable_step_logs=False)
-    pipe.run()
+    pipe()
     _assert_step_logs_disabled(pipe)
 
     step_.configure(enable_step_logs=True)
-    pipe.run()
+    pipe()
     _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on run level
     # This should override both the pipeline and step level setting
-    pipe.run(enable_step_logs=False)
+    pipe.with_options(enable_step_logs=False)()
     _assert_step_logs_disabled(pipe)
 
     pipe.configure(enable_step_logs=False)
     step_.configure(enable_step_logs=False)
-    pipe.run(enable_step_logs=True)
+    pipe.with_options(enable_step_logs=True)()
     _assert_step_logs_enabled(pipe)
 
 
-def _assert_step_logs_enabled(pipe: "BasePipeline"):
+def _assert_step_logs_enabled(pipe, step_name="step_with_logs"):
     """Assert that step logs were enabled in the last run."""
-    assert _get_first_step_of_last_run(pipe).logs
+    assert _get_first_step_of_last_run(pipe, step_name=step_name).logs
 
 
-def _assert_step_logs_disabled(pipe: "BasePipeline"):
+def _assert_step_logs_disabled(pipe, step_name="step_with_logs"):
     """Assert that step logs were disabled in the last run."""
-    assert not _get_first_step_of_last_run(pipe).logs
+    assert not _get_first_step_of_last_run(pipe, step_name=step_name).logs
 
 
-def _get_first_step_of_last_run(
-    pipe: "BasePipeline",
-) -> "StepRunResponse":
+def _get_first_step_of_last_run(pipe, step_name) -> "StepRunResponse":
     """Get the output of the last run."""
-    return pipe.model.last_run.steps["step_"]
+    return pipe.model.last_run.steps[step_name]

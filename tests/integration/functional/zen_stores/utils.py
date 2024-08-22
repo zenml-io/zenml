@@ -135,16 +135,8 @@ def int_plus_one_test_step(
 
 
 @pipeline(name="connected_two_step_pipeline")
-def connected_two_step_pipeline(step_1, step_2):
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-    step_2(step_1())
-
-
-pipeline_instance = connected_two_step_pipeline(
-    step_1=constant_int_output_test_step,
-    step_2=int_plus_one_test_step,
-)
+def pipeline_instance():
+    int_plus_one_test_step(constant_int_output_test_step())
 
 
 class PipelineRunContext:
