@@ -39,7 +39,7 @@ from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
-    ENV_ZENML_DISABLE_RUNNING_SINGLE_STEPS_ON_STACK,
+    ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
@@ -594,10 +594,10 @@ class BaseStep(metaclass=BaseStepMeta):
             # The step is being called outside the context of a pipeline, either
             # run the step function or run it as a single step pipeline on the
             # active stack
-            should_run_as_single_step_pipeline = not handle_bool_env_var(
-                ENV_ZENML_DISABLE_RUNNING_SINGLE_STEPS_ON_STACK, default=False
+            run_on_stack = not handle_bool_env_var(
+                ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
             )
-            if should_run_as_single_step_pipeline:
+            if run_on_stack:
                 return run_as_single_step_pipeline(self, *args, **kwargs)
             else:
                 return self.call_entrypoint(*args, **kwargs)
