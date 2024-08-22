@@ -340,10 +340,17 @@ class register_artifact_store_filesystem:
         self.target_artifact_store_id = target_artifact_store_id
 
     def __enter__(self) -> "BaseArtifactStore":
-        """Instantiate the target artifact store and return it.
+        """Entering the context manager.
+
+        It creates an instance of the target artifact store to register the
+        correct filesystem in the registry.
 
         Returns:
-            the artifact store object.
+            The target artifact store object.
+
+        Raises:
+            RuntimeError: If the target artifact store can not be fetched or
+                initiated due to missing dependencies.
         """
         try:
             if self.target_artifact_store_id is not None:
@@ -396,8 +403,8 @@ class register_artifact_store_filesystem:
             exc_value: The instance of the exception
             traceback: The traceback of the exception
         """
-        # As we exist the handler, we have to re-register the filesystem
-        # that belongs to the active artifact store as it may have been
-        # overwritten.
         if ENV_ZENML_SERVER not in os.environ:
+            # As we exit the handler, we have to re-register the filesystem
+            # that belongs to the active artifact store as it may have been
+            # overwritten.
             Client().active_stack.artifact_store._register()
