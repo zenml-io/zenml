@@ -236,6 +236,8 @@ class NotebookSource(Source):
     Attributes:
         replacement_module: Name of the module from which this source should
             be loaded in case the code is not running in a notebook.
+        artifact_store_id: ID of the artifact store in which the replacement
+            module code is stored.
     """
 
     replacement_module: Optional[str] = None

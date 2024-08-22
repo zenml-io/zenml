@@ -590,6 +590,8 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
 
     Raises:
         RuntimeError: If the source can't be loaded.
+        FileNotFoundError: If the file containing the notebook cell code can't
+            be found.
 
     Returns:
         The loaded object.
