@@ -390,6 +390,9 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run(
                 f"nohup bash -c 'cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {entrypoint_string}' > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
             )
+            logger.info(
+                f"The pipeline is running in async mode, you can keep checking the logs by running the following command: `lightning download -s vision-model/zenml-async-orchestrator-studio -p /teamspace/studios/this_studio/log_{filename.rsplit('.', 2)[0]}.txt && cat log_{filename.rsplit('.', 2)[0]}.txt`"
+            )
         else:
             self._upload_and_run_pipeline(
                 deployment,

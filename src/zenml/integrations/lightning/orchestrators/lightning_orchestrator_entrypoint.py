@@ -153,9 +153,10 @@ def main() -> None:
         "/teamspace/studios/this_studio/.lightning_studio/.studiorc",
         remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
     )
-    main_studio.run(
+    output = main_studio.run(
         f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
     )
+    logger.info(output)
     main_studio.upload_file(
         f"/teamspace/studios/this_studio/zenml_codes/{filename}",
         remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
@@ -166,20 +167,23 @@ def main() -> None:
     )
     logger.info(f"Code extraction output: {output}")
     logger.info("Installing requirements... ")
-    # main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
 
-    main_studio.run("pip install uv")
-    main_studio.run(f"uv pip install {pipeline_requirements_to_string}")
-    main_studio.run(
+    output = main_studio.run("pip install uv")
+    logger.info(output)
+    output = main_studio.run(
+        f"uv pip install {pipeline_requirements_to_string}"
+    )
+    logger.info(output)
+    output = main_studio.run(
         "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
     )
+    logger.info(output)
 
     for command in pipeline_settings.custom_commands or []:
         output = main_studio.run(
             f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
         )
         logger.info(f"Custom command output: {output}")
-    # main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
 
     run = Client().list_pipeline_runs(
         sort_by="asc:created",
@@ -229,33 +233,41 @@ def main() -> None:
             studio = Studio(name=unique_resource_configs[step_name])
             try:
                 studio.start(Machine(step_settings.machine_type))
-                studio.run(
+                output = studio.run(
                     f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
                 )
+                logger.info(output)
                 studio.upload_file(
                     f"/teamspace/studios/this_studio/zenml_codes/{filename}",
                     remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
                 )
-                studio.run(
+                output = studio.run(
                     f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
                 )
+                logger.info(output)
                 studio.upload_file(
                     "/teamspace/studios/this_studio/.lightning_studio/.studiorc",
                     remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
                 )
-                studio.run("pip install uv")
-                studio.run(f"uv pip install {step_requirements_to_string}")
-                studio.run(
+                output = studio.run("pip install uv")
+                logger.info(output)
+                output = studio.run(
+                    f"uv pip install {step_requirements_to_string}"
+                )
+                logger.info(output)
+                output = studio.run(
                     "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
                 )
+                logger.info(output)
                 for command in step_settings.custom_commands or []:
                     output = studio.run(
                         f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
                     )
                     logger.info(f"Custom command output: {output}")
-                studio.run(
+                output = studio.run(
                     f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
                 )
+                logger.info(output)
             except Exception as e:
                 logger.error(
                     f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}"
@@ -265,9 +277,10 @@ def main() -> None:
                 studio.delete()
                 studio.delete()
         else:
-            main_studio.run(
+            output = main_studio.run(
                 f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {run_command}"
             )
+            logger.info(output)
 
             # Pop the resource configuration for this step
         unique_resource_configs.pop(step_name)
