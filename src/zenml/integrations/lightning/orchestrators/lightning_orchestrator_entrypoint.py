@@ -53,7 +53,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--deployment_id", type=str, required=True)
-    # parser.add_argument("--wheel_package", type=str, required=True)
     return parser.parse_args()
 
 
@@ -78,18 +77,12 @@ def main() -> None:
     orchestrator_run_id = os.environ.get(
         ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID
     )
-    # wheel_package_name = os.environ.get(ENV_ZENML_WHEEL_PACKAGE_NAME)
-    # if not orchestrator_run_id or not wheel_package_name:
-    #    raise ValueError(
-    #        f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' or '{ENV_ZENML_WHEEL_PACKAGE_NAME}' is not set."
-    #    )
     if not orchestrator_run_id:
         raise ValueError(
             f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' is not set."
         )
 
     logger.info(f"Orchestrator run id: {orchestrator_run_id}")
-    # logger.info(f"Wheel package name: {wheel_package_name}")
 
     deployment = Client().get_deployment(args.deployment_id)
     filename = f"{args.run_name}.tar.gz"
@@ -110,7 +103,6 @@ def main() -> None:
 
     # Set up credentials
     orchestrator._get_lightning_client(deployment)
-    # orchestrator.package_name = wheel_package_name
 
     pipeline_settings = cast(
         LightningOrchestratorSettings, orchestrator.get_settings(deployment)
@@ -199,12 +191,15 @@ def main() -> None:
 
         Args:
             step_name: Name of the step.
+
+        Raises:
+            Exception: If an error occurs while running the step on the STUDIO.
         """
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
             deployment_id=args.deployment_id,
-            # wheel_package=wheel_package_name,
         )
+
         entrypoint = entrypoint_command + step_args
         entrypoint_string = " ".join(entrypoint)
         run_command = f"{entrypoint_string}"

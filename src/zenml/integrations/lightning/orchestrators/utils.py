@@ -41,7 +41,14 @@ def sanitize_studio_name(studio_name: str) -> str:
 
 
 def gather_requirements(docker_settings: "DockerSettings") -> List[str]:
-    """Gather the requirements files."""
+    """Gather the requirements files.
+
+    Args:
+        docker_settings: Docker settings.
+
+    Returns:
+        List of requirements.
+    """
     docker_image_builder = PipelineDockerImageBuilder()
     requirements_files = docker_image_builder.gather_requirements_files(
         docker_settings=docker_settings,
@@ -68,10 +75,6 @@ def download_and_extract_code(code_path: str, extract_dir: str) -> None:
     Args:
         code_path: Path where the code is uploaded.
         extract_dir: Directory where to code should be extracted to.
-
-    Raises:
-        RuntimeError: If the code is stored in an artifact store which is
-            not active.
     """
     download_path = os.path.basename(code_path)
 

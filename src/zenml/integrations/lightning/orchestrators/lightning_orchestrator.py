@@ -102,7 +102,11 @@ class LightningOrchestrator(WheeledOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
     ) -> None:
-        """Set up the Lightning client using environment variables."""
+        """Set up the Lightning client using environment variables.
+
+        Args:
+            deployment: The pipeline deployment to prepare or run.
+        """
         settings = cast(
             LightningOrchestratorSettings, self.get_settings(deployment)
         )
@@ -296,7 +300,14 @@ class LightningOrchestrator(WheeledOrchestrator):
         def _construct_lightning_steps(
             deployment: "PipelineDeploymentResponse",
         ) -> Dict[str, Dict[str, Any]]:
-            """Construct the steps for the pipeline."""
+            """Construct the steps for the pipeline.
+
+            Args:
+                deployment: The pipeline deployment to prepare or run.
+
+            Returns:
+                The steps for the pipeline.
+            """
             steps = {}
             for step_name, step in deployment.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
@@ -404,10 +415,6 @@ class LightningOrchestrator(WheeledOrchestrator):
                 filename,
                 env_file_path,
             )
-
-        # Remove the temporary directory
-        # fileio.rmtree(repository_temp_dir)
-        # Remove the temporary file
         os.unlink(env_file_path)
 
     def _upload_and_run_pipeline(
@@ -428,10 +435,13 @@ class LightningOrchestrator(WheeledOrchestrator):
             orchestrator_run_id: The orchestrator run id.
             requirements: The requirements for the pipeline.
             settings: The orchestrator settings.
-            steps_commands: The commands to run for each step.
+            steps_commands: The commands for the steps.
             code_path: The path to the wheel package.
             filename: The name of the code archive.
             env_file_path: The path to the environment file.
+
+        Raises:
+            Exception: If an error occurs while running the pipeline.
         """
         logger.info("Setting up Lightning AI client")
         self._get_lightning_client(deployment)

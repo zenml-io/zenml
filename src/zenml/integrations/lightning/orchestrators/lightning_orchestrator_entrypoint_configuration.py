@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 
 RUN_NAME_OPTION = "run_name"
 DEPLOYMENT_ID_OPTION = "deployment_id"
-# WHEEL_PACKAGE_OPTION = "wheel_package"
 
 
 class LightningOrchestratorEntrypointConfiguration:
@@ -36,7 +35,6 @@ class LightningOrchestratorEntrypointConfiguration:
         options = {
             RUN_NAME_OPTION,
             DEPLOYMENT_ID_OPTION,
-            # WHEEL_PACKAGE_OPTION,
         }
         return options
 
@@ -59,12 +57,10 @@ class LightningOrchestratorEntrypointConfiguration:
         cls,
         run_name: str,
         deployment_id: "UUID",
-        # wheel_package: str,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            wheel_package: Path to the wheel package to install.
             run_name: Name of the ZenML run.
             deployment_id: ID of the deployment.
 
@@ -76,8 +72,6 @@ class LightningOrchestratorEntrypointConfiguration:
             run_name,
             f"--{DEPLOYMENT_ID_OPTION}",
             str(deployment_id),
-            # f"--{WHEEL_PACKAGE_OPTION}",
-            # wheel_package,
         ]
 
         return args
