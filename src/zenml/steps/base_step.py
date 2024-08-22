@@ -690,8 +690,17 @@ class BaseStep(metaclass=BaseStepMeta):
 
         # 2. Create single-step pipeline
         from zenml import pipeline
+        from zenml.client import Client
 
-        @pipeline(enable_cache=False)
+        orchestrator = Client().active_stack.orchestrator
+
+        pipeline_settings = {}
+        if "synchronous" in orchestrator.config.model_fields:
+            # Make sure the orchestrator runs sync so we stream the logs
+            key = settings_utils.get_stack_component_setting_key(orchestrator)
+            pipeline_settings[key] = {"synchronous": True}
+
+        @pipeline(enable_cache=False, settings=pipeline_settings)
         def single_step_pipeline():
             self(**inputs)
 
