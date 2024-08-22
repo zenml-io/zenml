@@ -30,6 +30,6 @@ from .model_trainer import (
 from .model_evaluator import (
     evaluate_model
 )
-from .random_tester import (
-    model_tester
+from .model_tester import (
+    test_model
 )

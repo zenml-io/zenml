@@ -1,41 +1,43 @@
-# Apache Software License 2.0
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the Huggingface datasets materializer."""
+
 import os
 import tempfile
 from typing import Any, ClassVar, Type, Union
 
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast
 
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
+DEFAULT_MODEL_DIR = "hf_t5_model"
 
-class T5Materializer(BaseMaterializer):
-    """Base class for ultralytics YOLO models."""
+
+class HFT5Materializer(BaseMaterializer):
+    """Base class for huggingface t5 models."""
 
     SKIP_REGISTRATION: ClassVar[bool] = True
     ASSOCIATED_TYPES = (
         T5ForConditionalGeneration,
         T5Tokenizer,
+        T5TokenizerFast
     )
 
     def load(
         self, data_type: Type[Any]
-    ) -> Union[T5ForConditionalGeneration, T5Tokenizer]:
+    ) -> Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast]:
         """Reads a T5ForConditionalGeneration model or T5Tokenizer from a serialized zip file.
 
         Args:
@@ -69,7 +71,7 @@ class T5Materializer(BaseMaterializer):
                 raise ValueError(f"Unsupported data type: {data_type}")
 
     def save(
-        self, obj: Union[T5ForConditionalGeneration, T5Tokenizer]
+        self, obj: Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast]
     ) -> None:
         """Creates a serialization for a T5ForConditionalGeneration model or T5Tokenizer.
 
@@ -95,3 +97,4 @@ class T5Materializer(BaseMaterializer):
                         fileio.copy(subsrc, subdst)
                 else:
                     fileio.copy(src, dst)
+

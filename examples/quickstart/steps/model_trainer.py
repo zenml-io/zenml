@@ -14,10 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import torch
 from datasets import Dataset
-from materializers import T5Materializer
 from transformers import (
     T5ForConditionalGeneration,
     Trainer,
@@ -39,7 +37,7 @@ class T5_Model(StrEnum):
     LARGE = "t5-large"
 
 
-@step(output_materializers=T5Materializer, enable_cache=False)
+@step(enable_cache=False)
 def train_model(
     tokenized_dataset: Dataset,
     model_type: T5_Model,
@@ -64,7 +62,7 @@ def train_model(
         logging_dir="./logs",
         logging_steps=10,
         save_steps=500,
-        fp16=True,  # Mixed precision training
+        fp16=False,  # Mixed precision training
         learning_rate=3e-5,
         max_grad_norm=0.5,  # Gradient clipping
         dataloader_num_workers=dataloader_num_workers,  # Adjust based on your system

@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Annotated, Tuple
+from typing import Annotated
 
 import requests
 from datasets import Dataset
 
 from zenml import step
-from zenml.integrations.huggingface.materializers import HFDatasetMaterializer
+import datasets
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 PROMPT = ""  # In case you want to also use a prompt you can set it here
 
 
-@step(output_materializers=HFDatasetMaterializer)
+@step
 def load_data(
     data_url: str,
 ) -> Annotated[Dataset, "full_dataset"]:

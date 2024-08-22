@@ -19,7 +19,7 @@
 from steps import (
     evaluate_model,
     load_data,
-    model_tester,
+    test_model,
     split_dataset,
     tokenize_data,
     train_model,
@@ -44,8 +44,7 @@ def english_translation_pipeline(
     full_dataset = load_data()
     tokenized_dataset, tokenizer = tokenize_data(dataset=full_dataset, model_type=model_type)
     tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = split_dataset(
-        tokenized_dataset,
-
+        tokenized_dataset
     )
     model = train_model(
         tokenized_dataset=tokenized_train_dataset,
@@ -56,4 +55,4 @@ def english_translation_pipeline(
         dataloader_num_workers=dataloader_num_workers,
     )
     evaluate_model(model=model, tokenized_dataset=tokenized_eval_dataset)
-    model_tester(model=model, tokenized_test_dataset=tokenized_test_dataset, tokenizer=tokenizer)
+    test_model(model=model, tokenized_test_dataset=tokenized_test_dataset, tokenizer=tokenizer)

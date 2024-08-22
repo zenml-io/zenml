@@ -62,7 +62,6 @@ def split_dataset(
     # Calculate split sizes
     train_samples = int(subset_samples * train_size)
     eval_samples = int(subset_samples * eval_size)
-    test_samples = subset_samples - train_samples - eval_samples
 
     # Shuffle the subset indices
     random.shuffle(subset_indices)

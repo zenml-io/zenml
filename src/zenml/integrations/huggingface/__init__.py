@@ -27,7 +27,7 @@ class HuggingfaceIntegration(Integration):
 
     NAME = HUGGINGFACE
     REQUIREMENTS = [
-        "transformers<=4.31",
+        "transformers",
         "datasets",
         "huggingface_hub>0.19.0",
         "accelerate",

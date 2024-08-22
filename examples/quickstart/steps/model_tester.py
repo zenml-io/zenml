@@ -18,7 +18,7 @@ import torch
 from datasets import Dataset
 from transformers import (
     T5ForConditionalGeneration,
-    T5Tokenizer,
+    T5Tokenizer, T5TokenizerFast,
 )
 
 from zenml import log_model_metadata, step
@@ -30,10 +30,10 @@ logger = get_logger(__name__)
 
 
 @step
-def model_tester(
+def test_model(
     model: T5ForConditionalGeneration,
     tokenized_test_dataset: Dataset,
-    tokenizer: T5Tokenizer
+    tokenizer: T5TokenizerFast
 ) -> None:
     """Test the model on some generated Old English-style sentences."""
 
