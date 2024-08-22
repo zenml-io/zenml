@@ -594,13 +594,13 @@ class BaseStep(metaclass=BaseStepMeta):
             # The step is being called outside the context of a pipeline, either
             # run the step function or run it as a single step pipeline on the
             # active stack
-            run_on_stack = not handle_bool_env_var(
+            run_without_stack = handle_bool_env_var(
                 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
             )
-            if run_on_stack:
-                return run_as_single_step_pipeline(self, *args, **kwargs)
-            else:
+            if run_without_stack:
                 return self.call_entrypoint(*args, **kwargs)
+            else:
+                return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
             input_artifacts,
