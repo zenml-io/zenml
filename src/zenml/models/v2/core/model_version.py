@@ -345,7 +345,6 @@ class ModelVersionResponse(
             suppress_class_validation_warnings=suppress_class_validation_warnings,
             model_version_id=self.id,
         )
-        mv.model_version_id = self.id
 
         return mv
 
