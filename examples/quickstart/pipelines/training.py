@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
+import materializers  # this import needs to stay to ensure materializers are loaded
 from steps import (
     evaluate_model,
     load_data,
