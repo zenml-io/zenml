@@ -20,7 +20,7 @@ import math
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -1587,6 +1587,7 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
+        model.last_user_activity = settings.last_user_activity
         if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
             model.analytics_enabled = settings.enable_analytics
         return model
@@ -1688,6 +1689,29 @@ class SqlZenStore(BaseZenStore):
             session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def _update_last_user_activity_timestamp(
+        self, last_user_activity: datetime
+    ) -> None:
+        """Update the last user activity timestamp.
+
+        Args:
+            last_user_activity: The timestamp of latest user activity
+                traced by server instance.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            if last_user_activity < settings.last_user_activity.replace(
+                tzinfo=timezone.utc
+            ):
+                return
+
+            settings.last_user_activity = last_user_activity
+            # `updated` kept intentionally unchanged here
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
 
     def get_onboarding_state(self) -> List[str]:
         """Get the server onboarding state.

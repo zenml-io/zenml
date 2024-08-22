@@ -56,8 +56,11 @@
     * [Understanding reranking](user-guide/llmops-guide/reranking/understanding-reranking.md)
     * [Implementing reranking in ZenML](user-guide/llmops-guide/reranking/implementing-reranking.md)
     * [Evaluating reranking performance](user-guide/llmops-guide/reranking/evaluating-reranking-performance.md)
-  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings.md)
-  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms.md)
+  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
+    * [Synthetic data generation](user-guide/llmops-guide/finetuning-embeddings/synthetic-data-generation.md)
+    * [Finetuning embeddings with Sentence Transformers](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
+    * [Evaluating finetuned embeddings](user-guide/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings.md)
+  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
 ## How-To
 
@@ -103,9 +106,7 @@
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
   * [Use your own Dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Which files are built into the image](how-to/customize-docker-builds/which-files-are-built-into-the-image.md)
-  * [Reuse Docker builds to speed up Docker build times](how-to/customize-docker-builds/reuse-docker-builds.md)
   * [Use code repositories to automate Docker build reuse](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
-  * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
 * [⚒️ Manage stacks & components](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack with ZenML](how-to/stack-deployment/deploy-a-cloud-stack.md)
@@ -116,6 +117,7 @@
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
   * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
+  * [Distributed Training with 🤗 Accelerate](how-to/training-with-gpus/accelerate-distributed-training.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Enable or disable logs storage](how-to/control-logging/enable-or-disable-logs-storing.md)

@@ -4295,7 +4295,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            data=body.model_dump_json(),
+            json=body.model_dump(mode="json"),
             params=params,
             timeout=timeout,
             **kwargs,
@@ -4322,11 +4322,13 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
-        data = body.model_dump_json(exclude_unset=True) if body else None
+        json = (
+            body.model_dump(mode="json", exclude_unset=True) if body else None
+        )
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=data,
+            json=json,
             params=params,
             timeout=timeout,
             **kwargs,

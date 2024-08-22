@@ -41,8 +41,6 @@ When running locally, there is no real concept of an `execution` environment as 
 
 ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](../../how-to/customize-docker-builds/README.md) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
-The execution environments do not need to be built each time a pipeline is run - you can [reuse builds from previous runs to save time](../../how-to/customize-docker-builds/reuse-docker-builds.md).
-
 ## Image Builder Environment
 
 By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../component-guide/image-builders/image-builders.md), a special [stack component](../../component-guide/README.md), allowing users to build and push Docker images in a different specialized _image builder environment_.

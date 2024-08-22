@@ -13,29 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML AzureML Step Operator."""
 
-import itertools
-import os
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
-from azureml.core import (
-    ComputeTarget,
-    Environment,
-    Experiment,
-    ScriptRunConfig,
-    Workspace,
-)
-from azureml.core.authentication import (
-    AbstractAuthentication,
-    ServicePrincipalAuthentication,
-)
-from azureml.core.conda_dependencies import CondaDependencies
+from azure.ai.ml import MLClient, command
+from azure.ai.ml.entities import Environment
+from azure.core.credentials import TokenCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 
-import zenml
-from zenml.client import Client
-from zenml.constants import (
-    ENV_ZENML_CONFIG_PATH,
-)
-from zenml.environment import Environment as ZenMLEnvironment
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.enums import StackComponentType
+from zenml.integrations.azure.azureml_utils import create_or_get_compute
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorSettings,
@@ -43,18 +30,16 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import source_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config import DockerSettings
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
+
+
+AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY = "azureml_step_operator"
 
 
 class AzureMLStepOperator(BaseStepOperator):
@@ -87,11 +72,11 @@ class AzureMLStepOperator(BaseStepOperator):
         """Validates the stack.
 
         Returns:
-            A validator that checks that the stack contains a remote artifact
-            store.
+            A validator that checks that the stack contains a remote container
+            registry and a remote artifact store.
         """
 
-        def _validate_remote_artifact_store(
+        def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
@@ -104,113 +89,75 @@ class AzureMLStepOperator(BaseStepOperator):
                     "step operator."
                 )
 
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The AzureML step operator runs code remotely and "
+                    "needs to push/pull Docker images, but the "
+                    f"container registry `{container_registry.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote container registry when using the "
+                    "AzureML step operator."
+                )
+
             return True, ""
 
         return StackValidator(
-            custom_validation_function=_validate_remote_artifact_store,
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
+            custom_validation_function=_validate_remote_components,
         )
 
-    def _get_authentication(self) -> Optional[AbstractAuthentication]:
+    def _get_credentials(self) -> TokenCredential:
         """Returns the authentication object for the AzureML environment.
 
         Returns:
             The authentication object for the AzureML environment.
         """
-        if (
+        # Authentication
+        if connector := self.get_connector():
+            credentials = connector.connect()
+            assert isinstance(credentials, TokenCredential)
+            return credentials
+        elif (
             self.config.tenant_id
             and self.config.service_principal_id
             and self.config.service_principal_password
         ):
-            return ServicePrincipalAuthentication(
+            return ClientSecretCredential(
                 tenant_id=self.config.tenant_id,
-                service_principal_id=self.config.service_principal_id,
-                service_principal_password=self.config.service_principal_password,
+                client_id=self.config.service_principal_id,
+                client_secret=self.config.service_principal_password,
             )
-        return None
+        else:
+            return DefaultAzureCredential()
 
-    def _prepare_environment(
-        self,
-        workspace: Workspace,
-        docker_settings: "DockerSettings",
-        run_name: str,
-        environment_variables: Dict[str, str],
-        environment_name: Optional[str] = None,
-    ) -> Environment:
-        """Prepares the environment in which Azure will run all jobs.
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
 
         Args:
-            workspace: The AzureML Workspace that has configuration
-                for a storage account, container registry among other
-                things.
-            docker_settings: The Docker settings for this step.
-            run_name: The name of the pipeline run that can be used
-                for naming environments and runs.
-            environment_variables: Environment variables to set in the
-                environment.
-            environment_name: Optional name of an existing environment to use.
+            deployment: The pipeline deployment for which to get the builds.
 
         Returns:
-            The AzureML Environment object.
+            The required Docker builds.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        requirements_files = docker_image_builder.gather_requirements_files(
-            docker_settings=docker_settings,
-            stack=Client().active_stack,
-            log=False,
-        )
-        requirements = list(
-            itertools.chain.from_iterable(
-                r[1].split("\n") for r in requirements_files
-            )
-        )
-        requirements.append(f"zenml=={zenml.__version__}")
-        logger.info(
-            "Using requirements for AzureML step operator environment: %s",
-            requirements,
-        )
-        if environment_name:
-            environment = Environment.get(
-                workspace=workspace, name=environment_name
-            )
-            if not environment.python.conda_dependencies:
-                environment.python.conda_dependencies = (
-                    CondaDependencies.create(
-                        python_version=ZenMLEnvironment.python_version()
-                    )
+        builds = []
+        for step_name, step in deployment.step_configurations.items():
+            if step.config.step_operator == self.name:
+                build = BuildConfiguration(
+                    key=AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    step_name=step_name,
                 )
+                builds.append(build)
 
-            for requirement in requirements:
-                environment.python.conda_dependencies.add_pip_package(
-                    requirement
-                )
-        else:
-            environment = Environment(name=f"zenml-{run_name}")
-            environment.python.conda_dependencies = CondaDependencies.create(
-                pip_packages=requirements,
-                python_version=ZenMLEnvironment.python_version(),
-            )
-
-            if docker_settings.parent_image:
-                # replace the default azure base image
-                environment.docker.base_image = docker_settings.parent_image
-
-        # set credentials to access azure storage
-        for key in [
-            "AZURE_STORAGE_ACCOUNT_KEY",
-            "AZURE_STORAGE_ACCOUNT_NAME",
-            "AZURE_STORAGE_CONNECTION_STRING",
-            "AZURE_STORAGE_SAS_TOKEN",
-        ]:
-            value = os.getenv(key)
-            if value:
-                environment_variables[key] = value
-
-        environment_variables[ENV_ZENML_CONFIG_PATH] = (
-            f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
-        )
-        environment_variables.update(docker_settings.environment)
-        environment.environment_variables = environment_variables
-        return environment
+        return builds
 
     def launch(
         self,
@@ -226,79 +173,33 @@ class AzureMLStepOperator(BaseStepOperator):
             environment: Environment variables to set in the step operator
                 environment.
         """
-        if not info.config.resource_settings.empty:
-            logger.warning(
-                "Specifying custom step resources is not supported for "
-                "the AzureML step operator. If you want to run this step "
-                "operator on specific resources, you can do so by creating an "
-                "Azure compute target (https://docs.microsoft.com/en-us/azure/machine-learning/concept-compute-target) "
-                "with a specific machine type and then updating this step "
-                "operator: `zenml step-operator update %s "
-                "--compute_target_name=<COMPUTE_TARGET_NAME>`",
-                self.name,
-            )
-
-        unused_docker_fields = [
-            "dockerfile",
-            "build_context_root",
-            "build_options",
-            "skip_build",
-            "target_repository",
-            "dockerignore",
-            "copy_files",
-            "copy_global_config",
-            "apt_packages",
-            "user",
-            "source_files",
-            "allow_including_files_in_images",
-            "allow_download_from_code_repository",
-            "allow_download_from_artifact_store",
-        ]
-        docker_settings = info.config.docker_settings
-        ignored_docker_fields = docker_settings.model_fields_set.intersection(
-            unused_docker_fields
-        )
-
-        if ignored_docker_fields:
-            logger.warning(
-                "The AzureML step operator currently does not support all "
-                "options defined in your Docker settings. Ignoring all "
-                "values set for the attributes: %s",
-                ignored_docker_fields,
-            )
-
         settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
+        image_name = info.get_image(key=AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
-        workspace = Workspace.get(
+        # Client creation
+        ml_client = MLClient(
+            credential=self._get_credentials(),
             subscription_id=self.config.subscription_id,
-            resource_group=self.config.resource_group,
-            name=self.config.workspace_name,
-            auth=self._get_authentication(),
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace_name,
         )
 
-        source_directory = source_utils.get_source_root()
+        env = Environment(name=f"zenml-{info.run_name}", image=image_name)
 
-        environment = self._prepare_environment(
-            workspace=workspace,
-            docker_settings=docker_settings,
-            run_name=info.run_name,
+        compute_target = create_or_get_compute(
+            ml_client, settings, default_compute_name=f"zenml_{self.id}"
+        )
+
+        command_job = command(
+            name=info.run_name,
+            command=" ".join(entrypoint_command),
+            environment=env,
             environment_variables=environment,
-            environment_name=settings.environment_name,
-        )
-        compute_target = ComputeTarget(
-            workspace=workspace, name=self.config.compute_target_name
+            compute=compute_target,
+            experiment_name=info.pipeline.name,
         )
 
-        run_config = ScriptRunConfig(
-            source_directory=source_directory,
-            environment=environment,
-            compute_target=compute_target,
-            command=entrypoint_command,
-        )
+        job = ml_client.jobs.create_or_update(command_job)
 
-        experiment = Experiment(workspace=workspace, name=info.pipeline.name)
-        run = experiment.submit(config=run_config)
-
-        run.display_name = info.run_name
-        info.force_write_logs()
-        run.wait_for_completion(show_output=True)
+        logger.info(f"AzureML job created with id: {job.id}")
+        ml_client.jobs.stream(info.run_name)

@@ -25,7 +25,8 @@ You should use the AzureML orchestrator if:
 The ZenML AzureML orchestrator implementation uses [the Python SDK v2 of 
 AzureML](https://learn.microsoft.com/en-gb/python/api/overview/azure/ai-ml-readme?view=azure-python) 
 to allow our users to build their Machine Learning pipelines. For each ZenML step,
-it creates an AzureML `[CommandComponent](https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.commandcomponent?view=azure-python)` and brings them together in a pipeline.
+it creates an AzureML [CommandComponent](https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.commandcomponent?view=azure-python)
+and brings them together in a pipeline.
 
 ## How to deploy it
 
@@ -97,7 +98,7 @@ and its execution logs.
 ## Settings
 
 The ZenML AzureML orchestrator comes with a dedicated class called 
-`AzureMLOrchestratorSettings` for configuring its settings and it controls
+`AzureMLOrchestratorSettings` for configuring its settings, and it controls
 the compute resources used for pipeline execution in AzureML.
 
 Currently, it supports three different modes of operation.
@@ -106,50 +107,111 @@ Currently, it supports three different modes of operation.
 - Set `mode` to `serverless`.
 - Other parameters are ignored.
 
+**Example:**
+
+```python
+from zenml import step, pipeline
+from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
+
+azureml_settings = AzureMLOrchestratorSettings(
+  mode="serverless"  # It's the default behaviour
+)
+
+@step
+def example_step() -> int:
+    return 3
+
+
+@pipeline(settings={"orchestrator.azureml": azureml_settings})
+def pipeline():
+    example_step()
+
+pipeline()
+```
+
 ### 2. Compute Instance
 - Set `mode` to `compute-instance`.
 - Requires a `compute_name`.
   - If a compute instance with the same name exists, it uses the existing 
-  compute instance and ignores other parameters.
+  compute instance and ignores other parameters. (It will throw a warning if the 
+  provided configuration does not match the existing instance.)
   - If a compute instance with the same name doesn't exist, it creates a 
   new compute instance with the `compute_name`. For this process, you can 
-  specify `compute_size` and `idle_type_before_shutdown_minutes`.
+  specify `size` and `idle_type_before_shutdown_minutes`.
+
+**Example:**
+
+```python
+from zenml import step, pipeline
+from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
+
+azureml_settings = AzureMLOrchestratorSettings(
+    mode="compute-instance",
+    compute_name="my-gpu-instance",  # Will fetch or create this instance
+    size="Standard_NC6s_v3",  # Using a NVIDIA Tesla V100 GPU
+    idle_time_before_shutdown_minutes=20,
+)
+
+@step
+def example_step() -> int:
+    return 3
+
+
+@pipeline(settings={"orchestrator.azureml": azureml_settings})
+def pipeline():
+    example_step()
+
+pipeline()
+```
 
 ### 3. Compute Cluster
 - Set `mode` to `compute-cluster`.
 - Requires a `compute_name`.
   - If a compute cluster with the same name exists, it uses existing cluster, 
-  ignores other parameters.
+  ignores other parameters. (It will throw a warning if the provided 
+  - configuration does not match the existing cluster.)
   - If a compute cluster with the same name doesn't exist, it creates a new 
   compute cluster. Additional parameters can be used for configuring this 
   process.
 
-Here is an example how you can use the `AzureMLOrchestratorSettings` to define 
-a compute instance:
+**Example:**
 
 ```python
+from zenml import step, pipeline
 from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
 
 azureml_settings = AzureMLOrchestratorSettings(
-    mode="compute-instance",
-    compute_name="MyComputeInstance",
+    mode="compute-cluster",
+    compute_name="my-gpu-cluster",  # Will fetch or create this instance
+    size="Standard_NC6s_v3",  # Using a NVIDIA Tesla V100 GPU
+    tier="Dedicated",  # Can be set to either "Dedicated" or "LowPriority"
+    min_instances=2,
+    max_instances=10,
+    idle_time_before_scaledown_down=60,
 )
 
+@step
+def example_step() -> int:
+    return 3
 
-@pipeline(
-   settings={
-       "orchestrator.azureml": azureml_settings
-   }
-)
+
+@pipeline(settings={"orchestrator.azureml": azureml_settings})
 def pipeline():
-    # YOUR PIPELINE CODE
-    ...
+    example_step()
+
+pipeline()
 ```
+
+{% hint style="info" %}
+In order to learn more about the supported sizes for compute instances and 
+clusters, you can check [the AzureML documentation](https://learn.microsoft.com/en-us/azure/machine-learning/concept-compute-target?view=azureml-api-2#supported-vm-series-and-sizes).
+{% endhint %}
 
 ### Run pipelines on a schedule
 
 The AzureML orchestrator supports running pipelines on a schedule using 
-its `[JobSchedules](https://learn.microsoft.com/en-us/azure/templates/microsoft.automation/2023-11-01/automationaccounts/jobschedules?pivots=deployment-language-bicep)`. Both cron expression and intervals are supported.
+its [JobSchedules](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-schedule-pipeline-job?view=azureml-api-2&tabs=python). 
+Both cron expression and intervals are supported.
 
 ```python
 from zenml.config.schedule import Schedule
