@@ -69,7 +69,8 @@ permissions and are aware of any potential costs:
 - An Azure Resource Group to contain all the resources required for the ZenML stack
 - An Azure Storage Account and Blob Storage Container registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/azure).
 - An Azure Container Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/azure).
-- An AzureML Workspace registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml) and used to run pipelines.
+- An AzureML Workspace registered as both a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml) and a
+[ZenML step operator](https://docs.zenml.io/stack-components/step-operators/azureml) and used to run pipelines.
 A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
 - An Azure Service Principal with the minimum necessary permissions to access
 the above resources.
