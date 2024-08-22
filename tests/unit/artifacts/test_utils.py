@@ -14,7 +14,6 @@
 import os
 import shutil
 import tempfile
-from uuid import uuid4
 
 import numpy as np
 import pytest
