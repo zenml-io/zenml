@@ -132,7 +132,9 @@ def pipeline_instance():
     s()
 
 
-pipeline_instance_source = f"{pipeline_instance.__module__}.pipeline_instance"
+# Use the step module here as the pipeline decorator does not create a class
+# in the target module
+pipeline_instance_source = f"{s.__module__}.pipeline_instance"
 
 
 def test_pipeline_registration_without_repo(clean_client):
@@ -168,7 +170,7 @@ def test_pipeline_registration_with_repo(clean_client: "Client"):
     # Correct source
     result = runner.invoke(register_command, [pipeline_instance_source])
     assert result.exit_code == 0
-    assert clean_client.list_pipelines(name="p").total == 1
+    assert clean_client.list_pipelines(name="pipeline_instance").total == 1
 
 
 def test_pipeline_build_without_repo(clean_client):

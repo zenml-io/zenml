@@ -151,11 +151,11 @@ class PipelineRunContext:
     def __enter__(self):
         self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
-            pipeline_instance.run(
+            pipeline_instance.with_options(
                 run_name=f"{self.pipeline_name}_{i}",
                 unlisted=True,
                 enable_step_logs=self.enable_step_logs,
-            )
+            )()
 
         # persist which runs, steps and artifact versions were produced.
         # In case the test ends up deleting some or all of these, this allows

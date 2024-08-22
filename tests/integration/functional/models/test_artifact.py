@@ -43,7 +43,10 @@ def test_default_artifact_name(clean_client: "Client", one_step_pipeline):
     pipeline_run = pipeline_instance()
     step_run = pipeline_run.steps["constant_int_output_test_step"]
     artifact = step_run.output
-    assert artifact.name == f"{pipeline_run.pipeline.name}::step_::output"
+    assert (
+        artifact.name
+        == f"{pipeline_run.pipeline.name}::constant_int_output_test_step::output"
+    )
 
 
 @step
@@ -75,7 +78,10 @@ def test_multi_output_artifact_names(
     artifact_1 = step_run.outputs["number_7"]
     artifact_2 = step_run.outputs["output_1"]
     assert artifact_1.name == "number_7"
-    assert artifact_2.name == f"{pipeline_run.pipeline.name}::step_::output_1"
+    assert (
+        artifact_2.name
+        == f"{pipeline_run.pipeline.name}::multi_output_test_step::output_1"
+    )
 
 
 @step
@@ -107,9 +113,9 @@ def test_artifact_versioning(clean_client: "Client", one_step_pipeline):
     assert str(artifact.version) == "1"
 
     # Manual version should be applied
-    pipeline_instance = one_step_pipeline(custom_artifact_name_test_step)
+    pipeline_instance = one_step_pipeline(manual_string_version_step)
     pipeline_run = pipeline_instance.with_options(enable_cache=False)()
-    step_run = pipeline_run.steps["custom_artifact_name_test_step"]
+    step_run = pipeline_run.steps["manual_string_version_step"]
     artifact = step_run.output
     assert artifact.version == "cat"
 
@@ -196,17 +202,17 @@ def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
     # Non-cached run: producer step is the step that was just run
     step_run = pipeline_run.steps["constant_int_output_test_step"]
     artifact = step_run.output
-    assert artifact.step == step_run
-    assert artifact.run == pipeline_run
+    assert artifact.step.id == step_run.id
+    assert artifact.run.id == pipeline_run.id
 
     # Cached run: producer step is the step that was cached
-    pipeline_run = pipeline_instance()
-    step_run_2 = pipeline_run.steps["constant_int_output_test_step"]
+    pipeline_run_2 = pipeline_instance()
+    step_run_2 = pipeline_run_2.steps["constant_int_output_test_step"]
     assert step_run_2.status == ExecutionStatus.CACHED
     assert step_run_2.original_step_run_id == step_run.id
     artifact_2 = step_run_2.output
-    assert artifact_2.step == step_run
-    assert artifact_2.run == pipeline_run
+    assert artifact_2.step.id == step_run.id
+    assert artifact_2.run.id == pipeline_run.id
 
 
 def test_disabling_artifact_visualization(

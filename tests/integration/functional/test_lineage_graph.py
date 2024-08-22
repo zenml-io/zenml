@@ -50,10 +50,10 @@ def test_generate_run_nodes_and_edges(
 
     # Create and retrieve a pipeline run
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
