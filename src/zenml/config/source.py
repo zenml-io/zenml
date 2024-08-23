@@ -69,6 +69,9 @@ class Source(BaseModel):
     attribute: Optional[str] = None
     type: SourceType
 
+    dynamic_decorator: Optional["Source"] = None
+    dynamic_decorator_kwargs: Optional[Dict[str, Any]] = {}
+
     @classmethod
     def from_import_path(
         cls, import_path: str, is_module_path: bool = False

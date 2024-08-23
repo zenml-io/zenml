@@ -21,6 +21,7 @@ from typing import Any, Callable, Iterator, List, Tuple, TypeVar, Union
 
 import click
 
+from zenml.constants import STEP_DECO_ORIGINAL_ENTRYPOINT
 from zenml.logger import get_logger
 from zenml.utils.string_utils import random_str
 
@@ -28,19 +29,21 @@ F = TypeVar("F", bound=Callable[..., None])
 
 logger = get_logger(__name__)
 
-_CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = """
+_CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = (
+    """
 from zenml.utils.function_utils import _cli_wrapped_function
 
 import sys
 sys.path.append(r"{func_path}")
 
 from {func_module} import {func_name} as step_function
-
-if unwrapped_entrypoint:=getattr(step_function, "unwrapped_entrypoint", None):
-    func = _cli_wrapped_function(unwrapped_entrypoint)
+"""
+    + f"""if {STEP_DECO_ORIGINAL_ENTRYPOINT}:=getattr(step_function, "{STEP_DECO_ORIGINAL_ENTRYPOINT}", None):
+    func = _cli_wrapped_function({STEP_DECO_ORIGINAL_ENTRYPOINT})
 else:
     func = _cli_wrapped_function(step_function.entrypoint)
 """
+)
 _CLI_WRAPPED_MAINS = {
     "accelerate": """
 if __name__=="__main__":

@@ -17,7 +17,7 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (  # type: ignore[import-untyped]
@@ -25,8 +25,13 @@ from accelerate.commands.launch import (  # type: ignore[import-untyped]
     launch_command_parser,
 )
 
-from zenml import get_pipeline_context
+from zenml.constants import (
+    STEP_DECO_DECORATOR_FUNCTION,
+    STEP_DECO_DECORATOR_KWARGS,
+    STEP_DECO_ORIGINAL_ENTRYPOINT,
+)
 from zenml.logger import get_logger
+from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.steps import BaseStep
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
 
@@ -37,11 +42,11 @@ F = TypeVar("F", bound=Callable[..., Any])
 def run_with_accelerate(
     step_function_top_level: Optional[BaseStep] = None,
     **accelerate_launch_kwargs: Any,
-) -> BaseStep:
+) -> Union[Callable[[BaseStep], BaseStep], BaseStep]:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
-    Example:
+    Example (functional):
         ```python
         from zenml import step, pipeline
         from zenml.integrations.hugginface.steps import run_with_accelerate
@@ -55,6 +60,22 @@ def run_with_accelerate(
             run_with_accelerate(training_step, num_processes=4)(some_param, ...)
         ```
 
+    Example (decoration):
+        ```python
+        from zenml import step, pipeline
+        from zenml.integrations.hugginface.steps import run_with_accelerate
+
+        @run_with_accelerate(num_processes=4)
+        @step
+        def training_step(some_param: int, ...):
+            # your training code is below
+            ...
+
+        @pipeline
+        def training_pipeline(some_param: int, ...):
+            training_step(some_param, ...)
+        ```
+
     Args:
         step_function_top_level: The step function to run with accelerate [optional].
             Used in functional calls like `run_with_accelerate(some_func,foo=bar)()`.
@@ -66,13 +87,9 @@ def run_with_accelerate(
 
     Returns:
         The accelerate-enabled version of the step.
-
-    Raises:
-        RuntimeError: If the decorator is misused.
-
     """
 
-    def _decorator(step_function: BaseStep):
+    def _decorator(step_function: BaseStep) -> BaseStep:
         def _wrapper(
             entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
         ) -> F:
@@ -135,23 +152,23 @@ def run_with_accelerate(
         except RuntimeError:
             pass
         else:
-            raise RuntimeError(
-                f"`{run_with_accelerate.__name__}` decorator cannot be used "
-                "in a functional way with steps, please apply decoration "
-                "directly to a step instead. This behavior will be also "
-                "allowed in future, but now it faces technical limitations.\n"
-                "Example (allowed):\n"
-                f"@{run_with_accelerate.__name__}(...)\n"
-                f"def {step_function.name}(...):\n"
-                "    ...\n"
-                "Example (not allowed):\n"
-                "def my_pipeline(...):\n"
-                f"    run_with_accelerate({step_function.name},...)(...)\n"
+            setattr(
+                step_function,
+                STEP_DECO_DECORATOR_FUNCTION,
+                run_with_accelerate,
+            )
+            setattr(
+                step_function,
+                STEP_DECO_DECORATOR_KWARGS,
+                accelerate_launch_kwargs,
             )
 
         setattr(
-            step_function, "unwrapped_entrypoint", step_function.entrypoint
+            step_function,
+            STEP_DECO_ORIGINAL_ENTRYPOINT,
+            step_function.entrypoint,
         )
+
         setattr(
             step_function,
             "entrypoint",

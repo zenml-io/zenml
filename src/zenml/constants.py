@@ -501,3 +501,8 @@ ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT = (
     "Organization page. If the tenant is PAUSED you can `Resume` it via UI "
     "and try again."
 )
+
+# Step decorators common objects used in setattr/getattr calls
+STEP_DECO_ORIGINAL_ENTRYPOINT = "undecorated_entrypoint"
+STEP_DECO_DECORATOR_FUNCTION = "dynamic_decorator"
+STEP_DECO_DECORATOR_KWARGS = "dynamic_decorator_kwargs"

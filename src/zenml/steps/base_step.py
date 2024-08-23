@@ -279,6 +279,15 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         obj = source_utils.load(source)
 
+        if isinstance(source, Source):
+            # apply the chain of decorators applied in the pipeline context directly
+            source_ = source
+            while source_.dynamic_decorator:
+                obj = source_utils.load(source_.dynamic_decorator)(
+                    obj, **source_.dynamic_decorator_kwargs
+                )
+                source_ = source_.dynamic_decorator
+
         if isinstance(obj, BaseStep):
             return obj
         elif isinstance(obj, type) and issubclass(obj, BaseStep):
