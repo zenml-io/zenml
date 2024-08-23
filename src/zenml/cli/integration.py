@@ -251,12 +251,17 @@ def install(
         force: Force the installation of the required packages.
         uv: Use uv for package installation (experimental).
     """
-    from zenml.cli.utils import is_uv_installed
+    from zenml.cli.utils import is_pip_installed, is_uv_installed
     from zenml.integrations.registry import integration_registry
 
     if uv and not is_uv_installed():
         error(
             "UV is not installed but the uv flag was passed in. Please install uv or remove the uv flag."
+        )
+
+    if not uv and not is_pip_installed():
+        error(
+            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
         )
 
     if not integrations:
@@ -346,11 +351,16 @@ def uninstall(
         force: Force the uninstallation of the required packages.
         uv: Use uv for package uninstallation (experimental).
     """
-    from zenml.cli.utils import is_uv_installed
+    from zenml.cli.utils import is_pip_installed, is_uv_installed
     from zenml.integrations.registry import integration_registry
 
     if uv and not is_uv_installed():
         error("Package `uv` is not installed. Please install it and retry.")
+
+    if not uv and not is_pip_installed():
+        error(
+            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
+        )
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -423,11 +433,16 @@ def upgrade(
         force: Force the installation of the required packages.
         uv: Use uv for package installation (experimental).
     """
-    from zenml.cli.utils import is_uv_installed
+    from zenml.cli.utils import is_pip_installed, is_uv_installed
     from zenml.integrations.registry import integration_registry
 
     if uv and not is_uv_installed():
         error("Package `uv` is not installed. Please install it and retry.")
+
+    if not uv and not is_pip_installed():
+        error(
+            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
+        )
 
     if not integrations:
         # no integrations specified, use all registered integrations

@@ -516,7 +516,7 @@ def list_pipeline_builds(**kwargs: Any) -> None:
     client = Client()
     try:
         with console.status("Listing pipeline builds...\n"):
-            pipeline_builds = client.list_builds(**kwargs)
+            pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
@@ -526,7 +526,14 @@ def list_pipeline_builds(**kwargs: Any) -> None:
 
         cli_utils.print_pydantic_models(
             pipeline_builds,
-            exclude_columns=["created", "updated", "user", "workspace"],
+            exclude_columns=[
+                "created",
+                "updated",
+                "user",
+                "workspace",
+                "images",
+                "stack_checksum",
+            ],
         )
 
 
