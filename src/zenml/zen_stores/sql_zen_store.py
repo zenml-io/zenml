@@ -7230,7 +7230,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If the full stack creation fails, due to the corrupted
                 input.
-            RuntimeError: If the full stack creation fails, due to unforeseen
+            Exception: If the full stack creation fails, due to unforeseen
                 errors.
         """
         with Session(self.engine) as session:
@@ -7516,7 +7516,7 @@ class SqlZenStore(BaseZenStore):
 
                 return new_stack_schema.to_model(include_metadata=True)
 
-            except Exception as e:
+            except Exception:
                 for component_id in components_created_ids:
                     self.delete_stack_component(component_id=component_id)
                 for service_connector_id in service_connectors_created_ids:
@@ -7527,10 +7527,7 @@ class SqlZenStore(BaseZenStore):
                     "Stack creation has failed. Cleaned up the entities "
                     "that are created in the process."
                 )
-                raise RuntimeError(
-                    f"Stack creation has failed {e}. Cleaning up the "
-                    f"created entities."
-                ) from e
+                raise
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
