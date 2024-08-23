@@ -101,7 +101,14 @@ def test_accelerate_runner_on_cpu_with_toy_model(clean_client):
 
 def test_accelerate_runner_fails_on_functional_use(clean_client):
     """Tests whether the run_with_accelerate wrapper works as expected."""
+
+    @pipeline(enable_cache=False)
+    def train_pipe():
+        model_dir = run_with_accelerate(train, num_processes=2, use_cpu=True)
+        # if it is StepArtifact, we are still composing the pipeline
+        if not isinstance(model_dir, StepArtifact):
+            assert isinstance(model_dir, str)
+            assert model_dir == "model_dir"
+
     with pytest.raises(RuntimeError):
-        train_accelerated = run_with_accelerate(
-            train, num_processes=2, use_cpu=True
-        )
+        train_pipe()
