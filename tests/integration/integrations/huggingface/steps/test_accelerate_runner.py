@@ -104,11 +104,7 @@ def test_accelerate_runner_fails_on_functional_use(clean_client):
 
     @pipeline(enable_cache=False)
     def train_pipe():
-        model_dir = run_with_accelerate(train, num_processes=2, use_cpu=True)
-        # if it is StepArtifact, we are still composing the pipeline
-        if not isinstance(model_dir, StepArtifact):
-            assert isinstance(model_dir, str)
-            assert model_dir == "model_dir"
+        _ = run_with_accelerate(train, num_processes=2, use_cpu=True)
 
     with pytest.raises(RuntimeError):
         train_pipe()
