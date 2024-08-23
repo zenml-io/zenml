@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 def add_badges(notebook_path: str, is_local: bool) -> str:
     if is_local:
         return ""
-    repo_name = os.environ.get('GITHUB_REPOSITORY', 'zenml-io/zenml')
+    repo_name = os.environ.get('GITHUB_REPOSITORY', '')
+    if not repo_name:
+        raise ValueError("GITHUB_REPOSITORY environment variable is not set")
     relative_path = os.path.relpath(notebook_path, start='tutorials')
     colab_badge = f"[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/{repo_name}/blob/main/tutorials/{relative_path})"
     local_badge = f"[![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/{repo_name})"
