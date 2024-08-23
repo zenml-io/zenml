@@ -35,10 +35,8 @@ from zenml.config.docker_settings import (
     PythonPackageInstaller,
 )
 from zenml.constants import (
-    ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
-    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
 from zenml.enums import OperatingSystemType
@@ -334,7 +332,6 @@ class PipelineDockerImageBuilder:
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
-                download_files=download_files,
                 requirements_files=requirements_files,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
@@ -563,7 +560,6 @@ class PipelineDockerImageBuilder:
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
-        download_files: bool,
         requirements_files: Sequence[Tuple[str, str, List[str]]] = (),
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
@@ -573,7 +569,6 @@ class PipelineDockerImageBuilder:
         Args:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
-            download_files: Whether to download files in the build context.
             requirements_files: List of tuples that contain three items:
                 - the name of a requirements file,
                 - the content of that file,
@@ -641,12 +636,6 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if download_files:
-            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
-
-        lines.append(
-            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
-        )
 
         lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
