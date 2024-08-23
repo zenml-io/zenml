@@ -49,7 +49,7 @@ def generate_suggested_toc(guide_type: str, converted_files: List[str]) -> str:
             toc += f"  * [{title}](user-guide/{guide_type.lower().replace(' ', '-')}/{file_name}.md)\n"
     return toc
 
-def process_guide(guide_type: str, is_local: bool) -> tuple[str, list[str], list[str]]:
+def process_guide(guide_type: str, is_local: bool) -> tuple[str, List[str], List[str]]:
     tutorials_dir = Path('tutorials')
     guide_dir = next((d for d in tutorials_dir.iterdir() if d.is_dir() and d.name.replace('-', ' ') == guide_type.lower()), None)
     
