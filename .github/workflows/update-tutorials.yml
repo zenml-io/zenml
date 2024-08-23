@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.11'
+        python-version: '3.8'
     
     - name: Install dependencies
       run: |
@@ -28,19 +28,30 @@ jobs:
       run: python scripts/update_gitbook.py
     
     - name: Create PR comment
-      uses: actions/github-script@v6
       if: success()
+      uses: actions/github-script@v6
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const suggestedToc = process.env.suggested_toc;
-          const deletedFiles = process.env.deleted_files.split(',');
-          const retainedFiles = process.env.retained_files.split(',');
+          const fs = require('fs');
+          const suggestedToc = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8')
+            .split('\n')
+            .find(line => line.startsWith('suggested_toc<<EOF'))
+            ?.split('EOF')[0]
+            .replace('suggested_toc<<EOF\n', '');
+          const deletedFiles = '${{ steps.update_gitbook.outputs.deleted_files }}'.split(',').filter(Boolean);
+          const retainedFiles = '${{ steps.update_gitbook.outputs.retained_files }}'.split(',').filter(Boolean);
           
           let comment = "## GitBook Update Summary\n\n";
-          comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
-          comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
-          comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
+          if (suggestedToc) {
+            comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
+          }
+          if (deletedFiles.length > 0) {
+            comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
+          }
+          if (retainedFiles.length > 0) {
+            comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
+          }
           comment += "Please review these changes and update the TOC.md file accordingly.";
           
           github.rest.issues.createComment({
@@ -51,8 +62,8 @@ jobs:
           });
 
     - name: PR Comment on Failure
-      uses: actions/github-script@v6
       if: failure()
+      uses: actions/github-script@v6
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |

@@ -101,11 +101,12 @@ def main():
         logger.info(f"Deleted files: {deleted_files}")
         logger.info(f"Retained files: {retained_files}")
         
+        # At the end of the main() function, add:
         if os.environ.get('GITHUB_ACTIONS'):
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write(f"suggested_toc<<EOF\n{suggested_toc}\nEOF\n")
-                f.write(f"deleted_files={','.join(deleted_files)}\n")
-                f.write(f"retained_files={','.join(retained_files)}\n")
+                f.write(f"deleted_files={','.join(deleted_files) if deleted_files else ''}\n")
+                f.write(f"retained_files={','.join(retained_files) if retained_files else ''}\n")
     
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
