@@ -1,0 +1,95 @@
+name: Update GitBook
+
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'tutorials/**'
+
+jobs:
+  update-gitbook:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
+      with:
+        fetch-depth: 0
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nbconvert pyyaml jupyter
+
+    - name: Clear notebook outputs
+      run: |
+        find tutorials -name "*.ipynb" -exec jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {} \;
+    
+    - name: Update GitBook
+      id: update_gitbook
+      run: python scripts/update_gitbook.py
+    
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add tutorials docs/book
+        git commit -m "Update GitBook content and clear notebook outputs" || echo "No changes to commit"
+        git push origin HEAD:${{ github.head_ref }}
+
+    - name: Create PR comment
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const fs = require('fs');
+          const suggestedToc = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8')
+            .split('\n')
+            .find(line => line.startsWith('suggested_toc<<EOF'))
+            ?.split('EOF')[0]
+            .replace('suggested_toc<<EOF\n', '');
+          const deletedFiles = '${{ steps.update_gitbook.outputs.deleted_files }}'.split(',').filter(Boolean);
+          const retainedFiles = '${{ steps.update_gitbook.outputs.retained_files }}'.split(',').filter(Boolean);
+          
+          let comment = "## GitBook Update Summary\n\n";
+          comment += "The GitBook content has been automatically updated based on the changes in the `tutorials/` directory. ";
+          comment += "Notebook outputs have been cleared in the `tutorials/` directory.\n\n";
+          if (suggestedToc) {
+            comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
+            comment += "Please update the `docs/book/toc.md` file with these changes.\n\n";
+          }
+          if (deletedFiles.length > 0) {
+            comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
+          }
+          if (retainedFiles.length > 0) {
+            comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
+          }
+          comment += "Please review these changes and make any necessary adjustments.";
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: comment
+          });
+
+    - name: PR Comment on Failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
+          });
