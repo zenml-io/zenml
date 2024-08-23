@@ -6,6 +6,7 @@ from pathlib import Path
 import nbconvert
 from traitlets.config import Config
 import tempfile
+from typing import List
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def convert_notebook_to_markdown(notebook_path: str, output_dir: str, is_local: 
     logger.info(f"Successfully converted {notebook_path} to {output_path}")
     return output_filename
 
-def generate_suggested_toc(guide_type: str, converted_files: list[str]) -> str:
+def generate_suggested_toc(guide_type: str, converted_files: List[str]) -> str:
     toc = f"## {guide_type}\n\n"
     toc += f"* [🐣 {guide_type}](user-guide/{guide_type.lower().replace(' ', '-')}/README.md)\n"
     for file in converted_files:
