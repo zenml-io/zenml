@@ -17,8 +17,7 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-import inspect
-from typing import Any, Callable, Dict, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (  # type: ignore[import-untyped]
@@ -35,6 +34,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def run_with_accelerate(
+    step_function_top_level: Optional[BaseStep] = None,
     **accelerate_launch_kwargs: Any,
 ) -> BaseStep:
     """Run a function with accelerate.
@@ -55,6 +55,8 @@ def run_with_accelerate(
         ```
 
     Args:
+        step_function_top_level: The step function to run with accelerate [optional].
+            Used in functional calls like `run_with_accelerate(some_func,foo=bar)()`.
         accelerate_launch_kwargs: A dictionary of arguments to pass along to the
             `accelerate launch` command, including hardware selection, resource
             allocation, and training paradigm options. Visit
@@ -127,21 +129,21 @@ def run_with_accelerate(
 
             return cast(F, inner)
 
-        if f"@{run_with_accelerate.__name__}" not in inspect.getsource(
-            step_function.entrypoint
-        ):
-            raise RuntimeError(
-                f"`{run_with_accelerate.__name__}` decorator cannot be used "
-                "in a functional way with steps, please apply decoration "
-                "directly to a step instead.\n"
-                "Example (allowed):\n"
-                f"@{run_with_accelerate.__name__}(...)\n"
-                f"def {step_function.name}(...):\n"
-                "    ...\n"
-                "Example (not allowed):\n"
-                "def my_pipeline(...):\n"
-                f"    run_with_accelerate({step_function.name},...)(...)\n"
-            )
+        # if f"@{run_with_accelerate.__name__}" not in inspect.getsource(
+        #     step_function.entrypoint
+        # ):
+        #     raise RuntimeError(
+        #         f"`{run_with_accelerate.__name__}` decorator cannot be used "
+        #         "in a functional way with steps, please apply decoration "
+        #         "directly to a step instead.\n"
+        #         "Example (allowed):\n"
+        #         f"@{run_with_accelerate.__name__}(...)\n"
+        #         f"def {step_function.name}(...):\n"
+        #         "    ...\n"
+        #         "Example (not allowed):\n"
+        #         "def my_pipeline(...):\n"
+        #         f"    run_with_accelerate({step_function.name},...)(...)\n"
+        #     )
 
         setattr(
             step_function, "unwrapped_entrypoint", step_function.entrypoint
@@ -157,4 +159,6 @@ def run_with_accelerate(
 
         return step_function
 
+    if step_function_top_level:
+        return _decorator(step_function_top_level)
     return _decorator

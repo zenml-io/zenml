@@ -36,7 +36,10 @@ sys.path.append(r"{func_path}")
 
 from {func_module} import {func_name} as step_function
 
-func = _cli_wrapped_function(step_function.unwrapped_entrypoint)
+if unwrapped_entrypoint:=getattr(step_function, "unwrapped_entrypoint", None):
+    func = _cli_wrapped_function(unwrapped_entrypoint)
+else:
+    func = _cli_wrapped_function(step_function.entrypoint)
 """
 _CLI_WRAPPED_MAINS = {
     "accelerate": """
