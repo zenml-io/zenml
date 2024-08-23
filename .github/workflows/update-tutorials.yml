@@ -1,4 +1,4 @@
-name: Update Tutorials
+name: Update GitBook
 
 on:
   pull_request:
@@ -7,29 +7,43 @@ on:
     paths:
       - 'tutorials/**'
 
-permissions:
-  pull-requests: write
-
 jobs:
   update-gitbook:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
       with:
-        python-version: '3.11'
+        fetch-depth: 0
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install nbconvert pyyaml
+        pip install nbconvert pyyaml jupyter
+
+    - name: Clear notebook outputs
+      run: |
+        find tutorials -name "*.ipynb" -exec jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {} \;
     
     - name: Update GitBook
       id: update_gitbook
       run: python scripts/update_gitbook.py
     
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add tutorials docs/book
+        git commit -m "Update GitBook content and clear notebook outputs" || echo "No changes to commit"
+        git push origin HEAD:${{ github.head_ref }}
+
     - name: Create PR comment
       if: success()
       uses: actions/github-script@v6
@@ -46,8 +60,11 @@ jobs:
           const retainedFiles = '${{ steps.update_gitbook.outputs.retained_files }}'.split(',').filter(Boolean);
           
           let comment = "## GitBook Update Summary\n\n";
+          comment += "The GitBook content has been automatically updated based on the changes in the `tutorials/` directory. ";
+          comment += "Notebook outputs have been cleared in the `tutorials/` directory.\n\n";
           if (suggestedToc) {
             comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
+            comment += "Please update the `docs/book/toc.md` file with these changes.\n\n";
           }
           if (deletedFiles.length > 0) {
             comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
@@ -55,7 +72,7 @@ jobs:
           if (retainedFiles.length > 0) {
             comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
           }
-          comment += "Please review these changes and update the TOC.md file accordingly.";
+          comment += "Please review these changes and make any necessary adjustments.";
           
           github.rest.issues.createComment({
             issue_number: context.issue.number,
