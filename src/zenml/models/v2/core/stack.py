@@ -30,7 +30,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.misc.full_stack import ComponentInfo, ServiceConnectorInfo
+from zenml.models.v2.misc.info_models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement

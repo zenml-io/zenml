@@ -74,15 +74,16 @@ from zenml.exceptions import (
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.models import StackFilter, StackRequest
-from zenml.models.v2.core.service_connector import (
-    ServiceConnectorRequest,
-    ServiceConnectorResponse,
-)
-from zenml.models.v2.misc.full_stack import (
+from zenml.models import (
     ComponentInfo,
     ServiceConnectorInfo,
     ServiceConnectorResourcesInfo,
+    StackFilter,
+    StackRequest,
+)
+from zenml.models.v2.core.service_connector import (
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
 )
 from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,
