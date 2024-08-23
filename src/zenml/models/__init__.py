@@ -389,6 +389,12 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.full_stack import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+    ResourcesInfo,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -449,6 +455,7 @@ ServiceConnectorResponseMetadata.model_rebuild()
 StackRequest.model_rebuild()
 StackResponseBody.model_rebuild()
 StackResponseMetadata.model_rebuild()
+StackResponse.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
@@ -457,6 +464,10 @@ TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
 TriggerResponseResources.model_rebuild()
 TriggerResponseResources.model_rebuild()
+ComponentInfo.model_rebuild()
+ServiceConnectorInfo.model_rebuild()
+ServiceConnectorResourcesInfo.model_rebuild()
+ResourcesInfo.model_rebuild()
 
 
 __all__ = [
@@ -738,4 +749,8 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
+    "ComponentInfo",
+    "ServiceConnectorInfo",
+    "ServiceConnectorResourcesInfo",
+    "ResourcesInfo",
 ]

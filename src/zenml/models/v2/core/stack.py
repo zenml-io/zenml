@@ -30,11 +30,12 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.core.component import ComponentResponse
 from zenml.models.v2.misc.full_stack import ComponentInfo, ServiceConnectorInfo
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.models.v2.core.component import ComponentResponse
 
 
 # ------------------ Request Model ------------------
@@ -155,7 +156,7 @@ class StackResponseBody(WorkspaceScopedResponseBody):
 class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for stacks."""
 
-    components: Dict[StackComponentType, List[ComponentResponse]] = Field(
+    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
@@ -282,7 +283,9 @@ class StackResponse(
         return self.get_metadata().stack_spec_path
 
     @property
-    def components(self) -> Dict[StackComponentType, List[ComponentResponse]]:
+    def components(
+        self,
+    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
         """The `components` property.
 
         Returns:
