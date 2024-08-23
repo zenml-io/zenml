@@ -25,6 +25,7 @@ from accelerate.commands.launch import (  # type: ignore[import-untyped]
     launch_command_parser,
 )
 
+from zenml import get_pipeline_context
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
@@ -129,21 +130,24 @@ def run_with_accelerate(
 
             return cast(F, inner)
 
-        # if f"@{run_with_accelerate.__name__}" not in inspect.getsource(
-        #     step_function.entrypoint
-        # ):
-        #     raise RuntimeError(
-        #         f"`{run_with_accelerate.__name__}` decorator cannot be used "
-        #         "in a functional way with steps, please apply decoration "
-        #         "directly to a step instead.\n"
-        #         "Example (allowed):\n"
-        #         f"@{run_with_accelerate.__name__}(...)\n"
-        #         f"def {step_function.name}(...):\n"
-        #         "    ...\n"
-        #         "Example (not allowed):\n"
-        #         "def my_pipeline(...):\n"
-        #         f"    run_with_accelerate({step_function.name},...)(...)\n"
-        #     )
+        try:
+            get_pipeline_context()
+        except RuntimeError:
+            pass
+        else:
+            raise RuntimeError(
+                f"`{run_with_accelerate.__name__}` decorator cannot be used "
+                "in a functional way with steps, please apply decoration "
+                "directly to a step instead. This behavior will be also "
+                "allowed in future, but now it faces technical limitations.\n"
+                "Example (allowed):\n"
+                f"@{run_with_accelerate.__name__}(...)\n"
+                f"def {step_function.name}(...):\n"
+                "    ...\n"
+                "Example (not allowed):\n"
+                "def my_pipeline(...):\n"
+                f"    run_with_accelerate({step_function.name},...)(...)\n"
+            )
 
         setattr(
             step_function, "unwrapped_entrypoint", step_function.entrypoint
