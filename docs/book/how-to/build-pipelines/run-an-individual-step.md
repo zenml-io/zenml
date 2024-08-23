@@ -4,6 +4,11 @@ If you want to run just an invividual step on your stack, you can simply call th
 as you would with a normal Python function. ZenML will internally create a pipeline with just your step
 and run it on the active stack.
 
+{% hint style="info" %}
+The pipeline run that will happen to execute your step will be `unlisted`, which means it
+will not be associated with any pipeline.
+{% endhint %}
+
 ```python
 from zenml import step
 import pandas as pd
