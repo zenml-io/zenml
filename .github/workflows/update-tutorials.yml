@@ -1,0 +1,64 @@
+name: Update GitBook
+
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'tutorials/**'
+
+jobs:
+  update-gitbook:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nbconvert pyyaml
+    
+    - name: Update GitBook
+      id: update_gitbook
+      run: python scripts/update_gitbook.py
+    
+    - name: Create PR comment
+      uses: actions/github-script@v6
+      if: success()
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const suggestedToc = process.env.suggested_toc;
+          const deletedFiles = process.env.deleted_files.split(',');
+          const retainedFiles = process.env.retained_files.split(',');
+          
+          let comment = "## GitBook Update Summary\n\n";
+          comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
+          comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
+          comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
+          comment += "Please review these changes and update the TOC.md file accordingly.";
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: comment
+          });
+
+    - name: PR Comment on Failure
+      uses: actions/github-script@v6
+      if: failure()
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
+          });
