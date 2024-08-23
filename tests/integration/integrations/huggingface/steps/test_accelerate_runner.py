@@ -16,7 +16,6 @@ import os
 import shutil
 from pathlib import Path
 
-import pytest
 import transformers
 from accelerate import Accelerator
 from datasets import load_from_disk
@@ -78,7 +77,9 @@ def train() -> str:
 train_accelerated = run_with_accelerate(train, num_processes=2, use_cpu=True)
 
 
-def test_accelerate_runner_on_cpu_with_toy_model(clean_client):
+def test_accelerate_runner_works_as_decorator_on_cpu_with_toy_model(
+    clean_client,
+):
     """Tests whether the run_with_accelerate wrapper works as expected."""
 
     @pipeline(enable_cache=False)
@@ -99,12 +100,24 @@ def test_accelerate_runner_on_cpu_with_toy_model(clean_client):
             shutil.rmtree(each)
 
 
-def test_accelerate_runner_fails_on_functional_use(clean_client):
+def test_accelerate_runner_works_functionally_on_cpu_with_toy_model(
+    clean_client,
+):
     """Tests whether the run_with_accelerate wrapper works as expected."""
 
     @pipeline(enable_cache=False)
     def train_pipe():
-        _ = run_with_accelerate(train, num_processes=2, use_cpu=True)
+        model_dir = run_with_accelerate(train, num_processes=2, use_cpu=True)
+        # if it is StepArtifact, we are still composing the pipeline
+        if not isinstance(model_dir, StepArtifact):
+            assert isinstance(model_dir, str)
+            assert model_dir == "model_dir"
 
-    with pytest.raises(RuntimeError):
-        train_pipe()
+    try:
+        prev_files = os.listdir()
+        response = train_pipe()
+        assert response.status.lower() == "completed"
+    finally:
+        cur_files = os.listdir()
+        for each in set(cur_files) - set(prev_files):
+            shutil.rmtree(each)
