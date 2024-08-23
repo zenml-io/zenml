@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import materializers
 from steps import (
     evaluate_model,
     load_data,
@@ -28,6 +29,8 @@ from zenml import pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+assert materializers  # Ensure materializers are loaded
 
 
 @pipeline

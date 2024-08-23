@@ -1,7 +1,8 @@
 # Environment configuration
 settings:
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.64.0-py3.11"
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.64.0-py3.11-azure"
+    skip_build: False
 # Uncomment the following two lines to specify the accelerator for your skypilot vm orchestrator
 #  orchestrator.vm_azure:
 #    instance_type: 'Standard_NC6'

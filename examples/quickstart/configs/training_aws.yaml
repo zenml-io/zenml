@@ -5,7 +5,8 @@ settings:
   resources:
     memory: 64GB
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.64.0-py3.11"
+    parent_image: "339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-0.64.0-py3.11-aws" # "public.ecr.aws/f7g3v0f1/zenml-public-pipelines:quickstart-0.64.0-py3.11-aws"
+    skip_build: True
 # Uncomment the following two lines to specify the accelerator for your aws orchestrator
   orchestrator.sagemaker:
     instance_type: ml.m5.4xlarge
