@@ -53,10 +53,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DOCKER_IMAGE_WORKDIR = "/app"
-DOCKER_IMAGE_ZENML_CONFIG_DIR = ".zenconfig"
-DOCKER_IMAGE_ZENML_CONFIG_PATH = (
-    f"{DOCKER_IMAGE_WORKDIR}/{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
-)
 
 DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
