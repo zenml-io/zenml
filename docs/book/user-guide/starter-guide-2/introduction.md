@@ -2,8 +2,6 @@
 
 # 🐣 Starter guide
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-repo/zenml-docs/blob/main/notebooks/01_introduction.ipynb) [![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/your-repo/zenml-docs)
-
 Welcome to the ZenML Starter Guide! If you're an MLOps engineer aiming to build robust ML platforms, or a data scientist interested in leveraging the power of MLOps, this is the perfect place to begin. Our guide is designed to provide you with the foundational knowledge of the ZenML framework and equip you with the initial tools to manage the complexity of machine learning operations.
 
 ![Embarking on MLOps can be intricate. ZenML simplifies the journey.](../../.gitbook/assets/01_pipeline.png)
