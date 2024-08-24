@@ -1,15 +1,16 @@
 import argparse
+import filecmp
+import logging
 import os
 import shutil
+import sys
+import tempfile
+import traceback
 from pathlib import Path
+from typing import Dict, List, Tuple
+
 import nbconvert
 from traitlets.config import Config
-import tempfile
-from typing import List, Tuple, Dict
-import logging
-import filecmp
-import sys
-import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,9 +28,7 @@ def add_badges(notebook_path: Path, is_local: bool) -> str:
     """
     if is_local:
         return ""
-    repo_name = os.environ.get("GITHUB_REPOSITORY", "")
-    if not repo_name:
-        raise ValueError("GITHUB_REPOSITORY environment variable is not set")
+    repo_name = os.environ.get("GITHUB_REPOSITORY", "zenml-io/zenml")
     relative_path = notebook_path.relative_to("tutorials")
     colab_badge = f"[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/{repo_name}/blob/main/tutorials/{relative_path})"
     local_badge = f"[![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/{repo_name})"
