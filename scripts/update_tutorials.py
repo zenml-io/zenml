@@ -57,14 +57,20 @@ def convert_notebook_to_markdown(
     exporter = nbconvert.MarkdownExporter(config=c)
     output, _ = exporter.from_filename(str(notebook_path))
 
-    # Calculate the relative path from the output markdown to the .gitbook/assets directory
+    # Define the target location of the rendered markdown
+    target_markdown_dir = Path("docs/book/user-guide/starter-guide-2")
+
+    # Define the location of the .gitbook/assets directory
     gitbook_assets = Path("docs/book/.gitbook/assets")
-    relative_path = os.path.relpath(gitbook_assets, output_dir)
+
+    # Calculate the relative path from the target markdown to the .gitbook/assets directory
+    relative_path = os.path.relpath(gitbook_assets, target_markdown_dir)
 
     # Adjust image paths
     def replace_path(match):
         old_path = match.group(1)
-        new_path = str(Path(relative_path) / Path(old_path).name)
+        image_name = Path(old_path).name
+        new_path = str(Path(relative_path) / image_name)
         return f"]({new_path}"
 
     output = re.sub(r"\]\((.*?\.gitbook/assets/[^)]+)", replace_path, output)
