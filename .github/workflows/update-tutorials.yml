@@ -36,7 +36,7 @@ jobs:
     - name: Update Tutorials
       id: update_tutorials
       run: python scripts/update_tutorials.py
-    
+
     - name: Check for changes
       id: git-check
       run: |
@@ -91,7 +91,8 @@ jobs:
           // Add suggested TOC for each guide type
           const guideTypes = ['starter_guide', 'advanced_guide']; // Add all your guide types here
           guideTypes.forEach(guideType => {
-            const suggestedToc = process.env[`suggested_toc_${guideType}`];
+            const suggestedTocKey = `suggested_toc_${guideType}`;
+            const suggestedToc = process.env[suggestedTocKey];
             if (suggestedToc) {
               commentBody += `### Suggested TOC for ${guideType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:\n\n`;
               commentBody += '```\n' + suggestedToc + '\n```\n\n';

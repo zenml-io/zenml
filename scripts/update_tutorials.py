@@ -115,19 +115,27 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
         converted_files = []
         updated_files = []
         for notebook_path in sorted(guide_dir.glob("*.ipynb")):
-            output_filename = convert_notebook_to_markdown(notebook_path, temp_dir, is_local)
+            output_filename = convert_notebook_to_markdown(
+                notebook_path, temp_dir, is_local
+            )
             converted_files.append(output_filename)
-            
+
             # Check if the file is new or has been modified
             output_path = output_dir / output_filename
-            if not output_path.exists() or not filecmp.cmp(temp_dir / output_filename, output_path):
+            if not output_path.exists() or not filecmp.cmp(
+                temp_dir / output_filename, output_path
+            ):
                 updated_files.append(output_filename)
 
         if not converted_files:
             logger.warning(f"No files were converted for {guide_type}")
             continue
 
-        existing_files = [f.name for f in output_dir.glob("*.md")] if output_dir.exists() else []
+        existing_files = (
+            [f.name for f in output_dir.glob("*.md")]
+            if output_dir.exists()
+            else []
+        )
         retained_files = existing_files
 
         suggested_toc = generate_suggested_toc(guide_type, converted_files)
@@ -148,26 +156,39 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
 
 def main():
     """Main function to update the GitBook content from Jupyter notebooks."""
-    parser = argparse.ArgumentParser(description="Update GitBook content from Jupyter notebooks.")
-    parser.add_argument("--local", action="store_true", help="Run in local mode (skips adding badges)")
+    parser = argparse.ArgumentParser(
+        description="Update GitBook content from Jupyter notebooks."
+    )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Run in local mode (skips adding badges)",
+    )
     args = parser.parse_args()
 
     try:
         logger.info("Starting to process tutorials...")
         results = process_tutorials(args.local)
 
+        if os.environ.get("GITHUB_ACTIONS"):
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                for guide_type, (
+                    suggested_toc,
+                    retained_files,
+                ) in results.items():
+                    safe_guide_type = guide_type.lower().replace(" ", "_")
+                    f.write(
+                        f"suggested_toc_{safe_guide_type}<<EOF\n{suggested_toc}\nEOF\n"
+                    )
+                    f.write(
+                        f"retained_files_{safe_guide_type}={','.join(retained_files) if retained_files else ''}\n"
+                    )
+
         for guide_type, (suggested_toc, retained_files) in results.items():
             logger.info(f"Processed guide: {guide_type}")
             logger.info(f"Suggested TOC for {guide_type}:\n{suggested_toc}")
             logger.info(f"Retained files: {retained_files}")
 
-        if os.environ.get("GITHUB_ACTIONS"):
-            logger.info("Writing output for GitHub Actions...")
-            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                for guide_type, (suggested_toc, retained_files) in results.items():
-                    f.write(f"suggested_toc_{guide_type.lower().replace(' ', '_')}<<EOF\n{suggested_toc}\nEOF\n")
-                    f.write(f"retained_files_{guide_type.lower().replace(' ', '_')}={','.join(retained_files) if retained_files else ''}\n")
-        
         logger.info("Tutorial processing completed successfully.")
 
     except Exception as e:
