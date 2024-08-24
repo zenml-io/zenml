@@ -7,6 +7,7 @@ from traitlets.config import Config
 import tempfile
 from typing import List, Tuple, Dict
 import logging
+import filecmp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,15 +89,15 @@ def generate_suggested_toc(guide_type: str, converted_files: List[str]) -> str:
     return toc
 
 
-def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str], List[str]]]:
+def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
     """Process all tutorial directories by converting notebooks to markdown and updating the table of contents.
 
     Args:
         is_local (bool): Flag indicating if running locally.
 
     Returns:
-        Dict[str, Tuple[str, List[str], List[str]]]: Dictionary with guide names as keys and tuples of
-        (suggested table of contents, deleted files, and retained files) as values.
+        Dict[str, Tuple[str, List[str]]]: Dictionary with guide names as keys and tuples of
+        (suggested table of contents, and retained files) as values.
     """
     tutorials_dir = Path("tutorials")
     results = {}
@@ -110,32 +111,35 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str], List[st
         temp_dir = Path(tempfile.mkdtemp())
 
         converted_files = []
+        updated_files = []
         for notebook_path in sorted(guide_dir.glob("*.ipynb")):
             output_filename = convert_notebook_to_markdown(notebook_path, temp_dir, is_local)
             converted_files.append(output_filename)
+            
+            # Check if the file is new or has been modified
+            output_path = output_dir / output_filename
+            if not output_path.exists() or not filecmp.cmp(temp_dir / output_filename, output_path):
+                updated_files.append(output_filename)
 
         if not converted_files:
             logger.warning(f"No files were converted for {guide_type}")
             continue
 
         existing_files = [f.name for f in output_dir.glob("*.md")] if output_dir.exists() else []
-        deleted_files = [f for f in existing_files if f not in converted_files]
-        retained_files = [f for f in existing_files if f in converted_files]
+        retained_files = existing_files
 
         suggested_toc = generate_suggested_toc(guide_type, converted_files)
 
-        # Update the actual output directory
+        # Update only the changed files
         output_dir.mkdir(parents=True, exist_ok=True)
-        for file in output_dir.glob("*.md"):
-            if file.name not in converted_files:
-                file.unlink()
-
-        for file in converted_files:
+        for file in updated_files:
             shutil.copy(temp_dir / file, output_dir / file)
+            if file not in existing_files:
+                retained_files.append(file)
 
         shutil.rmtree(temp_dir)
 
-        results[guide_type] = (suggested_toc, deleted_files, retained_files)
+        results[guide_type] = (suggested_toc, retained_files)
 
     return results
 
@@ -149,16 +153,14 @@ def main():
     try:
         results = process_tutorials(args.local)
 
-        for guide_type, (suggested_toc, deleted_files, retained_files) in results.items():
+        for guide_type, (suggested_toc, retained_files) in results.items():
             logger.info(f"Suggested TOC for {guide_type}:\n{suggested_toc}")
-            logger.info(f"Deleted files: {deleted_files}")
             logger.info(f"Retained files: {retained_files}")
 
         if os.environ.get("GITHUB_ACTIONS"):
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                for guide_type, (suggested_toc, deleted_files, retained_files) in results.items():
+                for guide_type, (suggested_toc, retained_files) in results.items():
                     f.write(f"suggested_toc_{guide_type.lower().replace(' ', '_')}<<EOF\n{suggested_toc}\nEOF\n")
-                    f.write(f"deleted_files_{guide_type.lower().replace(' ', '_')}={','.join(deleted_files) if deleted_files else ''}\n")
                     f.write(f"retained_files_{guide_type.lower().replace(' ', '_')}={','.join(retained_files) if retained_files else ''}\n")
 
     except Exception as e:
