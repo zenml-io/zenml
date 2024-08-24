@@ -67,55 +67,38 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          console.log('Event payload:', JSON.stringify(context.payload, null, 2));
+          const prNumber = context.payload.pull_request.number;
+          console.log(`PR number: ${prNumber}`);
           
-          const fs = require('fs');
-          const output = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8');
-          const lines = output.split('\n');
-          
-          let comment = "## GitBook Update Summary\n\n";
-          comment += "The GitBook content has been automatically updated based on the changes in the `tutorials/` directory. ";
-          comment += "Notebook outputs have been cleared in the `tutorials/` directory.\n\n";
-          
-          lines.forEach(line => {
-            if (line.startsWith('suggested_toc_')) {
-              const [key, value] = line.split('<<EOF');
-              const guideType = key.replace('suggested_toc_', '').replace(/_/g, ' ');
-              comment += `### Suggested TOC for ${guideType}:\n\`\`\`markdown\n${value.trim()}\n\`\`\`\n\n`;
-            } else if (line.startsWith('deleted_files_') || line.startsWith('retained_files_')) {
-              const [key, value] = line.split('=');
-              const [type, guideType] = key.split('_', 2);
-              const files = value.split(',').filter(Boolean);
-              if (files.length > 0) {
-                comment += `### ${type === 'deleted' ? 'Deleted' : 'Retained'} Files for ${guideType.replace(/_/g, ' ')}:\n${files.join(", ")}\n\n`;
-              }
-            }
-          });
-          
-          comment += "Please review these changes and make any necessary adjustments.";
-          
-          const prNumber = context.payload.pull_request ? context.payload.pull_request.number : context.issue.number;
-          
-          await github.rest.issues.createComment({
-            issue_number: prNumber,
-            owner: context.repo.owner,
-            repo: context.repo.name,
-            body: comment
-          });
+          try {
+            await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'The GitBook content has been successfully updated.'
+            });
+          } catch (error) {
+            console.error('Error creating comment:', error);
+            core.setFailed(`Failed to create comment: ${error.message}`);
+          }
 
-    - name: PR Comment on Failure
+    - name: Create PR comment on failure
       if: failure()
       uses: actions/github-script@v7
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          console.log('Event payload:', JSON.stringify(context.payload, null, 2));
+          const prNumber = context.payload.pull_request.number;
+          console.log(`PR number: ${prNumber}`);
           
-          const prNumber = context.payload.pull_request ? context.payload.pull_request.number : context.issue.number;
-          
-          await github.rest.issues.createComment({
-            issue_number: prNumber,
-            owner: context.repo.owner,
-            repo: context.repo.name,
-            body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
-          });
+          try {
+            await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
+            });
+          } catch (error) {
+            console.error('Error creating comment:', error);
+            core.setFailed(`Failed to create comment: ${error.message}`);
+          }
