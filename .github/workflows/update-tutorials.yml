@@ -80,16 +80,10 @@ jobs:
 
     - name: Create PR comment
       if: steps.git-check.outputs.changes == 'true'
-      env:
-        SUGGESTED_TOC_STARTER_GUIDE: ${{ steps.update_tutorials.outputs.suggested_toc_starter_guide }}
-        SUGGESTED_TOC_ADVANCED_GUIDE: ${{ steps.update_tutorials.outputs.suggested_toc_advanced_guide }}
       uses: actions/github-script@v7
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          console.log('Starter Guide TOC:', process.env.SUGGESTED_TOC_STARTER_GUIDE);
-          console.log('Advanced Guide TOC:', process.env.SUGGESTED_TOC_ADVANCED_GUIDE);
-          
           const prNumber = context.payload.pull_request.number;
           const changedFiles = `${{ steps.git-check.outputs.changed_files }}`.split('\n');
           
@@ -99,17 +93,6 @@ jobs:
             commentBody += `- \`${file}\`\n`;
           });
           commentBody += '\nPlease review these changes.\n\n';
-          
-          // Add suggested TOC for each guide type
-          const guideTypes = ['starter_guide', 'advanced_guide']; // Add all your guide types here
-          guideTypes.forEach(guideType => {
-            const suggestedTocKey = `steps.update_tutorials.outputs.suggested_toc_${guideType}`;
-            const suggestedToc = process.env[suggestedTocKey];
-            if (suggestedToc) {
-              commentBody += `### Suggested TOC for ${guideType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:\n\n`;
-              commentBody += '```\n' + suggestedToc + '\n```\n\n';
-            }
-          });
           
           try {
             await github.rest.issues.createComment({
