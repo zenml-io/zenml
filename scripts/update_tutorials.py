@@ -32,7 +32,7 @@ def add_badges(notebook_path: Path, is_local: bool) -> str:
     repo_name = os.environ.get("GITHUB_REPOSITORY", "zenml-io/zenml")
     relative_path = notebook_path.relative_to("tutorials")
     colab_badge = f"[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/{repo_name}/blob/main/tutorials/{relative_path})"
-    local_badge = f"[![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/{repo_name})"
+    local_badge = f"[![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/{repo_name}/blob/main/tutorials/{relative_path})"
     return f"{colab_badge} {local_badge}\n\n"
 
 
