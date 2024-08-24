@@ -16,6 +16,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4.1.1
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+
     - name: Set up Python 3.9
       uses: actions/setup-python@v5.0.0
       with:
@@ -34,13 +37,29 @@ jobs:
       id: update_gitbook
       run: python scripts/update_gitbook.py
     
-    - name: Commit changes
+    - name: Configure Git
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+
+    - name: Commit changes
+      run: |
         git add tutorials docs/book
-        git commit -m "Update GitBook content and clear notebook outputs" || echo "No changes to commit"
-        git push origin HEAD:${{ github.head_ref }}
+        git diff-index --quiet HEAD || git commit -m "Update GitBook content and clear notebook outputs"
+
+    - name: Fetch latest changes
+      run: git fetch origin ${{ github.head_ref }}
+
+    - name: Merge latest changes
+      run: |
+        git checkout ${{ github.head_ref }}
+        git merge --no-edit origin/${{ github.head_ref }}
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.head_ref }}
 
     - name: Create PR comment
       if: success()
@@ -49,27 +68,28 @@ jobs:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const fs = require('fs');
-          const suggestedToc = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8')
-            .split('\n')
-            .find(line => line.startsWith('suggested_toc<<EOF'))
-            ?.split('EOF')[0]
-            .replace('suggested_toc<<EOF\n', '');
-          const deletedFiles = '${{ steps.update_gitbook.outputs.deleted_files }}'.split(',').filter(Boolean);
-          const retainedFiles = '${{ steps.update_gitbook.outputs.retained_files }}'.split(',').filter(Boolean);
+          const output = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8');
+          const lines = output.split('\n');
           
           let comment = "## GitBook Update Summary\n\n";
           comment += "The GitBook content has been automatically updated based on the changes in the `tutorials/` directory. ";
           comment += "Notebook outputs have been cleared in the `tutorials/` directory.\n\n";
-          if (suggestedToc) {
-            comment += "### Suggested TOC:\n```markdown\n" + suggestedToc + "```\n\n";
-            comment += "Please update the `docs/book/toc.md` file with these changes.\n\n";
-          }
-          if (deletedFiles.length > 0) {
-            comment += "### Deleted Files:\n" + deletedFiles.join(", ") + "\n\n";
-          }
-          if (retainedFiles.length > 0) {
-            comment += "### Retained Files:\n" + retainedFiles.join(", ") + "\n\n";
-          }
+          
+          lines.forEach(line => {
+            if (line.startsWith('suggested_toc_')) {
+              const [key, value] = line.split('<<EOF');
+              const guideType = key.replace('suggested_toc_', '').replace(/_/g, ' ');
+              comment += `### Suggested TOC for ${guideType}:\n\`\`\`markdown\n${value.trim()}\n\`\`\`\n\n`;
+            } else if (line.startsWith('deleted_files_') || line.startsWith('retained_files_')) {
+              const [key, value] = line.split('=');
+              const [type, guideType] = key.split('_', 2);
+              const files = value.split(',').filter(Boolean);
+              if (files.length > 0) {
+                comment += `### ${type === 'deleted' ? 'Deleted' : 'Retained'} Files for ${guideType.replace(/_/g, ' ')}:\n${files.join(", ")}\n\n`;
+              }
+            }
+          });
+          
           comment += "Please review these changes and make any necessary adjustments.";
           
           await github.rest.issues.createComment({
