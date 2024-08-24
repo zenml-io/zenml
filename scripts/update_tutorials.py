@@ -8,6 +8,8 @@ import tempfile
 from typing import List, Tuple, Dict
 import logging
 import filecmp
+import sys
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -151,23 +153,29 @@ def main():
     args = parser.parse_args()
 
     try:
+        logger.info("Starting to process tutorials...")
         results = process_tutorials(args.local)
 
         for guide_type, (suggested_toc, retained_files) in results.items():
+            logger.info(f"Processed guide: {guide_type}")
             logger.info(f"Suggested TOC for {guide_type}:\n{suggested_toc}")
             logger.info(f"Retained files: {retained_files}")
 
         if os.environ.get("GITHUB_ACTIONS"):
+            logger.info("Writing output for GitHub Actions...")
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 for guide_type, (suggested_toc, retained_files) in results.items():
                     f.write(f"suggested_toc_{guide_type.lower().replace(' ', '_')}<<EOF\n{suggested_toc}\nEOF\n")
                     f.write(f"retained_files_{guide_type.lower().replace(' ', '_')}={','.join(retained_files) if retained_files else ''}\n")
+        
+        logger.info("Tutorial processing completed successfully.")
 
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
+        logger.error(traceback.format_exc())
         if os.environ.get("GITHUB_ACTIONS"):
             print(f"::error::An error occurred: {str(e)}")
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

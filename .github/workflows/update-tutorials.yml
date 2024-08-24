@@ -35,17 +35,30 @@ jobs:
     
     - name: Update Tutorials
       id: update_tutorials
-      run: python scripts/update_tutorials.py
-    
+      run: |
+        python scripts/update_tutorials.py
+      continue-on-error: true
+
+    - name: Check Python script output
+      if: always()
+      run: |
+        if [ ${{ steps.update_tutorials.outcome }} == 'failure' ]; then
+          echo "Python script failed. Check the logs above for more information."
+          exit 1
+        fi
+
     - name: Configure Git
+      if: success()
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
     - name: Commit changes
+      if: success()
       run: |
         git add tutorials docs/book
-        git diff-index --quiet HEAD || git commit -m "Update Tutorial content and clear notebook outputs"
+        git status
+        git diff --cached --exit-code || git commit -m "Update Tutorial content and clear notebook outputs"
 
     - name: Fetch latest changes
       run: git fetch origin ${{ github.head_ref }}
