@@ -86,7 +86,17 @@ jobs:
           changedFiles.forEach(file => {
             commentBody += `- \`${file}\`\n`;
           });
-          commentBody += '\nPlease review these changes.';
+          commentBody += '\nPlease review these changes.\n\n';
+          
+          // Add suggested TOC for each guide type
+          const guideTypes = ['starter_guide', 'advanced_guide']; // Add all your guide types here
+          guideTypes.forEach(guideType => {
+            const suggestedToc = process.env[`suggested_toc_${guideType}`];
+            if (suggestedToc) {
+              commentBody += `### Suggested TOC for ${guideType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:\n\n`;
+              commentBody += '```\n' + suggestedToc + '\n```\n\n';
+            }
+          });
           
           try {
             await github.rest.issues.createComment({
