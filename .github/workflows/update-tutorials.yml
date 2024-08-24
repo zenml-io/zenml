@@ -1,4 +1,4 @@
-name: Update GitBook
+name: Update Tutorials
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
       - 'tutorials/**'
 
 jobs:
-  update-gitbook:
+  update-tutorials:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,9 +33,9 @@ jobs:
       run: |
         find tutorials -name "*.ipynb" -exec jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {} \;
     
-    - name: Update GitBook
-      id: update_gitbook
-      run: python scripts/update_gitbook.py
+    - name: Update Tutorials
+      id: update_tutorials
+      run: python scripts/update_tutorials.py
     
     - name: Configure Git
       run: |
@@ -45,7 +45,7 @@ jobs:
     - name: Commit changes
       run: |
         git add tutorials docs/book
-        git diff-index --quiet HEAD || git commit -m "Update GitBook content and clear notebook outputs"
+        git diff-index --quiet HEAD || git commit -m "Update Tutorial content and clear notebook outputs"
 
     - name: Fetch latest changes
       run: git fetch origin ${{ github.head_ref }}
@@ -75,7 +75,7 @@ jobs:
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'The GitBook content has been successfully updated.'
+              body: 'The tutorials content has been successfully updated.'
             });
           } catch (error) {
             console.error('Error creating comment:', error);
@@ -96,7 +96,7 @@ jobs:
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
+              body: 'There was an error updating the tutorial content. Please check the workflow logs for more information.'
             });
           } catch (error) {
             console.error('Error creating comment:', error);
