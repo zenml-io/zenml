@@ -67,6 +67,8 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
+          console.log('Event payload:', JSON.stringify(context.payload, null, 2));
+          
           const fs = require('fs');
           const output = fs.readFileSync(process.env.GITHUB_OUTPUT, 'utf8');
           const lines = output.split('\n');
@@ -92,8 +94,10 @@ jobs:
           
           comment += "Please review these changes and make any necessary adjustments.";
           
+          const prNumber = context.payload.pull_request ? context.payload.pull_request.number : context.issue.number;
+          
           await github.rest.issues.createComment({
-            issue_number: context.issue.number,
+            issue_number: prNumber,
             owner: context.repo.owner,
             repo: context.repo.name,
             body: comment
@@ -105,8 +109,12 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
+          console.log('Event payload:', JSON.stringify(context.payload, null, 2));
+          
+          const prNumber = context.payload.pull_request ? context.payload.pull_request.number : context.issue.number;
+          
           await github.rest.issues.createComment({
-            issue_number: context.issue.number,
+            issue_number: prNumber,
             owner: context.repo.owner,
             repo: context.repo.name,
             body: 'There was an error updating the GitBook content. Please check the workflow logs for more information.'
