@@ -59,7 +59,7 @@ def convert_notebook_to_markdown(
 
     # Define the target location of the rendered markdown
     target_markdown_dir = Path("docs/book/user-guide/starter-guide-2")
-
+    
     # Define the location of the .gitbook/assets directory
     gitbook_assets = Path("docs/book/.gitbook/assets")
 
@@ -71,9 +71,9 @@ def convert_notebook_to_markdown(
         old_path = match.group(1)
         image_name = Path(old_path).name
         new_path = str(Path(relative_path) / image_name)
-        return f"]({new_path}"
+        return f']({new_path}'
 
-    output = re.sub(r"\]\((.*?\.gitbook/assets/[^)]+)", replace_path, output)
+    output = re.sub(r'\]\((.*?\.gitbook/assets/[^)]+)', replace_path, output)
 
     badges = add_badges(notebook_path, is_local)
     output = badges + output
@@ -99,13 +99,31 @@ def generate_suggested_toc(guide_type: str, converted_files: List[str]) -> str:
     """
     toc = f"## {guide_type}\n\n"
     toc += f"* [🐣 {guide_type}](user-guide/{guide_type.lower().replace(' ', '-')}/README.md)\n"
-    for file in sorted(converted_files):
+    
+    # Sort files to ensure consistent ordering
+    sorted_files = sorted(converted_files)
+    
+    # Keep track of the current directory level
+    current_level = 0
+    
+    for file in sorted_files:
         if file != "README.md":
+            path_parts = Path(file).parts
             file_name = Path(file).stem
-            title = " ".join(
-                word.capitalize() for word in file_name.split("_")[1:]
-            )
-            toc += f"  * [{title}](user-guide/{guide_type.lower().replace(' ', '-')}/{file_name}.md)\n"
+            
+            # Calculate the new level based on the number of subdirectories
+            new_level = len(path_parts) - 1
+            
+            # Adjust indentation based on directory level
+            while current_level < new_level:
+                toc += "  " * (current_level + 1) + "* " + path_parts[current_level].capitalize() + "\n"
+                current_level += 1
+            while current_level > new_level:
+                current_level -= 1
+            
+            title = " ".join(word.capitalize() for word in file_name.split("_")[1:])
+            toc += "  " * (current_level + 1) + f"* [{title}](user-guide/{guide_type.lower().replace(' ', '-')}/{file})\n"
+    
     return toc
 
 
@@ -127,41 +145,53 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
             continue
 
         guide_type = guide_dir.name.replace("-", " ").title()
-        output_dir = Path("docs") / "book" / "user-guide" / guide_dir.name
+        output_base_dir = Path("docs") / "book" / "user-guide" / guide_dir.name
         temp_dir = Path(tempfile.mkdtemp())
 
         converted_files = []
         updated_files = []
-        for notebook_path in sorted(guide_dir.glob("*.ipynb")):
+        
+        # Use rglob to find all .ipynb files, including in subdirectories
+        for notebook_path in sorted(guide_dir.rglob("*.ipynb")):
+            # Calculate the relative path within the guide directory
+            relative_path = notebook_path.relative_to(guide_dir)
+            
+            # Create corresponding subdirectories in temp_dir and output_dir
+            temp_output_dir = temp_dir / relative_path.parent
+            final_output_dir = output_base_dir / relative_path.parent
+            temp_output_dir.mkdir(parents=True, exist_ok=True)
+            final_output_dir.mkdir(parents=True, exist_ok=True)
+
             output_filename = convert_notebook_to_markdown(
-                notebook_path, temp_dir, is_local
+                notebook_path, temp_output_dir, is_local
             )
-            converted_files.append(output_filename)
+            converted_files.append(str(relative_path.parent / output_filename))
 
             # Check if the file is new or has been modified
-            output_path = output_dir / output_filename
+            output_path = final_output_dir / output_filename
             if not output_path.exists() or not filecmp.cmp(
-                temp_dir / output_filename, output_path
+                temp_output_dir / output_filename, output_path
             ):
-                updated_files.append(output_filename)
+                updated_files.append(str(relative_path.parent / output_filename))
 
         if not converted_files:
             logger.warning(f"No files were converted for {guide_type}")
             continue
 
-        existing_files = (
-            [f.name for f in output_dir.glob("*.md")]
-            if output_dir.exists()
-            else []
-        )
+        existing_files = [
+            str(f.relative_to(output_base_dir))
+            for f in output_base_dir.rglob("*.md")
+        ] if output_base_dir.exists() else []
         retained_files = existing_files
 
         suggested_toc = generate_suggested_toc(guide_type, converted_files)
 
         # Update only the changed files
-        output_dir.mkdir(parents=True, exist_ok=True)
         for file in updated_files:
-            shutil.copy(temp_dir / file, output_dir / file)
+            source = temp_dir / file
+            destination = output_base_dir / file
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(source, destination)
             if file not in existing_files:
                 retained_files.append(file)
 
