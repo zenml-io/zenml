@@ -105,22 +105,3 @@ jobs:
             console.error('Error creating comment:', error);
             core.setFailed(`Failed to create comment: ${error.message}`);
           }
-
-    - name: Create PR comment on no changes
-      if: steps.git-check.outputs.changes != 'true'
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |-
-          const prNumber = context.payload.pull_request.number;
-          try {
-            await github.rest.issues.createComment({
-              issue_number: prNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'No changes were detected in the tutorials content. All files are up to date.'
-            });
-          } catch (error) {
-            console.error('Error creating comment:', error);
-            core.setFailed(`Failed to create comment: ${error.message}`);
-          }
