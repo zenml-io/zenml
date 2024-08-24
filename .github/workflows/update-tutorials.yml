@@ -42,14 +42,28 @@ jobs:
       run: |
         git add tutorials docs/book
         git status
-        git diff --staged --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+        changed_files=$(git diff --staged --name-only)
+        if [ -n "$changed_files" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$changed_files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
 
     - name: Commit changes
       if: steps.git-check.outputs.changes == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git commit -m "Update Tutorial content and clear notebook outputs"
+        changed_files="${{ steps.git-check.outputs.changed_files }}"
+        num_changed=$(echo "$changed_files" | wc -l)
+        if [ $num_changed -eq 1 ]; then
+          file=$(echo "$changed_files" | tr -d '\n')
+          commit_message="Update tutorial: ${file##*/}"
+        else
+          commit_message="Update ${num_changed} tutorial files"
+        fi
+        git commit -m "$commit_message"
 
     - name: Push changes
       if: steps.git-check.outputs.changes == 'true'
@@ -65,14 +79,21 @@ jobs:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const prNumber = context.payload.pull_request.number;
-          console.log(`PR number: ${prNumber}`);
+          const changedFiles = `${{ steps.git-check.outputs.changed_files }}`.split('\n');
+          
+          let commentBody = '### Tutorial Update Summary\n\n';
+          commentBody += 'The following files have been updated:\n\n';
+          changedFiles.forEach(file => {
+            commentBody += `- \`${file}\`\n`;
+          });
+          commentBody += '\nPlease review these changes.';
           
           try {
             await github.rest.issues.createComment({
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'The tutorials content has been successfully updated.'
+              body: commentBody
             });
           } catch (error) {
             console.error('Error creating comment:', error);
@@ -86,14 +107,13 @@ jobs:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const prNumber = context.payload.pull_request.number;
-          console.log(`PR number: ${prNumber}`);
           
           try {
             await github.rest.issues.createComment({
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'No changes were detected in the tutorials content.'
+              body: 'No changes were detected in the tutorials content. All files are up to date.'
             });
           } catch (error) {
             console.error('Error creating comment:', error);
