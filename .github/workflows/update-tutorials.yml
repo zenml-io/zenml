@@ -35,47 +35,31 @@ jobs:
     
     - name: Update Tutorials
       id: update_tutorials
-      run: |
-        python scripts/update_tutorials.py
-      continue-on-error: true
-
-    - name: Check Python script output
-      if: always()
-      run: |
-        if [ ${{ steps.update_tutorials.outcome }} == 'failure' ]; then
-          echo "Python script failed. Check the logs above for more information."
-          exit 1
-        fi
-
-    - name: Configure Git
-      if: success()
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-    - name: Commit changes
-      if: success()
+      run: python scripts/update_tutorials.py
+    
+    - name: Check for changes
+      id: git-check
       run: |
         git add tutorials docs/book
         git status
-        git diff --cached --exit-code || git commit -m "Update Tutorial content and clear notebook outputs"
+        git diff --staged --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
 
-    - name: Fetch latest changes
-      run: git fetch origin ${{ github.head_ref }}
-
-    - name: Merge latest changes
+    - name: Commit changes
+      if: steps.git-check.outputs.changes == 'true'
       run: |
-        git checkout ${{ github.head_ref }}
-        git merge --no-edit origin/${{ github.head_ref }}
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git commit -m "Update Tutorial content and clear notebook outputs"
 
     - name: Push changes
+      if: steps.git-check.outputs.changes == 'true'
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.head_ref }}
 
     - name: Create PR comment
-      if: success()
+      if: steps.git-check.outputs.changes == 'true'
       uses: actions/github-script@v7
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
@@ -95,8 +79,8 @@ jobs:
             core.setFailed(`Failed to create comment: ${error.message}`);
           }
 
-    - name: Create PR comment on failure
-      if: failure()
+    - name: Create PR comment on no changes
+      if: steps.git-check.outputs.changes != 'true'
       uses: actions/github-script@v7
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
@@ -109,7 +93,7 @@ jobs:
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'There was an error updating the tutorial content. Please check the workflow logs for more information.'
+              body: 'No changes were detected in the tutorials content.'
             });
           } catch (error) {
             console.error('Error creating comment:', error);
