@@ -6,7 +6,7 @@
 
 Welcome to the ZenML Starter Guide! If you're an MLOps engineer aiming to build robust ML platforms, or a data scientist interested in leveraging the power of MLOps, this is the perfect place to begin. Our guide is designed to provide you with the foundational knowledge of the ZenML framework and equip you with the initial tools to manage the complexity of machine learning operations.
 
-![Embarking on MLOps can be intricate. ZenML simplifies the journey.](../../.gitbook/assets/01_pipeline.png)
+![Embarking on MLOps can be intricate. ZenML simplifies the journey.](../../home/runner/work/zenml/zenml/docs/book/.gitbook/assets/01_pipeline.png)
 
 Throughout this guide, we'll cover essential topics including:
 
