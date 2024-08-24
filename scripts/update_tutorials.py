@@ -2,6 +2,7 @@ import argparse
 import filecmp
 import logging
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -55,6 +56,18 @@ def convert_notebook_to_markdown(
 
     exporter = nbconvert.MarkdownExporter(config=c)
     output, _ = exporter.from_filename(str(notebook_path))
+
+    # Calculate the relative path from the output markdown to the .gitbook/assets directory
+    gitbook_assets = Path("docs/book/.gitbook/assets")
+    relative_path = os.path.relpath(gitbook_assets, output_dir)
+
+    # Adjust image paths
+    def replace_path(match):
+        old_path = match.group(1)
+        new_path = str(Path(relative_path) / Path(old_path).name)
+        return f"]({new_path}"
+
+    output = re.sub(r"\]\((.*?\.gitbook/assets/[^)]+)", replace_path, output)
 
     badges = add_badges(notebook_path, is_local)
     output = badges + output
