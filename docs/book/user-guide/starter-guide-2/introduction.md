@@ -1,4 +1,4 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/tutorials/starter-guide-2/introduction.ipynb) [![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/zenml-io/zenml)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/tutorials/starter-guide-2/introduction.ipynb) [![Run Locally](https://img.shields.io/badge/run-locally-blue)](https://github.com/zenml-io/zenml/blob/main/tutorials/starter-guide-2/introduction.ipynb)
 
 # 🐣 Starter guide
 
