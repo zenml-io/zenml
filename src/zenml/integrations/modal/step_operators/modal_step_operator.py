@@ -131,6 +131,13 @@ class ModalStepOperator(BaseStepOperator):
         zc = Client()
         stack = zc.active_stack
 
+        if not stack.container_registry:
+            raise ValueError(
+                "No Container registry found in the stack. "
+                "Please add a container registry and ensure "
+                "it is correctly configured."
+            )
+
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
         else:
