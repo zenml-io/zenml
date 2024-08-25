@@ -1,3 +1,5 @@
+"""Script to update GitBook content from Jupyter notebooks."""
+
 import argparse
 import filecmp
 import logging
