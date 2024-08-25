@@ -33,11 +33,6 @@ jobs:
         run: |
           echo "Available outputs:"
           cat $GITHUB_OUTPUT
-      - name: Process Python Script Output
-        run: |
-          while IFS= read -r line; do
-            echo "$line" >> $GITHUB_OUTPUT
-          done < <(python scripts/update_tutorials.py)
       - name: Check for changes
         id: git-check
         run: |
@@ -50,6 +45,13 @@ jobs:
             echo "$changed_files" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           fi
+      - name: Use Outputs
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          echo "Suggested TOC for Starter Guide:"
+          echo "${{ steps.update_tutorials.outputs.suggested_toc_starter_guide }}"
+          echo "Retained files for Starter Guide:"
+          echo "${{ steps.update_tutorials.outputs.retained_files_starter_guide }}"
       - name: Commit changes
         if: steps.git-check.outputs.changes == 'true'
         run: |

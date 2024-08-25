@@ -242,16 +242,24 @@ def main():
         logger.info("Starting to process tutorials...")
         results = process_tutorials(args.local)
 
-        for guide_type, (suggested_toc, retained_files) in results.items():
-            safe_guide_type = guide_type.lower().replace(" ", "_")
-            print(f"suggested_toc_{safe_guide_type}<<EOF")
-            print(suggested_toc)
-            print("EOF")
-            print(
-                f"retained_files_{safe_guide_type}={','.join(retained_files) if retained_files else ''}"
-            )
+        if os.environ.get("GITHUB_OUTPUT"):
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                for guide_type, (suggested_toc, retained_files) in results.items():
+                    safe_guide_type = guide_type.lower().replace(" ", "_")
+                    f.write(f"suggested_toc_{safe_guide_type}<<EOF\n")
+                    f.write(suggested_toc)
+                    f.write("\nEOF\n")
+                    f.write(f"retained_files_{safe_guide_type}={','.join(retained_files) if retained_files else ''}\n")
 
         logger.info("Tutorial processing completed successfully.")
+        
+        # Print a summary of updated files
+        updated_files = [file for guide in results.values() for file in guide[1]]
+        print("Tutorial Update Summary")
+        print("The following files have been updated:")
+        for file in updated_files:
+            print(file)
+        print("Please review these changes.")
 
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
