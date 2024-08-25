@@ -247,7 +247,9 @@ def main():
             print(f"suggested_toc_{safe_guide_type}<<EOF")
             print(suggested_toc)
             print("EOF")
-            print(f"retained_files_{safe_guide_type}={','.join(retained_files) if retained_files else ''}")
+            print(
+                f"retained_files_{safe_guide_type}={','.join(retained_files) if retained_files else ''}"
+            )
 
         logger.info("Tutorial processing completed successfully.")
 
