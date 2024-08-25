@@ -42,6 +42,12 @@ MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 
 
 class ModalStepOperator(BaseStepOperator):
+    """Step operator to run a step on Modal.
+
+    This class defines code that can set up a Modal environment and run
+    functions in it.
+    """
+
     @property
     def config(self) -> ModalStepOperatorConfig:
         """Get the Modal step operator configuration.
@@ -115,6 +121,9 @@ class ModalStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
+
+        Raises:
+            SystemExit: If the modal app exits with a non-zero code.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
