@@ -251,5 +251,8 @@
     "IPython.core",
     "IPython.core.display",
     "IPython.core.display_functions",
-    "ipywidgets"
+    "ipywidgets",
+    "modal",
+    "modal.cli",
+    "modal.cli.run"
 ]
