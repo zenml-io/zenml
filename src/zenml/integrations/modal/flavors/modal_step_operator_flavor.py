@@ -26,18 +26,29 @@ if TYPE_CHECKING:
 class ModalStepOperatorSettings(BaseSettings):
     """Settings for the Modal step operator.
 
+    Specifying the region and cloud provider is only available for Enterprise
+    and Team plan customers.
+
+    Certain combinations of settings are not available. It is suggested to err
+    on the side of looser settings rather than more restrictive ones to avoid
+    pipeline execution failures. In the case of failures, however, Modal
+    provides detailed error messages that can help identify what is
+    incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
+
     Attributes:
         gpu: The type of GPU to use for the step execution.
         cpu: The number of CPU cores to allocate for the step execution.
         memory: The amount of memory (in megabytes) to allocate for the step
         execution.
         region: The region to use for the step execution.
+        cloud: The cloud provider to use for the step execution.
     """
 
     gpu: Optional[str] = None
     cpu: Optional[float] = None
     memory: Optional[int] = None
     region: Optional[str] = None
+    cloud: Optional[str] = None
 
 
 class ModalStepOperatorConfig(
