@@ -17,6 +17,7 @@ import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import click
+import pkg_resources
 from modal.cli.run import run
 
 from zenml.client import Client
@@ -129,6 +130,19 @@ class ModalStepOperator(BaseStepOperator):
         pydantic_version = pkg_resources.get_distribution("pydantic").version
         major, minor, *_ = pydantic_version.split(".")
 
+        # Construct the decorator arguments based on the settings
+        decorator_args = []
+        if settings.gpu is not None:
+            decorator_args.append(f"gpu='{settings.gpu}'")
+        if settings.cpu is not None:
+            decorator_args.append(f"cpu={settings.cpu}")
+        if settings.memory is not None:
+            decorator_args.append(f"memory={settings.memory}")
+        if settings.region is not None:
+            decorator_args.append(f"region='{settings.region}'")
+
+        decorator_args_str = ", ".join(decorator_args)
+
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".py"
         ) as tmp:
@@ -143,7 +157,7 @@ zenml_image = modal.Image.from_registry(tag='{image_name}', secret=my_secret).en
 
 app = modal.App('{info.run_name}')
 
-@app.function(image=zenml_image)
+@app.function(image=zenml_image, {decorator_args_str})
 def run_step():
     print("Executing {info.run_name} step...")
 
