@@ -17,7 +17,6 @@ import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import click
-import modal
 from modal.cli.run import run
 
 from zenml.client import Client
@@ -124,23 +123,11 @@ class ModalStepOperator(BaseStepOperator):
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
 
-        my_secret = modal.Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
-        )
-
-        # TODO: replace pydantic superposition with the version from ZenML requirements
-        zenml_image = (
-            modal.Image.from_registry(
-                tag=image_name,
-                secret=my_secret,
-            )
-            .env(environment)
-            .pip_install("pydantic~=2.7")
-            .run_commands(entrypoint_command)
-        )
+        # get the pydantic version in local environment
+        # use it to install the correct version of pydantic in the modal app
+        # since it overwrites with 1.x on top of our image
+        pydantic_version = pkg_resources.get_distribution("pydantic").version
+        major, minor, *_ = pydantic_version.split(".")
 
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".py"
@@ -152,7 +139,7 @@ my_secret = modal.Secret.from_dict({{
     'REGISTRY_PASSWORD': '{docker_password}',
 }})
 
-zenml_image = modal.Image.from_registry(tag='{image_name}', secret=my_secret).env({environment}).pip_install("pydantic~=2.7").run_commands('{" ".join(entrypoint_command)}')
+zenml_image = modal.Image.from_registry(tag='{image_name}', secret=my_secret).env({environment}).pip_install("pydantic~={major}.{minor}").run_commands('{" ".join(entrypoint_command)}')
 
 app = modal.App('{info.run_name}')
 
@@ -176,4 +163,11 @@ if __name__ == "__main__":
         ctx.obj["interactive"] = False
         ctx.obj["env"] = None
 
-        run.main(args=[tmp_filename], prog_name="modal run", obj=ctx.obj)
+        try:
+            run.main(args=[tmp_filename], prog_name="modal run", obj=ctx.obj)
+        except SystemExit as e:
+            if e.code == 0:
+                logger.info("Modal app completed successfully.")
+            else:
+                logger.error(f"Modal app exited with code {e.code}.")
+                raise
