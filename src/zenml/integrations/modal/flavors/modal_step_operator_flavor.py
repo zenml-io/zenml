@@ -29,12 +29,15 @@ class ModalStepOperatorSettings(BaseSettings):
     Attributes:
         gpu: The type of GPU to use for the step execution.
         cpu: The number of CPU cores to allocate for the step execution.
-        memory: The amount of memory (in megabytes) to allocate for the step execution.
+        memory: The amount of memory (in megabytes) to allocate for the step
+        execution.
+        region: The region to use for the step execution.
     """
 
     gpu: Optional[str] = None
     cpu: Optional[float] = None
     memory: Optional[int] = None
+    region: Optional[str] = None
 
 
 class ModalStepOperatorConfig(

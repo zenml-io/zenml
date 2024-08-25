@@ -13,10 +13,14 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
+import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
-from modal import Image, Stub, gpu
+import click
+import modal
+from modal.cli.run import run
 
+from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.modal.flavors import (
@@ -63,6 +67,7 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
+
         def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
             # ... validation logic ...
             return True, ""
@@ -113,25 +118,62 @@ class ModalStepOperator(BaseStepOperator):
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
+        zc = Client()
+        stack = zc.active_stack
 
-        stub = Stub(
-            image=Image.from_dockerhub(image_name),
-            gpu=gpu(settings.gpu_type) if settings.gpu_type else None,
-            cpu=settings.cpu,
-            memory=settings.memory,
-            secrets=settings.secrets,
+        if docker_creds := stack.container_registry.credentials:
+            docker_username, docker_password = docker_creds
+
+        my_secret = modal.Secret.from_dict(
+            {
+                "REGISTRY_USERNAME": docker_username,
+                "REGISTRY_PASSWORD": docker_password,
+            }
         )
 
-        @stub.function(
-            image=Image.from_dockerhub(image_name),
-            gpu=gpu(settings.gpu_type) if settings.gpu_type else None,
-            cpu=settings.cpu,
-            memory=settings.memory,
-            secrets=settings.secrets,
-            timeout=settings.timeout,
+        # TODO: replace pydantic superposition with the version from ZenML requirements
+        zenml_image = (
+            modal.Image.from_registry(
+                tag=image_name,
+                secret=my_secret,
+            )
+            .env(environment)
+            .pip_install("pydantic~=2.7")
+            .run_commands(entrypoint_command)
         )
-        def run_step():
-            # ... run step logic ...
-            pass
 
-        run_step.call()
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".py"
+        ) as tmp:
+            modal_code = f"""import modal
+
+my_secret = modal.Secret.from_dict({{
+    'REGISTRY_USERNAME': '{docker_username}',
+    'REGISTRY_PASSWORD': '{docker_password}',
+}})
+
+zenml_image = modal.Image.from_registry(tag='{image_name}', secret=my_secret).env({environment}).pip_install("pydantic~=2.7").run_commands('{" ".join(entrypoint_command)}')
+
+app = modal.App('{info.run_name}')
+
+@app.function(image=zenml_image)
+def run_step():
+    print("Executing {info.run_name} step...")
+
+if __name__ == "__main__":
+    run_step()
+"""
+            tmp.write(modal_code)
+            tmp_filename = tmp.name
+
+        # Create a Click context object
+        ctx = click.Context(run)
+
+        # Set the necessary context parameters
+        ctx.ensure_object(dict)
+        ctx.obj["detach"] = False
+        ctx.obj["show_progress"] = True
+        ctx.obj["interactive"] = False
+        ctx.obj["env"] = None
+
+        run.main(args=[tmp_filename], prog_name="modal run", obj=ctx.obj)
