@@ -59,13 +59,13 @@ def convert_notebook_to_markdown(
 
     # Define the base directory for the user guide
     user_guide_base = Path("docs/book/user-guide")
-    
+
     # Calculate the relative path from the notebook to the tutorials directory
     relative_to_tutorials = notebook_path.relative_to(Path("tutorials"))
-    
+
     # Calculate the expected final path of the markdown file
     expected_markdown_path = user_guide_base / relative_to_tutorials.parent
-    
+
     # Define the location of the .gitbook/assets directory
     gitbook_assets = Path("docs/book/.gitbook/assets")
 
@@ -77,9 +77,9 @@ def convert_notebook_to_markdown(
         old_path = match.group(1)
         image_name = Path(old_path).name
         new_path = str(Path(relative_path) / image_name)
-        return f']({new_path}'
+        return f"]({new_path}"
 
-    output = re.sub(r'\]\((.*?\.gitbook/assets/[^)]+)', replace_path, output)
+    output = re.sub(r"\]\((.*?\.gitbook/assets/[^)]+)", replace_path, output)
 
     badges = add_badges(notebook_path, is_local)
     output = badges + output
@@ -105,31 +105,41 @@ def generate_suggested_toc(guide_type: str, converted_files: List[str]) -> str:
     """
     toc = f"## {guide_type}\n\n"
     toc += f"* [🐣 {guide_type}](user-guide/{guide_type.lower().replace(' ', '-')}/README.md)\n"
-    
+
     # Sort files to ensure consistent ordering
     sorted_files = sorted(converted_files)
-    
+
     # Keep track of the current directory level
     current_level = 0
-    
+
     for file in sorted_files:
         if file != "README.md":
             path_parts = Path(file).parts
             file_name = Path(file).stem
-            
+
             # Calculate the new level based on the number of subdirectories
             new_level = len(path_parts) - 1
-            
+
             # Adjust indentation based on directory level
             while current_level < new_level:
-                toc += "  " * (current_level + 1) + "* " + path_parts[current_level].capitalize() + "\n"
+                toc += (
+                    "  " * (current_level + 1)
+                    + "* "
+                    + path_parts[current_level].capitalize()
+                    + "\n"
+                )
                 current_level += 1
             while current_level > new_level:
                 current_level -= 1
-            
-            title = " ".join(word.capitalize() for word in file_name.split("_")[1:])
-            toc += "  " * (current_level + 1) + f"* [{title}](user-guide/{guide_type.lower().replace(' ', '-')}/{file})\n"
-    
+
+            title = " ".join(
+                word.capitalize() for word in file_name.split("_")[1:]
+            )
+            toc += (
+                "  " * (current_level + 1)
+                + f"* [{title}](user-guide/{guide_type.lower().replace(' ', '-')}/{file})\n"
+            )
+
     return toc
 
 
@@ -156,12 +166,12 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
 
         converted_files = []
         updated_files = []
-        
+
         # Use rglob to find all .ipynb files, including in subdirectories
         for notebook_path in sorted(guide_dir.rglob("*.ipynb")):
             # Calculate the relative path within the guide directory
             relative_path = notebook_path.relative_to(guide_dir)
-            
+
             # Create corresponding subdirectories in temp_dir and output_dir
             temp_output_dir = temp_dir / relative_path.parent
             final_output_dir = output_base_dir / relative_path.parent
@@ -178,16 +188,22 @@ def process_tutorials(is_local: bool) -> Dict[str, Tuple[str, List[str]]]:
             if not output_path.exists() or not filecmp.cmp(
                 temp_output_dir / output_filename, output_path
             ):
-                updated_files.append(str(relative_path.parent / output_filename))
+                updated_files.append(
+                    str(relative_path.parent / output_filename)
+                )
 
         if not converted_files:
             logger.warning(f"No files were converted for {guide_type}")
             continue
 
-        existing_files = [
-            str(f.relative_to(output_base_dir))
-            for f in output_base_dir.rglob("*.md")
-        ] if output_base_dir.exists() else []
+        existing_files = (
+            [
+                str(f.relative_to(output_base_dir))
+                for f in output_base_dir.rglob("*.md")
+            ]
+            if output_base_dir.exists()
+            else []
+        )
         retained_files = existing_files
 
         suggested_toc = generate_suggested_toc(guide_type, converted_files)
