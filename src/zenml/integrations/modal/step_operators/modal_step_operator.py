@@ -124,6 +124,7 @@ class ModalStepOperator(BaseStepOperator):
 
         Raises:
             SystemExit: If the modal app exits with a non-zero code.
+            ValueError: If no Docker credentials are found for the container registry.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
@@ -132,6 +133,10 @@ class ModalStepOperator(BaseStepOperator):
 
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
+        else:
+            raise ValueError(
+                "No Docker credentials found for the container registry."
+            )
 
         # get the pydantic version in local environment
         # use it to install the correct version of pydantic in the modal app
