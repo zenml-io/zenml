@@ -27,7 +27,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import Field
-from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -36,7 +35,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter, StrFilter
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -341,6 +340,13 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         custom_filters = super().get_custom_filters()
         if self.tag:
-            custom_filters.append(col(TagSchema.name) == self.tag)
+            value, filter_operator = self._resolve_operator(self.tag)
+            filter_ = StrFilter(
+                operation=filter_operator,
+                column="name",
+                value=value,
+            )
+
+            custom_filters.append(filter_.generate_query_conditions(TagSchema))
 
         return custom_filters

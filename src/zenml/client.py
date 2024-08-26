@@ -1236,6 +1236,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
+        component_name: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1252,6 +1253,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
+            component_name: The name of the component to filter by.
             name: The name of the stack to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -1267,6 +1269,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             component_id=component_id,
+            component_name=component_name,
             name=name,
             description=description,
             id=id,

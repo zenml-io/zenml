@@ -23,6 +23,7 @@ from sqlmodel import and_
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -293,6 +294,7 @@ class StackFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",  # This is a relationship, not a field
+        "component_name",
     ]
 
     name: Optional[str] = Field(
@@ -317,6 +319,9 @@ class StackFilter(WorkspaceScopedFilter):
         description="Component in the stack",
         union_mode="left_to_right",
     )
+    component_name: Optional[str] = Field(
+        default=None, description="Name of component in the stack."
+    )
 
     def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
@@ -326,6 +331,9 @@ class StackFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
+        from zenml.zen_stores.schemas.component_schemas import (
+            StackComponentSchema,
+        )
         from zenml.zen_stores.schemas.stack_schemas import (
             StackCompositionSchema,
             StackSchema,
@@ -337,5 +345,21 @@ class StackFilter(WorkspaceScopedFilter):
                 StackCompositionSchema.component_id == self.component_id,
             )
             custom_filters.append(component_id_filter)
+
+        if self.component_name is not None:
+            value, filter_operator = self._resolve_operator(
+                self.component_name
+            )
+            filter_ = StrFilter(
+                operation=filter_operator,
+                column="name",
+                value=value,
+            )
+            component_name_filter = and_(
+                StackCompositionSchema.stack_id == StackSchema.id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                filter_.generate_query_conditions(StackComponentSchema),
+            )
+            custom_filters.append(component_name_filter)
 
         return custom_filters
