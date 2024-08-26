@@ -306,6 +306,7 @@ class EnvironmentType(StrEnum):
     GITHUB_CODESPACES = "github_codespaces"
     VSCODE_REMOTE_CONTAINER = "vscode_remote_container"
 
+
 class ModelStages(StrEnum):
     """All possible stages of a Model Version."""
 
