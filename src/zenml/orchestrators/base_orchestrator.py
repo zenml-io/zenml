@@ -68,6 +68,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
         """
         return False
 
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return False
+
 
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators.
