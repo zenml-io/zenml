@@ -768,13 +768,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "`zenml up`."
                     )
 
-                if self.configuration.model:
-                    logs_of_model = self.configuration.model._prepare_model_version_inside_run(
-                        pipeline_run=run, step_run=None, return_logs=True
-                    )
-                    if logs_of_model:
-                        logger.info(logs_of_model)
-
             deploy_pipeline(
                 deployment=deployment_model, stack=stack, placeholder_run=run
             )

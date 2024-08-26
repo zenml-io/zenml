@@ -511,8 +511,12 @@ class Model(BaseModel):
         Returns:
             Dict of validated values.
         """
-        suppress_class_validation_warnings = data.get(
-            "suppress_class_validation_warnings", False
+        suppress_class_validation_warnings = (
+            data.get(
+                "suppress_class_validation_warnings",
+                False,
+            )
+            or data.get("model_version_id", None) is not None
         )
         version = data.get("version", None)
 
@@ -827,7 +831,7 @@ class Model(BaseModel):
             )
         )
 
-    def _prepare_model_version_inside_run(
+    def _prepare_model_version_before_step_launch(
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: Optional["StepRunResponse"],

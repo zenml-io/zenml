@@ -241,7 +241,7 @@ class StepLauncher:
 
                     if model:
                         prep_logs_to_show = (
-                            model._prepare_model_version_inside_run(
+                            model._prepare_model_version_before_step_launch(
                                 pipeline_run=pipeline_run,
                                 step_run=_step_run,
                                 return_logs=True,
