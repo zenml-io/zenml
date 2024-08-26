@@ -906,4 +906,5 @@ class Model(BaseModel):
                         "Models can be viewed in the dashboard using ZenML Pro. Sign up "
                         "for a free trial at https://www.zenml.io/pro/"
                     )
+        self.model_version_id = self_copy.model_version_id
         return logs
