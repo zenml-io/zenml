@@ -45,7 +45,7 @@ class OutputSignature(BaseModel):
     artifact_config: Optional[ArtifactConfig] = None
     has_custom_name: bool = False
 
-    def get_output_types(self) -> Tuple[Any]:
+    def get_output_types(self) -> Tuple[Any, ...]:
         """Get all output types that match the type annotation.
 
         Returns:
