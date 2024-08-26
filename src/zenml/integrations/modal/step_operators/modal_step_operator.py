@@ -210,6 +210,6 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError as e:
             logger.error(f"Modal app exited with code {e.returncode}.")
             logger.error(e.stdout)
-            raise
+            raise RuntimeError(f"Model step operator failed: {str(e)}") from e
         finally:
             os.remove(tmp_filename)
