@@ -93,6 +93,16 @@ Check out the [Modal docs](https://modal.com/docs/reference/modal.gpu) for the
 full list of supported GPU types and the [SDK
 docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-modal/#zenml.integrations.modal.flavors.modal\_step\_operator\_flavor.ModalStepOperatorSettings)
 for more details on the available settings.
+
+The settings do allow you to specify the region and cloud provider, but these
+settings are only available for Modal Enterprise and Team plan customers.
+Moreover, certain combinations of settings are not available. It is suggested to
+err on the side of looser settings rather than more restrictive ones to avoid
+pipeline execution failures. In the case of failures, however, Modal provides
+detailed error messages that can help identify what is incompatible. See more in
+the [Modal docs on region selection](https://modal.com/docs/guide/region-selection) for more
+details.
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
