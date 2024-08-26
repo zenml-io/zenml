@@ -63,8 +63,9 @@ def clean_client_with_scheduled_run(
 ):
     """Fixture to get a clean workspace with an existing scheduled run in it."""
     schedule = Schedule(cron_expression="*/5 * * * *")
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         connected_two_step_pipeline(
             step_1=constant_int_output_test_step(),

@@ -337,8 +337,9 @@ def test_run_configuration_in_code(
     pipeline_instance = one_step_pipeline(empty_step())
 
     schedule = Schedule(cron_expression="5 * * * *")
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         pipeline_instance.run(run_name="run_name", schedule=schedule)
 
@@ -367,8 +368,9 @@ def test_run_configuration_from_file(
     )
     config_path.write_text(expected_run_config.yaml())
 
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         pipeline_instance.run(config_path=str(config_path))
     mock_compile.assert_called_once_with(
@@ -394,8 +396,9 @@ def test_run_configuration_from_code_and_file(
     )
     config_path.write_text(file_config.yaml())
 
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         pipeline_instance.run(
             config_path=str(config_path),
@@ -1049,8 +1052,9 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     )
     pipeline_instance = empty_pipeline
 
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         scheduled_pipeline_instance = pipeline_instance.with_options(
             schedule=Schedule(cron_expression="*/5 * * * *")

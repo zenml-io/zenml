@@ -20,7 +20,6 @@ import zipfile
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
     NamedTuple,
     Optional,
@@ -98,8 +97,6 @@ def get_dag_generator_values(
 
 class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
-
-    supports_scheduling: ClassVar[bool] = True
 
     def __init__(self, **values: Any):
         """Initialize the orchestrator.

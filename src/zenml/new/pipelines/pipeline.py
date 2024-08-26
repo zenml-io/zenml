@@ -639,7 +639,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             schedule_id = None
             if schedule:
-                if not stack.orchestrator.supports_scheduling:
+                if not stack.orchestrator.config.is_schedulable:
                     raise ValueError(
                         f"Stack {stack.name} does not support scheduling. "
                         "Not all orchestrator types support scheduling, "

@@ -78,8 +78,9 @@ def test_scheduled_pipeline_run_has_schedule_id(
         step_2=int_plus_one_test_step(),
     )
     schedule = Schedule(cron_expression="*/5 * * * *")
-    with patch.object(
-        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
     ):
         pipeline_instance.run(schedule=schedule)
     pipeline_run = clean_client.get_pipeline(

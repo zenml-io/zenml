@@ -35,7 +35,6 @@ import types
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
     List,
     Optional,
@@ -108,7 +107,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
-    supports_scheduling: ClassVar[bool] = True
 
     @property
     def config(self) -> VertexOrchestratorConfig:
