@@ -608,7 +608,7 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
     def _inner_pipeline():
         # this step requests a new version, but can be cached
         _this_step_produces_output.with_options(model=Model(name="step"))(
-            dummy=42, id="cacheable_step"
+            dummy=42, id="cacheable_step", after=["non_cacheable_step"]
         )
         # this is an always run step
         _this_step_produces_output.with_options(enable_cache=False)(

@@ -211,7 +211,7 @@ class StepLauncher:
                 )
                 prep_logs_to_show = ""
                 try:
-                    execution_needed, step_run = self._prepare(
+                    execution_needed, step_run, cached_outputs = self._prepare(
                         step_run=step_run
                     )
                 except:
@@ -247,6 +247,32 @@ class StepLauncher:
                                 return_logs=True,
                             )
                         )
+
+                    if not execution_needed:
+                        if self._step.config.model is None:
+                            if (
+                                mv := Client()
+                                .get_pipeline_run(step_run.pipeline_run_id)
+                                .model_version
+                            ):
+                                model = mv.to_model_class()
+                            else:
+                                model = None
+
+                        step_run.outputs = {
+                            output_name: artifact.id
+                            for output_name, artifact in cached_outputs.items()
+                        }
+                        orchestrator_utils._link_cached_artifacts_to_model(
+                            model_from_context=model,
+                            step_run=step_run,
+                            step_source=self._step.spec.source,
+                        )
+                        if model:
+                            orchestrator_utils._link_pipeline_run_to_model_from_context(
+                                pipeline_run_id=step_run.pipeline_run_id,
+                                model=model,
+                            )
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
@@ -383,7 +409,9 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
-    ) -> Tuple[bool, StepRunRequest]:
+    ) -> Tuple[
+        bool, StepRunRequest, Optional[Dict[str, ArtifactVersionResponse]]
+    ]:
         """Prepares running the step.
 
         Args:
@@ -393,10 +421,7 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model = (
-            self._deployment.step_configurations[step_run.name].config.model
-            or self._deployment.pipeline_configuration.model
-        )
+        cached_outputs = None
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
@@ -440,34 +465,10 @@ class StepLauncher:
                 cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
 
-                if self._step.config.model is None:
-                    if (
-                        mv := Client()
-                        .get_pipeline_run(step_run.pipeline_run_id)
-                        .model_version
-                    ):
-                        model = mv.to_model_class()
-                    else:
-                        model = None
-
-                step_run.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_outputs.items()
-                }
-                orchestrator_utils._link_cached_artifacts_to_model(
-                    model_from_context=model,
-                    step_run=step_run,
-                    step_source=self._step.spec.source,
-                )
-                if model:
-                    orchestrator_utils._link_pipeline_run_to_model_from_context(
-                        pipeline_run_id=step_run.pipeline_run_id,
-                        model=model,
-                    )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
-        return execution_needed, step_run
+        return execution_needed, step_run, cached_outputs
 
     def _run_step(
         self,
