@@ -322,17 +322,16 @@ class StepLauncher:
                                 )
                                 raise
                 else:
+                    orchestrator_utils._link_cached_artifacts_to_model(
+                        model_from_context=model,
+                        step_run=step_run,
+                        step_source=self._step.spec.source,
+                    )
                     if model:
-                        orchestrator_utils._link_cached_artifacts_to_model(
-                            model_from_context=model,
-                            step_run=step_run,
-                            step_source=self._step.spec.source,
+                        orchestrator_utils._link_pipeline_run_to_model_from_context(
+                            pipeline_run_id=step_run.pipeline_run_id,
+                            model=model,
                         )
-                        if model:
-                            orchestrator_utils._link_pipeline_run_to_model_from_context(
-                                pipeline_run_id=step_run.pipeline_run_id,
-                                model=model,
-                            )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
