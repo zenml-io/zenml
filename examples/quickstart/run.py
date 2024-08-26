@@ -55,7 +55,7 @@ Examples:
 @click.option(
     "--orchestration_environment",
     type=click.Choice(
-        ["local", "custom", "aws", "gcp", "azure"], case_sensitive=False
+        ["local", "aws", "gcp", "azure"], case_sensitive=False
     ),
     default="local",
     help="Choose the orchestration environment.",
@@ -95,7 +95,6 @@ def main(
     english_translation_pipeline.with_options(**pipeline_args)(
         model_type=model_type, **run_args_train
     )
-    logger.info("Training pipeline finished successfully!\n\n")
 
 
 if __name__ == "__main__":
