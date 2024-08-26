@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
+import importlib
+import os
+import subprocess
 import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
-import click
-from modal.cli.run import run
-
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.resource_settings import ByteUnit
 from zenml.enums import StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
@@ -152,14 +153,24 @@ class ModalStepOperator(BaseStepOperator):
 
         # Construct the decorator arguments based on the settings
         decorator_args = []
-        if settings.gpu is not None:
-            decorator_args.append(f"gpu='{settings.gpu}'")
-        if settings.cpu is not None:
-            decorator_args.append(f"cpu={settings.cpu}")
-        if settings.memory is not None:
-            decorator_args.append(f"memory={settings.memory}")
         if settings.region is not None:
             decorator_args.append(f"region='{settings.region}'")
+        if settings.cloud is not None:
+            decorator_args.append(f"cloud='{settings.cloud}'")
+
+        # if resource settings are set, add them to the decorator args
+        resource_settings = info.config.resource_settings
+        if settings.gpu is not None:
+            gpu_str = settings.gpu
+            if resource_settings.gpu_count is not None:
+                gpu_str += f":{resource_settings.gpu_count}"
+            decorator_args.append(f"gpu='{gpu_str}'")
+        if resource_settings.cpu_count is not None:
+            decorator_args.append(f"cpu={resource_settings.cpu_count}")
+        if resource_settings.memory is not None:
+            decorator_args.append(
+                f"memory={resource_settings.get_memory(ByteUnit.MB)}"
+            )
 
         decorator_args_str = ", ".join(decorator_args)
 
@@ -187,21 +198,18 @@ if __name__ == "__main__":
             tmp.write(modal_code)
             tmp_filename = tmp.name
 
-        # Create a Click context object
-        ctx = click.Context(run)
-
-        # Set the necessary context parameters
-        ctx.ensure_object(dict)
-        ctx.obj["detach"] = False
-        ctx.obj["show_progress"] = True
-        ctx.obj["interactive"] = False
-        ctx.obj["env"] = None
-
+        # Run the Modal app using subprocess
         try:
-            run.main(args=[tmp_filename], prog_name="modal run", obj=ctx.obj)
-        except SystemExit as e:
-            if e.code == 0:
-                logger.info("Modal app completed successfully.")
-            else:
-                logger.error(f"Modal app exited with code {e.code}.")
-                raise
+            subprocess.run(
+                ["modal", "run", tmp_filename],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            logger.info("Modal app completed successfully.")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Modal app exited with code {e.returncode}.")
+            logger.error(e.stdout)
+            raise
+        finally:
+            os.remove(tmp_filename)
