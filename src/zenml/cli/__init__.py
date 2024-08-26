@@ -2186,7 +2186,7 @@ zenml service-connector describe SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
 
 You can update a registered service connector by using the `update` command.
 Keep in mind that all service connector updates are validated before being
-applied. If you want to disable this behaviour please use the `--no-verify`
+applied. If you want to disable this behavior please use the `--no-verify`
 flag.
 
 ```bash
