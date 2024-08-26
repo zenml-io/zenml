@@ -123,7 +123,7 @@ class ModalStepOperator(BaseStepOperator):
             environment: The environment variables for the step.
 
         Raises:
-            SystemExit: If the modal app exits with a non-zero code.
+            subprocess.CalledProcessError: If the modal app exits with a non-zero code.
             ValueError: If no Docker credentials are found for the container registry.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
