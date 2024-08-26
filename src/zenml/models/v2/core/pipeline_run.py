@@ -117,7 +117,7 @@ class PipelineRunRequest(WorkspaceScopedRequest):
     )
     configured_model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
-        "configured by this step run explicitly.",
+        "configured by this pipeline run explicitly.",
         default=None,
     )
 
@@ -132,7 +132,7 @@ class PipelineRunUpdate(BaseModel):
     end_time: Optional[datetime] = None
     configured_model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
-        "configured by this step run explicitly.",
+        "configured by this pipeline run explicitly.",
         default=None,
     )
     # TODO: we should maybe have a different update model here, the upper three attributes should only be for internal use
@@ -176,7 +176,7 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     )
     configured_model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
-        "configured by this step run explicitly.",
+        "configured by this pipeline run explicitly.",
         default=None,
     )
 
