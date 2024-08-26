@@ -98,7 +98,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             custom_validation_function=_validate_remote_components,
         )
 
-    def _get_lightning_client(
+    def _set_lightning_env_vars(
         self,
         deployment: "PipelineDeploymentResponse",
     ) -> None:
@@ -356,7 +356,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             entrypoint = entrypoint_command + entrypoint_arguments
             entrypoint_string = " ".join(entrypoint)
             logger.info("Setting up Lightning AI client")
-            self._get_lightning_client(deployment)
+            self._set_lightning_env_vars(deployment)
 
             studio_name = sanitize_studio_name(
                 "zenml_async_orchestrator_studio"
@@ -444,7 +444,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             Exception: If an error occurs while running the pipeline.
         """
         logger.info("Setting up Lightning AI client")
-        self._get_lightning_client(deployment)
+        self._set_lightning_env_vars(deployment)
 
         if settings.main_studio_name:
             studio_name = settings.main_studio_name

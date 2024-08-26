@@ -6,7 +6,7 @@ description: Orchestrating your pipelines to run on Lightning AI.
 
 # Lightning AI Orchestrator
 
-[Lightning AI](https://lightning.ai/) is a platform that simplifies the development and deployment of AI applications. The Lightning AI orchestrator is an integration provided by ZenML that allows you to run your pipelines on Lightning AI's infrastructure, leveraging its scalable compute resources and managed environment.
+[Lightning AI Studi](https://lightning.ai/) is a platform that simplifies the development and deployment of AI applications. The Lightning AI orchestrator is an integration provided by ZenML that allows you to run your pipelines on Lightning AI's infrastructure, leveraging its scalable compute resources and managed environment.
 
 
 {% hint style="warning" %}
@@ -22,17 +22,24 @@ This component is only meant to be used within the context of a [remote ZenML de
 
 * you want to leverage Lightning AI's managed infrastructure for running your pipelines.
 
-
 * you're looking for a solution that simplifies the deployment and scaling of your ML workflows.
-
 
 * you want to take advantage of Lightning AI's optimizations for machine learning workloads.
 
 
 ## How to deploy it
 
-To use the Lightning AI orchestrator, you need to have a Lightning AI account and the necessary credentials. You don't need to deploy any additional infrastructure, as the orchestrator will use Lightning AI's managed resources.
+To use the [Lightning AI Studi](https://lightning.ai/) orchestrator, you need to have a Lightning AI account and the necessary credentials. You don't need to deploy any additional infrastructure, as the orchestrator will use Lightning AI's managed resources.
 
+
+## How it works
+
+The Lightning AI orchestrator is a ZenML orchestrator that runs your pipelines on Lightning AI's infrastructure. When you run a pipeline with the Lightning AI orchestrator, ZenML will archive your current ZenML repository and upload it to the Lightning AI studio. Once the code is archived, using `lightning-sdk`, ZenML will create a new stduio in Lightning AI and upload the code to it. Then ZenML runs list of commands via `studio.run()` to prepare for the pipeline run (e.g. installing dependencies, setting up the environment). Finally, ZenML will run the pipeline on Lightning AI's infrastructure.
+
+* You can always use an already existing studio by specifying the `main_studio_name` in the `LightningOrchestratorSettings`.
+* The orchestartor supports a async mode, which means that the pipeline will be run in the background and you can check the status of the run in the ZenML Dashboard or the Lightning AI Studio.
+* You can specify a list of custom commands that will be executed before running the pipeline. This can be useful for installing dependencies or setting up the environment.
+* The orchestrator supports both CPU and GPU machine types. You can specify the machine type in the `LightningOrchestratorSettings`.
 
 ## How to use it
 
@@ -41,7 +48,7 @@ To use the Lightning AI orchestrator, you need:
 *   The ZenML `lightning` integration installed. If you haven't done so, run
 
     ```shell
-    zenml integration install lightning
+    pip install lightning-sdk
     ```
 
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
@@ -106,8 +113,12 @@ def my_pipeline():
 
 
 {% hint style="info" %}
-ZenML will build a wheel that includes all the files within you zenml repository and upload it to the lightning studio.
+ZenML will archive the current zenml repository (The code within the path where you run `zenml init`) and upload it to the Lightning AI studio.
 For this reason you need make sure that you are running `zenml init` in the same directory where you are running your pipeline.
+{% endhint %}
+
+{% hint style="info" %}
+The `custom_commands` attribute allows you to specify a list of shell commands that will be executed before running the pipeline. This can be useful for installing dependencies or setting up the environment, The commands will be executed in the root directory of the uploaded and extracted ZenML repository.
 {% endhint %}
 
 
@@ -147,6 +158,8 @@ lightning_settings = LightningOrchestratorSettings(
 ```
 
 
+
+
 These settings can then be specified on either pipeline-level or step-level:
 
 ```python
@@ -176,7 +189,7 @@ To use GPUs with the Lightning AI orchestrator, you need to specify a GPU-enable
 
 ```python
 lightning_settings = LightningOrchestratorSettings(
-    machine_type="gpu",
+    machine_type="gpu", # or 
 )
 ```
 

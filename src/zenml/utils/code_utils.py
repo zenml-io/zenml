@@ -176,7 +176,8 @@ def zip_and_hash_code(code_archive: CodeArchive) -> Tuple[str, str]:
         code_archive: The code archive to zip and hash.
 
     Returns:
-        A tuple containing the temporary file path and the computed hash.
+        A tuple containing the temporary file path and the filename of the
+        archive.
     """
     with tempfile.NamedTemporaryFile(
         mode="w+b", delete=False, suffix=".tar.gz"

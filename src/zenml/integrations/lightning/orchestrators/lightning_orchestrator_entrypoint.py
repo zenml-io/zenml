@@ -102,7 +102,7 @@ def main() -> None:
         )
 
     # Set up credentials
-    orchestrator._get_lightning_client(deployment)
+    orchestrator._set_lightning_env_vars(deployment)
 
     pipeline_settings = cast(
         LightningOrchestratorSettings, orchestrator.get_settings(deployment)

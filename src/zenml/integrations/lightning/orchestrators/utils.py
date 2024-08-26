@@ -14,9 +14,7 @@
 """Utility functions for the Lightning orchestrator."""
 
 import itertools
-import os
 import re
-import shutil
 from typing import List
 
 from zenml.client import Client
@@ -67,16 +65,3 @@ def gather_requirements(docker_settings: "DockerSettings") -> List[str]:
     requirements = sorted(set(filter(None, requirements)))
 
     return requirements
-
-
-def download_and_extract_code(code_path: str, extract_dir: str) -> None:
-    """Download and extract code.
-
-    Args:
-        code_path: Path where the code is uploaded.
-        extract_dir: Directory where to code should be extracted to.
-    """
-    download_path = os.path.basename(code_path)
-
-    shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
-    os.remove(download_path)
