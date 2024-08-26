@@ -61,7 +61,7 @@ def main() -> None:
 
     This is the entrypoint of the Lightning master/orchestrator STUDIO. It is
     responsible for provisioning the STUDIO and running the pipeline steps in
-    separate STUDIOs.
+    separate STUDIO.
 
     Raises:
         TypeError: If the active stack's orchestrator is not an instance of
