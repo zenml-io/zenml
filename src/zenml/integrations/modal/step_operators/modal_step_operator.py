@@ -17,7 +17,6 @@ import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import click
-import pkg_resources
 from modal.cli.run import run
 
 from zenml.client import Client
@@ -148,7 +147,7 @@ class ModalStepOperator(BaseStepOperator):
         # get the pydantic version in local environment
         # use it to install the correct version of pydantic in the modal app
         # since it overwrites with 1.x on top of our image
-        pydantic_version = pkg_resources.get_distribution("pydantic").version
+        pydantic_version = importlib.metadata.version("pydantic")
         major, minor, *_ = pydantic_version.split(".")
 
         # Construct the decorator arguments based on the settings
