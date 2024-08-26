@@ -91,6 +91,9 @@ module "zenml_stack" {
   # Required inputs
   zenml_server_url = "https://<zenml-server-url>"
   zenml_api_key = "<your-api-key>"
+  # Optional inputs
+  zenml_stack_name = "<your-stack-name>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "vertex", "azureml", "skypilot"
 }
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
@@ -100,9 +103,9 @@ output "zenml_stack_name" {
 }
 ```
 
-There might be a few additional inputs required depending on the cloud provider
-you are using. You can find the full list of inputs for each module in the
-[Terraform Registry](https://registry.terraform.io/modules/zenml-io/zenml-stack)
+There might be a few additional required or optional inputs depending on the
+cloud provider you are using. You can find the full list of inputs for each
+module in the [Terraform Registry](https://registry.terraform.io/modules/zenml-io/zenml-stack)
 documentation for the relevant module or you can read on in the following
 sections.
 
@@ -181,6 +184,7 @@ module "zenml_stack" {
 
   # Optional inputs
   region = "<your-aws-region>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "skypilot"
 }
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
@@ -195,16 +199,29 @@ output "zenml_stack_name" {
 The Terraform module will create a ZenML stack configuration with the
 following components:
 
+
 1. an S3 Artifact Store linked to a S3 bucket
 2. an ECR Container Registry linked to a ECR repository
-3. a SageMaker Orchestrator linked to your AWS account
-4. an AWS Service Connector configured with the IAM role credentials and used to
+3. depending on the `orchestrator` input variable:
+  * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the SageMaker Step Operator to selectively run some steps locally and some on SageMaker.
+  * a SageMaker Orchestrator linked to the AWS account, if `orchestrator` is set to `sagemaker` (default)
+  * a SkyPilot Orchestrator linked to the AWS account, if `orchestrator` is set to `skypilot`
+4. a SageMaker Step Operator linked to the AWS account
+5. an AWS Service Connector configured with the IAM role credentials and used to
 authenticate all ZenML components with your AWS account
 
 To use the ZenML stack, you will need to install the required integrations:
 
+* for the local or SageMaker orchestrator:
+
 ```shell
 zenml integration install aws s3
+```
+
+* for the SkyPilot orchestrator:
+
+```shell
+zenml integration install aws s3 skypilot_aws
 ```
 
 {% endtab %}
@@ -237,6 +254,7 @@ module "zenml_stack" {
 
   # Optional inputs
   region = "<your-gcp-region>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "vertex", "skypilot" or "airflow"
 }
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
@@ -253,15 +271,33 @@ following components:
 
 1. an GCP Artifact Store linked to a GCS bucket
 2. an GCP Container Registry linked to a Google Artifact Registry
-3. a Vertex AI Orchestrator linked to your GCP project
+3. depending on the `orchestrator` input variable:
+  * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the Vertex AI Step Operator to selectively run some steps locally and some on Vertex AI.
+  * a Vertex AI Orchestrator linked to the GCP project, if `orchestrator` is set to `vertex` (default)
+  * a SkyPilot Orchestrator linked to the GCP project, if `orchestrator` is set to `skypilot`
+  * an Airflow Orchestrator linked to the Cloud Composer environment, if `orchestrator` is set to `airflow`
 4. a Google Cloud Build Image Builder linked to your GCP project
-5. a GCP Service Connector configured with the GCP service account credentials
-and used to authenticate all ZenML components with the GCP resources
+5. a Vertex AI Step Operator linked to the GCP project
+6. a GCP Service Connector configured with the GCP service account credentials or the GCP Workload Identity Provider configuration and used to authenticate all ZenML components with the GCP resources
 
 To use the ZenML stack, you will need to install the required integrations:
 
+* for the local and Vertex AI orchestrators:
+
 ```shell
 zenml integration install gcp
+```
+
+* for the SkyPilot orchestrator:
+
+```shell
+zenml integration install gcp skypilot_gcp
+```
+
+* for the Airflow orchestrator:
+
+```shell
+zenml integration install gcp airflow
 ```
 
 {% endtab %}
@@ -293,6 +329,7 @@ module "zenml_stack" {
 
   # Optional inputs
   location = "<your-azure-location>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "skypilot_azure"
 }
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
@@ -309,11 +346,23 @@ following components:
 
 1. an Azure Artifact Store linked to an Azure Storage Account and Blob Container
 2. an ACR Container Registry linked to an Azure Container Registry
-3. an Azure Skypilot Orchestrator linked to your Azure subscription
-4. an Azure Service Connector configured with Azure Service Principal
+3. depending on the `orchestrator` input variable:
+  * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the AzureML Step Operator to selectively run some steps locally and some on AzureML.
+  * an Azure SkyPilot Orchestrator linked to the Azure subscription, if `orchestrator` is set to `skypilot` (default)
+  * an AzureML Orchestrator linked to an AzureML Workspace, if `orchestrator` is set to `azureml` 
+4. an AzureML Step Operator linked to an AzureML Workspace
+5. an Azure Service Connector configured with Azure Service Principal
 credentials and used to authenticate all ZenML components with the Azure resources
 
 To use the ZenML stack, you will need to install the required integrations:
+
+* for the local and AzureML orchestrators:
+
+```shell
+zenml integration install azure
+```
+
+* for the SkyPilot orchestrator:
 
 ```shell
 zenml integration install azure skypilot_azure
