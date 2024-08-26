@@ -75,7 +75,29 @@ class ModalStepOperator(BaseStepOperator):
         """
 
         def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
-            # ... validation logic ...
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The Modal step operator runs code remotely and "
+                    "needs to write files into the artifact store, but the "
+                    f"artifact store `{stack.artifact_store.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote artifact store when using the Modal "
+                    "step operator."
+                )
+
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The Modal step operator runs code remotely and "
+                    "needs to push/pull Docker images, but the "
+                    f"container registry `{container_registry.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote container registry when using the "
+                    "Modal step operator."
+                )
+
             return True, ""
 
         return StackValidator(
