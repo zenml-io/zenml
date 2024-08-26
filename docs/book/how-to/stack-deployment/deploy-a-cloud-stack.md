@@ -379,7 +379,7 @@ following GCP permissions in your GCP project:
 - An Azure Resource Group to contain all the resources required for the ZenML stack
 - An Azure Storage Account and Blob Storage Container that will be used as a ZenML Artifact Store.
 - An Azure Container Registry that will be used as a ZenML Container Registry.
-- An AzureML Workspace that will be used to run pipelines. A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
+- An AzureML Workspace that will be used as a ZenML Orchestrator and ZenML Step Operator. A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
 - An Azure Service Principal with the minimum necessary permissions to access
 the above resources.
 - An Azure Service Principal client secret used to give access to ZenML to

@@ -1169,6 +1169,19 @@ def is_uv_installed() -> bool:
         return False
 
 
+def is_pip_installed() -> bool:
+    """Check if pip is installed in the current environment.
+
+    Returns:
+        True if pip is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("pip")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
+
+
 def pretty_print_secret(
     secret: Dict[str, str],
     hide_secret: bool = True,
