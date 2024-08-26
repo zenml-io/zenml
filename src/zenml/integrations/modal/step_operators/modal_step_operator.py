@@ -141,7 +141,7 @@ class ModalStepOperator(BaseStepOperator):
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
         else:
-            raise ValueError(
+            raise RuntimeError(
                 "No Docker credentials found for the container registry."
             )
 
