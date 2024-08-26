@@ -20,4 +20,4 @@ from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoin
     LightningOrchestratorEntrypointConfiguration,
 )
 
-__all__ = ["LightningOrchestrator", "LightningEntrypointConfiguration", "LightningOrchestratorEntrypointConfiguration"]
+__all__ = ["LightningOrchestrator", "LightningOrchestratorEntrypointConfiguration"]

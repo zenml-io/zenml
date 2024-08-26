@@ -201,6 +201,7 @@
   * [Airflow Orchestrator](component-guide/orchestrators/airflow.md)
   * [Skypilot VM Orchestrator](component-guide/orchestrators/skypilot-vm.md)
   * [HyperAI Orchestrator](component-guide/orchestrators/hyperai.md)
+  * [Lightning AI Orchestrator](component-guide/orchestrators/lightning.md)
   * [Develop a custom orchestrator](component-guide/orchestrators/custom.md)
 * [🏪 Artifact Stores](component-guide/artifact-stores/artifact-stores.md)
   * [Local Artifact Store](component-guide/artifact-stores/local.md)
