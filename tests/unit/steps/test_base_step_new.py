@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
@@ -50,7 +50,7 @@ def test_input_validation_inside_pipeline():
     def test_pipeline(step_input):
         return step_with_int_input(step_input)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         test_pipeline(step_input="wrong_type")
 
     with does_not_raise():
@@ -187,3 +187,134 @@ def test_unpacking_step_artifact_raises_custom_exception():
 
     with pytest.raises(StepInterfaceError):
         test_pipeline()
+
+
+# ------------------------ Optional Input types
+@step
+def some_step(some_optional_int: Optional[int]) -> None:
+    pass
+
+
+def test_step_can_have_optional_input_types():
+    """Tests that a step allows None values for optional input types"""
+
+    @pipeline
+    def p():
+        some_step(some_optional_int=None)
+
+    with does_not_raise():
+        p()
+
+
+def test_step_fails_on_none_inputs_for_non_optional_input_types():
+    """Tests that a step does not allow None values for non-optional input types"""
+
+    @step
+    def some_step(some_optional_int: int) -> None:
+        pass
+
+    @pipeline
+    def p():
+        some_step(some_optional_int=None)
+
+    with pytest.raises(ValueError):
+        p().run(unlisted=True)
+
+
+# --------- Test type coercion
+
+
+@step
+def coerce_step(some_int: int, some_float: float) -> None:
+    pass
+
+
+def test_step_with_type_coercion():
+    """Tests that a step can coerce types when possible"""
+
+    @pipeline
+    def p():
+        coerce_step(some_int="42", some_float="3.14")
+
+    with does_not_raise():
+        p()
+
+
+def test_step_fails_on_invalid_type_coercion():
+    """Tests that a step fails when type coercion is not possible"""
+
+    @step
+    def coerce_step(some_int: int) -> None:
+        pass
+
+    @pipeline
+    def p():
+        coerce_step(some_int="not an int")
+
+    with pytest.raises(ValueError):
+        p().run(unlisted=True)
+
+
+# ------------- Non-Json-Serializable types
+
+
+class NonSerializable:
+    def __init__(self, value):
+        self.value = value
+
+
+@step
+def non_serializable_step(some_obj: NonSerializable) -> None:
+    pass
+
+
+def test_step_with_non_serializable_type_as_parameter_fails():
+    """Tests that a step can handle non-JSON serializable types, but fails if these are passed as parameters"""
+
+    @pipeline
+    def p():
+        non_serializable_step(some_obj=NonSerializable(42))
+
+    with pytest.raises(StepInterfaceError):
+        p().run(unlisted=True)
+
+
+def test_step_fails_on_wrong_non_serializable_type():
+    """Tests that a step fails when given the wrong non-serializable type"""
+
+    @step
+    def non_serializable_step(some_obj: NonSerializable) -> None:
+        pass
+
+    @pipeline
+    def p():
+        non_serializable_step(some_obj=None)
+
+    with pytest.raises(ValueError):
+        p().run(unlisted=True)
+
+
+# --------- Test union types
+
+
+@step
+def union_step(some_union: Union[int, str]) -> None:
+    pass
+
+
+def test_step_with_union_type():
+    """Tests that a step can handle Union types"""
+
+    @pipeline
+    def p():
+        union_step(some_union=42)
+
+    with does_not_raise():
+        p()
+
+    @pipeline
+    def p():
+        union_step(some_union="fourtytwo")
+
+    with does_not_raise():
+        p()

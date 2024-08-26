@@ -25,9 +25,11 @@ from typing import (
     Sequence,
     Type,
     Union,
+    get_args,
+    get_origin,
 )
 
-from pydantic import ConfigDict, ValidationError, create_model
+from pydantic import ValidationError, create_model
 
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
@@ -185,7 +187,6 @@ class EntrypointFunctionDefinition(NamedTuple):
             )
 
         parameter = self.inputs[key]
-
         if isinstance(
             value,
             (
@@ -235,17 +236,40 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-        config_dict = ConfigDict(arbitrary_types_allowed=False)
+        annotation = parameter.annotation
 
-        # Create a pydantic model with just a single required field with the
-        # type annotation of the parameter to verify the input type including
-        # pydantics type coercion
-        validation_model_class = create_model(
-            "input_validation_model",
-            __config__=config_dict,
-            value=(parameter.annotation, ...),
-        )
-        validation_model_class(value=value)
+        # Handle Optional types
+        origin = get_origin(annotation)
+        if origin is Union:
+            args = get_args(annotation)
+            if type(None) in args:
+                if value is None:
+                    return  # None is valid for Optional types
+                # Remove NoneType from args as this case is handled from here
+                args = tuple(arg for arg in args if arg is not type(None))
+                annotation = args[0] if len(args) == 1 else Union[args]
+
+        # Handle None values for non-Optional types
+        if value is None and annotation is not type(None):
+            raise ValueError(f"Expected {annotation}, but got None")
+
+        # Use Pydantic for all types to take advantage of its coercion abilities
+        try:
+            config_dict = {"arbitrary_types_allowed": True}
+            validation_model_class = create_model(
+                "input_validation_model",
+                __config__=type("Config", (), config_dict),
+                value=(annotation, ...),
+            )
+            validation_model_class(value=value)
+        except ValidationError as e:
+            raise ValueError(f"Invalid input: {e}")
+        except Exception:
+            # If Pydantic can't handle it, fall back to isinstance
+            if not isinstance(value, annotation):
+                raise TypeError(
+                    f"Expected {annotation}, but got {type(value)}"
+                )
 
 
 def validate_entrypoint_function(
