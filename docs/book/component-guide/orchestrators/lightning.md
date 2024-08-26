@@ -117,6 +117,8 @@ ZenML will archive the current zenml repository (The code within the path where 
 For this reason you need make sure that you are running `zenml init` in the same directory where you are running your pipeline.
 {% endhint %}
 
+![Lightning AI studio VSCode](../../.gitbook/assets/lightning_studio_vscode.png)
+
 {% hint style="info" %}
 The `custom_commands` attribute allows you to specify a list of shell commands that will be executed before running the pipeline. This can be useful for installing dependencies or setting up the environment, The commands will be executed in the root directory of the uploaded and extracted ZenML repository.
 {% endhint %}
@@ -132,6 +134,9 @@ python file_that_runs_a_zenml_pipeline.py
 ### Lightning AI UI
 
 Lightning AI provides its own UI where you can monitor and manage your running applications, including the pipelines orchestrated by ZenML.
+![Lightning AI Studio](../../.gitbook/assets/lightning_studio_ui.png)
+
+
 For any runs executed on Lightning AI, you can get the URL to the Lightning AI UI in Python using the following code snippet:
 
 ```python
