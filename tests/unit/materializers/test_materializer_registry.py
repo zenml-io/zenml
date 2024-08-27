@@ -29,7 +29,7 @@ def test_materializer_with_subclassing_parameter():
         return MyFloatType(3.0)
 
     with does_not_raise():
-        some_step().entrypoint()
+        some_step().call_entrypoint()
 
 
 def test_materializer_with_parameter_with_more_than_one_baseclass():
@@ -47,7 +47,7 @@ def test_materializer_with_parameter_with_more_than_one_baseclass():
         return MyFloatType(3.0)
 
     with does_not_raise():
-        some_step().entrypoint()
+        some_step().call_entrypoint()
 
 
 class MyFirstType:
@@ -109,4 +109,4 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
     with does_not_raise():
         some_step().configure(
             output_materializers=MyFirstMaterializer
-        ).entrypoint()
+        ).call_entrypoint()

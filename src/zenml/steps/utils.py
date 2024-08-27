@@ -531,7 +531,7 @@ def run_as_single_step_pipeline(
         key = settings_utils.get_stack_component_setting_key(orchestrator)
         pipeline_settings[key] = BaseSettings(synchronous=True)
 
-    @pipeline(enable_cache=False, settings=pipeline_settings)
+    @pipeline(name=__step.name, enable_cache=False, settings=pipeline_settings)
     def single_step_pipeline() -> None:
         __step(**inputs)
 
