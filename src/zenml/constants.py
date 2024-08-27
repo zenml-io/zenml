@@ -488,7 +488,7 @@ MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
 )
 
 
-FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
+FINISHED_ONBOARDING_SURVEY_KEY = "finished_onboarding_survey"
 
 # Name validation
 BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
