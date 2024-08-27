@@ -118,7 +118,15 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         from zenml.client import Client
 
+        try:
+            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
+        except KeyError:
+            pass
         self.pipeline_run = pipeline_run
+        try:
+            step_run = Client().get_run_step(step_run.id)
+        except KeyError:
+            pass
         self.step_run = step_run
         self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
@@ -177,18 +185,21 @@ class StepContext(metaclass=SingletonMetaClass):
         Raises:
             StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model is not None:
-            model = self.step_run.config.model
+        if (
+            self.step_run.config.model is not None
+            and self.step_run.model_version is not None
+        ):
+            model = self.step_run.model_version.to_model_class()
         elif self.pipeline_run.config.model is not None:
-            model = self.pipeline_run.config.model
+            if self.pipeline_run.model_version:
+                model = self.pipeline_run.model_version.to_model_class()
+            else:
+                model = self.pipeline_run.config.model
         else:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
                 f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
             )
-
-        # warm-up the model version
-        model._get_or_create_model_version()
 
         return model
 

@@ -194,10 +194,10 @@ def svc_trainer(
 ```
 
 {% hint style="info" %}
-If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the step function outside of a ZenML pipeline. For example:
+If you want to run just a single step on your ZenML stack, all you need to do is call the step function outside of a ZenML pipeline. For example:
 
 ```python
-svc_trainer(X_train=..., y_train=...)
+model, train_acc = svc_trainer(X_train=..., y_train=...)
 ```
 {% endhint %}
 

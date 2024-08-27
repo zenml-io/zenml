@@ -37,7 +37,7 @@ from zenml.constants import (
     ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
-from zenml.exceptions import StepContextError, StepInterfaceError
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -181,8 +181,6 @@ class StepRunner:
                         for k, v in output_annotations.items()
                     },
                 )
-                # Prepare Model Context
-                self._prepare_model_context_for_step()
 
                 # Parse the inputs for the entrypoint function.
                 function_params = self._parse_inputs(
@@ -647,13 +645,6 @@ class StepRunner:
             output_artifacts[output_name] = artifact.id
 
         return output_artifacts
-
-    def _prepare_model_context_for_step(self) -> None:
-        try:
-            model = get_step_context().model
-            model._get_or_create_model_version()
-        except StepContextError:
-            return
 
     def load_and_run_hook(
         self,

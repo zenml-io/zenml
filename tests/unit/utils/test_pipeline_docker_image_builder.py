@@ -31,7 +31,6 @@ def test_check_user_is_set():
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
             "image:tag",
             docker_settings,
-            download_files=False,
         )
     )
     assert "USER" not in generated_dockerfile
@@ -41,7 +40,6 @@ def test_check_user_is_set():
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
             "image:tag",
             docker_settings,
-            download_files=False,
         )
     )
     assert "USER test_user" in generated_dockerfile
@@ -148,7 +146,6 @@ def test_python_package_installer_args():
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
             "image:tag",
             docker_settings,
-            download_files=False,
             requirements_files=requirements_files,
         )
     )

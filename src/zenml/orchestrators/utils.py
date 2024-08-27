@@ -15,7 +15,6 @@
 
 import os
 import random
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 from uuid import UUID
 
@@ -38,6 +37,7 @@ from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
@@ -153,10 +153,7 @@ def get_run_name(run_name_template: str) -> str:
     Returns:
         The run name derived from the template.
     """
-    date = datetime.utcnow().strftime("%Y_%m_%d")
-    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-
-    run_name = run_name_template.format(date=date, time=time)
+    run_name = format_name_template(run_name_template)
 
     if run_name == "":
         raise ValueError("Empty run names are not allowed.")
