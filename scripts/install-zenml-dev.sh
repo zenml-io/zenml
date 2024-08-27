@@ -36,7 +36,8 @@ install_integrations() {
     # figure out the python version
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
-    ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy"
+    # TODO: Add mlflow, huggingface and tensorflow back in
+    ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy mlflow tensorflow huggingface"
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
