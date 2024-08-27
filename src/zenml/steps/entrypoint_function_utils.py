@@ -25,11 +25,9 @@ from typing import (
     Sequence,
     Type,
     Union,
-    get_args,
-    get_origin,
 )
 
-from pydantic import ValidationError, create_model
+from pydantic import ValidationError, create_model, ConfigDict
 
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
@@ -187,6 +185,7 @@ class EntrypointFunctionDefinition(NamedTuple):
             )
 
         parameter = self.inputs[key]
+
         if isinstance(
             value,
             (
@@ -238,32 +237,15 @@ class EntrypointFunctionDefinition(NamedTuple):
         """
         annotation = parameter.annotation
 
-        # Handle Optional types
-        origin = get_origin(annotation)
-        if origin is Union:
-            args = get_args(annotation)
-            if type(None) in args:
-                if value is None:
-                    return  # None is valid for Optional types
-                # Remove NoneType from args as this case is handled from here
-                args = tuple(arg for arg in args if arg is not type(None))
-                annotation = args[0] if len(args) == 1 else Union[args]
-
-        # Handle None values for non-Optional types
-        if value is None and annotation is not type(None):
-            raise ValueError(f"Expected {annotation}, but got None")
-
         # Use Pydantic for all types to take advantage of its coercion abilities
         try:
-            config_dict = {"arbitrary_types_allowed": True}
+            config_dict = ConfigDict(arbitrary_types_allowed=True)
             validation_model_class = create_model(
                 "input_validation_model",
                 __config__=type("Config", (), config_dict),
                 value=(annotation, ...),
             )
             validation_model_class(value=value)
-        except ValidationError as e:
-            raise ValueError(f"Invalid input: {e}")
         except Exception:
             # If Pydantic can't handle it, fall back to isinstance
             if not isinstance(value, annotation):
