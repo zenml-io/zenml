@@ -162,7 +162,7 @@ class StepRunSchema(NamedSchema, table=True):
         back_populates="step_runs",
     )
 
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
