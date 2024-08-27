@@ -35,6 +35,7 @@ from zenml.config.docker_settings import (
     PythonPackageInstaller,
 )
 from zenml.constants import (
+    ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     handle_bool_env_var,
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DOCKER_IMAGE_WORKDIR = "/app"
+DOCKER_IMAGE_ZENML_CONFIG_PATH = f"{DOCKER_IMAGE_WORKDIR}/.zenconfig"
 
 DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
@@ -632,6 +634,9 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
+        lines.append(
+            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
+        )
 
         lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
