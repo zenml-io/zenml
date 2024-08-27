@@ -185,11 +185,8 @@ class StepContext(metaclass=SingletonMetaClass):
         Raises:
             StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model is not None:
-            if self.step_run.model_version:
-                model = self.step_run.model_version.to_model_class()
-            else:
-                model = self.step_run.config.model
+        if self.step_run.model_version is not None:
+            model = self.step_run.model_version.to_model_class()
         elif self.pipeline_run.config.model is not None:
             if self.pipeline_run.model_version:
                 model = self.pipeline_run.model_version.to_model_class()
