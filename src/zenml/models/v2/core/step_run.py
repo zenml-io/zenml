@@ -114,6 +114,8 @@ class StepRunRequest(WorkspaceScopedRequest):
         default=None,
     )
 
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -146,6 +148,7 @@ class StepRunUpdate(BaseModel):
         "configured by this step run explicitly.",
         default=None,
     )
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -166,6 +169,7 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         "configured by this step run explicitly.",
         default=None,
     )
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):

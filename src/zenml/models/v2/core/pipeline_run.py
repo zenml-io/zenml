@@ -121,6 +121,8 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
     )
 
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -142,6 +144,8 @@ class PipelineRunUpdate(BaseModel):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
     )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -179,6 +183,8 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
         "configured by this pipeline run explicitly.",
         default=None,
     )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):

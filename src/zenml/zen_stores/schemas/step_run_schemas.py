@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
@@ -160,6 +161,8 @@ class StepRunSchema(NamedSchema, table=True):
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
+
+    model_config = ConfigDict(protected_namespaces=())
 
     @classmethod
     def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
