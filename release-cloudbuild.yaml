@@ -15,7 +15,6 @@ steps:
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
           docker tag $$USERNAME/zenml:$TAG_NAME-py3.8 $$USERNAME/zenml:py3.8
-          docker tag $$USERNAME/zenml:$TAG_NAME-py3.8 $$USERNAME/zenml:latest
         fi
     id: build-base-3.8
     waitFor: ['-']
@@ -82,6 +81,7 @@ steps:
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
           docker tag $$USERNAME/zenml:$TAG_NAME-py3.11 $$USERNAME/zenml:py3.11
+          docker tag $$USERNAME/zenml:$TAG_NAME-py3.11 $$USERNAME/zenml:latest
         fi
     id: build-base-3.11
     waitFor: ['-']
