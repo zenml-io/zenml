@@ -26,6 +26,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from azure.ai.ml import Input, MLClient, Output
 from azure.ai.ml.constants import TimeZone
@@ -45,6 +46,7 @@ from azure.identity import DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.step_configurations import Step
+from zenml.constants import METADATA_ORCHESTRATOR_URL
 from zenml.enums import StackComponentType
 from zenml.integrations.azure.azureml_utils import create_or_get_compute
 from zenml.integrations.azure.flavors.azureml import AzureMLComputeTypes
@@ -56,6 +58,7 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
     AzureMLEntrypointConfiguration,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -388,3 +391,40 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             if self.config.synchronous:
                 logger.info("Waiting for pipeline to finish...")
                 ml_client.jobs.stream(job.name)
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        try:
+            if connector := self.get_connector():
+                credentials = connector.connect()
+            else:
+                credentials = DefaultAzureCredential()
+
+            ml_client = MLClient(
+                credential=credentials,
+                subscription_id=self.config.subscription_id,
+                resource_group_name=self.config.resource_group,
+                workspace_name=self.config.workspace,
+            )
+
+            azureml_root_run_id = os.environ[ENV_ZENML_AZUREML_RUN_ID]
+            azureml_job = ml_client.jobs.get(azureml_root_run_id)
+
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri(azureml_job.studio_url),
+            }
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch the Studio URL of the AzureML pipeline "
+                f"job: {e}"
+            )
+            return {}
