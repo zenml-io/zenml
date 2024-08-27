@@ -239,31 +239,31 @@ def test_enabling_a_custom_step_operator_for_a_step():
 def test_call_step_with_args(step_with_two_int_inputs):
     """Test that a step can be called with args."""
     with does_not_raise():
-        step_with_two_int_inputs()(1, 2)
+        step_with_two_int_inputs().call_entrypoint(1, 2)
 
 
 def test_call_step_with_kwargs(step_with_two_int_inputs):
     """Test that a step can be called with kwargs."""
     with does_not_raise():
-        step_with_two_int_inputs()(input_1=1, input_2=2)
+        step_with_two_int_inputs().call_entrypoint(input_1=1, input_2=2)
 
 
 def test_call_step_with_args_and_kwargs(step_with_two_int_inputs):
     """Test that a step can be called with a mix of args and kwargs."""
     with does_not_raise():
-        step_with_two_int_inputs()(1, input_2=2)
+        step_with_two_int_inputs().call_entrypoint(1, input_2=2)
 
 
 def test_call_step_with_too_many_args(step_with_two_int_inputs):
     """Test that calling a step fails when too many args are passed."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(1, 2, 3)
+        step_with_two_int_inputs().call_entrypoint(1, 2, 3)
 
 
 def test_call_step_with_too_many_args_and_kwargs(step_with_two_int_inputs):
     """Test that calling a step fails when too many args and kwargs are passed."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(1, input_1=2, input_2=3)
+        step_with_two_int_inputs().call_entrypoint(1, input_1=2, input_2=3)
 
 
 def test_call_step_with_missing_key(step_with_two_int_inputs):
@@ -285,13 +285,15 @@ def test_call_step_with_unexpected_key(step_with_two_int_inputs):
 def test_call_step_with_wrong_arg_type(step_with_two_int_inputs):
     """Test that calling a step fails when an arg has a wrong type."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(1, "not_an_int")
+        step_with_two_int_inputs().call_entrypoint(1, "not_an_int")
 
 
 def test_call_step_with_wrong_kwarg_type(step_with_two_int_inputs):
     """Test that calling a step fails when a kwarg has a wrong type."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(input_1=1, input_2="not_an_int")
+        step_with_two_int_inputs().call_entrypoint(
+            input_1=1, input_2="not_an_int"
+        )
 
 
 class MyType:
@@ -310,7 +312,7 @@ def test_call_step_with_default_materializer_registered():
         return MyType()
 
     with does_not_raise():
-        some_step()()
+        some_step().call_entrypoint()
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
@@ -376,8 +378,8 @@ def test_calling_a_step_works():
     step_instance = my_step()
 
     with does_not_raise():
-        step_instance()
-        step_instance()
+        step_instance.call_entrypoint()
+        step_instance.call_entrypoint()
 
 
 @step

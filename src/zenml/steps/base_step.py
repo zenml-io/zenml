@@ -39,7 +39,11 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
-from zenml.constants import STEP_SOURCE_PARAMETER_NAME
+from zenml.constants import (
+    ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
+    STEP_SOURCE_PARAMETER_NAME,
+    handle_bool_env_var,
+)
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -52,6 +56,7 @@ from zenml.steps.entrypoint_function_utils import (
 )
 from zenml.steps.utils import (
     resolve_type_annotation,
+    run_as_single_step_pipeline,
 )
 from zenml.utils import (
     dict_utils,
@@ -587,9 +592,16 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside the context of a pipeline,
-            # we simply call the entrypoint
-            return self.call_entrypoint(*args, **kwargs)
+            # The step is being called outside the context of a pipeline, either
+            # run the step function or run it as a single step pipeline on the
+            # active stack
+            run_without_stack = handle_bool_env_var(
+                ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
+            )
+            if run_without_stack:
+                return self.call_entrypoint(*args, **kwargs)
+            else:
+                return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
             input_artifacts,
