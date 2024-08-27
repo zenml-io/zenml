@@ -70,6 +70,9 @@ zenml init
 
 # Start the ZenServer to enable dashboard access
 zenml connect --url="INSERT_YOUR_SERVER_URL_HERE"
+
+# We'll start on the default stack
+zenml stack set default
 ```
 
 As described above we have done the first step already and created an experimental pipeline. Feel free to check out
@@ -97,7 +100,7 @@ well together.
 
 Our last section confirmed to us, that the pipeline works. Let's now run the pipeline in the environment of your choice.
 
-For you to be able to try this next section, you will need to have access to a cloud environment (AWS, GCP, AZURE).
+For you to be able to try this next section, you will need to have access to a cloud environment (GCP, Azure, AWS).
 ZenML wraps around all the major cloud providers and orchestration tools and lets you easily deploy your code onto them.
 
 To do this lets head over to the `Stack` section of your ZenML Dashboard. Here you'll be able to either connect to an
@@ -113,7 +116,7 @@ For AWS you will need to install some aws requirements in your local environment
 need an AWS stack registered in ZenML.
 
 ```bash
-!zenml integration install aws s3 -y
+zenml integration install aws s3 -y
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
 python run.py --model_type=t5-small --orchestration_environment aws
@@ -127,7 +130,7 @@ For GCP you will need to install some aws requirements in your local environment
 need an AWS stack registered in ZenML.
 
 ```bash
-!zenml integration install gcp
+zenml integration install gcp
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
 python run.py --model_type=t5-small --orchestration_environment gcp
@@ -138,7 +141,7 @@ You can edit `configs/training_gcp.yaml` to adjust the settings.
 #### Azure
 
 ```bash
-!zenml integration install azure
+zenml integration install azure
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
 python run.py --model_type=t5-small --orchestration_environment azure
