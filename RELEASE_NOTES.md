@@ -731,7 +731,7 @@ by adding support for `Schedule.start_time` to the HyperAI orchestrator.
 ## What's Changed
 * Really run migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2562
 * Interact with feature gate by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2492
-* Allow for logs to be unformatted / without colours by @strickvl in https://github.com/zenml-io/zenml/pull/2544
+* Allow for logs to be unformatted / without colors by @strickvl in https://github.com/zenml-io/zenml/pull/2544
 * Add VS Code extension to README / docs by @strickvl in https://github.com/zenml-io/zenml/pull/2568
 * Allow loading of artifacts without needing to activate the artifact store (again) by @avishniakov in https://github.com/zenml-io/zenml/pull/2545
 * Minor fix by @htahir1 in https://github.com/zenml-io/zenml/pull/2578
@@ -1302,7 +1302,7 @@ and some improvements to the Model Control Plane.
 ## What's Changed
 * Bump aquasecurity/trivy-action from 0.16.0 to 0.16.1 by @dependabot in https://github.com/zenml-io/zenml/pull/2244
 * Bump crate-ci/typos from 1.16.26 to 1.17.0 by @dependabot in https://github.com/zenml-io/zenml/pull/2245
-* Add YAML formatting standardisation to formatting & linting scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2224
+* Add YAML formatting standardization to formatting & linting scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2224
 * Remove text annotation by @strickvl in https://github.com/zenml-io/zenml/pull/2246
 * Add MariaDB migration testing by @strickvl in https://github.com/zenml-io/zenml/pull/2170
 * Delete artifact links from model version via Client, ModelVersion and API by @avishniakov in https://github.com/zenml-io/zenml/pull/2191
@@ -1383,7 +1383,7 @@ which allows you to define custom blocks for the Slack message.
 * Bump google-github-actions/auth from 1 to 2 by @dependabot in https://github.com/zenml-io/zenml/pull/2203
 * Bump aws-actions/amazon-ecr-login from 1 to 2 by @dependabot in https://github.com/zenml-io/zenml/pull/2200
 * Bump crate-ci/typos from 1.16.25 to 1.16.26 by @dependabot in https://github.com/zenml-io/zenml/pull/2207
-* Fix unreliable test behaviour when using hypothesis by @strickvl in https://github.com/zenml-io/zenml/pull/2208
+* Fix unreliable test behavior when using hypothesis by @strickvl in https://github.com/zenml-io/zenml/pull/2208
 * Added more pod spec properties for k8s orchestrator by @htahir1 in https://github.com/zenml-io/zenml/pull/2097
 * Fix API docs environment setup by @strickvl in https://github.com/zenml-io/zenml/pull/2190
 * Use placeholder runs to show pipeline runs in the dashboard without delay by @schustmi in https://github.com/zenml-io/zenml/pull/2048
@@ -2602,7 +2602,7 @@ improvements and bug fixes.
 * Delete extra word from `bentoml` docs by @strickvl in https://github.com/zenml-io/zenml/pull/1484
 * Remove top-level config from recommended repo structure by @schustmi in https://github.com/zenml-io/zenml/pull/1485
 * Bump `mypy` and `ruff` by @strickvl in https://github.com/zenml-io/zenml/pull/1481
-* ZenML Version Downgrade - Silence Warnning by @safoinme in https://github.com/zenml-io/zenml/pull/1477
+* ZenML Version Downgrade - Silence Warning by @safoinme in https://github.com/zenml-io/zenml/pull/1477
 * Update ZenServer recipes to include secret stores by @wjayesh in https://github.com/zenml-io/zenml/pull/1483
 * Fix alembic order by @schustmi in https://github.com/zenml-io/zenml/pull/1487
 * Fix source resolving for classes in notebooks by @schustmi in https://github.com/zenml-io/zenml/pull/1486

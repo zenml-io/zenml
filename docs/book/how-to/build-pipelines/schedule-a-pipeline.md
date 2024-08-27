@@ -8,16 +8,24 @@ description: Learn how to set, pause and stop a schedule for pipelines.
 Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
 {% endhint %}
 
-| Orchestrator                                                                   | Scheduling Support |
-|--------------------------------------------------------------------------------|--------------------|
-| [LocalOrchestrator](../../component-guide/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](../../component-guide/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](../../component-guide/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](../../component-guide/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](../../component-guide/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](../../component-guide/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](../../component-guide/orchestrators/airflow.md)          | ✅                  |
-| [AzureMLOrchestrator](../../component-guide/orchestrators/azureml.md)          | ✅                  |
+| Orchestrator                                                                     | Scheduling Support |
+|----------------------------------------------------------------------------------|--------------------|
+| [AirflowOrchestrator](../../component-guide/orchestrators/airflow.md)            | ✅                 |
+| [AzureMLOrchestrator](../../component-guide/orchestrators/azureml.md)            | ✅                 |
+| [DatabricksOrchestrator](../../component-guide/orchestrators/databricks.md)      | ✅                 |
+| [HyperAIOrchestrator](../../component-guide/orchestrators/hyperai.md)            | ✅                 |
+| [KubeflowOrchestrator](../../component-guide/orchestrators/kubeflow.md)          | ✅                 |
+| [KubernetesOrchestrator](../../component-guide/orchestrators/kubernetes.md)      | ✅                 |
+| [LocalOrchestrator](../../component-guide/orchestrators/local.md)                | ⛔️                 |
+| [LocalDockerOrchestrator](../../component-guide/orchestrators/local-docker.md)   | ⛔️                 |
+| [SagemakerOrchestrator](../../component-guide/orchestrators/sagemaker.md)        | ⛔️                 |
+| [SkypilotAWSOrchestrator](../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |
+| [SkypilotAzureOrchestrator](../../component-guide/orchestrators/skypilot-vm.md)  | ⛔️                 |
+| [SkypilotGCPOrchestrator](../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |
+| [SkypilotLambdaOrchestrator](../../component-guide/orchestrators/skypilot-vm.md) | ⛔️                 |
+| [TektonOrchestrator](../../component-guide/orchestrators/tekton.md)              | ⛔️                 |
+| [VertexOrchestrator](../../component-guide/orchestrators/vertex.md)              | ✅                 |
+
 
 ### Set a schedule
 
