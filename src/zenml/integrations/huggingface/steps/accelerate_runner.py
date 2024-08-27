@@ -82,7 +82,7 @@ def run_with_accelerate(
                     )
 
                 with create_cli_wrapped_script(
-                    entrypoint, flavour="accelerate"
+                    entrypoint, flavor="accelerate"
                 ) as (
                     script_path,
                     output_path,
