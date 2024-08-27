@@ -108,6 +108,11 @@ class StepRunRequest(WorkspaceScopedRequest):
     deployment: UUID = Field(
         title="The deployment associated with the step run."
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -136,6 +141,11 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
@@ -150,6 +160,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     outputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The output artifact versions of the step run.",
         default={},
+    )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
     )
 
 
@@ -319,6 +334,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().outputs
+
+    @property
+    def model_version_id(self) -> Optional[UUID]:
+        """The `model_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().model_version_id
 
     @property
     def config(self) -> "StepConfiguration":
