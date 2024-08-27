@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-import importlib
-import os
-import subprocess
-import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+
+import modal
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -167,71 +165,38 @@ class ModalStepOperator(BaseStepOperator):
                 "No Docker credentials found for the container registry."
             )
 
-        # get the pydantic version in local environment
-        # use it to install the correct version of pydantic in the modal app
-        # since it overwrites with 1.x on top of our image
-        pydantic_version = importlib.metadata.version("pydantic")
-        major, minor, *_ = pydantic_version.split(".")
+        my_secret = modal.Secret.from_dict(
+            {
+                "REGISTRY_USERNAME": docker_username,
+                "REGISTRY_PASSWORD": docker_password,
+            }
+        )
 
-        # Construct the decorator arguments based on the settings
-        decorator_args = []
-        if settings.region is not None:
-            decorator_args.append(f"region='{settings.region}'")
-        if settings.cloud is not None:
-            decorator_args.append(f"cloud='{settings.cloud}'")
+        zenml_image = (
+            modal.Image.from_registry(tag=image_name, secret=my_secret)
+            .env(environment)
+            .run_commands(" ".join(entrypoint_command))
+        )
 
-        # if resource settings are set, add them to the decorator args
         resource_settings = info.config.resource_settings
-        if settings.gpu is not None:
-            gpu_str = settings.gpu
-            if resource_settings.gpu_count is not None:
-                gpu_str += f":{resource_settings.gpu_count}"
-            decorator_args.append(f"gpu='{gpu_str}'")
-        if resource_settings.cpu_count is not None:
-            decorator_args.append(f"cpu={resource_settings.cpu_count}")
-        if resource_settings.memory is not None:
-            decorator_args.append(
-                f"memory={resource_settings.get_memory(ByteUnit.MB)}"
-            )
+        gpu_str = settings.gpu
+        if resource_settings.gpu_count is not None:
+            gpu_str += f":{resource_settings.gpu_count}"
 
-        decorator_args_str = ", ".join(decorator_args)
+        sb = modal.Sandbox.create(
+            "bash",
+            "-c",
+            " ".join(entrypoint_command),
+            image=zenml_image,
+            gpu=gpu_str,
+            cpu=resource_settings.cpu_count or None,
+            memory=resource_settings.get_memory(ByteUnit.MB) or None,
+            cloud=settings.cloud or None,
+            region=settings.region or None,
+        )
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".py"
-        ) as tmp:
-            modal_code = f"""import modal
-
-my_secret = modal.Secret.from_dict({{
-    'REGISTRY_USERNAME': '{docker_username}',
-    'REGISTRY_PASSWORD': '{docker_password}',
-}})
-
-zenml_image = modal.Image.from_registry(tag='{image_name}', secret=my_secret).env({environment}).pip_install("pydantic~={major}.{minor}").run_commands('{" ".join(entrypoint_command)}')
-
-app = modal.App('{info.run_name}')
-
-@app.function(image=zenml_image, {decorator_args_str})
-def run_step():
-    print("Executing {info.run_name} step...")
-
-if __name__ == "__main__":
-    run_step()
-"""
-            tmp.write(modal_code)
-            tmp_filename = tmp.name
-
-        # Run the Modal app using subprocess
-        try:
-            subprocess.run(
-                ["modal", "run", tmp_filename],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            logger.info("Modal app completed successfully.")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Modal app exited with code {e.returncode}.")
-            logger.error(e.stdout)
-            raise RuntimeError(f"Model step operator failed: {str(e)}") from e
-        finally:
-            os.remove(tmp_filename)
+        sb.wait()
+        stdout = sb.stdout()
+        stderr = sb.stderr()
+        returncode = sb.returncode()
+        # return stdout, stderr, returncode
