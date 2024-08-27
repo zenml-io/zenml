@@ -151,7 +151,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    configured_model_version: "ModelVersionSchema" = Relationship(
+    model_version: "ModelVersionSchema" = Relationship(
         back_populates="pipeline_runs",
     )
 
@@ -348,8 +348,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             model_version = None
-            if self.configured_model_version:
-                model_version = self.configured_model_version.to_model()
+            if self.model_version:
+                model_version = self.model_version.to_model()
 
             resources = PipelineRunResponseResources(
                 model_version=model_version,

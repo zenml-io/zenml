@@ -157,7 +157,7 @@ class StepRunSchema(NamedSchema, table=True):
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
         },
     )
-    configured_model_version: "ModelVersionSchema" = Relationship(
+    model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
 
@@ -288,8 +288,8 @@ class StepRunSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             model_version = None
-            if self.configured_model_version:
-                model_version = self.configured_model_version.to_model()
+            if self.model_version:
+                model_version = self.model_version.to_model()
 
             resources = StepRunResponseResources(model_version=model_version)
 

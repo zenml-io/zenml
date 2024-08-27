@@ -287,10 +287,10 @@ class ModelVersionSchema(NamedSchema, table=True):
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="configured_model_version"
+        back_populates="model_version"
     )
     step_runs: List["StepRunSchema"] = Relationship(
-        back_populates="configured_model_version"
+        back_populates="model_version"
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
