@@ -115,7 +115,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    configured_model_version_id: UUID = build_foreign_key_field(
+    model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",
@@ -238,7 +238,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
-            configured_model_version_id=request.configured_model_version_id,
+            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -321,7 +321,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
-            configured_model_version_id=self.configured_model_version_id,
+            model_version_id=self.model_version_id,
         )
         metadata = None
         if include_metadata:
@@ -376,13 +376,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
-        if (
-            run_update.configured_model_version_id
-            and self.configured_model_version_id is None
-        ):
-            self.configured_model_version_id = (
-                run_update.configured_model_version_id
-            )
+        if run_update.model_version_id and self.model_version_id is None:
+            self.model_version_id = run_update.model_version_id
 
         self.updated = datetime.utcnow()
         return self

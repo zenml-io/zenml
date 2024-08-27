@@ -1,4 +1,4 @@
-"""add configured_model_version_id [bf2120261b5a].
+"""add model_version_id [bf2120261b5a].
 
 Revision ID: bf2120261b5a
 Revises: 0.64.0
@@ -23,7 +23,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
-                "configured_model_version_id",
+                "model_version_id",
                 sqlmodel.sql.sqltypes.GUID(),
                 nullable=True,
             )
@@ -31,7 +31,7 @@ def upgrade() -> None:
         batch_op.create_foreign_key(
             "fk_pipeline_run_model_version_id_model_version",
             "model_version",
-            ["configured_model_version_id"],
+            ["model_version_id"],
             ["id"],
             ondelete="SET NULL",
         )
@@ -39,7 +39,7 @@ def upgrade() -> None:
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
-                "configured_model_version_id",
+                "model_version_id",
                 sqlmodel.sql.sqltypes.GUID(),
                 nullable=True,
             )
@@ -47,7 +47,7 @@ def upgrade() -> None:
         batch_op.create_foreign_key(
             "fk_step_run_model_version_id_model_version",
             "model_version",
-            ["configured_model_version_id"],
+            ["model_version_id"],
             ["id"],
             ondelete="SET NULL",
         )
@@ -62,13 +62,13 @@ def downgrade() -> None:
         batch_op.drop_constraint(
             "fk_step_run_model_version_id_model_version", type_="foreignkey"
         )
-        batch_op.drop_column("configured_model_version_id")
+        batch_op.drop_column("model_version_id")
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
             "fk_pipeline_run_model_version_id_model_version",
             type_="foreignkey",
         )
-        batch_op.drop_column("configured_model_version_id")
+        batch_op.drop_column("model_version_id")
 
     # ### end Alembic commands ###

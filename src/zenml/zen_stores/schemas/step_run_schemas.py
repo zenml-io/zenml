@@ -118,7 +118,7 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    configured_model_version_id: UUID = build_foreign_key_field(
+    model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",
@@ -185,7 +185,7 @@ class StepRunSchema(NamedSchema, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
-            configured_model_version_id=request.configured_model_version_id,
+            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -263,7 +263,7 @@ class StepRunSchema(NamedSchema, table=True):
             outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
-            configured_model_version_id=self.configured_model_version_id,
+            model_version_id=self.model_version_id,
         )
         metadata = None
         if include_metadata:
@@ -317,9 +317,9 @@ class StepRunSchema(NamedSchema, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
-            if key == "configured_model_version_id":
-                if value and self.configured_model_version_id is None:
-                    self.configured_model_version_id = value
+            if key == "model_version_id":
+                if value and self.model_version_id is None:
+                    self.model_version_id = value
 
         self.updated = datetime.utcnow()
 

@@ -108,7 +108,7 @@ class StepRunRequest(WorkspaceScopedRequest):
     deployment: UUID = Field(
         title="The deployment associated with the step run."
     )
-    configured_model_version_id: Optional[UUID] = Field(
+    model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
         default=None,
@@ -141,7 +141,7 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
-    configured_model_version_id: Optional[UUID] = Field(
+    model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
         default=None,
@@ -161,7 +161,7 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         title="The output artifact versions of the step run.",
         default={},
     )
-    configured_model_version_id: Optional[UUID] = Field(
+    model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
         default=None,
@@ -336,13 +336,13 @@ class StepRunResponse(
         return self.get_body().outputs
 
     @property
-    def configured_model_version_id(self) -> Optional[UUID]:
-        """The `configured_model_version_id` property.
+    def model_version_id(self) -> Optional[UUID]:
+        """The `model_version_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().configured_model_version_id
+        return self.get_body().model_version_id
 
     @property
     def config(self) -> "StepConfiguration":

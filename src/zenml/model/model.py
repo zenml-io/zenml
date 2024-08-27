@@ -883,14 +883,14 @@ class Model(BaseModel):
                 Client().zen_store.update_run_step(
                     step_run_id=step_run.id,
                     step_run_update=StepRunUpdate(
-                        configured_model_version_id=model_version_response.id
+                        model_version_id=model_version_response.id
                     ),
                 )
             else:
                 Client().zen_store.update_run(
                     run_id=pipeline_run.id,
                     run_update=PipelineRunUpdate(
-                        configured_model_version_id=model_version_response.id
+                        model_version_id=model_version_response.id
                     ),
                 )
 
