@@ -6,7 +6,8 @@ and run it on the active stack.
 
 {% hint style="info" %}
 The pipeline run that will happen to execute your step will be `unlisted`, which means it
-will not be associated with any pipeline.
+will not be associated with any pipeline. You can still see it in the "Runs" tab of the
+dashboard.
 {% endhint %}
 
 ```python
