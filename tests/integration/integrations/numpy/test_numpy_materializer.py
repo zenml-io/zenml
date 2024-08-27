@@ -15,7 +15,9 @@
 import numpy as np
 
 from tests.unit.test_general import _test_materializer
-from zenml.materializers.numpy_materializer import NumpyMaterializer
+from zenml.integrations.numpy.materializers.numpy_materializer import (
+    NumpyMaterializer,
+)
 from zenml.metadata.metadata_types import (
     DType,
 )
