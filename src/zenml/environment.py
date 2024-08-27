@@ -69,6 +69,10 @@ def get_environment() -> str:
         return EnvironmentType.BITBUCKET_CI
     elif Environment.in_ci():
         return EnvironmentType.GENERIC_CI
+    elif Environment.in_github_codespaces():
+        return EnvironmentType.GITHUB_CODESPACES
+    elif Environment.in_vscode_remote_container():
+        return EnvironmentType.VSCODE_REMOTE_CONTAINER
     elif Environment.in_lightning_ai_studio():
         return EnvironmentType.LIGHTNING_AI_STUDIO
     elif Environment.in_docker():
@@ -270,6 +274,33 @@ class Environment(metaclass=SingletonMetaClass):
         ]:
             return True
         return False
+
+    @staticmethod
+    def in_github_codespaces() -> bool:
+        """If the current Python process is running in GitHub Codespaces.
+
+        Returns:
+            `True` if the current Python process is running in GitHub Codespaces,
+            `False` otherwise.
+        """
+        return (
+            "CODESPACES" in os.environ
+            or "GITHUB_CODESPACE_TOKEN" in os.environ
+            or "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN" in os.environ
+        )
+
+    @staticmethod
+    def in_vscode_remote_container() -> bool:
+        """If the current Python process is running in a VS Code Remote Container.
+
+        Returns:
+            `True` if the current Python process is running in a VS Code Remote Container,
+            `False` otherwise.
+        """
+        return (
+            "REMOTE_CONTAINERS" in os.environ
+            or "VSCODE_REMOTE_CONTAINERS_SESSION" in os.environ
+        )
 
     @staticmethod
     def in_paperspace_gradient() -> bool:

@@ -407,7 +407,7 @@ One of the key features of the SkyPilot VM Orchestrator is the ability to run ea
 
 The SkyPilot VM Orchestrator allows you to configure resources for each step individually. This means you can specify different VM types, CPU and memory requirements, and even use spot instances for certain steps while using on-demand instances for others.
 
-If no step-specific settings are specified, the orchestrator will use the resources specified in the orchestrator settings for each step and run the entire pipeline in one VM. If step-specific settings are specified, an orchestrator VM will be spun up first, which will subsequently spin out new VMs dependant on the step settings. You can disable this behavior by setting the `disable_step_based_settings` parameter to `True` in the orchestrator configuration, using the following command:
+If no step-specific settings are specified, the orchestrator will use the resources specified in the orchestrator settings for each step and run the entire pipeline in one VM. If step-specific settings are specified, an orchestrator VM will be spun up first, which will subsequently spin out new VMs dependent on the step settings. You can disable this behavior by setting the `disable_step_based_settings` parameter to `True` in the orchestrator configuration, using the following command:
 
 ```shell
 zenml orchestrator update <ORCHESTRATOR_NAME> --disable_step_based_settings=True
