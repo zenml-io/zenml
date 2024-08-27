@@ -17,15 +17,11 @@ import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Optional, Set
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
-from zenml.constants import (
-    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
-    handle_bool_env_var,
-)
 from zenml.logger import get_logger
 from zenml.utils import (
     code_repository_utils,
@@ -194,22 +190,28 @@ class BaseEntrypointConfiguration(ABC):
         return Client().zen_store.get_deployment(deployment_id=deployment_id)
 
     def download_code_if_necessary(
-        self, deployment: "PipelineDeploymentResponse"
+        self,
+        deployment: "PipelineDeploymentResponse",
+        step_name: Optional[str] = None,
     ) -> None:
         """Downloads user code if necessary.
 
         Args:
             deployment: The deployment for which to download the code.
+            step_name: Name of the step to be run. This will be used to
+                determine whether code download is necessary. If not given,
+                the DockerSettings of the pipeline will be used to make that
+                decision instead.
 
         Raises:
             RuntimeError: If the current environment requires code download
                 but the deployment does not have a reference to any code.
         """
-        requires_code_download = handle_bool_env_var(
-            ENV_ZENML_REQUIRES_CODE_DOWNLOAD
+        should_download_code = self._should_download_code(
+            deployment=deployment, step_name=step_name
         )
 
-        if not requires_code_download:
+        if not should_download_code:
             return
 
         if code_reference := deployment.code_reference:
@@ -283,6 +285,43 @@ class BaseEntrypointConfiguration(ABC):
         source_utils.set_custom_source_root(extract_dir)
         sys.path.insert(0, extract_dir)
         os.chdir(extract_dir)
+
+    def _should_download_code(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        step_name: Optional[str] = None,
+    ) -> bool:
+        """Checks whether code should be downloaded.
+
+        Args:
+            deployment: The deployment to check.
+            step_name: Name of the step to be run. This will be used to
+                determine whether code download is necessary. If not given,
+                the DockerSettings of the pipeline will be used to make that
+                decision instead.
+
+        Returns:
+            Whether code should be downloaded.
+        """
+        docker_settings = (
+            deployment.step_configurations[step_name].config.docker_settings
+            if step_name
+            else deployment.pipeline_configuration.docker_settings
+        )
+
+        if (
+            deployment.code_reference
+            and docker_settings.allow_download_from_code_repository
+        ):
+            return True
+
+        if (
+            deployment.code_path
+            and docker_settings.allow_download_from_artifact_store
+        ):
+            return True
+
+        return False
 
     @abstractmethod
     def run(self) -> None:
