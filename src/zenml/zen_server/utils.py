@@ -29,7 +29,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import secure
+# import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -68,7 +68,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional[secure.Secure] = None
+_secure_headers: Optional[Any] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -224,7 +224,7 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> secure.Secure:
+def secure_headers() -> Any:
     """Return the secure headers component.
 
     Returns:
@@ -252,6 +252,7 @@ def initialize_secure_headers() -> None:
     # - if set to `True`, we use the default value for the header
     # - if set to a string, we use the string as the value for the header
     # - if set to `False`, we don't set the header
+    import secure
 
     server: Optional[secure.Server] = None
     if config.secure_headers_server:
