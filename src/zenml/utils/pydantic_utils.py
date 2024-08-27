@@ -297,7 +297,7 @@ def model_validator_data_handler(
     this can create conflicts after the migration and this function will be
     used as a helper function to handle different types of raw input data.
 
-    A code snippet to showcase how the behaviour changes. The "before" validator
+    A code snippet to showcase how the behavior changes. The "before" validator
     prints the type of the input:
 
         class Base(BaseModel):
@@ -336,7 +336,7 @@ def model_validator_data_handler(
         # raw data such as MyClass(...) or MyClass.model_validate()
 
         if isinstance(raw_data, dict):
-            # In most cases, this is the behaviour as the raw input is a dict
+            # In most cases, this is the behavior as the raw input is a dict
             return raw_data
 
         elif isinstance(raw_data, base_class):
@@ -354,7 +354,7 @@ def model_validator_data_handler(
                 f"During the validation of a `{base_class}` object, an instance"
                 f"of `{raw_data.__class__}` (super class of `{base_class}`) "
                 f"has been passed as raw input. This might lead to unexpected "
-                f"behaviour in case `{base_class}` have features which can not"
+                f"behavior in case `{base_class}` have features which can not"
                 f"be extracted from an instance of a `{raw_data.__class__}`."
             )
             return dict(raw_data)

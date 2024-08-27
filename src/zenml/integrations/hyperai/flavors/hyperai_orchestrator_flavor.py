@@ -81,6 +81,15 @@ class HyperAIOrchestratorConfig(
         """
         return True
 
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
+
 
 class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the HyperAI orchestrator."""

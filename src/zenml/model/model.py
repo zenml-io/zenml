@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
+import datetime
 import time
 from typing import (
     TYPE_CHECKING,
@@ -31,6 +32,7 @@ from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -40,6 +42,7 @@ if TYPE_CHECKING:
         ModelVersionResponse,
         PipelineRunResponse,
         RunMetadataResponse,
+        StepRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -508,8 +511,12 @@ class Model(BaseModel):
         Returns:
             Dict of validated values.
         """
-        suppress_class_validation_warnings = data.get(
-            "suppress_class_validation_warnings", False
+        suppress_class_validation_warnings = (
+            data.get(
+                "suppress_class_validation_warnings",
+                False,
+            )
+            or data.get("model_version_id", None) is not None
         )
         version = data.get("version", None)
 
@@ -677,6 +684,10 @@ class Model(BaseModel):
 
         model = self._get_or_create_model()
 
+        # backup logic, if the Model class is used directly from the code
+        if isinstance(self.version, str):
+            self.version = format_name_template(self.version)
+
         zenml_client = Client()
         model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
@@ -819,3 +830,81 @@ class Model(BaseModel):
                 )
             )
         )
+
+    def _prepare_model_version_before_step_launch(
+        self,
+        pipeline_run: "PipelineRunResponse",
+        step_run: Optional["StepRunResponse"],
+        return_logs: bool,
+    ) -> str:
+        """Prepares model version inside pipeline run.
+
+        Args:
+            pipeline_run: pipeline run
+            step_run: step run (passed only if model version is defined in a step explicitly)
+            return_logs: whether to return logs or not
+
+        Returns:
+            Logs related to the Dashboard URL to show later.
+        """
+        from zenml.client import Client
+        from zenml.models import PipelineRunUpdate, StepRunUpdate
+
+        logs = ""
+
+        # copy Model instance to prevent corrupting configs of the
+        # subsequent runs, if they share the same config object
+        self_copy = self.model_copy()
+
+        # in case request is within the step and no self-configuration is provided
+        # try reuse what's in the pipeline run first
+        if step_run is None and pipeline_run.model_version is not None:
+            self_copy.version = pipeline_run.model_version.name
+            self_copy.model_version_id = pipeline_run.model_version.id
+        # otherwise try to fill the templated name, if needed
+        elif isinstance(self_copy.version, str):
+            if pipeline_run.start_time:
+                start_time = pipeline_run.start_time
+            else:
+                start_time = datetime.datetime.now(datetime.timezone.utc)
+            self_copy.version = format_name_template(
+                self_copy.version,
+                date=start_time.strftime("%Y_%m_%d"),
+                time=start_time.strftime("%H_%M_%S_%f"),
+            )
+
+        # if exact model not yet defined - try to get/create and update it
+        # back to the run accordingly
+        if self_copy.model_version_id is None:
+            model_version_response = self_copy._get_or_create_model_version()
+
+            # update the configured model version id in runs accordingly
+            if step_run:
+                Client().zen_store.update_run_step(
+                    step_run_id=step_run.id,
+                    step_run_update=StepRunUpdate(
+                        model_version_id=model_version_response.id
+                    ),
+                )
+            else:
+                Client().zen_store.update_run(
+                    run_id=pipeline_run.id,
+                    run_update=PipelineRunUpdate(
+                        model_version_id=model_version_response.id
+                    ),
+                )
+
+            if return_logs:
+                from zenml.utils.cloud_utils import try_get_model_version_url
+
+                if logs_to_show := try_get_model_version_url(
+                    model_version_response
+                ):
+                    logs = logs_to_show
+                else:
+                    logs = (
+                        "Models can be viewed in the dashboard using ZenML Pro. Sign up "
+                        "for a free trial at https://www.zenml.io/pro/"
+                    )
+        self.model_version_id = self_copy.model_version_id
+        return logs
