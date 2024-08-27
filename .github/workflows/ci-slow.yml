@@ -201,7 +201,7 @@ jobs:
         os: [arc-runner-set]
         # python-version: ['3.8', '3.9', '3.10', '3.11']
         # TODO: REVERT
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -216,7 +216,7 @@ jobs:
         os: [windows-latest]
         # python-version: ['3.8', '3.9', '3.10', '3.11']
         # TODO: REVERT
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -231,7 +231,7 @@ jobs:
         os: [macos-latest]
         # python-version: ['3.8', '3.9', '3.10', '3.11']
         # TODO: REVERT
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
         # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
@@ -254,7 +254,7 @@ jobs:
         os: [windows-latest]
         # python-version: ['3.8', '3.9', '3.10', '3.11']
         # TODO: REVERT
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -271,7 +271,7 @@ jobs:
         os: [macos-13]
         # python-version: ['3.8', '3.9', '3.10', '3.11']
         # TODO: REVERT
-        python-version: [ '3.12' ]
+        python-version: ['3.12']
         # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
