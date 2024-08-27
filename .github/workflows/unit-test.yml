@@ -37,9 +37,10 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11']
+        # TODO: REVERT
+        options: ['3.12']
         required: false
-        default: '3.8'
+        default: '3.12'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice

@@ -50,13 +50,13 @@ docker = "~7.1.0"
 gitpython = "^3.1.18"
 numpy = "<2.0.0"
 packaging = ">=24.1"
-pandas = ">=1.1.5"
+pandas = ">=2.0.0"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
 pydantic = "~2.7"
 pydantic-settings = "~2.2.1"
 pymysql = { version = "~1.1.0,>=1.1.1" }
-python = ">=3.8,<3.12"
+python = ">=3.8,<3.13"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
