@@ -119,6 +119,15 @@ class AirflowOrchestratorConfig(
 
     local: bool = True
 
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
+
 
 class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the Airflow orchestrator."""
