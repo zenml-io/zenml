@@ -3741,6 +3741,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: Optional[Union[str, UUID]] = None,
         pipeline_name: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user_name: Optional[str] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3770,6 +3771,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id: The id of the pipeline to filter by.
             pipeline_name: The name of the pipeline to filter by.
             user_id: The id of the user to filter by.
+            user_name: The name of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
@@ -3809,6 +3811,7 @@ class Client(metaclass=ClientMetaClass):
             template_id=template_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
+            user_name=user_name,
             stack_id=stack_id,
             status=status,
             start_time=start_time,
