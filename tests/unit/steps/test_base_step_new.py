@@ -189,6 +189,7 @@ def test_unpacking_step_artifact_raises_custom_exception():
         test_pipeline()
 
 
+
 # ------------------------ Optional Input types
 @step
 def some_step(some_optional_int: Optional[int]) -> None:
@@ -217,7 +218,7 @@ def test_step_fails_on_none_inputs_for_non_optional_input_types():
     def p():
         some_step(some_optional_int=None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         p().run(unlisted=True)
 
 
@@ -290,7 +291,7 @@ def test_step_fails_on_wrong_non_serializable_type():
     def p():
         non_serializable_step(some_obj=None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         p().run(unlisted=True)
 
 
