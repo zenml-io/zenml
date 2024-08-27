@@ -30,7 +30,9 @@ class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
 
     NAME = DATABRICKS
-    REQUIREMENTS = ["databricks-sdk==0.28.0"]
+    REQUIREMENTS = ["databricks-sdk==0.28.0", "numpy<2.0.0", "pandas>=2.0.0"]
+
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["numpy", "pandas"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -36,6 +36,8 @@ class MlflowIntegration(Integration):
         "mlflow>=2.1.1,<3",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
+        "numpy<2.0.0",
+        "pandas>=2.0.0",
         # TODO: remove this requirement once rapidjson is fixed
         "python-rapidjson<1.15",
         # When you do:
@@ -48,7 +50,7 @@ class MlflowIntegration(Integration):
         "pydantic>=2.7.0,<2.8.0",
     ]
 
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic", 'numpy', 'pandas']
 
     @classmethod
     def activate(cls) -> None:

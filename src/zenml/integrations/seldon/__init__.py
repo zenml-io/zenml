@@ -32,8 +32,9 @@ class SeldonIntegration(Integration):
     NAME = SELDON
     REQUIREMENTS = [
         "kubernetes==18.20.0",
+        "numpy<2.0.0",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "numpy"]
 
     @classmethod
     def activate(cls) -> None:

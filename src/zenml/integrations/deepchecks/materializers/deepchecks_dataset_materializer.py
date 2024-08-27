@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 from deepchecks.tabular import Dataset
 
 from zenml.enums import ArtifactType, VisualizationType
-from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.integrations.pandas.materializers.pandas_materializer import (
+    PandasMaterializer,
+)
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType

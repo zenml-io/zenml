@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,23 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Facets integration for ZenML."""
+"""Initialization of the Numpy integration."""
 
-from zenml.integrations.constants import FACETS
+from zenml.integrations.constants import NUMPY
 from zenml.integrations.integration import Integration
 
 
-class FacetsIntegration(Integration):
-    """Definition of Facets integration for ZenML."""
+class NumpyIntegration(Integration):
+    """Definition of Numpy integration for ZenML."""
 
-    NAME = FACETS
-    REQUIREMENTS = ["facets-overview>=1.0.0", "pandas>=2.0.0"]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
+    NAME = NUMPY
+    REQUIREMENTS = ["numpy<2.0.0"]
 
-    @staticmethod
-    def activate() -> None:
-        """Activate the Facets integration."""
-        from zenml.integrations.facets import materializers  # noqa
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.numpy import materializers  # noqa
 
 
-FacetsIntegration.check_installation()
+NumpyIntegration.check_installation()

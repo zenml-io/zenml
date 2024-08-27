@@ -56,8 +56,9 @@ class EvidentlyIntegration(Integration):
     REQUIREMENTS = [
         "evidently>=0.4.16,<=0.4.22",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+        "pandas>=2.0.0",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity", "pandas"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
