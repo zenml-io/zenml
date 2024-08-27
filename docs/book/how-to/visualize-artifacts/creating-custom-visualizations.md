@@ -12,20 +12,22 @@ Currently, the following visualization types are supported:
 * **Image:** Visualizations of image data such as Pillow images (e.g. `PIL.Image`) or certain numeric numpy arrays,
 * **CSV:** Tables, such as the pandas DataFrame `.describe()` output,
 * **Markdown:** Markdown strings or pages.
+* **JSON:** JSON strings or objects.
 
 There are three ways how you can add custom visualizations to the dashboard:
 
-* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
+* If you are already handling HTML, Markdown, CSV or JSON data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
 * If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
 * If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](#how-to-think-about-creating-a-custom-visualization) and build and return this custom return type from one of your steps.
 
 ## Visualization via Special Return Types
 
-If you already have HTML, Markdown, or CSV data available as a string inside your step, you can simply cast them to one of the following types and return them from your step:
+If you already have HTML, Markdown, CSV or JSON data available as a string inside your step, you can simply cast them to one of the following types and return them from your step:
 
 * `zenml.types.HTMLString` for strings in HTML format, e.g., `"<h1>Header</h1>Some text"`,
 * `zenml.types.MarkdownString` for strings in Markdown format, e.g., `"# Header\nSome text"`,
 * `zenml.types.CSVString` for strings in CSV format, e.g., `"a,b,c\n1,2,3"`.
+* `zenml.types.JSONString` for strings in JSON format, e.g., `{"key": "value"}`.
 
 ### Example:
 
