@@ -776,6 +776,7 @@ def get_resolved_notebook_sources() -> Dict[str, str]:
     """Get all notebook sources that were resolved in this process.
 
     Returns:
-        List of notebook sources.
+        Dictionary mapping the import path of notebook sources to the code
+        of their notebook cell.
     """
     return _resolved_notebook_sources.copy()
