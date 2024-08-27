@@ -481,6 +481,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack_id",
         "template_id",
         "pipeline_name",
+        "user_name",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -508,6 +509,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="User that created the Pipeline Run",
         union_mode="left_to_right",
+    )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user associated that created the run",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -575,6 +580,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineSchema,
             ScheduleSchema,
             StackSchema,
+            UserSchema,
         )
 
         if self.unlisted is not None:
@@ -596,6 +602,19 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 filter_.generate_query_conditions(PipelineSchema),
             )
             custom_filters.append(pipeline_name_filter)
+
+        if self.user_name is not None:
+            value, filter_operator = self._resolve_operator(self.user_name)
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
+            )
+            user_name_filter = and_(
+                PipelineRunSchema.user_id == UserSchema.id,
+                filter_.generate_query_conditions(UserSchema),
+            )
+            custom_filters.append(user_name_filter)
 
         if self.code_repository_id:
             code_repo_filter = and_(
