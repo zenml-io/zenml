@@ -1,0 +1,4770 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.65.0/core_code_docs/core-enums/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Enums - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#enums" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Enums
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Enums
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Enums
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.enums" class="md-nav__link">
+    enums
+  </a>
+  
+    <nav class="md-nav" aria-label="enums">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AnalyticsEventSource" class="md-nav__link">
+    AnalyticsEventSource
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AnnotationTasks" class="md-nav__link">
+    AnnotationTasks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ArtifactType" class="md-nav__link">
+    ArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AuthScheme" class="md-nav__link">
+    AuthScheme
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.CliCategories" class="md-nav__link">
+    CliCategories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ColorVariants" class="md-nav__link">
+    ColorVariants
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ContainerRegistryFlavor" class="md-nav__link">
+    ContainerRegistryFlavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.DatabaseBackupStrategy" class="md-nav__link">
+    DatabaseBackupStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.EnvironmentType" class="md-nav__link">
+    EnvironmentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ExecutionStatus" class="md-nav__link">
+    ExecutionStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.GenericFilterOps" class="md-nav__link">
+    GenericFilterOps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.LoggingLevels" class="md-nav__link">
+    LoggingLevels
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.LogicalOperators" class="md-nav__link">
+    LogicalOperators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.MetadataResourceTypes" class="md-nav__link">
+    MetadataResourceTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ModelStages" class="md-nav__link">
+    ModelStages
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OAuthDeviceStatus" class="md-nav__link">
+    OAuthDeviceStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OAuthGrantTypes" class="md-nav__link">
+    OAuthGrantTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OnboardingStep" class="md-nav__link">
+    OnboardingStep
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OperatingSystemType" class="md-nav__link">
+    OperatingSystemType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.PluginSubType" class="md-nav__link">
+    PluginSubType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.PluginType" class="md-nav__link">
+    PluginType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ResponseUpdateStrategy" class="md-nav__link">
+    ResponseUpdateStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretScope" class="md-nav__link">
+    SecretScope
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretValidationLevel" class="md-nav__link">
+    SecretValidationLevel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretsStoreType" class="md-nav__link">
+    SecretsStoreType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ServerProviderType" class="md-nav__link">
+    ServerProviderType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SorterOps" class="md-nav__link">
+    SorterOps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SourceContextTypes" class="md-nav__link">
+    SourceContextTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StackComponentType" class="md-nav__link">
+    StackComponentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StackDeploymentProvider" class="md-nav__link">
+    StackDeploymentProvider
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunInputArtifactType" class="md-nav__link">
+    StepRunInputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunOutputArtifactType" class="md-nav__link">
+    StepRunOutputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StoreType" class="md-nav__link">
+    StoreType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.TaggableResourceTypes" class="md-nav__link">
+    TaggableResourceTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.VisualizationType" class="md-nav__link">
+    VisualizationType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ZenMLServiceType" class="md-nav__link">
+    ZenMLServiceType
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-lineage_graph/" class="md-nav__link">
+        Lineage Graph
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-new/" class="md-nav__link">
+        New
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-databricks/" class="md-nav__link">
+        Databricks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightning/" class="md-nav__link">
+        Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.enums" class="md-nav__link">
+    enums
+  </a>
+  
+    <nav class="md-nav" aria-label="enums">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AnalyticsEventSource" class="md-nav__link">
+    AnalyticsEventSource
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AnnotationTasks" class="md-nav__link">
+    AnnotationTasks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ArtifactType" class="md-nav__link">
+    ArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.AuthScheme" class="md-nav__link">
+    AuthScheme
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.CliCategories" class="md-nav__link">
+    CliCategories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ColorVariants" class="md-nav__link">
+    ColorVariants
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ContainerRegistryFlavor" class="md-nav__link">
+    ContainerRegistryFlavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.DatabaseBackupStrategy" class="md-nav__link">
+    DatabaseBackupStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.EnvironmentType" class="md-nav__link">
+    EnvironmentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ExecutionStatus" class="md-nav__link">
+    ExecutionStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.GenericFilterOps" class="md-nav__link">
+    GenericFilterOps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.LoggingLevels" class="md-nav__link">
+    LoggingLevels
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.LogicalOperators" class="md-nav__link">
+    LogicalOperators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.MetadataResourceTypes" class="md-nav__link">
+    MetadataResourceTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ModelStages" class="md-nav__link">
+    ModelStages
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OAuthDeviceStatus" class="md-nav__link">
+    OAuthDeviceStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OAuthGrantTypes" class="md-nav__link">
+    OAuthGrantTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OnboardingStep" class="md-nav__link">
+    OnboardingStep
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.OperatingSystemType" class="md-nav__link">
+    OperatingSystemType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.PluginSubType" class="md-nav__link">
+    PluginSubType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.PluginType" class="md-nav__link">
+    PluginType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ResponseUpdateStrategy" class="md-nav__link">
+    ResponseUpdateStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretScope" class="md-nav__link">
+    SecretScope
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretValidationLevel" class="md-nav__link">
+    SecretValidationLevel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SecretsStoreType" class="md-nav__link">
+    SecretsStoreType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ServerProviderType" class="md-nav__link">
+    ServerProviderType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SorterOps" class="md-nav__link">
+    SorterOps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.SourceContextTypes" class="md-nav__link">
+    SourceContextTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StackComponentType" class="md-nav__link">
+    StackComponentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StackDeploymentProvider" class="md-nav__link">
+    StackDeploymentProvider
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunInputArtifactType" class="md-nav__link">
+    StepRunInputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunOutputArtifactType" class="md-nav__link">
+    StepRunOutputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StoreType" class="md-nav__link">
+    StoreType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.TaggableResourceTypes" class="md-nav__link">
+    TaggableResourceTypes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.VisualizationType" class="md-nav__link">
+    VisualizationType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.ZenMLServiceType" class="md-nav__link">
+    ZenMLServiceType
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/core_code_docs/core-enums.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="enums">Enums</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.enums" class="doc doc-heading">
+        <code>zenml.enums</code>
+
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>ZenML enums.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.AnalyticsEventSource" class="doc doc-heading">
+        <code>
+AnalyticsEventSource            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum to identify analytics events source.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsEventSource</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum to identify analytics events source.&quot;&quot;&quot;</span>
+
+    <span class="n">ZENML_GO</span> <span class="o">=</span> <span class="s2">&quot;zenml go&quot;</span>
+    <span class="n">ZENML_INIT</span> <span class="o">=</span> <span class="s2">&quot;zenml init&quot;</span>
+    <span class="n">ZENML_SERVER</span> <span class="o">=</span> <span class="s2">&quot;zenml server&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.AnnotationTasks" class="doc doc-heading">
+        <code>
+AnnotationTasks            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Supported annotation tasks.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnnotationTasks</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Supported annotation tasks.&quot;&quot;&quot;</span>
+
+    <span class="n">IMAGE_CLASSIFICATION</span> <span class="o">=</span> <span class="s2">&quot;image_classification&quot;</span>
+    <span class="n">OBJECT_DETECTION_BOUNDING_BOXES</span> <span class="o">=</span> <span class="s2">&quot;object_detection_bounding_boxes&quot;</span>
+    <span class="n">OCR</span> <span class="o">=</span> <span class="s2">&quot;optical_character_recognition&quot;</span>
+    <span class="n">TEXT_CLASSIFICATION</span> <span class="o">=</span> <span class="s2">&quot;text_classification&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ArtifactType" class="doc doc-heading">
+        <code>
+ArtifactType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types an artifact can have.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types an artifact can have.&quot;&quot;&quot;</span>
+
+    <span class="n">DATA_ANALYSIS</span> <span class="o">=</span> <span class="s2">&quot;DataAnalysisArtifact&quot;</span>
+    <span class="n">DATA</span> <span class="o">=</span> <span class="s2">&quot;DataArtifact&quot;</span>
+    <span class="n">MODEL</span> <span class="o">=</span> <span class="s2">&quot;ModelArtifact&quot;</span>
+    <span class="n">SCHEMA</span> <span class="o">=</span> <span class="s2">&quot;SchemaArtifact&quot;</span>  <span class="c1"># deprecated</span>
+    <span class="n">SERVICE</span> <span class="o">=</span> <span class="s2">&quot;ServiceArtifact&quot;</span>
+    <span class="n">STATISTICS</span> <span class="o">=</span> <span class="s2">&quot;StatisticsArtifact&quot;</span>  <span class="c1"># deprecated in favor of `DATA_ANALYSIS`</span>
+    <span class="n">BASE</span> <span class="o">=</span> <span class="s2">&quot;BaseArtifact&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.AuthScheme" class="doc doc-heading">
+        <code>
+AuthScheme            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>The authentication scheme.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthScheme</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The authentication scheme.&quot;&quot;&quot;</span>
+
+    <span class="n">NO_AUTH</span> <span class="o">=</span> <span class="s2">&quot;NO_AUTH&quot;</span>
+    <span class="n">HTTP_BASIC</span> <span class="o">=</span> <span class="s2">&quot;HTTP_BASIC&quot;</span>
+    <span class="n">OAUTH2_PASSWORD_BEARER</span> <span class="o">=</span> <span class="s2">&quot;OAUTH2_PASSWORD_BEARER&quot;</span>
+    <span class="n">EXTERNAL</span> <span class="o">=</span> <span class="s2">&quot;EXTERNAL&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.CliCategories" class="doc doc-heading">
+        <code>
+CliCategories            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible categories for CLI commands.</p>
+<p>Note: The order of the categories is important. The same
+order is used to sort the commands in the CLI help output.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">CliCategories</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible categories for CLI commands.</span>
+
+<span class="sd">    Note: The order of the categories is important. The same</span>
+<span class="sd">    order is used to sort the commands in the CLI help output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">STACK_COMPONENTS</span> <span class="o">=</span> <span class="s2">&quot;Stack Components&quot;</span>
+    <span class="n">MODEL_DEPLOYMENT</span> <span class="o">=</span> <span class="s2">&quot;Model Deployment&quot;</span>
+    <span class="n">INTEGRATIONS</span> <span class="o">=</span> <span class="s2">&quot;Integrations&quot;</span>
+    <span class="n">MANAGEMENT_TOOLS</span> <span class="o">=</span> <span class="s2">&quot;Management Tools&quot;</span>
+    <span class="n">MODEL_CONTROL_PLANE</span> <span class="o">=</span> <span class="s2">&quot;Model Control Plane&quot;</span>
+    <span class="n">IDENTITY_AND_SECURITY</span> <span class="o">=</span> <span class="s2">&quot;Identity and Security&quot;</span>
+    <span class="n">OTHER_COMMANDS</span> <span class="o">=</span> <span class="s2">&quot;Other Commands&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ColorVariants" class="doc doc-heading">
+        <code>
+ColorVariants            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible color variants for frontend.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ColorVariants</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible color variants for frontend.&quot;&quot;&quot;</span>
+
+    <span class="n">GREY</span> <span class="o">=</span> <span class="s2">&quot;grey&quot;</span>
+    <span class="n">PURPLE</span> <span class="o">=</span> <span class="s2">&quot;purple&quot;</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;green&quot;</span>
+    <span class="n">YELLOW</span> <span class="o">=</span> <span class="s2">&quot;yellow&quot;</span>
+    <span class="n">ORANGE</span> <span class="o">=</span> <span class="s2">&quot;orange&quot;</span>
+    <span class="n">LIME</span> <span class="o">=</span> <span class="s2">&quot;lime&quot;</span>
+    <span class="n">TEAL</span> <span class="o">=</span> <span class="s2">&quot;teal&quot;</span>
+    <span class="n">TURQUOISE</span> <span class="o">=</span> <span class="s2">&quot;turquoise&quot;</span>
+    <span class="n">MAGENTA</span> <span class="o">=</span> <span class="s2">&quot;magenta&quot;</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="s2">&quot;blue&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ContainerRegistryFlavor" class="doc doc-heading">
+        <code>
+ContainerRegistryFlavor            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Flavors of container registries.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerRegistryFlavor</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavors of container registries.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>
+    <span class="n">GITHUB</span> <span class="o">=</span> <span class="s2">&quot;github&quot;</span>
+    <span class="n">DOCKERHUB</span> <span class="o">=</span> <span class="s2">&quot;dockerhub&quot;</span>
+    <span class="n">GCP</span> <span class="o">=</span> <span class="s2">&quot;gcp&quot;</span>
+    <span class="n">AZURE</span> <span class="o">=</span> <span class="s2">&quot;azure&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.DatabaseBackupStrategy" class="doc doc-heading">
+        <code>
+DatabaseBackupStrategy            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All available database backup strategies.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabaseBackupStrategy</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All available database backup strategies.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Backup disabled</span>
+    <span class="n">DISABLED</span> <span class="o">=</span> <span class="s2">&quot;disabled&quot;</span>
+    <span class="c1"># In-memory backup</span>
+    <span class="n">IN_MEMORY</span> <span class="o">=</span> <span class="s2">&quot;in-memory&quot;</span>
+    <span class="c1"># Dump the database to a file</span>
+    <span class="n">DUMP_FILE</span> <span class="o">=</span> <span class="s2">&quot;dump-file&quot;</span>
+    <span class="c1"># Create a backup of the database in the remote database service</span>
+    <span class="n">DATABASE</span> <span class="o">=</span> <span class="s2">&quot;database&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.EnvironmentType" class="doc doc-heading">
+        <code>
+EnvironmentType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum for environment types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EnvironmentType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for environment types.&quot;&quot;&quot;</span>
+
+    <span class="n">BITBUCKET_CI</span> <span class="o">=</span> <span class="s2">&quot;bitbucket_ci&quot;</span>
+    <span class="n">CIRCLE_CI</span> <span class="o">=</span> <span class="s2">&quot;circle_ci&quot;</span>
+    <span class="n">COLAB</span> <span class="o">=</span> <span class="s2">&quot;colab&quot;</span>
+    <span class="n">CONTAINER</span> <span class="o">=</span> <span class="s2">&quot;container&quot;</span>
+    <span class="n">DOCKER</span> <span class="o">=</span> <span class="s2">&quot;docker&quot;</span>
+    <span class="n">GENERIC_CI</span> <span class="o">=</span> <span class="s2">&quot;generic_ci&quot;</span>
+    <span class="n">GITHUB_ACTION</span> <span class="o">=</span> <span class="s2">&quot;github_action&quot;</span>
+    <span class="n">GITLAB_CI</span> <span class="o">=</span> <span class="s2">&quot;gitlab_ci&quot;</span>
+    <span class="n">KUBERNETES</span> <span class="o">=</span> <span class="s2">&quot;kubernetes&quot;</span>
+    <span class="n">NATIVE</span> <span class="o">=</span> <span class="s2">&quot;native&quot;</span>
+    <span class="n">NOTEBOOK</span> <span class="o">=</span> <span class="s2">&quot;notebook&quot;</span>
+    <span class="n">PAPERSPACE</span> <span class="o">=</span> <span class="s2">&quot;paperspace&quot;</span>
+    <span class="n">WSL</span> <span class="o">=</span> <span class="s2">&quot;wsl&quot;</span>
+    <span class="n">LIGHTNING_AI_STUDIO</span> <span class="o">=</span> <span class="s2">&quot;lightning_ai_studio&quot;</span>
+    <span class="n">GITHUB_CODESPACES</span> <span class="o">=</span> <span class="s2">&quot;github_codespaces&quot;</span>
+    <span class="n">VSCODE_REMOTE_CONTAINER</span> <span class="o">=</span> <span class="s2">&quot;vscode_remote_container&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ExecutionStatus" class="doc doc-heading">
+        <code>
+ExecutionStatus            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum that represents the current status of a step or pipeline run.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ExecutionStatus</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum that represents the current status of a step or pipeline run.&quot;&quot;&quot;</span>
+
+    <span class="n">INITIALIZING</span> <span class="o">=</span> <span class="s2">&quot;initializing&quot;</span>
+    <span class="n">FAILED</span> <span class="o">=</span> <span class="s2">&quot;failed&quot;</span>
+    <span class="n">COMPLETED</span> <span class="o">=</span> <span class="s2">&quot;completed&quot;</span>
+    <span class="n">RUNNING</span> <span class="o">=</span> <span class="s2">&quot;running&quot;</span>
+    <span class="n">CACHED</span> <span class="o">=</span> <span class="s2">&quot;cached&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_finished</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the execution status refers to a finished execution.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Whether the execution status refers to a finished execution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">FAILED</span><span class="p">,</span>
+            <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">,</span>
+            <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">CACHED</span><span class="p">,</span>
+        <span class="p">}</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.GenericFilterOps" class="doc doc-heading">
+        <code>
+GenericFilterOps            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Ops for all filters for string values on list methods.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GenericFilterOps</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ops for all filters for string values on list methods.&quot;&quot;&quot;</span>
+
+    <span class="n">EQUALS</span> <span class="o">=</span> <span class="s2">&quot;equals&quot;</span>
+    <span class="n">CONTAINS</span> <span class="o">=</span> <span class="s2">&quot;contains&quot;</span>
+    <span class="n">STARTSWITH</span> <span class="o">=</span> <span class="s2">&quot;startswith&quot;</span>
+    <span class="n">ENDSWITH</span> <span class="o">=</span> <span class="s2">&quot;endswith&quot;</span>
+    <span class="n">GTE</span> <span class="o">=</span> <span class="s2">&quot;gte&quot;</span>
+    <span class="n">GT</span> <span class="o">=</span> <span class="s2">&quot;gt&quot;</span>
+    <span class="n">LTE</span> <span class="o">=</span> <span class="s2">&quot;lte&quot;</span>
+    <span class="n">LT</span> <span class="o">=</span> <span class="s2">&quot;lt&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.LoggingLevels" class="doc doc-heading">
+        <code>
+LoggingLevels            (<span title="enum.Enum">Enum</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum for logging levels.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LoggingLevels</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for logging levels.&quot;&quot;&quot;</span>
+
+    <span class="n">NOTSET</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">NOTSET</span>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
+    <span class="n">WARN</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARN</span>
+    <span class="n">INFO</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
+    <span class="n">DEBUG</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+    <span class="n">CRITICAL</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.LogicalOperators" class="doc doc-heading">
+        <code>
+LogicalOperators            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Logical Ops to use to combine filters on list methods.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LogicalOperators</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logical Ops to use to combine filters on list methods.&quot;&quot;&quot;</span>
+
+    <span class="n">OR</span> <span class="o">=</span> <span class="s2">&quot;or&quot;</span>
+    <span class="n">AND</span> <span class="o">=</span> <span class="s2">&quot;and&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.MetadataResourceTypes" class="doc doc-heading">
+        <code>
+MetadataResourceTypes            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible resource types for adding metadata.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MetadataResourceTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible resource types for adding metadata.&quot;&quot;&quot;</span>
+
+    <span class="n">PIPELINE_RUN</span> <span class="o">=</span> <span class="s2">&quot;pipeline_run&quot;</span>
+    <span class="n">STEP_RUN</span> <span class="o">=</span> <span class="s2">&quot;step_run&quot;</span>
+    <span class="n">ARTIFACT_VERSION</span> <span class="o">=</span> <span class="s2">&quot;artifact_version&quot;</span>
+    <span class="n">MODEL_VERSION</span> <span class="o">=</span> <span class="s2">&quot;model_version&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ModelStages" class="doc doc-heading">
+        <code>
+ModelStages            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible stages of a Model Version.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ModelStages</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible stages of a Model Version.&quot;&quot;&quot;</span>
+
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+    <span class="n">STAGING</span> <span class="o">=</span> <span class="s2">&quot;staging&quot;</span>
+    <span class="n">PRODUCTION</span> <span class="o">=</span> <span class="s2">&quot;production&quot;</span>
+    <span class="n">ARCHIVED</span> <span class="o">=</span> <span class="s2">&quot;archived&quot;</span>
+    <span class="n">LATEST</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.OAuthDeviceStatus" class="doc doc-heading">
+        <code>
+OAuthDeviceStatus            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>The OAuth device status.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OAuthDeviceStatus</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The OAuth device status.&quot;&quot;&quot;</span>
+
+    <span class="n">PENDING</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>
+    <span class="n">VERIFIED</span> <span class="o">=</span> <span class="s2">&quot;verified&quot;</span>
+    <span class="n">ACTIVE</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span>
+    <span class="n">LOCKED</span> <span class="o">=</span> <span class="s2">&quot;locked&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.OAuthGrantTypes" class="doc doc-heading">
+        <code>
+OAuthGrantTypes            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>The OAuth grant types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OAuthGrantTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The OAuth grant types.&quot;&quot;&quot;</span>
+
+    <span class="n">OAUTH_PASSWORD</span> <span class="o">=</span> <span class="s2">&quot;password&quot;</span>
+    <span class="n">OAUTH_DEVICE_CODE</span> <span class="o">=</span> <span class="s2">&quot;urn:ietf:params:oauth:grant-type:device_code&quot;</span>
+    <span class="n">ZENML_EXTERNAL</span> <span class="o">=</span> <span class="s2">&quot;zenml-external&quot;</span>
+    <span class="n">ZENML_API_KEY</span> <span class="o">=</span> <span class="s2">&quot;zenml-api-key&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.OnboardingStep" class="doc doc-heading">
+        <code>
+OnboardingStep            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All onboarding steps.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OnboardingStep</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All onboarding steps.&quot;&quot;&quot;</span>
+
+    <span class="n">DEVICE_VERIFIED</span> <span class="o">=</span> <span class="s2">&quot;device_verified&quot;</span>
+    <span class="n">PIPELINE_RUN</span> <span class="o">=</span> <span class="s2">&quot;pipeline_run&quot;</span>
+    <span class="n">STARTER_SETUP_COMPLETED</span> <span class="o">=</span> <span class="s2">&quot;starter_setup_completed&quot;</span>
+    <span class="n">STACK_WITH_REMOTE_ORCHESTRATOR_CREATED</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;stack_with_remote_orchestrator_created&quot;</span>
+    <span class="p">)</span>
+    <span class="n">PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;pipeline_run_with_remote_orchestrator&quot;</span>
+    <span class="p">)</span>
+    <span class="n">PRODUCTION_SETUP_COMPLETED</span> <span class="o">=</span> <span class="s2">&quot;production_setup_completed&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.OperatingSystemType" class="doc doc-heading">
+        <code>
+OperatingSystemType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum for OS types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OperatingSystemType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for OS types.&quot;&quot;&quot;</span>
+
+    <span class="n">LINUX</span> <span class="o">=</span> <span class="s2">&quot;Linux&quot;</span>
+    <span class="n">WINDOWS</span> <span class="o">=</span> <span class="s2">&quot;Windows&quot;</span>
+    <span class="n">MACOS</span> <span class="o">=</span> <span class="s2">&quot;Darwin&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.PluginSubType" class="doc doc-heading">
+        <code>
+PluginSubType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of Plugins.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PluginSubType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of Plugins.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Event Source Subtypes</span>
+    <span class="n">WEBHOOK</span> <span class="o">=</span> <span class="s2">&quot;webhook&quot;</span>
+    <span class="c1"># Action Subtypes</span>
+    <span class="n">PIPELINE_RUN</span> <span class="o">=</span> <span class="s2">&quot;pipeline_run&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.PluginType" class="doc doc-heading">
+        <code>
+PluginType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of Plugins.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PluginType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of Plugins.&quot;&quot;&quot;</span>
+
+    <span class="n">EVENT_SOURCE</span> <span class="o">=</span> <span class="s2">&quot;event_source&quot;</span>
+    <span class="n">ACTION</span> <span class="o">=</span> <span class="s2">&quot;action&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ResponseUpdateStrategy" class="doc doc-heading">
+        <code>
+ResponseUpdateStrategy            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All available strategies to handle updated properties in the response.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ResponseUpdateStrategy</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All available strategies to handle updated properties in the response.&quot;&quot;&quot;</span>
+
+    <span class="n">ALLOW</span> <span class="o">=</span> <span class="s2">&quot;allow&quot;</span>
+    <span class="n">IGNORE</span> <span class="o">=</span> <span class="s2">&quot;ignore&quot;</span>
+    <span class="n">DENY</span> <span class="o">=</span> <span class="s2">&quot;deny&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.SecretScope" class="doc doc-heading">
+        <code>
+SecretScope            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum for the scope of a secret.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretScope</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for the scope of a secret.&quot;&quot;&quot;</span>
+
+    <span class="n">WORKSPACE</span> <span class="o">=</span> <span class="s2">&quot;workspace&quot;</span>
+    <span class="n">USER</span> <span class="o">=</span> <span class="s2">&quot;user&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.SecretValidationLevel" class="doc doc-heading">
+        <code>
+SecretValidationLevel            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Secret validation levels.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretValidationLevel</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Secret validation levels.&quot;&quot;&quot;</span>
+
+    <span class="n">SECRET_AND_KEY_EXISTS</span> <span class="o">=</span> <span class="s2">&quot;SECRET_AND_KEY_EXISTS&quot;</span>
+    <span class="n">SECRET_EXISTS</span> <span class="o">=</span> <span class="s2">&quot;SECRET_EXISTS&quot;</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;NONE&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.SecretsStoreType" class="doc doc-heading">
+        <code>
+SecretsStoreType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Secrets Store Backend Types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretsStoreType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Secrets Store Backend Types.&quot;&quot;&quot;</span>
+
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>  <span class="c1"># indicates that no secrets store is used</span>
+    <span class="n">SQL</span> <span class="o">=</span> <span class="s2">&quot;sql&quot;</span>
+    <span class="n">AWS</span> <span class="o">=</span> <span class="s2">&quot;aws&quot;</span>
+    <span class="n">GCP</span> <span class="o">=</span> <span class="s2">&quot;gcp&quot;</span>
+    <span class="n">AZURE</span> <span class="o">=</span> <span class="s2">&quot;azure&quot;</span>
+    <span class="n">HASHICORP</span> <span class="o">=</span> <span class="s2">&quot;hashicorp&quot;</span>
+    <span class="n">CUSTOM</span> <span class="o">=</span> <span class="s2">&quot;custom&quot;</span>  <span class="c1"># indicates that the secrets store uses a custom backend</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ServerProviderType" class="doc doc-heading">
+        <code>
+ServerProviderType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>ZenML server providers.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerProviderType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML server providers.&quot;&quot;&quot;</span>
+
+    <span class="n">LOCAL</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
+    <span class="n">DOCKER</span> <span class="o">=</span> <span class="s2">&quot;docker&quot;</span>
+    <span class="n">AWS</span> <span class="o">=</span> <span class="s2">&quot;aws&quot;</span>
+    <span class="n">GCP</span> <span class="o">=</span> <span class="s2">&quot;gcp&quot;</span>
+    <span class="n">AZURE</span> <span class="o">=</span> <span class="s2">&quot;azure&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.SorterOps" class="doc doc-heading">
+        <code>
+SorterOps            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Ops for all filters for string values on list methods.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SorterOps</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ops for all filters for string values on list methods.&quot;&quot;&quot;</span>
+
+    <span class="n">ASCENDING</span> <span class="o">=</span> <span class="s2">&quot;asc&quot;</span>
+    <span class="n">DESCENDING</span> <span class="o">=</span> <span class="s2">&quot;desc&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.SourceContextTypes" class="doc doc-heading">
+        <code>
+SourceContextTypes            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum for event source types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SourceContextTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for event source types.&quot;&quot;&quot;</span>
+
+    <span class="n">CLI</span> <span class="o">=</span> <span class="s2">&quot;cli&quot;</span>
+    <span class="n">PYTHON</span> <span class="o">=</span> <span class="s2">&quot;python&quot;</span>
+    <span class="n">DASHBOARD</span> <span class="o">=</span> <span class="s2">&quot;dashboard&quot;</span>
+    <span class="n">DASHBOARD_V2</span> <span class="o">=</span> <span class="s2">&quot;dashboard-v2&quot;</span>
+    <span class="n">API</span> <span class="o">=</span> <span class="s2">&quot;api&quot;</span>
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StackComponentType" class="doc doc-heading">
+        <code>
+StackComponentType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types a <code>StackComponent</code> can have.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types a `StackComponent` can have.&quot;&quot;&quot;</span>
+
+    <span class="n">ALERTER</span> <span class="o">=</span> <span class="s2">&quot;alerter&quot;</span>
+    <span class="n">ANNOTATOR</span> <span class="o">=</span> <span class="s2">&quot;annotator&quot;</span>
+    <span class="n">ARTIFACT_STORE</span> <span class="o">=</span> <span class="s2">&quot;artifact_store&quot;</span>
+    <span class="n">CONTAINER_REGISTRY</span> <span class="o">=</span> <span class="s2">&quot;container_registry&quot;</span>
+    <span class="n">DATA_VALIDATOR</span> <span class="o">=</span> <span class="s2">&quot;data_validator&quot;</span>
+    <span class="n">EXPERIMENT_TRACKER</span> <span class="o">=</span> <span class="s2">&quot;experiment_tracker&quot;</span>
+    <span class="n">FEATURE_STORE</span> <span class="o">=</span> <span class="s2">&quot;feature_store&quot;</span>
+    <span class="n">IMAGE_BUILDER</span> <span class="o">=</span> <span class="s2">&quot;image_builder&quot;</span>
+    <span class="n">MODEL_DEPLOYER</span> <span class="o">=</span> <span class="s2">&quot;model_deployer&quot;</span>
+    <span class="n">ORCHESTRATOR</span> <span class="o">=</span> <span class="s2">&quot;orchestrator&quot;</span>
+    <span class="n">STEP_OPERATOR</span> <span class="o">=</span> <span class="s2">&quot;step_operator&quot;</span>
+    <span class="n">MODEL_REGISTRY</span> <span class="o">=</span> <span class="s2">&quot;model_registry&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">plural</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the plural of the enum value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The plural of the enum value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">CONTAINER_REGISTRY</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;container_registries&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">MODEL_REGISTRY</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;model_registries&quot;</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">s&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StackDeploymentProvider" class="doc doc-heading">
+        <code>
+StackDeploymentProvider            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible stack deployment providers.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackDeploymentProvider</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible stack deployment providers.&quot;&quot;&quot;</span>
+
+    <span class="n">AWS</span> <span class="o">=</span> <span class="s2">&quot;aws&quot;</span>
+    <span class="n">GCP</span> <span class="o">=</span> <span class="s2">&quot;gcp&quot;</span>
+    <span class="n">AZURE</span> <span class="o">=</span> <span class="s2">&quot;azure&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StepRunInputArtifactType" class="doc doc-heading">
+        <code>
+StepRunInputArtifactType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of a step run input artifact.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunInputArtifactType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of a step run input artifact.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># input argument that is the output of a previous step</span>
+    <span class="n">MANUAL</span> <span class="o">=</span> <span class="s2">&quot;manual&quot;</span>  <span class="c1"># manually loaded via `zenml.load_artifact()`</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StepRunOutputArtifactType" class="doc doc-heading">
+        <code>
+StepRunOutputArtifactType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of a step run output artifact.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunOutputArtifactType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of a step run output artifact.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># output of the current step</span>
+    <span class="n">MANUAL</span> <span class="o">=</span> <span class="s2">&quot;manual&quot;</span>  <span class="c1"># manually saved via `zenml.save_artifact()`</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StoreType" class="doc doc-heading">
+        <code>
+StoreType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Zen Store Backend Types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StoreType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zen Store Backend Types.&quot;&quot;&quot;</span>
+
+    <span class="n">SQL</span> <span class="o">=</span> <span class="s2">&quot;sql&quot;</span>
+    <span class="n">REST</span> <span class="o">=</span> <span class="s2">&quot;rest&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.TaggableResourceTypes" class="doc doc-heading">
+        <code>
+TaggableResourceTypes            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible resource types for tagging.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TaggableResourceTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible resource types for tagging.&quot;&quot;&quot;</span>
+
+    <span class="n">ARTIFACT</span> <span class="o">=</span> <span class="s2">&quot;artifact&quot;</span>
+    <span class="n">ARTIFACT_VERSION</span> <span class="o">=</span> <span class="s2">&quot;artifact_version&quot;</span>
+    <span class="n">MODEL</span> <span class="o">=</span> <span class="s2">&quot;model&quot;</span>
+    <span class="n">MODEL_VERSION</span> <span class="o">=</span> <span class="s2">&quot;model_version&quot;</span>
+    <span class="n">PIPELINE</span> <span class="o">=</span> <span class="s2">&quot;pipeline&quot;</span>
+    <span class="n">PIPELINE_RUN</span> <span class="o">=</span> <span class="s2">&quot;pipeline_run&quot;</span>
+    <span class="n">RUN_TEMPLATE</span> <span class="o">=</span> <span class="s2">&quot;run_template&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.VisualizationType" class="doc doc-heading">
+        <code>
+VisualizationType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All currently available visualization types.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VisualizationType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All currently available visualization types.&quot;&quot;&quot;</span>
+
+    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">&quot;csv&quot;</span>
+    <span class="n">HTML</span> <span class="o">=</span> <span class="s2">&quot;html&quot;</span>
+    <span class="n">IMAGE</span> <span class="o">=</span> <span class="s2">&quot;image&quot;</span>
+    <span class="n">MARKDOWN</span> <span class="o">=</span> <span class="s2">&quot;markdown&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.ZenMLServiceType" class="doc doc-heading">
+        <code>
+ZenMLServiceType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types a service can have.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLServiceType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types a service can have.&quot;&quot;&quot;</span>
+
+    <span class="n">ZEN_SERVER</span> <span class="o">=</span> <span class="s2">&quot;zen_server&quot;</span>
+    <span class="n">MODEL_SERVING</span> <span class="o">=</span> <span class="s2">&quot;model-serving&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../core-entrypoints/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Entrypoints" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Entrypoints
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core-environment/" class="md-footer__link md-footer__link--next" aria-label="Next: Environment" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Environment
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>

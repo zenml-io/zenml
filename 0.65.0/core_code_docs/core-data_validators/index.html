@@ -1,0 +1,3439 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.65.0/core_code_docs/core-data_validators/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Data Validators - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-validators" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Validators
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Data Validators
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Data Validators
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.data_validators" class="md-nav__link">
+    data_validators
+  </a>
+  
+    <nav class="md-nav" aria-label="data_validators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator" class="md-nav__link">
+    base_data_validator
+  </a>
+  
+    <nav class="md-nav" aria-label="base_data_validator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator" class="md-nav__link">
+    BaseDataValidator
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseDataValidator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.data_profiling" class="md-nav__link">
+    data_profiling()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.data_validation" class="md-nav__link">
+    data_validation()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.get_active_data_validator" class="md-nav__link">
+    get_active_data_validator()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.model_validation" class="md-nav__link">
+    model_validation()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorConfig" class="md-nav__link">
+    BaseDataValidatorConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor" class="md-nav__link">
+    BaseDataValidatorFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseDataValidatorFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-lineage_graph/" class="md-nav__link">
+        Lineage Graph
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-new/" class="md-nav__link">
+        New
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-databricks/" class="md-nav__link">
+        Databricks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightning/" class="md-nav__link">
+        Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.data_validators" class="md-nav__link">
+    data_validators
+  </a>
+  
+    <nav class="md-nav" aria-label="data_validators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator" class="md-nav__link">
+    base_data_validator
+  </a>
+  
+    <nav class="md-nav" aria-label="base_data_validator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator" class="md-nav__link">
+    BaseDataValidator
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseDataValidator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.data_profiling" class="md-nav__link">
+    data_profiling()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.data_validation" class="md-nav__link">
+    data_validation()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.get_active_data_validator" class="md-nav__link">
+    get_active_data_validator()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidator.model_validation" class="md-nav__link">
+    model_validation()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorConfig" class="md-nav__link">
+    BaseDataValidatorConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor" class="md-nav__link">
+    BaseDataValidatorFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseDataValidatorFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/core_code_docs/core-data_validators.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="data-validators">Data Validators</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.data_validators" class="doc doc-heading">
+        <code>zenml.data_validators</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>Data validators are stack components responsible for data profiling and validation.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.data_validators.base_data_validator" class="doc doc-heading">
+        <code>base_data_validator</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML data validators.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.data_validators.base_data_validator.BaseDataValidator" class="doc doc-heading">
+        <code>
+BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml.stack.stack_component.StackComponent" href="../core-stack/#zenml.stack.stack_component.StackComponent">StackComponent</a>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML data validators.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML data validators.&quot;&quot;&quot;</span>
+
+    <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseDataValidatorFlavor&quot;</span><span class="p">]]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseDataValidatorConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config of this data validator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The config of this data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseDataValidatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the data validator registered in the active stack.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The data validator registered in the active stack.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: if a data validator is not part of the</span>
+<span class="sd">                active stack.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flavor</span><span class="p">:</span> <span class="n">BaseDataValidatorFlavor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">()</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+        <span class="n">data_validator</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">data_validator</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data_validator</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_validator</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The active stack needs to have a </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2"> data &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;validator component registered to be able to run data validation &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;actions with </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">. You can create a new stack with &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;a </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2"> data validator component or update your &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;active stack to add this component, e.g.:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;  `zenml data-validator register </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;--flavor=</span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ...`</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;  `zenml stack register &lt;STACK-NAME&gt; -dv </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ...`</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;  or:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;  `zenml stack update -dv </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data_validator</span>
+
+    <span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze one or more datasets and generate a data profile.</span>
+
+<span class="sd">        This method should be implemented by data validators that support</span>
+<span class="sd">        analyzing a dataset and generating a data profile (e.g. schema,</span>
+<span class="sd">        statistical summary, data distribution profile, validation</span>
+<span class="sd">        rules, data drift reports etc.).</span>
+<span class="sd">        The method should return a data profile object.</span>
+
+<span class="sd">        This method also accepts an optional second dataset argument to</span>
+<span class="sd">        accommodate different categories of data profiling, e.g.:</span>
+
+<span class="sd">        * profiles generated from a single dataset: schema inference, validation</span>
+<span class="sd">        rules inference, statistical profiles, data integrity reports</span>
+<span class="sd">        * differential profiles that need a second dataset for comparison:</span>
+<span class="sd">        differential statistical profiles, data drift reports</span>
+
+<span class="sd">        Data validators that support generating multiple categories of data</span>
+<span class="sd">        profiles should also take in a `profile_list` argument that lists the</span>
+<span class="sd">        subset of profiles to be generated. If not supplied, the behavior is</span>
+<span class="sd">        implementation specific, but it is recommended to provide a good default</span>
+<span class="sd">        (e.g. a single default data profile type may be generated and returned,</span>
+<span class="sd">        or all available data profiles may be generated and returned as a single</span>
+<span class="sd">        result).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset: Target dataset to be profiled.</span>
+<span class="sd">            comparison_dataset: Optional second dataset to be used for data</span>
+<span class="sd">                comparison profiles (e.g data drift reports).</span>
+<span class="sd">            profile_list: Optional list identifying the categories of data</span>
+<span class="sd">                profiles to be generated.</span>
+<span class="sd">            **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: if data profiling is not supported by this</span>
+<span class="sd">                data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Data profiling is not supported by the </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2"> data &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;validator.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run data validation checks on a dataset.</span>
+
+<span class="sd">        This method should be implemented by data validators that support</span>
+<span class="sd">        running data quality checks an input dataset (e.g. data integrity</span>
+<span class="sd">        checks, data drift checks).</span>
+
+<span class="sd">        This method also accepts an optional second dataset argument to</span>
+<span class="sd">        accommodate different categories of data validation tests, e.g.:</span>
+
+<span class="sd">        * single dataset checks: data integrity checks (e.g. missing</span>
+<span class="sd">        values, conflicting labels, mixed data types etc.)</span>
+<span class="sd">        * checks that compare two datasets: data drift checks (e.g. new labels,</span>
+<span class="sd">        feature drift, label drift etc.)</span>
+
+<span class="sd">        Data validators that support running multiple categories of data</span>
+<span class="sd">        integrity checks should also take in a `check_list` argument that</span>
+<span class="sd">        lists the subset of checks to be performed. If not supplied, the</span>
+<span class="sd">        behavior is implementation specific, but it is recommended to provide a</span>
+<span class="sd">        good default (e.g. a single default validation check may be performed,</span>
+<span class="sd">        or all available validation checks may be performed and their results</span>
+<span class="sd">        returned as a list of objects).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset: Target dataset to be validated.</span>
+<span class="sd">            comparison_dataset: Optional second dataset to be used for data</span>
+<span class="sd">                comparison checks (e.g data drift checks).</span>
+<span class="sd">            check_list: Optional list identifying the data checks to</span>
+<span class="sd">                be performed.</span>
+<span class="sd">            **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: if data validation is not</span>
+<span class="sd">                supported by this data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Data validation not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">model_validation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run model validation checks.</span>
+
+<span class="sd">        This method should be implemented by data validators that support</span>
+<span class="sd">        running model validation checks (e.g. confusion matrix validation,</span>
+<span class="sd">        performance reports, model error analyses, etc).</span>
+
+<span class="sd">        Unlike `data_validation`, model validation checks require that a model</span>
+<span class="sd">        be present as an active component during the validation process.</span>
+
+<span class="sd">        This method also accepts an optional second dataset argument to</span>
+<span class="sd">        accommodate different categories of data validation tests, e.g.:</span>
+
+<span class="sd">        * single dataset tests: confusion matrix validation,</span>
+<span class="sd">        performance reports, model error analyses, etc</span>
+<span class="sd">        * model comparison tests: tests that identify changes in a model</span>
+<span class="sd">        behavior by comparing how it performs on two different datasets.</span>
+
+<span class="sd">        Data validators that support running multiple categories of model</span>
+<span class="sd">        validation checks should also take in a `check_list` argument that</span>
+<span class="sd">        lists the subset of checks to be performed. If not supplied, the</span>
+<span class="sd">        behavior is implementation specific, but it is recommended to provide a</span>
+<span class="sd">        good default (e.g. a single default validation check may be performed,</span>
+<span class="sd">        or all available validation checks may be performed and their results</span>
+<span class="sd">        returned as a list of objects).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset: Target dataset to be validated.</span>
+<span class="sd">            model: Target model to be validated.</span>
+<span class="sd">            comparison_dataset: Optional second dataset to be used for model</span>
+<span class="sd">                comparison checks (e.g model performance comparison checks).</span>
+<span class="sd">            check_list: Optional list identifying the model validation checks to</span>
+<span class="sd">                be performed.</span>
+<span class="sd">            **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: if model validation is not supported by this</span>
+<span class="sd">                data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Model validation not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidator.config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config</span><span class="p">:</span> <span class="n">BaseDataValidatorConfig</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the config of this data validator.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BaseDataValidatorConfig</code></td>
+      <td><p>The config of this data validator.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidator.data_profiling" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">data_profiling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">comparison_dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">profile_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Analyze one or more datasets and generate a data profile.</p>
+<p>This method should be implemented by data validators that support
+analyzing a dataset and generating a data profile (e.g. schema,
+statistical summary, data distribution profile, validation
+rules, data drift reports etc.).
+The method should return a data profile object.</p>
+<p>This method also accepts an optional second dataset argument to
+accommodate different categories of data profiling, e.g.:</p>
+<ul>
+<li>profiles generated from a single dataset: schema inference, validation
+rules inference, statistical profiles, data integrity reports</li>
+<li>differential profiles that need a second dataset for comparison:
+differential statistical profiles, data drift reports</li>
+</ul>
+<p>Data validators that support generating multiple categories of data
+profiles should also take in a <code>profile_list</code> argument that lists the
+subset of profiles to be generated. If not supplied, the behavior is
+implementation specific, but it is recommended to provide a good default
+(e.g. a single default data profile type may be generated and returned,
+or all available data profiles may be generated and returned as a single
+result).</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dataset</code></td>
+        <td><code>Any</code></td>
+        <td><p>Target dataset to be profiled.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>comparison_dataset</code></td>
+        <td><code>Optional[Any]</code></td>
+        <td><p>Optional second dataset to be used for data
+comparison profiles (e.g data drift reports).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>profile_list</code></td>
+        <td><code>Optional[Sequence[Any]]</code></td>
+        <td><p>Optional list identifying the categories of data
+profiles to be generated.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Implementation specific keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>NotImplementedError</code></td>
+        <td><p>if data profiling is not supported by this
+data validator.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze one or more datasets and generate a data profile.</span>
+
+<span class="sd">    This method should be implemented by data validators that support</span>
+<span class="sd">    analyzing a dataset and generating a data profile (e.g. schema,</span>
+<span class="sd">    statistical summary, data distribution profile, validation</span>
+<span class="sd">    rules, data drift reports etc.).</span>
+<span class="sd">    The method should return a data profile object.</span>
+
+<span class="sd">    This method also accepts an optional second dataset argument to</span>
+<span class="sd">    accommodate different categories of data profiling, e.g.:</span>
+
+<span class="sd">    * profiles generated from a single dataset: schema inference, validation</span>
+<span class="sd">    rules inference, statistical profiles, data integrity reports</span>
+<span class="sd">    * differential profiles that need a second dataset for comparison:</span>
+<span class="sd">    differential statistical profiles, data drift reports</span>
+
+<span class="sd">    Data validators that support generating multiple categories of data</span>
+<span class="sd">    profiles should also take in a `profile_list` argument that lists the</span>
+<span class="sd">    subset of profiles to be generated. If not supplied, the behavior is</span>
+<span class="sd">    implementation specific, but it is recommended to provide a good default</span>
+<span class="sd">    (e.g. a single default data profile type may be generated and returned,</span>
+<span class="sd">    or all available data profiles may be generated and returned as a single</span>
+<span class="sd">    result).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataset: Target dataset to be profiled.</span>
+<span class="sd">        comparison_dataset: Optional second dataset to be used for data</span>
+<span class="sd">            comparison profiles (e.g data drift reports).</span>
+<span class="sd">        profile_list: Optional list identifying the categories of data</span>
+<span class="sd">            profiles to be generated.</span>
+<span class="sd">        **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NotImplementedError: if data profiling is not supported by this</span>
+<span class="sd">            data validator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Data profiling is not supported by the </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2"> data &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;validator.&quot;</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidator.data_validation" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">data_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">comparison_dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Run data validation checks on a dataset.</p>
+<p>This method should be implemented by data validators that support
+running data quality checks an input dataset (e.g. data integrity
+checks, data drift checks).</p>
+<p>This method also accepts an optional second dataset argument to
+accommodate different categories of data validation tests, e.g.:</p>
+<ul>
+<li>single dataset checks: data integrity checks (e.g. missing
+values, conflicting labels, mixed data types etc.)</li>
+<li>checks that compare two datasets: data drift checks (e.g. new labels,
+feature drift, label drift etc.)</li>
+</ul>
+<p>Data validators that support running multiple categories of data
+integrity checks should also take in a <code>check_list</code> argument that
+lists the subset of checks to be performed. If not supplied, the
+behavior is implementation specific, but it is recommended to provide a
+good default (e.g. a single default validation check may be performed,
+or all available validation checks may be performed and their results
+returned as a list of objects).</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dataset</code></td>
+        <td><code>Any</code></td>
+        <td><p>Target dataset to be validated.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>comparison_dataset</code></td>
+        <td><code>Optional[Any]</code></td>
+        <td><p>Optional second dataset to be used for data
+comparison checks (e.g data drift checks).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>check_list</code></td>
+        <td><code>Optional[Sequence[Any]]</code></td>
+        <td><p>Optional list identifying the data checks to
+be performed.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Implementation specific keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>NotImplementedError</code></td>
+        <td><p>if data validation is not
+supported by this data validator.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run data validation checks on a dataset.</span>
+
+<span class="sd">    This method should be implemented by data validators that support</span>
+<span class="sd">    running data quality checks an input dataset (e.g. data integrity</span>
+<span class="sd">    checks, data drift checks).</span>
+
+<span class="sd">    This method also accepts an optional second dataset argument to</span>
+<span class="sd">    accommodate different categories of data validation tests, e.g.:</span>
+
+<span class="sd">    * single dataset checks: data integrity checks (e.g. missing</span>
+<span class="sd">    values, conflicting labels, mixed data types etc.)</span>
+<span class="sd">    * checks that compare two datasets: data drift checks (e.g. new labels,</span>
+<span class="sd">    feature drift, label drift etc.)</span>
+
+<span class="sd">    Data validators that support running multiple categories of data</span>
+<span class="sd">    integrity checks should also take in a `check_list` argument that</span>
+<span class="sd">    lists the subset of checks to be performed. If not supplied, the</span>
+<span class="sd">    behavior is implementation specific, but it is recommended to provide a</span>
+<span class="sd">    good default (e.g. a single default validation check may be performed,</span>
+<span class="sd">    or all available validation checks may be performed and their results</span>
+<span class="sd">    returned as a list of objects).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataset: Target dataset to be validated.</span>
+<span class="sd">        comparison_dataset: Optional second dataset to be used for data</span>
+<span class="sd">            comparison checks (e.g data drift checks).</span>
+<span class="sd">        check_list: Optional list identifying the data checks to</span>
+<span class="sd">            be performed.</span>
+<span class="sd">        **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NotImplementedError: if data validation is not</span>
+<span class="sd">            supported by this data validator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Data validation not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidator.get_active_data_validator" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_active_data_validator</span><span class="p">()</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get the data validator registered in the active stack.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BaseDataValidator</code></td>
+      <td><p>The data validator registered in the active stack.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>TypeError</code></td>
+        <td><p>if a data validator is not part of the
+active stack.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the data validator registered in the active stack.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The data validator registered in the active stack.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: if a data validator is not part of the</span>
+<span class="sd">            active stack.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flavor</span><span class="p">:</span> <span class="n">BaseDataValidatorFlavor</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">()</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+    <span class="n">data_validator</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">data_validator</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data_validator</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_validator</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The active stack needs to have a </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2"> data &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;validator component registered to be able to run data validation &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;actions with </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">. You can create a new stack with &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;a </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2"> data validator component or update your &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;active stack to add this component, e.g.:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  `zenml data-validator register </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;--flavor=</span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ...`</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  `zenml stack register &lt;STACK-NAME&gt; -dv </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ...`</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  or:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  `zenml stack update -dv </span><span class="si">{</span><span class="n">flavor</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data_validator</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidator.model_validation" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">model_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">comparison_dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Run model validation checks.</p>
+<p>This method should be implemented by data validators that support
+running model validation checks (e.g. confusion matrix validation,
+performance reports, model error analyses, etc).</p>
+<p>Unlike <code>data_validation</code>, model validation checks require that a model
+be present as an active component during the validation process.</p>
+<p>This method also accepts an optional second dataset argument to
+accommodate different categories of data validation tests, e.g.:</p>
+<ul>
+<li>single dataset tests: confusion matrix validation,
+performance reports, model error analyses, etc</li>
+<li>model comparison tests: tests that identify changes in a model
+behavior by comparing how it performs on two different datasets.</li>
+</ul>
+<p>Data validators that support running multiple categories of model
+validation checks should also take in a <code>check_list</code> argument that
+lists the subset of checks to be performed. If not supplied, the
+behavior is implementation specific, but it is recommended to provide a
+good default (e.g. a single default validation check may be performed,
+or all available validation checks may be performed and their results
+returned as a list of objects).</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dataset</code></td>
+        <td><code>Any</code></td>
+        <td><p>Target dataset to be validated.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>model</code></td>
+        <td><code>Any</code></td>
+        <td><p>Target model to be validated.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>comparison_dataset</code></td>
+        <td><code>Optional[Any]</code></td>
+        <td><p>Optional second dataset to be used for model
+comparison checks (e.g model performance comparison checks).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>check_list</code></td>
+        <td><code>Optional[Sequence[Any]]</code></td>
+        <td><p>Optional list identifying the model validation checks to
+be performed.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Implementation specific keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>NotImplementedError</code></td>
+        <td><p>if model validation is not supported by this
+data validator.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">model_validation</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run model validation checks.</span>
+
+<span class="sd">    This method should be implemented by data validators that support</span>
+<span class="sd">    running model validation checks (e.g. confusion matrix validation,</span>
+<span class="sd">    performance reports, model error analyses, etc).</span>
+
+<span class="sd">    Unlike `data_validation`, model validation checks require that a model</span>
+<span class="sd">    be present as an active component during the validation process.</span>
+
+<span class="sd">    This method also accepts an optional second dataset argument to</span>
+<span class="sd">    accommodate different categories of data validation tests, e.g.:</span>
+
+<span class="sd">    * single dataset tests: confusion matrix validation,</span>
+<span class="sd">    performance reports, model error analyses, etc</span>
+<span class="sd">    * model comparison tests: tests that identify changes in a model</span>
+<span class="sd">    behavior by comparing how it performs on two different datasets.</span>
+
+<span class="sd">    Data validators that support running multiple categories of model</span>
+<span class="sd">    validation checks should also take in a `check_list` argument that</span>
+<span class="sd">    lists the subset of checks to be performed. If not supplied, the</span>
+<span class="sd">    behavior is implementation specific, but it is recommended to provide a</span>
+<span class="sd">    good default (e.g. a single default validation check may be performed,</span>
+<span class="sd">    or all available validation checks may be performed and their results</span>
+<span class="sd">    returned as a list of objects).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataset: Target dataset to be validated.</span>
+<span class="sd">        model: Target model to be validated.</span>
+<span class="sd">        comparison_dataset: Optional second dataset to be used for model</span>
+<span class="sd">            comparison checks (e.g model performance comparison checks).</span>
+<span class="sd">        check_list: Optional list identifying the model validation checks to</span>
+<span class="sd">            be performed.</span>
+<span class="sd">        **kwargs: Implementation specific keyword arguments.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NotImplementedError: if model validation is not supported by this</span>
+<span class="sd">            data validator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Model validation not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.data_validators.base_data_validator.BaseDataValidatorConfig" class="doc doc-heading">
+        <code>
+BaseDataValidatorConfig            (<a class="autorefs autorefs-internal" title="zenml.stack.stack_component.StackComponentConfig" href="../core-stack/#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base config for all data validators.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for all data validators.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.data_validators.base_data_validator.BaseDataValidatorFlavor" class="doc doc-heading">
+        <code>
+BaseDataValidatorFlavor            (<a class="autorefs autorefs-internal" title="zenml.stack.flavor.Flavor" href="../core-stack/#zenml.stack.flavor.Flavor">Flavor</a>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for data validator flavors.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for data validator flavors.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of the component.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The type of the component.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">DATA_VALIDATOR</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidatorConfig</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for data validator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Config class for data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">BaseDataValidatorConfig</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidator</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation for data validator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Implementation for data validator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">BaseDataValidator</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.config_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">data_validators</span><span class="o">.</span><span class="n">base_data_validator</span><span class="o">.</span><span class="n">BaseDataValidatorConfig</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Config class for data validator.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.data_validators.base_data_validator.BaseDataValidatorConfig]</code></td>
+      <td><p>Config class for data validator.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.implementation_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">implementation_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">data_validators</span><span class="o">.</span><span class="n">base_data_validator</span><span class="o">.</span><span class="n">BaseDataValidator</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Implementation for data validator.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.data_validators.base_data_validator.BaseDataValidator]</code></td>
+      <td><p>Implementation for data validator.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.data_validators.base_data_validator.BaseDataValidatorFlavor.type" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">type</span><span class="p">:</span> <span class="n">StackComponentType</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>The type of the component.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>StackComponentType</code></td>
+      <td><p>The type of the component.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../core-container_registries/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Container Registries" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Container Registries
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core-entrypoints/" class="md-footer__link md-footer__link--next" aria-label="Next: Entrypoints" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Entrypoints
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
