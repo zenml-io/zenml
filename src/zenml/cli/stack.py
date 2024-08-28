@@ -2478,9 +2478,11 @@ def _get_stack_component_info(
                 is_skypilot=True,
             )
         elif flavor == "azureml":
-            config["subscription_id"] = Prompt.ask("Enter the subscription ID:")
+            config["subscription_id"] = Prompt.ask(
+                "Enter the subscription ID:"
+            )
             config["resource_group"] = Prompt.ask("Enter the resource group:")
-            config["workspace"] = Prompt.ask("Enter workspace name:")
+            config["workspace"] = Prompt.ask("Enter the workspace name:")
         elif flavor == "vertex":
             config["location"] = query_region(
                 StackDeploymentProvider.GCP, "Vertex AI job"
