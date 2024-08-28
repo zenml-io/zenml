@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
+import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
@@ -183,30 +184,21 @@ class ModalStepOperator(BaseStepOperator):
         if resource_settings.gpu_count is not None:
             gpu_str += f":{resource_settings.gpu_count}"
 
-        sb = await modal.Sandbox.create.aio(
-            "bash",
-            "-c",
-            " ".join(entrypoint_command),
-            image=zenml_image,
-            gpu=gpu_str,
-            cpu=resource_settings.cpu_count or None,
-            memory=resource_settings.get_memory(ByteUnit.MB) or None,
-            cloud=settings.cloud or None,
-            region=settings.region or None,
-        )
+        app = modal.App(f"zenml-{info.run_name}-{info.step_run_id}")
 
-        app = modal.App(f"zenml-{info.pipeline_name}-{info.step_name}")
+        async def run_sandbox():
+            async with app.run():
+                await modal.Sandbox.create(
+                    "bash",
+                    "-c",
+                    " ".join(entrypoint_command),
+                    image=zenml_image,
+                    gpu=gpu_str,
+                    cpu=resource_settings.cpu_count or None,
+                    memory=resource_settings.get_memory(ByteUnit.MB) or None,
+                    cloud=settings.cloud or None,
+                    region=settings.region or None,
+                    app=app,
+                )
 
-        with app.run():
-            await modal.Sandbox.create.aio(
-                "bash",
-                "-c",
-                " ".join(entrypoint_command),
-                image=zenml_image,
-                gpu=gpu_str,
-                cpu=resource_settings.cpu_count or None,
-                memory=resource_settings.get_memory(ByteUnit.MB) or None,
-                cloud=settings.cloud or None,
-                region=settings.region or None,
-                app=app,
-            )
+        asyncio.run(run_sandbox())
