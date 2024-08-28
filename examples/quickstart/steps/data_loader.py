@@ -37,7 +37,7 @@ def load_data(
         inputs = []
         targets = []
 
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()  # Raise an exception for bad responses
 
         for line in response.text.splitlines():
