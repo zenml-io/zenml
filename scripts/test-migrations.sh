@@ -109,10 +109,10 @@ function run_tests_for_version() {
 
     cd test_starter
 
-    echo "===== Installing sklearn integration ====="
-    zenml integration export-requirements sklearn --output-file sklearn-requirements.txt
-    uv pip install -r sklearn-requirements.txt
-    rm sklearn-requirements.txt
+    echo "===== Installing required integration ====="
+    zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
+    uv pip install -r integration-requirements.txt
+    rm integration-requirements.txt
 
     echo "===== Running starter template pipeline ====="
     # Check if the version supports templates with arguments (> 0.52.0)
