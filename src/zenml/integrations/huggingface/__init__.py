@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
-from typing import List, Type
+import sys
+from typing import List, Type, Optional
 
 from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
@@ -46,6 +47,26 @@ class HuggingfaceIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.huggingface import materializers  # noqa
         from zenml.integrations.huggingface import services
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+
+        Args:
+            target_os: The target operating system.
+
+        Returns:
+            A list of requirements.
+        """
+        requirements = cls.REQUIREMENTS
+
+        # In python 3.8 higher transformers version lead to other packages breaking
+        if sys.version_info.minor > 8:
+            requirements += ["transformers"]
+        else:
+            requirements += ["transformers<=4.31"]
+
+        return requirements
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
