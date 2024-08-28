@@ -110,7 +110,12 @@ function run_tests_for_version() {
     cd test_starter
 
     echo "===== Installing required integration ====="
-    zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
+    if [ "$(version_compare "$VERSION" "0.64.0")" == "<" ]; then
+        zenml integration export-requirements sklearn --output-file integration-requirements.txt
+    else
+        zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
+    fi
+
     uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
