@@ -30,6 +30,8 @@ from zenml.utils.archivable import Archivable
 if TYPE_CHECKING:
     from git.repo.base import Repo
 
+    from zenml.artifact_stores import BaseArtifactStore
+
 
 logger = get_logger(__name__)
 
@@ -280,3 +282,61 @@ def download_code_from_artifact_store(code_path: str) -> None:
     source_utils.set_custom_source_root(extract_dir)
     sys.path.insert(0, extract_dir)
     os.chdir(extract_dir)
+
+
+def _get_notebook_upload_dir(artifact_store: "BaseArtifactStore") -> str:
+    """Get the upload directory for code extracted from notebook cells.
+
+    Args:
+        artifact_store: The artifact store in which the directory should be.
+
+    Returns:
+        The upload directory for code extracted from notebook cells.
+    """
+    return os.path.join(artifact_store.path, "notebook_code")
+
+
+def upload_notebook_code(
+    artifact_store: "BaseArtifactStore", cell_code: str, file_name: str
+) -> None:
+    """Upload code extracted from a notebook cell.
+
+    Args:
+        artifact_store: The artifact store in which to upload the code.
+        cell_code: The notebook cell code.
+        file_name: The filename to use for storing the cell code.
+    """
+    upload_dir = _get_notebook_upload_dir(artifact_store=artifact_store)
+    fileio.makedirs(upload_dir)
+    upload_path = os.path.join(upload_dir, file_name)
+
+    if not fileio.exists(upload_path):
+        with fileio.open(upload_path, "wb") as f:
+            f.write(cell_code.encode())
+
+        logger.info("Uploaded notebook cell code to %s.", upload_path)
+
+
+def download_notebook_code(
+    artifact_store: "BaseArtifactStore", file_name: str, download_path: str
+) -> None:
+    """Download code extracted from a notebook cell.
+
+    Args:
+        artifact_store: The artifact store from which to download the code.
+        file_name: The name of the code file.
+        download_path: The local path where the file should be downloaded to.
+
+    Raises:
+        FileNotFoundError: If no file with the given filename exists in this
+            artifact store.
+    """
+    code_dir = _get_notebook_upload_dir(artifact_store=artifact_store)
+    code_path = os.path.join(code_dir, file_name)
+
+    if not fileio.exists(code_path):
+        raise FileNotFoundError(
+            f"Notebook code at path {code_path} not found."
+        )
+
+    fileio.copy(code_path, download_path)

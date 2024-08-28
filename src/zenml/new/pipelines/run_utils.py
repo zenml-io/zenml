@@ -1,15 +1,16 @@
 """Utility functions for running pipelines."""
 
-import hashlib
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
+
+from pydantic import BaseModel
 
 from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.source import SourceType
+from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
@@ -23,7 +24,7 @@ from zenml.models import (
 )
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
-from zenml.utils import code_utils, notebook_utils
+from zenml.utils import code_utils, notebook_utils, source_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -269,9 +270,8 @@ def upload_notebook_cell_code_if_necessary(
         RuntimeError: If the code for one of the steps that will run out of
             process cannot be extracted into a python file.
     """
-    code_archive = code_utils.CodeArchive(root=None)
     should_upload = False
-    sources_that_require_upload = []
+    resolved_notebook_sources = source_utils.get_resolved_notebook_sources()
 
     for step in deployment.step_configurations.values():
         source = step.spec.source
@@ -282,7 +282,9 @@ def upload_notebook_cell_code_if_necessary(
                 or step.config.step_operator
             ):
                 should_upload = True
-                cell_code = getattr(step.spec.source, "_cell_code", None)
+                cell_code = resolved_notebook_sources.get(
+                    source.import_path, None
+                )
 
                 # Code does not run in-process, which means we need to
                 # extract the step code into a python file
@@ -296,20 +298,53 @@ def upload_notebook_cell_code_if_necessary(
                         "of a notebook."
                     )
 
-                notebook_utils.warn_about_notebook_cell_magic_commands(
-                    cell_code=cell_code
-                )
-
-                code_hash = hashlib.sha1(cell_code.encode()).hexdigest()  # nosec
-                module_name = f"extracted_notebook_code_{code_hash}"
-                file_name = f"{module_name}.py"
-                code_archive.add_file(source=cell_code, destination=file_name)
-
-                setattr(step.spec.source, "replacement_module", module_name)
-                sources_that_require_upload.append(source)
-
     if should_upload:
-        logger.info("Archiving notebook code...")
-        code_path = code_utils.upload_code_if_necessary(code_archive)
-        for source in sources_that_require_upload:
-            setattr(source, "code_path", code_path)
+        logger.info("Uploading notebook code...")
+
+        for _, cell_code in resolved_notebook_sources.items():
+            notebook_utils.warn_about_notebook_cell_magic_commands(
+                cell_code=cell_code
+            )
+            module_name = notebook_utils.compute_cell_replacement_module_name(
+                cell_code=cell_code
+            )
+            file_name = f"{module_name}.py"
+
+            code_utils.upload_notebook_code(
+                artifact_store=stack.artifact_store,
+                cell_code=cell_code,
+                file_name=file_name,
+            )
+
+        all_deployment_sources = get_all_sources_from_value(deployment)
+
+        for source in all_deployment_sources:
+            if source.type == SourceType.NOTEBOOK:
+                setattr(source, "artifact_store_id", stack.artifact_store.id)
+
+        logger.info("Upload finished.")
+
+
+def get_all_sources_from_value(value: Any) -> List[Source]:
+    """Get all source objects from a value.
+
+    Args:
+        value: The value from which to get all the source objects.
+
+    Returns:
+        List of source objects for the given value.
+    """
+    sources = []
+    if isinstance(value, Source):
+        sources.append(value)
+    elif isinstance(value, BaseModel):
+        for v in value.__dict__.values():
+            sources.extend(get_all_sources_from_value(v))
+    elif isinstance(value, Dict):
+        for v in value.values():
+            sources.extend(get_all_sources_from_value(v))
+    elif isinstance(value, (List, Set, tuple)):
+        for v in value:
+            sources.extend(get_all_sources_from_value(v))
+
+    return sources
