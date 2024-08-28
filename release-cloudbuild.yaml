@@ -98,7 +98,6 @@ steps:
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=gcp \
-          --target client \
           -f docker/zenml-quickstart.Dockerfile . \
           -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-gcp      
 
@@ -117,7 +116,6 @@ steps:
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=aws \
-          --target client \
           -f docker/zenml-quickstart.Dockerfile . \
           -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-aws
         
@@ -136,7 +134,6 @@ steps:
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=azure \
-          --target client \
           -f docker/zenml-quickstart.Dockerfile . \
           -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-azure
 
