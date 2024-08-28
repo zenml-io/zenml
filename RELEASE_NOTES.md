@@ -4,14 +4,6 @@
 
 ## New Features and Improvements
 
-### Lightning AI Studio Orchestrator
-
-[Lightning AI Studio](https://lightning.ai/) is a platform that simplifies the development and deployment of AI applications. 
-The Lightning AI orchestrator is an integration provided by ZenML that allows you to run your pipelines on Lightning AI's 
-infrastructure, leveraging its scalable compute resources and managed environment.
-
-See [ZenML Docs](https://docs.zenml.io/stack-components/orchestrators/lightning) to learn more about this integration.
-
 ### New Quickstart Experience
 
 This example demonstrates how ZenML streamlines the transition of machine learning workflows from local environments to 
