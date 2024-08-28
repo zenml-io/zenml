@@ -188,19 +188,20 @@ class ModalStepOperator(BaseStepOperator):
         app = modal.App(f"zenml-{info.run_name}-{info.step_run_id}")
 
         async def run_sandbox():
-            async with app.run():
-                sandbox = await modal.Sandbox.create(
-                    "bash",
-                    "-c",
-                    " ".join(entrypoint_command),
-                    image=zenml_image,
-                    gpu=gpu_str,
-                    cpu=resource_settings.cpu_count or None,
-                    memory=resource_settings.get_memory(ByteUnit.MB) or None,
-                    cloud=settings.cloud or None,
-                    region=settings.region or None,
-                    app=app,
-                )
-                await sandbox.run()
+            with modal.enable_output():
+                async with app.run():
+                    modal.Sandbox.create(
+                        "bash",
+                        "-c",
+                        " ".join(entrypoint_command),
+                        image=zenml_image,
+                        gpu=gpu_str,
+                        cpu=resource_settings.cpu_count or None,
+                        memory=resource_settings.get_memory(ByteUnit.MB)
+                        or None,
+                        cloud=settings.cloud or None,
+                        region=settings.region or None,
+                        app=app,
+                    )
 
         asyncio.run(run_sandbox())
