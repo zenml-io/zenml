@@ -169,33 +169,28 @@ class CodeArchive(Archivable):
             )
 
 
-def zip_and_hash_code(code_archive: CodeArchive) -> Tuple[str, str]:
-    """Zip the code archive and compute its hash.
+def compute_file_hash(file: IO[bytes]) -> str:
+    """Compute a hash of the content of a file.
+
+    This function will not seek the file before or after the hash computation.
+    This means that the content will be computed based on the current cursor
+    until the end of the file.
 
     Args:
-        code_archive: The code archive to zip and hash.
+        file: The file for which to compute the hash.
 
     Returns:
-        A tuple containing the temporary file path and the filename of the
-        archive.
+        A hash of the file content.
     """
-    with tempfile.NamedTemporaryFile(
-        mode="w+b", delete=False, suffix=".tar.gz"
-    ) as f:
-        code_archive.write_archive(f)
+    hash_ = hashlib.sha1()  # nosec
 
-        hash_ = hashlib.sha1()  # nosec
+    while True:
+        data = file.read(64 * 1024)
+        if not data:
+            break
+        hash_.update(data)
 
-        f.seek(0)
-        while True:
-            data = f.read(64 * 1024)
-            if not data:
-                break
-            hash_.update(data)
-
-        filename = f"{hash_.hexdigest()}.tar.gz"
-
-    return f.name, filename
+    return hash_.hexdigest()
 
 
 def upload_code_if_necessary(code_archive: CodeArchive) -> str:
@@ -213,26 +208,31 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
     """
     artifact_store = Client().active_stack.artifact_store
 
-    temp_file, filename = zip_and_hash_code(code_archive)
+    with tempfile.NamedTemporaryFile(
+        mode="w+b", delete=False, suffix=".tar.gz"
+    ) as f:
+        code_archive.write_archive(f)
+        archive_path = f.name
+        archive_hash = compute_file_hash(f)
 
     upload_dir = os.path.join(artifact_store.path, "code_uploads")
     fileio.makedirs(upload_dir)
-    upload_path = os.path.join(upload_dir, filename)
+    upload_path = os.path.join(upload_dir, f"{archive_hash}.tar.gz")
 
     if not fileio.exists(upload_path):
         archive_size = string_utils.get_human_readable_filesize(
-            os.path.getsize(temp_file)
+            os.path.getsize(archive_path)
         )
         logger.info(
             "Uploading code to `%s` (Size: %s).", upload_path, archive_size
         )
-        fileio.copy(temp_file, upload_path)
+        fileio.copy(archive_path, upload_path)
         logger.info("Code upload finished.")
     else:
         logger.info("Code already exists in artifact store, skipping upload.")
 
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
+    if os.path.exists(archive_path):
+        os.remove(archive_path)
 
     return upload_path
 

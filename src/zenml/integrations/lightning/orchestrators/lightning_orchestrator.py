@@ -263,7 +263,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             root=source_utils.get_source_root()
         )
         logger.info("Archiving pipeline code...")
-        code_path, _ = code_utils.zip_and_hash_code(code_archive)
+        with tempfile.NamedTemporaryFile(
+            mode="w+b", delete=False, suffix=".tar.gz"
+        ) as code_path:
+            code_archive.write_archive(code_path)
+
         filename = f"{orchestrator_run_name}.tar.gz"
 
         # Construct the env variables for the pipeline
