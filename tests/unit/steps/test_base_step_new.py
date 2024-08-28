@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
 
 from zenml import pipeline, step
 from zenml.exceptions import StepInterfaceError
+from zenml.materializers.base_materializer import BaseMaterializer
 
 
 @step
@@ -187,3 +188,53 @@ def test_unpacking_step_artifact_raises_custom_exception():
 
     with pytest.raises(StepInterfaceError):
         test_pipeline()
+
+
+class MyStringMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (str,)
+
+    def load(self, data_type: Any) -> Any:
+        return None
+
+    def save(self, data: Any) -> None:
+        return
+
+
+def test_configure_step_with_wrong_materializers():
+    """Tests that configuring a step with invalid materializers raises an
+    error."""
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_with_int_return() -> int:
+        return 1
+
+    with pytest.raises(StepInterfaceError):
+        step_with_int_return._finalize_configuration({}, {}, {}, {})
+
+    @step
+    def step_with_int_and_string_return() -> Tuple[str, int]:
+        return "", 1
+
+    with pytest.raises(StepInterfaceError):
+        step_with_int_and_string_return.with_options(
+            output_materializers=MyStringMaterializer
+        )._finalize_configuration({}, {}, {}, {})
+
+    with does_not_raise():
+        step_with_int_and_string_return.with_options(
+            output_materializers={"output_0": MyStringMaterializer}
+        )._finalize_configuration({}, {}, {}, {})
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_with_str_union_return() -> Union[str, int]:
+        return 1
+
+    with does_not_raise():
+        step_with_str_union_return._finalize_configuration({}, {}, {}, {})
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_without_str_union_return() -> Union[int, float]:
+        return 1
+
+    with pytest.raises(StepInterfaceError):
+        step_without_str_union_return._finalize_configuration({}, {}, {}, {})
