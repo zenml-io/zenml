@@ -254,5 +254,6 @@
     "ipywidgets",
     "modal",
     "modal.cli",
-    "modal.cli.run"
+    "modal.cli.run",
+    "lightning_sdk"
 ]

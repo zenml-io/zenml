@@ -36,6 +36,7 @@ from zenml.integrations.gitlab import GitLabIntegration  # noqa
 from zenml.integrations.great_expectations import (  # noqa
     GreatExpectationsIntegration,
 )
+from zenml.integrations.lightning import LightningIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.hyperai import HyperAIIntegration  # noqa
 from zenml.integrations.kaniko import KanikoIntegration  # noqa

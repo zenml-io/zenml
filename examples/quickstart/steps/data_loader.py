@@ -14,52 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Annotated
 
-import pandas as pd
-from sklearn.datasets import load_breast_cancer
-from typing_extensions import Annotated
+import requests
+from datasets import Dataset
 
 from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+PROMPT = ""  # In case you want to also use a prompt you can set it here
+
 
 @step
-def data_loader(
-    random_state: int, is_inference: bool = False, target: str = "target"
-) -> Annotated[pd.DataFrame, "dataset"]:
-    """Dataset reader step.
+def load_data(
+    data_url: str,
+) -> Annotated[Dataset, "full_dataset"]:
+    """Load and prepare the dataset."""
 
-    This is an example of a dataset reader step that load Breast Cancer dataset.
+    def read_data_from_url(url):
+        inputs = []
+        targets = []
 
-    This step is parameterized, which allows you to configure the step
-    independently of the step code, before running it in a pipeline.
-    In this example, the step can be configured with number of rows and logic
-    to drop target column or not. See the documentation for more information:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad responses
 
-        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
+        for line in response.text.splitlines():
+            old, modern = line.strip().split("|")
+            inputs.append(f"{PROMPT}{old}")
+            targets.append(modern)
 
-    Args:
-        random_state: Random state for sampling
-        is_inference: If `True` subset will be returned and target column
-            will be removed from dataset.
-        target: Name of target columns in dataset.
+        return {"input": inputs, "target": targets}
 
-    Returns:
-        The dataset artifact as Pandas DataFrame and name of target column.
-    """
-    dataset = load_breast_cancer(as_frame=True)
-    inference_size = int(len(dataset.target) * 0.05)
-    dataset: pd.DataFrame = dataset.frame
-    inference_subset = dataset.sample(
-        inference_size, random_state=random_state
-    )
-    if is_inference:
-        dataset = inference_subset
-        dataset.drop(columns=target, inplace=True)
-    else:
-        dataset.drop(inference_subset.index, inplace=True)
-    dataset.reset_index(drop=True, inplace=True)
-    logger.info(f"Dataset with {len(dataset)} records loaded!")
-    return dataset
+    # Fetch and process the data
+    data = read_data_from_url(data_url)
+
+    # Convert to Dataset
+    return Dataset.from_dict(data)

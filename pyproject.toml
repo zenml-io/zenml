@@ -464,9 +464,11 @@ module = [
     "huggingface_hub.*",
     "label_studio_sdk.*",
     "argilla.*",
+    "lightning_sdk.*",
     "peewee.*",
     "prodigy.*",
     "prodigy.components.*",
     "prodigy.components.db.*",
+    "transformers.*",
 ]
 ignore_missing_imports = true
