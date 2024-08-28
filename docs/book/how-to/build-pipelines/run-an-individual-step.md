@@ -1,6 +1,6 @@
 # Run an individual step on your stack
 
-If you want to run just an invividual step on your stack, you can simply call the step
+If you want to run just an individual step on your stack, you can simply call the step
 as you would with a normal Python function. ZenML will internally create a pipeline with just your step
 and run it on the active stack.
 
