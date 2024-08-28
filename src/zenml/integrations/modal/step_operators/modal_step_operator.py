@@ -183,7 +183,7 @@ class ModalStepOperator(BaseStepOperator):
         if resource_settings.gpu_count is not None:
             gpu_str += f":{resource_settings.gpu_count}"
 
-        sb = modal.Sandbox.create(
+        sb = await modal.Sandbox.create.aio(
             "bash",
             "-c",
             " ".join(entrypoint_command),
@@ -195,8 +195,18 @@ class ModalStepOperator(BaseStepOperator):
             region=settings.region or None,
         )
 
-        sb.wait()
-        stdout = sb.stdout()
-        stderr = sb.stderr()
-        returncode = sb.returncode()
-        # return stdout, stderr, returncode
+        app = modal.App(f"zenml-{info.pipeline_name}-{info.step_name}")
+
+        with app.run():
+            await modal.Sandbox.create.aio(
+                "bash",
+                "-c",
+                " ".join(entrypoint_command),
+                image=zenml_image,
+                gpu=gpu_str,
+                cpu=resource_settings.cpu_count or None,
+                memory=resource_settings.get_memory(ByteUnit.MB) or None,
+                cloud=settings.cloud or None,
+                region=settings.region or None,
+                app=app,
+            )
