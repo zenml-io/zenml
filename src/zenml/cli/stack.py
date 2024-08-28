@@ -316,7 +316,7 @@ def register_stack(
         pass
 
     labels: Dict[str, str] = {}
-    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
+    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
 
     # Cloud Flow
     created_objects: Set[str] = set()
@@ -490,7 +490,7 @@ def register_stack(
                     component_info = selected_component.id
                     component_name = selected_component.name
 
-            components[component_type] = component_info
+            components[component_type] = [component_info]
             if component_type == StackComponentType.ARTIFACT_STORE:
                 artifact_store = component_name
             if component_type == StackComponentType.ORCHESTRATOR:
@@ -515,9 +515,11 @@ def register_stack(
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
         ]:
             if component_name_ and component_type_ not in components:
-                components[component_type_] = client.get_stack_component(
-                    component_type_, component_name_
-                ).id
+                components[component_type_] = [
+                    client.get_stack_component(
+                        component_type_, component_name_
+                    ).id
+                ]
 
         try:
             created_stack = client.zen_store.create_stack(
