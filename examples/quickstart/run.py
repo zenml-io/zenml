@@ -54,9 +54,7 @@ Examples:
 )
 @click.option(
     "--orchestration_environment",
-    type=click.Choice(
-        ["local", "aws", "gcp", "azure"], case_sensitive=False
-    ),
+    type=click.Choice(["local", "aws", "gcp", "azure"], case_sensitive=False),
     default="local",
     help="Choose the orchestration environment.",
 )

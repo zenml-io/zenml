@@ -70,7 +70,11 @@ class HFT5Materializer(BaseMaterializer):
                     fileio.copy(src, dst)
 
             # Load the model or tokenizer from the temporary directory
-            if data_type in [T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast]:
+            if data_type in [
+                T5ForConditionalGeneration,
+                T5Tokenizer,
+                T5TokenizerFast,
+            ]:
                 return data_type.from_pretrained(temp_dir)
             else:
                 raise ValueError(f"Unsupported data type: {data_type}")
