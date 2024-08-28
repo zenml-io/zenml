@@ -265,8 +265,9 @@ class LightningOrchestrator(WheeledOrchestrator):
         logger.info("Archiving pipeline code...")
         with tempfile.NamedTemporaryFile(
             mode="w+b", delete=False, suffix=".tar.gz"
-        ) as code_path:
-            code_archive.write_archive(code_path)
+        ) as code_file:
+            code_archive.write_archive(code_file)
+            code_path = code_file.name
 
         filename = f"{orchestrator_run_name}.tar.gz"
 
