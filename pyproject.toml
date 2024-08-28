@@ -462,6 +462,7 @@ module = [
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
+    "distutils.*",
     "accelerate.*",
     "label_studio_sdk.*",
     "argilla.*",
