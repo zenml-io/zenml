@@ -469,5 +469,6 @@ module = [
     "prodigy.*",
     "prodigy.components.*",
     "prodigy.components.db.*",
+    "transformers.*",
 ]
 ignore_missing_imports = true

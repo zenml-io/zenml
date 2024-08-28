@@ -66,7 +66,7 @@ steps:
     secretEnv:
       - USERNAME
 
-    # build base image - python 3.11
+  # build client base image - python 3.11
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -85,6 +85,63 @@ steps:
         fi
     id: build-base-3.11
     waitFor: ['-']
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart gcp image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=gcp \
+          --target client \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-gcp      
+
+    id: build-quickstart-3.11-gcp
+    waitFor: [ '-' ]
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart aws image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=aws \
+          --target client \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-aws
+        
+    id: build-quickstart-3.11-aws
+    waitFor: [ '-' ]
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart azure image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=azure \
+          --target client \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-azure
+
+    id: build-quickstart-3.11-azure
+    waitFor: [ '-' ]
     entrypoint: bash
     secretEnv:
       - USERNAME
