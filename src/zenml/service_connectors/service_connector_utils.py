@@ -18,10 +18,10 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models.v2.core.service_connector import ServiceConnectorRequest
-from zenml.models.v2.misc.full_stack import (
+from zenml.models import (
     ResourcesInfo,
     ServiceConnectorInfo,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesInfo,
 )
 from zenml.utils.pagination_utils import depaginate

@@ -207,13 +207,13 @@ def _cli_wrapped_function(func: F) -> F:
 
 @contextmanager
 def create_cli_wrapped_script(
-    func: F, flavour: str = "accelerate"
+    func: F, flavor: str = "accelerate"
 ) -> Iterator[Tuple[Path, Path]]:
     """Create a script with the CLI-wrapped function.
 
     Args:
         func: The function to use.
-        flavour: The flavour to use.
+        flavor: The flavor to use.
 
     Yields:
         The paths of the script and the output.
@@ -244,7 +244,7 @@ def create_cli_wrapped_script(
                     func_module=clean_module_name,
                     func_name=func.__name__,
                 )
-                script += _CLI_WRAPPED_MAINS[flavour].format(
+                script += _CLI_WRAPPED_MAINS[flavor].format(
                     output_file=str(output_path.absolute())
                 )
                 f.write(script)

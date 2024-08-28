@@ -25,6 +25,7 @@ from accelerate.commands.launch import (  # type: ignore[import-untyped]
     launch_command_parser,
 )
 
+from zenml import get_pipeline_context
 from zenml.constants import (
     STEP_DECO_DECORATOR_FUNCTION,
     STEP_DECO_DECORATOR_KWARGS,
@@ -50,6 +51,8 @@ def run_with_accelerate(
         ```python
         from zenml import step, pipeline
         from zenml.integrations.hugginface.steps import run_with_accelerate
+
+        @run_with_accelerate(num_processes=4, multi_gpu=True)
         @step
         def training_step(some_param: int, ...):
             # your training code is below
@@ -57,7 +60,7 @@ def run_with_accelerate(
 
         @pipeline
         def training_pipeline(some_param: int, ...):
-            run_with_accelerate(training_step, num_processes=4)(some_param, ...)
+            training_step(some_param, ...)
         ```
 
     Example (decoration):
@@ -101,7 +104,7 @@ def run_with_accelerate(
                     )
 
                 with create_cli_wrapped_script(
-                    entrypoint, flavour="accelerate"
+                    entrypoint, flavor="accelerate"
                 ) as (
                     script_path,
                     output_path,
