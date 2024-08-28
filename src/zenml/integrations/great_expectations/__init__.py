@@ -17,10 +17,9 @@ The Great Expectations integration enables you to use Great Expectations as a
 way of profiling and validating your data.
 """
 
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.enums import StackComponentType
-from zenml.integrations.constants import GREAT_EXPECTATIONS, PANDAS
+from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -32,8 +31,6 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = ["great-expectations>=0.17.15,<1.0"]
-
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
@@ -54,6 +51,21 @@ class GreatExpectationsIntegration(Integration):
         )
 
         return [GreatExpectationsDataValidatorFlavor]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
 
 GreatExpectationsIntegration.check_installation()

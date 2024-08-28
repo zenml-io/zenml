@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization of the whylogs integration."""
 
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -28,7 +27,6 @@ class WhylogsIntegration(Integration):
 
     NAME = WHYLOGS
     REQUIREMENTS = ["whylogs[viz]~=1.0.5", "whylogs[whylabs]~=1.0.5"]
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
@@ -50,6 +48,21 @@ class WhylogsIntegration(Integration):
         )
 
         return [WhylogsDataValidatorFlavor]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
 
 WhylogsIntegration.check_installation()

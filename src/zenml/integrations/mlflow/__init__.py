@@ -16,9 +16,9 @@
 The MLflow integrations currently enables you to use MLflow tracking as a
 convenient way to visualize your experiment runs within the MLflow UI.
 """
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.integrations.constants import MLFLOW, PANDAS, NUMPY
+from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -47,9 +47,25 @@ class MlflowIntegration(Integration):
         # will not happen.
         "pydantic>=2.7.0,<2.8.0",
     ]
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS, NUMPY]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic", 'numpy', 'pandas']
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.numpy import NumpyIntegration
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            NumpyIntegration.get_requirements(target_os=target_os) + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
     @classmethod
     def activate(cls) -> None:

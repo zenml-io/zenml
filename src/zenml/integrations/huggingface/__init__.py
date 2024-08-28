@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.integrations.constants import HUGGINGFACE, PANDAS
+from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -39,7 +39,6 @@ class HuggingfaceIntegration(Integration):
         # TODO try relaxing it back going forward
         "fsspec<=2023.12.0",
     ]
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
 
@@ -61,6 +60,21 @@ class HuggingfaceIntegration(Integration):
         )
 
         return [HuggingFaceModelDeployerFlavor]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
 
 HuggingfaceIntegration.check_installation()

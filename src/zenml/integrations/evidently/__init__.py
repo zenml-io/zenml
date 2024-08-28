@@ -27,7 +27,7 @@ import os
 import warnings
 from typing import List, Type, Optional
 
-from zenml.integrations.constants import EVIDENTLY, PANDAS
+from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -57,9 +57,22 @@ class EvidentlyIntegration(Integration):
         "evidently>=0.4.16,<=0.4.22",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
-
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity", "pandas"]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

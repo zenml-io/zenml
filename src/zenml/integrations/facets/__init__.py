@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Facets integration for ZenML."""
-from typing import Optional,List
+from typing import Optional, List
 from zenml.integrations.constants import FACETS, PANDAS
 from zenml.integrations.integration import Integration
 
@@ -22,7 +22,6 @@ class FacetsIntegration(Integration):
 
     NAME = FACETS
     REQUIREMENTS = ["facets-overview>=1.0.0"]
-    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
@@ -31,6 +30,20 @@ class FacetsIntegration(Integration):
         """Activate the Facets integration."""
         from zenml.integrations.facets import materializers  # noqa
 
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
 
 FacetsIntegration.check_installation()
