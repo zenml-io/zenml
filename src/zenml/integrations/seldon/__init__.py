@@ -19,7 +19,7 @@ platform to implement continuous model deployment.
 from typing import List, Type
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import SELDON
+from zenml.integrations.constants import SELDON, NUMPY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -32,8 +32,9 @@ class SeldonIntegration(Integration):
     NAME = SELDON
     REQUIREMENTS = [
         "kubernetes==18.20.0",
-        "numpy<2.0.0",
     ]
+    REQUIRED_ZENML_INTEGRATIONS = [NUMPY]
+
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "numpy"]
 
     @classmethod

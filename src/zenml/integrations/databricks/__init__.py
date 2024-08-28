@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Initialization of the Databricks integration for ZenML."""
 
-from typing import List, Type
+from typing import List, Type, Optional
 
 from zenml.integrations.constants import (
-    DATABRICKS,
+    DATABRICKS, NUMPY, PANDAS
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -30,7 +30,8 @@ class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
 
     NAME = DATABRICKS
-    REQUIREMENTS = ["databricks-sdk==0.28.0", "numpy<2.0.0", "pandas>=2.0.0"]
+    REQUIREMENTS = ["databricks-sdk==0.28.0"]
+    REQUIRED_ZENML_INTEGRATIONS = [NUMPY, PANDAS]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["numpy", "pandas"]
 

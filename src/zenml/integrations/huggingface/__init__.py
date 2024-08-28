@@ -14,7 +14,7 @@
 """Initialization of the Huggingface integration."""
 from typing import List, Type
 
-from zenml.integrations.constants import HUGGINGFACE
+from zenml.integrations.constants import HUGGINGFACE, PANDAS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -39,6 +39,8 @@ class HuggingfaceIntegration(Integration):
         # TODO try relaxing it back going forward
         "fsspec<=2023.12.0",
     ]
+    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
+
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
 
     @classmethod

@@ -23,8 +23,7 @@ The integration includes custom materializers to store and visualize Deepchecks
 
 from typing import List, Type
 
-from zenml.enums import StackComponentType
-from zenml.integrations.constants import DEEPCHECKS
+from zenml.integrations.constants import DEEPCHECKS, PANDAS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -37,20 +36,23 @@ class DeepchecksIntegration(Integration):
     NAME = DEEPCHECKS
     REQUIREMENTS = [
         "deepchecks[vision]==0.8.0",
+        # Normally, the deepchecks integrations requires pandas to work.
+        # However, their version 0.8.0 is using a pandas function which got
+        # removed at pandas 2.1.0. Until we can upgrade the deepchecks
+        # requirement, we have to limit pandas to <2.1.0.
+        "pandas<2.1.0",
         "torchvision>=0.14.0",
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
-        # Deepchecks materializer inherits from the PandasMaterializer, thus
-        # we need to put the requirements of the pandas integration here as
-        # well.
-        "pandas>=2.0.0",
     ]
-    APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas","torchvision","tenacity"]
+    REQUIRED_ZENML_INTEGRATIONS = [PANDAS]
 
-    @staticmethod
-    def activate() -> None:
+    APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas", "torchvision", "tenacity"]
+
+    @classmethod
+    def activate(cls) -> None:
         """Activate the Deepchecks integration."""
         from zenml.integrations.deepchecks import materializers  # noqa
 

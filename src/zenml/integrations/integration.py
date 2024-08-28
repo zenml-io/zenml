@@ -59,6 +59,8 @@ class Integration(metaclass=IntegrationMeta):
     NAME = "base_integration"
 
     REQUIREMENTS: List[str] = []
+    REQUIRED_ZENML_INTEGRATIONS: List[str] = []
+
     APT_PACKAGES: List[str] = []
     REQUIREMENTS_IGNORED_ON_UNINSTALL: List[str] = []
 
@@ -142,6 +144,18 @@ class Integration(metaclass=IntegrationMeta):
         Returns:
             A list of requirements.
         """
+        from zenml.integrations.registry import integration_registry
+
+        reqs: List[str] = []
+
+        for required_integration_name in cls.REQUIRED_ZENML_INTEGRATIONS:
+            reqs.extend(
+                integration_registry.select_integration_requirements(
+                    integration_name=required_integration_name,
+                    target_os=target_os,
+                )
+            )
+
         return cls.REQUIREMENTS
 
     @classmethod

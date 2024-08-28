@@ -49,7 +49,7 @@ from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.numpy import NumpyIntegration  # noqa
-from zenml.integrations.openai import OpenAIIntegration  #
+from zenml.integrations.openai import OpenAIIntegration  # noqa
 from zenml.integrations.pandas import PandasIntegration  # noqa
 from zenml.integrations.pigeon import PigeonIntegration # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa

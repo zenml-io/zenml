@@ -18,7 +18,7 @@ convenient way to visualize your experiment runs within the MLflow UI.
 """
 from typing import List, Type
 
-from zenml.integrations.constants import MLFLOW
+from zenml.integrations.constants import MLFLOW, PANDAS, NUMPY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -36,8 +36,6 @@ class MlflowIntegration(Integration):
         "mlflow>=2.1.1,<3",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
-        "numpy<2.0.0",
-        "pandas>=2.0.0",
         # TODO: remove this requirement once rapidjson is fixed
         "python-rapidjson<1.15",
         # When you do:
@@ -49,6 +47,7 @@ class MlflowIntegration(Integration):
         # will not happen.
         "pydantic>=2.7.0,<2.8.0",
     ]
+    REQUIRED_ZENML_INTEGRATIONS = [PANDAS, NUMPY]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic", 'numpy', 'pandas']
 
