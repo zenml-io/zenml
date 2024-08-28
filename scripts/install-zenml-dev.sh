@@ -29,6 +29,8 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
     uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]"
+    # TODO: Remove and add the extra back in
+    uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-python-3.12
 }
 
 install_integrations() {
