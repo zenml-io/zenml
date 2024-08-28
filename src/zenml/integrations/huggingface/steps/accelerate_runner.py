@@ -25,7 +25,6 @@ from accelerate.commands.launch import (  # type: ignore[import-untyped]
     launch_command_parser,
 )
 
-from zenml import get_pipeline_context
 from zenml.constants import (
     STEP_DECO_DECORATOR_FUNCTION,
     STEP_DECO_DECORATOR_KWARGS,
