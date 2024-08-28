@@ -303,6 +303,8 @@ class EnvironmentType(StrEnum):
     PAPERSPACE = "paperspace"
     WSL = "wsl"
     LIGHTNING_AI_STUDIO = "lightning_ai_studio"
+    GITHUB_CODESPACES = "github_codespaces"
+    VSCODE_REMOTE_CONTAINER = "vscode_remote_container"
 
 
 class ModelStages(StrEnum):

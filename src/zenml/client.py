@@ -1525,25 +1525,23 @@ class Client(metaclass=ClientMetaClass):
             stack: The stack to validate.
 
         Raises:
-            KeyError: If the stack references missing components.
             ValidationError: If the stack configuration is invalid.
         """
         local_components: List[str] = []
         remote_components: List[str] = []
         assert stack.components is not None
-        for component_type, component_ids in stack.components.items():
-            for component_id in component_ids:
-                try:
-                    component = self.get_stack_component(
-                        name_id_or_prefix=component_id,
+        for component_type, components in stack.components.items():
+            for component in components:
+                if isinstance(component, UUID):
+                    component_response = self.get_stack_component(
+                        name_id_or_prefix=component,
                         component_type=component_type,
                     )
-                except KeyError as e:
-                    raise KeyError(
-                        f"Cannot register stack '{stack.name}' since it has an "
-                        f"unregistered {component_type} with id "
-                        f"'{component_id}'."
-                    ) from e
+                    component_config = component_response.configuration
+                    component_flavor = component_response.flavor
+                else:
+                    component_config = component.configuration
+                    component_flavor = component.flavor
 
                 # Create and validate the configuration
                 from zenml.stack.utils import (
@@ -1552,9 +1550,9 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 configuration = validate_stack_component_config(
-                    configuration_dict=component.configuration,
-                    flavor_name=component.flavor,
-                    component_type=component.type,
+                    configuration_dict=component_config,
+                    flavor_name=component_flavor,
+                    component_type=component_type,
                     # Always enforce validation of custom flavors
                     validate_custom_flavors=True,
                 )
@@ -1564,11 +1562,11 @@ class Client(metaclass=ClientMetaClass):
                 warn_if_config_server_mismatch(configuration)
                 if configuration.is_local:
                     local_components.append(
-                        f"{component.type.value}: {component.name}"
+                        f"{component_type.value}: {component_flavor}"
                     )
                 elif configuration.is_remote:
                     remote_components.append(
-                        f"{component.type.value}: {component.name}"
+                        f"{component_type.value}: {component_flavor}"
                     )
 
         if local_components and remote_components:

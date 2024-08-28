@@ -105,7 +105,7 @@ Step retrieval_evaluation_full_with_reranking has finished in 4m20s.
 
 We can see here a specific example of a failure in the reranking evaluation. It's quite a good one because we can see that the question asked was actually an anomaly in the sense that the LLM has generated two questions and included its meta-discussion of the two questions it generated. Obviously this is not a representative question for the dataset, and if we saw a lot of these we might want to take some time to both understand why the LLM is generating these questions and how we can filter them out.
 
-### Visualising our reranking performance
+### Visualizing our reranking performance
 
 Since ZenML can display visualizations in its dashboard, we can showcase the results of our experiments in a visual format. For example, we can plot the failure rates of the retrieval system with and without reranking to see the impact of reranking on the performance.
 

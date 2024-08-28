@@ -1,18 +1,18 @@
 """Utility functions for running pipelines."""
 
-import hashlib
 import time
-from collections import defaultdict
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
+
+from pydantic import BaseModel
 
 from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.source import SourceType
+from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -22,15 +22,12 @@ from zenml.models import (
     PipelineRunResponse,
     StackResponse,
 )
-from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
-from zenml.utils import cloud_utils, code_utils, notebook_utils
+from zenml.utils import code_utils, notebook_utils, source_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
-    from zenml.model.model import Model
-
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
@@ -158,116 +155,6 @@ def deploy_pipeline(
         constants.SHOULD_PREVENT_PIPELINE_EXECUTION = previous_value
 
 
-def _update_new_requesters(
-    requester_name: str,
-    model: "Model",
-    new_versions_requested: Dict[Tuple[str, Optional[str]], NewModelRequest],
-    other_models: Set["Model"],
-) -> None:
-    key = (
-        model.name,
-        str(model.version) if model.version else None,
-    )
-    if model.version is None:
-        version_existed = False
-    else:
-        try:
-            model._get_model_version()
-            version_existed = key not in new_versions_requested
-        except KeyError as e:
-            if model.version in ModelStages.values():
-                raise KeyError(
-                    f"Unable to get model `{model.name}` using stage "
-                    f"`{model.version}`, please check that the model "
-                    "version in given stage exists before running a pipeline."
-                ) from e
-            version_existed = False
-    if not version_existed:
-        model.was_created_in_this_run = True
-        new_versions_requested[key].update_request(
-            model,
-            NewModelRequest.Requester(source="step", name=requester_name),
-        )
-    else:
-        other_models.add(model)
-
-
-def prepare_model_versions(
-    deployment: Union["PipelineDeploymentBase", "PipelineDeploymentResponse"],
-) -> None:
-    """Create model versions which are missing and validate existing ones that are used in the pipeline run.
-
-    Args:
-        deployment: The pipeline deployment configuration.
-    """
-    new_versions_requested: Dict[
-        Tuple[str, Optional[str]], NewModelRequest
-    ] = defaultdict(NewModelRequest)
-    other_models: Set["Model"] = set()
-    all_steps_have_own_config = True
-    for step in deployment.step_configurations.values():
-        step_model = step.config.model
-        all_steps_have_own_config = (
-            all_steps_have_own_config and step.config.model is not None
-        )
-        if step_model:
-            _update_new_requesters(
-                model=step_model,
-                requester_name=step.config.name,
-                new_versions_requested=new_versions_requested,
-                other_models=other_models,
-            )
-    if not all_steps_have_own_config:
-        pipeline_model = deployment.pipeline_configuration.model
-        if pipeline_model:
-            _update_new_requesters(
-                model=pipeline_model,
-                requester_name=deployment.pipeline_configuration.name,
-                new_versions_requested=new_versions_requested,
-                other_models=other_models,
-            )
-    elif deployment.pipeline_configuration.model is not None:
-        logger.warning(
-            f"ModelConfig of pipeline `{deployment.pipeline_configuration.name}` is overridden in all "
-            f"steps. "
-        )
-
-    _validate_new_version_requests(new_versions_requested)
-
-    for other_model in other_models:
-        other_model._validate_config_in_runtime()
-
-
-def _validate_new_version_requests(
-    new_versions_requested: Dict[Tuple[str, Optional[str]], NewModelRequest],
-) -> None:
-    """Validate the model version that are used in the pipeline run.
-
-    Args:
-        new_versions_requested: A dict of new model version request objects.
-
-    """
-    is_cloud_model = True
-    for key, data in new_versions_requested.items():
-        model_name, model_version = key
-        if len(data.requesters) > 1:
-            logger.warning(
-                f"New version of model version `{model_name}::{model_version or 'NEW'}` "
-                f"requested in multiple decorators:\n{data.requesters}\n We recommend "
-                "that `Model` requesting new version is configured only in one "
-                "place of the pipeline."
-            )
-        model_version_response = data.model._validate_config_in_runtime()
-        is_cloud_model &= cloud_utils.is_cloud_model_version(
-            model_version_response
-        )
-    if not is_cloud_model:
-        logger.info(
-            "Models can be viewed in the dashboard using ZenML Pro. Sign up "
-            "for a free trial at https://www.zenml.io/pro/"
-        )
-
-
 def wait_for_pipeline_run_to_finish(run_id: UUID) -> "PipelineRunResponse":
     """Waits until a pipeline run is finished.
 
@@ -383,9 +270,8 @@ def upload_notebook_cell_code_if_necessary(
         RuntimeError: If the code for one of the steps that will run out of
             process cannot be extracted into a python file.
     """
-    code_archive = code_utils.CodeArchive(root=None)
     should_upload = False
-    sources_that_require_upload = []
+    resolved_notebook_sources = source_utils.get_resolved_notebook_sources()
 
     for step in deployment.step_configurations.values():
         source = step.spec.source
@@ -396,7 +282,9 @@ def upload_notebook_cell_code_if_necessary(
                 or step.config.step_operator
             ):
                 should_upload = True
-                cell_code = getattr(step.spec.source, "_cell_code", None)
+                cell_code = resolved_notebook_sources.get(
+                    source.import_path, None
+                )
 
                 # Code does not run in-process, which means we need to
                 # extract the step code into a python file
@@ -410,20 +298,53 @@ def upload_notebook_cell_code_if_necessary(
                         "of a notebook."
                     )
 
-                notebook_utils.warn_about_notebook_cell_magic_commands(
-                    cell_code=cell_code
-                )
-
-                code_hash = hashlib.sha1(cell_code.encode()).hexdigest()  # nosec
-                module_name = f"extracted_notebook_code_{code_hash}"
-                file_name = f"{module_name}.py"
-                code_archive.add_file(source=cell_code, destination=file_name)
-
-                setattr(step.spec.source, "replacement_module", module_name)
-                sources_that_require_upload.append(source)
-
     if should_upload:
-        logger.info("Archiving notebook code...")
-        code_path = code_utils.upload_code_if_necessary(code_archive)
-        for source in sources_that_require_upload:
-            setattr(source, "code_path", code_path)
+        logger.info("Uploading notebook code...")
+
+        for _, cell_code in resolved_notebook_sources.items():
+            notebook_utils.warn_about_notebook_cell_magic_commands(
+                cell_code=cell_code
+            )
+            module_name = notebook_utils.compute_cell_replacement_module_name(
+                cell_code=cell_code
+            )
+            file_name = f"{module_name}.py"
+
+            code_utils.upload_notebook_code(
+                artifact_store=stack.artifact_store,
+                cell_code=cell_code,
+                file_name=file_name,
+            )
+
+        all_deployment_sources = get_all_sources_from_value(deployment)
+
+        for source in all_deployment_sources:
+            if source.type == SourceType.NOTEBOOK:
+                setattr(source, "artifact_store_id", stack.artifact_store.id)
+
+        logger.info("Upload finished.")
+
+
+def get_all_sources_from_value(value: Any) -> List[Source]:
+    """Get all source objects from a value.
+
+    Args:
+        value: The value from which to get all the source objects.
+
+    Returns:
+        List of source objects for the given value.
+    """
+    sources = []
+    if isinstance(value, Source):
+        sources.append(value)
+    elif isinstance(value, BaseModel):
+        for v in value.__dict__.values():
+            sources.extend(get_all_sources_from_value(v))
+    elif isinstance(value, Dict):
+        for v in value.values():
+            sources.extend(get_all_sources_from_value(v))
+    elif isinstance(value, (List, Set, tuple)):
+        for v in value:
+            sources.extend(get_all_sources_from_value(v))
+
+    return sources

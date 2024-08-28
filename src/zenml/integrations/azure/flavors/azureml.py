@@ -40,8 +40,8 @@ class AzureMLComputeSettings(BaseSettings):
 
     There are three possible use cases for this implementation:
 
-        1. Serverless compute (default behaviour):
-            - The `mode` is set to `serverless` (default behaviour).
+        1. Serverless compute (default behavior):
+            - The `mode` is set to `serverless` (default behavior).
             - All the other parameters become irrelevant and will throw a
             warning if set.
 

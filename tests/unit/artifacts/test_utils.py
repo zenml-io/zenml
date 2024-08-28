@@ -14,7 +14,6 @@
 import os
 import shutil
 import tempfile
-from uuid import uuid4
 
 import numpy as np
 import pytest
@@ -33,7 +32,7 @@ from zenml.models import ArtifactVersionResponse, Page
 
 
 @pytest.fixture
-def model_artifact(mocker):
+def model_artifact(mocker, clean_client: "Client"):
     return mocker.Mock(
         spec=ArtifactVersionResponse,
         id="123",
@@ -45,7 +44,7 @@ def model_artifact(mocker):
         uri="gs://my-bucket/model.joblib",
         data_type="path/to/model/class",
         materializer="path/to/materializer/class",
-        artifact_store_id=uuid4(),
+        artifact_store_id=clean_client.active_stack.artifact_store.id,
     )
 
 
