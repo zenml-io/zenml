@@ -41,20 +41,25 @@ class LightningOrchestratorSettings(BaseSettings):
         username: Username.
         teamspace: Teamspace.
         organization: Organization.
-        async_mode: Whether to run the pipeline in async mode.
         custom_commands: Custom commands to run.
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`. This setting only
+            has an effect when specified on the pipeline and will be ignored if
+            specified on steps.
     """
 
     # Resources
     main_studio_name: Optional[str] = None
     machine_type: Optional[str] = None
-    user_id: str = SecretField(default=None)
-    api_key: str = SecretField(default=None)
+    user_id: Optional[str] = SecretField(default=None)
+    api_key: Optional[str] = SecretField(default=None)
     username: Optional[str] = None
     teamspace: Optional[str] = None
     organization: Optional[str] = None
-    async_mode: bool = False
     custom_commands: Optional[List[str]] = None
+    synchronous: bool = True
 
 
 class LightningOrchestratorConfig(
@@ -70,6 +75,15 @@ class LightningOrchestratorConfig(
             True if this config is for a local component, False otherwise.
         """
         return False
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return self.synchronous
 
 
 class LightningOrchestratorFlavor(BaseOrchestratorFlavor):

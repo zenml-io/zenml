@@ -62,9 +62,6 @@ class LightningOrchestrator(WheeledOrchestrator):
     This orchestrator does not support running on a schedule.
     """
 
-    # The default instance type to use if none is specified in settings
-    DEFAULT_INSTANCE_TYPE: Optional[str] = None
-
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
@@ -110,8 +107,10 @@ class LightningOrchestrator(WheeledOrchestrator):
         settings = cast(
             LightningOrchestratorSettings, self.get_settings(deployment)
         )
-        os.environ["LIGHTNING_USER_ID"] = settings.user_id
-        os.environ["LIGHTNING_API_KEY"] = settings.api_key
+        if settings.user_id:
+            os.environ["LIGHTNING_USER_ID"] = settings.user_id
+        if settings.api_key:
+            os.environ["LIGHTNING_API_KEY"] = settings.api_key
         if settings.username:
             os.environ["LIGHTNING_USERNAME"] = settings.username
         if settings.teamspace:
@@ -352,7 +351,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 }
             return steps
 
-        if settings.async_mode:
+        if not settings.synchronous:
             entrypoint_command = LightningOrchestratorEntrypointConfiguration.get_entrypoint_command()
             entrypoint_arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
