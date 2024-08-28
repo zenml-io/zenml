@@ -2,6 +2,11 @@
 description: Learn how to group key-value pairs in the dashboard.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Grouping Metadata in the Dashboard
 
 ![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
