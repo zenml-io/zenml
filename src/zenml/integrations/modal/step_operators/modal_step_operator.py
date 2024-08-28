@@ -176,6 +176,7 @@ class ModalStepOperator(BaseStepOperator):
         zenml_image = (
             modal.Image.from_registry(tag=image_name, secret=my_secret)
             .env(environment)
+            .pip_install("pydantic>=2.7")
             .run_commands(" ".join(entrypoint_command))
         )
 
