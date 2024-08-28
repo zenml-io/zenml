@@ -206,11 +206,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh Starter template
         run: |
-          rm -rf examples/quickstart
-          mkdir -p examples/quickstart
-          printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
+          rm -rf examples/mlops_starter
+          mkdir -p examples/mlops_starter
+          printf 'info@zenml.io' | zenml init --path examples/mlops_starter --template starter --template-with-defaults
           pip install yamlfix
-          bash scripts/format.sh examples/quickstart
+          bash scripts/format.sh examples/mlops_starter
       - name: Check for changes
         id: check_changes
         run: |
@@ -240,7 +240,7 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Quickstart template updates in `examples/quickstart` have been pushed.'
+              body: 'Classification template updates in `examples/mlops_starter` have been pushed.'
             })
   update-llm-finetuning-template-to-examples:
     name: update-llm-finetuning-template-to-examples
