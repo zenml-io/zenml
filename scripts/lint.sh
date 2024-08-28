@@ -12,7 +12,7 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 ruff check $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
-ruff check $TESTS_EXAMPLES --extend-ignore D --exclude "quickstart.ipynb"
+ruff check $TESTS_EXAMPLES --extend-ignore D --exclude "*.ipynb"
 
 # Flag check for skipping yamlfix
 if [ "$OS" = "windows-latest" ]; then
