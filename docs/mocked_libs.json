@@ -251,5 +251,6 @@
     "IPython.core",
     "IPython.core.display",
     "IPython.core.display_functions",
-    "ipywidgets"
+    "ipywidgets",
+    "lightning_sdk"
 ]
