@@ -188,7 +188,7 @@ class ModalStepOperator(BaseStepOperator):
 
         async def run_sandbox():
             async with app.run():
-                await modal.Sandbox.create(
+                sandbox = await modal.Sandbox.create(
                     "bash",
                     "-c",
                     " ".join(entrypoint_command),
@@ -200,5 +200,6 @@ class ModalStepOperator(BaseStepOperator):
                     region=settings.region or None,
                     app=app,
                 )
+                await sandbox.run()
 
         asyncio.run(run_sandbox())
