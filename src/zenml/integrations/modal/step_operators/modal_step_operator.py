@@ -17,6 +17,7 @@ import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
+from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -166,17 +167,26 @@ class ModalStepOperator(BaseStepOperator):
                 "No Docker credentials found for the container registry."
             )
 
-        my_secret = modal.Secret.from_dict(
+        my_secret = modal.secret._Secret.from_dict(
             {
                 "REGISTRY_USERNAME": docker_username,
                 "REGISTRY_PASSWORD": docker_password,
             }
         )
 
+        spec = modal.image.DockerfileSpec(
+            commands=[f"FROM {image_name}"], context_files={}
+        )
+
         zenml_image = (
-            modal.Image.from_registry(tag=image_name, secret=my_secret)
+            modal.Image._from_args(
+                dockerfile_function=lambda *_, **__: spec,
+                force_build=False,
+                image_registry_config=modal.image._ImageRegistryConfig(
+                    api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
+                ),
+            )
             .env(environment)
-            .pip_install("pydantic>=2.7")
             .run_commands(" ".join(entrypoint_command))
         )
 
@@ -190,7 +200,7 @@ class ModalStepOperator(BaseStepOperator):
         async def run_sandbox():
             with modal.enable_output():
                 async with app.run():
-                    modal.Sandbox.create(
+                    await modal.Sandbox.create.aio(
                         "bash",
                         "-c",
                         " ".join(entrypoint_command),
