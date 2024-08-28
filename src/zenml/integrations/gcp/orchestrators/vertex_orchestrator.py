@@ -32,7 +32,16 @@
 import os
 import re
 import types
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions

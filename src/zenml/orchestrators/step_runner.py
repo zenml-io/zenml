@@ -37,7 +37,7 @@ from zenml.constants import (
     ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
-from zenml.exceptions import StepContextError, StepInterfaceError
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -181,8 +181,6 @@ class StepRunner:
                         for k, v in output_annotations.items()
                     },
                 )
-                # Prepare Model Context
-                self._prepare_model_context_for_step()
 
                 # Parse the inputs for the entrypoint function.
                 function_params = self._parse_inputs(
@@ -447,14 +445,24 @@ class StepRunner:
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
 
+        from zenml.orchestrators.utils import (
+            register_artifact_store_filesystem,
+        )
+
         materializer_class: Type[BaseMaterializer] = (
             source_utils.load_and_validate_class(
                 artifact.materializer, expected_class=BaseMaterializer
             )
         )
-        materializer: BaseMaterializer = materializer_class(artifact.uri)
-        materializer.validate_type_compatibility(data_type)
-        return materializer.load(data_type=data_type)
+
+        with register_artifact_store_filesystem(
+            artifact.artifact_store_id
+        ) as target_artifact_store:
+            materializer: BaseMaterializer = materializer_class(
+                uri=artifact.uri, artifact_store=target_artifact_store
+            )
+            materializer.validate_type_compatibility(data_type)
+            return materializer.load(data_type=data_type)
 
     def _validate_outputs(
         self,
@@ -637,13 +645,6 @@ class StepRunner:
             output_artifacts[output_name] = artifact.id
 
         return output_artifacts
-
-    def _prepare_model_context_for_step(self) -> None:
-        try:
-            model = get_step_context().model
-            model._get_or_create_model_version()
-        except StepContextError:
-            return
 
     def load_and_run_hook(
         self,

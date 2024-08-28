@@ -114,7 +114,7 @@ from zenml import step, pipeline
 from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
 
 azureml_settings = AzureMLOrchestratorSettings(
-  mode="serverless"  # It's the default behaviour
+  mode="serverless"  # It's the default behavior
 )
 
 @step

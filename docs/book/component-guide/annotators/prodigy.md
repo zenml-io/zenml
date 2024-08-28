@@ -76,7 +76,7 @@ workflow!
 With Prodigy, there is no need to specially start the annotator ahead of time
 like with [Label Studio](label-studio.md). Instead, just use Prodigy as per the
 [Prodigy docs](https://prodi.gy) and then you can use the ZenML wrapper / API to
-get your labelled data etc using our Python methods.
+get your labeled data etc using our Python methods.
 
 ZenML supports access to your data and annotations via the `zenml annotator ...`
 CLI command.

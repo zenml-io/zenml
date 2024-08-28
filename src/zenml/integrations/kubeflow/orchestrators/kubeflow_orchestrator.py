@@ -32,7 +32,16 @@
 
 import os
 import types
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 import kfp

@@ -115,6 +115,13 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="Tags of the pipeline run.",
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Update Model ------------------
@@ -125,13 +132,20 @@ class PipelineRunUpdate(BaseModel):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
-    # TODO: we should maybe have a different update model here, the upper two attributes should only be for internal use
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+    # TODO: we should maybe have a different update model here, the upper three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the pipeline run."
     )
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
     )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -164,6 +178,13 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -356,6 +377,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().deployment_id
+
+    @property
+    def model_version_id(self) -> Optional[UUID]:
+        """The `model_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().model_version_id
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:

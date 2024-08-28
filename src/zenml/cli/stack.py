@@ -74,16 +74,16 @@ from zenml.exceptions import (
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.models import StackFilter
+from zenml.models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+    StackFilter,
+    StackRequest,
+)
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
     ServiceConnectorResponse,
-)
-from zenml.models.v2.misc.full_stack import (
-    ComponentInfo,
-    FullStackRequest,
-    ServiceConnectorInfo,
-    ServiceConnectorResourcesInfo,
 )
 from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,
@@ -281,10 +281,11 @@ def register_stack(
         artifact_store is None or orchestrator is None
     ):
         cli_utils.error(
-            "Only stack using service connector can be registered "
-            "without specifying an artifact store and an orchestrator. "
-            "Please specify the artifact store and the orchestrator or "
-            "the service connector or cloud type settings."
+            "The only way to register a stack without specifying an "
+            "orchestrator and an artifact store is by using either a provider"
+            "(-p/--provider) or an existing service connector "
+            "(-sc/--connector). Please specify the artifact store and "
+            "the orchestrator or the service connector or cloud type settings."
         )
 
     client = Client()
@@ -294,12 +295,12 @@ def register_stack(
             cli_utils.error(
                 "You are registering a stack using a service connector, but "
                 "this feature cannot be used with a local ZenML deployment. "
-                "ZenML needs to be accessible from the cloud provider to allow the "
-                "stack and its components to be registered automatically. "
-                "Please deploy ZenML in a remote environment as described in the "
-                "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
-                "or use a managed ZenML Pro server instance for quick access to "
-                "this feature and more: https://www.zenml.io/pro"
+                "ZenML needs to be accessible from the cloud provider to allow "
+                "the stack and its components to be registered automatically. "
+                "Please deploy ZenML in a remote environment as described in "
+                "the documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+                "or use a managed ZenML Pro server instance for quick access "
+                "to this feature and more: https://www.zenml.io/pro"
             )
 
     try:
@@ -316,7 +317,8 @@ def register_stack(
 
     labels: Dict[str, str] = {}
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
-    # cloud flow
+
+    # Cloud Flow
     created_objects: Set[str] = set()
     service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
     if provider is not None and connector is None:
@@ -339,6 +341,7 @@ def register_stack(
             )
         except Exception:
             pass
+
         if service_connector_response:
             use_auto_configure = Confirm.ask(
                 f"[bold]{provider.upper()} cloud service connector[/bold] "
@@ -364,8 +367,9 @@ def register_stack(
                         for connector in existing_connectors.items
                     ],
                     headers=["Name"],
-                    prompt_text=f"We found these {provider.upper()} service connectors. "
-                    "Do you want to create a new one or use one of the existing ones?",
+                    prompt_text=f"We found these {provider.upper()} service "
+                    "connectors. Do you want to create a new one or use one "
+                    "of the existing ones?",
                     default_choice="0",
                     allow_zero_be_a_new_object=True,
                 )
@@ -516,8 +520,8 @@ def register_stack(
                 ).id
 
         try:
-            created_stack = client.zen_store.create_full_stack(
-                full_stack=FullStackRequest(
+            created_stack = client.zen_store.create_stack(
+                stack=StackRequest(
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,
                     name=stack_name,
