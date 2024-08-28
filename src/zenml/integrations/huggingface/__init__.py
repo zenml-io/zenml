@@ -27,18 +27,6 @@ class HuggingfaceIntegration(Integration):
     """Definition of Huggingface integration for ZenML."""
 
     NAME = HUGGINGFACE
-    REQUIREMENTS = [
-        "datasets",
-        "huggingface_hub>0.19.0",
-        "accelerate",
-        "bitsandbytes>=0.41.3",
-        "peft",
-        # temporary fix for CI issue similar to:
-        # - https://github.com/huggingface/datasets/issues/6737
-        # - https://github.com/huggingface/datasets/issues/6697
-        # TODO try relaxing it back going forward
-        "fsspec<=2023.12.0",
-    ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
 
     @classmethod
@@ -57,7 +45,18 @@ class HuggingfaceIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        requirements = cls.REQUIREMENTS
+        requirements = [
+            "datasets",
+            "huggingface_hub>0.19.0",
+            "accelerate",
+            "bitsandbytes>=0.41.3",
+            "peft",
+            # temporary fix for CI issue similar to:
+            # - https://github.com/huggingface/datasets/issues/6737
+            # - https://github.com/huggingface/datasets/issues/6697
+            # TODO try relaxing it back going forward
+            "fsspec<=2023.12.0",
+        ]
 
         # In python 3.8 higher transformers version lead to other packages breaking
         if sys.version_info.minor > 8:
