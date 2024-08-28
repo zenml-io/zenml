@@ -17,7 +17,6 @@ import copy
 import hashlib
 import inspect
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -72,7 +71,6 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
-    prepare_model_versions,
     upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
@@ -91,6 +89,7 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -587,6 +586,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
+
+        Raises:
+            ValueError: if the orchestrator doesn't support scheduling, but schedule was given
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -632,17 +634,24 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             else:
                 logger.debug(f"Pipeline {self.name} is unlisted.")
 
-            # TODO: check whether orchestrator even support scheduling before
-            #   registering the schedule
+            stack = Client().active_stack
+            stack.validate()
+
             schedule_id = None
             if schedule:
+                if not stack.orchestrator.config.is_schedulable:
+                    raise ValueError(
+                        f"Stack {stack.name} does not support scheduling. "
+                        "Not all orchestrator types support scheduling, "
+                        "kindly consult with "
+                        "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                        "for details."
+                    )
                 if schedule.name:
                     schedule_name = schedule.name
                 else:
-                    date = datetime.utcnow().strftime("%Y_%m_%d")
-                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule_name = deployment.run_name_template.format(
-                        date=date, time=time
+                    schedule_name = format_name_template(
+                        deployment.run_name_template
                     )
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
@@ -673,8 +682,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             upload_notebook_cell_code_if_necessary(
                 deployment=deployment, stack=stack
             )
-
-            prepare_model_versions(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -1009,12 +1016,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         integration_registry.activate_integrations()
 
-        self._parse_config_file(
+        _from_config_file = self._parse_config_file(
             config_path=config_path,
             matcher=list(PipelineRunConfiguration.model_fields.keys()),
         )
 
-        run_config = PipelineRunConfiguration(**self._from_config_file)
+        self._reconfigure_from_file_with_overrides(config_path=config_path)
+
+        run_config = PipelineRunConfiguration(**_from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
         update = PipelineRunConfiguration.model_validate(new_values)
@@ -1229,12 +1238,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
-    ) -> None:
+    ) -> Dict[str, Any]:
         """Parses the given configuration file and sets `self._from_config_file`.
 
         Args:
             config_path: Path to a yaml configuration file.
             matcher: List of keys to match in the configuration file.
+
+        Returns:
+            Parsed config file according to matcher settings.
         """
         _from_config_file: Dict[str, Any] = {}
         if config_path:
@@ -1263,7 +1275,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     _from_config_file["model"] = Model.model_validate(
                         _from_config_file["model"]
                     )
-        self._from_config_file = _from_config_file
+        return _from_config_file
 
     def with_options(
         self,
@@ -1314,17 +1326,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         pipeline_copy = self.copy()
 
-        pipeline_copy._parse_config_file(
-            config_path=config_path,
-            matcher=inspect.getfullargspec(self.configure)[0]
-            + ["model_version"],  # TODO: deprecate `model_version` later on
+        pipeline_copy._reconfigure_from_file_with_overrides(
+            config_path=config_path, **kwargs
         )
-        pipeline_copy._from_config_file = dict_utils.recursive_update(
-            pipeline_copy._from_config_file, kwargs
-        )
-
-        with pipeline_copy.__suppress_configure_warnings__():
-            pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {
@@ -1422,3 +1426,39 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
             else:
                 self.prepare()
+
+    def _reconfigure_from_file_with_overrides(
+        self,
+        config_path: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Update the pipeline configuration from config file.
+
+        Accepts overrides as kwargs.
+
+        Args:
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+            **kwargs: Pipeline configuration options. These will be passed
+                to the `pipeline.configure(...)` method.
+        """
+        self._from_config_file = {}
+        if config_path:
+            self._from_config_file = self._parse_config_file(
+                config_path=config_path,
+                matcher=inspect.getfullargspec(self.configure)[0]
+                + [
+                    "model_version"
+                ],  # TODO: deprecate `model_version` later on
+            )
+
+        _from_config_file = dict_utils.recursive_update(
+            self._from_config_file, kwargs
+        )
+
+        with self.__suppress_configure_warnings__():
+            self.configure(**_from_config_file)

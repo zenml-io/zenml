@@ -41,7 +41,7 @@ When this pipeline is executed, the run of the pipeline gets logged to the ZenML
 at its DAG and all the associated metadata. To access the dashboard you need to have a ZenML server either running
 locally or remotely. See our documentation on this [here](../../getting-started/deploying-zenml/README.md).
 
-<figure><img src="../../.gitbook/assets/SimplePipelineDag.png" alt=""><figcaption><p>DAG representation in the ZenML Dahboard.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/SimplePipelineDag.png" alt=""><figcaption><p>DAG representation in the ZenML Dashboard.</p></figcaption></figure>
 
 Check below for more advanced ways to build and interact with your pipeline.
 
