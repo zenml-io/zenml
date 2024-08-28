@@ -17,7 +17,7 @@ import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
-from modal_proto import api_pb2
+from modal_proto import api_pb2  # type: ignore
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -191,13 +191,15 @@ class ModalStepOperator(BaseStepOperator):
         )
 
         resource_settings = info.config.resource_settings
-        gpu_str = settings.gpu
+        gpu_str = settings.gpu or ""
         if resource_settings.gpu_count is not None:
             gpu_str += f":{resource_settings.gpu_count}"
 
         app = modal.App(f"zenml-{info.run_name}-{info.step_run_id}")
 
-        async def run_sandbox():
+        async def run_sandbox() -> asyncio.Future[None]:
+            loop = asyncio.get_event_loop()
+            future = loop.create_future()
             with modal.enable_output():
                 async with app.run():
                     await modal.Sandbox.create.aio(
@@ -213,5 +215,8 @@ class ModalStepOperator(BaseStepOperator):
                         region=settings.region or None,
                         app=app,
                     )
+
+            future.set_result(None)
+            return future
 
         asyncio.run(run_sandbox())
