@@ -58,6 +58,7 @@ python = ">=3.8,<3.13"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
+setuptools = "*"
 sqlalchemy = "^2.0.0"
 sqlalchemy_utils = "*"
 sqlmodel = "0.0.18"
@@ -461,6 +462,7 @@ module = [
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
+    "accelerate.*",
     "label_studio_sdk.*",
     "argilla.*",
     "lightning_sdk.*",
