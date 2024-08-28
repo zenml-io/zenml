@@ -32,14 +32,13 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
-        "great-expectations>=0.17.15,<1.0","pandas>=2.0.0"
+        "great-expectations>=0.17.15,<1.0", "pandas>=2.0.0"
     ]
-
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the Great Expectations integration."""
         from zenml.integrations.great_expectations import materializers  # noqa
 
