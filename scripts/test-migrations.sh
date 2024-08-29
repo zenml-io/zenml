@@ -110,7 +110,7 @@ function run_tests_for_version() {
     cd test_starter
 
     echo "===== Installing required integrations ====="
-    if [ "$(version_compare "$VERSION" "0.64.0")" == "<" ]; then
+    if [ "$(version_compare "$VERSION" "0.65.0")" == "<" ]; then
         zenml integration export-requirements sklearn --output-file integration-requirements.txt
     else
         zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
