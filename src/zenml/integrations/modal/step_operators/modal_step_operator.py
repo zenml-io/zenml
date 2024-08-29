@@ -21,7 +21,7 @@ from modal_proto import api_pb2  # type: ignore
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit
+from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.enums import StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
@@ -39,6 +39,24 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
+
+
+def get_gpu_values(
+    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
+) -> Optional[str]:
+    """Get the GPU values for the Modal step operator.
+
+    Args:
+        settings: The Modal step operator settings.
+        resource_settings: The resource settings.
+
+    Returns:
+        The GPU string if a count is specified, otherwise the GPU type.
+    """
+    if not settings.gpu:
+        return None
+    gpu_count = resource_settings.gpu_count
+    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -191,9 +209,7 @@ class ModalStepOperator(BaseStepOperator):
         )
 
         resource_settings = info.config.resource_settings
-        gpu_str = settings.gpu or ""
-        if resource_settings.gpu_count is not None:
-            gpu_str += f":{resource_settings.gpu_count}"
+        gpu_values = get_gpu_values(settings, resource_settings)
 
         app = modal.App(f"zenml-{info.run_name}-{info.step_run_id}")
 
@@ -207,7 +223,7 @@ class ModalStepOperator(BaseStepOperator):
                         "-c",
                         " ".join(entrypoint_command),
                         image=zenml_image,
-                        gpu=gpu_str,
+                        gpu=gpu_values,
                         cpu=resource_settings.cpu_count,
                         memory=resource_settings.get_memory(ByteUnit.MB),
                         cloud=settings.cloud,
