@@ -176,9 +176,9 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     TABULAR_FEATURE_LABEL_CORRELATION = source_utils.resolve(
         tabular_checks.FeatureLabelCorrelation
     ).import_path
-    TABULAR_IDENTIFIER_LEAKAGE = source_utils.resolve(
-        tabular_checks.IdentifierLeakage
-    ).import_path
+    # TABULAR_IDENTIFIER_LEAKAGE = source_utils.resolve(
+    #     tabular_checks.IdentifierLeakage
+    # ).import_path
     TABULAR_IS_SINGLE_VALUE = source_utils.resolve(
         tabular_checks.IsSingleValue
     ).import_path
@@ -234,9 +234,9 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     TABULAR_DATE_TRAIN_TEST_LEAKAGE_OVERLAP = source_utils.resolve(
         tabular_checks.DateTrainTestLeakageOverlap
     ).import_path
-    TABULAR_DOMINANT_FREQUENCY_CHANGE = source_utils.resolve(
-        tabular_checks.DominantFrequencyChange
-    ).import_path
+    # TABULAR_DOMINANT_FREQUENCY_CHANGE = source_utils.resolve(
+    #     tabular_checks.DominantFrequencyChange
+    # ).import_path
     TABULAR_FEATURE_LABEL_CORRELATION_CHANGE = source_utils.resolve(
         tabular_checks.FeatureLabelCorrelationChange
     ).import_path
@@ -262,9 +262,9 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
         tabular_checks.WholeDatasetDrift
     ).import_path
 
-    VISION_FEATURE_LABEL_CORRELATION_CHANGE = source_utils.resolve(
-        vision_checks.FeatureLabelCorrelationChange
-    ).import_path
+    # VISION_FEATURE_LABEL_CORRELATION_CHANGE = source_utils.resolve(
+    #     vision_checks.FeatureLabelCorrelationChange
+    # ).import_path
     VISION_HEATMAP_COMPARISON = source_utils.resolve(
         vision_checks.HeatmapComparison
     ).import_path
@@ -277,9 +277,9 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     VISION_NEW_LABELS = source_utils.resolve(
         vision_checks.NewLabels
     ).import_path
-    VISION_SIMILAR_IMAGE_LEAKAGE = source_utils.resolve(
-        vision_checks.SimilarImageLeakage
-    ).import_path
+    # VISION_SIMILAR_IMAGE_LEAKAGE = source_utils.resolve(
+    #     vision_checks.SimilarImageLeakage
+    # ).import_path
     VISION_TRAIN_TEST_LABEL_DRIFT = source_utils.resolve(
         vision_checks.TrainTestLabelDrift
     ).import_path
@@ -324,21 +324,21 @@ class DeepchecksModelValidationCheck(DeepchecksValidationCheck):
     VISION_CONFUSION_MATRIX_REPORT = source_utils.resolve(
         vision_checks.ConfusionMatrixReport
     ).import_path
-    VISION_IMAGE_SEGMENT_PERFORMANCE = source_utils.resolve(
-        vision_checks.ImageSegmentPerformance
-    ).import_path
+    # VISION_IMAGE_SEGMENT_PERFORMANCE = source_utils.resolve(
+    #     vision_checks.ImageSegmentPerformance
+    # ).import_path
     VISION_MEAN_AVERAGE_PRECISION_REPORT = source_utils.resolve(
         vision_checks.MeanAveragePrecisionReport
     ).import_path
     VISION_MEAN_AVERAGE_RECALL_REPORT = source_utils.resolve(
         vision_checks.MeanAverageRecallReport
     ).import_path
-    VISION_ROBUSTNESS_REPORT = source_utils.resolve(
-        vision_checks.RobustnessReport
-    ).import_path
-    VISION_SINGLE_DATASET_SCALAR_PERFORMANCE = source_utils.resolve(
-        vision_checks.SingleDatasetScalarPerformance
-    ).import_path
+    # VISION_ROBUSTNESS_REPORT = source_utils.resolve(
+    #     vision_checks.RobustnessReport
+    # ).import_path
+    # VISION_SINGLE_DATASET_SCALAR_PERFORMANCE = source_utils.resolve(
+    #     vision_checks.SingleDatasetScalarPerformance
+    # ).import_path
 
 
 class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
@@ -358,12 +358,12 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     TABULAR_BOOSTING_OVERFIT = source_utils.resolve(
         tabular_checks.BoostingOverfit
     ).import_path
-    TABULAR_MODEL_ERROR_ANALYSIS = source_utils.resolve(
-        tabular_checks.ModelErrorAnalysis
-    ).import_path
-    TABULAR_PERFORMANCE_REPORT = source_utils.resolve(
-        tabular_checks.PerformanceReport
-    ).import_path
+    # TABULAR_MODEL_ERROR_ANALYSIS = source_utils.resolve(
+    #     tabular_checks.ModelErrorAnalysis
+    # ).import_path
+    # TABULAR_PERFORMANCE_REPORT = source_utils.resolve(
+    #     tabular_checks.PerformanceReport
+    # ).import_path
     TABULAR_SIMPLE_MODEL_COMPARISON = source_utils.resolve(
         tabular_checks.SimpleModelComparison
     ).import_path
@@ -377,9 +377,9 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     VISION_CLASS_PERFORMANCE = source_utils.resolve(
         vision_checks.ClassPerformance
     ).import_path
-    VISION_MODEL_ERROR_ANALYSIS = source_utils.resolve(
-        vision_checks.ModelErrorAnalysis
-    ).import_path
+    # VISION_MODEL_ERROR_ANALYSIS = source_utils.resolve(
+    #     vision_checks.ModelErrorAnalysis
+    # ).import_path
     VISION_SIMPLE_MODEL_COMPARISON = source_utils.resolve(
         vision_checks.SimpleModelComparison
     ).import_path
