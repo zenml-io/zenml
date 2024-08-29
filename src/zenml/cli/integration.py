@@ -293,11 +293,19 @@ def install(
 
     if sys.version_info.minor == 12 and "tensorflow" in integration_set:
         warning(
-            "The TensorFlow is not yet compatible with Python 3.12, thus "
-            "skipping its installation. Consider using a different version of "
-            "Python and stay in touch for further updates. "
+            "The TensorFlow integration is not yet compatible with Python "
+            "3.12, thus its installation is skipped. Consider using a "
+            "different version of Python and stay in touch for further updates."
         )
         integration_set.remove("tensorflow")
+
+    if sys.version_info.minor == 12 and "deepchecks" in integration_set:
+        warning(
+            "The Deepchecks integration is not yet compatible with Python "
+            "3.12, thus its installation is skipped. Consider using a "
+            "different version of Python and stay in touch for further updates."
+        )
+        integration_set.remove("deepchecks")
 
     requirements = []
     integrations_to_install = []

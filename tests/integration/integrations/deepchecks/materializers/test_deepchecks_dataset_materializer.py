@@ -13,19 +13,28 @@
 #  permissions and limitations under the License.
 """Unit tests for Deepchecks dataset materializer."""
 
+import sys
 from contextlib import ExitStack as does_not_raise
 
-import pandas as pd
-from deepchecks.tabular import Dataset
+import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer import (
-    DeepchecksDatasetMaterializer,
+
+
+@pytest.mark.skipif(
+    sys.version_info.minor >= 12,
+    reason="The deepchecks integrations is not yet supported on 3.12.",
 )
-
-
 def test_deepchecks_dataset_materializer(clean_client):
     """Test the Deepchecks dataset materializer."""
+
+    import pandas as pd
+    from deepchecks.tabular import Dataset
+
+    from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer import (
+        DeepchecksDatasetMaterializer,
+    )
+
     df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"])
     deepchecks_dataset = Dataset(
         df,

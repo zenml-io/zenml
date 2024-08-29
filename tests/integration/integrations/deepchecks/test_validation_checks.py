@@ -11,15 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
+
 import pytest
 
-from zenml.integrations.deepchecks.validation_checks import (
-    DeepchecksValidationCheck,
+
+@pytest.mark.skipif(
+    sys.version_info.minor >= 12,
+    reason="The deepchecks integrations is not yet supported on 3.12.",
 )
-
-
 def test_validation_check_fails_when_checking_name():
     """Ensures that the validation check fails when names not using our format."""
+    from zenml.integrations.deepchecks.validation_checks import (
+        DeepchecksValidationCheck,
+    )
+
     deepchecks_validation_check = DeepchecksValidationCheck(
         "aria", "the_wrong_enum_value"
     )

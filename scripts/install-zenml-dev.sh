@@ -42,7 +42,7 @@ install_integrations() {
 
     # Ignore tensorflow only on Python 3.12
     if [ "$python_version" = "3.12" ]; then
-        ignore_integrations="$ignore_integrations tensorflow"
+        ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
     
     # turn the ignore integrations into a list of --ignore-integration args

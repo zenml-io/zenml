@@ -12,11 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
 import pytest
 
 from tests.integration.examples.utils import run_example
 
 
+@pytest.mark.skipif(
+    sys.version_info.minor >= 12,
+    reason="The deepchecks integrations is not yet supported on 3.12.",
+)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Test the deepchecks example."""
     with run_example(

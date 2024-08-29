@@ -35,12 +35,7 @@ class DeepchecksIntegration(Integration):
 
     NAME = DEEPCHECKS
     REQUIREMENTS = [
-        "deepchecks[vision]==0.8.0",
-        # Normally, the deepchecks integrations requires pandas to work.
-        # However, their version 0.8.0 is using a pandas function which got
-        # removed at pandas 2.1.0. Until we can upgrade the deepchecks
-        # requirement, we have to limit pandas to <2.1.0.
-        "pandas<2.1.0",
+        "deepchecks[vision]",
         "torchvision>=0.14.0",
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
