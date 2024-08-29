@@ -10,9 +10,9 @@ from zenml import step
 @step
 def split_dataset(
     dataset: Dataset,
-    train_size: float=0.7,
-    test_size: float=0.1,
-    eval_size: float=0.2,
+    train_size: float = 0.7,
+    test_size: float = 0.1,
+    eval_size: float = 0.2,
     subset_size: float = 1.0,
     random_state: int = 42,
 ) -> Tuple[
