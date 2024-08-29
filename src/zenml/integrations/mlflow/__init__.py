@@ -21,10 +21,15 @@ from typing import List, Type, Optional
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
+import sys
+
+from zenml.logger import get_logger
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
 MLFLOW_MODEL_REGISTRY_FLAVOR = "mlflow"
+
+logger = get_logger(__name__)
 
 
 class MlflowIntegration(Integration):
@@ -34,8 +39,6 @@ class MlflowIntegration(Integration):
 
     REQUIREMENTS = [
         "mlflow>=2.1.1,<3",
-        "mlserver>=1.3.3",
-        "mlserver-mlflow>=1.3.3",
         # TODO: remove this requirement once rapidjson is fixed
         "python-rapidjson<1.15",
         # When you do:
@@ -48,7 +51,12 @@ class MlflowIntegration(Integration):
         "pydantic>=2.7.0,<2.8.0",
     ]
 
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic", 'numpy', 'pandas']
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
+        "python-rapidjson",
+        "pydantic",
+        "numpy",
+        "pandas",
+    ]
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
@@ -63,9 +71,22 @@ class MlflowIntegration(Integration):
         from zenml.integrations.numpy import NumpyIntegration
         from zenml.integrations.pandas import PandasIntegration
 
-        return cls.REQUIREMENTS + \
-            NumpyIntegration.get_requirements(target_os=target_os) + \
-            PandasIntegration.get_requirements(target_os=target_os)
+        reqs = cls.REQUIREMENTS
+        if sys.version_info.minor >= 12:
+            logger.debug(
+                "The MLflow integration on Python 3.12 and above is not yet "
+                "fully supported: The extra dependencies 'mlserver' and "
+                "'mlserver-mlflow' will be skipped."
+            )
+        else:
+            reqs.extend([
+                "mlserver>=1.3.3",
+                "mlserver-mlflow>=1.3.3",
+            ])
+
+        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os))
+        reqs.extend(PandasIntegration.get_requirements(target_os=target_os))
+        return reqs
 
     @classmethod
     def activate(cls) -> None:
