@@ -541,3 +541,5 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Model version associated with the pipeline run.",
         union_mode="left_to_right",
     )
+
+    model_config = ConfigDict(protected_namespaces=())

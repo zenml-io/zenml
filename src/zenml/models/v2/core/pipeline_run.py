@@ -609,6 +609,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         description="Name of the model associated with the run.",
     )
 
+    model_config = ConfigDict(protected_namespaces=())
+
     def get_custom_filters(
         self,
     ) -> List["ColumnElement[bool]"]:

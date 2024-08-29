@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -502,6 +502,8 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name of the model that is associated with this artifact version.",
     )
+
+    model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
