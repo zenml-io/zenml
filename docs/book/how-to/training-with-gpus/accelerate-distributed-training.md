@@ -8,23 +8,24 @@ There are several reasons why you might want to scale your machine learning pipe
 
 ## Use 🤗 Accelerate in your steps
 
-Some steps in your machine learning pipeline, particularly training steps, can benefit from distributed execution. You can now use the `run_with_accelerate` function to enable this:
+Some steps in your machine learning pipeline, particularly training steps, can benefit from distributed execution. You can now use the `run_with_accelerate` decorator to enable this:
 
 ```python
 from zenml import step, pipeline
-from zenml.integrations.huggingface.steps import run_with_accelerate
+from zenml.integrations.hugginface.steps import run_with_accelerate
 
+@run_with_accelerate(num_processes=4, multi_gpu=True)
 @step
-def training_step():
-    # your training code here
+def training_step(some_param: int, ...):
+    # your training code is below
     ...
 
 @pipeline
-def training_pipeline(num_processes: int):
-    run_with_accelerate(training_step, num_processes=num_processes)()
+def training_pipeline(some_param: int, ...):
+    training_step(some_param, ...)
 ```
 
-The `run_with_accelerate` function wraps your step, enabling it to run with Accelerate's distributed training capabilities. It accepts various arguments that correspond to Accelerate CLI options.
+The `run_with_accelerate` decorator wraps your step, enabling it to run with Accelerate's distributed training capabilities. It accepts arguments available to `accelerate launch` CLI command.
 
 {% hint style="info" %}
 For a complete list of available arguments and more details, refer to the [Accelerate CLI documentation](https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch).
@@ -32,7 +33,7 @@ For a complete list of available arguments and more details, refer to the [Accel
 
 ### Configuration
 
-The `run_with_accelerate` function accepts various arguments to configure your distributed training environment. Some common arguments include:
+The `run_with_accelerate` decorator accepts various arguments to configure your distributed training environment. Some common arguments include:
 
 - `num_processes`: The number of processes to use for distributed training.
 - `cpu`: Whether to force training on CPU.
@@ -41,13 +42,11 @@ The `run_with_accelerate` function accepts various arguments to configure your d
 
 ### Important Usage Notes
 
-1. The `run_with_accelerate` function cannot be used directly on steps using the '@' syntax. Use it within your pipeline definition instead.
+1. The `run_with_accelerate` decorator can only be used directly on steps using the '@' syntax. Using it as a function inside the pipeline definition is not allowed.
 
-2. Steps defined inside the entrypoint script cannot be used with `run_with_accelerate`. Move your step code to another file and import it.
+2. Accelerated steps do not support positional arguments. Use keyword arguments when calling your steps.
 
-3. Accelerated steps do not support positional arguments. Use keyword arguments when calling your steps.
-
-4. If `run_with_accelerate` is misused, it will raise a `RuntimeError` with a helpful message explaining the correct usage.
+3. If `run_with_accelerate` is misused, it will raise a `RuntimeError` with a helpful message explaining the correct usage.
 
 {% hint style="info" %}
 To see a full example where Accelerate is used within a ZenML pipeline, check out our <a href="https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md">llm-lora-finetuning</a> project which leverages the distributed training functionalities while finetuning an LLM.
