@@ -3758,6 +3758,7 @@ class Client(metaclass=ClientMetaClass):
         deployment_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -3791,6 +3792,7 @@ class Client(metaclass=ClientMetaClass):
             deployment_id: The id of the deployment to filter by.
             code_repository_id: The id of the code repository to filter by.
             template_id: The ID of the template to filter by.
+            model_version_id: The ID of the model version to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -3825,6 +3827,7 @@ class Client(metaclass=ClientMetaClass):
             deployment_id=deployment_id,
             code_repository_id=code_repository_id,
             template_id=template_id,
+            model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             user_name=user_name,
@@ -3916,6 +3919,7 @@ class Client(metaclass=ClientMetaClass):
         original_step_run_id: Optional[Union[str, UUID]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         num_outputs: Optional[Union[int, str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
@@ -3935,6 +3939,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_run_id: The  id of the pipeline run to filter by.
             original_step_run_id: The  id of the pipeline run to filter by.
+            model_version_id: The ID of the model version to filter by.
             name: The name of the run to filter by.
             entrypoint_name: The entrypoint_name of the run to filter by.
             code_hash: The code_hash of the run to filter by.
@@ -3966,6 +3971,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
+            model_version_id=model_version_id,
             num_outputs=num_outputs,
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
