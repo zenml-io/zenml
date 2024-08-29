@@ -255,5 +255,6 @@
     "modal",
     "modal.cli",
     "modal.cli.run",
+    "modal_proto",
     "lightning_sdk"
 ]
