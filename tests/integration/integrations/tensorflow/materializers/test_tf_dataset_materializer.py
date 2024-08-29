@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
+import pytest
 import tensorflow as tf
 
 from tests.unit.test_general import _test_materializer
@@ -20,6 +23,10 @@ from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import 
 )
 
 
+@pytest.mark.skipif(
+    sys.version_info.minor >= 12,
+    reason="The tensorflow integrations is not yet supported on 3.12.",
+)
 def test_tensorflow_tf_dataset_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow TF Dataset materializer."""
     dataset = _test_materializer(
