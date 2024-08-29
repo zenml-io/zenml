@@ -87,8 +87,7 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        # TODO: REVERT
-        python-version: ['3.12']
+        python-version: ['3.10']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -100,8 +99,7 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        # TODO: REVERT
-        python-version: ['3.12']
+        python-version: ['3.10']
         test_environment: [default, docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
