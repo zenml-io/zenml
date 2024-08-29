@@ -299,7 +299,11 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
-        "build_id" "pipeline_id",
+        "build_id",
+        "pipeline_id",
+        "user_name",
+        "pipeline_name",
+        "stack_name",
     ]
 
     name: Optional[str] = Field(
@@ -336,6 +340,18 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the template.",
+    )
+    pipeline_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline associated with the template.",
+    )
+    stack_name: Optional[str] = Field(
+        default=None,
+        description="Name of the stack associated with the template.",
+    )
 
     def get_custom_filters(
         self,
@@ -352,7 +368,10 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
             PipelineDeploymentSchema,
+            PipelineSchema,
             RunTemplateSchema,
+            StackSchema,
+            UserSchema,
         )
 
         if self.code_repository_id:
@@ -389,5 +408,40 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                RunTemplateSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
+        if self.pipeline_name is not None:
+            pipeline_name_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.pipeline_name,
+                    table=PipelineSchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(pipeline_name_filter)
+
+        if self.stack_name:
+            stack_name_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.stack_name,
+                    table=StackSchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(stack_name_filter)
 
         return custom_filters

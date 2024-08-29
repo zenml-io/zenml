@@ -790,6 +790,25 @@ class BaseFilter(BaseModel):
             value=bool(value),
         )
 
+    def generate_custom_filter_conditions_for_column(
+        self,
+        value: Any,
+        table: Type[SQLModel],
+        column: str,
+    ) -> "ColumnElement[bool]":
+        """Generate custom filter conditions for a column of a table.
+
+        Args:
+            value: The filter value.
+            table: The table which contains the column.
+            column: The column name.
+        """
+        value, operator = BaseFilter._resolve_operator(value)
+        filter_ = self._define_filter(
+            column=column, value=value, operator=operator
+        )
+        return filter_.generate_query_conditions(table=table)
+
     @property
     def offset(self) -> int:
         """Returns the offset needed for the query on the data persistence layer.

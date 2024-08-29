@@ -28,8 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus, GenericFilterOps
-from zenml.models.v2.base.filter import StrFilter
+from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -510,8 +509,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "schedule_id",
         "stack_id",
         "template_id",
-        "pipeline_name",
         "user_name",
+        "pipeline_name",
+        "stack_name",
+        "code_repository_name",
+        "model_name",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -526,10 +528,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         description="Pipeline associated with the Pipeline Run",
         union_mode="left_to_right",
     )
-    pipeline_name: Optional[str] = Field(
-        default=None,
-        description="Name of the pipeline associated with the run",
-    )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Workspace of the Pipeline Run",
@@ -539,10 +537,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="User that created the Pipeline Run",
         union_mode="left_to_right",
-    )
-    user_name: Optional[str] = Field(
-        default=None,
-        description="Name of the user associated that created the run",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -589,6 +583,26 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the run.",
+    )
+    pipeline_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline associated with the run.",
+    )
+    stack_name: Optional[str] = Field(
+        default=None,
+        description="Name of the stack associated with the run.",
+    )
+    code_repository_name: Optional[str] = Field(
+        default=None,
+        description="Name of the code repository associated with the run.",
+    )
+    model_name: Optional[str] = Field(
+        default=None,
+        description="Name of the model associated with the run.",
+    )
 
     def get_custom_filters(
         self,
@@ -604,6 +618,9 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
+            CodeRepositorySchema,
+            ModelSchema,
+            ModelVersionSchema,
             PipelineBuildSchema,
             PipelineDeploymentSchema,
             PipelineRunSchema,
@@ -619,32 +636,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             else:
                 unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
             custom_filters.append(unlisted_filter)
-
-        if self.pipeline_name is not None:
-            value, filter_operator = self._resolve_operator(self.pipeline_name)
-            filter_ = StrFilter(
-                operation=GenericFilterOps(filter_operator),
-                column="name",
-                value=value,
-            )
-            pipeline_name_filter = and_(
-                PipelineRunSchema.pipeline_id == PipelineSchema.id,
-                filter_.generate_query_conditions(PipelineSchema),
-            )
-            custom_filters.append(pipeline_name_filter)
-
-        if self.user_name is not None:
-            value, filter_operator = self._resolve_operator(self.user_name)
-            filter_ = StrFilter(
-                operation=GenericFilterOps(filter_operator),
-                column="name",
-                value=value,
-            )
-            user_name_filter = and_(
-                PipelineRunSchema.user_id == UserSchema.id,
-                filter_.generate_query_conditions(UserSchema),
-            )
-            custom_filters.append(user_name_filter)
 
         if self.code_repository_id:
             code_repo_filter = and_(
@@ -686,5 +677,62 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                PipelineRunSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
+        if self.pipeline_name is not None:
+            pipeline_name_filter = and_(
+                PipelineRunSchema.pipeline_id == PipelineSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.pipeline_name,
+                    table=PipelineSchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(pipeline_name_filter)
+
+        if self.stack_name:
+            stack_name_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.stack_name,
+                    table=StackSchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(stack_name_filter)
+
+        if self.code_repository_name:
+            code_repo_name_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.code_reference_id
+                == CodeReferenceSchema.id,
+                CodeReferenceSchema.code_repository_id
+                == CodeRepositorySchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.code_repository_name,
+                    table=CodeRepositorySchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(code_repo_name_filter)
+
+        if self.model_name:
+            model_name_filter = and_(
+                PipelineRunSchema.model_version_id == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.model_name, table=ModelSchema, column="name"
+                ),
+            )
+            custom_filters.append(model_name_filter)
 
         return custom_filters
