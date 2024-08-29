@@ -17,9 +17,8 @@ The Feast integration offers a way to connect to a Feast Feature Store. ZenML
 implements a dedicated stack component that you can access as part of your ZenML
 steps in the usual ways.
 """
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import FEAST
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -31,9 +30,8 @@ class FeastIntegration(Integration):
     """Definition of Feast integration for ZenML."""
 
     NAME = FEAST
-    # click is added to keep the feast click version
-    # in sync with ZenML's click
-    REQUIREMENTS = ["feast<=0.37.1", "click>=8.0.1,<8.1.4", "pandas>=2.0.0"]
+    # click is added to keep the feast click version in sync with ZenML's click
+    REQUIREMENTS = ["feast<=0.37.1", "click>=8.0.1,<8.1.4"]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["click", "pandas"]
 
     @classmethod
@@ -46,6 +44,21 @@ class FeastIntegration(Integration):
         from zenml.integrations.feast.flavors import FeastFeatureStoreFlavor
 
         return [FeastFeatureStoreFlavor]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
 
 FeastIntegration.check_installation()
