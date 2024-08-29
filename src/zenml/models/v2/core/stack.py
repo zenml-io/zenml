@@ -23,7 +23,6 @@ from sqlmodel import and_
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseRequest, BaseUpdate
-from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedResponse,
@@ -319,12 +318,10 @@ class StackFilter(WorkspaceScopedFilter):
     scoping.
     """
 
-    # `component_id` refers to a relationship through a link-table
-    #  rather than a field in the db, hence it needs to be handled
-    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "component_id",  # This is a relationship, not a field
+        "component_id",
+        "user_name",
         "component_name",
     ]
 
@@ -350,6 +347,10 @@ class StackFilter(WorkspaceScopedFilter):
         description="Component in the stack",
         union_mode="left_to_right",
     )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the stack.",
+    )
     component_name: Optional[str] = Field(
         default=None, description="Name of component in the stack."
     )
@@ -362,12 +363,11 @@ class StackFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from zenml.zen_stores.schemas.component_schemas import (
+        from zenml.zen_stores.schemas import (
             StackComponentSchema,
-        )
-        from zenml.zen_stores.schemas.stack_schemas import (
             StackCompositionSchema,
             StackSchema,
+            UserSchema,
         )
 
         if self.component_id:
@@ -377,19 +377,24 @@ class StackFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(component_id_filter)
 
+        if self.user_name is not None:
+            user_name_filter = and_(
+                StackSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
         if self.component_name is not None:
-            value, filter_operator = self._resolve_operator(
-                self.component_name
-            )
-            filter_ = StrFilter(
-                operation=filter_operator,
-                column="name",
-                value=value,
-            )
             component_name_filter = and_(
                 StackCompositionSchema.stack_id == StackSchema.id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
-                filter_.generate_query_conditions(StackComponentSchema),
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.component_name,
+                    table=StackComponentSchema,
+                    column="name",
+                ),
             )
             custom_filters.append(component_name_filter)
 

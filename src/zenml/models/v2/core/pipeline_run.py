@@ -568,6 +568,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         description="Template used for the pipeline run.",
         union_mode="left_to_right",
     )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Model version associated with the pipeline run.",
+        union_mode="left_to_right",
+    )
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",

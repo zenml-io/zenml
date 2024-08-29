@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -36,6 +45,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -248,6 +259,10 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
 
     CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "user_name",
+    ]
 
     name: Optional[str] = Field(
         default=None,
@@ -263,6 +278,38 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         description="User of the Pipeline",
         union_mode="left_to_right",
     )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the pipeline.",
+    )
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            PipelineSchema,
+            UserSchema,
+        )
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                PipelineSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
+        return custom_filters
 
     def apply_sorting(
         self,

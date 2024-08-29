@@ -30,9 +30,10 @@ from zenml.models.v2.base.scoped import (
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
-
 
 # ------------------ Request Model ------------------
 
@@ -316,6 +317,16 @@ class ModelResponse(
 class ModelFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
+        "workspace_id",
+        "user_id",
+    ]
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "user_name",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the Model",
@@ -330,9 +341,35 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
         description="User of the Model",
         union_mode="left_to_right",
     )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the model.",
+    )
 
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "user_id",
-    ]
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            ModelSchema,
+            UserSchema,
+        )
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                ModelSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
+        return custom_filters

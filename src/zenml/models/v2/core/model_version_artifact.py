@@ -166,6 +166,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "only_model_artifacts",
         "only_deployment_artifacts",
         "has_custom_name",
+        "user_name",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -214,6 +215,10 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_model_artifacts: Optional[bool] = False
     only_deployment_artifacts: Optional[bool] = False
     has_custom_name: Optional[bool] = None
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the artifact.",
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -233,12 +238,11 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas.artifact_schemas import (
+        from zenml.zen_stores.schemas import (
             ArtifactSchema,
             ArtifactVersionSchema,
-        )
-        from zenml.zen_stores.schemas.model_schemas import (
             ModelVersionArtifactSchema,
+            UserSchema,
         )
 
         if self.artifact_name:
@@ -283,5 +287,16 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
                 ArtifactSchema.has_custom_name == self.has_custom_name,
             )
             custom_filters.append(custom_name_filter)
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
 
         return custom_filters

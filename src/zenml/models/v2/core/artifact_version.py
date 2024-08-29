@@ -430,14 +430,13 @@ class ArtifactVersionResponse(
 class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
-    # `name` and `only_unused` refer to properties related to other entities
-    #  rather than a field in the db, hence they need to be handled
-    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
         "has_custom_name",
+        "user_name",
+        "model_name",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -495,6 +494,14 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user that created the artifact version.",
+    )
+    model_name: Optional[str] = Field(
+        default=None,
+        description="Name of the model that is associated with this artifact version.",
+    )
 
     def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
@@ -506,13 +513,14 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
         from sqlmodel import and_, select
 
-        from zenml.zen_stores.schemas.artifact_schemas import (
+        from zenml.zen_stores.schemas import (
             ArtifactSchema,
             ArtifactVersionSchema,
-        )
-        from zenml.zen_stores.schemas.step_run_schemas import (
+            ModelSchema,
+            ModelVersionArtifactSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
+            UserSchema,
         )
 
         if self.name:
@@ -545,6 +553,26 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 ArtifactSchema.has_custom_name == self.has_custom_name,
             )
             custom_filters.append(custom_name_filter)
+
+        if self.user_name is not None:
+            user_name_filter = and_(
+                ArtifactVersionSchema.user_id == UserSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=UserSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
+
+        if self.model_name is not None:
+            user_name_filter = and_(
+                ArtifactVersionSchema.id
+                == ModelVersionArtifactSchema.artifact_version_id,
+                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                self.generate_custom_filter_conditions_for_column(
+                    value=self.user_name, table=ModelSchema, column="name"
+                ),
+            )
+            custom_filters.append(user_name_filter)
 
         return custom_filters
 
