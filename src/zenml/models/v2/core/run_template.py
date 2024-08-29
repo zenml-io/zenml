@@ -301,9 +301,9 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         "stack_id",
         "build_id",
         "pipeline_id",
-        "user_name",
-        "pipeline_name",
-        "stack_name",
+        "user",
+        "pipeline",
+        "stack",
     ]
 
     name: Optional[str] = Field(
@@ -340,17 +340,17 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    user_name: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the user that created the template.",
+        description="Name/ID of the user that created the template.",
     )
-    pipeline_name: Optional[str] = Field(
+    pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the pipeline associated with the template.",
+        description="Name/ID of the pipeline associated with the template.",
     )
-    stack_name: Optional[str] = Field(
+    stack: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the stack associated with the template.",
+        description="Name/ID of the stack associated with the template.",
     )
 
     def get_custom_filters(
@@ -409,39 +409,37 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(pipeline_filter)
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 RunTemplateSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
-        if self.pipeline_name is not None:
-            pipeline_name_filter = and_(
+        if self.pipeline is not None:
+            pipeline_filter = and_(
                 RunTemplateSchema.source_deployment_id
                 == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.pipeline_name,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline,
                     table=PipelineSchema,
-                    column="name",
                 ),
             )
-            custom_filters.append(pipeline_name_filter)
+            custom_filters.append(pipeline_filter)
 
-        if self.stack_name:
-            stack_name_filter = and_(
+        if self.stack:
+            stack_filter = and_(
                 RunTemplateSchema.source_deployment_id
                 == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.stack_name,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack,
                     table=StackSchema,
-                    column="name",
                 ),
             )
-            custom_filters.append(stack_name_filter)
+            custom_filters.append(stack_filter)
 
         return custom_filters

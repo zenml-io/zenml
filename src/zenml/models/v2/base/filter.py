@@ -54,7 +54,7 @@ from zenml.utils.typing_utils import get_args
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.zen_stores.schemas import BaseSchema
+    from zenml.zen_stores.schemas import BaseSchema, NamedSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -789,6 +789,45 @@ class BaseFilter(BaseModel):
             column=column,
             value=bool(value),
         )
+
+    def generate_name_or_id_query_conditions(
+        self,
+        value: Union[UUID, str],
+        table: Type["NamedSchema"],
+    ) -> "ColumnElement[bool]":
+        """Generate filter conditions for name or id of a table.
+
+        Args:
+            value: The filter value.
+            table: The table to filter.
+
+        Returns:
+            The query conditions.
+        """
+        from sqlmodel import or_
+
+        value, operator = BaseFilter._resolve_operator(value)
+        value = str(value)
+
+        conditions = []
+
+        try:
+            filter_ = self._define_filter(
+                column="id", value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
+        except ValueError:
+            # UUID filter with equal operators and no full UUID fail with
+            # a ValueError. In this case, we already know that the filter
+            # will not produce any result and can simply ignore it.
+            pass
+
+        filter_ = self._define_filter(
+            column="name", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
+
+        return or_(False, *conditions)
 
     def generate_custom_query_conditions_for_column(
         self,

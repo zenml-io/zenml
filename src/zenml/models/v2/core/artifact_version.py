@@ -435,8 +435,8 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "name",
         "only_unused",
         "has_custom_name",
-        "user_name",
-        "model_name",
+        "user",
+        "model",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -494,13 +494,13 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    user_name: Optional[str] = Field(
+    user: Optional[str] = Field(
         default=None,
-        description="Name of the user that created the artifact version.",
+        description="Name/ID of the user that created the artifact version.",
     )
-    model_name: Optional[str] = Field(
+    model: Optional[str] = Field(
         default=None,
-        description="Name of the model that is associated with this artifact version.",
+        description="Name/ID of the model that is associated with this artifact version.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -556,25 +556,25 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(custom_name_filter)
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 ArtifactVersionSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
-        if self.model_name is not None:
-            user_name_filter = and_(
+        if self.model is not None:
+            model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,
                 ModelVersionArtifactSchema.model_id == ModelSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=ModelSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(model_filter)
 
         return custom_filters
 

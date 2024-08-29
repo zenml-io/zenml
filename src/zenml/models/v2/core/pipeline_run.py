@@ -509,11 +509,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "schedule_id",
         "stack_id",
         "template_id",
-        "user_name",
-        "pipeline_name",
-        "stack_name",
-        "code_repository_name",
-        "model_name",
+        "user",
+        "pipeline",
+        "stack",
+        "code_repository",
+        "model",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -588,25 +588,25 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    user_name: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the user that created the run.",
+        description="Name/ID of the user that created the run.",
     )
-    pipeline_name: Optional[str] = Field(
+    pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the pipeline associated with the run.",
+        description="Name/ID of the pipeline associated with the run.",
     )
-    stack_name: Optional[str] = Field(
+    stack: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the stack associated with the run.",
+        description="Name/ID of the stack associated with the run.",
     )
-    code_repository_name: Optional[str] = Field(
+    code_repository: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the code repository associated with the run.",
+        description="Name/ID of the code repository associated with the run.",
     )
-    model_name: Optional[str] = Field(
+    model: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the model associated with the run.",
+        description="Name/ID of the model associated with the run.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -685,61 +685,57 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(run_template_filter)
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 PipelineRunSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
-        if self.pipeline_name is not None:
-            pipeline_name_filter = and_(
+        if self.pipeline is not None:
+            pipeline_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.pipeline_name,
-                    table=PipelineSchema,
-                    column="name",
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline, table=PipelineSchema
                 ),
             )
-            custom_filters.append(pipeline_name_filter)
+            custom_filters.append(pipeline_filter)
 
-        if self.stack_name:
-            stack_name_filter = and_(
+        if self.stack:
+            stack_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.stack_name,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack,
                     table=StackSchema,
-                    column="name",
                 ),
             )
-            custom_filters.append(stack_name_filter)
+            custom_filters.append(stack_filter)
 
-        if self.code_repository_name:
-            code_repo_name_filter = and_(
+        if self.code_repository:
+            code_repo_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == CodeRepositorySchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.code_repository_name,
+                self.generate_name_or_id_query_conditions(
+                    value=self.code_repository,
                     table=CodeRepositorySchema,
-                    column="name",
                 ),
             )
-            custom_filters.append(code_repo_name_filter)
+            custom_filters.append(code_repo_filter)
 
-        if self.model_name:
-            model_name_filter = and_(
+        if self.model:
+            model_filter = and_(
                 PipelineRunSchema.model_version_id == ModelVersionSchema.id,
                 ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.model_name, table=ModelSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
                 ),
             )
-            custom_filters.append(model_name_filter)
+            custom_filters.append(model_filter)
 
         return custom_filters

@@ -1236,7 +1236,8 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
-        component_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1253,7 +1254,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
-            component_name: The name of the component to filter by.
+            user: The name/ID of the user to filter by.
+            component: The name/ID of the component to filter by.
             name: The name of the stack to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -1269,7 +1271,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             component_id=component_id,
-            component_name=component_name,
+            user=user,
+            component=component,
             name=name,
             description=description,
             id=id,
@@ -2353,7 +2356,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-        user_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
@@ -2370,7 +2373,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
-            user_name: The name of the user to filter by.
+            user: The name/ID of the user to filter by.
             tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -2389,7 +2392,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
-            user_name=user_name,
+            user=user,
             tag=tag,
         )
         pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
@@ -3473,9 +3476,9 @@ class Client(metaclass=ClientMetaClass):
         build_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
-        user_name: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        stack_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        stack: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[RunTemplateResponse]:
         """Get a page of run templates.
@@ -3495,9 +3498,9 @@ class Client(metaclass=ClientMetaClass):
             build_id: Filter by build ID.
             stack_id: Filter by stack ID.
             code_repository_id: Filter by code repository ID.
-            user_name: Filter by user name.
-            pipeline_name: Filter by pipeline name.
-            stack_name: Filter by stack name.
+            user: Filter by user name/ID.
+            pipeline: Filter by pipeline name/ID.
+            stack: Filter by stack name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3519,9 +3522,9 @@ class Client(metaclass=ClientMetaClass):
             build_id=build_id,
             stack_id=stack_id,
             code_repository_id=code_repository_id,
-            user_name=user_name,
-            pipeline_name=pipeline_name,
-            stack_name=stack_name,
+            user=user,
+            pipeline=pipeline,
+            stack=stack,
         )
 
         return self.zen_store.list_run_templates(
@@ -3749,9 +3752,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
-        pipeline_name: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
-        user_name: Optional[str] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3766,9 +3767,11 @@ class Client(metaclass=ClientMetaClass):
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
         tag: Optional[str] = None,
-        code_repository_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        stack_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        code_repository: Optional[Union[UUID, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
+        stack: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3783,9 +3786,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
-            pipeline_name: The name of the pipeline to filter by.
             user_id: The id of the user to filter by.
-            user_name: The name of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
@@ -3801,9 +3802,11 @@ class Client(metaclass=ClientMetaClass):
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
             tag: Tag to filter by.
-            code_repository_name: Filter by code repository name.
-            model_name: Filter by model name.
-            stack_name: Filter by stack name.
+            user: The name/ID of the user to filter by.
+            pipeline: The name/ID of the pipeline to filter by.
+            code_repository: Filter by code repository name/ID.
+            model: Filter by model name/ID.
+            stack: Filter by stack name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3821,7 +3824,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             pipeline_id=pipeline_id,
-            pipeline_name=pipeline_name,
             schedule_id=schedule_id,
             build_id=build_id,
             deployment_id=deployment_id,
@@ -3830,7 +3832,6 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
-            user_name=user_name,
             stack_id=stack_id,
             status=status,
             start_time=start_time,
@@ -3838,9 +3839,11 @@ class Client(metaclass=ClientMetaClass):
             num_steps=num_steps,
             tag=tag,
             unlisted=unlisted,
-            code_repository_name=code_repository_name,
-            stack_name=stack_name,
-            model_name=model_name,
+            user=user,
+            pipeline=pipeline,
+            code_repository=code_repository,
+            stack=stack,
+            model=model,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(
@@ -4180,8 +4183,8 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
-        user_name: Optional[str] = None,
-        model_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
@@ -4210,8 +4213,8 @@ class Client(metaclass=ClientMetaClass):
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
             tag: A tag to filter by.
-            user_name: Filter by user name.
-            model_name: Filter by model name.
+            user: Filter by user name or ID.
+            model: Filter by model name or ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4240,8 +4243,8 @@ class Client(metaclass=ClientMetaClass):
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,
-            user_name=user_name,
-            model_name=model_name,
+            user=user,
+            model=model,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -6138,7 +6141,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        user_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ModelResponse]:
@@ -6152,7 +6155,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the model to filter by.
-            user_name: Filter by user name.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag of the model to filter by.
@@ -6169,7 +6172,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             tag=tag,
-            user_name=user_name,
+            user=user,
         )
 
         return self.zen_store.list_models(
@@ -6349,7 +6352,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
-        user_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ModelVersionResponse]:
@@ -6367,7 +6370,7 @@ class Client(metaclass=ClientMetaClass):
             name: name or id of the model version.
             number: number of the model version.
             stage: stage of the model version.
-            user_name: Filter by user name.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag to filter by.
@@ -6386,7 +6389,7 @@ class Client(metaclass=ClientMetaClass):
             number=number,
             stage=stage,
             tag=tag,
-            user_name=user_name,
+            user=user,
         )
 
         return self.zen_store.list_model_versions(
@@ -6464,7 +6467,7 @@ class Client(metaclass=ClientMetaClass):
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
         has_custom_name: Optional[bool] = None,
-        user_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -6486,7 +6489,7 @@ class Client(metaclass=ClientMetaClass):
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
             has_custom_name: Filter artifacts with/without custom names.
-            user_name: Filter by user name.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6511,7 +6514,7 @@ class Client(metaclass=ClientMetaClass):
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
                 has_custom_name=has_custom_name,
-                user_name=user_name,
+                user=user,
             ),
             hydrate=hydrate,
         )
@@ -6581,7 +6584,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
-        user_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
@@ -6599,7 +6602,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
             pipeline_run_name: Use the pipeline run name for filtering
-            user_name: Filter by user name.
+            user: Filter by user name or ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response
 
@@ -6620,7 +6623,7 @@ class Client(metaclass=ClientMetaClass):
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,
-                user_name=user_name,
+                user=user,
             ),
             hydrate=hydrate,
         )

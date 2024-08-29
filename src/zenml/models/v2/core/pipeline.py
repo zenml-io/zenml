@@ -261,7 +261,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "user_name",
+        "user",
     ]
 
     name: Optional[str] = Field(
@@ -278,9 +278,9 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         description="User of the Pipeline",
         union_mode="left_to_right",
     )
-    user_name: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the user that created the pipeline.",
+        description="Name/ID of the user that created the pipeline.",
     )
 
     def get_custom_filters(
@@ -300,14 +300,14 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
             UserSchema,
         )
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 PipelineSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
         return custom_filters
 

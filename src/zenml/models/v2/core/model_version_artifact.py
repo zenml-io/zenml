@@ -166,7 +166,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "only_model_artifacts",
         "only_deployment_artifacts",
         "has_custom_name",
-        "user_name",
+        "user",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -215,9 +215,9 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_model_artifacts: Optional[bool] = False
     only_deployment_artifacts: Optional[bool] = False
     has_custom_name: Optional[bool] = None
-    user_name: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the user that created the artifact.",
+        description="Name/ID of the user that created the artifact.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -288,15 +288,15 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(custom_name_filter)
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 ModelVersionArtifactSchema.artifact_version_id
                 == ArtifactVersionSchema.id,
                 ArtifactVersionSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
         return custom_filters

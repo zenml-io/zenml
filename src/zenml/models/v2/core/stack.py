@@ -321,8 +321,8 @@ class StackFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
-        "user_name",
-        "component_name",
+        "user",
+        "component",
     ]
 
     name: Optional[str] = Field(
@@ -347,12 +347,12 @@ class StackFilter(WorkspaceScopedFilter):
         description="Component in the stack",
         union_mode="left_to_right",
     )
-    user_name: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the user that created the stack.",
+        description="Name/ID of the user that created the stack.",
     )
-    component_name: Optional[str] = Field(
-        default=None, description="Name of component in the stack."
+    component: Optional[Union[UUID, str]] = Field(
+        default=None, description="Name/ID of a component in the stack."
     )
 
     def get_custom_filters(self) -> List["ColumnElement[bool]"]:
@@ -377,25 +377,24 @@ class StackFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(component_id_filter)
 
-        if self.user_name is not None:
-            user_name_filter = and_(
+        if self.user is not None:
+            user_filter = and_(
                 StackSchema.user_id == UserSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.user_name, table=UserSchema, column="name"
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
                 ),
             )
-            custom_filters.append(user_name_filter)
+            custom_filters.append(user_filter)
 
-        if self.component_name is not None:
-            component_name_filter = and_(
+        if self.component is not None:
+            component_filter = and_(
                 StackCompositionSchema.stack_id == StackSchema.id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.component_name,
+                self.generate_name_or_id_query_conditions(
+                    value=self.component,
                     table=StackComponentSchema,
-                    column="name",
                 ),
             )
-            custom_filters.append(component_name_filter)
+            custom_filters.append(component_filter)
 
         return custom_filters

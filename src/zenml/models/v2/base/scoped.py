@@ -35,7 +35,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter, StrFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -340,13 +340,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         custom_filters = super().get_custom_filters()
         if self.tag:
-            value, filter_operator = self._resolve_operator(self.tag)
-            filter_ = StrFilter(
-                operation=filter_operator,
-                column="name",
-                value=value,
+            custom_filters.append(
+                self.generate_custom_query_conditions_for_column(
+                    value=self.tag, table=TagSchema, column="name"
+                )
             )
-
-            custom_filters.append(filter_.generate_query_conditions(TagSchema))
 
         return custom_filters
