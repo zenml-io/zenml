@@ -686,7 +686,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         if self.user_name is not None:
             user_name_filter = and_(
                 PipelineRunSchema.user_id == UserSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.user_name, table=UserSchema, column="name"
                 ),
             )
@@ -695,7 +695,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         if self.pipeline_name is not None:
             pipeline_name_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.pipeline_name,
                     table=PipelineSchema,
                     column="name",
@@ -707,7 +707,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             stack_name_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.stack_name,
                     table=StackSchema,
                     column="name",
@@ -722,7 +722,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == CodeRepositorySchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.code_repository_name,
                     table=CodeRepositorySchema,
                     column="name",
@@ -734,7 +734,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             model_name_filter = and_(
                 PipelineRunSchema.model_version_id == ModelVersionSchema.id,
                 ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.model_name, table=ModelSchema, column="name"
                 ),
             )

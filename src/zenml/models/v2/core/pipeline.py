@@ -303,7 +303,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         if self.user_name is not None:
             user_name_filter = and_(
                 PipelineSchema.user_id == UserSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.user_name, table=UserSchema, column="name"
                 ),
             )

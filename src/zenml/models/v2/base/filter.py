@@ -790,7 +790,7 @@ class BaseFilter(BaseModel):
             value=bool(value),
         )
 
-    def generate_custom_filter_conditions_for_column(
+    def generate_custom_query_conditions_for_column(
         self,
         value: Any,
         table: Type[SQLModel],
@@ -802,6 +802,9 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table which contains the column.
             column: The column name.
+
+        Returns:
+            The query conditions.
         """
         value, operator = BaseFilter._resolve_operator(value)
         filter_ = self._define_filter(

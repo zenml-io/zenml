@@ -412,7 +412,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         if self.user_name is not None:
             user_name_filter = and_(
                 RunTemplateSchema.user_id == UserSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.user_name, table=UserSchema, column="name"
                 ),
             )
@@ -423,7 +423,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 RunTemplateSchema.source_deployment_id
                 == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.pipeline_name,
                     table=PipelineSchema,
                     column="name",
@@ -436,7 +436,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 RunTemplateSchema.source_deployment_id
                 == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
-                self.generate_custom_filter_conditions_for_column(
+                self.generate_custom_query_conditions_for_column(
                     value=self.stack_name,
                     table=StackSchema,
                     column="name",
