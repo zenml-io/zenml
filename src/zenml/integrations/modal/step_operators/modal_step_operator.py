@@ -208,11 +208,10 @@ class ModalStepOperator(BaseStepOperator):
                         " ".join(entrypoint_command),
                         image=zenml_image,
                         gpu=gpu_str,
-                        cpu=resource_settings.cpu_count or None,
-                        memory=resource_settings.get_memory(ByteUnit.MB)
-                        or None,
-                        cloud=settings.cloud or None,
-                        region=settings.region or None,
+                        cpu=resource_settings.cpu_count,
+                        memory=resource_settings.get_memory(ByteUnit.MB),
+                        cloud=settings.cloud,
+                        region=settings.region,
                         app=app,
                     )
 
