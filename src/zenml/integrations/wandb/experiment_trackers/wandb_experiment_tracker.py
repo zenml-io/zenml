@@ -126,7 +126,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
             info: Info about the step that was executed.
             step_failed: Whether the step failed or not.
         """
-        wandb.finish(exit_code=1) if step_failed else wandb.finish()  # type: ignore[attr-defined]
+        wandb.finish(exit_code=1) if step_failed else wandb.finish()  # type: ignore
         os.environ.pop(WANDB_API_KEY, None)
 
     def _initialize_wandb(
