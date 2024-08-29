@@ -35,6 +35,7 @@ assert materializers  # Ensure materializers are loaded
 
 @pipeline
 def english_translation_pipeline(
+    data_url: str,
     model_type: T5_Model,
     per_device_train_batch_size: int,
     gradient_accumulation_steps: int,
@@ -42,7 +43,7 @@ def english_translation_pipeline(
     num_train_epochs: int = 5,
 ):
     """Define a pipeline that connects the steps."""
-    full_dataset = load_data()
+    full_dataset = load_data(data_url)
     tokenized_dataset, tokenizer = tokenize_data(
         dataset=full_dataset, model_type=model_type
     )

@@ -17,6 +17,7 @@ model:
 
 # Configure the pipeline
 parameters:
+  data_url: 'https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt'
   # model_type: "t5-small"  # Choose between t5-small and t5-large
   num_train_epochs: 2
   per_device_train_batch_size: 16
@@ -32,6 +33,3 @@ steps:
       test_size: 0.1
       eval_size: 0.2
       random_state: 42
-  load_data:
-    parameters:
-      data_url: 'https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt'
