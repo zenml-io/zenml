@@ -159,7 +159,7 @@ echo
 
 set +e
 # Register the ZenML stack with the ZenML server
-curl -X POST "$ZENML_SERVER_URL/api/v1/workspaces/default/full-stack" \
+curl -X POST "$ZENML_SERVER_URL/api/v1/workspaces/default/stacks" \
     -H "Authorization: Bearer $ZENML_SERVER_API_TOKEN" \
     -H "Content-Type: application/json" \
     -d "$zenml_stack_json"
