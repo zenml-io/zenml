@@ -15,12 +15,8 @@
 import sys
 
 import pytest
-import tensorflow as tf
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (
-    TensorflowDatasetMaterializer,
-)
 
 
 @pytest.mark.skipif(
@@ -29,6 +25,12 @@ from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import 
 )
 def test_tensorflow_tf_dataset_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow TF Dataset materializer."""
+    import tensorflow as tf
+
+    from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (
+        TensorflowDatasetMaterializer,
+    )
+
     dataset = _test_materializer(
         step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),
         step_output_type=tf.data.Dataset,

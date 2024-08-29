@@ -15,12 +15,8 @@
 import sys
 
 import pytest
-from tensorflow import keras
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.tensorflow.materializers.keras_materializer import (
-    KerasMaterializer,
-)
 
 
 @pytest.mark.skipif(
@@ -29,6 +25,12 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
 )
 def test_tensorflow_keras_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
+    from tensorflow import keras
+
+    from zenml.integrations.tensorflow.materializers.keras_materializer import (
+        KerasMaterializer,
+    )
+
     inputs = keras.Input(shape=(32,))
     outputs = keras.layers.Dense(1)(inputs)
     model = keras.Model(inputs, outputs)
