@@ -213,13 +213,12 @@ function test_upgrade_to_version() {
 
     if [ "$VERSION" == "current" ]; then
         uv pip install -e ".[templates,server]"
-    elif [ "$(version_compare "$VERSION" "0.58.2")" == ">" ]; then
-        # For releases  >= 0.60.0 we don't want to have those old requirements pinned
-        uv pip install -e ".[templates,server]"
     else
         uv pip install "zenml[templates,server]==$VERSION"
-        # handles unpinned sqlmodel dependency in older versions
-        uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
+        if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
+            # handles unpinned sqlmodel dependency in older versions
+            uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
+        fi
     fi
 
     # Get the major and minor version of Python
