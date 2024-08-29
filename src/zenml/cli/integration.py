@@ -492,4 +492,4 @@ def upgrade(
         )
     ):
         with console.status("Upgrading integrations..."):
-            install_packarges(requirements, upgrade=True, use_uv=uv)
+            install_packages(requirements, upgrade=True, use_uv=uv)
