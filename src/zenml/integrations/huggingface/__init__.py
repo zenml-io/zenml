@@ -28,7 +28,7 @@ class HuggingfaceIntegration(Integration):
 
     NAME = HUGGINGFACE
 
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec", "pandas"]
 
     @classmethod
     def activate(cls) -> None:
