@@ -15,9 +15,9 @@ from steps import importer, predictor, trainer, vectorizer
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import SKLEARN
+from zenml.integrations.constants import SKLEARN, PANDAS
 
-docker_settings = DockerSettings(required_integrations=[SKLEARN])
+docker_settings = DockerSettings(required_integrations=[SKLEARN, PANDAS])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
