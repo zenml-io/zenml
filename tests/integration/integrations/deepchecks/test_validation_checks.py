@@ -17,7 +17,7 @@ import pytest
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor >= 12,
+    sys.version_info.minor == 12,
     reason="The deepchecks integrations is not yet supported on 3.12.",
 )
 def test_validation_check_fails_when_checking_name():
