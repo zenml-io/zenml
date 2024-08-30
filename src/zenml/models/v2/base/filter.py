@@ -827,7 +827,7 @@ class BaseFilter(BaseModel):
         )
         conditions.append(filter_.generate_query_conditions(table=table))
 
-        return or_(False, *conditions)
+        return or_(*conditions)
 
     def generate_custom_query_conditions_for_column(
         self,
