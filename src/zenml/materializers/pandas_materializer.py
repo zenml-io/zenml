@@ -13,16 +13,25 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's pandas materializer."""
 
-from zenml.integrations.pandas.materializers.pandas_materializer import (  # noqa
-    PandasMaterializer,
-)
-from zenml.logger import get_logger
+# With the code below, we keep a reference to the PandasMaterializer in its
+# original spot. So, if someone has an artifact version that was created with
+# the NumpyMaterializer, (assuming that they have it installed), they will still
+# be able to use the artifact version. However, if this file is to be removed,
+# you have to write a DB migration script to change the materializer source
+# of the old artifact version entries.
 
-# TODO: We will need to write a migration for older materializer source entries
-get_logger(__name__).warning(
-    "The ZenML built-in Pandas materializer has been moved to an "
-    "integration. Before you use it, make sure you that the `pandas` "
-    "integration is installed with `zenml integration install pandas`, and if "
-    "you need to import the materializer explicitly, please use: "
-    "'from zenml.integrations.pandas.materializers import PandasMaterializer'"
-)
+from zenml.exceptions import IntegrationError
+
+try:
+    from zenml.integrations.pandas.materializers.pandas_materializer import (  # noqa
+        PandasMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    raise IntegrationError(
+        "The ZenML built-in Pandas materializer has been moved to an "
+        "integration. Before you use it, make sure you that the `pandas` "
+        "integration is installed with `zenml integration install pandas`, "
+        "and if you need to import the materializer explicitly, please use: "
+        "'from zenml.integrations.pandas.materializers import "
+        f"PandasMaterializer': {e}"
+    )
