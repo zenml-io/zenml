@@ -194,7 +194,7 @@ def get_step(pipeline_name: str, step_name: str) -> "StepRunResponse":
     Raises:
         RuntimeError: If the step is not found.
     """
-    runs = Client().list_pipeline_runs(pipeline_name=pipeline_name)
+    runs = Client().list_pipeline_runs(pipeline=pipeline_name)
     if runs.total == 0:
         raise RuntimeError(
             f"No pipeline runs for pipeline `{pipeline_name}` were found"
