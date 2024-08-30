@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
 import click
 from pipelines import (
     english_translation_pipeline,
@@ -53,12 +51,12 @@ Examples:
 )
 @click.option(
     "--config_path",
-    default="configs/training_local.yaml",
+    default="configs/training_default.yaml",
     help="Choose the configuration file.",
 )
 def main(
     model_type: str,
-    config_path: str = "configs/training_local.yaml",
+    config_path: str = "configs/training_default.yaml",
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
