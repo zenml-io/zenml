@@ -62,16 +62,14 @@ def link_step_artifacts_to_model(
         ).artifact_config
 
         # Implicit linking
+        linking_mode = "Explicitly"
         if artifact_config is None and model is not None:
             artifact_config = ArtifactConfig(name=artifact_name)
-            logger.debug(
-                f"Implicitly linking artifact `{artifact_name}` to model "
-                f"`{model.name}` version `{model.version}`."
-            )
+            linking_mode = "Implicitly"
 
         if artifact_config:
             logger.debug(
-                f"Explicitly linking artifact `{artifact_name}` to model "
+                f"{linking_mode} linking artifact `{artifact_name}` to model "
                 f"`{model.name}` version `{model.version}` using config "
                 f"`{artifact_config}`."
             )
