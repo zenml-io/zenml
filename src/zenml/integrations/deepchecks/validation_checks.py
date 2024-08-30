@@ -176,9 +176,6 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     TABULAR_FEATURE_LABEL_CORRELATION = source_utils.resolve(
         tabular_checks.FeatureLabelCorrelation
     ).import_path
-    # TABULAR_IDENTIFIER_LEAKAGE = source_utils.resolve(
-    #     tabular_checks.IdentifierLeakage
-    # ).import_path
     TABULAR_IS_SINGLE_VALUE = source_utils.resolve(
         tabular_checks.IsSingleValue
     ).import_path
