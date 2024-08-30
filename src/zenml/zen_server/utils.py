@@ -29,7 +29,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-# import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
