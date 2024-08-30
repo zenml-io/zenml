@@ -20,7 +20,7 @@ from tests.integration.examples.utils import run_example
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor >= 12,
+    sys.version_info.minor == 12,
     reason="The deepchecks integrations is not yet supported on 3.12.",
 )
 def test_example(request: pytest.FixtureRequest) -> None:
