@@ -209,7 +209,6 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
-                prep_logs_to_show = ""
                 try:
                     execution_needed, step_run = self._prepare(
                         step_run=step_run
@@ -247,11 +246,11 @@ class StepLauncher:
                                 return_logs=True,
                             )
                         )
+                        if prep_logs_to_show:
+                            logger.info(prep_logs_to_show)
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
-                    if prep_logs_to_show:
-                        logger.info(prep_logs_to_show)
                     retries = 0
                     last_retry = True
                     max_retries = (
