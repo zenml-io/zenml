@@ -12,7 +12,7 @@ Some steps in your machine learning pipeline, particularly training steps, can b
 
 ```python
 from zenml import step, pipeline
-from zenml.integrations.hugginface.steps import run_with_accelerate
+from zenml.integrations.huggingface.steps import run_with_accelerate
 
 @run_with_accelerate(num_processes=4, multi_gpu=True)
 @step
