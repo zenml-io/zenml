@@ -20,7 +20,7 @@ from tests.unit.test_general import _test_materializer
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor >= 12,
+    sys.version_info.minor == 12,
     reason="The tensorflow integrations is not yet supported on 3.12.",
 )
 def test_tensorflow_tf_dataset_materializer(clean_client):
