@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of ZenML's numpy materializer."""
+"""Placeholder for importing the Numpy Materializer from its former path."""
 
 # With the code below, we keep a reference to the NumpyMaterializer in its
 # original spot. So, if someone has an artifact version that was created with
@@ -20,14 +20,12 @@
 # you have to write a DB migration script to change the materializer source
 # of the old artifact version entries.
 
-from zenml.exceptions import IntegrationError
-
 try:
     from zenml.integrations.numpy.materializers.numpy_materializer import (  # noqa
         NumpyMaterializer,
     )
 except (ImportError, ModuleNotFoundError) as e:
-    raise IntegrationError(
+    raise ImportError(
         "The ZenML built-in Numpy materializer has been moved to an "
         "integration. Before you use it, make sure you that the `numpy` "
         "integration is installed with `zenml integration install numpy`, "
