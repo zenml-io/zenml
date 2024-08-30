@@ -256,9 +256,6 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
         tabular_checks.WholeDatasetDrift
     ).import_path
 
-    # VISION_FEATURE_LABEL_CORRELATION_CHANGE = source_utils.resolve(
-    #     vision_checks.FeatureLabelCorrelationChange
-    # ).import_path
     VISION_HEATMAP_COMPARISON = source_utils.resolve(
         vision_checks.HeatmapComparison
     ).import_path
