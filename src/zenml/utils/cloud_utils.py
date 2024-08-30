@@ -32,9 +32,9 @@ def try_get_model_version_url(model_version: ModelVersionResponse) -> str:
     model_version_url = get_model_version_url(model_version.id)
     if model_version_url:
         return (
-            "Dashboard URL for Model "
-            f"`{model_version.model.name}::{model_version.name}` "
-            "used in this step: \n " + model_version_url
+            "Dashboard URL for created Model Version "
+            f"`{model_version.model.name}::{model_version.name}`:\n"
+            + model_version_url
         )
     else:
         return ""
