@@ -61,18 +61,10 @@ def link_step_artifacts_to_model(
             artifact_name
         ).artifact_config
 
-        # Implicit linking
-        linking_mode = "Explicitly"
         if artifact_config is None and model is not None:
             artifact_config = ArtifactConfig(name=artifact_name)
-            linking_mode = "Implicitly"
 
         if artifact_config:
-            logger.debug(
-                f"{linking_mode} linking artifact `{artifact_name}` to model "
-                f"`{model.name}` version `{model.version}` using config "
-                f"`{artifact_config}`."
-            )
             link_artifact_config_to_model(
                 artifact_config=artifact_config,
                 artifact_version_id=artifact_version_id,
@@ -104,6 +96,11 @@ def link_artifact_config_to_model(
         )
 
     if model:
+        logger.debug(
+            f"Linking artifact `{artifact_config.name}` to model "
+            f"`{model.name}` version `{model.version}` using config "
+            f"`{artifact_config}`."
+        )
         request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
