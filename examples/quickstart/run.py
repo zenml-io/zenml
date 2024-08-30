@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import os
 
 import click
 from pipelines import (
