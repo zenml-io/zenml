@@ -231,9 +231,6 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     TABULAR_DATE_TRAIN_TEST_LEAKAGE_OVERLAP = source_utils.resolve(
         tabular_checks.DateTrainTestLeakageOverlap
     ).import_path
-    # TABULAR_DOMINANT_FREQUENCY_CHANGE = source_utils.resolve(
-    #     tabular_checks.DominantFrequencyChange
-    # ).import_path
     TABULAR_FEATURE_LABEL_CORRELATION_CHANGE = source_utils.resolve(
         tabular_checks.FeatureLabelCorrelationChange
     ).import_path
