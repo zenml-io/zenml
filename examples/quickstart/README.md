@@ -80,7 +80,7 @@ the individual steps in the [`steps`](steps) directory. The pipeline that connec
 the [`pipeline`](pipelines) directory.
 
 And here is how to run it. When you run the pipeline with the following command you will be using the configuration
-[here](configs/training_local.yaml)
+[here](configs/training_default.yaml)
 
 ```bash
 # Run the pipeline locally

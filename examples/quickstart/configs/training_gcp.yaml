@@ -1,7 +1,7 @@
+enable_cache: True
+
 # Environment configuration
 settings:
-  resources:
-    memory: 64GB
   docker:
     parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.65.0-py3.11-gcp"
     skip_build: True
