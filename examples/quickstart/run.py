@@ -53,14 +53,13 @@ Examples:
     help="Choose the model size: t5-small or t5-large.",
 )
 @click.option(
-    "--orchestration_environment",
-    type=click.Choice(["local", "aws", "gcp", "azure"], case_sensitive=False),
-    default="local",
-    help="Choose the orchestration environment.",
+    "--config_path",
+    default="configs/training_local.yaml",
+    help="Choose the configuration file.",
 )
 def main(
     model_type: str,
-    orchestration_environment: str,
+    config_path: str = "configs/training_local.yaml",
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -74,22 +73,18 @@ def main(
 
     Args:
         model_type: Type of model to use
-        orchestration_environment: Environment where the pipeline will run
+        config_path: Configuration file to use
         no_cache: If `True` cache will be disabled.
     """
-    config_folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "configs",
-    )
-
     run_args_train = {}
 
     pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
-    pipeline_args["config_path"] = os.path.join(
-        config_folder, f"training_{orchestration_environment}.yaml"
-    )
+
+    print(f"Using {config_path} to configure the pipeline run.")
+
+    pipeline_args["config_path"] = config_path
     english_translation_pipeline.with_options(**pipeline_args)(
         model_type=model_type, **run_args_train
     )

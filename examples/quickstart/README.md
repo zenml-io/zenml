@@ -119,7 +119,7 @@ need an AWS stack registered in ZenML.
 zenml integration install aws s3 -y
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --orchestration_environment aws
+python run.py --model_type=t5-small --config_path configs/training_aws.yaml
 ```
 
 You can edit `configs/training_aws.yaml` to adjust the settings for running your pipeline in aws.
@@ -133,7 +133,7 @@ need an AWS stack registered in ZenML.
 zenml integration install gcp
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --orchestration_environment gcp
+python run.py --model_type=t5-small --config_path configs/training_gcp.yaml
 ```
 
 You can edit `configs/training_gcp.yaml` to adjust the settings.
@@ -144,7 +144,7 @@ You can edit `configs/training_gcp.yaml` to adjust the settings.
 zenml integration install azure
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --orchestration_environment azure
+python run.py --model_type=t5-small --config_path configs/training_azure.yaml
 ```
 
 You can edit `configs/training_azure.yaml` to adjust the settings.
