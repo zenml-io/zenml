@@ -164,7 +164,8 @@ jobs:
         run: |
           source .venv/bin/activate
           uv pip install -e .
-          uv pip install mlstacks
+          # TODO: Remove and add mlstacks back in
+          uv pip install git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-python-3.12
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate
