@@ -40,11 +40,9 @@ class DeepchecksIntegration(Integration):
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
-        # TODO: Fix the explanation here
-        # Normally, the deepchecks integrations requires pandas to work.
-        # However, their version 0.8.0 is using a pandas function which got
-        # removed at pandas 2.1.0. Until we can upgrade the deepchecks
-        # requirement, we have to limit pandas to <2.1.0.
+        # The deepchecks integrations requires pandas to work.
+        # However, their version 0.18.0 is still not compatible with
+        # pandas>=2.2.0, so we limit the version here.
         "pandas<2.2.0",
     ]
 
