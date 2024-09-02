@@ -75,7 +75,16 @@ def validate_stack_component_config(
             return None
         raise
 
-    configuration = flavor_class.config_class(**configuration_dict)
+    config_class = flavor_class.config_class
+    # Make sure extras are forbidden for the config class. Due to inhertance
+    # order, some config classes allow extras by accident which we patch here.
+    validation_config_class = type(
+        config_class.__name__,
+        (config_class,),
+        {"model_config": {"extra": "forbid"}},
+    )
+    configuration = validation_config_class(**configuration_dict)
+
     if not configuration.is_valid:
         raise ValueError(
             f"Invalid stack component configuration. Please verify "
