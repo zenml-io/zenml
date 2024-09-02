@@ -14,6 +14,7 @@
 """Azure Service Connector."""
 
 import datetime
+import logging
 import re
 import subprocess
 from typing import Any, Dict, List, Optional, Tuple
@@ -57,6 +58,9 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+# Configure the logging level for azure.identity
+logging.getLogger("azure.identity").setLevel(logging.WARNING)
 
 logger = get_logger(__name__)
 
