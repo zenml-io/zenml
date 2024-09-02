@@ -76,7 +76,7 @@ def validate_stack_component_config(
         raise
 
     config_class = flavor_class.config_class
-    # Make sure extras are forbidden for the config class. Due to inhertance
+    # Make sure extras are forbidden for the config class. Due to inheritance
     # order, some config classes allow extras by accident which we patch here.
     validation_config_class = type(
         config_class.__name__,
