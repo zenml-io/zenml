@@ -19,8 +19,8 @@ from pipelines import (
     english_translation_pipeline,
 )
 
-from zenml.logger import get_logger
 from zenml.client import Client
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
