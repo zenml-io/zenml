@@ -20,6 +20,7 @@ from pipelines import (
 )
 
 from zenml.logger import get_logger
+from zenml.client import Client
 
 logger = get_logger(__name__)
 
@@ -51,12 +52,11 @@ Examples:
 )
 @click.option(
     "--config_path",
-    default="configs/training_default.yaml",
     help="Choose the configuration file.",
 )
 def main(
     model_type: str,
-    config_path: str = "configs/training_default.yaml",
+    config_path: str,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -73,12 +73,26 @@ def main(
         config_path: Configuration file to use
         no_cache: If `True` cache will be disabled.
     """
+    client = Client()
     run_args_train = {}
+
+    crf = client.active_stack.container_registry.flavor
+    asf = client.active_stack.artifact_store.flavor
+    orchf = client.active_stack.orchestrator.flavor
 
     pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
 
+    if not config_path:
+        if crf == "aws" and asf == "s3" and orchf == "sagemaker":
+            config_path = "configs/training_aws.yaml"
+        elif crf == "gcp" and asf == "gcp" and orchf == "vertex":
+            config_path = "configs/training_gcp.yaml"
+        elif crf == "azure" and asf == "azure" and orchf == "azureml":
+            config_path = "configs/training_azure.yaml"
+        else:
+            config_path = "configs/training_default.yaml"
     print(f"Using {config_path} to configure the pipeline run.")
 
     pipeline_args["config_path"] = config_path

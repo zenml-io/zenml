@@ -84,7 +84,7 @@ And here is how to run it. When you run the pipeline with the following command 
 
 ```bash
 # Run the pipeline locally
-python run.py --model_type=t5-small --orchestration_environment local
+python run.py --model_type=t5-small
 ```
 
 <img src=".assets/DAG.png" width="50%" alt="Dashboard view">
@@ -119,7 +119,7 @@ need an AWS stack registered in ZenML.
 zenml integration install aws s3 -y
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --config_path configs/training_aws.yaml
+python run.py --model_type=t5-small
 ```
 
 You can edit `configs/training_aws.yaml` to adjust the settings for running your pipeline in aws.
@@ -133,7 +133,7 @@ need an AWS stack registered in ZenML.
 zenml integration install gcp
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --config_path configs/training_gcp.yaml
+python run.py --model_type=t5-small
 ```
 
 You can edit `configs/training_gcp.yaml` to adjust the settings.
@@ -144,7 +144,7 @@ You can edit `configs/training_gcp.yaml` to adjust the settings.
 zenml integration install azure
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small --config_path configs/training_azure.yaml
+python run.py --model_type=t5-small
 ```
 
 You can edit `configs/training_azure.yaml` to adjust the settings.
