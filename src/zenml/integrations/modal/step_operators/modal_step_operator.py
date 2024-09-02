@@ -196,17 +196,13 @@ class ModalStepOperator(BaseStepOperator):
             commands=[f"FROM {image_name}"], context_files={}
         )
 
-        zenml_image = (
-            modal.Image._from_args(
-                dockerfile_function=lambda *_, **__: spec,
-                force_build=False,
-                image_registry_config=modal.image._ImageRegistryConfig(
-                    api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-                ),
-            )
-            .env(environment)
-            .run_commands(" ".join(entrypoint_command))
-        )
+        zenml_image = modal.Image._from_args(
+            dockerfile_function=lambda *_, **__: spec,
+            force_build=False,
+            image_registry_config=modal.image._ImageRegistryConfig(
+                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
+            ),
+        ).env(environment)
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
@@ -218,7 +214,7 @@ class ModalStepOperator(BaseStepOperator):
             future = loop.create_future()
             with modal.enable_output():
                 async with app.run():
-                    await modal.Sandbox.create.aio(
+                    sb = await modal.Sandbox.create.aio(
                         "bash",
                         "-c",
                         " ".join(entrypoint_command),
@@ -230,6 +226,8 @@ class ModalStepOperator(BaseStepOperator):
                         region=settings.region,
                         app=app,
                     )
+
+                    await sb.wait.aio()  # type: ignore
 
             future.set_result(None)
             return future
