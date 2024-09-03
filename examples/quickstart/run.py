@@ -90,14 +90,15 @@ def main(
         pipeline_args["enable_cache"] = False
 
     if not config_path:
-        if asf == "s3" and orchf == "sagemaker" and sof in [None, "sagemaker"]:
+        # Default configuration
+        config_path = "configs/training_default.yaml"
+        #
+        if orchf == "sagemaker" or sof == "sagemaker":
             config_path = "configs/training_aws.yaml"
-        elif asf == "gcp" and orchf == "vertex":
+        elif orchf == "vertex" or sof == "vertex":
             config_path = "configs/training_gcp.yaml"
-        elif asf == "azure" and orchf == "azureml":
+        elif orchf == "azureml" or sof == "azureml":
             config_path = "configs/training_azure.yaml"
-        else:
-            config_path = "configs/training_default.yaml"
 
         print(f"Using {config_path} to configure the pipeline run.")
     else:
