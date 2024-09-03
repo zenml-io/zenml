@@ -25,6 +25,6 @@ except (ImportError, ModuleNotFoundError) as e:
 
     raise IntegrationError(
         f"The `{AZURE}` integration that you are trying to use is not properly "
-        "installed. Please make sure that you have the correct installation"
+        "installed. Please make sure that you have the correct installation "
         f"with: `zenml integration install {AZURE}`"
     )
