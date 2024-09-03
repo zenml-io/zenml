@@ -184,7 +184,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-starter
-        uses: zenml-io/template-starter/.github/actions/starter_template_test@2024.08.28
+        uses: zenml-io/template-starter/.github/actions/starter_template_test@main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
