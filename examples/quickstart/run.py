@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Optional
+
 import click
 from pipelines import (
     english_translation_pipeline,
@@ -56,7 +58,7 @@ Examples:
 )
 def main(
     model_type: str,
-    config_path: str,
+    config_path: Optional[str],
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -76,24 +78,35 @@ def main(
     client = Client()
     run_args_train = {}
 
-    crf = client.active_stack.container_registry.flavor
     asf = client.active_stack.artifact_store.flavor
     orchf = client.active_stack.orchestrator.flavor
+
+    sof = None
+    if client.active_stack.step_operator:
+        sof = client.active_stack.step_operator.flavor
 
     pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
 
     if not config_path:
-        if crf == "aws" and asf == "s3" and orchf == "sagemaker":
+        if asf == "s3" and orchf == "sagemaker" and sof in [None, "sagemaker"]:
             config_path = "configs/training_aws.yaml"
-        elif crf == "gcp" and asf == "gcp" and orchf == "vertex":
+        elif asf == "gcp" and orchf == "vertex":
             config_path = "configs/training_gcp.yaml"
-        elif crf == "azure" and asf == "azure" and orchf == "azureml":
+        elif asf == "azure" and orchf == "azureml":
             config_path = "configs/training_azure.yaml"
         else:
             config_path = "configs/training_default.yaml"
-    print(f"Using {config_path} to configure the pipeline run.")
+
+        print(f"Using {config_path} to configure the pipeline run.")
+    else:
+        print(
+            f"You specified {config_path}. Please be aware of the contents of this "
+            f"file as some settings might be very specific to a certain orchestration "
+            f"environment. Also you might need to set `skip_build` to False in case "
+            f"of missing requirements in the execution environment."
+        )
 
     pipeline_args["config_path"] = config_path
     english_translation_pipeline.with_options(**pipeline_args)(
