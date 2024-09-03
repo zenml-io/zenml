@@ -14,9 +14,7 @@
 """The base class for feature stores."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Type, Union, cast
-
-import pandas as pd
+from typing import Any, Dict, List, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -42,10 +40,10 @@ class BaseFeatureStore(StackComponent, ABC):
     @abstractmethod
     def get_historical_features(
         self,
-        entity_df: Union[pd.DataFrame, str],
+        entity_df: Any,
         features: List[str],
         full_feature_names: bool = False,
-    ) -> pd.DataFrame:
+    ) -> Any:
         """Returns the historical features for training or batch scoring.
 
         Args:
@@ -54,7 +52,7 @@ class BaseFeatureStore(StackComponent, ABC):
             full_feature_names: Whether to return the full feature names.
 
         Returns:
-            The historical features as a Pandas DataFrame.
+            The historical features.
         """
 
     @abstractmethod

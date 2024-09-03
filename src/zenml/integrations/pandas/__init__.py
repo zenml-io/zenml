@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,23 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the Pandas integration."""
 
-import sys
-
-import pytest
-
-from tests.integration.examples.utils import run_example
+from zenml.integrations.constants import PANDAS
+from zenml.integrations.integration import Integration
 
 
-@pytest.mark.skipif(
-    sys.version_info.minor == 12,
-    reason="The deepchecks integrations is not yet supported on 3.12.",
-)
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Test the deepchecks example."""
-    with run_example(
-        request=request,
-        name="deepchecks",
-        pipelines={"data_validation_pipeline": (1, 6)},
-    ):
-        pass
+class PandasIntegration(Integration):
+    """Definition of Pandas integration for ZenML."""
+
+    NAME = PANDAS
+    REQUIREMENTS = ["pandas>=2.0.0"]
+
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.pandas import materializers  # noqa
+
+
+PandasIntegration.check_installation()

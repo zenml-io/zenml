@@ -143,12 +143,12 @@ tests:
           synchronized: true
   - module: tests.integration.examples.test_lightgbm
     requirements:
-      - integrations: [lightgbm]
+      - integrations: [lightgbm, pandas]
       - capabilities:
           synchronized: true
   - module: tests.integration.examples.test_scipy
     requirements:
-      - integrations: [sklearn]
+      - integrations: [sklearn, pandas]
       - capabilities:
           synchronized: true
   - module: tests.integration.examples.test_facets

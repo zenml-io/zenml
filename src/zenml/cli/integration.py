@@ -247,7 +247,8 @@ def install(
     Args:
         integrations: The name of the integration to install the requirements
             for.
-        ignore_integration: Integrations to ignore explicitly (passed in separately).
+        ignore_integration: Integrations to ignore explicitly (passed in
+            separately).
         force: Force the installation of the required packages.
         uv: Use uv for package installation (experimental).
     """
@@ -256,28 +257,33 @@ def install(
 
     if uv and not is_uv_installed():
         error(
-            "UV is not installed but the uv flag was passed in. Please install uv or remove the uv flag."
+            "UV is not installed but the uv flag was passed in. Please install "
+            "uv or remove the uv flag."
         )
 
     if not uv and not is_pip_installed():
         error(
-            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
+            "Pip is not installed. Please install pip or use the uv flag "
+            "(--uv) for package installation."
         )
 
     if not integrations:
         # no integrations specified, use all registered integrations
-        integrations = set(integration_registry.integrations.keys())
+        integration_set = set(integration_registry.integrations.keys())
 
         for i in ignore_integration:
             try:
-                integrations.remove(i)
+                integration_set.remove(i)
             except KeyError:
                 error(
                     f"Integration {i} does not exist. Available integrations: "
                     f"{list(integration_registry.integrations.keys())}"
                 )
+    else:
+        integration_set = set(integrations)
+
     # TODO: remove once python 3.8 is deprecated
-    if sys.version_info.minor == 8 and "tensorflow" in integrations:
+    if sys.version_info.minor == 8 and "tensorflow" in integration_set:
         warning(
             "Python 3.8 with TensorFlow is not fully compatible with "
             "Pydantic 2 requirements. Consider upgrading to a "
@@ -285,9 +291,25 @@ def install(
             "Tensorflow integration."
         )
 
+    if sys.version_info.minor == 12 and "tensorflow" in integration_set:
+        warning(
+            "The TensorFlow integration is not yet compatible with Python "
+            "3.12, thus its installation is skipped. Consider using a "
+            "different version of Python and stay in touch for further updates."
+        )
+        integration_set.remove("tensorflow")
+
+    if sys.version_info.minor == 12 and "deepchecks" in integration_set:
+        warning(
+            "The Deepchecks integration is not yet compatible with Python "
+            "3.12, thus its installation is skipped. Consider using a "
+            "different version of Python and stay in touch for further updates."
+        )
+        integration_set.remove("deepchecks")
+
     requirements = []
     integrations_to_install = []
-    for integration_name in integrations:
+    for integration_name in integration_set:
         try:
             if force or not integration_registry.is_installed(
                 integration_name
@@ -359,7 +381,8 @@ def uninstall(
 
     if not uv and not is_pip_installed():
         error(
-            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
+            "Pip is not installed. Please install pip or use the uv flag "
+            "(--uv) for package installation."
         )
 
     if not integrations:
@@ -441,7 +464,8 @@ def upgrade(
 
     if not uv and not is_pip_installed():
         error(
-            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
+            "Pip is not installed. Please install pip or use the uv flag "
+            "(--uv) for package installation."
         )
 
     if not integrations:
