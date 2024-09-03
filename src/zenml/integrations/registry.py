@@ -50,7 +50,7 @@ class IntegrationRegistry(object):
         Raises:
             IntegrationError: If you try to manually set the integrations property.
         """
-        raise IntegrationError(
+        raise ValueError(
             "Please do not manually change the integrations within the "
             "registry. If you would like to register a new integration "
             "manually, please use "
