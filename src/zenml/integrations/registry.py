@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
