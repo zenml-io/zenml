@@ -16,9 +16,7 @@
 try:
     from zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor import BitbucketWebhookEventSourceFlavor
 
-    __all__ = [
-        "BitbucketWebhookEventSourceFlavor"
-    ]
+    __all__ = ["BitbucketWebhookEventSourceFlavor"]
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
     from zenml.integrations.constants import BITBUCKET

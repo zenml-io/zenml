@@ -20,6 +20,7 @@ try:
     from zenml.integrations.skypilot_lambda.orchestrators.skypilot_lambda_vm_orchestrator import (  # noqa
         SkypilotLambdaOrchestrator,
     )
+
     __all__ = [
         "SkypilotBaseOrchestrator",
         "SkypilotLambdaOrchestrator",

@@ -19,10 +19,10 @@ try:
     )
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
-    from zenml.integrations.constants import BENTOML
+    from zenml.integrations.constants import GREAT_EXPECTATIONS
 
     raise IntegrationError(
-        f"The `{BENTOML}` integration that you are trying to use is not "
-        "properly installed. Please make sure that you have the correct "
-        f"installation with: `zenml integration install {BENTOML}`"
+        f"The `{GREAT_EXPECTATIONS}` integration that you are trying to use is "
+        "not properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GREAT_EXPECTATIONS}`"
     )

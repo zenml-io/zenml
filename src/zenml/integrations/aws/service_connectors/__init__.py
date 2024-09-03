@@ -19,7 +19,6 @@ try:
     )
 
     __all__ = ["AWSServiceConnector"]
-
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
     from zenml.integrations.constants import AWS

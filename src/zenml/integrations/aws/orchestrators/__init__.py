@@ -17,9 +17,7 @@ try:
         SagemakerOrchestrator,
     )
 
-    __all__ = [
-        "SagemakerOrchestrator",
-    ]
+    __all__ = ["SagemakerOrchestrator"]
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
     from zenml.integrations.constants import AWS

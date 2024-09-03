@@ -23,7 +23,7 @@ try:
     )
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
-    from zenml.integrations.constants import GREAT_EXPECTATIONS\
+    from zenml.integrations.constants import GREAT_EXPECTATIONS
 
     raise IntegrationError(
         f"The `{GREAT_EXPECTATIONS}` integration that you are trying to use is "
