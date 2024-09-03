@@ -78,15 +78,17 @@ from zenml.zen_server.routers import (
     webhook_endpoints,
     workspaces_endpoints,
 )
+from zenml.zen_server.secure_headers import (
+    initialize_secure_headers,
+    secure_headers,
+)
 from zenml.zen_server.utils import (
     initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
-    initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
     is_user_request,
-    secure_headers,
     server_config,
     zen_store,
 )
