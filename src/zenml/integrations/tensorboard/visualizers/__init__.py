@@ -21,10 +21,10 @@ try:
     )
 except (ImportError, ModuleNotFoundError) as e:
     from zenml.exceptions import IntegrationError
-    from zenml.integrations.constants import BENTOML
+    from zenml.integrations.constants import TENSORBOARD
 
     raise IntegrationError(
-        f"The `{BENTOML}` integration that you are trying to use is not "
+        f"The `{TENSORBOARD}` integration that you are trying to use is not "
         "properly installed. Please make sure that you have the correct "
-        f"installation with: `zenml integration install {BENTOML}`"
+        f"installation with: `zenml integration install {TENSORBOARD}`"
     )
