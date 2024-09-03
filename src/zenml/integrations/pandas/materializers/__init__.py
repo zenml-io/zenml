@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the Pandas materializer."""
 
-from zenml.integrations.pandas.materializers.pandas_materializer import (  # noqa
-    PandasMaterializer,
-)
+try:
+    from zenml.integrations.pandas.materializers.pandas_materializer import (  # noqa
+        PandasMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import PANDAS
+
+    raise IntegrationError(
+        f"The `{PANDAS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {PANDAS}`"
+    )

@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the Numpy materializer."""
 
-from zenml.integrations.numpy.materializers.numpy_materializer import (  # noqa
-    NumpyMaterializer,
-)
+try:
+    from zenml.integrations.numpy.materializers.numpy_materializer import (  # noqa
+        NumpyMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import NUMPY
+
+    raise IntegrationError(
+        f"The `{NUMPY}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {NUMPY}`"
+    )
