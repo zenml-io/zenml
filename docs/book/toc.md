@@ -24,6 +24,9 @@
 
 ## User Guide
 
+* [🐣 Starter guide 2](user-guide/starter-guide-2/chapter1.md)
+  * [Create an ML pipeline](user-guide/starter-guide-2/chapter1.md)
+  * [Cache previous executions](user-guide/starter-guide-2/introduction.md)
 * [🐣 Starter guide](user-guide/starter-guide/README.md)
   * [Create an ML pipeline](user-guide/starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](user-guide/starter-guide/cache-previous-executions.md)
