@@ -13,18 +13,17 @@
 #  permissions and limitations under the License.
 """Deepchecks integration for ZenML.
 
-The Deepchecks integration provides a way to validate your data in your pipelines.
-It includes a way to detect data anomalies and define checks to ensure quality of
-data.
+The Deepchecks integration provides a way to validate your data in your
+pipelines. It includes a way to detect data anomalies and define checks to
+ensure quality of data.
 
 The integration includes custom materializers to store and visualize Deepchecks
 `SuiteResults`.
 """
 
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.enums import StackComponentType
-from zenml.integrations.constants import DEEPCHECKS
+from zenml.integrations.constants import DEEPCHECKS, PANDAS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -36,20 +35,39 @@ class DeepchecksIntegration(Integration):
 
     NAME = DEEPCHECKS
     REQUIREMENTS = [
-        "deepchecks[vision]==0.8.0",
+        "deepchecks[vision]>=0.18.0",
         "torchvision>=0.14.0",
-        "pandas<2.0.0",
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+        # The deepchecks integrations requires pandas to work.
+        # However, their version 0.18.0 is still not compatible with
+        # pandas>=2.2.0, so we limit the version here.
+        "pandas<2.2.0",
     ]
-    APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas","torchvision","tenacity"]
 
-    @staticmethod
-    def activate() -> None:
+    APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas", "torchvision", "tenacity"]
+
+    @classmethod
+    def activate(cls) -> None:
         """Activate the Deepchecks integration."""
         from zenml.integrations.deepchecks import materializers  # noqa
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

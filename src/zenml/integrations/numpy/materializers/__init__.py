@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,23 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the Numpy materializer."""
 
-import sys
-
-import pytest
-
-from tests.integration.examples.utils import run_example
-
-
-@pytest.mark.skipif(
-    sys.version_info.minor == 12,
-    reason="The deepchecks integrations is not yet supported on 3.12.",
+from zenml.integrations.numpy.materializers.numpy_materializer import (  # noqa
+    NumpyMaterializer,
 )
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Test the deepchecks example."""
-    with run_example(
-        request=request,
-        name="deepchecks",
-        pipelines={"data_validation_pipeline": (1, 6)},
-    ):
-        pass
