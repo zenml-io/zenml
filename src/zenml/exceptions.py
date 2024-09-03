@@ -169,7 +169,7 @@ class MissingStepParameterError(ZenMLBaseException):
         super().__init__(message)
 
 
-class IntegrationError(ZenMLBaseException):
+class IntegrationError(ImportError):
     """Raises exceptions when a requested integration can not be activated."""
 
 
