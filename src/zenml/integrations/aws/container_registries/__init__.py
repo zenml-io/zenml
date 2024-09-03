@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of AWS Container Registry integration."""
 
-from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
-    AWSContainerRegistry,
-)
+try:
+    from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
+        AWSContainerRegistry,
+    )
 
-__all__ = ["AWSContainerRegistry"]
+    __all__ = ["AWSContainerRegistry"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import AWS
+
+    raise IntegrationError(
+        f"The `{AWS}` integration that you are trying to use is not properly "
+        "installed. Please make sure that you have the correct installation"
+        f"with: `zenml integration install {AWS}`"
+    )

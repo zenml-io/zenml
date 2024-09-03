@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Seldon Model Deployer."""
 
-from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (  # noqa
-    SeldonModelDeployer,
-)
+try:
+    from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (  # noqa
+        SeldonModelDeployer,
+    )
 
-__all__ = ["SeldonModelDeployer"]
+    __all__ = ["SeldonModelDeployer"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SELDON
+
+    raise IntegrationError(
+        f"The `{SELDON}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SELDON}`"
+    )

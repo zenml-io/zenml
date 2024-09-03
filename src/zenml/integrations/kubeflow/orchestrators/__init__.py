@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Kubeflow ZenML orchestrator."""
 
-from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (  # noqa
-    KubeflowOrchestrator,
-)
+try:
+    from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (  # noqa
+        KubeflowOrchestrator,
+    )
 
-__all__ = ["KubeflowOrchestrator"]
+    __all__ = ["KubeflowOrchestrator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import KUBEFLOW
+
+    raise IntegrationError(
+        f"The `{KUBEFLOW}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {KUBEFLOW}`"
+    )

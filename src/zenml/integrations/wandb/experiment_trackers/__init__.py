@@ -11,8 +11,18 @@
 #  permissions and limitations under the License.
 """Initialization for the wandb experiment tracker."""
 
-from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (  # noqa
-    WandbExperimentTracker,
-)
+try:
+    from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (  # noqa
+        WandbExperimentTracker,
+    )
 
-__all__ = ["WandbExperimentTracker"]
+    __all__ = ["WandbExperimentTracker"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import WANDB
+
+    raise IntegrationError(
+        f"The `{WANDB}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {WANDB}`"
+    )

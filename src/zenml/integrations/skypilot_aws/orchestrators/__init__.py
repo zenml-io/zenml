@@ -13,13 +13,24 @@
 #  permissions and limitations under the License.
 """Initialization of the Skypilot AWS ZenML orchestrator."""
 
-from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
-    SkypilotBaseOrchestrator,
-)
-from zenml.integrations.skypilot_aws.orchestrators.skypilot_aws_vm_orchestrator import (  # noqa
-    SkypilotAWSOrchestrator,
-)
-__all__ = [
-    "SkypilotBaseOrchestrator",
-    "SkypilotAWSOrchestrator",
-]
+try:
+    from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
+        SkypilotBaseOrchestrator,
+    )
+    from zenml.integrations.skypilot_aws.orchestrators.skypilot_aws_vm_orchestrator import (  # noqa
+        SkypilotAWSOrchestrator,
+    )
+
+    __all__ = [
+        "SkypilotBaseOrchestrator",
+        "SkypilotAWSOrchestrator",
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SKYPILOT_AWS
+
+    raise IntegrationError(
+        f"The `{SKYPILOT_AWS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SKYPILOT_AWS}`"
+    )

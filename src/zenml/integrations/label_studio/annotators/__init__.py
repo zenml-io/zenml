@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Label Studio annotators submodule."""
 
-from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-    LabelStudioAnnotator,
-)
+try:
+    from zenml.integrations.label_studio.annotators.label_studio_annotator import (
+        LabelStudioAnnotator,
+    )
 
-__all__ = ["LabelStudioAnnotator"]
+    __all__ = ["LabelStudioAnnotator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LABEL_STUDIO
+
+    raise IntegrationError(
+        f"The `{LABEL_STUDIO}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LABEL_STUDIO}`"
+    )

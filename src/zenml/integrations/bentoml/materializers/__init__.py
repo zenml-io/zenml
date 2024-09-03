@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the BentoML Bento Materializer."""
 
-from zenml.integrations.bentoml.materializers.bentoml_bento_materializer import (  # noqa
-    BentoMaterializer,
-)
+try:
+    from zenml.integrations.bentoml.materializers.bentoml_bento_materializer import (  # noqa
+        BentoMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import BENTOML
+
+    raise IntegrationError(
+        f"The `{BENTOML}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {BENTOML}`"
+    )

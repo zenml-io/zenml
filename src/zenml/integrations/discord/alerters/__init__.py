@@ -10,8 +10,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Alerter components defined by the Discord integration."""
-from zenml.integrations.discord.alerters.discord_alerter import (  # noqa
-    DiscordAlerter,
-)
 
-__all__ = ["DiscordAlerter"]
+try:
+    from zenml.integrations.discord.alerters.discord_alerter import (  # noqa
+        DiscordAlerter,
+    )
+
+    __all__ = ["DiscordAlerter"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import DISCORD
+
+    raise IntegrationError(
+        f"The `{DISCORD}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {DISCORD}`"
+    )

@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Evidently data validator for ZenML."""
 
-from zenml.integrations.evidently.data_validators.evidently_data_validator import (
-    EvidentlyDataValidator,
-)
+try:
+    from zenml.integrations.evidently.data_validators.evidently_data_validator import (
+        EvidentlyDataValidator,
+    )
 
-__all__ = ["EvidentlyDataValidator"]
+    __all__ = ["EvidentlyDataValidator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import EVIDENTLY
+
+    raise IntegrationError(
+        f"The `{EVIDENTLY}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {EVIDENTLY}`"
+    )

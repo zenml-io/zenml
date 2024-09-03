@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the whylogs materializer."""
 
-from zenml.integrations.whylogs.materializers.whylogs_materializer import (  # noqa
-    WhylogsMaterializer,
-)
+try:
+    from zenml.integrations.whylogs.materializers.whylogs_materializer import (  # noqa
+        WhylogsMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import WHYLOGS
+
+    raise IntegrationError(
+        f"The `{WHYLOGS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {WHYLOGS}`"
+    )

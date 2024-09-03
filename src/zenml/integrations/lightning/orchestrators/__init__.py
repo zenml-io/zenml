@@ -13,11 +13,24 @@
 #  permissions and limitations under the License.
 """Initialization of the Lightning ZenML orchestrator."""
 
-from zenml.integrations.lightning.orchestrators.lightning_orchestrator import (  # noqa
-    LightningOrchestrator,
-)
-from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
-    LightningOrchestratorEntrypointConfiguration,
-)
+try:
+    from zenml.integrations.lightning.orchestrators.lightning_orchestrator import (  # noqa
+        LightningOrchestrator,
+    )
+    from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
+        LightningOrchestratorEntrypointConfiguration,
+    )
 
-__all__ = ["LightningOrchestrator", "LightningOrchestratorEntrypointConfiguration"]
+    __all__ = [
+        "LightningOrchestrator",
+        "LightningOrchestratorEntrypointConfiguration"
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LIGHTNING
+
+    raise IntegrationError(
+        f"The `{LIGHTNING}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LIGHTNING}`"
+    )

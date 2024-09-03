@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the GCP Artifact Store."""
 
-from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (  # noqa
-    GCPArtifactStore,
-)
+try:
+    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (  # noqa
+        GCPArtifactStore,
+    )
 
-__all__ = ["GCPArtifactStore"]
+    __all__ = ["GCPArtifactStore"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GCP
+
+    raise IntegrationError(
+        f"The `{GCP}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GCP}`"
+    )

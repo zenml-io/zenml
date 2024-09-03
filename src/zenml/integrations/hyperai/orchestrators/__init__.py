@@ -12,10 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """HyperAI orchestrator."""
-from zenml.integrations.hyperai.orchestrators.hyperai_orchestrator import (
-    HyperAIOrchestrator
-)
 
-__all__ = [
-    "HyperAIOrchestrator"
-]
+try:
+    from zenml.integrations.hyperai.orchestrators.hyperai_orchestrator import (
+        HyperAIOrchestrator
+    )
+
+    __all__ = ["HyperAIOrchestrator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import HYPERAI
+
+    raise IntegrationError(
+        f"The `{HYPERAI}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {HYPERAI}`"
+    )

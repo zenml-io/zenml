@@ -12,9 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the BentoML Model Deployer."""
+try:
+    from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (  # noqa
+        BentoMLModelDeployer,
+    )
 
-from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (  # noqa
-    BentoMLModelDeployer,
-)
+    __all__ = ["BentoMLModelDeployer"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import BENTOML
 
-__all__ = ["BentoMLModelDeployer"]
+    raise IntegrationError(
+        f"The `{BENTOML}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {BENTOML}`"
+    )

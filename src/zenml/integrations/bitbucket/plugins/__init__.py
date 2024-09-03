@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Bitbucket event flavors."""
 
-from zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor import BitbucketWebhookEventSourceFlavor
+try:
+    from zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor import BitbucketWebhookEventSourceFlavor
 
-__all__ = [
-    "BitbucketWebhookEventSourceFlavor"
-]
+    __all__ = [
+        "BitbucketWebhookEventSourceFlavor"
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import BITBUCKET
+
+    raise IntegrationError(
+        f"The `{BITBUCKET}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {BITBUCKET}`"
+    )

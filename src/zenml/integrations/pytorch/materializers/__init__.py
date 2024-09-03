@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Initialization of the PyTorch Materializer."""
 
-from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa
-    PyTorchDataLoaderMaterializer,
-)
-from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa
-    PyTorchModuleMaterializer,
-)
+try:
+    from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa
+        PyTorchDataLoaderMaterializer,
+    )
+    from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa
+        PyTorchModuleMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import PYTORCH
+
+    raise IntegrationError(
+        f"The `{PYTORCH}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {PYTORCH}`"
+    )

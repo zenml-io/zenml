@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Initialization of the OpenAI hooks module."""
 
-from zenml.integrations.openai.hooks.open_ai_failure_hook import (
-    openai_chatgpt_alerter_failure_hook,
-    openai_gpt4_alerter_failure_hook,
-)
+try:
+    from zenml.integrations.openai.hooks.open_ai_failure_hook import (
+        openai_chatgpt_alerter_failure_hook,
+        openai_gpt4_alerter_failure_hook,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import OPEN_AI
+
+    raise IntegrationError(
+        f"The `{OPEN_AI}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {OPEN_AI}`"
+    )

@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Standard steps to be used with the Label Studio annotator integration."""
 
-from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetSyncParameters,
-    get_labeled_data,
-    get_or_create_dataset,
-    sync_new_data_to_label_studio,
-)
+try:
+    from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
+        LabelStudioDatasetSyncParameters,
+        get_labeled_data,
+        get_or_create_dataset,
+        sync_new_data_to_label_studio,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LABEL_STUDIO
+
+    raise IntegrationError(
+        f"The `{LABEL_STUDIO}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LABEL_STUDIO}`"
+    )

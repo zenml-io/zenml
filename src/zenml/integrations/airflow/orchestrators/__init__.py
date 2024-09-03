@@ -11,10 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The Airflow integration enables the use of Airflow as a pipeline orchestrator."""
+"""The Airflow integration enables the use of Airflow as an orchestrator."""
 
-from zenml.integrations.airflow.orchestrators.airflow_orchestrator import (  # noqa
-    AirflowOrchestrator,
-)
+try:
+    from zenml.integrations.airflow.orchestrators.airflow_orchestrator import (  # noqa
+        AirflowOrchestrator,
+    )
 
-__all__ = ["AirflowOrchestrator"]
+    __all__ = ["AirflowOrchestrator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import AIRFLOW
+
+    raise IntegrationError(
+        f"The `{AIRFLOW}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {AIRFLOW}`"
+    )

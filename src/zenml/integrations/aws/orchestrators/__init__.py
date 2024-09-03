@@ -12,10 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """AWS Sagemaker orchestrator."""
-from zenml.integrations.aws.orchestrators.sagemaker_orchestrator import (
-    SagemakerOrchestrator,
-)
+try:
+    from zenml.integrations.aws.orchestrators.sagemaker_orchestrator import (
+        SagemakerOrchestrator,
+    )
 
-__all__ = [
-    "SagemakerOrchestrator",
-]
+    __all__ = [
+        "SagemakerOrchestrator",
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import AWS
+
+    raise IntegrationError(
+        f"The `{AWS}` integration that you are trying to use is not properly "
+        "installed. Please make sure that you have the correct installation"
+        f"with: `zenml integration install {AWS}`"
+    )

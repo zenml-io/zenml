@@ -14,9 +14,19 @@
 
 """Great Expectations data profiling and validation standard steps."""
 
-from zenml.integrations.great_expectations.steps.ge_profiler import (
-    great_expectations_profiler_step,
-)
-from zenml.integrations.great_expectations.steps.ge_validator import (
-    great_expectations_validator_step,
-)
+try:
+    from zenml.integrations.great_expectations.steps.ge_profiler import (
+        great_expectations_profiler_step,
+    )
+    from zenml.integrations.great_expectations.steps.ge_validator import (
+        great_expectations_validator_step,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GREAT_EXPECTATIONS\
+
+    raise IntegrationError(
+        f"The `{GREAT_EXPECTATIONS}` integration that you are trying to use is "
+        "not properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GREAT_EXPECTATIONS}`"
+    )

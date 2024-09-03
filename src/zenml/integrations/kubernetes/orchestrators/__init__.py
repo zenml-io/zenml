@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Kubernetes-native orchestration."""
 
-from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (  # noqa
-    KubernetesOrchestrator,
-)
+try:
+    from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (  # noqa
+        KubernetesOrchestrator,
+    )
 
-__all__ = ["KubernetesOrchestrator"]
+    __all__ = ["KubernetesOrchestrator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import KUBERNETES
+
+    raise IntegrationError(
+        f"The `{KUBERNETES}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {KUBERNETES}`"
+    )

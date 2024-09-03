@@ -21,8 +21,19 @@ addition to commonly-used machine learning stacks. Feast is a leading
 open-source feature store, first developed by Gojek in collaboration with
 Google.
 """
-from zenml.integrations.feast.feature_stores.feast_feature_store import (  # noqa
-    FeastFeatureStore,
-)
 
-__all__ = ["FeastFeatureStore"]
+try:
+    from zenml.integrations.feast.feature_stores.feast_feature_store import (  # noqa
+        FeastFeatureStore,
+    )
+
+    __all__ = ["FeastFeatureStore"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import FEAST
+
+    raise IntegrationError(
+        f"The `{FEAST}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {FEAST}`"
+    )

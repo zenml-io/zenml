@@ -13,10 +13,22 @@
 #  permissions and limitations under the License.
 """Initialization of the Evidently Standard Steps."""
 
-from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
-from zenml.integrations.evidently.steps.evidently_report import (
-    evidently_report_step,
-)
-from zenml.integrations.evidently.steps.evidently_test import (
-    evidently_test_step,
-)
+try:
+    from zenml.integrations.evidently.column_mapping import (
+        EvidentlyColumnMapping,
+    )
+    from zenml.integrations.evidently.steps.evidently_report import (
+        evidently_report_step,
+    )
+    from zenml.integrations.evidently.steps.evidently_test import (
+        evidently_test_step,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import EVIDENTLY
+
+    raise IntegrationError(
+        f"The `{EVIDENTLY}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {EVIDENTLY}`"
+    )

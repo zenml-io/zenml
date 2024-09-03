@@ -12,14 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the langchain materializer."""
-from zenml.integrations.langchain.materializers.vector_store_materializer import (
-    LangchainVectorStoreMaterializer,
-)
 
-from zenml.integrations.langchain.materializers.document_materializer import (
-    LangchainDocumentMaterializer,
-)
+try:
+    from zenml.integrations.langchain.materializers.vector_store_materializer import (
+        LangchainVectorStoreMaterializer,
+    )
+    from zenml.integrations.langchain.materializers.document_materializer import (
+        LangchainDocumentMaterializer,
+    )
+    from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
+        LangchainOpenaiEmbeddingMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LANGCHAIN
 
-from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
-    LangchainOpenaiEmbeddingMaterializer,
-)
+    raise IntegrationError(
+        f"The `{LANGCHAIN}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LANGCHAIN}`"
+    )

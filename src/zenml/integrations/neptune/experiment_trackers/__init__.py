@@ -13,10 +13,20 @@
 #  permissions and limitations under the License.
 """Initialization of Neptune experiment tracker."""
 
-from zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker import (
-    NeptuneExperimentTracker,
-)
+try:
+    from zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker import (
+        NeptuneExperimentTracker,
+    )
 
-__all__ = [
-    "NeptuneExperimentTracker",
-]
+    __all__ = [
+        "NeptuneExperimentTracker",
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import NEPTUNE
+
+    raise IntegrationError(
+        f"The `{NEPTUNE}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {NEPTUNE}`"
+    )

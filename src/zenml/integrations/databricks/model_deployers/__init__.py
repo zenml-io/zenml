@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Databricks model deployers."""
 
-from zenml.integrations.databricks.model_deployers.databricks_model_deployer import (  # noqa
-    DatabricksModelDeployer,
-)
+try:
+    from zenml.integrations.databricks.model_deployers.databricks_model_deployer import (  # noqa
+        DatabricksModelDeployer,
+    )
 
-__all__ = ["DatabricksModelDeployer"]
+    __all__ = ["DatabricksModelDeployer"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import DATABRICKS
+
+    raise IntegrationError(
+        f"The `{DATABRICKS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {DATABRICKS}`"
+    )

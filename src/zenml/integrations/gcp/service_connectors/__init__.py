@@ -12,8 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML GCP Service Connector."""
-from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
-    GCPServiceConnector,
-)
 
-__all__ = ["GCPServiceConnector"]
+try:
+    from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
+        GCPServiceConnector,
+    )
+
+    __all__ = ["GCPServiceConnector"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GCP
+
+    raise IntegrationError(
+        f"The `{GCP}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GCP}`"
+    )

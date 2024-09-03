@@ -13,18 +13,28 @@
 #  permissions and limitations under the License.
 """Initialization of Huggingface materializers."""
 
-from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
-    HFDatasetMaterializer,
-)
-from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
-    HFPTModelMaterializer,
-)
-from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
-    HFTFModelMaterializer,
-)
-from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
-    HFTokenizerMaterializer,
-)
-from zenml.integrations.huggingface.materializers.huggingface_t5_materializer import (
-    HFT5Materializer,
-)
+try:
+    from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
+        HFDatasetMaterializer,
+    )
+    from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
+        HFPTModelMaterializer,
+    )
+    from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
+        HFTFModelMaterializer,
+    )
+    from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
+        HFTokenizerMaterializer,
+    )
+    from zenml.integrations.huggingface.materializers.huggingface_t5_materializer import (
+        HFT5Materializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import HUGGINGFACE
+
+    raise IntegrationError(
+        f"The `{HUGGINGFACE}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {HUGGINGFACE}`"
+    )

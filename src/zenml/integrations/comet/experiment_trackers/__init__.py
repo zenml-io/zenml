@@ -11,8 +11,18 @@
 #  permissions and limitations under the License.
 """Initialization for the comet experiment tracker."""
 
-from zenml.integrations.comet.experiment_trackers.comet_experiment_tracker import (  # noqa
-    CometExperimentTracker,
-)
+try:
+    from zenml.integrations.comet.experiment_trackers.comet_experiment_tracker import (  # noqa
+        CometExperimentTracker,
+    )
 
-__all__ = ["CometExperimentTracker"]
+    __all__ = ["CometExperimentTracker"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import COMET
+
+    raise IntegrationError(
+        f"The `{COMET}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {COMET}`"
+    )

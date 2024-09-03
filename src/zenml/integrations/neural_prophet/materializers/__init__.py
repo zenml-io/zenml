@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the Neural Prophet materializer."""
 
-from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (  # noqa
-    NeuralProphetMaterializer,
-)
+try:
+    from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (  # noqa
+        NeuralProphetMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import NEURAL_PROPHET
+
+    raise IntegrationError(
+        f"The `{NEURAL_PROPHET}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {NEURAL_PROPHET}`"
+    )

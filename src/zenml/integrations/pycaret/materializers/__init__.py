@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization for the PyCaret materializers."""
 
-from zenml.integrations.pycaret.materializers.model_materializer import (  # noqa
-    PyCaretMaterializer,
-)
+try:
+    from zenml.integrations.pycaret.materializers.model_materializer import (  # noqa
+        PyCaretMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import PYCARET
+
+    raise IntegrationError(
+        f"The `{PYCARET}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {PYCARET}`"
+    )

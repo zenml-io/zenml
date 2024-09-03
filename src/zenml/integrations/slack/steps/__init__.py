@@ -12,3 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Built-in steps for the Slack integration."""
+try:
+    from zenml.integrations.slack.steps.slack_alerter_ask_step import (
+        slack_alerter_ask_step,
+    )
+    from zenml.integrations.slack.steps.slack_alerter_post_step import (
+        slack_alerter_post_step,
+    )
+
+    __all__ = ["slack_alerter_ask_step", "slack_alerter_post_step"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SLACK
+
+    raise IntegrationError(
+        f"The `{SLACK}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SLACK}`"
+    )

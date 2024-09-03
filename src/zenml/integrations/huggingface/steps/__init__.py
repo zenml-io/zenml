@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Initialization for Hugging Face model deployer step."""
 
-from zenml.integrations.huggingface.steps.huggingface_deployer import (
-    huggingface_model_deployer_step,
-)
-from zenml.integrations.huggingface.steps.accelerate_runner import (
-    run_with_accelerate,
-)
+try:
+    from zenml.integrations.huggingface.steps.huggingface_deployer import (
+        huggingface_model_deployer_step,
+    )
+    from zenml.integrations.huggingface.steps.accelerate_runner import (
+        run_with_accelerate,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import HUGGINGFACE
+
+    raise IntegrationError(
+        f"The `{HUGGINGFACE}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {HUGGINGFACE}`"
+    )

@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Facets Materializers."""
 
-from zenml.integrations.facets.materializers.facets_materializer import (
-    FacetsMaterializer,
-)
+try:
+    from zenml.integrations.facets.materializers.facets_materializer import (
+        FacetsMaterializer,
+    )
 
-__all__ = ["FacetsMaterializer"]
+    __all__ = ["FacetsMaterializer"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import FACETS
+
+    raise IntegrationError(
+        f"The `{FACETS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {FACETS}`"
+    )

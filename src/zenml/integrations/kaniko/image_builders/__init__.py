@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Kaniko image building."""
 
-from zenml.integrations.kaniko.image_builders.kaniko_image_builder import (  # noqa
-    KanikoImageBuilder,
-)
+try:
+    from zenml.integrations.kaniko.image_builders.kaniko_image_builder import (  # noqa
+        KanikoImageBuilder,
+    )
 
-__all__ = ["KanikoImageBuilder"]
+    __all__ = ["KanikoImageBuilder"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import KANIKO
+
+    raise IntegrationError(
+        f"The `{KANIKO}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {KANIKO}`"
+    )

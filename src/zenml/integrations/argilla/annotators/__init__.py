@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Argilla annotators submodule."""
 
-from zenml.integrations.argilla.annotators.argilla_annotator import (
-    ArgillaAnnotator,
-)
+try:
+    from zenml.integrations.argilla.annotators.argilla_annotator import (
+        ArgillaAnnotator,
+    )
 
-__all__ = ["ArgillaAnnotator"]
+    __all__ = ["ArgillaAnnotator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import ARGILLA
+
+    raise IntegrationError(
+        f"The `{ARGILLA}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {ARGILLA}`"
+    )

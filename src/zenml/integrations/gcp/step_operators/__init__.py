@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization for the VertexAI Step Operator."""
 
-from zenml.integrations.gcp.step_operators.vertex_step_operator import (  # noqa
-    VertexStepOperator,
-)
+try:
+    from zenml.integrations.gcp.step_operators.vertex_step_operator import (  # noqa
+        VertexStepOperator,
+    )
 
-__all__ = ["VertexStepOperator"]
+    __all__ = ["VertexStepOperator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GCP
+
+    raise IntegrationError(
+        f"The `{GCP}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GCP}`"
+    )

@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Initialization of the Neural Prophet materializer."""
 
-from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (  # noqa
-    LightGBMBoosterMaterializer,
-)
-from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (  # noqa
-    LightGBMDatasetMaterializer,
-)
+try:
+    from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (  # noqa
+        LightGBMBoosterMaterializer,
+    )
+    from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (  # noqa
+        LightGBMDatasetMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LIGHTGBM
+
+    raise IntegrationError(
+        f"The `{LIGHTGBM}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LIGHTGBM}`"
+    )

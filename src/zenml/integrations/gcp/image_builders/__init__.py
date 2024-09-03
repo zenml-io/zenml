@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization for the GCP image builder."""
 
-from zenml.integrations.gcp.image_builders.gcp_image_builder import (
-    GCPImageBuilder,
-)
+try:
+    from zenml.integrations.gcp.image_builders.gcp_image_builder import (
+        GCPImageBuilder,
+    )
 
-__all__ = ["GCPImageBuilder"]
+    __all__ = ["GCPImageBuilder"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GCP
+
+    raise IntegrationError(
+        f"The `{GCP}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GCP}`"
+    )

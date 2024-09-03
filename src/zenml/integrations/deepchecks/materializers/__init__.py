@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Deepchecks materializers."""
 
-from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer import (  # noqa
-    DeepchecksDatasetMaterializer,
-)
-from zenml.integrations.deepchecks.materializers.deepchecks_results_materializer import (  # noqa
-    DeepchecksResultMaterializer,
-)
+try:
+    from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer import (  # noqa
+        DeepchecksDatasetMaterializer,
+    )
+    from zenml.integrations.deepchecks.materializers.deepchecks_results_materializer import (  # noqa
+        DeepchecksResultMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import DEEPCHECKS
+
+    raise IntegrationError(
+        f"The `{DEEPCHECKS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {DEEPCHECKS}`"
+    )

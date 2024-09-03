@@ -13,18 +13,28 @@
 #  permissions and limitations under the License.
 """Initialization of the Label Studio config generators submodule."""
 
-from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
-    generate_basic_ocr_label_config,
-    generate_basic_object_detection_bounding_boxes_label_config,
-    generate_image_classification_label_config,
-    generate_text_classification_label_config,
-    TASK_TO_FILENAME_REFERENCE_MAPPING,
-)
+try:
+    from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
+        generate_basic_ocr_label_config,
+        generate_basic_object_detection_bounding_boxes_label_config,
+        generate_image_classification_label_config,
+        generate_text_classification_label_config,
+        TASK_TO_FILENAME_REFERENCE_MAPPING,
+    )
 
-__all__ = [
-    "generate_basic_ocr_label_config"
-    "generate_basic_object_detection_bounding_boxes_label_config",
-    "generate_image_classification_label_config",
-    "generate_text_classification_label_config",
-    "TASK_TO_FILENAME_REFERENCE_MAPPING",
-]
+    __all__ = [
+        "generate_basic_ocr_label_config",
+        "generate_basic_object_detection_bounding_boxes_label_config",
+        "generate_image_classification_label_config",
+        "generate_text_classification_label_config",
+        "TASK_TO_FILENAME_REFERENCE_MAPPING",
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import LABEL_STUDIO
+
+    raise IntegrationError(
+        f"The `{LABEL_STUDIO}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {LABEL_STUDIO}`"
+    )

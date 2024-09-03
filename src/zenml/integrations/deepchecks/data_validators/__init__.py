@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Deepchecks data validator for ZenML."""
 
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
-)
+try:
+    from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
+        DeepchecksDataValidator,
+    )
 
-__all__ = ["DeepchecksDataValidator"]
+    __all__ = ["DeepchecksDataValidator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import DEEPCHECKS
+
+    raise IntegrationError(
+        f"The `{DEEPCHECKS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {DEEPCHECKS}`"
+    )

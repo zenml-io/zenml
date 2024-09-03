@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the sklearn materializer."""
 
-from zenml.integrations.sklearn.materializers.sklearn_materializer import (  # noqa
-    SklearnMaterializer,
-)
+try:
+    from zenml.integrations.sklearn.materializers.sklearn_materializer import (  # noqa
+        SklearnMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SKLEARN
+
+    raise IntegrationError(
+        f"The `{SKLEARN}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SKLEARN}`"
+    )

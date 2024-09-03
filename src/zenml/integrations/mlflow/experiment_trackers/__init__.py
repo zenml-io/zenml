@@ -11,8 +11,18 @@
 #  permissions and limitations under the License.
 """Initialization of the MLflow experiment tracker."""
 
-from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (  # noqa
-    MLFlowExperimentTracker,
-)
+try:
+    from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (  # noqa
+        MLFlowExperimentTracker,
+    )
 
-__all__ = ["MLFlowExperimentTracker"]
+    __all__ = ["MLFlowExperimentTracker"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import MLFLOW
+
+    raise IntegrationError(
+        f"The `{MLFLOW}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {MLFLOW}`"
+    )

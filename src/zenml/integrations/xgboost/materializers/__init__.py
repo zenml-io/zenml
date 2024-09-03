@@ -13,9 +13,19 @@
 #  permissions and limitations under the License.
 """Initialization of the XGBoost materializers."""
 
-from zenml.integrations.xgboost.materializers.xgboost_booster_materializer import (  # noqa
-    XgboostBoosterMaterializer,
-)
-from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (  # noqa
-    XgboostDMatrixMaterializer,
-)
+try:
+    from zenml.integrations.xgboost.materializers.xgboost_booster_materializer import (  # noqa
+        XgboostBoosterMaterializer,
+    )
+    from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (  # noqa
+        XgboostDMatrixMaterializer,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import XGBOOST
+
+    raise IntegrationError(
+        f"The `{XGBOOST}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {XGBOOST}`"
+    )

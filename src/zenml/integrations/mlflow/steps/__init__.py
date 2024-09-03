@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization of the MLflow standard interface steps."""
 
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_deployer_step,
-)
+try:
+    from zenml.integrations.mlflow.steps.mlflow_deployer import (
+        mlflow_model_deployer_step,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import MLFLOW
+
+    raise IntegrationError(
+        f"The `{MLFLOW}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {MLFLOW}`"
+    )

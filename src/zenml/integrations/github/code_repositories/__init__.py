@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the ZenML GitHub code repository."""
 
-from zenml.integrations.github.code_repositories.github_code_repository import (
-    GitHubCodeRepository,
-)
+try:
+    from zenml.integrations.github.code_repositories.github_code_repository import (
+        GitHubCodeRepository,
+    )
 
-__all__ = ["GitHubCodeRepository"]
+    __all__ = ["GitHubCodeRepository"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GITHUB
+
+    raise IntegrationError(
+        f"The `{GITHUB}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GITHUB}`"
+    )

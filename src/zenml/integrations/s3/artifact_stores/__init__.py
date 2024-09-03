@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the S3 Artifact Store."""
 
-from zenml.integrations.s3.artifact_stores.s3_artifact_store import (  # noqa
-    S3ArtifactStore,
-)
+try:
+    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (  # noqa
+        S3ArtifactStore,
+    )
 
-__all__ = ["S3ArtifactStore"]
+    __all__ = ["S3ArtifactStore"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import S3
+
+    raise IntegrationError(
+        f"The `{S3}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {S3}`"
+    )

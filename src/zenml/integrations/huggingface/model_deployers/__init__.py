@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Hugging Face model deployers."""
 
-from zenml.integrations.huggingface.model_deployers.huggingface_model_deployer import (  # noqa
-    HuggingFaceModelDeployer,
-)
+try:
+    from zenml.integrations.huggingface.model_deployers.huggingface_model_deployer import (  # noqa
+        HuggingFaceModelDeployer,
+    )
 
-__all__ = ["HuggingFaceModelDeployer"]
+    __all__ = ["HuggingFaceModelDeployer"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import HUGGINGFACE
+
+    raise IntegrationError(
+        f"The `{HUGGINGFACE}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {HUGGINGFACE}`"
+    )

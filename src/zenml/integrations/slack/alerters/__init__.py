@@ -11,8 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.slack.alerters.slack_alerter import (  # noqa
-    SlackAlerter,
-)
+try:
+    from zenml.integrations.slack.alerters.slack_alerter import (  # noqa
+        SlackAlerter,
+    )
 
-__all__ = ["SlackAlerter"]
+    __all__ = ["SlackAlerter"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SLACK
+
+    raise IntegrationError(
+        f"The `{SLACK}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SLACK}`"
+    )

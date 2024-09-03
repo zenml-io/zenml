@@ -17,10 +17,19 @@ This schema can be used to configure a ZenML secret to authenticate ZenML to
 use the Whylabs platform to automatically log all whylogs data profiles
 generated and by pipeline steps.
 """
-from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
-    WhylabsSecretSchema,
-)
 
-__all__ = [
-    "WhylabsSecretSchema",
-]
+try:
+    from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
+        WhylabsSecretSchema,
+    )
+
+    __all__ = ["WhylabsSecretSchema"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import WHYLOGS
+
+    raise IntegrationError(
+        f"The `{WHYLOGS}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {WHYLOGS}`"
+    )

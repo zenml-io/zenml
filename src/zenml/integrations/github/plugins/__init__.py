@@ -13,7 +13,18 @@
 #  permissions and limitations under the License.
 """Github event flavors."""
 
-from zenml.integrations.github.plugins.github_webhook_event_source_flavor import GithubWebhookEventSourceFlavor
-__all__ = [
-    "GithubWebhookEventSourceFlavor"
-]
+try:
+    from zenml.integrations.github.plugins.github_webhook_event_source_flavor import (
+        GithubWebhookEventSourceFlavor,
+    )
+
+    __all__ = ["GithubWebhookEventSourceFlavor"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GITHUB
+
+    raise IntegrationError(
+        f"The `{GITHUB}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GITHUB}`"
+    )

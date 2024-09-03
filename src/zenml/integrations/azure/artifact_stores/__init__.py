@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Azure Artifact Store integration."""
 
-from zenml.integrations.azure.artifact_stores.azure_artifact_store import (  # noqa
-    AzureArtifactStore,
-)
+try:
+    from zenml.integrations.azure.artifact_stores.azure_artifact_store import (  # noqa
+        AzureArtifactStore,
+    )
 
-__all__ = ["AzureArtifactStore"]
+    __all__ = ["AzureArtifactStore"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import AZURE
+
+    raise IntegrationError(
+        f"The `{AZURE}` integration that you are trying to use is not properly "
+        "installed. Please make sure that you have the correct installation"
+        f"with: `zenml integration install {AZURE}`"
+    )

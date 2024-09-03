@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Kubernetes Service Connector."""
 
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesServiceConnector,
-)
+try:
+    from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+        KubernetesServiceConnector,
+    )
 
-__all__ = ["KubernetesServiceConnector"]
+    __all__ = ["KubernetesServiceConnector"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import KUBERNETES
+
+    raise IntegrationError(
+        f"The `{KUBERNETES}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {KUBERNETES}`"
+    )

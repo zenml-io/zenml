@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Great Expectations data validator for ZenML."""
 
-from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
-    GreatExpectationsDataValidator,
-)
+try:
+    from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+        GreatExpectationsDataValidator,
+    )
 
-__all__ = ["GreatExpectationsDataValidator"]
+    __all__ = ["GreatExpectationsDataValidator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import GREAT_EXPECTATIONS
+
+    raise IntegrationError(
+        f"The `{GREAT_EXPECTATIONS}` integration that you are trying to use is "
+        "not properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {GREAT_EXPECTATIONS}`"
+    )

@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Azure Service Connector."""
 
-from zenml.integrations.azure.service_connectors.azure_service_connector import (
-    AzureServiceConnector,
-)
+try:
+    from zenml.integrations.azure.service_connectors.azure_service_connector import (
+        AzureServiceConnector,
+    )
 
-__all__ = ["AzureServiceConnector"]
+    __all__ = ["AzureServiceConnector"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import AZURE
+
+    raise IntegrationError(
+        f"The `{AZURE}` integration that you are trying to use is not properly "
+        "installed. Please make sure that you have the correct installation"
+        f"with: `zenml integration install {AZURE}`"
+    )

@@ -16,14 +16,25 @@
 These are secret schemas that can be used to authenticate Seldon to the
 Artifact Store used to store served ML models.
 """
-from zenml.integrations.seldon.secret_schemas.secret_schemas import (
-    SeldonAzureSecretSchema,
-    SeldonGSSecretSchema,
-    SeldonS3SecretSchema,
-)
 
-__all__ = [
-    "SeldonAzureSecretSchema",
-    "SeldonGSSecretSchema",
-    "SeldonS3SecretSchema",
-]
+try:
+    from zenml.integrations.seldon.secret_schemas.secret_schemas import (
+        SeldonAzureSecretSchema,
+        SeldonGSSecretSchema,
+        SeldonS3SecretSchema,
+    )
+
+    __all__ = [
+        "SeldonAzureSecretSchema",
+        "SeldonGSSecretSchema",
+        "SeldonS3SecretSchema",
+    ]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import SELDON
+
+    raise IntegrationError(
+        f"The `{SELDON}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {SELDON}`"
+    )

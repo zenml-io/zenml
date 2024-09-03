@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard services."""
 
-from zenml.integrations.tensorboard.services.tensorboard_service import (  # noqa
-    TensorboardService,
-    TensorboardServiceConfig,
-)
+try:
+    from zenml.integrations.tensorboard.services.tensorboard_service import (  # noqa
+        TensorboardService,
+        TensorboardServiceConfig,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import TENSORBOARD
+
+    raise IntegrationError(
+        f"The `{TENSORBOARD}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {TENSORBOARD}`"
+    )

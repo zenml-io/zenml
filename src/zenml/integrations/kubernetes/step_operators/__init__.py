@@ -13,10 +13,18 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator."""
 
-from zenml.integrations.kubernetes.step_operators.kubernetes_step_operator  import (
-    KubernetesStepOperator,
-)
+try:
+    from zenml.integrations.kubernetes.step_operators.kubernetes_step_operator import (
+        KubernetesStepOperator,
+    )
 
-__all__ = [
-    "KubernetesStepOperator",
-]
+    __all__ = ["KubernetesStepOperator"]
+except (ImportError, ModuleNotFoundError) as e:
+    from zenml.exceptions import IntegrationError
+    from zenml.integrations.constants import KUBERNETES
+
+    raise IntegrationError(
+        f"The `{KUBERNETES}` integration that you are trying to use is not "
+        "properly installed. Please make sure that you have the correct "
+        f"installation with: `zenml integration install {KUBERNETES}`"
+    )
