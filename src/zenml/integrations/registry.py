@@ -47,7 +47,7 @@ class IntegrationRegistry(object):
             i: Value to set the integrations property to.
 
         Raises:
-            IntegrationError: If you try to manually set the integrations property.
+            ValueError: If you try to manually set the integrations property.
         """
         raise ValueError(
             "Please do not manually change the integrations within the "
