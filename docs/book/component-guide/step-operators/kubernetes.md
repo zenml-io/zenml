@@ -214,7 +214,7 @@ kubernetes_settings = KubernetesStepOperatorSettings(
 
 @step(
     settings={
-        "step_operator.kubernetes": kubernetes_settings
+        "step_operator": kubernetes_settings
     }
 )
 def my_kubernetes_step():

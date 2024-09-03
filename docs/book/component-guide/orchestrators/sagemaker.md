@@ -196,7 +196,7 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 They can then be applied to a step as follows:
 
 ```python
-@step(settings={"orchestrator.sagemaker": sagemaker_orchestrator_settings})
+@step(settings={"orchestrator": sagemaker_orchestrator_settings})
 ```
 
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
