@@ -29,7 +29,7 @@ class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
 
     NAME = DATABRICKS
-    REQUIREMENTS = ["databricks-sdk==0.28.0"]
+    REQUIREMENTS = ["databricks-sdk==0.31.1"]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["numpy", "pandas"]
 

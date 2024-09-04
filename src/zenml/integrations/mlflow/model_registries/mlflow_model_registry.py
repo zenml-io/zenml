@@ -30,8 +30,8 @@ from zenml.enums import StackComponentType
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
-from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
-    MLFlowModelRegistryConfig,
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
+    MLFlowExperimentTrackerConfig,
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -53,13 +53,15 @@ class MLFlowModelRegistry(BaseModelRegistry):
     _client: Optional[MlflowClient] = None
 
     @property
-    def config(self) -> MLFlowModelRegistryConfig:
-        """Returns the `MLFlowModelRegistryConfig` config.
+    def config(self) -> MLFlowExperimentTrackerConfig:
+        """Returns the `MLFlowExperimentTrackerConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(MLFlowModelRegistryConfig, self._config)
+        experiment_tracker = Client().active_stack.experiment_tracker
+        assert isinstance(experiment_tracker, MLFlowExperimentTracker)
+        return cast(MLFlowExperimentTrackerConfig, experiment_tracker.config)
 
     def configure_mlflow(self) -> None:
         """Configures the MLflow Client with the experiment tracker config."""
@@ -606,10 +608,16 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     order_by = ["creation_timestamp ASC"]
                 else:
                     order_by = ["creation_timestamp DESC"]
-        mlflow_model_versions = self.mlflow_client.search_model_versions(
-            filter_string=filter_string,
-            order_by=order_by,
-        )
+
+        if self.config.enable_unity_catalog:
+            mlflow_model_versions = self.mlflow_client.search_model_versions(
+                filter_string=filter_string,
+            )
+        else:
+            mlflow_model_versions = self.mlflow_client.search_model_versions(
+                filter_string=filter_string,
+                order_by=order_by,
+            )
         # Cast the MLflow model versions to the ZenML model version class.
         model_versions = []
         for mlflow_model_version in mlflow_model_versions:
