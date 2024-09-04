@@ -153,8 +153,8 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
 
     This list reflects the set of data integrity checks provided by Deepchecks:
 
-      * [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#data-integrity)
-      * [for computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#data-integrity)
+      * [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/data_integrity/index.html)
+      * [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/data_integrity/index.html)
 
     All these checks inherit from `deepchecks.tabular.SingleDatasetCheck` or
     `deepchecks.vision.SingleDatasetCheck` and require a single dataset as input.
@@ -175,6 +175,9 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     ).import_path
     TABULAR_FEATURE_LABEL_CORRELATION = source_utils.resolve(
         tabular_checks.FeatureLabelCorrelation
+    ).import_path
+    TABULAR_IDENTIFIER_LABEL_CORRELATION = source_utils.resolve(
+        tabular_checks.IdentifierLabelCorrelation
     ).import_path
     TABULAR_IS_SINGLE_VALUE = source_utils.resolve(
         tabular_checks.IsSingleValue
@@ -197,12 +200,21 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     TABULAR_STRING_MISMATCH = source_utils.resolve(
         tabular_checks.StringMismatch
     ).import_path
+    TABULAR_CLASS_IMBALANCE = source_utils.resolve(
+        tabular_checks.ClassImbalance
+    ).import_path
+    TABULAR_PERCENT_OF_NULLS = source_utils.resolve(
+        tabular_checks.PercentOfNulls
+    ).import_path
 
     VISION_IMAGE_PROPERTY_OUTLIERS = source_utils.resolve(
         vision_checks.ImagePropertyOutliers
     ).import_path
     VISION_LABEL_PROPERTY_OUTLIERS = source_utils.resolve(
         vision_checks.LabelPropertyOutliers
+    ).import_path
+    VISION_PROPERTY_LABEL_CORRELATION = source_utils.resolve(
+        vision_checks.PropertyLabelCorrelation
     ).import_path
 
 
@@ -255,9 +267,21 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     TABULAR_WHOLE_DATASET_DRIFT = source_utils.resolve(
         tabular_checks.WholeDatasetDrift
     ).import_path
+    TABULAR_NEW_CATEGORY_TRAIN_TEST = source_utils.resolve(
+        tabular_checks.NewCategoryTrainTest
+    ).import_path
+    TABULAR_MULTIVARIATE_DRIFT = source_utils.resolve(
+        tabular_checks.MultivariateDrift
+    ).import_path
 
+    VISION_PROPERTY_LABEL_CORRELATION_CHANGE = source_utils.resolve(
+        vision_checks.PropertyLabelCorrelationChange
+    ).import_path
     VISION_HEATMAP_COMPARISON = source_utils.resolve(
         vision_checks.HeatmapComparison
+    ).import_path
+    VISION_LABEL_DRIFT = source_utils.resolve(
+        vision_checks.LabelDrift
     ).import_path
     VISION_IMAGE_DATASET_DRIFT = source_utils.resolve(
         vision_checks.ImageDatasetDrift
@@ -267,9 +291,6 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     ).import_path
     VISION_NEW_LABELS = source_utils.resolve(
         vision_checks.NewLabels
-    ).import_path
-    VISION_TRAIN_TEST_LABEL_DRIFT = source_utils.resolve(
-        vision_checks.TrainTestLabelDrift
     ).import_path
 
 
