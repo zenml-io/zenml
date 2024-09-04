@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.64.0"
+version = "0.65.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -464,9 +464,11 @@ module = [
     "huggingface_hub.*",
     "label_studio_sdk.*",
     "argilla.*",
+    "lightning_sdk.*",
     "peewee.*",
     "prodigy.*",
     "prodigy.components.*",
     "prodigy.components.db.*",
+    "transformers.*",
 ]
 ignore_missing_imports = true

@@ -16,6 +16,7 @@
 import hashlib
 import os
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional
@@ -23,11 +24,13 @@ from typing import IO, TYPE_CHECKING, Dict, Optional
 from zenml.client import Client
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import string_utils
+from zenml.utils import source_utils, string_utils
 from zenml.utils.archivable import Archivable
 
 if TYPE_CHECKING:
     from git.repo.base import Repo
+
+    from zenml.artifact_stores import BaseArtifactStore
 
 
 logger = get_logger(__name__)
@@ -168,6 +171,30 @@ class CodeArchive(Archivable):
             )
 
 
+def compute_file_hash(file: IO[bytes]) -> str:
+    """Compute a hash of the content of a file.
+
+    This function will not seek the file before or after the hash computation.
+    This means that the content will be computed based on the current cursor
+    until the end of the file.
+
+    Args:
+        file: The file for which to compute the hash.
+
+    Returns:
+        A hash of the file content.
+    """
+    hash_ = hashlib.sha1()  # nosec
+
+    while True:
+        data = file.read(64 * 1024)
+        if not data:
+            break
+        hash_.update(data)
+
+    return hash_.hexdigest()
+
+
 def upload_code_if_necessary(code_archive: CodeArchive) -> str:
     """Upload code to the artifact store if necessary.
 
@@ -179,7 +206,7 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
         code_archive: The code archive to upload.
 
     Returns:
-        The path where to archived code is uploaded.
+        The path where the archived code is uploaded.
     """
     artifact_store = Client().active_stack.artifact_store
 
@@ -187,36 +214,27 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
         mode="w+b", delete=False, suffix=".tar.gz"
     ) as f:
         code_archive.write_archive(f)
+        archive_path = f.name
+        archive_hash = compute_file_hash(f)
 
-        hash_ = hashlib.sha1()  # nosec
+    upload_dir = os.path.join(artifact_store.path, "code_uploads")
+    fileio.makedirs(upload_dir)
+    upload_path = os.path.join(upload_dir, f"{archive_hash}.tar.gz")
 
-        while True:
-            data = f.read(64 * 1024)
-            if not data:
-                break
-            hash_.update(data)
+    if not fileio.exists(upload_path):
+        archive_size = string_utils.get_human_readable_filesize(
+            os.path.getsize(archive_path)
+        )
+        logger.info(
+            "Uploading code to `%s` (Size: %s).", upload_path, archive_size
+        )
+        fileio.copy(archive_path, upload_path)
+        logger.info("Code upload finished.")
+    else:
+        logger.info("Code already exists in artifact store, skipping upload.")
 
-        filename = f"{hash_.hexdigest()}.tar.gz"
-        upload_dir = os.path.join(artifact_store.path, "code_uploads")
-        fileio.makedirs(upload_dir)
-        upload_path = os.path.join(upload_dir, filename)
-
-        if not fileio.exists(upload_path):
-            archive_size = string_utils.get_human_readable_filesize(
-                os.path.getsize(f.name)
-            )
-            logger.info(
-                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
-            )
-            fileio.copy(f.name, upload_path)
-            logger.info("Code upload finished.")
-        else:
-            logger.info(
-                "Code already exists in artifact store, skipping upload."
-            )
-
-    if os.path.exists(f.name):
-        os.remove(f.name)
+    if os.path.exists(archive_path):
+        os.remove(archive_path)
 
     return upload_path
 
@@ -242,3 +260,83 @@ def download_and_extract_code(code_path: str, extract_dir: str) -> None:
 
     shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
     os.remove(download_path)
+
+
+def download_code_from_artifact_store(code_path: str) -> None:
+    """Download code from the artifact store.
+
+    Args:
+        code_path: Path where the code is stored.
+    """
+    logger.info("Downloading code from artifact store path `%s`.", code_path)
+
+    # Do not remove this line, we need to instantiate the artifact store to
+    # register the filesystem needed for the file download
+    _ = Client().active_stack.artifact_store
+
+    extract_dir = os.path.abspath("code")
+    os.makedirs(extract_dir)
+
+    download_and_extract_code(code_path=code_path, extract_dir=extract_dir)
+
+    source_utils.set_custom_source_root(extract_dir)
+    sys.path.insert(0, extract_dir)
+    os.chdir(extract_dir)
+
+
+def _get_notebook_upload_dir(artifact_store: "BaseArtifactStore") -> str:
+    """Get the upload directory for code extracted from notebook cells.
+
+    Args:
+        artifact_store: The artifact store in which the directory should be.
+
+    Returns:
+        The upload directory for code extracted from notebook cells.
+    """
+    return os.path.join(artifact_store.path, "notebook_code")
+
+
+def upload_notebook_code(
+    artifact_store: "BaseArtifactStore", cell_code: str, file_name: str
+) -> None:
+    """Upload code extracted from a notebook cell.
+
+    Args:
+        artifact_store: The artifact store in which to upload the code.
+        cell_code: The notebook cell code.
+        file_name: The filename to use for storing the cell code.
+    """
+    upload_dir = _get_notebook_upload_dir(artifact_store=artifact_store)
+    fileio.makedirs(upload_dir)
+    upload_path = os.path.join(upload_dir, file_name)
+
+    if not fileio.exists(upload_path):
+        with fileio.open(upload_path, "wb") as f:
+            f.write(cell_code.encode())
+
+        logger.info("Uploaded notebook cell code to %s.", upload_path)
+
+
+def download_notebook_code(
+    artifact_store: "BaseArtifactStore", file_name: str, download_path: str
+) -> None:
+    """Download code extracted from a notebook cell.
+
+    Args:
+        artifact_store: The artifact store from which to download the code.
+        file_name: The name of the code file.
+        download_path: The local path where the file should be downloaded to.
+
+    Raises:
+        FileNotFoundError: If no file with the given filename exists in this
+            artifact store.
+    """
+    code_dir = _get_notebook_upload_dir(artifact_store=artifact_store)
+    code_path = os.path.join(code_dir, file_name)
+
+    if not fileio.exists(code_path):
+        raise FileNotFoundError(
+            f"Notebook code at path {code_path} not found."
+        )
+
+    fileio.copy(code_path, download_path)

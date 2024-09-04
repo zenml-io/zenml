@@ -332,7 +332,6 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
-from zenml.models.v2.misc.full_stack import FullStackRequest
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -390,6 +389,12 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.info_models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+    ResourcesInfo,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -409,7 +414,6 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
-FullStackRequest.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
@@ -448,8 +452,10 @@ ServiceResponseMetadata.model_rebuild()
 ServiceResponseResources.model_rebuild()
 ServiceConnectorResponseBody.model_rebuild()
 ServiceConnectorResponseMetadata.model_rebuild()
+StackRequest.model_rebuild()
 StackResponseBody.model_rebuild()
 StackResponseMetadata.model_rebuild()
+StackResponse.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
@@ -458,6 +464,10 @@ TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
 TriggerResponseResources.model_rebuild()
 TriggerResponseResources.model_rebuild()
+ComponentInfo.model_rebuild()
+ServiceConnectorInfo.model_rebuild()
+ServiceConnectorResourcesInfo.model_rebuild()
+ResourcesInfo.model_rebuild()
 
 
 __all__ = [
@@ -723,7 +733,6 @@ __all__ = [
     "ServiceConnectorTypedResourcesModel",
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
-    "FullStackRequest",
     "UserAuthModel",
     "ExternalUserModel",
     "BuildItem",
@@ -740,4 +749,8 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
+    "ComponentInfo",
+    "ServiceConnectorInfo",
+    "ServiceConnectorResourcesInfo",
+    "ResourcesInfo",
 ]

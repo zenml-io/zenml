@@ -219,7 +219,7 @@ class BaseEntrypointConfiguration(ABC):
                 code_reference=code_reference
             )
         elif code_path := deployment.code_path:
-            self.download_code_from_artifact_store(code_path=code_path)
+            code_utils.download_code_from_artifact_store(code_path=code_path)
         else:
             raise RuntimeError(
                 "Code download required but no code reference or path provided."
@@ -260,31 +260,6 @@ class BaseEntrypointConfiguration(ABC):
 
         sys.path.insert(0, download_dir)
         os.chdir(download_dir)
-
-    def download_code_from_artifact_store(self, code_path: str) -> None:
-        """Download code from the artifact store.
-
-        Args:
-            code_path: Path where the code is stored.
-        """
-        logger.info(
-            "Downloading code from artifact store path `%s`.", code_path
-        )
-
-        # Do not remove this line, we need to instantiate the artifact store to
-        # register the filesystem needed for the file download
-        _ = Client().active_stack.artifact_store
-
-        extract_dir = os.path.abspath("code")
-        os.makedirs(extract_dir)
-
-        code_utils.download_and_extract_code(
-            code_path=code_path, extract_dir=extract_dir
-        )
-
-        source_utils.set_custom_source_root(extract_dir)
-        sys.path.insert(0, extract_dir)
-        os.chdir(extract_dir)
 
     def _should_download_code(
         self,

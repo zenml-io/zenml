@@ -1,5 +1,69 @@
 <!-- markdown-link-check-disable -->
 
+# 0.65.0
+
+## New Features and Improvements
+
+### New Quickstart Experience
+
+This example demonstrates how ZenML streamlines the transition of machine learning workflows from local environments to 
+cloud-scale operations.
+
+### Run Single Step as a ZenML Pipeline
+
+If you want to run just an individual step on your stack, you can simply call the step
+as you would with a normal Python function. ZenML will internally create a pipeline with just your step
+and run it on the active stack.
+
+### Other improvements and fixes
+
+* Updated AzureML Step Operator to work with SDKv2 and use Service Connectors
+* Added timestamps to log messages
+* Fixed issue with loading artifacts from artifact store outside of current active artifact store
+* Support of templated names for Model Version (`{date}` and `{time}` are currently supported placeholders)
+* `run_with_accelerate` step wrapper can be used as a Python Decorator on top of ZenML steps
+
+## Breaking changes
+
+* Workspace scoped POST endpoint `full-stack` was removed and merged with `stacks` POST endpoint
+
+
+## What's Changed
+* Remove broken JIRA sync workflow by @strickvl in https://github.com/zenml-io/zenml/pull/2924
+* Fix Hugging Face Spaces permissions by @strickvl in https://github.com/zenml-io/zenml/pull/2925
+* Fixes for `run_with_accelerate` by @avishniakov in https://github.com/zenml-io/zenml/pull/2935
+* Bump azure skypilot to a stable 0.6.1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2933
+* Add Timestamps to Logs and Update Dashboard URL Message by @htahir1 in https://github.com/zenml-io/zenml/pull/2934
+* Adding 0.64.0 to migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/2923
+* Removed docker build docs + fixed CLI command for zenml pipeline build list by @htahir1 in https://github.com/zenml-io/zenml/pull/2938
+* Throw an error when running integration installs when uv == False but pip is not installed by @mennoliefstingh in https://github.com/zenml-io/zenml/pull/2930
+* Update AzureML step operator to SDK v2 and add service connector support by @stefannica in https://github.com/zenml-io/zenml/pull/2927
+* Improving the AzureML orchestrator docs by @bcdurak in https://github.com/zenml-io/zenml/pull/2940
+* Update mlflow docs by @htahir1 in https://github.com/zenml-io/zenml/pull/2941
+* Tell users where they can import `DockerSettings` from by @strickvl in https://github.com/zenml-io/zenml/pull/2947
+* Fail early when specifying invalid materializers by @schustmi in https://github.com/zenml-io/zenml/pull/2950
+* Add GitHub Codespaces and VS Code Remote Container support by @htahir1 in https://github.com/zenml-io/zenml/pull/2949
+* Automatically detect whether code download is necessary by @schustmi in https://github.com/zenml-io/zenml/pull/2946
+* Enable running a single step on the active stack by @schustmi in https://github.com/zenml-io/zenml/pull/2942
+* Dynamic (templated) names for model versions by @avishniakov in https://github.com/zenml-io/zenml/pull/2909
+* Adding an orchestrator URL to the AzureML orchestrator by @bcdurak in https://github.com/zenml-io/zenml/pull/2952
+* Update python version of latest docker image by @schustmi in https://github.com/zenml-io/zenml/pull/2954
+* Make `run_with_accelerate` a pythonic decorator by @avishniakov in https://github.com/zenml-io/zenml/pull/2943
+* Bugfix for artifacts coming from a different artifact store by @bcdurak in https://github.com/zenml-io/zenml/pull/2928
+* Stack Request cleanup and improvements by @bcdurak in https://github.com/zenml-io/zenml/pull/2906
+* Silence pydantic protected namespace warnings by @schustmi in https://github.com/zenml-io/zenml/pull/2955
+* Update key for finished onboarding survey by @schustmi in https://github.com/zenml-io/zenml/pull/2956
+* Extend notebook source replacement code to other objects apart from ZenML steps by @schustmi in https://github.com/zenml-io/zenml/pull/2919
+* Fix stack register CLI command by @schustmi in https://github.com/zenml-io/zenml/pull/2958
+* Lightening studio orchestrator by @safoinme in https://github.com/zenml-io/zenml/pull/2931
+* Introduce new quickstart with a focus on Stack switching by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2937
+* Bugfix for the required prompts for the AzureML wizard by @bcdurak in https://github.com/zenml-io/zenml/pull/2959
+
+## New Contributors
+* @mennoliefstingh made their first contribution in https://github.com/zenml-io/zenml/pull/2930
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.64.0...0.65.0
+
 # 0.64.0
 
 ## New Features and Improvements

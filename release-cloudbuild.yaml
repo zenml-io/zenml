@@ -1,4 +1,4 @@
-steps:  
+steps:
   # build client base image - python 3.8
   - name: gcr.io/cloud-builders/docker
     args:
@@ -9,8 +9,7 @@ steps:
           --build-arg PYTHON_VERSION=3.8 \
           --target client \
           -f docker/base.Dockerfile . \
-          -t $$USERNAME/zenml:$TAG_NAME-py3.8 \
-          -t $$USERNAME/zenml:$TAG_NAME
+          -t $$USERNAME/zenml:$TAG_NAME-py3.8
 
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
@@ -66,7 +65,7 @@ steps:
     secretEnv:
       - USERNAME
 
-    # build base image - python 3.11
+  # build client base image - python 3.11
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -76,7 +75,8 @@ steps:
           --build-arg PYTHON_VERSION=3.11 \
           --target client \
           -f docker/base.Dockerfile . \
-          -t $$USERNAME/zenml:$TAG_NAME-py3.11
+          -t $$USERNAME/zenml:$TAG_NAME-py3.11 \
+          -t $$USERNAME/zenml:$TAG_NAME
 
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
@@ -100,7 +100,7 @@ steps:
         --target server \
         -f docker/base.Dockerfile . \
         -t $$USERNAME/zenml-server:$TAG_NAME
-        
+
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
           docker tag $$USERNAME/zenml-server:$TAG_NAME $$USERNAME/zenml-server:latest
@@ -110,7 +110,7 @@ steps:
     entrypoint: bash
     secretEnv:
       - USERNAME
-
+  
   # login to Dockerhub
   - name: gcr.io/cloud-builders/docker
     args:
@@ -130,6 +130,10 @@ steps:
     id: push-base
     waitFor:
       - docker-login
+      - build-base-3.8
+      - build-base-3.9
+      - build-base-3.10
+      - build-base-3.11
     entrypoint: bash
     secretEnv:
       - USERNAME
@@ -141,6 +145,73 @@ steps:
       - docker push --all-tags $$USERNAME/zenml-server
     id: push-server
     waitFor:
+      - build-server
+      - docker-login
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart gcp image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=gcp \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-gcp      
+    id: build-quickstart-3.11-gcp
+    waitFor: [ 'push-base' ]
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart aws image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=aws \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-aws
+    id: build-quickstart-3.11-aws
+    waitFor: [ 'push-base' ]
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # build client quickstart azure image - python 3.11
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg ZENML_VERSION=$TAG_NAME \
+          --build-arg PYTHON_VERSION=3.11 \
+          --build-arg CLOUD_PROVIDER=azure \
+          -f docker/zenml-quickstart.Dockerfile . \
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11-azure
+    id: build-quickstart-3.11-azure
+    waitFor: [ 'push-base' ]
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # push quickstart images
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - docker push --all-tags $$USERNAME/zenml-public-pipelines
+    id: push-quickstart
+    waitFor:
+      - build-quickstart-3.11-gcp
+      - build-quickstart-3.11-aws
+      - build-quickstart-3.11-azure
       - docker-login
     entrypoint: bash
     secretEnv:
