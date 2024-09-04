@@ -745,7 +745,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
             created_at=datetime.fromtimestamp(
                 int(mlflow_model_version.creation_timestamp) / 1e3
             ),
-            stage=ModelVersionStage(mlflow_model_version.current_stage),
+            stage=ModelVersionStage(mlflow_model_version.current_stage)
+            if mlflow_model_version.current_stage
+            else ModelVersionStage.NONE,
             description=mlflow_model_version.description,
             last_updated_at=datetime.fromtimestamp(
                 int(mlflow_model_version.last_updated_timestamp) / 1e3
