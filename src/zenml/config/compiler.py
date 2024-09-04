@@ -29,7 +29,9 @@ from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.resource_settings import ResourceSettings
 from zenml.config.settings_resolver import SettingsResolver
+from zenml.config.stack_component_settings import StackComponentSettings
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -476,6 +478,13 @@ class Compiler:
         complete_step_configuration = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
         )
+        self._warn_about_unused_resource_settings(
+            resource_settings=complete_step_configuration.resource_settings,
+            stack=stack,
+            invocation_id=invocation.id,
+            step_operator=complete_step_configuration.step_operator,
+        )
+
         return Step(spec=step_spec, config=complete_step_configuration)
 
     def _get_sorted_invocations(
@@ -596,3 +605,46 @@ class Compiler:
             additional_spec_args["parameters"] = pipeline._parameters
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
+
+    @staticmethod
+    def _warn_about_unused_resource_settings(
+        resource_settings: "ResourceSettings",
+        stack: "Stack",
+        invocation_id: str,
+        step_operator: Optional[str] = None,
+    ) -> None:
+        """Warn about unused resource settings.
+
+        Args:
+            resource_settings: The resource settings for the step invocation.
+            stack: The stack on which the step will run.
+            invocation_id: ID of the step invocation.
+            step_operator: The step operator used for the step invocation.
+        """
+        if step_operator:
+            assert stack.step_operator
+            settings_class = stack.step_operator.settings_class
+        else:
+            settings_class = stack.orchestrator.settings_class
+
+        if settings_class and issubclass(
+            settings_class, StackComponentSettings
+        ):
+            allowed_keys = settings_class.ALLOWED_RESOURCE_SETTINGS_KEYS
+        else:
+            allowed_keys = []
+
+        ignored_keys = [
+            key
+            for key in resource_settings.model_dump(exclude_none=True)
+            if key not in allowed_keys
+        ]
+
+        if ignored_keys:
+            logger.warning(
+                "Ignoring the following resource settings because your active "
+                "%s for step %s does not support them: %s",
+                "step operator" if step_operator else "orchestrator",
+                invocation_id,
+                ignored_keys,
+            )

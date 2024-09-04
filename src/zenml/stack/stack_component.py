@@ -23,7 +23,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from zenml.config import ResourceSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.stack_component_settings import StackComponentSettings
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -38,7 +40,6 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ComponentResponse,
@@ -452,7 +453,7 @@ class StackComponent:
         return self._config
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> Optional[Type["StackComponentSettings"]]:
         """Class specifying available settings for this component.
 
         Returns:
@@ -469,7 +470,7 @@ class StackComponent:
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
         ],
-    ) -> "BaseSettings":
+    ) -> "StackComponentSettings":
         """Gets settings for this stack component.
 
         This will return `None` if the stack component doesn't specify a
@@ -507,6 +508,37 @@ class StackComponent:
             return self.settings_class.model_validate(dict(all_settings[key]))
         else:
             return self.settings_class()
+
+    @staticmethod
+    def migrate_legacy_resource_settings(
+        resource_settings: ResourceSettings,
+        settings: StackComponentSettings,
+        key_mapping: Dict[str, str],
+    ) -> ResourceSettings:
+        migrated_values = {}
+        for resource_settings_key, settings_key in key_mapping.items():
+            settings_value = getattr(settings, settings_key)
+
+            if not settings_value:
+                # We just use the resource settings value
+                continue
+
+            resource_settings_value = getattr(
+                resource_settings, resource_settings_key
+            )
+
+            if (
+                resource_settings_value
+                and resource_settings_value != settings_value
+            ):
+                raise ValueError(
+                    "Different resource values for the same attribute"
+                )
+
+            elif not resource_settings_value:
+                migrated_values[resource_settings_key] = settings_value
+
+        return resource_settings.model_copy(update=migrated_values)
 
     def connector_has_expired(self) -> bool:
         """Checks whether the connector linked to this stack component has expired.

@@ -16,10 +16,20 @@
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import Field, NonNegativeInt, PositiveFloat
-from pydantic_settings import SettingsConfigDict
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
 
 from zenml.config.base_settings import BaseSettings
+from zenml.utils.enum_utils import StrEnum
+
+# Vertex step operator
+# ['ACCELERATOR_TYPE_UNSPECIFIED', 'NVIDIA_TESLA_K80', 'NVIDIA_TESLA_P100', 'NVIDIA_TESLA_V100', 'NVIDIA_TESLA_P4', 'NVIDIA_TESLA_T4', 'NVIDIA_TESLA_A100', 'NVIDIA_A100_80GB', 'NVIDIA_L4', 'NVIDIA_H100_80GB', 'TPU_V2', 'TPU_V3', 'TPU_V4_POD', 'TPU_V5_LITEPOD']
+
+
+class AcceleratorType(StrEnum): ...
+
+
+# Or MachineType?
+class InstanceType(StrEnum): ...
 
 
 class ByteUnit(Enum):
@@ -73,6 +83,14 @@ class ResourceSettings(BaseSettings):
     gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
 
+    accelerator: Optional[Union[AcceleratorType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+    accelerator_count: Optional[NonNegativeInt] = None
+    instance_type: Optional[Union[InstanceType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+
     @property
     def empty(self) -> bool:
         """Returns if this object is "empty" (=no values configured) or not.
@@ -115,9 +133,8 @@ class ResourceSettings(BaseSettings):
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
 
-    model_config = SettingsConfigDict(
+    model_config = ConfigDict(
         # public attributes are immutable
         frozen=True,
-        # prevent extra attributes during model initialization
-        extra="forbid",
+        extra="allow",
     )
