@@ -78,7 +78,6 @@ def main(
     client = Client()
     run_args_train = {}
 
-    asf = client.active_stack.artifact_store.flavor
     orchf = client.active_stack.orchestrator.flavor
 
     sof = None
