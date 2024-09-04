@@ -15,7 +15,9 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.config.base_settings import BaseSettings
+from zenml.config.stack_component_settings import (
+    StackComponentResourceSettings,
+)
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_STEP_OPERATOR_FLAVOR,
@@ -28,12 +30,23 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
+from pydantic import BaseModel
 
-class VertexStepOperatorSettings(BaseSettings):
+
+class VertexStepOperatorResources(StackComponentResourceSettings):
+    accelerator: Optional[str] = None
+    accelerator_count: int = 0
+    instance_type: str = "n1-standard-4"
+    boot_disk_size_gb: int = 100
+    boot_disk_type: str = "pd-ssd"
+
+
+class VertexStepOperatorSettings(VertexStepOperatorResources):
     """Settings for the Vertex step operator.
 
     Attributes:
@@ -54,11 +67,22 @@ class VertexStepOperatorSettings(BaseSettings):
 
     """
 
+    _resource_depractions = deprecate_pydantic_attributes(
+        ("accelerator_type", "accelerator"),
+    )
     accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
-    boot_disk_size_gb: int = 100
-    boot_disk_type: str = "pd-ssd"
+
+    @classmethod
+    def resources_class(cls) -> Optional[Type[BaseModel]]:
+        return VertexStepOperatorResources
+
+    # ALLOWED_RESOURCE_SETTINGS_KEYS = list(VertexStepOperatorResources.model_fields.keys())
+
+    # accelerator_type: Optional[str] = None
+    # accelerator_count: int = 0
+    # machine_type: str = "n1-standard-4"
+    # boot_disk_size_gb: int = 100
+    # boot_disk_type: str = "pd-ssd"
 
 
 class VertexStepOperatorConfig(

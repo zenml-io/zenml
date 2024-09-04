@@ -18,14 +18,23 @@ from abc import ABC
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from inspect import isclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config import ResourceSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.stack_component_settings import StackComponentSettings
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -40,6 +49,10 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
+    from zenml.config.stack_component_settings import (
+        StackComponentResourceSettings,
+    )
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ComponentResponse,
@@ -48,6 +61,8 @@ if TYPE_CHECKING:
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
+
+    T = TypeVar("T", bound=StackComponentResourceSettings)
 
 logger = get_logger(__name__)
 
@@ -453,7 +468,7 @@ class StackComponent:
         return self._config
 
     @property
-    def settings_class(self) -> Optional[Type["StackComponentSettings"]]:
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Class specifying available settings for this component.
 
         Returns:
@@ -470,7 +485,7 @@ class StackComponent:
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
         ],
-    ) -> "StackComponentSettings":
+    ) -> "BaseSettings":
         """Gets settings for this stack component.
 
         This will return `None` if the stack component doesn't specify a
@@ -505,40 +520,57 @@ class StackComponent:
         )
 
         if key in all_settings:
-            return self.settings_class.model_validate(dict(all_settings[key]))
+            component_settings = self.settings_class.model_validate(
+                dict(all_settings[key])
+            )
         else:
-            return self.settings_class()
+            component_settings = self.settings_class()
 
-    @staticmethod
-    def migrate_legacy_resource_settings(
-        resource_settings: ResourceSettings,
-        settings: StackComponentSettings,
-        key_mapping: Dict[str, str],
-    ) -> ResourceSettings:
-        migrated_values = {}
-        for resource_settings_key, settings_key in key_mapping.items():
-            settings_value = getattr(settings, settings_key)
-
-            if not settings_value:
-                # We just use the resource settings value
-                continue
-
-            resource_settings_value = getattr(
-                resource_settings, resource_settings_key
+        if isinstance(component_settings, StackComponentResourceSettings):
+            resource_settings = (
+                container.config.resource_settings
+                if isinstance(container, (Step, StepRunResponse, StepRunInfo))
+                else container.pipeline_configuration.resource_settings
             )
 
-            if (
+            component_settings = self.merge_resource_settings(
+                resource_settings=resource_settings,
+                component_settings=component_settings,
+            )
+
+        return component_settings
+
+    def merge_resource_settings(
+        self,
+        resource_settings: ResourceSettings,
+        component_settings: T,
+    ) -> T:
+        updates = {}
+
+        allowed_keys = component_settings.get_allowed_resource_settings_keys()
+        for key, resource_settings_value in resource_settings.model_dump(
+            exclude_none=True
+        ).items():
+            if key not in allowed_keys:
+                continue
+
+            settings_value = getattr(component_settings, key)
+
+            if not settings_value:
+                updates[key] = resource_settings_value
+            elif (
                 resource_settings_value
                 and resource_settings_value != settings_value
             ):
                 raise ValueError(
-                    "Different resource values for the same attribute"
+                    "Got multiple conflicting values for resource attribute "
+                    f"{key} of {self.type} {self.name}: "
+                    f"{resource_settings_value} (specified using "
+                    f"ResourceSettings) and {settings_value} (specified using "
+                    "the component settings)."
                 )
 
-            elif not resource_settings_value:
-                migrated_values[resource_settings_key] = settings_value
-
-        return resource_settings.model_copy(update=migrated_values)
+        return component_settings.model_copy(update=updates)
 
     def connector_has_expired(self) -> bool:
         """Checks whether the connector linked to this stack component has expired.

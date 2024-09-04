@@ -188,19 +188,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         Raises:
             RuntimeError: If the run fails.
         """
-        resource_settings = info.config.resource_settings
-        if resource_settings.cpu_count or resource_settings.memory:
-            logger.warning(
-                "Specifying cpus or memory is not supported for "
-                "the Vertex step operator. If you want to run this step "
-                "operator on specific resources, you can do so by configuring "
-                "a different machine_type type like this: "
-                "`zenml step-operator update %s "
-                "--machine_type=<MACHINE_TYPE>`",
-                self.name,
-            )
         settings = cast(VertexStepOperatorSettings, self.get_settings(info))
-        validate_accelerator_type(settings.accelerator_type)
+        validate_accelerator_type(settings.accelerator)
 
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
@@ -220,19 +209,17 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
-        accelerator_count = (
-            resource_settings.gpu_count or settings.accelerator_count
-        )
+
         custom_job = {
             "display_name": info.run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {
                         "machine_spec": {
-                            "machine_type": settings.machine_type,
-                            "accelerator_type": settings.accelerator_type,
-                            "accelerator_count": accelerator_count
-                            if settings.accelerator_type
+                            "machine_type": settings.instance_type,
+                            "accelerator_type": settings.accelerator,
+                            "accelerator_count": settings.accelerator_count
+                            if settings.accelerator
                             else 0,
                         },
                         "replica_count": 1,

@@ -31,7 +31,9 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.resource_settings import ResourceSettings
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.stack_component_settings import StackComponentSettings
+from zenml.config.stack_component_settings import (
+    StackComponentResourceSettings,
+)
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -628,11 +630,11 @@ class Compiler:
             settings_class = stack.orchestrator.settings_class
 
         if settings_class and issubclass(
-            settings_class, StackComponentSettings
+            settings_class, StackComponentResourceSettings
         ):
-            allowed_keys = settings_class.ALLOWED_RESOURCE_SETTINGS_KEYS
+            allowed_keys = settings_class.get_allowed_resource_settings_keys()
         else:
-            allowed_keys = []
+            allowed_keys = set()
 
         ignored_keys = [
             key
