@@ -37,17 +37,28 @@ In order to use the `SlackAlerter`, you first need to have a Slack workspace set
 Then, you need to [create a Slack App](https://api.slack.com/apps?new\_app=1) with a bot in your workspace.
 
 {% hint style="info" %}
-Make sure to give your Slack bot `chat:write` and `chat:write.public` permissions in the `OAuth & Permissions` tab under `Scopes`.
+Make sure to give your Slack bot the following permissions in the `OAuth & Permissions` tab under `Scopes`:
+
+* `chat:write`,
+* `chat:write.public`
+* `channels:read`
+* `groups:read`
+* `im:read`
+* `mpim:read`
+
+![Slack OAuth Permissions](../../.gitbook/assets/slack-alerter-oauth-permissions.png)
+
 {% endhint %}
 
 ### Registering a Slack Alerter in ZenML
 
-Next, you need to register a `slack` alerter in ZenML and link it to the bot you just created. You can do this with the following command:
+Next, you need to register a `slack` alerter in ZenML and link it to the bot you just created. You can do this with the following commands:
 
 ```shell
+zenml secret create slack_token --oauth_token=<SLACK_TOKEN>
 zenml alerter register slack_alerter \
     --flavor=slack \
-    --slack_token=<SLACK_TOKEN> \
+    --slack_token='{{ slack_token:oauth_token }}' \
     --default_slack_channel_id=<SLACK_CHANNEL_ID>
 ```
 
