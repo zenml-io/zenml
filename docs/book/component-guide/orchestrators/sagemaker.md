@@ -186,10 +186,8 @@ For example, settings can be provided in the following way:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
-    processor_args={
-        "instance_type": "ml.t3.medium",
-        "volume_size_in_gb": 30
-    }
+    instance_type="ml.m5.large",
+    volume_size_in_gb=30,
 )
 ```
 
