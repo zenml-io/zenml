@@ -17,7 +17,8 @@ import os
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
+import great_expectations as ge
+from great_expectations.checkpoint.checkpoint import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
 from great_expectations.core import (  # type: ignore[import-untyped]
@@ -38,13 +39,12 @@ from great_expectations.data_context.types.base import (
 from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
 )
-from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import-untyped]
-    UserConfigurableProfiler,
-)
+from great_expectations.profile.user_configurable_profiler import   # type: ignore[import-untyped]
 
 from zenml import get_step_context
 from zenml.client import Client
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
+from zenml.integrations.great_expectations.data_validators.expectations import GreatExpectationExpectationConfig
 from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
     GreatExpectationsDataValidatorConfig,
     GreatExpectationsDataValidatorFlavor,
@@ -52,7 +52,7 @@ from zenml.integrations.great_expectations.flavors.great_expectations_data_valid
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
 )
-from zenml.integrations.great_expectations.utils import create_batch_request
+from zenml.integrations.great_expectations.utils import create_batch_definition, create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
@@ -200,8 +200,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             expectations_store_name = "zenml_expectations_store"
             validations_store_name = "zenml_validations_store"
             checkpoint_store_name = "zenml_checkpoint_store"
-            profiler_store_name = "zenml_profiler_store"
-            evaluation_parameter_store_name = "evaluation_parameter_store"
 
             # Define default configuration options that plug the GX stores
             # in the active ZenML artifact store
@@ -216,18 +214,10 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     checkpoint_store_name: self.get_store_config(
                         "CheckpointStore", "checkpoints"
                     ),
-                    profiler_store_name: self.get_store_config(
-                        "ProfilerStore", "profilers"
-                    ),
-                    evaluation_parameter_store_name: {
-                        "class_name": "EvaluationParameterStore"
-                    },
                 },
                 expectations_store_name=expectations_store_name,
                 validations_store_name=validations_store_name,
                 checkpoint_store_name=checkpoint_store_name,
-                profiler_store_name=profiler_store_name,
-                evaluation_parameter_store_name=evaluation_parameter_store_name,
                 data_docs_sites={
                     "zenml_artifact_store": self.get_data_docs_config(
                         "data_docs"
@@ -267,15 +257,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 self._context.config.expectations_store_name = (
                     expectations_store_name
                 )
-                self._context.config.validations_store_name = (
+                self._context.config.validation_results_store_name = (
                     validations_store_name
                 )
                 self._context.config.checkpoint_store_name = (
                     checkpoint_store_name
-                )
-                self._context.config.profiler_store_name = profiler_store_name
-                self._context.config.evaluation_parameter_store_name = (
-                    evaluation_parameter_store_name
                 )
                 for store_name, store_config in zenml_context_config[
                     "stores"
@@ -323,126 +309,16 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         return path
 
-    def data_profiling(
-        self,
-        dataset: pd.DataFrame,
-        comparison_dataset: Optional[Any] = None,
-        profile_list: Optional[Sequence[str]] = None,
-        expectation_suite_name: Optional[str] = None,
-        data_asset_name: Optional[str] = None,
-        profiler_kwargs: Optional[Dict[str, Any]] = None,
-        overwrite_existing_suite: bool = True,
-        **kwargs: Any,
-    ) -> ExpectationSuite:
-        """Infer a Great Expectation Expectation Suite from a given dataset.
-
-        This Great Expectations specific data profiling method implementation
-        builds an Expectation Suite automatically by running a
-        UserConfigurableProfiler on an input dataset [as covered in the official
-        GE documentation](https://docs.greatexpectations.io/docs/guides/expectations/how_to_create_and_edit_expectations_with_a_profiler).
-
-        Args:
-            dataset: The dataset from which the expectation suite will be
-                inferred.
-            comparison_dataset: Optional dataset used to generate data
-                comparison (i.e. data drift) profiles. Not supported by the
-                Great Expectation data validator.
-            profile_list: Optional list identifying the categories of data
-                profiles to be generated. Not supported by the Great Expectation
-                data validator.
-            expectation_suite_name: The name of the expectation suite to create
-                or update. If not supplied, a unique name will be generated from
-                the current pipeline and step name, if running in the context of
-                a pipeline step.
-            data_asset_name: The name of the data asset to use to identify the
-                dataset in the Great Expectations docs.
-            profiler_kwargs: A dictionary of custom keyword arguments to pass to
-                the profiler.
-            overwrite_existing_suite: Whether to overwrite an existing
-                expectation suite, if one exists with that name.
-            kwargs: Additional keyword arguments (unused).
-
-        Returns:
-            The inferred Expectation Suite.
-
-        Raises:
-            ValueError: if an `expectation_suite_name` value is not supplied and
-                a name for the expectation suite cannot be generated from the
-                current step name and pipeline name.
-        """
-        context = self.data_context
-
-        if comparison_dataset is not None:
-            logger.warning(
-                "A comparison dataset is not required by Great Expectations "
-                "to do data profiling. Silently ignoring the supplied dataset "
-            )
-
-        if not expectation_suite_name:
-            try:
-                step_context = get_step_context()
-                pipeline_name = step_context.pipeline.name
-                step_name = step_context.step_run.name
-                expectation_suite_name = f"{pipeline_name}_{step_name}"
-            except RuntimeError:
-                raise ValueError(
-                    "A expectation suite name is required when not running in "
-                    "the context of a pipeline step."
-                )
-
-        suite_exists = False
-        if context.expectations_store.has_key(  # noqa
-            ExpectationSuiteIdentifier(expectation_suite_name)
-        ):
-            suite_exists = True
-            suite = context.get_expectation_suite(expectation_suite_name)
-            if not overwrite_existing_suite:
-                logger.info(
-                    f"Expectation Suite `{expectation_suite_name}` "
-                    f"already exists and `overwrite_existing_suite` is not set "
-                    f"in the step configuration. Skipping re-running the "
-                    f"profiler."
-                )
-                return suite
-
-        batch_request = create_batch_request(context, dataset, data_asset_name)
-
-        try:
-            if suite_exists:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    expectation_suite_name=expectation_suite_name,
-                )
-            else:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    create_expectation_suite_with_name=expectation_suite_name,
-                )
-
-            profiler = UserConfigurableProfiler(
-                profile_dataset=validator, **profiler_kwargs
-            )
-
-            suite = profiler.build_suite()
-            context.save_expectation_suite(
-                expectation_suite=suite,
-                expectation_suite_name=expectation_suite_name,
-            )
-
-            context.build_data_docs()
-        finally:
-            context.delete_datasource(batch_request.datasource_name)
-
-        return suite
-
     def data_validation(
         self,
         dataset: pd.DataFrame,
         comparison_dataset: Optional[Any] = None,
         check_list: Optional[Sequence[str]] = None,
+        expectations_list: Optional[Sequence[GreatExpectationExpectationConfig]] = None,
+        expectation_parameters: Optional[Dict[str, Any]] = None,
         expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
-        action_list: Optional[List[Dict[str, Any]]] = None,
+        action_list: Optional[List[ge.checkpoint.actions.ValidationAction]] = None,
         **kwargs: Any,
     ) -> CheckpointResult:
         """Great Expectations data validation.
@@ -460,6 +336,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             check_list: Optional list identifying the data validation checks to
                 be performed. Not supported by the Great Expectations data
                 validator.
+            expectations_list: A list of Great Expectations expectations to
+                use to validate the dataset. A value must be provided.
+            expectation_parameters: Optional parameters to pass to the
+                expectations if you have defined any parameters in the
+                expectations.
             expectation_suite_name: The name of the expectation suite to use to
                 validate the dataset. A value must be provided.
             data_asset_name: The name of the data asset to use to identify the
@@ -474,15 +355,18 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Raises:
             ValueError: if the `expectation_suite_name` argument is omitted.
         """
-        if not expectation_suite_name:
-            raise ValueError("Missing expectation_suite_name argument value.")
-
         if comparison_dataset is not None:
             logger.warning(
                 "A comparison dataset is not required by Great Expectations "
                 "to do data validation. Silently ignoring the supplied dataset "
             )
 
+        if expectation_suite_name and expectations_list:
+            raise ValueError("Only one of `expectation_suite_name` and `expectations_list` can be provided.")
+        
+        if not expectation_suite_name and not expectations_list:
+            raise ValueError("Either `expectation_suite_name` or `expectations_list` must be provided.")
+        
         try:
             step_context = get_step_context()
             run_name = step_context.pipeline_run.name
@@ -494,42 +378,49 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         context = self.data_context
 
+        # get all expectations from the list
+        if expectations_list:
+            # construct an expectation suite name from the pipeline and step names
+            suite_name = f"{run_name}_{step_name}"
+            expectation_suite = ExpectationSuite(
+                name=suite_name,
+                expectations=[exp.get_expectation() for exp in expectations_list]
+            )
+            context.suites.add(expectation_suite)
+        
+        else:  # when the expectation_suite_name is provided
+            expectation_suite = context.suites.get(name=expectation_suite_name)
+
+        # TODO need to create a batch definition
+        batch_definition, batch_parameters = create_batch_definition(context, dataset, data_asset_name)                
+        
+        # create a validation definition
+        validation_defintion = ge.ValidationDefinition(
+            data=batch_definition, suite=expectation_suite,
+            name=f"{run_name}_{step_name}"
+        )
+
+        validation_defintion = context.validation_definitions.add(validation_defintion)
+
+        # create a checkpoint
         checkpoint_name = f"{run_name}_{step_name}"
+        checkpoint = ge.Checkpoint(
+            name=checkpoint_name,
+            validation_definitions=[validation_defintion],
+            actions=action_list,
+            # get it from the kwargs
+            result_format={"result_format": kwargs.get("result_format", "SUMMARY")},
+        )
 
-        batch_request = create_batch_request(context, dataset, data_asset_name)
-
-        action_list = action_list or [
-            {
-                "name": "store_validation_result",
-                "action": {"class_name": "StoreValidationResultAction"},
-            },
-            {
-                "name": "store_evaluation_params",
-                "action": {"class_name": "StoreEvaluationParametersAction"},
-            },
-            {
-                "name": "update_data_docs",
-                "action": {"class_name": "UpdateDataDocsAction"},
-            },
-        ]
-
-        checkpoint_config: Dict[str, Any] = {
-            "name": checkpoint_name,
-            "run_name_template": run_name,
-            "config_version": 1,
-            "class_name": "Checkpoint",
-            "expectation_suite_name": expectation_suite_name,
-            "action_list": action_list,
-        }
-        context.add_checkpoint(**checkpoint_config)  # type: ignore[has-type]
-
+        checkpoint = context.checkpoints.add(checkpoint)
+        
+        # run a checkpoint
         try:
-            results = context.run_checkpoint(
-                checkpoint_name=checkpoint_name,
-                validations=[{"batch_request": batch_request}],
+            results = checkpoint.run(
+                batch_parameters=batch_parameters,
+                expectation_parameters=expectation_parameters
             )
         finally:
-            context.delete_datasource(batch_request.datasource_name)
-            context.delete_checkpoint(checkpoint_name)
+            context.delete_datasource(batch_definition.data_asset.datasource.name)
 
         return results

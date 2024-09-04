@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 """Great Expectations data profiling standard step."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
-from great_expectations.core.batch import (  # type: ignore[import-untyped]
-    RuntimeBatchRequest,
-)
+from great_expectations.core.batch_definition import BatchDefinition
 from great_expectations.data_context.data_context.abstract_data_context import (
     AbstractDataContext,
 )
@@ -30,11 +28,11 @@ from zenml.utils.string_utils import random_str
 logger = get_logger(__name__)
 
 
-def create_batch_request(
+def create_batch_definition(
     context: AbstractDataContext,
     dataset: pd.DataFrame,
     data_asset_name: Optional[str],
-) -> RuntimeBatchRequest:
+) -> Tuple[BatchDefinition, Dict[str, Any]]:
     """Create a temporary runtime GE batch request from a dataset step artifact.
 
     Args:
@@ -58,33 +56,16 @@ def create_batch_request(
         step_name = f"step_{random_str(5)}"
 
     datasource_name = f"{run_name}_{step_name}"
-    data_connector_name = datasource_name
     data_asset_name = data_asset_name or f"{pipeline_name}_{step_name}"
-    batch_identifier = "default"
+    batch_definition_name = "default"
 
-    datasource_config: Dict[str, Any] = {
-        "name": datasource_name,
-        "class_name": "Datasource",
-        "module_name": "great_expectations.datasource",
-        "execution_engine": {
-            "module_name": "great_expectations.execution_engine",
-            "class_name": "PandasExecutionEngine",
-        },
-        "data_connectors": {
-            data_connector_name: {
-                "class_name": "RuntimeDataConnector",
-                "batch_identifiers": [batch_identifier],
-            },
-        },
-    }
+    data_source = context.data_sources.add_pandas(name=datasource_name)
+    data_asset = data_source.add_dataframe_asset(name=data_asset_name)
 
-    context.add_datasource(**datasource_config)
-    batch_request = RuntimeBatchRequest(
-        datasource_name=datasource_name,
-        data_connector_name=data_connector_name,
-        data_asset_name=data_asset_name,
-        runtime_parameters={"batch_data": dataset},
-        batch_identifiers={batch_identifier: batch_identifier},
+    batch_definition = data_asset.add_batch_definition_whole_dataframe(
+        batch_definition_name
     )
 
-    return batch_request
+    batch_parameters = {"dataframe": dataset}
+
+    return batch_definition, batch_parameters
