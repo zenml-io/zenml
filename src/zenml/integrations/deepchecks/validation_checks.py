@@ -258,8 +258,14 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     TABULAR_TRAIN_TEST_FEATURE_DRIFT = source_utils.resolve(
         tabular_checks.TrainTestFeatureDrift
     ).import_path
+    TABULAR_FEATURE_DRIFT = source_utils.resolve(
+        tabular_checks.FeatureDrift
+    ).import_path
     TABULAR_TRAIN_TEST_LABEL_DRIFT = source_utils.resolve(
         tabular_checks.TrainTestLabelDrift
+    ).import_path
+    TABULAR_LABEL_DRIFT = source_utils.resolve(
+        tabular_checks.LabelDrift
     ).import_path
     TABULAR_TRAIN_TEST_SAMPLES_MIX = source_utils.resolve(
         tabular_checks.TrainTestSamplesMix
@@ -317,6 +323,12 @@ class DeepchecksModelValidationCheck(DeepchecksValidationCheck):
     TABULAR_MODEL_INFERENCE_TIME = source_utils.resolve(
         tabular_checks.ModelInferenceTime
     ).import_path
+    TABULAR_MODEL_INFO = source_utils.resolve(
+        tabular_checks.ModelInfo
+    ).import_path
+    TABULAR_PERFORMANCE_BIAS = source_utils.resolve(
+        tabular_checks.model_evaluation.PerformanceBias
+    ).import_path
     TABULAR_REGRESSION_ERROR_DISTRIBUTION = source_utils.resolve(
         tabular_checks.RegressionErrorDistribution
     ).import_path
@@ -329,6 +341,18 @@ class DeepchecksModelValidationCheck(DeepchecksValidationCheck):
     TABULAR_SEGMENT_PERFORMANCE = source_utils.resolve(
         tabular_checks.SegmentPerformance
     ).import_path
+    TABULAR_WEAK_SEGMENT_PERFORMANCE = source_utils.resolve(
+        tabular_checks.WeakSegmentsPerformance
+    ).import_path
+    TABULAR_SINGLE_DATASET_PERFORMANCE = source_utils.resolve(
+        tabular_checks.SingleDatasetPerformance
+    ).import_path
+    TABULAR_TRAIN_TEST_PERFORMANCE = source_utils.resolve(
+        tabular_checks.TrainTestPerformance
+    ).import_path
+    TABULAR_MULTI_MODEL_PERFORMANCE_REPORT = source_utils.resolve(
+        tabular_checks.MultiModelPerformanceReport
+    ).import_path
 
     VISION_CONFUSION_MATRIX_REPORT = source_utils.resolve(
         vision_checks.ConfusionMatrixReport
@@ -338,6 +362,12 @@ class DeepchecksModelValidationCheck(DeepchecksValidationCheck):
     ).import_path
     VISION_MEAN_AVERAGE_RECALL_REPORT = source_utils.resolve(
         vision_checks.MeanAverageRecallReport
+    ).import_path
+    VISION_SINGLE_DATASET_PERFORMANCE = source_utils.resolve(
+        vision_checks.SingleDatasetPerformance
+    ).import_path
+    VISION_WEAK_SEGMENT_PERFORMANCE = source_utils.resolve(
+        vision_checks.WeakSegmentsPerformance
     ).import_path
 
 
@@ -364,6 +394,9 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     TABULAR_TRAIN_TEST_PREDICTION_DRIFT = source_utils.resolve(
         tabular_checks.TrainTestPredictionDrift
     ).import_path
+    TABULAR_PREDICTION_DRIFT = source_utils.resolve(
+        tabular_checks.PredictionDrift
+    ).import_path
     TABULAR_UNUSED_FEATURES = source_utils.resolve(
         tabular_checks.UnusedFeatures
     ).import_path
@@ -376,4 +409,7 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     ).import_path
     VISION_TRAIN_TEST_PREDICTION_DRIFT = source_utils.resolve(
         vision_checks.TrainTestPredictionDrift
+    ).import_path
+    VISION_PREDICTION_DRIFT = source_utils.resolve(
+        vision_checks.PredictionDrift
     ).import_path
