@@ -533,18 +533,31 @@ class StackComponent:
                 else container.pipeline_configuration.resource_settings
             )
 
-            component_settings = self.merge_resource_settings(
+            component_settings = self._apply_resource_settings(
                 resource_settings=resource_settings,
                 component_settings=component_settings,
             )
 
         return component_settings
 
-    def merge_resource_settings(
+    def _apply_resource_settings(
         self,
-        resource_settings: ResourceSettings,
         component_settings: T,
+        resource_settings: ResourceSettings,
     ) -> T:
+        """Apply resource settings to the component settings.
+
+        Args:
+            component_settings: The component settings.
+            resource_settings: The resource settings to apply.
+
+        Raises:
+            ValueError: If multiple different values are specified for a
+                resource key.
+
+        Returns:
+            The component settings with resource settings applied.
+        """
         updates = {}
 
         allowed_keys = component_settings.get_allowed_resource_settings_keys()
