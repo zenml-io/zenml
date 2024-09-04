@@ -616,7 +616,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
         else:
             mlflow_model_versions = self.mlflow_client.search_model_versions(
                 filter_string=filter_string,
-                order_by=order_by,
             )
         # Cast the MLflow model versions to the ZenML model version class.
         model_versions = []
