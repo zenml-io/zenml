@@ -556,7 +556,7 @@ class Compiler:
                     f"Step `{name}` requires step operator "
                     f"'{step_operator}' which is not configured in "
                     f"the stack '{stack.name}'. Available step operators: "
-                    f"{available_step_operators}."
+                    f"{list(available_step_operators)}."
                 )
 
             experiment_tracker = step.config.experiment_tracker
@@ -568,7 +568,8 @@ class Compiler:
                     f"Step `{name}` requires experiment tracker "
                     f"'{experiment_tracker}' which is not "
                     f"configured in the stack '{stack.name}'. Available "
-                    f"experiment trackers: {available_experiment_trackers}."
+                    "experiment trackers: "
+                    f"{list(available_experiment_trackers)}."
                 )
 
     @staticmethod
@@ -624,8 +625,16 @@ class Compiler:
             step_operator: The step operator used for the step invocation.
         """
         if step_operator:
-            assert stack.step_operator
-            settings_class = stack.step_operator.settings_class
+            if (
+                stack.step_operator
+                and stack.step_operator.name == step_operator
+            ):
+                settings_class = stack.step_operator.settings_class
+            else:
+                # This will fail right after when we validate that the step
+                # operator configuration is possible with the active stack, so
+                # we don't need to log any warning here.
+                return
         else:
             settings_class = stack.orchestrator.settings_class
 
@@ -644,9 +653,9 @@ class Compiler:
 
         if ignored_keys:
             logger.warning(
-                "Ignoring the following resource settings because your active "
-                "%s for step %s does not support them: %s",
-                "step operator" if step_operator else "orchestrator",
+                "Ignoring the following resource settings for step `%s` "
+                "because your active %s does not support them: %s",
                 invocation_id,
+                "step operator" if step_operator else "orchestrator",
                 ignored_keys,
             )

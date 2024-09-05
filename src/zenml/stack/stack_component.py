@@ -35,6 +35,9 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config import ResourceSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.stack_component_resource_settings import (
+    StackComponentResourceSettings,
+)
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -50,9 +53,6 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.stack_component_resource_settings import (
-        StackComponentResourceSettings,
-    )
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ComponentResponse,
@@ -542,9 +542,9 @@ class StackComponent:
 
     def _apply_resource_settings(
         self,
-        component_settings: T,
+        component_settings: "T",
         resource_settings: ResourceSettings,
-    ) -> T:
+    ) -> "T":
         """Apply resource settings to the component settings.
 
         Args:
