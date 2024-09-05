@@ -296,7 +296,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 os.environ[DATABRICKS_PASSWORD] = self.config.tracking_password
             if self.config.tracking_token:
                 os.environ[DATABRICKS_TOKEN] = self.config.tracking_token
-            if self.config.enable_unity_catalog:
+            if self.config.enable_unity_catalog is True:
                 mlflow.set_registry_uri(DATABRICKS_UNITY_CATALOG)
         else:
             os.environ[MLFLOW_TRACKING_URI] = tracking_uri

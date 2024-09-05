@@ -609,13 +609,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 else:
                     order_by = ["creation_timestamp DESC"]
 
-        if self.config.enable_unity_catalog:
+        if self.config.enable_unity_catalog is True:
             mlflow_model_versions = self.mlflow_client.search_model_versions(
                 filter_string=filter_string,
             )
         else:
             mlflow_model_versions = self.mlflow_client.search_model_versions(
                 filter_string=filter_string,
+                order_by=order_by,
             )
         # Cast the MLflow model versions to the ZenML model version class.
         model_versions = []
