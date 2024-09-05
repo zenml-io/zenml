@@ -729,7 +729,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             The model version.
         """
-        metadata = mlflow_model_version.tags or {}
+        if isinstance(mlflow_model_version.tags, dict):
+            metadata = mlflow_model_version.tags
+        else:
+            metadata = {}
         if mlflow_model_version.run_id:
             metadata["mlflow_run_id"] = mlflow_model_version.run_id
         if mlflow_model_version.run_link:
