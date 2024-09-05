@@ -18,8 +18,10 @@ class StackComponentResourceSettings(BaseSettings):
         Returns:
             Set of keys that can be defined using the resource settings.
         """
-        for class_ in cls.__mro__[1:]:
-            if issubclass(class_, StackComponentResourceSettings):
+        for class_ in reversed(cls.__mro__):
+            if class_ is not StackComponentResourceSettings and issubclass(
+                class_, StackComponentResourceSettings
+            ):
                 return set(class_.model_fields)
         else:
             return set()
