@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.config.stack_component_settings import (
+from zenml.config.stack_component_resource_settings import (
     StackComponentResourceSettings,
 )
 from zenml.integrations.gcp import (

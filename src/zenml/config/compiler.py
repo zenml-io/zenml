@@ -31,7 +31,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.resource_settings import ResourceSettings
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.stack_component_settings import (
+from zenml.config.stack_component_resource_settings import (
     StackComponentResourceSettings,
 )
 from zenml.config.step_configurations import (

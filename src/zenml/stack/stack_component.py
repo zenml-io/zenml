@@ -50,7 +50,7 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.stack_component_settings import (
+    from zenml.config.stack_component_resource_settings import (
         StackComponentResourceSettings,
     )
     from zenml.metadata.metadata_types import MetadataType
@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
 
-    T = TypeVar("T", bound=StackComponentResourceSettings)
+    T = TypeVar("T", bound="StackComponentResourceSettings")
 
 logger = get_logger(__name__)
 
