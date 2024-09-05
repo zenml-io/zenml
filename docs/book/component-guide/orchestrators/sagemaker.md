@@ -92,7 +92,7 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
     --execution_role=<YOUR_IAM_ROLE_ARN> \ 
     --aws_access_key_id=...
     --aws_secret_access_key=...
-    --aws_region=...
+    --region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
@@ -186,10 +186,8 @@ For example, settings can be provided in the following way:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
-    processor_args={
-        "instance_type": "ml.t3.medium",
-        "volume_size_in_gb": 30
-    }
+    instance_type="ml.m5.large",
+    volume_size_in_gb=30,
 )
 ```
 

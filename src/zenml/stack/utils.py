@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -75,7 +75,16 @@ def validate_stack_component_config(
             return None
         raise
 
-    configuration = flavor_class.config_class(**configuration_dict)
+    config_class = flavor_class.config_class
+    # Make sure extras are forbidden for the config class. Due to inheritance
+    # order, some config classes allow extras by accident which we patch here.
+    validation_config_class: Type[StackComponentConfig] = type(
+        config_class.__name__,
+        (config_class,),
+        {"model_config": {"extra": "forbid"}},
+    )
+    configuration = validation_config_class(**configuration_dict)
+
     if not configuration.is_valid:
         raise ValueError(
             f"Invalid stack component configuration. Please verify "

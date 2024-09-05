@@ -45,8 +45,8 @@ class AWSIntegration(Integration):
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the AWS integration."""
         from zenml.integrations.aws import service_connectors  # noqa
 
