@@ -20,7 +20,7 @@ import functools
 from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 
 import cloudpickle as pickle
-from accelerate.commands.launch import (  # type: ignore[import-untyped]
+from accelerate.commands.launch import (
     launch_command,
     launch_command_parser,
 )

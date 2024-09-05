@@ -15,8 +15,8 @@ import os
 import shutil
 import tempfile
 
-import numpy as np
 import pytest
+from pydantic import BaseModel
 
 from zenml.artifacts.utils import (
     _get_new_artifact_version,
@@ -27,7 +27,7 @@ from zenml.artifacts.utils import (
 )
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.materializers.numpy_materializer import NUMPY_FILENAME
+from zenml.materializers.pydantic_materializer import DEFAULT_FILENAME
 from zenml.models import ArtifactVersionResponse, Page
 
 
@@ -120,17 +120,24 @@ def test_load_artifact_from_response(mocker, model_artifact):
     mocker_load_artifact.assert_called_once()
 
 
+class TempClass(BaseModel):
+    """Temp class for testing purposes."""
+
+    temp_value: int = 1
+
+
 @pytest.fixture
-def numpy_file_uri(clean_client: "Client"):
-    # Create a temporary file to save the numpy array
+def builtin_type_file_uri(clean_client: "Client"):
+    # Create a temporary file to save an integer
     temp_dir = tempfile.mkdtemp(
         dir=clean_client.active_stack.artifact_store.path
     )
-    numpy_file = os.path.join(temp_dir, NUMPY_FILENAME)
+    filepath = os.path.join(temp_dir, DEFAULT_FILENAME)
 
-    # Save a numpy array to the temporary file
-    arr = np.array([1, 2, 3, 4, 5])
-    np.save(numpy_file, arr)
+    # Save the integer to the temporary file
+    from zenml.utils.yaml_utils import write_json
+
+    write_json(filepath, TempClass().model_dump_json())
 
     # Yield the temporary directory
     yield temp_dir
@@ -139,7 +146,7 @@ def numpy_file_uri(clean_client: "Client"):
     shutil.rmtree(temp_dir)
 
 
-def test__load_artifact(numpy_file_uri):
+def test__load_artifact(builtin_type_file_uri):
     """Test the _load_artifact function."""
     materializer = (
         "random_materializer_class_path.random_materializer_class_name"
@@ -149,7 +156,7 @@ def test__load_artifact(numpy_file_uri):
     # Test with invalid materializer and ensure that a ModuleNotFoundError is
     # raised
     try:
-        _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
+        _load_artifact_from_uri(materializer, data_type, builtin_type_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
         assert (
@@ -158,9 +165,11 @@ def test__load_artifact(numpy_file_uri):
 
     # Test with invalid data type and ensure that a ModuleNotFoundError is
     # raised
-    materializer = "zenml.materializers.numpy_materializer.NumpyMaterializer"
+    materializer = (
+        "zenml.materializers.pydantic_materializer.PydanticMaterializer"
+    )
     try:
-        _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
+        _load_artifact_from_uri(materializer, data_type, builtin_type_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
         assert (
@@ -169,10 +178,18 @@ def test__load_artifact(numpy_file_uri):
 
     # Test with valid materializer and data type and ensure that the artifact
     # is loaded correctly
-    data_type = "numpy.ndarray"
-    artifact = _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
+    from zenml.utils import source_utils
+
+    data_type = source_utils.Source(
+        module=TempClass.__module__,
+        attribute=TempClass.__name__,
+        type=source_utils.SourceType.BUILTIN,
+    )
+    artifact = _load_artifact_from_uri(
+        materializer, data_type, builtin_type_file_uri
+    )
     assert artifact is not None
-    assert isinstance(artifact, np.ndarray)
+    assert isinstance(artifact, TempClass)
 
 
 def test__get_new_artifact_version(mocker, sample_artifact_version_model):
