@@ -93,6 +93,10 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
+        convert_component_shortcut_settings_keys(
+            pipeline.configuration.settings, stack=stack
+        )
+
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
         if run_configuration.run_name:
             self._verify_run_name(run_configuration.run_name)
@@ -445,6 +449,9 @@ class Compiler:
                 step_config, runtime_parameters=invocation.parameters
             )
 
+        convert_component_shortcut_settings_keys(
+            step.configuration.settings, stack=stack
+        )
         step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
@@ -596,3 +603,30 @@ class Compiler:
             additional_spec_args["parameters"] = pipeline._parameters
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
+
+
+def convert_component_shortcut_settings_keys(
+    settings: Dict[str, "BaseSettings"], stack: "Stack"
+) -> None:
+    """Convert component shortcut settings keys.
+
+    Args:
+        settings: Dictionary of settings.
+        stack: The stack that the pipeline will run on.
+
+    Raises:
+        ValueError: If stack component settings were defined both using the
+            full and the shortcut key.
+    """
+    for component in stack.components.values():
+        shortcut_key = str(component.type)
+        if component_settings := settings.pop(shortcut_key, None):
+            key = settings_utils.get_stack_component_setting_key(component)
+            if key in settings:
+                raise ValueError(
+                    f"Duplicate settings provided for your {shortcut_key} "
+                    f"using the keys {shortcut_key} and {key}. Remove settings "
+                    "for one of them to fix this error."
+                )
+
+            settings[key] = component_settings

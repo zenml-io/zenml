@@ -158,7 +158,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.databricks": databricks_settings,
+        "orchestrator": databricks_settings,
     }
 )
 def my_pipeline():

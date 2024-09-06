@@ -219,7 +219,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.tekton": tekton_settings,
+        "orchestrator": tekton_settings,
         "resources": resource_settings,
     }
 )
@@ -229,7 +229,7 @@ def my_pipeline():
 # OR specify settings on step-level
 @step(
     settings={
-        "orchestrator.tekton": tekton_settings,
+        "orchestrator": tekton_settings,
         "resources": resource_settings,
     }
 )

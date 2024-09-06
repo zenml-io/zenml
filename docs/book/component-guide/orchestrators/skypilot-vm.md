@@ -299,7 +299,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_aws": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -334,7 +334,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_gcp": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -368,7 +368,7 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_azure": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -394,7 +394,7 @@ skypilot_settings = SkypilotLambdaOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_lambda": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -428,14 +428,14 @@ high_resource_settings = SkypilotAWSOrchestratorSettings(
     # ... other settings
 )
 
-@step(settings={"orchestrator.vm_aws": high_resource_settings})
+@step(settings={"orchestrator": high_resource_settings})
 def my_resource_intensive_step():
     # Step implementation
     pass
 ```
 
 {% hint style="warning" %}
-When configuring pipeline or step-specific resources, you can use the `settings` parameter to specifically target the orchestrator flavor you want to use `orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name `orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure resources for the `vm_gcp` flavor, you can use `settings={"orchestrator.vm_gcp": ...}`.
+When configuring pipeline or step-specific resources, you can use the `settings` parameter to specifically target the orchestrator flavor you want to use `orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name `orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure resources for the `vm_gcp` flavor, you can use `settings={"orchestrator": ...}`.
 {% endhint %}
 
 By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.
