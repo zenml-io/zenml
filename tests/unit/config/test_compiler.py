@@ -531,3 +531,65 @@ def test_spec_compilation(local_stack):
 
     assert spec == expected_spec
     assert other_spec == expected_spec
+
+
+def test_stack_component_shortcut_keys(
+    mocker, one_step_pipeline, empty_step, local_stack
+):
+    """Tests settings stack component settings with the shortcut key."""
+
+    class StubSettings(BaseSettings):
+        value: str = ""
+
+    step_instance = empty_step()
+    pipeline_instance = one_step_pipeline(step_instance)
+
+    full_key_settings = StubSettings(value="full_key")
+    shortcut_settings = StubSettings(value="shortcut")
+
+    orchestrator_class = type(local_stack.orchestrator)
+    mocker.patch.object(
+        orchestrator_class,
+        "settings_class",
+        new_callable=mocker.PropertyMock,
+        return_value=StubSettings,
+    )
+
+    pipeline_instance_with_shortcut_settings = pipeline_instance.with_options(
+        settings={"orchestrator": shortcut_settings}
+    )
+
+    with pipeline_instance_with_shortcut_settings:
+        pipeline_instance_with_shortcut_settings.entrypoint()
+
+    with does_not_raise():
+        deployment = Compiler().compile(
+            pipeline=pipeline_instance_with_shortcut_settings,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+
+    assert "orchestrator" not in deployment.pipeline_configuration.settings
+    compiled_settings = deployment.pipeline_configuration.settings[
+        "orchestrator.default"
+    ]
+    assert compiled_settings.value == "shortcut"
+
+    # The pipeline config has settings for both the full as well as the
+    # shortcut key, which means it should fail during compilation
+    pipeline_instance_with_duplicate_settings = pipeline_instance.with_options(
+        settings={
+            "orchestrator": shortcut_settings,
+            "orchestrator.default": full_key_settings,
+        }
+    )
+
+    with pipeline_instance_with_duplicate_settings:
+        pipeline_instance_with_duplicate_settings.entrypoint()
+
+    with pytest.raises(ValueError):
+        deployment = Compiler().compile(
+            pipeline=pipeline_instance_with_duplicate_settings,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )

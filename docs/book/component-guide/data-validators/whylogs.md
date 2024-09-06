@@ -71,7 +71,7 @@ from zenml import step
 
 @step(
     settings={
-        "data_validator.whylogs": WhylogsDataValidatorSettings(
+        "data_validator": WhylogsDataValidatorSettings(
             enable_whylabs=True, dataset_id="model-1"
         )
     }
@@ -170,7 +170,7 @@ whylogs_settings = WhylogsDataValidatorSettings(
 
 @step(
     settings={
-        "data_validator.whylogs": whylogs_settings
+        "data_validator": whylogs_settings
     }
 )
 def data_profiler(
@@ -222,7 +222,7 @@ whylogs_settings = WhylogsDataValidatorSettings(
 
 @step(
     settings={
-        "data_validator.whylogs": whylogs_settings
+        "data_validator": whylogs_settings
     }
 )
 def data_profiler(

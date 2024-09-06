@@ -180,7 +180,7 @@ wandb_settings = WandbExperimentTrackerSettings(
 @step(
     experiment_tracker="<WANDB_TRACKER_STACK_COMPONENT_NAME>",
     settings={
-        "experiment_tracker.wandb": wandb_settings
+        "experiment_tracker": wandb_settings
     }
 )
 def my_step(
