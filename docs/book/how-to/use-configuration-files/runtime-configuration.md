@@ -23,7 +23,7 @@ Settings are categorized into two types:
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
   * [`DockerSettings`](../customize-docker-builds/README.md) to specify Docker settings.
   * [`ResourceSettings`](../training-with-gpus/training-with-gpus.md) to specify resource settings.
-* **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
+* **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (the key should be `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws/#zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
   * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings) to specify Kubeflow settings.
   * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings) to specify MLflow settings.
@@ -45,17 +45,17 @@ This means that all pipelines that run using this experiment tracker use nested 
 
 ### Using the right key for Stack-component-specific settings
 
-When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>
+When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. If you specify just the category (e.g. `step_operator` or `orchestrator`), ZenML will try to apply those settings to whatever flavor of component is in your stack when running a pipeline. If your settings don't apply to this flavor, they will be ignored.
 
-For example, the [SagemakerStepOperator](../../component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator.sagemaker`
+For example, the [SagemakerStepOperator](../../component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
 
 ```python
-@step(step_operator="nameofstepoperator", settings= {"step_operator.sagemaker": {"estimator_args": {"instance_type": "m7g.medium"}}})
+@step(step_operator="nameofstepoperator", settings= {"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
 def my_step():
   ...
 
 # Using the class
-@step(step_operator="nameofstepoperator", settings= {"step_operator.sagemaker": SagemakerStepOperatorSettings(instance_type="m7g.medium")})
+@step(step_operator="nameofstepoperator", settings= {"step_operator": SagemakerStepOperatorSettings(instance_type="m7g.medium")})
 def my_step():
   ...
 ```
@@ -67,7 +67,7 @@ steps:
   my_step:
     step_operator: "nameofstepoperator"
     settings:
-      step_operator.sagemaker:
+      step_operator:
         estimator_args:
           instance_type: m7g.medium
 ```
