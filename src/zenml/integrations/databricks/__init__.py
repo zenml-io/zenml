@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """Initialization of the Databricks integration for ZenML."""
 
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.integrations.constants import (
-    DATABRICKS,
-)
+from zenml.integrations.constants import DATABRICKS
+
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -31,6 +30,25 @@ class DatabricksIntegration(Integration):
 
     NAME = DATABRICKS
     REQUIREMENTS = ["databricks-sdk==0.28.0"]
+
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["numpy", "pandas"]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.numpy import NumpyIntegration
+        from zenml.integrations.pandas import PandasIntegration
+
+        return cls.REQUIREMENTS + \
+            NumpyIntegration.get_requirements(target_os=target_os) + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

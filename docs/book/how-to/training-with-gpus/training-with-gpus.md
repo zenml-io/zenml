@@ -32,7 +32,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 )
 
 
-@step(settings={"orchestrator.vm_aws": skypilot_settings)
+@step(settings={"orchestrator": skypilot_settings)
 def training_step(...) -> ...:
     # train a model
 ```

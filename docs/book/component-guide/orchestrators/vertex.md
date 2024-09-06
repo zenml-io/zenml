@@ -269,7 +269,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )
@@ -279,7 +279,7 @@ def my_pipeline():
 # OR specify settings on step-level
 @step(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )

@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
+import pytest
 from transformers import TFAutoModelForSequenceClassification
 
 from tests.unit.test_general import _test_materializer
@@ -20,6 +23,10 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 )
 
 
+@pytest.mark.skipif(
+    sys.version_info.minor == 12,
+    reason="The tensorflow integrations is not yet supported on 3.12.",
+)
 def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
     model = _test_materializer(

@@ -161,7 +161,7 @@ neptune_settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
 @step(
     experiment_tracker="<NEPTUNE_TRACKER_STACK_COMPONENT_NAME>",
     settings={
-        "experiment_tracker.neptune": neptune_settings
+        "experiment_tracker": neptune_settings
     }
 )
 def my_step(

@@ -27,7 +27,8 @@ class HuggingfaceIntegration(Integration):
     """Definition of Huggingface integration for ZenML."""
 
     NAME = HUGGINGFACE
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
+
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec", "pandas"]
 
     @classmethod
     def activate(cls) -> None:
@@ -64,7 +65,11 @@ class HuggingfaceIntegration(Integration):
         else:
             requirements += ["transformers<=4.31"]
 
-        return requirements
+        # Add the pandas integration requirements
+        from zenml.integrations.pandas import PandasIntegration
+
+        return requirements + \
+            PandasIntegration.get_requirements(target_os=target_os)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

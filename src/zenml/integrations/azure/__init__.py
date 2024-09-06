@@ -52,8 +52,8 @@ class AzureIntegration(Integration):
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the Azure integration."""
         from zenml.integrations.azure import service_connectors  # noqa
 
