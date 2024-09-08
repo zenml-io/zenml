@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to AWS."""
 
-from typing import ClassVar, Dict, List
+from typing import ClassVar, Dict, List, Optional
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
-from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
+from zenml.stack_deployments.stack_deployment import (
+    STACK_DEPLOYMENT_TERRAFORM,
+    ZenMLCloudStackDeployment,
+)
 from zenml.utils.string_utils import random_str
 
 AWS_DEPLOYMENT_TYPE = "cloud-formation"
@@ -217,16 +220,18 @@ console.
         deploy the ZenML stack. The URL should include as many pre-filled
         URL query parameters as possible.
         * a textual description of the URL
+        * a Terraform script used to deploy the ZenML stack
         * some deployment providers may require additional configuration
-        parameters to be passed to the cloud provider in addition to the
-        deployment URL query parameters. Where that is the case, this method
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
         should also return a string that the user can copy and paste into the
         cloud provider console to deploy the ZenML stack (e.g. a set of
-        environment variables, or YAML configuration snippet etc.).
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
 
         Returns:
-            The configuration to deploy the ZenML stack to the specified cloud
-            provider.
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
         """
         params = dict(
             stackName=self.stack_name,
@@ -247,8 +252,27 @@ console.
             f"{region}#/stacks/create/review?{query_params}"
         )
 
+        config: Optional[str] = None
+        if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
+            config = f"""module "zenml_stack" {{
+    source  = "zenml-io/zenml-stack/aws"
+
+    region = "{self.location or "eu-central-1"}"
+    zenml_server_url = "{self.zenml_server_url}"
+    zenml_api_key = ""
+    zenml_api_token = "{self.zenml_server_api_token}"
+    zenml_stack_name = "{self.stack_name}"
+    zenml_stack_deployment = "{self.deployment_type}"
+}}
+output "zenml_stack_id" {{
+    value = module.zenml_stack.zenml_stack_id
+}}
+output "zenml_stack_name" {{
+    value = module.zenml_stack.zenml_stack_name
+}}"""
+
         return StackDeploymentConfig(
             deployment_url=url,
             deployment_url_text="AWS CloudFormation Console",
-            configuration=None,
+            configuration=config,
         )

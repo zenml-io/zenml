@@ -6,6 +6,8 @@ The configuration for specifying pip and apt dependencies only works in the remo
 
 When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../configure-python-environments/README.md#-configure-python-environments) component of your stack.
 
+For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
+
 By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
 
 * Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
@@ -23,6 +25,8 @@ def my_pipeline(...):
 If required, a custom command can be provided. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
 
 ```python
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(replicate_local_python_environment=[
     "poetry",
     "export",
@@ -103,7 +107,6 @@ You can combine these methods but do make sure that your list of requirements do
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
 
 * The packages installed in your local python environment
-* The packages specified via the `required_hub_plugins` attribute
 * The packages required by the stack unless this is disabled by setting `install_stack_requirements=False`.
 * The packages specified via the `required_integrations`
 * The packages specified via the `requirements` attribute

@@ -89,7 +89,7 @@ A summary of some of the advantages that ZenML brings to the table here includes
 - **Reproducibility**: You can rerun the pipeline to update the index store with
   new documents or to change the parameters of the chunking process and so on. Previous versions of
   the artifacts will be preserved, and you can compare the performance of
-    different versions of the pipeline.
+    different runs of the pipeline.
 - **Scalability**: You can easily scale the pipeline to handle larger corpora of
     documents by deploying it on a cloud provider and using a more scalable
     vector store.

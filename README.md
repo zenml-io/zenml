@@ -1,6 +1,6 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
+  <h1 align="center">Connecting data science teams seamlessly to cloud infrastructure.
 </h1>
 </div>
 
@@ -318,7 +318,7 @@ the Apache License Version 2.0.
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/cloud">Sign up for ZenML Pro</a>
+    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a>
     ·
     <a href="https://www.zenml.io/blog">Read Blog</a>
     ·
@@ -327,7 +327,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.61.0 is out. Check out the release notes
+    🎉 Version 0.65.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

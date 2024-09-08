@@ -171,7 +171,6 @@ class CliCategories(StrEnum):
 
     STACK_COMPONENTS = "Stack Components"
     MODEL_DEPLOYMENT = "Model Deployment"
-    HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
     MODEL_CONTROL_PLANE = "Model Control Plane"
@@ -303,6 +302,9 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+    LIGHTNING_AI_STUDIO = "lightning_ai_studio"
+    GITHUB_CODESPACES = "github_codespaces"
+    VSCODE_REMOTE_CONTAINER = "vscode_remote_container"
 
 
 class ModelStages(StrEnum):
@@ -338,6 +340,9 @@ class TaggableResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
     MODEL_VERSION = "model_version"
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+    RUN_TEMPLATE = "run_template"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -406,3 +411,4 @@ class StackDeploymentProvider(StrEnum):
 
     AWS = "aws"
     GCP = "gcp"
+    AZURE = "azure"

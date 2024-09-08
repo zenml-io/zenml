@@ -25,3 +25,6 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
+from zenml.integrations.huggingface.materializers.huggingface_t5_materializer import (
+    HFT5Materializer,
+)

@@ -17,7 +17,6 @@ import copy
 import hashlib
 import inspect
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -72,7 +71,7 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
-    prepare_model_versions,
+    upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -82,6 +81,7 @@ from zenml.steps.entrypoint_function_utils import (
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
+    code_utils,
     dashboard_utils,
     dict_utils,
     pydantic_utils,
@@ -89,6 +89,7 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -241,20 +242,6 @@ class Pipeline:
         """
         return inspect.getsource(self.source_object)
 
-    @classmethod
-    def from_model(cls, model: "PipelineResponse") -> "Pipeline":
-        """Creates a pipeline instance from a model.
-
-        Args:
-            model: The model to load the pipeline instance from.
-
-        Returns:
-            The pipeline instance.
-        """
-        from zenml.new.pipelines.deserialization_utils import load_pipeline
-
-        return load_pipeline(model=model)
-
     @property
     def model(self) -> "PipelineResponse":
         """Gets the registered pipeline model for this instance.
@@ -267,14 +254,7 @@ class Pipeline:
         """
         self._prepare_if_possible()
 
-        pipeline_spec = Compiler().compile_spec(self)
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        pipelines = Client().list_pipelines(
-            name=self.name, version_hash=version_hash
-        )
+        pipelines = Client().list_pipelines(name=self.name)
         if len(pipelines) == 1:
             return pipelines.items[0]
 
@@ -513,8 +493,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "pipeline build/run` commands."
             )
 
-        pipeline_spec = Compiler().compile_spec(self)
-        return self._register(pipeline_spec=pipeline_spec)
+        return self._register()
 
     def build(
         self,
@@ -541,12 +520,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
-            deployment, pipeline_spec, _, _ = self._compile(
+            deployment, _, _ = self._compile(
                 config_path=config_path,
                 steps=step_configurations,
                 settings=settings,
             )
-            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+            pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
@@ -601,11 +580,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
 
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
+
+        Raises:
+            ValueError: if the orchestrator doesn't support scheduling, but schedule was given
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -623,7 +606,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, pipeline_spec, schedule, build = self._compile(
+            deployment, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
                 enable_cache=enable_cache,
@@ -646,22 +629,29 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             pipeline_id = None
             if register_pipeline:
-                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+                pipeline_id = self._register().id
 
             else:
                 logger.debug(f"Pipeline {self.name} is unlisted.")
 
-            # TODO: check whether orchestrator even support scheduling before
-            #   registering the schedule
+            stack = Client().active_stack
+            stack.validate()
+
             schedule_id = None
             if schedule:
+                if not stack.orchestrator.config.is_schedulable:
+                    raise ValueError(
+                        f"Stack {stack.name} does not support scheduling. "
+                        "Not all orchestrator types support scheduling, "
+                        "kindly consult with "
+                        "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                        "for details."
+                    )
                 if schedule.name:
                     schedule_name = schedule.name
                 else:
-                    date = datetime.utcnow().strftime("%Y_%m_%d")
-                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule_name = deployment.run_name_template.format(
-                        date=date, time=time
+                    schedule_name = format_name_template(
+                        deployment.run_name_template
                     )
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
@@ -689,8 +679,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             stack = Client().active_stack
             stack.validate()
-
-            prepare_model_versions(deployment)
+            upload_notebook_cell_code_if_necessary(
+                deployment=deployment, stack=stack
+            )
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -698,6 +689,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo_context
             )
+
+            if prevent_build_reuse:
+                logger.warning(
+                    "Passing `prevent_build_reuse=True` to "
+                    "`pipeline.with_opitions(...)` is deprecated. Use "
+                    "`DockerSettings.prevent_build_reuse` instead."
+                )
 
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
@@ -723,6 +721,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     code_repository=local_repo_context.code_repository_id,
                 )
 
+            code_path = None
+            if build_utils.should_upload_code(
+                deployment=deployment,
+                build=build_model,
+                code_reference=code_reference,
+            ):
+                code_archive = code_utils.CodeArchive(
+                    root=source_utils.get_source_root()
+                )
+                logger.info("Archiving pipeline code...")
+                code_path = code_utils.upload_code_if_necessary(code_archive)
+
             deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
@@ -731,6 +741,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
+                code_path=code_path,
                 **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
@@ -749,7 +760,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if run:
                 run_url = dashboard_utils.get_run_url(run)
                 if run_url:
-                    logger.info(f"Dashboard URL: {run_url}")
+                    logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
                 else:
                     logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
@@ -987,7 +998,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
         "PipelineDeploymentBase",
-        "PipelineSpec",
         Optional["Schedule"],
         Union["PipelineBuildBase", UUID, None],
     ]:
@@ -998,7 +1008,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **run_configuration_args: Configurations for the pipeline run.
 
         Returns:
-            A tuple containing the deployment, spec, schedule and build of
+            A tuple containing the deployment, schedule and build of
             the compiled pipeline.
         """
         # Activating the built-in integrations to load all materializers
@@ -1006,12 +1016,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         integration_registry.activate_integrations()
 
-        self._parse_config_file(
+        _from_config_file = self._parse_config_file(
             config_path=config_path,
             matcher=list(PipelineRunConfiguration.model_fields.keys()),
         )
 
-        run_config = PipelineRunConfiguration(**self._from_config_file)
+        self._reconfigure_from_file_with_overrides(config_path=config_path)
+
+        run_config = PipelineRunConfiguration(**_from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
         update = PipelineRunConfiguration.model_validate(new_values)
@@ -1019,61 +1031,41 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
 
-        deployment, pipeline_spec = Compiler().compile(
+        deployment = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
 
-        return deployment, pipeline_spec, run_config.schedule, run_config.build
+        return deployment, run_config.schedule, run_config.build
 
-    def _register(self, pipeline_spec: "PipelineSpec") -> "PipelineResponse":
+    def _register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
-
-        Args:
-            pipeline_spec: The pipeline spec to register.
 
         Returns:
             The registered pipeline model.
         """
+        client = Client()
 
-        def _get(version_hash: str) -> PipelineResponse:
-            client = Client()
-
+        def _get() -> PipelineResponse:
             matching_pipelines = client.list_pipelines(
                 name=self.name,
-                version_hash=version_hash,
                 size=1,
                 sort_by="desc:created",
             )
+
             if matching_pipelines.total:
                 registered_pipeline = matching_pipelines.items[0]
-                logger.info(
-                    "Reusing registered pipeline version: `(version: %s)`.",
-                    registered_pipeline.version,
-                )
                 return registered_pipeline
             raise RuntimeError("No matching pipelines found.")
 
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        client = Client()
         try:
-            return _get(version_hash)
+            return _get()
         except RuntimeError:
-            latest_version = self._get_latest_version() or 0
-            version = str(latest_version + 1)
-
             request = PipelineRequest(
                 workspace=client.active_workspace.id,
                 user=client.active_user.id,
                 name=self.name,
-                version=version,
-                version_hash=version_hash,
-                spec=pipeline_spec,
-                docstring=self.__doc__,
             )
 
             try:
@@ -1081,12 +1073,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     pipeline=request
                 )
                 logger.info(
-                    "Registered new version: `(version %s)`.",
-                    registered_pipeline.version,
+                    "Registered new pipeline: `%s`.",
+                    registered_pipeline.name,
                 )
                 return registered_pipeline
             except EntityExistsError:
-                return _get(version_hash)
+                return _get()
 
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
         """Computes a unique identifier from the pipeline spec and steps.
@@ -1112,22 +1104,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             hash_.update(step_source.encode())
 
         return hash_.hexdigest()
-
-    def _get_latest_version(self) -> Optional[int]:
-        """Gets the latest version of this pipeline.
-
-        Returns:
-            The latest version or `None` if no version exists.
-        """
-        all_pipelines = Client().list_pipelines(
-            name=self.name, sort_by="desc:created", size=1
-        )
-        if not all_pipelines.total:
-            return None
-        pipeline = all_pipelines.items[0]
-        if pipeline.version == "UNVERSIONED":
-            return None
-        return int(all_pipelines.items[0].version)
 
     def add_step_invocation(
         self,
@@ -1262,12 +1238,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
-    ) -> None:
+    ) -> Dict[str, Any]:
         """Parses the given configuration file and sets `self._from_config_file`.
 
         Args:
             config_path: Path to a yaml configuration file.
             matcher: List of keys to match in the configuration file.
+
+        Returns:
+            Parsed config file according to matcher settings.
         """
         _from_config_file: Dict[str, Any] = {}
         if config_path:
@@ -1296,7 +1275,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     _from_config_file["model"] = Model.model_validate(
                         _from_config_file["model"]
                     )
-        self._from_config_file = _from_config_file
+        return _from_config_file
 
     def with_options(
         self,
@@ -1330,7 +1309,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
             **kwargs: Pipeline configuration options. These will be passed
                 to the `pipeline.configure(...)` method.
 
@@ -1346,17 +1326,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         pipeline_copy = self.copy()
 
-        pipeline_copy._parse_config_file(
-            config_path=config_path,
-            matcher=inspect.getfullargspec(self.configure)[0]
-            + ["model_version"],  # TODO: deprecate `model_version` later on
+        pipeline_copy._reconfigure_from_file_with_overrides(
+            config_path=config_path, **kwargs
         )
-        pipeline_copy._from_config_file = dict_utils.recursive_update(
-            pipeline_copy._from_config_file, kwargs
-        )
-
-        with pipeline_copy.__suppress_configure_warnings__():
-            pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {
@@ -1454,3 +1426,39 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
             else:
                 self.prepare()
+
+    def _reconfigure_from_file_with_overrides(
+        self,
+        config_path: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Update the pipeline configuration from config file.
+
+        Accepts overrides as kwargs.
+
+        Args:
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+            **kwargs: Pipeline configuration options. These will be passed
+                to the `pipeline.configure(...)` method.
+        """
+        self._from_config_file = {}
+        if config_path:
+            self._from_config_file = self._parse_config_file(
+                config_path=config_path,
+                matcher=inspect.getfullargspec(self.configure)[0]
+                + [
+                    "model_version"
+                ],  # TODO: deprecate `model_version` later on
+            )
+
+        _from_config_file = dict_utils.recursive_update(
+            self._from_config_file, kwargs
+        )
+
+        with self.__suppress_configure_warnings__():
+            self.configure(**_from_config_file)

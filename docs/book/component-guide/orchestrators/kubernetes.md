@@ -22,8 +22,7 @@ This component is only meant to be used within the context of a [remote ZenML de
 
 You should use the Kubernetes orchestrator if:
 
-* you're looking lightweight way of running your pipelines on Kubernetes.
-* you don't need a UI to list all your pipeline runs.
+* you're looking for a lightweight way of running your pipelines on Kubernetes.
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 
@@ -144,17 +143,20 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
-* `orchestrator_pod_settings`:  Node selectors, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `orchestrator_pod_settings`:  Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
 from kubernetes.client.models import V1Toleration
 
 kubernetes_settings = KubernetesOrchestratorSettings(
-    # settings to be applied to the step pods
     pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-nodepool": "ml-pool",
+            "kubernetes.io/arch": "amd64"
+        },
         "affinity": {
             "nodeAffinity": {
                 "requiredDuringSchedulingIgnoredDuringExecution": {
@@ -162,9 +164,9 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                         {
                             "matchExpressions": [
                                 {
-                                    "key": "node.kubernetes.io/name",
+                                    "key": "gpu-type",
                                     "operator": "In",
-                                    "values": ["my_powerful_node_group"],
+                                    "values": ["nvidia-tesla-v100", "nvidia-tesla-p100"]
                                 }
                             ]
                         }
@@ -174,29 +176,97 @@ kubernetes_settings = KubernetesOrchestratorSettings(
         },
         "tolerations": [
             V1Toleration(
-                key="node.kubernetes.io/name",
+                key="gpu",
                 operator="Equal",
-                value="",
+                value="present",
                 effect="NoSchedule"
+            ),
+            V1Toleration(
+                key="high-priority",
+                operator="Exists",
+                effect="PreferNoSchedule"
             )
         ],
-        "image_pull_secrets": ["regcred"]
+        "resources": {
+            "requests": {
+                "cpu": "2",
+                "memory": "4Gi",
+                "nvidia.com/gpu": "1"
+            },
+            "limits": {
+                "cpu": "4",
+                "memory": "8Gi",
+                "nvidia.com/gpu": "1"
+            }
+        },
+        "annotations": {
+            "prometheus.io/scrape": "true",
+            "prometheus.io/port": "8080"
+        },
+        "volumes": [
+            {
+                "name": "data-volume",
+                "persistentVolumeClaim": {
+                    "claimName": "ml-data-pvc"
+                }
+            },
+            {
+                "name": "config-volume",
+                "configMap": {
+                    "name": "ml-config"
+                }
+            }
+        ],
+        "volume_mounts": [
+            {
+                "name": "data-volume",
+                "mountPath": "/mnt/data"
+            },
+            {
+                "name": "config-volume",
+                "mountPath": "/etc/ml-config",
+                "readOnly": True
+            }
+        ],
+        "host_ipc": True,
+        "image_pull_secrets": ["regcred", "gcr-secret"],
+        "labels": {
+            "app": "ml-pipeline",
+            "environment": "production",
+            "team": "data-science"
+        }
     },
-    # settings to apply to the orchestrator pod
     orchestrator_pod_settings={
-        ...
-    }
+        "node_selectors": {
+            "cloud.google.com/gke-nodepool": "orchestrator-pool"
+        },
+        "resources": {
+            "requests": {
+                "cpu": "1",
+                "memory": "2Gi"
+            },
+            "limits": {
+                "cpu": "2",
+                "memory": "4Gi"
+            }
+        },
+        "labels": {
+            "app": "zenml-orchestrator",
+            "component": "pipeline-runner"
+        }
+    },
+    kubernetes_namespace="ml-pipelines",
+    service_account_name="zenml-pipeline-runner"
 )
-
 
 @pipeline(
     settings={
-        "orchestrator.kubernetes": kubernetes_settings
+        "orchestrator": kubernetes_settings
     }
 )
-
-
-...
+def my_kubernetes_pipeline():
+    # Your pipeline steps here
+    ...
 ```
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.

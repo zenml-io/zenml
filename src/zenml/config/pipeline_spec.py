@@ -16,7 +16,7 @@
 import json
 from typing import Any, Dict, List, Optional
 
-from zenml.config.source import Source
+from zenml.config.source import Source, SourceWithValidator
 from zenml.config.step_configurations import StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.utils.json_utils import pydantic_encoder
@@ -34,7 +34,7 @@ class PipelineSpec(StrictBaseModel):
     # - 0.4: New Pipeline class, the upstream steps and
     #   inputs in the step specs refer to the pipeline parameter names
     version: str = "0.4"
-    source: Optional[Source] = None
+    source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
     steps: List[StepSpec]
 

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from zenml.stack.flavor import Flavor
 
 STACK_COMPONENT_REGEX = re.compile(
-    "(" + "|".join(StackComponentType.values()) + r")\..*"
+    "(" + "|".join(StackComponentType.values()) + r")(\..*)?"
 )
 
 

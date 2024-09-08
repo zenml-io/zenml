@@ -31,14 +31,22 @@
 """Kubernetes-native orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
-from zenml.environment import Environment
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -335,19 +343,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If trying to run from a Jupyter notebook.
+            RuntimeError: If the Kubernetes orchestrator is not configured.
         """
-        # First check whether the code is running in a notebook.
-        if Environment.in_notebook():
-            raise RuntimeError(
-                "The Kubernetes orchestrator cannot run pipelines in a notebook "
-                "environment. The reason is that it is non-trivial to create "
-                "a Docker image of a notebook. Please consider refactoring "
-                "your notebook cells into separate scripts in a Python module "
-                "and run the code outside of a notebook when using this "
-                "orchestrator."
-            )
-
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(

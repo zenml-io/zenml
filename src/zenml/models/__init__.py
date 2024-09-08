@@ -199,12 +199,7 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
-)
-from zenml.models.v2.core.pipeline_namespace import (
-    PipelineNamespaceResponseBody,
-    PipelineNamespaceResponseMetadata,
-    PipelineNamespaceResponse,
-    PipelineNamespaceFilter,
+    PipelineResponseResources
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -230,6 +225,16 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
+    PipelineRunResponseResources
+)
+from zenml.models.v2.core.run_template import (
+    RunTemplateRequest,
+    RunTemplateUpdate,
+    RunTemplateResponse,
+    RunTemplateResponseBody,
+    RunTemplateResponseMetadata,
+    RunTemplateResponseResources,
+    RunTemplateFilter,
 )
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
@@ -327,7 +332,6 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
-from zenml.models.v2.misc.full_stack import FullStackRequest
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -357,13 +361,6 @@ from zenml.models.v2.core.event_source import (
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
-from zenml.models.v2.misc.hub_plugin_models import (
-    HubPluginRequestModel,
-    HubPluginResponseModel,
-    HubUserResponseModel,
-    HubPluginBaseModel,
-    PluginStatus,
-)
 from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -392,6 +389,12 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.info_models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+    ResourcesInfo,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -411,7 +414,6 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
-FullStackRequest.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
@@ -424,6 +426,7 @@ ModelVersionPipelineRunResponseBody.model_rebuild()
 OAuthDeviceResponseBody.model_rebuild()
 PipelineResponseBody.model_rebuild()
 PipelineResponseMetadata.model_rebuild()
+PipelineResponseResources.model_rebuild()
 PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
@@ -433,6 +436,11 @@ PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
+PipelineRunResponseResources.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
+RunTemplateResponseMetadata.model_rebuild()
+RunTemplateResponseResources.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
 RunMetadataResponseBody.model_rebuild()
 RunMetadataResponseMetadata.model_rebuild()
 ScheduleResponseBody.model_rebuild()
@@ -444,8 +452,10 @@ ServiceResponseMetadata.model_rebuild()
 ServiceResponseResources.model_rebuild()
 ServiceConnectorResponseBody.model_rebuild()
 ServiceConnectorResponseMetadata.model_rebuild()
+StackRequest.model_rebuild()
 StackResponseBody.model_rebuild()
 StackResponseMetadata.model_rebuild()
+StackResponse.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
@@ -454,6 +464,10 @@ TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
 TriggerResponseResources.model_rebuild()
 TriggerResponseResources.model_rebuild()
+ComponentInfo.model_rebuild()
+ServiceConnectorInfo.model_rebuild()
+ServiceConnectorResourcesInfo.model_rebuild()
+ResourcesInfo.model_rebuild()
 
 
 __all__ = [
@@ -590,10 +604,7 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
-    "PipelineNamespaceFilter",
-    "PipelineNamespaceResponse",
-    "PipelineNamespaceResponseBody",
-    "PipelineNamespaceResponseMetadata",
+    "PipelineResponseResources",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",
@@ -612,6 +623,14 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
+    "PipelineRunResponseResources",
+    "RunTemplateRequest",
+    "RunTemplateUpdate",
+    "RunTemplateResponse",
+    "RunTemplateResponseBody",
+    "RunTemplateResponseMetadata",
+    "RunTemplateResponseResources",
+    "RunTemplateFilter",
     "RunMetadataRequest",
     "RunMetadataFilter",
     "RunMetadataResponse",
@@ -714,16 +733,10 @@ __all__ = [
     "ServiceConnectorTypedResourcesModel",
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
-    "FullStackRequest",
     "UserAuthModel",
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
-    "HubPluginRequestModel",
-    "HubPluginResponseModel",
-    "HubUserResponseModel",
-    "HubPluginBaseModel",
-    "PluginStatus",
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
@@ -736,4 +749,8 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
+    "ComponentInfo",
+    "ServiceConnectorInfo",
+    "ServiceConnectorResourcesInfo",
+    "ResourcesInfo",
 ]

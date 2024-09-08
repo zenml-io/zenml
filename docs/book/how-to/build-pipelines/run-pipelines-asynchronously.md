@@ -11,7 +11,7 @@ This behavior can be changed in multiple ways. Either the orchestrator can be co
 ```python
 from zenml import pipeline
 
-@pipeline(settings = {"orchestrator.<STACK_NAME>": {"synchronous": False}})
+@pipeline(settings = {"orchestrator": {"synchronous": False}})
 def my_pipeline():
   ...
 ```

@@ -72,9 +72,9 @@ Set to `false` to disable the [`rich` traceback](https://rich.readthedocs.io/en/
 export ZENML_ENABLE_RICH_TRACEBACK=true
 ```
 
-## Disable colourful logging
+## Disable colorful logging
 
-If you wish to disable colourful logging, set the following environment variable:
+If you wish to disable colorful logging, set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true

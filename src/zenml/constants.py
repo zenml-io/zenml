@@ -162,10 +162,8 @@ ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING = (
 )
 ENV_ZENML_DISABLE_WORKSPACE_WARNINGS = "ZENML_DISABLE_WORKSPACE_WARNINGS"
 ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT = "ZENML_SKIP_IMAGE_BUILDER_DEFAULT"
-ENV_ZENML_REQUIRES_CODE_DOWNLOAD = "ZENML_REQUIRES_CODE_DOWNLOAD"
 ENV_ZENML_SERVER = "ZENML_SERVER"
 ENV_ZENML_LOCAL_SERVER = "ZENML_LOCAL_SERVER"
-ENV_ZENML_HUB_URL = "ZENML_HUB_URL"
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
@@ -173,6 +171,8 @@ ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES"
 )
 ENV_ZENML_IGNORE_FAILURE_HOOK = "ZENML_IGNORE_FAILURE_HOOK"
+ENV_ZENML_CUSTOM_SOURCE_ROOT = "ZENML_CUSTOM_SOURCE_ROOT"
+ENV_ZENML_WHEEL_PACKAGE_NAME = "ZENML_WHEEL_PACKAGE_NAME"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
@@ -185,6 +185,9 @@ ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD = (
     f"{ENV_ZENML_SERVER_PREFIX}USE_LEGACY_DASHBOARD"
 )
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
+ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK = (
+    "ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK"
+)
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -278,7 +281,6 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
 _csp_connect_src_urls = [
     "https://sdkdocs.zenml.io",
-    "https://hubapi.zenml.io",
     "https://analytics.zenml.io",
 ]
 _csp_img_src_urls = [
@@ -314,6 +316,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
 DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
+DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
@@ -348,7 +351,6 @@ EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
-FULL_STACK = "/full-stack"
 GET_OR_CREATE = "/get-or-create"
 GRAPH = "/graph"
 HEALTH = "/health"
@@ -363,6 +365,7 @@ PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
 PLUGIN_FLAVORS = "/plugin-flavors"
 RUNS = "/runs"
+RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
 SCHEDULES = "/schedules"
 SECRETS = "/secrets"
@@ -375,6 +378,7 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_FULL_STACK = "/full_stack_resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
@@ -422,6 +426,7 @@ PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
 )
 FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+SORT_PIPELINES_BY_LATEST_RUN_KEY = "latest_run"
 
 # Metadata constants
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
@@ -483,10 +488,18 @@ MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
 )
 
 
-FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
+FINISHED_ONBOARDING_SURVEY_KEY = "finished_onboarding_survey"
 
 # Name validation
 BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
 
 
 STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours
+
+# ZenML Pro
+ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT = (
+    "\nHINT: Since you are trying to communicate with the ZenML Pro Tenant, "
+    "please make sure that your tenant is in RUNNING state on your "
+    "Organization page. If the tenant is PAUSED you can `Resume` it via UI "
+    "and try again."
+)

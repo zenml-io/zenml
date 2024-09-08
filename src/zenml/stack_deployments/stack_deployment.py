@@ -27,12 +27,15 @@ from zenml.models import (
     StackDeploymentInfo,
 )
 
+STACK_DEPLOYMENT_TERRAFORM = "terraform"
+
 
 class ZenMLCloudStackDeployment(BaseModel):
     """ZenML Cloud Stack CLI Deployment base class."""
 
     provider: ClassVar[StackDeploymentProvider]
     deployment: ClassVar[str]
+    terraform: bool = False
     stack_name: str
     zenml_server_url: str
     zenml_server_api_token: str
@@ -105,6 +108,26 @@ class ZenMLCloudStackDeployment(BaseModel):
             names to region descriptions.
         """
 
+    @property
+    def deployment_type(self) -> str:
+        """Return the type of deployment.
+
+        Returns:
+            The type of deployment.
+        """
+        if self.terraform:
+            return STACK_DEPLOYMENT_TERRAFORM
+        return self.deployment
+
+    @classmethod
+    def skypilot_default_regions(cls) -> Dict[str, str]:
+        """Returns the regions supported by default for the Skypilot.
+
+        Returns:
+            The regions supported by default for the Skypilot.
+        """
+        return cls.locations()
+
     @classmethod
     def get_deployment_info(cls) -> StackDeploymentInfo:
         """Return information about the ZenML Cloud Stack Deployment.
@@ -120,6 +143,7 @@ class ZenMLCloudStackDeployment(BaseModel):
             integrations=cls.integrations(),
             permissions=cls.permissions(),
             locations=cls.locations(),
+            skypilot_default_regions=cls.skypilot_default_regions(),
         )
 
     @abstractmethod
@@ -135,19 +159,21 @@ class ZenMLCloudStackDeployment(BaseModel):
         URL query parameters as possible.
         * a textual description of the URL
         * some deployment providers may require additional configuration
-        parameters to be passed to the cloud provider in addition to the
-        deployment URL query parameters. Where that is the case, this method
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
         should also return a string that the user can copy and paste into the
         cloud provider console to deploy the ZenML stack (e.g. a set of
-        environment variables, or YAML configuration snippet etc.).
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
 
         Returns:
-            The configuration to deploy the ZenML stack to the specified cloud
-            provider.
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
         """
 
     def get_stack(
-        self, date_start: Optional[datetime.datetime] = None
+        self,
+        date_start: Optional[datetime.datetime] = None,
     ) -> Optional[DeployedStack]:
         """Return the ZenML stack that was deployed and registered.
 
@@ -190,7 +216,7 @@ class ZenMLCloudStackDeployment(BaseModel):
             if stack.labels.get("zenml:provider") != self.provider.value:
                 continue
 
-            if stack.labels.get("zenml:deployment") != self.deployment:
+            if stack.labels.get("zenml:deployment") != self.deployment_type:
                 continue
 
             artifact_store = stack.components[

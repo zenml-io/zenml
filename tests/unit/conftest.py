@@ -22,7 +22,6 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
@@ -42,7 +41,6 @@ from zenml.models import (
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
-    HubPluginResponseModel,
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
@@ -57,7 +55,6 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
-    PluginStatus,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -445,6 +442,7 @@ def sample_pipeline_run(
             updated=datetime.now(),
             user=sample_user_model,
             status=ExecutionStatus.COMPLETED,
+            tags=[],
         ),
         metadata=PipelineRunResponseMetadata(
             workspace=sample_workspace_model,
@@ -595,13 +593,10 @@ def create_pipeline_model(
     customizable PipelineResponseModel."""
 
     def f(
-        version: Optional[str] = None,
         **kwargs: Any,
     ) -> PipelineResponse:
         metadata_kwargs = dict(
-            version_hash="",
             workspace=sample_workspace_model,
-            spec=PipelineSpec(steps=[]),
         )
         metadata_kwargs.update(kwargs)
         return PipelineResponse(
@@ -611,7 +606,7 @@ def create_pipeline_model(
                 created=datetime.now(),
                 updated=datetime.now(),
                 user=sample_user_model,
-                version=version or "1",
+                tags=[],
             ),
             metadata=PipelineResponseMetadata(
                 **metadata_kwargs,
@@ -682,23 +677,6 @@ def sample_code_repo_response_model(
             workspace=sample_workspace_model,
             config={},
         ),
-    )
-
-
-@pytest.fixture
-def sample_hub_plugin_response_model() -> HubPluginResponseModel:
-    return HubPluginResponseModel(
-        id=uuid4(),
-        author="AlexejPenner",
-        name="alexejs_ploogin",
-        version="3.14",
-        repository_url="https://github.com/zenml-io/zenml",
-        index_url="https://test.pypi.org/simple/",
-        package_name="ploogin",
-        status=PluginStatus.AVAILABLE,
-        created=datetime.now(),
-        updated=datetime.now(),
-        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
     )
 
 

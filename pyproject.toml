@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.61.0"
+version = "0.65.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -44,26 +45,21 @@ zenml = "zenml.cli.cli:cli"
 alembic = { version = "~1.8.1" }
 bcrypt = { version = "4.0.1" }
 click = "^8.0.1,<8.1.4"
-click-params = "^0.3.0"
 cloudpickle = ">=2.0.0,<3"
 distro = "^1.6.0"
-docker = "~6.1.0"
-httplib2 = "<0.20,>=0.19.1"
+docker = "~7.1.0"
 gitpython = "^3.1.18"
-numpy = "<2.0.0"
-pandas = ">=1.1.5"
+packaging = ">=24.1"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
-pydantic = "~2.7"
-pydantic-settings = "~2.2.1"
+pydantic = "~2.8"
+pydantic-settings = "*"
 pymysql = { version = "~1.1.0,>=1.1.1" }
-pyparsing = ">=2.4.0"
-python = ">=3.8,<3.12"
+python = ">=3.8,<3.13"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
-requests = "<2.32.0" # TODO: remove after https://github.com/docker/docker-py/issues/3256
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
-secure = "~0.3.0"
+setuptools = "*"
 sqlalchemy = "^2.0.0"
 sqlalchemy_utils = "*"
 sqlmodel = "0.0.18"
@@ -77,6 +73,7 @@ pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
+secure = { version = "~0.3.0" , optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -137,6 +134,7 @@ typing-extensions = { version = ">=3.7.4", optional = true }
 pydoclint = { version = "^0.5.4", optional = true }
 ruff = { version = ">=0.1.7", optional = true }
 yamlfix = { version = "^1.16.0", optional = true }
+maison = { version = "<2.0", optional = true }
 
 # pytest
 pytest = { version = "^7.4.0", optional = true }
@@ -153,6 +151,7 @@ mkdocs-material = { version = "^8.1.7", optional = true }
 mkdocs-awesome-pages-plugin = { version = "^2.6.1", optional = true }
 mkdocstrings = { version = "^0.17.0", optional = true }
 mike = { version = "^1.1.2", optional = true }
+
 # mypy type stubs
 types-certifi = { version = "^2021.10.8.0", optional = true }
 types-croniter = { version = "^1.0.2", optional = true }
@@ -186,6 +185,7 @@ server = [
     "orjson",
     "Jinja2",
     "ipinfo",
+    "secure",
 ]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
@@ -237,6 +237,7 @@ dev = [
     "mkdocs-awesome-pages-plugin",
     "mkdocstrings",
     "mike",
+    "maison",
     "types-certifi",
     "types-croniter",
     "types-futures",
@@ -341,7 +342,6 @@ exclude = [
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
 per-file-ignores = {}
-ignore-init-module-imports = true
 ignore = [
     "E501",
     "F401",
@@ -471,11 +471,15 @@ module = [
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
+    "distutils.*",
+    "accelerate.*",
     "label_studio_sdk.*",
     "argilla.*",
+    "lightning_sdk.*",
     "peewee.*",
     "prodigy.*",
     "prodigy.components.*",
     "prodigy.components.db.*",
+    "transformers.*",
 ]
 ignore_missing_imports = true

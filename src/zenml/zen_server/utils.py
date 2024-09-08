@@ -17,8 +17,10 @@ import inspect
 import os
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    List,
     Optional,
     Tuple,
     Type,
@@ -27,13 +29,15 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
+    API,
     ENV_ZENML_SERVER,
+    INFO,
+    VERSION_1,
 )
 from zenml.enums import ServerProviderType
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -47,11 +51,14 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
-from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
-from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 logger = get_logger(__name__)
 
@@ -60,7 +67,6 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional[secure.Secure] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -214,104 +220,6 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
-
-
-def secure_headers() -> secure.Secure:
-    """Return the secure headers component.
-
-    Returns:
-        The secure headers component.
-
-    Raises:
-        RuntimeError: If the secure headers component is not initialized.
-    """
-    global _secure_headers
-    if _secure_headers is None:
-        raise RuntimeError("Secure headers component not initialized")
-    return _secure_headers
-
-
-def initialize_secure_headers() -> None:
-    """Initialize the secure headers component."""
-    global _secure_headers
-
-    config = server_config()
-
-    # For each of the secure headers supported by the `secure` library, we
-    # check if the corresponding configuration is set in the server
-    # configuration:
-    #
-    # - if set to `True`, we use the default value for the header
-    # - if set to a string, we use the string as the value for the header
-    # - if set to `False`, we don't set the header
-
-    server: Optional[secure.Server] = None
-    if config.secure_headers_server:
-        server = secure.Server()
-        if isinstance(config.secure_headers_server, str):
-            server.set(config.secure_headers_server)
-        else:
-            server.set(str(config.deployment_id))
-
-    hsts: Optional[secure.StrictTransportSecurity] = None
-    if config.secure_headers_hsts:
-        hsts = secure.StrictTransportSecurity()
-        if isinstance(config.secure_headers_hsts, str):
-            hsts.set(config.secure_headers_hsts)
-
-    xfo: Optional[secure.XFrameOptions] = None
-    if config.secure_headers_xfo:
-        xfo = secure.XFrameOptions()
-        if isinstance(config.secure_headers_xfo, str):
-            xfo.set(config.secure_headers_xfo)
-
-    xxp: Optional[secure.XXSSProtection] = None
-    if config.secure_headers_xxp:
-        xxp = secure.XXSSProtection()
-        if isinstance(config.secure_headers_xxp, str):
-            xxp.set(config.secure_headers_xxp)
-
-    csp: Optional[secure.ContentSecurityPolicy] = None
-    if config.secure_headers_csp:
-        csp = secure.ContentSecurityPolicy()
-        if isinstance(config.secure_headers_csp, str):
-            csp.set(config.secure_headers_csp)
-
-    content: Optional[secure.XContentTypeOptions] = None
-    if config.secure_headers_content:
-        content = secure.XContentTypeOptions()
-        if isinstance(config.secure_headers_content, str):
-            content.set(config.secure_headers_content)
-
-    referrer: Optional[secure.ReferrerPolicy] = None
-    if config.secure_headers_referrer:
-        referrer = secure.ReferrerPolicy()
-        if isinstance(config.secure_headers_referrer, str):
-            referrer.set(config.secure_headers_referrer)
-
-    cache: Optional[secure.CacheControl] = None
-    if config.secure_headers_cache:
-        cache = secure.CacheControl()
-        if isinstance(config.secure_headers_cache, str):
-            cache.set(config.secure_headers_cache)
-
-    permissions: Optional[secure.PermissionsPolicy] = None
-    if config.secure_headers_permissions:
-        permissions = secure.PermissionsPolicy()
-        if isinstance(config.secure_headers_permissions, str):
-            permissions.value = config.secure_headers_permissions
-
-    _secure_headers = secure.Secure(
-        server=server,
-        hsts=hsts,
-        xfo=xfo,
-        xxp=xxp,
-        csp=csp,
-        content=content,
-        referrer=referrer,
-        cache=cache,
-        permissions=permissions,
-    )
 
 
 _server_config: Optional[ServerConfiguration] = None
@@ -570,3 +478,70 @@ def verify_admin_status_if_no_rbac(
                 "without RBAC enabled.",
             )
     return
+
+
+def is_user_request(request: "Request") -> bool:
+    """Determine if the incoming request is a user request.
+
+    This function checks various aspects of the request to determine
+    if it's a user-initiated request or a system request.
+
+    Args:
+        request: The incoming FastAPI request object.
+
+    Returns:
+        True if it's a user request, False otherwise.
+    """
+    # Define system paths that should be excluded
+    system_paths: List[str] = [
+        "/health",
+        "/metrics",
+        "/system",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    ]
+
+    user_prefix = f"{API}{VERSION_1}"
+    excluded_user_apis = [INFO]
+    # Check if this is not an excluded endpoint
+    if request.url.path in [
+        user_prefix + suffix for suffix in excluded_user_apis
+    ]:
+        return False
+
+    # Check if this is other user request
+    if request.url.path.startswith(user_prefix):
+        return True
+
+    # Exclude system paths
+    if any(request.url.path.startswith(path) for path in system_paths):
+        return False
+
+    # Exclude requests with specific headers
+    if request.headers.get("X-System-Request") == "true":
+        return False
+
+    # Exclude requests from certain user agents (e.g., monitoring tools)
+    user_agent = request.headers.get("User-Agent", "").lower()
+    system_agents = ["prometheus", "datadog", "newrelic", "pingdom"]
+    if any(agent in user_agent for agent in system_agents):
+        return False
+
+    # Check for internal IP addresses
+    client_host = request.client.host if request.client else None
+    if client_host and (
+        client_host.startswith("10.") or client_host.startswith("192.168.")
+    ):
+        return False
+
+    # Exclude OPTIONS requests (often used for CORS preflight)
+    if request.method == "OPTIONS":
+        return False
+
+    # Exclude specific query parameters that might indicate system requests
+    if request.query_params.get("system_check"):
+        return False
+
+    # If none of the above conditions are met, consider it a user request
+    return True

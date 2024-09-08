@@ -54,7 +54,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 > **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
-{% tab title="undefined" %}
+{% tab title="Default" %}
 The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
 
 It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
@@ -253,7 +253,7 @@ The environment variables starting with _ZENML\_SERVER\_SECURE\_HEADERS\__\* can
 
 The following secure headers environment variables are supported:
 
-* _ZENML\_SERVER\_SECURE\_HEADERS\_SERVER_\*: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
@@ -426,13 +426,13 @@ Note the following:
 To start the containers, run the following command from the directory where the `docker-compose.yml` file is located:
 
 ```shell
-docker-compose -p zenml up  -d
+docker compose -p zenml up  -d
 ```
 
 or, if you need to use a different filename or path:
 
 ```shell
-docker-compose -f /path/to/docker-compose.yml -p zenml up -d
+docker compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
 You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
@@ -444,7 +444,7 @@ zenml connect --url http://localhost:8080
 Tearing down the installation is as simple as running:
 
 ```shell
-docker-compose -p zenml down
+docker compose -p zenml down
 ```
 
 ## Database backup and recovery
