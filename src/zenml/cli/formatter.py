@@ -47,7 +47,7 @@ def iter_rows(
         col_count: The number of columns in the table.
 
     Yields:
-        An iterator over the rows of the table.
+        Tuple[str, ...]: A row of the table, padded with empty strings if necessary.
     """
     for row in rows:
         yield row + ("",) * (col_count - len(row))

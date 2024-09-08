@@ -98,6 +98,10 @@ class OldSchoolMarkdownHeading:
             console: The console to render to.
             options: The console options.
 
+        Returns:
+            RenderResult: An iterable of console renderables representing the
+            rendered heading.
+
         Yields:
             RenderResult: The rendered heading.
         """

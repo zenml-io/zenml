@@ -1607,12 +1607,12 @@ def validate_name(ctx: click.Context, param: str, value: str) -> str:
         return value
 
     if not re.match(r"^[a-zA-Z0-9-]*$", value):
-        raise click.BadParameter(
+        raise BadParameter(
             "Stack name must contain only alphanumeric characters and hyphens."
         )
 
     if len(value) > 16:
-        raise click.BadParameter(
+        raise BadParameter(
             "Stack name must have a maximum length of 16 characters."
         )
 
@@ -1757,7 +1757,7 @@ def deploy(
             f"automatically redirected to "
             f"{deployment_config.deployment_url_text} in your browser.",
         ):
-            raise click.Abort()
+            raise Abort()
 
         date_start = datetime.utcnow()
 
@@ -2397,8 +2397,7 @@ def _get_stack_component_info(
         The info model of the stack component.
 
     Raises:
-        ValueError: If the cloud provider is not supported.
-        ValueError: If the component type is not supported.
+        ValueError: If the cloud provider or component type is not supported.
     """
     from rich.prompt import Prompt
 
