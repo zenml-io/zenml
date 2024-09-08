@@ -225,7 +225,7 @@ class LocalFilesystem(BaseFilesystem):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-        """Return an iterator that walks the contents of the given directory.
+        """Yield the contents of the given directory.
 
         Args:
             top: Path of directory to walk.
@@ -233,10 +233,9 @@ class LocalFilesystem(BaseFilesystem):
             onerror: Callable that gets called if an error occurs.
 
         Yields:
-            An Iterable of Tuples, each of which contain the path of the
-            current directory path, a list of directories inside the
-            current directory and a list of files inside the current
-            directory.
+            Tuples, each containing the path of the current directory,
+            a list of directories inside the current directory, and
+            a list of files inside the current directory.
         """
         yield from os.walk(  # type: ignore[type-var, misc]
             top, topdown=topdown, onerror=onerror
