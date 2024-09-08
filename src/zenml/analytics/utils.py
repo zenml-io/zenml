@@ -232,6 +232,8 @@ class track_handler(object):
             value: The instance of the exception
             traceback: The traceback of the exception
 
+        Returns:
+            None
         """
         if traceback is not None:
             self.metadata.update({"event_success": False})
