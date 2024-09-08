@@ -150,10 +150,6 @@ class BaseEntrypointConfiguration(ABC):
 
         Returns:
             Dictionary of the parsed arguments.
-
-        # noqa: DAR402
-        Raises:
-            ValueError: If the arguments are not valid.
         """
 
         class _CustomParser(argparse.ArgumentParser):

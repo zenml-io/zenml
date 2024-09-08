@@ -197,7 +197,8 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         Returns:
             The created event source.
 
-        # noqa: DAR401
+        Raises:
+            Exception: when it fails to create the event source.
         """
         # Validate and instantiate the configuration from the request
         config = self.validate_event_source_configuration(
@@ -258,7 +259,8 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         Returns:
             The updated event source.
 
-        # noqa: DAR401
+        Raises:
+            Exception: when it fails to update the event source.
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -339,7 +341,8 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 even if the event source handler fails to delete the event
                 source.
 
-        # noqa: DAR401
+        Raises:
+            Exception: when it fails to delete the event source.
         """
         # Validate and instantiate the configuration from the original event
         # source
