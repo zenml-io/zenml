@@ -675,7 +675,7 @@ class Model(BaseModel):
             The model version based on configuration.
 
         Raises:
-            RuntimeError: if the model version needs to be created, but
+            KeyError: if the model version needs to be created, but
                 provided name is reserved.
             RuntimeError: if the model version cannot be created.
         """
