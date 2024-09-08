@@ -109,6 +109,9 @@ class BaseDataValidator(StackComponent):
                 profiles to be generated.
             **kwargs: Implementation specific keyword arguments.
 
+        Returns:
+            The data profile object.
+
         Raises:
             NotImplementedError: if data profiling is not supported by this
                 data validator.
@@ -154,6 +157,9 @@ class BaseDataValidator(StackComponent):
             check_list: Optional list identifying the data checks to
                 be performed.
             **kwargs: Implementation specific keyword arguments.
+
+        Returns:
+            The data validation object.
 
         Raises:
             NotImplementedError: if data validation is not
@@ -204,6 +210,9 @@ class BaseDataValidator(StackComponent):
             check_list: Optional list identifying the model validation checks to
                 be performed.
             **kwargs: Implementation specific keyword arguments.
+
+        Returns:
+            The model validation object.
 
         Raises:
             NotImplementedError: if model validation is not supported by this

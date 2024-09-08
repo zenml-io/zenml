@@ -137,7 +137,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         instance.
 
         Args:
-            data: Custom configuration options.
+            **data: Custom configuration options.
         """
         config_values = self._read_config()
         config_values.update(data)
