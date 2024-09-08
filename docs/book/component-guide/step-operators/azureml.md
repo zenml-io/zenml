@@ -140,7 +140,7 @@ azureml_settings = AzureMLStepOperatorSettings(
 
 @step(
    settings={
-       "step_operator.azureml": azureml_settings
+       "step_operator": azureml_settings
    }
 )
 def my_azureml_step():

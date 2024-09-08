@@ -241,12 +241,12 @@ airflow_settings = AirflowOrchestratorSettings(
 )
 
 # Using the operator for a single step
-@step(settings={"orchestrator.airflow": airflow_settings})
+@step(settings={"orchestrator": airflow_settings})
 def my_step(...):
 
 
 # Using the operator for all steps in your pipeline
-@pipeline(settings={"orchestrator.airflow": airflow_settings})
+@pipeline(settings={"orchestrator": airflow_settings})
 def my_pipeline(...):
 ```
 

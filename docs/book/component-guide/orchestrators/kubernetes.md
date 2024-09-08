@@ -261,7 +261,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.kubernetes": kubernetes_settings
+        "orchestrator": kubernetes_settings
     }
 )
 def my_kubernetes_pipeline():

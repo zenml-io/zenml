@@ -200,7 +200,7 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
 @step(
     experiment_tracker="<MLFLOW_TRACKER_STACK_COMPONENT_NAME>",
     settings={
-        "experiment_tracker.mlflow": mlflow_settings
+        "experiment_tracker": mlflow_settings
     }
 )
 def step_one(
