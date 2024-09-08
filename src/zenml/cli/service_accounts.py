@@ -171,11 +171,11 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 @list_options(ServiceAccountFilter)
 @click.pass_context
 def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
-    """List all users.
+    """List service accounts.
 
     Args:
-        ctx: The click context object
-        kwargs: Keyword arguments to filter the list of users.
+        ctx: The click context.
+        **kwargs: Keyword arguments to filter the service accounts.
     """
     client = Client()
     with console.status("Listing service accounts...\n"):

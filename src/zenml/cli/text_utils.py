@@ -16,7 +16,7 @@
 from typing import List
 
 from rich.console import Console, ConsoleOptions, RenderResult
-from rich.markdown import Heading, Markdown
+from rich.markdown import Markdown
 from rich.text import Text
 
 zenml_cli_welcome_message = Markdown(
@@ -86,7 +86,7 @@ links below.\n
     )
 
 
-class OldSchoolMarkdownHeading(Heading):
+class OldSchoolMarkdownHeading:
     """A traditional markdown heading."""
 
     def __rich_console__(
@@ -95,11 +95,11 @@ class OldSchoolMarkdownHeading(Heading):
         """Render the heading to the console.
 
         Args:
-            console: Rich console to render to.
-            options: Console options.
+            console: The console to render to.
+            options: The console options.
 
-        Returns:
-            The render result.
+        Yields:
+            RenderResult: The rendered heading.
         """
         text = self.text
         text.justify = "left"
