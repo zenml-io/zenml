@@ -960,12 +960,15 @@ def rename_stack(
 @stack.command("list")
 @list_options(StackFilter)
 @click.pass_context
-def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
+def list_stacks(
+    ctx: click.Context,
+    **kwargs: Any,
+) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
         ctx: the Click context
-        kwargs: Keyword arguments to filter the stacks.
+        **kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
     with console.status("Listing stacks...\n"):
@@ -2130,8 +2133,9 @@ def deploy_mlstack(
 
 
 @stack.command(
+    "destroy",
     help="Destroy stack components created previously with "
-    "`zenml stack deploy`"
+    "`zenml stack deploy`",
 )
 @click.argument("stack_name", required=True)
 @click.option(

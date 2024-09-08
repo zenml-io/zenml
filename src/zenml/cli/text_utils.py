@@ -92,14 +92,14 @@ class OldSchoolMarkdownHeading(Heading):
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        """Render the heading.
+        """Render the heading to the console.
 
         Args:
-            console: The console rendering the content.
-            options: The console options.
+            console: Rich console to render to.
+            options: Console options.
 
-        Yields:
-            RenderResult: The rendered content.
+        Returns:
+            The render result.
         """
         text = self.text
         text.justify = "left"
