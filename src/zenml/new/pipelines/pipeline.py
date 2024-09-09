@@ -924,6 +924,28 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with open(path, "w") as f:
             f.write(yaml_string)
 
+    def write_run_json_schema(
+        self, path: str, stack: Optional["Stack"] = None
+    ) -> None:
+        """Writes a run configuration yaml template.
+
+        Args:
+            path: The path where the template will be written.
+            stack: The stack for which the template should be generated. If
+                not given, the active stack will be used.
+        """
+        self._prepare_if_possible()
+
+        stack = stack or Client().active_stack
+
+        schema = generate_config_schema_from_pipeline(
+            pipeline=self, stack=stack
+        )
+        import json
+
+        with open(path, "w") as f:
+            json.dump(schema, f)
+
     def _apply_configuration(
         self,
         config: PipelineConfigurationUpdate,
@@ -1462,3 +1484,154 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
+
+
+from pydantic import create_model
+from pydantic.fields import FieldInfo
+
+from zenml.config import DockerSettings, ResourceSettings
+from zenml.config.source import SourceWithValidator
+
+
+def generate_config_schema_from_pipeline(
+    pipeline: "Pipeline", stack: "Stack"
+) -> Dict[str, Any]:
+    """Generate a run configuration schema for the deployment and stack.
+
+    Args:
+        deployment: The deployment schema.
+
+    Returns:
+        The generated schema dictionary.
+    """
+    experiment_trackers = []
+    step_operators = []
+
+    settings_fields: Dict[str, Any] = {
+        "resources": (ResourceSettings, None),
+        "docker": (DockerSettings, None),
+    }
+
+    for component in stack.components.values():
+        if not component.settings_class:
+            continue
+
+        settings_key = f"{component.type}.{component.flavor}"
+        settings_fields[settings_key] = (
+            Optional[component.settings_class],
+            None,
+        )
+
+        if component.type == StackComponentType.EXPERIMENT_TRACKER:
+            experiment_trackers.append(component.name)
+        if component.type == StackComponentType.STEP_OPERATOR:
+            step_operators.append(component.name)
+
+    settings_model = create_model("Settings", **settings_fields)
+
+    generic_step_fields: Dict[str, Any] = {}
+
+    for key, field_info in StepConfigurationUpdate.model_fields.items():
+        if key in [
+            "name",
+            "outputs",
+            "step_operator",
+            "experiment_tracker",
+            "parameters",
+        ]:
+            continue
+
+        if field_info.annotation == Optional[SourceWithValidator]:
+            generic_step_fields[key] = (Optional[str], None)
+        else:
+            generic_step_fields[key] = (field_info.annotation, field_info)
+
+    if experiment_trackers:
+        experiment_tracker_enum = Enum(  # type: ignore[misc]
+            "ExperimentTrackers", {e: e for e in experiment_trackers}
+        )
+        generic_step_fields["experiment_tracker"] = (
+            Optional[experiment_tracker_enum],
+            None,
+        )
+    if step_operators:
+        step_operator_enum = Enum(  # type: ignore[misc]
+            "StepOperators", {s: s for s in step_operators}
+        )
+        generic_step_fields["step_operator"] = (
+            Optional[step_operator_enum],
+            None,
+        )
+
+    generic_step_fields["settings"] = (Optional[settings_model], None)
+
+    all_steps: Dict[str, Any] = {}
+    all_steps_required = False
+
+    for name, invocation in pipeline.invocations.items():
+        step_fields = generic_step_fields.copy()
+        if invocation.parameters:
+            parameter_fields: Dict[str, Any] = {
+                name: (Any, FieldInfo(default=...))
+                for name in invocation.parameters
+            }
+            parameters_class = create_model(
+                f"{name}_parameters", **parameter_fields
+            )
+            step_fields["parameters"] = (
+                parameters_class,
+                FieldInfo(default=...),
+            )
+
+        step_model = create_model(name, **step_fields)
+
+        if invocation.parameters:
+            # This step has required parameters -> we make this attribute
+            # required and also the parent attribute so these parameters must
+            # always be included
+            all_steps_required = True
+            all_steps[name] = (step_model, FieldInfo(default=...))
+        else:
+            all_steps[name] = (Optional[step_model], FieldInfo(default=None))
+
+    all_steps_model = create_model("Steps", **all_steps)
+
+    top_level_fields: Dict[str, Any] = {}
+
+    for key, field_info in PipelineRunConfiguration.model_fields.items():
+        if key in ["build", "steps", "settings", "parameters"]:
+            continue
+
+        if field_info.annotation == Optional[SourceWithValidator]:
+            top_level_fields[key] = (Optional[str], None)
+        else:
+            top_level_fields[key] = (field_info.annotation, field_info)
+
+    top_level_fields["settings"] = (Optional[settings_model], None)
+
+    pipeline_entrypoint_signature = inspect.signature(pipeline.entrypoint)
+    if pipeline_entrypoint_signature.parameters:
+        pipeline_parameters = {
+            key: (
+                param.annotation,
+                FieldInfo(default=None if param.default else ...),
+            )
+            for key, param in pipeline_entrypoint_signature.parameters.items()
+        }
+        pipeline_parameters_model = create_model(
+            "Pipeline Parameters", **pipeline_parameters
+        )
+        top_level_fields["parameters"] = (
+            Optional[pipeline_parameters_model],
+            None,
+        )
+
+    if all_steps_required:
+        top_level_fields["steps"] = (all_steps_model, FieldInfo(default=...))
+    else:
+        top_level_fields["steps"] = (
+            Optional[all_steps_model],
+            FieldInfo(default=None),
+        )
+
+    return create_model("Result", **top_level_fields).model_json_schema()  # type: ignore[no-any-return]
