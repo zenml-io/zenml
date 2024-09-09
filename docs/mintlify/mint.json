@@ -58,6 +58,13 @@
       ]
     },
     {
+      "group": "Get Started",
+      "version": "v2",
+      "pages": [
+        "v2/introduction"
+      ]
+    },
+    {
       "group": "Essentials",
       "pages": [
         "essentials/markdown",
