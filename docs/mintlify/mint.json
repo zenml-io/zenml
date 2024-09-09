@@ -51,11 +51,21 @@
   "navigation": [
     {
       "group": "Get Started",
+      "version": "v1",
       "pages": [
         "introduction",
         "quickstart",
         "development"
       ]
+    },
+    {
+        "group": "Get Started",
+        "version": "v2",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "development"
+        ]
     },
     {
       "group": "Essentials",
