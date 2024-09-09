@@ -61,7 +61,8 @@
       "group": "Get Started",
       "version": "v2",
       "pages": [
-        "v2/introduction"
+        "v2/introduction",
+        "v2/quickstart"
       ]
     },
     {
