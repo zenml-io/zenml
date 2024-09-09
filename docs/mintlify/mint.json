@@ -52,20 +52,10 @@
   "navigation": [
     {
       "group": "Get Started",
-      "version": "v1",
       "pages": [
-        "introduction",
-        "development"
+        "v1/introduction",
+        "v1/development"
       ]
-    },
-    {
-        "group": "Get Started",
-        "version": "v2",
-        "pages": [
-          "introduction",
-          "quickstart",
-          "development"
-        ]
     },
     {
       "group": "Essentials",
