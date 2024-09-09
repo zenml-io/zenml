@@ -40,12 +40,11 @@ We can then register the step operator and use it in our stacks. This can be don
 
     ```
     $ zenml step-operator register <NAME> --flavor kubernetes
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered step operator `<NAME>`.
 
     $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
     ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
     ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
@@ -58,7 +57,6 @@ We can then register the step operator and use it in our stacks. This can be don
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
 
     $ zenml step-operator connect <NAME> --connector aws-iam-multi-us
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully connected step_operator `<NAME>` to the following resources:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
