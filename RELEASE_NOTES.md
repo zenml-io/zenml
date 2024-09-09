@@ -1,5 +1,63 @@
 <!-- markdown-link-check-disable -->
 
+# 0.66.0
+
+## New Features and Improvements
+
+### Python 3.12 support
+
+This release adds support for Python 3.12, which means you can now develop your ZenML pipelines
+with the latest python features.
+
+### Easier way to specify component settings
+
+Before this release, settings for stack components had to be specified with both the component type
+as well as the flavor. We simplified this and it is now possible to specify settings just using the
+component type:
+```python
+# Before
+@pipeline(settings={"orchestrator.sagemaker": SagemakerOrchestratorSettings(...)})
+def my_pipeline():
+  ...
+
+# Now
+@pipeline(settings={"orchestrator": SagemakerOrchestratorSettings(...)})
+def my_pipeline():
+  ...
+```
+
+## Breaking changes
+
+* In order to slim down the ZenML library, we removed the `numpy` and `pandas` libraries as dependencies of ZenML. If your
+code uses these libraries, you have to make sure they're installed in your local environment as well as the Docker images that
+get built to run your pipelines (Use `DockerSettings.requirements` or `DockerSettings.required_integrations`).
+
+## What's Changed
+* Add 0.65.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2963
+* Hotfix for release flow by @avishniakov in https://github.com/zenml-io/zenml/pull/2961
+* Fix the one-click AWS and GCP stack deployments by @stefannica in https://github.com/zenml-io/zenml/pull/2964
+* Fix wandb mypy error by @strickvl in https://github.com/zenml-io/zenml/pull/2967
+* Fix accelerate docs for 0.65.0+ by @avishniakov in https://github.com/zenml-io/zenml/pull/2968
+* Dynamic model version names docs by @avishniakov in https://github.com/zenml-io/zenml/pull/2970
+* Logging nits by @avishniakov in https://github.com/zenml-io/zenml/pull/2972
+* Fix excess Azure logging by @strickvl in https://github.com/zenml-io/zenml/pull/2965
+* Fix typo in docs by @strickvl in https://github.com/zenml-io/zenml/pull/2976
+* Pass code path to template run by @schustmi in https://github.com/zenml-io/zenml/pull/2973
+* Prevent extra attributes in component configs by @schustmi in https://github.com/zenml-io/zenml/pull/2978
+* Dependency cleanup and Python 3.12 support by @bcdurak in https://github.com/zenml-io/zenml/pull/2953
+* Few nits in docs based on integrations review by @avishniakov in https://github.com/zenml-io/zenml/pull/2983
+* Update slack alerter docs by @stefannica in https://github.com/zenml-io/zenml/pull/2981
+* Update Kubeflow orchestrator docs by @stefannica in https://github.com/zenml-io/zenml/pull/2985
+* Build docker images for python 3.12 by @schustmi in https://github.com/zenml-io/zenml/pull/2988
+* Allow shortcut keys for component settings by @schustmi in https://github.com/zenml-io/zenml/pull/2957
+* Remove references to workspaces from docs by @strickvl in https://github.com/zenml-io/zenml/pull/2991
+* Added some adjustments for colab by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2966
+* Reverting the installation of `mlstacks` after its new release by @bcdurak in https://github.com/zenml-io/zenml/pull/2980
+* Small dependency and docs updates by @strickvl in https://github.com/zenml-io/zenml/pull/2982
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.65.0...0.66.0
+
 # 0.65.0
 
 ## New Features and Improvements
