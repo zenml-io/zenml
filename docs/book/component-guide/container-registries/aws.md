@@ -143,7 +143,7 @@ zenml service-connector list-resources --connector-type aws --resource-type dock
 
 {% code title="Example Command Output" %}
 ```
-The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
 ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨

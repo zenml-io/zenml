@@ -115,7 +115,7 @@ For additional configuration of the Vertex step operator, you can pass `VertexSt
 from zenml import step
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
 
-@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator.vertex": VertexStepOperatorSettings(
+@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
     accelerator_type= "NVIDIA_TESLA_T4",  # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
     accelerator_count = 1,
     machine_type = "n1-standard-2",       # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types

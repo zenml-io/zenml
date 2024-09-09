@@ -144,7 +144,7 @@ comet_settings = CometExperimentTrackerSettings(
 @step(
     experiment_tracker="<COMET_TRACKER_STACK_COMPONENT_NAME>",
     settings={
-        "experiment_tracker.comet": comet_settings
+        "experiment_tracker": comet_settings
     }
 )
 def my_step():
