@@ -412,3 +412,26 @@ class StackDeploymentProvider(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
+
+
+
+
+class AcceleratorType(StrEnum):
+    # Vertex
+    K80 = "K80"
+    P100 = "P100"
+    V100 = "V100"
+    P4 = "P4"
+    T4 = "T4"
+    A100 = "A100"  # A100 40GB
+    A100_80GB = "A100_80GB"
+    L4 = "L4"
+    H100_80GB = "H100_80GB"
+    TPU_V2 = "TPU_V2"
+    TPU_V3 = "TPU_V3"
+    TPU_V4_POD = "TPU_V4_POD"
+    TPU_V5_LITEPOD = "TPU_V5_LITEPOD"
+
+
+# Or MachineType?
+class InstanceType(StrEnum): ...

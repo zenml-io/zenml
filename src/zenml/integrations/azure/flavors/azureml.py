@@ -47,17 +47,17 @@ class AzureMLComputeSettings(BaseSettings):
 
         2. Compute instance:
             - The `mode` is set to `compute-instance`.
-            - In this case, users have to provide a `compute-name`.
+            - In this case, users have to provide a `compute_name`.
                 - If a compute instance exists with this name, this instance
                 will be used and all the other parameters become irrelevant
                 and will throw a warning if set.
                 - If a compute instance does not already exist, ZenML will
-                create it. You can use the parameters `compute_size` and
+                create it. You can use the parameters `size` and
                 `idle_type_before_shutdown_minutes` for this operation.
 
         3. Compute cluster:
             - The `mode` is set to `compute-cluster`.
-            - In this case, users have to provide a `compute-name`.
+            - In this case, users have to provide a `compute_name`.
                 - If a compute cluster exists with this name, this instance
                 will be used and all the other parameters become irrelevant
                 and will throw a warning if set.
@@ -71,6 +71,7 @@ class AzureMLComputeSettings(BaseSettings):
 
     # Common Configuration for Compute Instances and Clusters
     compute_name: Optional[str] = None
+    # TODO: migrate to instance type
     size: Optional[str] = None
 
     # Additional configuration for a Compute Instance

@@ -18,18 +18,9 @@ from typing import Optional, Union
 
 from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
 
+from zenml.enums import AcceleratorType, InstanceType
 from zenml.config.base_settings import BaseSettings
-from zenml.utils.enum_utils import StrEnum
-
-# Vertex step operator
-# ['ACCELERATOR_TYPE_UNSPECIFIED', 'NVIDIA_TESLA_K80', 'NVIDIA_TESLA_P100', 'NVIDIA_TESLA_V100', 'NVIDIA_TESLA_P4', 'NVIDIA_TESLA_T4', 'NVIDIA_TESLA_A100', 'NVIDIA_A100_80GB', 'NVIDIA_L4', 'NVIDIA_H100_80GB', 'TPU_V2', 'TPU_V3', 'TPU_V4_POD', 'TPU_V5_LITEPOD']
-
-
-class AcceleratorType(StrEnum): ...
-
-
-# Or MachineType?
-class InstanceType(StrEnum): ...
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 
 class ByteUnit(Enum):
@@ -75,12 +66,13 @@ class ResourceSettings(BaseSettings):
 
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.
-        gpu_count: The amount of GPUs that should be configured.
         memory: The amount of memory that should be configured.
+        accelerator: The accelerator to use.
+        accelerator_count: The amount of accelerators that should be configured.
+        instance_type: The type of instance to use.
     """
 
     cpu_count: Optional[PositiveFloat] = None
-    gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
 
     accelerator: Optional[Union[AcceleratorType, str]] = Field(
@@ -90,6 +82,10 @@ class ResourceSettings(BaseSettings):
     instance_type: Optional[Union[InstanceType, str]] = Field(
         union_mode="left_to_right", default=None
     )
+
+    # DEPRECATED
+    gpu_count: Optional[NonNegativeInt] = None
+    _deprecation_validator = deprecate_pydantic_attributes(("gpu_count", "accelerator_count"))
 
     @property
     def empty(self) -> bool:

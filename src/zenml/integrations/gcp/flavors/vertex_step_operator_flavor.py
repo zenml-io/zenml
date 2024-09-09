@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Vertex step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
-
+from typing import TYPE_CHECKING, Optional, Type, Union
+from zenml.enums import AcceleratorType, InstanceType
+from pydantic import NonNegativeInt, Field
 from zenml.config.stack_component_resource_settings import (
     StackComponentResourceSettings,
 )
@@ -36,19 +37,11 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
 
-class VertexStepOperatorResources(StackComponentResourceSettings):
-    accelerator: Optional[str] = None
-    accelerator_count: int = 0
-    instance_type: str = "n1-standard-4"
-    boot_disk_size_gb: int = 100
-    boot_disk_type: str = "pd-ssd"
-
-
-class VertexStepOperatorSettings(VertexStepOperatorResources):
-    """Settings for the Vertex step operator.
+class VertexStepOperatorResourceSettings(StackComponentResourceSettings):
+    """Allowed resource settings for the Vertex step operator.
 
     Attributes:
-        accelerator_type: Defines which accelerator (GPU, TPU) is used for the
+        accelerator: Defines which accelerator (GPU, TPU) is used for the
             job. Check out out this table to see which accelerator
             type and count are compatible with your chosen machine type:
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
@@ -56,14 +49,26 @@ class VertexStepOperatorSettings(VertexStepOperatorResources):
             job. Check out out this table to see which accelerator
             type and count are compatible with your chosen machine type:
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
-        machine_type: Machine type specified here
+        instance_type: Machine type specified here
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
         boot_disk_size_gb: Size of the boot disk in GB. (Default: 100)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
         boot_disk_type: Type of the boot disk. (Default: pd-ssd)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
-
     """
+    accelerator: Optional[Union[AcceleratorType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+    accelerator_count: Optional[NonNegativeInt] = None
+    instance_type: Optional[Union[InstanceType, str]] = Field(
+        union_mode="left_to_right", default="n1-standard-4"
+    )
+    boot_disk_size_gb: int = 100
+    boot_disk_type: str = "pd-ssd"
+
+
+class VertexStepOperatorSettings(VertexStepOperatorResourceSettings):
+    """Settings for the Vertex step operator."""
 
     _resource_depractions = deprecate_pydantic_attributes(
         ("accelerator_type", "accelerator"),
