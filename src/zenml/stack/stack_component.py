@@ -440,7 +440,7 @@ class StackComponent:
                 connector_resource_id=component_model.connector_resource_id,
             )
         except ImportError as e:
-            from zenml.integrations.integration import integration_registry
+            from zenml.integrations.registry import integration_registry
 
             integration_requirements = " ".join(
                 integration_registry.select_integration_requirements(
