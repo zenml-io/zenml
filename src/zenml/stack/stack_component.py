@@ -450,6 +450,7 @@ class StackComponent:
 
             if integration_registry.is_installed(flavor_model.integration):
                 raise ImportError(
+                    f"{e}\n\n"
                     f"Something went wrong while trying to import from the "
                     f"`{flavor_model.integration}` integration. Please make "
                     "sure that all its requirements are installed properly by "
@@ -461,6 +462,7 @@ class StackComponent:
                 ) from e
             else:
                 raise ImportError(
+                    f"{e}\n\n"
                     f"The `{flavor_model.integration}` integration that you "
                     "are trying to use is not installed in your current "
                     "environment. Please make sure that it is installed by "
