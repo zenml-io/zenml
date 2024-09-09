@@ -6835,7 +6835,8 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <span class="c1"># mainly for testing purposes, we wait for the pipeline to finish</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">synchronous</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Executing synchronously. Waiting for pipeline to finish...&quot;</span>
+                <span class="s2">&quot;Executing synchronously. Waiting for pipeline to finish... </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;At this point you can `Ctrl-C` out without cancelling the execution.&quot;</span>
             <span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">pipeline_execution</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span>
@@ -7494,7 +7495,8 @@ AWS SageMaker NetworkConfig class.</p></td>
     <span class="c1"># mainly for testing purposes, we wait for the pipeline to finish</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">synchronous</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Executing synchronously. Waiting for pipeline to finish...&quot;</span>
+            <span class="s2">&quot;Executing synchronously. Waiting for pipeline to finish... </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;At this point you can `Ctrl-C` out without cancelling the execution.&quot;</span>
         <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pipeline_execution</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span>
