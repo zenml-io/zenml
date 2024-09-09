@@ -109,7 +109,7 @@ zenml service-connector list-resources --resource-type gcp-generic
 
 {% code title="Example Command Output" %}
 ```
-The following 'gcp-generic' resources can be accessed by service connectors configured in your workspace:
+The following 'gcp-generic' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────┼────────────────┨

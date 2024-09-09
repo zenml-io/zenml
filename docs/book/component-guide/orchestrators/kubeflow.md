@@ -137,7 +137,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 
     ```shell
     $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
     ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
     ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨

@@ -52,3 +52,19 @@ jobs:
             --quiet \
             --config=${{inputs.config_file}} \
             --substitutions=TAG_NAME=$VERSION
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
+          aws-region: eu-central-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
+      - name: Pull quickstart image from Dockerhub
+        run: |
+          docker pull zenmldocker/zenml-public-pipelines:quickstart-$VERSION-py3.11-aws
+      - name: Push quickstart image to ECR
+        run: |-
+          docker tag zenmldocker/zenml-public-pipelines:quickstart-$VERSION-py3.11-aws 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-$VERSION-py3.11-aws
+          docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-$VERSION-py3.11-aws
