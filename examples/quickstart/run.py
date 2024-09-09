@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import os
+from typing import Optional
 
 import click
 from pipelines import (
     english_translation_pipeline,
 )
 
+from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -53,14 +53,12 @@ Examples:
     help="Choose the model size: t5-small or t5-large.",
 )
 @click.option(
-    "--orchestration_environment",
-    type=click.Choice(["local", "aws", "gcp", "azure"], case_sensitive=False),
-    default="local",
-    help="Choose the orchestration environment.",
+    "--config_path",
+    help="Choose the configuration file.",
 )
 def main(
     model_type: str,
-    orchestration_environment: str,
+    config_path: Optional[str],
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -74,22 +72,43 @@ def main(
 
     Args:
         model_type: Type of model to use
-        orchestration_environment: Environment where the pipeline will run
+        config_path: Configuration file to use
         no_cache: If `True` cache will be disabled.
     """
-    config_folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "configs",
-    )
-
+    client = Client()
     run_args_train = {}
+
+    orchf = client.active_stack.orchestrator.flavor
+
+    sof = None
+    if client.active_stack.step_operator:
+        sof = client.active_stack.step_operator.flavor
 
     pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
-    pipeline_args["config_path"] = os.path.join(
-        config_folder, f"training_{orchestration_environment}.yaml"
-    )
+
+    if not config_path:
+        # Default configuration
+        config_path = "configs/training_default.yaml"
+        #
+        if orchf == "sagemaker" or sof == "sagemaker":
+            config_path = "configs/training_aws.yaml"
+        elif orchf == "vertex" or sof == "vertex":
+            config_path = "configs/training_gcp.yaml"
+        elif orchf == "azureml" or sof == "azureml":
+            config_path = "configs/training_azure.yaml"
+
+        print(f"Using {config_path} to configure the pipeline run.")
+    else:
+        print(
+            f"You specified {config_path}. Please be aware of the contents of this "
+            f"file as some settings might be very specific to a certain orchestration "
+            f"environment. Also you might need to set `skip_build` to False in case "
+            f"of missing requirements in the execution environment."
+        )
+
+    pipeline_args["config_path"] = config_path
     english_translation_pipeline.with_options(**pipeline_args)(
         model_type=model_type, **run_args_train
     )
