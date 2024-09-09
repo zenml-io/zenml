@@ -55,7 +55,6 @@
       "version": "v1",
       "pages": [
         "introduction",
-        "quickstart",
         "development"
       ]
     },
@@ -88,9 +87,7 @@
     {
       "group": "Endpoint Examples",
       "pages": [
-        "api-reference/endpoint/get",
-        "api-reference/endpoint/create",
-        "api-reference/endpoint/delete"
+        "api-reference/pipelines/get-pipeline"
       ]
     }
   ],
