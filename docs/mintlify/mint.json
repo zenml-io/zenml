@@ -52,21 +52,14 @@
   "navigation": [
     {
       "group": "Get Started",
+      "version": "v1",
       "pages": [
-        "v1/introduction",
-        "v1/development"
-      ]
-    },
-    {
-      "group": "Get Started",
-      "version": "v2",
-      "pages": [
-        "v2/introduction",
-        "v2/quickstart"
+        "v1/quickstart"
       ]
     },
     {
       "group": "Essentials",
+      "version": "v1",
       "pages": [
         "essentials/markdown",
         "essentials/code",
@@ -78,14 +71,9 @@
     },
     {
       "group": "API Documentation",
+      "version": "v1",
       "pages": [
         "api-reference/introduction"
-      ]
-    },
-    {
-      "group": "Endpoint Examples",
-      "pages": [
-        "api-reference/pipelines/get-pipeline"
       ]
     }
   ],
