@@ -76,7 +76,7 @@ def _create_api_key(
             )
             return
 
-    if output_file:
+    if output_file and api_key.key:
         with open(output_file, "w") as f:
             f.write(api_key.key)
 
@@ -533,7 +533,7 @@ def rotate_api_key(
             )
             return
 
-    if output_file:
+    if output_file and api_key.key:
         with open(output_file, "w") as f:
             f.write(api_key.key)
 
