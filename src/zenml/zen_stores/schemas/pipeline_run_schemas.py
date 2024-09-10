@@ -332,6 +332,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             if (
                 self.deployment
                 and self.deployment.build
+                and not self.deployment.build.is_local
                 and self.deployment.build.stack
             ):
                 is_templatable = True
