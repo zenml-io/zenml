@@ -328,6 +328,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            is_templatable = False
+            if (
+                self.deployment
+                and self.deployment.build
+                and self.deployment.build.stack
+            ):
+                is_templatable = True
+
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(
@@ -346,6 +354,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 template_id=self.deployment.template_id
                 if self.deployment
                 else None,
+                is_templatable=is_templatable,
             )
 
         resources = None
