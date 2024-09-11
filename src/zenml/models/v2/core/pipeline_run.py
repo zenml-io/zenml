@@ -609,7 +609,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlmodel import and_, or_
+        from sqlmodel import and_, col, or_
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
@@ -693,16 +693,16 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                     == PipelineDeploymentSchema.id,
                     PipelineDeploymentSchema.build_id
                     == PipelineBuildSchema.id,
-                    PipelineBuildSchema.is_local.is_(False),
-                    PipelineBuildSchema.stack_id.is_not(None),
+                    col(PipelineBuildSchema.is_local).is_(False),
+                    col(PipelineBuildSchema.stack_id).is_not(None),
                 )
             else:
                 templatable_filter = or_(
-                    PipelineRunSchema.deployment_id.is_(None),
+                    col(PipelineRunSchema.deployment_id).is_(None),
                     and_(
                         PipelineRunSchema.deployment_id
                         == PipelineDeploymentSchema.id,
-                        PipelineDeploymentSchema.build_id.is_(None),
+                        col(PipelineDeploymentSchema.build_id).is_(None),
                     ),
                     and_(
                         PipelineRunSchema.deployment_id
@@ -710,8 +710,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                         PipelineDeploymentSchema.build_id
                         == PipelineBuildSchema.id,
                         or_(
-                            PipelineBuildSchema.is_local.is_(True),
-                            PipelineBuildSchema.stack_id.is_(None),
+                            col(PipelineBuildSchema.is_local).is_(True),
+                            col(PipelineBuildSchema.stack_id).is_(None),
                         ),
                     ),
                 )
