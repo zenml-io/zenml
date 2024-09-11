@@ -289,7 +289,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     )
 
     def apply_filter(
-        self, query: AnyQuery, table: type["AnySchema"]
+        self, query: AnyQuery, table: Type["AnySchema"]
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -302,7 +302,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         """
         query = super().apply_filter(query, table)
 
-        from sqlmodel import and_, func, select
+        from sqlmodel import and_, col, func, select
 
         from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
 
@@ -312,7 +312,8 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
                     PipelineRunSchema.pipeline_id,
                     func.max(PipelineRunSchema.created).label("created"),
                 )
-                .group_by(PipelineRunSchema.pipeline_id)
+                .where(col(PipelineRunSchema.pipeline_id).is_not(None))
+                .group_by(col(PipelineRunSchema.pipeline_id))
                 .subquery()
             )
 
