@@ -80,6 +80,15 @@ class AzureMLOrchestratorConfig(
         """
         return self.synchronous
 
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
+
 
 class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the AzureML orchestrator."""

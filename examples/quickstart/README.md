@@ -1,24 +1,29 @@
-# :running: MLOps 101 with ZenML
+# ZenML Quickstart: Bridging Local Development and Cloud Deployment
 
-Build your first MLOps pipelines with ZenML.
+This repository demonstrates how ZenML streamlines the transition of machine learning workflows from local environments to cloud-scale operations.
 
-## :earth_americas: Overview
+Key advantages:
 
-This repository is a minimalistic MLOps project intended as a starting point to learn how to put ML workflows in production. It features: 
+Deploy to major cloud providers with minimal code changes
 
-- A feature engineering pipeline that loads data and prepares it for training.
-- A training pipeline that loads the preprocessed dataset and trains a model.
-- A batch inference pipeline that runs predictions on the trained model with new data.
+* Connect directly to your existing infrastructure
+* Bridge the gap between ML and Ops teams
+* Gain deep insights into pipeline metadata via the ZenML Dashboard
 
-This is a representation of how it will all come together: 
+Unlike traditional MLOps tools, ZenML offers unparalleled flexibility and control. It integrates seamlessly with your infrastructure, allowing both ML and Ops teams to collaborate effectively without compromising on their specific requirements.
 
-<img src=".assets/pipeline_overview.png" width="70%" alt="Pipelines Overview">
+The notebook guides you through adapting local code for cloud deployment, showcasing ZenML's ability to enhance workflow efficiency while maintaining reproducibility and auditability in production.
 
-Along the way we will also show you how to:
+Ready to unify your ML development and operations? Let's begin. The diagram below 
+describes what we'll show you in this example.
 
-- Structure your code into MLOps pipelines.
-- Automatically version, track, and cache data, models, and other artifacts.
-- Transition your ML models from development to production.
+<img src=".assets/Overview.png" width="80%" alt="Pipelines Overview">
+
+1) We have done some of the experimenting for you already and created a simple finetuning pipeline for a text-to-text
+   task.
+2) We will run this pipeline on your machine and a verify that everything works as expected.
+3) Now we'll connect ZenML to your infrastructure and configure everything.
+4) Finally, we are ready to run our code remotely.
 
 ## 🏃 Run on Colab
 
@@ -28,7 +33,7 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :computer: Run Locally
 
-To run locally, install ZenML and pull this quickstart:
+To run locally, install ZenML and pull this quickstart (if you haven't already done so):
 
 ```shell
 # Install ZenML
@@ -42,170 +47,123 @@ cd zenml/examples/quickstart
 Now we're ready to start. You have two options for running the quickstart locally:
 
 #### Option 1 - Interactively explore the quickstart using Jupyter Notebook:
+
 ```bash
 pip install notebook
 jupyter notebook
 # open notebooks/quickstart.ipynb
 ```
 
-#### Option 2 - Execute the whole ML pipeline from a Python script:
+#### Option 2 - Execute the whole training pipeline from a Python script:
+
+To run this quickstart you need to connect to a ZenML Server. You can deploy it
+[yourself on your own infrastructure](https://docs.zenml.io/getting-started/deploying-zenml) or try it
+out for free, no credit-card required in our [ZenML Pro managed service](https://zenml.io/pro). In the following
+commands we install our requirements, initialize our zenml environment and connect to the deployed ZenML Server.
+
 ```bash
 # Install required zenml integrations
-zenml integration install sklearn -y
+pip install -r requirements.txt
 
 # Initialize ZenML
 zenml init
 
 # Start the ZenServer to enable dashboard access
-zenml up
+zenml connect --url="INSERT_YOUR_SERVER_URL_HERE"
 
-# Run the feature engineering pipeline
-python run.py --feature-pipeline
-
-# Run the training pipeline
-python run.py --training-pipeline
-
-# Run the training pipeline with versioned artifacts
-python run.py --training-pipeline --train-dataset-version-name=1 --test-dataset-version-name=1
-
-# Run the inference pipeline
-python run.py --inference-pipeline
+# We'll start on the default stack
+zenml stack set default
 ```
 
-## 🌵 Learning MLOps with ZenML
+As described above we have done the first step already and created an experimental pipeline. Feel free to check out
+the individual steps in the [`steps`](steps) directory. The pipeline that connects these steps can be found in
+the [`pipeline`](pipelines) directory.
 
-This project is also a great source of learning about some fundamental MLOps concepts. In sum, there are four exemplary steps happening, that can be mapped onto many other projects:
+And here is how to run it. When you run the pipeline with the following command you will be using the configuration
+[here](configs/training_default.yaml)
 
-<details>
-  <summary>🥇 Step 1: Load your data and execute feature engineering</summary>
-
-We'll start off by importing our data. In this project, we'll be working with
-[the Breast Cancer](https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic) dataset
-which is publicly available on the UCI Machine Learning Repository. The task is a classification
-problem, to predict whether a patient is diagnosed with breast cancer or not.
-
-When you're getting started with a machine learning problem you'll want to do
-something similar to this: import your data and get it in the right shape for
-your training. Here are the typical steps within a feature engineering pipeline.
-
-The steps can be found defined the [steps](steps/) directory, while the [pipelines](pipelines/) directory has the pipeline code to connect them together.
-
-<img src=".assets/feature_engineering_pipeline.png" width="50%" alt="Feature engineering pipeline" />
-
-To execute the feature engineer pipelines, run:
-
-```python
-python run.py --feature-pipeline
+```bash
+# Run the pipeline locally
+python run.py --model_type=t5-small
 ```
 
-After the pipeline has run, the pipeline will produce some logs like:
+<img src=".assets/DAG.png" width="50%" alt="Dashboard view">
 
-```shell
-The latest feature engineering pipeline produced the following artifacts: 
+Above you can see the dashboard view of the pipeline we just ran in the ZenML Dashboard.
+You can find the URL for this within the logs produced by the command above.
 
-1. Train Dataset - Name: dataset_trn, Version Name: 1 
-2. Test Dataset: Name: dataset_tst, Version Name: 1
+As you can see the pipeline has run successfully. It also printed out some examples - however it seems the model is not
+yet able to solve the task well. What we did so far was validate that the pipeline and its individual steps work
+well together.
+
+### 🌵 Running Remotely
+
+Our last section confirmed to us, that the pipeline works. Let's now run the pipeline in the environment of your choice.
+
+For you to be able to try this next section, you will need to have access to a cloud environment (GCP, Azure, AWS).
+ZenML wraps around all the major cloud providers and orchestration tools and lets you easily deploy your code onto them.
+
+To do this lets head over to the `Stack` section of your ZenML Dashboard. Here you'll be able to either connect to an
+existing or deploy a new environment. Choose on of the options presented to you there and come back when you have a
+stack ready to go. Then proceed to the appropriate section below. **Do not** run all three. Also be sure that you
+are running with a remote ZenML server (see Step 1 above).
+
+<img src=".assets/StackCreate.png" width="50%" alt="Stack creation in the ZenML Dashboard">
+
+#### AWS
+
+For AWS you will need to install some aws requirements in your local environment. You will also
+need an AWS stack registered in ZenML.
+
+```bash
+zenml integration install aws s3 -y
+
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-small
 ```
 
-We will use these versions in the next pipeline.
+You can edit `configs/training_aws.yaml` to adjust the settings for running your pipeline in aws.
 
-</details>
+#### GCP
 
-<details>
-  <summary>⌚ Step 2: Training pipeline</summary>
+For GCP you will need to install some aws requirements in your local environment. You will also
+need an AWS stack registered in ZenML.
 
-Now that our data is prepared, it makes sense to train some models to get a sense of how difficult the task is. The Breast Cancer dataset is sufficiently large and complex  that it's unlikely we'll be able to train a model that behaves perfectly since the problem is inherently complex, but we can get a sense of what a reasonable baseline looks like.
+```bash
+zenml integration install gcp
 
-We'll start with two simple models, a SGD Classifier and a Random Forest
-Classifier, both batteries-included from `sklearn`. We'll train them on the
-same data and then compare their performance.
-
-<img src=".assets/training_pipeline.png" width="50%" alt="Training pipeline">
-
-Run it by using the ID's from the first step:
-
-```python
-# You can also ignore the `--train-dataset-version-name` and `--test-dataset-version-name` to use 
-#  the latest versions
-python run.py --training-pipeline --train-dataset-version-name 1 --test-dataset-version-name 1
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-small
 ```
 
-To track these models, ZenML offers a *Model Control Plane*, which is a central register of all your ML models.
-Each run of the training pipeline will produce a ZenML Model Version.
+You can edit `configs/training_gcp.yaml` to adjust the settings.
 
-```shell
-zenml model list
+#### Azure
+
+```bash
+zenml integration install azure
+
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-small
 ```
 
-This will show you a new `breast_cancer_classifier` model with two versions, `sgd` and `rf` created. You can find out how this was configured in the [YAML pipeline configuration files](configs/).
+You can edit `configs/training_azure.yaml` to adjust the settings.
 
-If you are a [ZenML Pro](https://zenml.io/pro) user, you can see all of this visualized in the dashboard:
+No matter which of these you choose, you should end up with a running pipeline on the backend of your choice. 
 
-<img src=".assets/cloud_mcp_screenshot.png" width="70%" alt="Model Control Plane">
+<img src=".assets/CloudDAGs.png" width="100%" alt="Pipeline running on Cloud orchestrator.">
 
-There is a lot more you can do with ZenML models, including the ability to
-track metrics by adding metadata to it, or having them persist in a model
-registry. However, these topics can be explored more in the
-[ZenML docs](https://docs.zenml.io).
+## Further exploration
 
-</details>
+This was just the tip of the iceberg of what ZenML can do; check out the [**docs**](https://docs.zenml.io/) to learn
+more
+about the capabilities of ZenML. For example, you might want to:
 
-<details>
-  <summary>💯 Step 3: Promoting the best model to production</summary>
+* Learn more about ZenML by following our [guides](https://docs.zenml.io/user-guide) or more generally our [docs](https://docs.zenml.io/)
+* Explore our [projects repository](https://github.com/zenml-io/zenml-projects) to find interesting use cases that leverage zenml
 
-For now, we will use the ZenML model control plane to promote our best
-model to `production`. You can do this by simply setting the `stage` of
-your chosen model version to the `production` tag.
+## What next?
 
-```shell
-zenml model version update breast_cancer_classifier rf --stage production
-```
-
-While we've demonstrated a manual promotion process for clarity, a more in-depth look at the [promoter code](steps/model_promoter.py) reveals that the training pipeline is designed to automate this step. It evaluates the latest model against established production metrics and, if the new model outperforms the existing one based on test set results, it will automatically promote the model to production. Here is an overview of the process:
-
-<img src=".assets/cloud_mcp.png" width="60%" alt="Model Control Plane">
-
-Again, if you are a [ZenML Pro](https://zenml.io/pro) user, you would be able to see all this in the cloud dashboard.
-
-</details>
-
-<details>
-  <summary>🫅 Step 4: Consuming the model in production</summary>
-
-Once the model is promoted, we can now consume the right model version in our
-batch inference pipeline directly. Let's see how that works.
-
-The batch inference pipeline simply takes the model marked as `production` and runs inference on it
-with `live data`. The critical step here is the `inference_predict` step, where we load the model in memory and generate predictions. Apart from the loading the model, we must also load the preprocessing pipeline that we ran in feature engineering,
-so that we can do the exact steps that we did on training time, in inference time. Let's bring it all together:
-
-ZenML automatically links all artifacts to the `production` model version as well, including the predictions
-that were returned in the pipeline. This completes the MLOps loop of training to inference:
-
-<img src=".assets/inference_pipeline.png" width="45%" alt="Inference pipeline">
-
-You can also see all predictions ever created as a complete history in the dashboard (Again only for [ZenML Pro](https://zenml.io/pro) users):
-
-<img src=".assets/cloud_mcp_predictions.png" width="70%" alt="Model Control Plane">
-
-</details>
-
-## :bulb: Learn More
-
-You're a legit MLOps engineer now! You trained two models, evaluated them against
-a test set, registered the best one with the ZenML model control plane,
-and served some predictions. You also learned how to iterate on your models and
-data by using some of the ZenML utility abstractions. You saw how to view your
-artifacts and stacks via the client as well as the ZenML Dashboard.
-
-If you want to learn more about ZenML as a tool, then the
-[:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place
-to get started. In particular, the [Production Guide](https://docs.zenml.io/user-guide/production-guide/)
-goes into more detail as to how to transition these same pipelines into production on the cloud.
-
-The best way to get a production ZenML instance up and running with all batteries included is the [ZenML Pro](https://zenml.io/pro). Check it out!
-
-Also, make sure to join our <a href="https://zenml.io/slack" target="_blank">
-    <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-    <b>Slack Community</b> 
-</a> to become part of the ZenML family!
+* If you have questions or feedback... join our [**Slack Community**](https://zenml.io/slack) and become part of the
+  ZenML family!
+* If you want to quickly get started with ZenML, check out [ZenML Pro](https://zenml.io/pro).

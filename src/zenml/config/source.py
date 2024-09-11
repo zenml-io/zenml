@@ -234,19 +234,15 @@ class NotebookSource(Source):
     """Source representing an object defined in a notebook.
 
     Attributes:
-        code_path: Path where the notebook cell code for this source is
-            uploaded.
         replacement_module: Name of the module from which this source should
             be loaded in case the code is not running in a notebook.
+        artifact_store_id: ID of the artifact store in which the replacement
+            module code is stored.
     """
 
-    code_path: Optional[str] = None
     replacement_module: Optional[str] = None
+    artifact_store_id: Optional[UUID] = None
     type: SourceType = SourceType.NOTEBOOK
-
-    # Private attribute that is used to store the code but should not be
-    # serialized
-    _cell_code: Optional[str] = None
 
     @field_validator("type")
     @classmethod

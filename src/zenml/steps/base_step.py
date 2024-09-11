@@ -22,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -37,7 +38,11 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
-from zenml.constants import STEP_SOURCE_PARAMETER_NAME
+from zenml.constants import (
+    ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
+    STEP_SOURCE_PARAMETER_NAME,
+    handle_bool_env_var,
+)
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -48,15 +53,16 @@ from zenml.steps.entrypoint_function_utils import (
 )
 from zenml.steps.utils import (
     resolve_type_annotation,
+    run_as_single_step_pipeline,
 )
 from zenml.utils import (
     dict_utils,
+    materializer_utils,
     notebook_utils,
     pydantic_utils,
     settings_utils,
     source_code_utils,
     source_utils,
-    typing_utils,
 )
 
 if TYPE_CHECKING:
@@ -481,9 +487,16 @@ class BaseStep:
         from zenml.pipelines.pipeline_definition import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside the context of a pipeline,
-            # we simply call the entrypoint
-            return self.call_entrypoint(*args, **kwargs)
+            # The step is being called outside the context of a pipeline, either
+            # run the step function or run it as a single step pipeline on the
+            # active stack
+            run_without_stack = handle_bool_env_var(
+                ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
+            )
+            if run_without_stack:
+                return self.call_entrypoint(*args, **kwargs)
+            else:
+                return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
             input_artifacts,
@@ -989,6 +1002,11 @@ To avoid this consider setting step parameters only in one place (config or code
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
 
+        Raises:
+            StepInterfaceError: If explicit materializers were specified for an
+                output but they do not work for the data type(s) defined by
+                the type annotation.
+
         Returns:
             The finalized step configuration.
         """
@@ -1010,9 +1028,45 @@ To avoid this consider setting step parameters only in one place (config or code
                 output_name, PartialArtifactConfiguration()
             )
 
-            from zenml.steps.utils import get_args
+            if output.materializer_source:
+                # The materializer source was configured by the user. We
+                # validate that their configured materializer supports the
+                # output type. If the output annotation is a Union, we check
+                # that at least one of the specified materializers works with at
+                # least one of the types in the Union. If that's not the case,
+                # it would be a guaranteed failure at runtime and we fail early
+                # here.
+                if output_annotation.resolved_annotation is Any:
+                    continue
 
-            if not output.materializer_source:
+                materializer_classes: List[Type["BaseMaterializer"]] = [
+                    source_utils.load(materializer_source)
+                    for materializer_source in output.materializer_source
+                ]
+
+                for data_type in output_annotation.get_output_types():
+                    try:
+                        materializer_utils.select_materializer(
+                            data_type=data_type,
+                            materializer_classes=materializer_classes,
+                        )
+                        break
+                    except RuntimeError:
+                        pass
+                else:
+                    materializer_strings = [
+                        materializer_source.import_path
+                        for materializer_source in output.materializer_source
+                    ]
+                    raise StepInterfaceError(
+                        "Invalid materializers specified for output "
+                        f"{output_name} of step {self.name}. None of the "
+                        f"materializers ({materializer_strings}) are "
+                        "able to save or load data of the type that is defined "
+                        "for the output "
+                        f"({output_annotation.resolved_annotation})."
+                    )
+            else:
                 if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name]["default_materializer_source"] = (
@@ -1022,26 +1076,9 @@ To avoid this consider setting step parameters only in one place (config or code
                     )
                     continue
 
-                if typing_utils.is_union(
-                    typing_utils.get_origin(
-                        output_annotation.resolved_annotation
-                    )
-                    or output_annotation.resolved_annotation
-                ):
-                    output_types = tuple(
-                        type(None)
-                        if typing_utils.is_none_type(output_type)
-                        else output_type
-                        for output_type in get_args(
-                            output_annotation.resolved_annotation
-                        )
-                    )
-                else:
-                    output_types = (output_annotation.resolved_annotation,)
-
                 materializer_sources = []
 
-                for output_type in output_types:
+                for output_type in output_annotation.get_output_types():
                     materializer_class = materializer_registry[output_type]
                     materializer_sources.append(
                         source_utils.resolve(materializer_class)

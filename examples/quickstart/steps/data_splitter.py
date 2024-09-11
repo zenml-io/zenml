@@ -1,61 +1,77 @@
-# Apache Software License 2.0
-#
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+import math
+import random
+from typing import Annotated, Tuple
 
-from typing import Tuple
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from typing_extensions import Annotated
+from datasets import Dataset
 
 from zenml import step
 
 
 @step
-def data_splitter(
-    dataset: pd.DataFrame, test_size: float = 0.2
+def split_dataset(
+    dataset: Dataset,
+    train_size: float = 0.7,
+    test_size: float = 0.1,
+    eval_size: float = 0.2,
+    subset_size: float = 1.0,
+    random_state: int = 42,
 ) -> Tuple[
-    Annotated[pd.DataFrame, "raw_dataset_trn"],
-    Annotated[pd.DataFrame, "raw_dataset_tst"],
+    Annotated[Dataset, "train_dataset"],
+    Annotated[Dataset, "eval_dataset"],
+    Annotated[Dataset, "test_dataset"],
 ]:
-    """Dataset splitter step.
-
-    This is an example of a dataset splitter step that splits the data
-    into train and test set before passing it to ML model.
-
-    This step is parameterized, which allows you to configure the step
-    independently of the step code, before running it in a pipeline.
-    In this example, the step can be configured to use different test
-    set sizes. See the documentation for more information:
-
-        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
+    """
+    Split a dataset into train, evaluation, and test sets.
 
     Args:
-        dataset: Dataset read from source.
-        test_size: 0.0..1.0 defining portion of test set.
+    dataset (Dataset): The input dataset to split.
+    subset_size (float): Fraction of the dataset to use. Default is 1.0 (use full dataset).
+    train_size (float): Fraction of the dataset to use for training. Default is 0.7.
+    test_size (float): Fraction of the dataset to use for testing. Default is 0.1.
+    eval_size (float): Fraction of the non-test data to use for evaluation. Default is 0.2.
+    random_state (int): Random state for reproducibility. Default is 42.
 
     Returns:
-        The split dataset: dataset_trn, dataset_tst.
+    tuple: (train_dataset, eval_dataset, test_dataset)
     """
-    dataset_trn, dataset_tst = train_test_split(
-        dataset,
-        test_size=test_size,
-        random_state=42,
-        shuffle=True,
+    # Validate split proportions
+    if not math.isclose(train_size + eval_size + test_size, 1.0, rel_tol=1e-5):
+        raise ValueError("Split proportions must sum to 1.0")
+    # Validate split proportions
+    if subset_size > 1.0 or subset_size < 0.0:
+        print(
+            f"Subset_size should be in the range [0.0, 1.0], {subset_size} was supplied. "
+            f"Defaulting subset_size to 1.0"
+        )
+        subset_size = 1.0
+
+    # Set random seed for reproducibility
+    random.seed(random_state)
+
+    # Get the total number of samples in the dataset
+    total_samples = len(dataset)
+
+    # Calculate the number of samples for the subset
+    subset_samples = int(total_samples * subset_size)
+
+    # Randomly select indices for the subset
+    all_indices = list(range(total_samples))
+    subset_indices = random.sample(all_indices, subset_samples)
+
+    # Calculate split sizes
+    train_samples = int(subset_samples * train_size)
+    eval_samples = int(subset_samples * eval_size)
+
+    # Shuffle the subset indices
+    random.shuffle(subset_indices)
+
+    # Split the indices
+    train_indices = subset_indices[:train_samples]
+    eval_indices = subset_indices[train_samples : train_samples + eval_samples]
+    test_indices = subset_indices[train_samples + eval_samples :]
+
+    return (
+        dataset.select(train_indices),
+        dataset.select(eval_indices),
+        dataset.select(test_indices),
     )
-    dataset_trn = pd.DataFrame(dataset_trn, columns=dataset.columns)
-    dataset_tst = pd.DataFrame(dataset_tst, columns=dataset.columns)
-    return dataset_trn, dataset_tst

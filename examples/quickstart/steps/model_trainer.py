@@ -14,60 +14,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from typing import Optional
-
-import pandas as pd
-from sklearn.base import ClassifierMixin
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import SGDClassifier
+import torch
+from datasets import Dataset
+from transformers import (
+    T5ForConditionalGeneration,
+    Trainer,
+    TrainingArguments,
+)
 from typing_extensions import Annotated
 
 from zenml import ArtifactConfig, step
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
 
-@step
-def model_trainer(
-    dataset_trn: pd.DataFrame,
-    model_type: str = "sgd",
-    target: Optional[str] = "target",
+class T5_Model(StrEnum):
+    """All possible types a `StackComponent` can have."""
+
+    SMALL = "t5-small"
+    LARGE = "t5-large"
+
+
+@step(enable_cache=False)
+def train_model(
+    tokenized_dataset: Dataset,
+    model_type: T5_Model,
+    num_train_epochs: int,
+    per_device_train_batch_size: int,
+    gradient_accumulation_steps: int,
+    dataloader_num_workers: int,
 ) -> Annotated[
-    ClassifierMixin,
-    ArtifactConfig(name="sklearn_classifier", is_model_artifact=True),
+    T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)
 ]:
-    """Configure and train a model on the training dataset.
+    """Train the model and return the path to the saved model."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    This is an example of a model training step that takes in a dataset artifact
-    previously loaded and pre-processed by other steps in your pipeline, then
-    configures and trains a model on it. The model is then returned as a step
-    output artifact.
+    model = T5ForConditionalGeneration.from_pretrained(model_type)
+    model = model.to(device)
 
-    Args:
-        dataset_trn: The preprocessed train dataset.
-        model_type: The type of model to train.
-        target: The name of the target column in the dataset.
-
-    Returns:
-        The trained model artifact.
-
-    Raises:
-        ValueError: If the model type is not supported.
-    """
-    # Initialize the model with the hyperparameters indicated in the step
-    # parameters and train it on the training set.
-    if model_type == "sgd":
-        model = SGDClassifier()
-    elif model_type == "rf":
-        model = RandomForestClassifier()
-    else:
-        raise ValueError(f"Unknown model type {model_type}")
-    logger.info(f"Training model {model}...")
-
-    model.fit(
-        dataset_trn.drop(columns=[target]),
-        dataset_trn[target],
+    training_args = TrainingArguments(
+        output_dir="./results",
+        num_train_epochs=num_train_epochs,
+        per_device_train_batch_size=per_device_train_batch_size,  # Reduced batch size for larger model
+        gradient_accumulation_steps=gradient_accumulation_steps,  # Increased gradient accumulation
+        logging_dir="./logs",
+        logging_steps=10,
+        save_steps=500,
+        fp16=False,  # Mixed precision training
+        learning_rate=3e-5,
+        max_grad_norm=0.5,  # Gradient clipping
+        dataloader_num_workers=dataloader_num_workers,  # Adjust based on your system
+        save_total_limit=2,  # Added
     )
-    return model
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset,
+    )
+
+    trainer.train()
+
+    return trainer.model

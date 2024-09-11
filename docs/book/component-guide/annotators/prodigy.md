@@ -76,7 +76,7 @@ workflow!
 With Prodigy, there is no need to specially start the annotator ahead of time
 like with [Label Studio](label-studio.md). Instead, just use Prodigy as per the
 [Prodigy docs](https://prodi.gy) and then you can use the ZenML wrapper / API to
-get your labelled data etc using our Python methods.
+get your labeled data etc using our Python methods.
 
 ZenML supports access to your data and annotations via the `zenml annotator ...`
 CLI command.
@@ -91,7 +91,7 @@ example, you might run:
 zenml annotator dataset annotate your_dataset --command="textcat.manual news_topics ./news_headlines.jsonl --label Technology,Politics,Economy,Entertainment"
 ```
 
-This would launch the Prodigy interface for the `textcat.manual` recipe with the
+This would launch the Prodigy interface for [the `textcat.manual` recipe](https://prodi.gy/docs/recipes#textcat-manual) with the
 `news_topics` dataset and the labels `Technology`, `Politics`, `Economy`, and
 `Entertainment`. The data would be loaded from the `news_headlines.jsonl` file.
 

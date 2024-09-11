@@ -1,5 +1,4 @@
-
-# Define steps in notebook cells
+# Limitations of defining steps in notebook cells
 
 If you want to run ZenML steps defined in notebook cells remotely (either with a remote [orchestrator](../../component-guide/orchestrators/orchestrators.md) or [step operator](../../component-guide/step-operators/step-operators.md)), the cells defining your steps must meet the following conditions:
 - The cell can only contain python code, no Jupyter magic commands or shell commands starting with a `%` or `!`.

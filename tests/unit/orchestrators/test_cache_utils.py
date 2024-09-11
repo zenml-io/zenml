@@ -32,6 +32,8 @@ from zenml.steps.step_invocation import StepInvocation
 
 
 def _compile_step(step: BaseStep) -> Step:
+    from zenml.client import Client
+
     pipeline = Pipeline(name="test_pipeline", entrypoint=lambda: None)
     invocation = StepInvocation(
         id="",
@@ -51,7 +53,7 @@ def _compile_step(step: BaseStep) -> Step:
         invocation=invocation,
         pipeline_settings={},
         pipeline_extra={},
-        stack=None,
+        stack=Client().active_stack,
         step_config=None,
         pipeline_failure_hook_source=None,
         pipeline_success_hook_source=None,

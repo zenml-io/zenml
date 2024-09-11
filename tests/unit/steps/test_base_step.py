@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Annotated, Dict, List, Tuple
+from typing import Annotated, Dict, List, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
@@ -133,31 +133,31 @@ def test_enabling_a_custom_step_operator_for_a_step():
 def test_call_step_with_args(step_with_two_int_inputs):
     """Test that a step can be called with args."""
     with does_not_raise():
-        step_with_two_int_inputs(1, 2)
+        step_with_two_int_inputs.call_entrypoint(1, 2)
 
 
 def test_call_step_with_kwargs(step_with_two_int_inputs):
     """Test that a step can be called with kwargs."""
     with does_not_raise():
-        step_with_two_int_inputs(input_1=1, input_2=2)
+        step_with_two_int_inputs.call_entrypoint(input_1=1, input_2=2)
 
 
 def test_call_step_with_args_and_kwargs(step_with_two_int_inputs):
     """Test that a step can be called with a mix of args and kwargs."""
     with does_not_raise():
-        step_with_two_int_inputs(1, input_2=2)
+        step_with_two_int_inputs.call_entrypoint(1, input_2=2)
 
 
 def test_call_step_with_too_many_args(step_with_two_int_inputs):
     """Test that calling a step fails when too many args are passed."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs(1, 2, 3)
+        step_with_two_int_inputs.call_entrypoint(1, 2, 3)
 
 
 def test_call_step_with_too_many_args_and_kwargs(step_with_two_int_inputs):
     """Test that calling a step fails when too many args and kwargs are passed."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs(1, input_1=2, input_2=3)
+        step_with_two_int_inputs.call_entrypoint(1, input_1=2, input_2=3)
 
 
 def test_call_step_with_missing_key(step_with_two_int_inputs):
@@ -179,13 +179,15 @@ def test_call_step_with_unexpected_key(step_with_two_int_inputs):
 def test_call_step_with_wrong_arg_type(step_with_two_int_inputs):
     """Test that calling a step fails when an arg has a wrong type."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs(1, "not_an_int")
+        step_with_two_int_inputs.call_entrypoint(1, "not_an_int")
 
 
 def test_call_step_with_wrong_kwarg_type(step_with_two_int_inputs):
     """Test that calling a step fails when a kwarg has a wrong type."""
     with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs(input_1=1, input_2="not_an_int")
+        step_with_two_int_inputs.call_entrypoint(
+            input_1=1, input_2="not_an_int"
+        )
 
 
 class MyType:
@@ -204,7 +206,7 @@ def test_call_step_with_default_materializer_registered():
         return MyType()
 
     with does_not_raise():
-        some_step()
+        some_step.call_entrypoint()
 
 
 def test_calling_a_step_works():
@@ -215,8 +217,8 @@ def test_calling_a_step_works():
         pass
 
     with does_not_raise():
-        step_instance()
-        step_instance()
+        step_instance.call_entrypoint()
+        step_instance.call_entrypoint()
 
 
 @step
@@ -948,3 +950,53 @@ def test_unpacking_step_artifact_raises_custom_exception():
 
     with pytest.raises(StepInterfaceError):
         test_pipeline()
+
+
+class MyStringMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (str,)
+
+    def load(self, data_type: Any) -> Any:
+        return None
+
+    def save(self, data: Any) -> None:
+        return
+
+
+def test_configure_step_with_wrong_materializers():
+    """Tests that configuring a step with invalid materializers raises an
+    error."""
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_with_int_return() -> int:
+        return 1
+
+    with pytest.raises(StepInterfaceError):
+        step_with_int_return._finalize_configuration({}, {}, {}, {})
+
+    @step
+    def step_with_int_and_string_return() -> Tuple[str, int]:
+        return "", 1
+
+    with pytest.raises(StepInterfaceError):
+        step_with_int_and_string_return.with_options(
+            output_materializers=MyStringMaterializer
+        )._finalize_configuration({}, {}, {}, {})
+
+    with does_not_raise():
+        step_with_int_and_string_return.with_options(
+            output_materializers={"output_0": MyStringMaterializer}
+        )._finalize_configuration({}, {}, {}, {})
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_with_str_union_return() -> Union[str, int]:
+        return 1
+
+    with does_not_raise():
+        step_with_str_union_return._finalize_configuration({}, {}, {}, {})
+
+    @step(output_materializers=MyStringMaterializer)
+    def step_without_str_union_return() -> Union[int, float]:
+        return 1
+
+    with pytest.raises(StepInterfaceError):
+        step_without_str_union_return._finalize_configuration({}, {}, {}, {})
