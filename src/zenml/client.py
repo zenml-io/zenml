@@ -2354,6 +2354,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        latest_run_status: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -2371,6 +2372,8 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the pipeline to filter by.
+            latest_run_status: Filter by the status of the latest run of a
+                pipeline.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             user: The name/ID of the user to filter by.
@@ -2390,6 +2393,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            latest_run_status=latest_run_status,
             workspace_id=workspace_id,
             user_id=user_id,
             user=user,

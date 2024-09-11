@@ -262,11 +262,16 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "user",
+        "latest_run_status",
     ]
 
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
+    )
+    latest_run_status: Optional[str] = Field(
+        default=None,
+        description="Filter by the status of the latest run of a pipeline.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -282,6 +287,53 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the user that created the pipeline.",
     )
+
+    def apply_filter(
+        self, query: AnyQuery, table: type["AnySchema"]
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query, table)
+
+        from sqlmodel import and_, func, select
+
+        from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
+
+        if self.latest_run_status:
+            latest_pipeline_run_subquery = (
+                select(
+                    PipelineRunSchema.pipeline_id,
+                    func.max(PipelineRunSchema.created).label("created"),
+                )
+                .group_by(PipelineRunSchema.pipeline_id)
+                .subquery()
+            )
+
+            query = (
+                query.join(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                )
+                .join(
+                    latest_pipeline_run_subquery,
+                    and_(
+                        PipelineRunSchema.pipeline_id
+                        == latest_pipeline_run_subquery.c.pipeline_id,
+                        PipelineRunSchema.created
+                        == latest_pipeline_run_subquery.c.created,
+                    ),
+                )
+                .where(PipelineRunSchema.status == self.latest_run_status)
+            )
+
+        return query
 
     def get_custom_filters(
         self,
