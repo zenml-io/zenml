@@ -1,0 +1,9 @@
+---
+name: Test Docker login entrypoint
+on:
+  push:
+    branches: [bugfix/permissions-to-assume-aws-role-v2]
+jobs:
+  test-docker-login:
+    uses: ./.github/workflows/test_docker_login.yml
+    secrets: inherit
