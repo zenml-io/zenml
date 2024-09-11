@@ -75,7 +75,7 @@ from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils, yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -471,6 +471,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Creates a kfp yaml file.
 
@@ -501,6 +502,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If trying to run a pipeline in a notebook

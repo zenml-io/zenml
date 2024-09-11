@@ -27,7 +27,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
 
@@ -46,6 +46,7 @@ class LocalOrchestrator(BaseOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Iterates through all steps and executes them sequentially.
 
@@ -54,6 +55,8 @@ class LocalOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline is deployed.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
         """
         if deployment.schedule:
             logger.warning(

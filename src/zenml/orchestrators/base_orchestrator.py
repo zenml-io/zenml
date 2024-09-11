@@ -27,7 +27,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
 
@@ -124,6 +124,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -159,6 +160,8 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Returns:
             The optional return value from this method will be returned by the
@@ -169,12 +172,15 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs a pipeline on a stack.
 
         Args:
             deployment: The pipeline deployment.
             stack: The stack on which to run the pipeline.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Returns:
             Orchestrator-specific return value.
@@ -185,7 +191,10 @@ class BaseOrchestrator(StackComponent, ABC):
 
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack, environment=environment
+                deployment=deployment,
+                stack=stack,
+                environment=environment,
+                placeholder_run=placeholder_run,
             )
         finally:
             self._cleanup_run()
