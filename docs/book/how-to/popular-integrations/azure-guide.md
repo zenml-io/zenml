@@ -46,23 +46,7 @@ secret value as it will be needed later.
 
 ![Azure App Registrations](../../.gitbook/assets/azure_3.png)
 
-## 2. Create a service connector
-
-Once you have created the service principal and the client secret, you can 
-go ahead and create [a ZenML Azure Service Connector](../../how-to/auth-management/azure-service-connector.md).
-
-```bash
-zenml service-connector register azure_connector --type azure \
-  --auth-method service-principal \
-  --client_secret=<CLIENT_SECRET> \
-  --tenant_id=<TENANT_ID> \
-  --client_id=<APPLICATION_ID>
-```
-
-You will use this service connector later on to connect your components with 
-proper authentication.
-
-## 3. Create a resource group and the AzureML instance
+## 2. Create a resource group and the AzureML instance
 
 Now, you have to [create a resource group on Azure](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal).
 To do this, go to the Azure portal and go to the `Resource Groups` page and 
@@ -82,6 +66,26 @@ with a storage account, key vault, and application insights. It is highly
 recommended that you create a container registry as well.
 
 ![AzureML Workspace Details](../../.gitbook/assets/azure_6.png)
+
+## 3. Created the required role assignments
+
+TODO: Write this!
+
+## 4. Create a service connector
+
+Once you have created the service principal and the client secret, you can 
+go ahead and create [a ZenML Azure Service Connector](../../how-to/auth-management/azure-service-connector.md).
+
+```bash
+zenml service-connector register azure_connector --type azure \
+  --auth-method service-principal \
+  --client_secret=<CLIENT_SECRET> \
+  --tenant_id=<TENANT_ID> \
+  --client_id=<APPLICATION_ID>
+```
+
+You will use this service connector later on to connect your components with 
+proper authentication.
 
 ## 4. Create Stack Components
 
