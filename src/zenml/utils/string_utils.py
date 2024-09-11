@@ -17,10 +17,13 @@ import base64
 import datetime
 import random
 import string
+from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
 
 from pydantic import BaseModel
 
 from zenml.constants import BANNED_NAME_CHARACTERS
+
+V = TypeVar("V", bound=Any)
 
 
 def get_human_readable_time(seconds: float) -> str:
@@ -167,3 +170,32 @@ def format_name_template(
         datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
     )
     return name_template.format(**kwargs)
+
+
+def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
+    """Recursively substitue strings in objects.
+
+    Args:
+        value: An object in which the strings should be recursively substituted.
+            This can be a pydantic model, dict, set, list, tuple or any
+            primitive type.
+        substitution_func: The function that does the actual string
+            substitution.
+
+    Returns:
+        The object with the substitution function applied to all string values.
+    """
+    if isinstance(value, BaseModel):
+        model_values = substitute_string(value.model_dump(mode="json"))
+        return type(value).model_validate(model_values)
+    elif isinstance(value, Dict):
+        return {
+            substitute_string(k): substitute_string(v)
+            for k, v in value.items()
+        }
+    elif isinstance(value, (List, Set, Tuple)):
+        return type(value)(substitute_string(v) for v in value)
+    elif isinstance(value, str):
+        return substitution_func(value)
+
+    return value

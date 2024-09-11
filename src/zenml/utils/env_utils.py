@@ -14,7 +14,16 @@
 """Utility functions for handling environment variables."""
 
 import os
-from typing import Dict, List, Optional, cast
+import re
+from typing import Any, Dict, List, Optional, TypeVar, cast
+
+from zenml.logger import get_logger
+from zenml.utils import string_utils
+
+logger = get_logger(__name__)
+
+V = TypeVar("V", bound=Any)
+ENV_VARIABLE_PLACEHOLDER_PATTERN = re.compile(pattern=r"\$\{([a-zA-Z0-9_]+)\}")
 
 ENV_VAR_CHUNK_SUFFIX = "_CHUNK_"
 
@@ -99,3 +108,36 @@ def reconstruct_environment_variables(
         # Remove the chunk environment variables
         for key in chunk_keys:
             env.pop(key)
+
+
+def substitute_env_variable_placeholders(value: V) -> V:
+    """Substitute environment variable placeholders in an object.
+
+    Args:
+        value: The object in which to substitute the placeholders.
+
+    Returns:
+        The object with placeholders substituted.
+    """
+
+    def _replace_with_env_variable_value(match: re.Match) -> str:
+        key = match.group(1)
+        if value := os.getenv(key):
+            return value
+        else:
+            logger.debug(
+                "Unable to substitute environment variable placeholder %s "
+                "because the environment variable is not set, using an empty "
+                "string instead.",
+                key,
+            )
+            return ""
+
+    def _substitution_func(v: str) -> str:
+        return ENV_VARIABLE_PLACEHOLDER_PATTERN.sub(
+            _replace_with_env_variable_value, v
+        )
+
+    return string_utils.substitute_string(
+        value=value, substitution_func=_substitution_func
+    )
