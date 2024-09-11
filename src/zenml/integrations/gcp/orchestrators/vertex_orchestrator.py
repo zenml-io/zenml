@@ -32,6 +32,7 @@
 import os
 import re
 import types
+import urllib
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -51,6 +52,7 @@ from kfp.compiler import Compiler
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
+    METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -70,6 +72,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils import yaml_utils
@@ -77,7 +80,11 @@ from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse, ScheduleResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        ScheduleResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -302,6 +309,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Creates a KFP JSON pipeline.
 
@@ -335,6 +343,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set and it
@@ -564,6 +574,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name=orchestrator_run_name,
             settings=settings,
             schedule=deployment.schedule,
+            placeholder_run=placeholder_run,
         )
 
     def _upload_and_run_pipeline(
@@ -573,6 +584,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         run_name: str,
         settings: VertexOrchestratorSettings,
         schedule: Optional["ScheduleResponse"] = None,
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
@@ -583,6 +595,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
             schedule: The schedule the pipeline will run on.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If the Vertex Orchestrator fails to provision or any other Runtime errors
@@ -629,7 +643,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         try:
             if schedule:
                 logger.info(
-                    "Scheduling job using native Vertex AI Pipelines scheduling..."
+                    "Scheduling job using native Vertex AI Pipelines "
+                    "scheduling..."
                 )
                 run.create_schedule(
                     display_name=schedule.name,
@@ -645,13 +660,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     "No schedule detected. Creating one-off Vertex job..."
                 )
                 logger.info(
-                    "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
-                    "service.",
+                    "Submitting pipeline job with job_id `%s` to Vertex AI "
+                    "Pipelines service.",
                     job_id,
                 )
 
                 # Submit the job to Vertex AI Pipelines service.
-
                 run.submit(
                     service_account=self.config.workload_service_account,
                     network=self.config.network,
@@ -659,6 +673,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 logger.info(
                     "View the Vertex AI Pipelines job at %s",
                     run._dashboard_uri(),
+                )
+
+                # Publish run metadata if possible
+                self._publish_run_metadata(
+                    job=run, placeholder_run=placeholder_run
                 )
 
                 if settings.synchronous:
@@ -718,6 +737,86 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }
 
+    @staticmethod
+    def _generate_orchestrator_url(
+        job: aiplatform.PipelineJob,
+    ) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+             the URL to the dashboard view in Vertex.
+        """
+        try:
+            return str(job._dashboard_uri())
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    @staticmethod
+    def _generate_orchestrator_docs_url(
+        job: aiplatform.PipelineJob,
+    ) -> Optional[str]:
+        """Generate the Logs Explorer URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+            the URL querying the pipeline logs in Logs Explorer on GCP.
+        """
+        try:
+            base_url = "https://console.cloud.google.com/logs/query"
+            query = f"""
+            resource.type="aiplatform.googleapis.com/PipelineJob"
+            resource.labels.pipeline_job_id="{job.job_id}"
+            """
+            encoded_query = urllib.parse.quote(query)
+            return f"{base_url}?project={job.project}&query={encoded_query}"
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the logs url: {e}"
+            )
+            return None
+
+    def _publish_run_metadata(
+        self,
+        job: aiplatform.PipelineJob,
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> None:
+        """Publishes run metadata upon pipeline execution."""
+        try:
+            # If the placeholder_run is already created, add metadata
+            if placeholder_run is not None:
+                pipeline_metadata = {}
+
+                # URL to the Vertex's pipeline view
+                if orchestrator_url := self._generate_orchestrator_url(job):
+                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
+                        orchestrator_url
+                    )
+
+                # URL to the corresponding Logs Explorer page
+                if logs_url := self._generate_orchestrator_docs_url(job):
+                    pipeline_metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(
+                        logs_url
+                    )
+
+                if pipeline_metadata:
+                    publish_pipeline_run_metadata(
+                        pipeline_run_id=placeholder_run.id,
+                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
+                    )
+        except Exception as e:
+            logger.warning(
+                f"There was an issue publishing the run metadata: {e}"
+            )
+
     def _configure_container_resources(
         self,
         dynamic_component: dsl.PipelineTask,
@@ -738,6 +837,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             The dynamic component with the resource settings applied.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
+        cpu_limit = None
         if resource_settings:
             cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
 

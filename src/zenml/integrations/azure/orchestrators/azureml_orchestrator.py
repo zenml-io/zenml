@@ -60,12 +60,13 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -199,6 +200,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Prepares or runs a pipeline on AzureML.
 
@@ -207,6 +209,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If the creation of the schedule fails.
@@ -379,6 +383,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         else:
             job = ml_client.jobs.create_or_update(pipeline_job)
             logger.info(f"Pipeline {run_name} has been started.")
+
+            # Publish run metadata if possible
+            self._publish_run_metadata(
+                job=job,
+                placeholder_run=placeholder_run,
+            )
+
             assert job.services is not None
             assert job.name is not None
 
@@ -428,3 +439,58 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 f"job: {e}"
             )
             return {}
+
+    @staticmethod
+    def _generate_orchestrator_url(job: Any) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding _PipelineExecution object.
+
+        Returns:
+             the URL to the dashboard view in AzureML.
+        """
+        try:
+            if job.studio_url:
+                return str(job.studio_url)
+
+            return None
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    def _publish_run_metadata(
+        self,
+        job: Any,
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> None:
+        """Publishes run metadata upon pipeline execution.
+
+        Args:
+            job: The generated Job object from Azure
+            placeholder_run: The placeholder run that is generated before
+                pipeline execution
+        """
+        try:
+            # If the placeholder_run is already created, add metadata
+            if placeholder_run is not None:
+                pipeline_metadata = {}
+
+                # URL to the AzureML's pipeline view
+                if orchestrator_url := self._generate_orchestrator_url(job):
+                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
+                        orchestrator_url
+                    )
+
+                if pipeline_metadata:
+                    publish_pipeline_run_metadata(
+                        pipeline_run_id=placeholder_run.id,
+                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
+                    )
+        except Exception as e:
+            logger.warning(
+                f"There was an issue publishing the run metadata: {e}"
+            )

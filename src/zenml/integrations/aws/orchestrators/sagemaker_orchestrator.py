@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import boto3
@@ -29,6 +29,7 @@ from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
+    METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.enums import StackComponentType
@@ -43,12 +44,13 @@ from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_conf
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
@@ -141,6 +143,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -149,6 +152,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If a connector is used that does not return a
@@ -241,8 +246,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Retrieve Processor arguments provided in the Step settings.
             processor_args_for_step = step_settings.processor_args or {}
 
-            # Set default values from configured orchestrator Component to arguments
-            # to be used when they are not present in processor_args.
+            # Set default values from configured orchestrator Component to
+            # arguments to be used when they are not present in processor_args.
             processor_args_for_step.setdefault(
                 "instance_type", step_settings.instance_type
             )
@@ -274,7 +279,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             processor_args_for_step["base_job_name"] = orchestrator_run_name
             processor_args_for_step["env"] = environment
 
-            # Convert network_config to sagemaker.network.NetworkConfig if present
+            # Convert network_config to sagemaker.network.NetworkConfig
+            # if present
             network_config = processor_args_for_step.get("network_config")
             if network_config and isinstance(network_config, dict):
                 try:
@@ -282,10 +288,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         **network_config
                     )
                 except TypeError:
-                    # If the network_config passed is not compatible with the NetworkConfig class,
-                    # raise a more informative error.
+                    # If the network_config passed is not compatible with the
+                    # NetworkConfig class, raise a more informative error.
                     raise TypeError(
-                        "Expected a sagemaker.network.NetworkConfig compatible object for the network_config argument, "
+                        "Expected a sagemaker.network.NetworkConfig "
+                        "compatible object for the network_config argument, "
                         "but the network_config processor argument is invalid."
                         "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
                         "for more information about the NetworkConfig class."
@@ -369,11 +376,18 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             "when using the Sagemaker Orchestrator."
         )
 
+        # Publish run metadata if possible
+        self._publish_run_metadata(
+            job=pipeline_execution,
+            placeholder_run=placeholder_run,
+        )
+
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
             logger.info(
                 "Executing synchronously. Waiting for pipeline to finish... \n"
-                "At this point you can `Ctrl-C` out without cancelling the execution."
+                "At this point you can `Ctrl-C` out without cancelling the "
+                "execution."
             )
             try:
                 pipeline_execution.wait(
@@ -382,28 +396,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 logger.info("Pipeline completed successfully.")
             except WaiterError:
                 raise RuntimeError(
-                    "Timed out while waiting for pipeline execution to finish. For long-running "
-                    "pipelines we recommend configuring your orchestrator for asynchronous execution. "
+                    "Timed out while waiting for pipeline execution to "
+                    "finish. For long-running pipelines we recommend "
+                    "configuring your orchestrator for asynchronous execution. "
                     "The following command does this for you: \n"
-                    f"`zenml orchestrator update {self.name} --synchronous=False`"
+                    f"`zenml orchestrator update {self.name} "
+                    f"--synchronous=False`"
                 )
-
-    def _get_region_name(self) -> str:
-        """Returns the AWS region name.
-
-        Returns:
-            The region name.
-
-        Raises:
-            RuntimeError: If the region name cannot be retrieved.
-        """
-        try:
-            return cast(str, sagemaker.Session().boto_region_name)
-        except Exception as e:
-            raise RuntimeError(
-                "Unable to get region name. Please ensure that you have "
-                "configured your AWS credentials correctly."
-            ) from e
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -416,16 +415,17 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
+        pipeline_execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
+            "pipeline_execution_arn": pipeline_execution_arn,
         }
-        try:
-            region_name = self._get_region_name()
-        except RuntimeError:
-            logger.warning("Unable to get region name from AWS Sagemaker.")
-            return run_metadata
 
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
+
+        region_name, _, _ = self._dissect_pipeline_execution_arn(
+            pipeline_execution_arn=pipeline_execution_arn
+        )
+
         orchestrator_logs_url = (
             f"https://{region_name}.console.aws.amazon.com/"
             f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
@@ -434,3 +434,136 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
         run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
         return run_metadata
+
+    @staticmethod
+    def _dissect_pipeline_execution_arn(
+        pipeline_execution_arn: str,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Extract region name, pipeline name, and execution id from the ARN.
+
+        Args:
+            pipeline_execution_arn: the pipeline execution ARN
+
+        Returns:
+            Region Name, Pipeline Name, Execution ID in order
+        """
+        # Extract region_name
+        region_match = re.search(r"sagemaker:(.*?):", pipeline_execution_arn)
+        region_name = region_match.group(1) if region_match else None
+
+        # Extract pipeline_name
+        pipeline_match = re.search(
+            r"pipeline/(.*?)/execution", pipeline_execution_arn
+        )
+        pipeline_name = pipeline_match.group(1) if pipeline_match else None
+
+        # Extract execution_id
+        execution_match = re.search(r"execution/(.*)", pipeline_execution_arn)
+        execution_id = execution_match.group(1) if execution_match else None
+
+        return region_name, pipeline_name, execution_id
+
+    def _generate_orchestrator_url(
+        self,
+        pipeline_execution: Any,
+    ) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            pipeline_execution: The corresponding _PipelineExecution object.
+
+        Returns:
+             the URL to the dashboard view in SageMaker.
+        """
+        try:
+            region_name, pipeline_name, execution_id = (
+                self._dissect_pipeline_execution_arn(pipeline_execution.arn)
+            )
+
+            # Get the Sagemaker session
+            session = pipeline_execution.sagemaker_session
+
+            # List the Studio domains and get the Studio Domain ID
+            # TODO: Solve this with the config
+            domains_response = session.sagemaker_client.list_domains()
+            studio_domain_id = domains_response["Domains"][0]["DomainId"]
+
+            return (
+                f"https://studio-{studio_domain_id}.studio.{region_name}."
+                f"sagemaker.aws/pipelines/view/{pipeline_name}/executions"
+                f"/{execution_id}/graph"
+            )
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    def _generate_orchestrator_docs_url(
+        self,
+        pipeline_execution: Any,
+    ) -> Optional[str]:
+        """Generate the Logs Explorer URL upon pipeline execution.
+
+        Args:
+            pipeline_execution: The corresponding PipelineJob object.
+
+        Returns:
+            the URL querying the pipeline logs in Logs Explorer on GCP.
+        """
+        try:
+            region_name, _, execution_id = (
+                self._dissect_pipeline_execution_arn(pipeline_execution.arn)
+            )
+
+            return (
+                f"https://{region_name}.console.aws.amazon.com/"
+                f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+                f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+                f"$3Dpipelines-{execution_id}-"
+            )
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the logs url: {e}"
+            )
+            return None
+
+    def _publish_run_metadata(
+        self,
+        job: Any,
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> None:
+        """Publishes run metadata upon pipeline execution.
+
+        Args:
+            job: The generated Job object from Azure
+            placeholder_run: The placeholder run that is generated before
+                pipeline execution
+        """
+        try:
+            # If the placeholder_run is already created, add metadata
+            if placeholder_run is not None:
+                pipeline_metadata = {}
+
+                # URL to the Sagemaker's pipeline view
+                if orchestrator_url := self._generate_orchestrator_url(job):
+                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
+                        orchestrator_url
+                    )
+
+                # URL to the corresponding CloudWatch page
+                if logs_url := self._generate_orchestrator_docs_url(job):
+                    pipeline_metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(
+                        logs_url
+                    )
+
+                if pipeline_metadata:
+                    publish_pipeline_run_metadata(
+                        pipeline_run_id=placeholder_run.id,
+                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
+                    )
+        except Exception as e:
+            logger.warning(
+                f"There was an issue publishing the run metadata: {e}"
+            )
