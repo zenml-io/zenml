@@ -261,9 +261,18 @@ class DockerServiceConnector(ServiceConnector):
         """
         assert self.resource_id is not None
 
+        # The reason we need to configure the local client here instead of
+        # using the `docker_client.login(...)` method is the following:
+        # When calling the login method on the python client, it stores the
+        # credentials in memory, but doesn't actually use them in future calls
+        # to push/pull images in case a credential store or credential helper is
+        # configured. If the cred store/helper contains invalid/expired
+        # credentials for the registry, these calls will fail.
+        # This solution is not ideal as we're now replacing potentially
+        # long-lived credentials in the cred store with our short lived ones,
+        # but the best we can do without modifying the docker library.
+        self._configure_local_client()
         docker_client = docker_utils._try_get_docker_client_from_env()
-
-        self._authorize_client(docker_client, self.resource_id)
 
         return docker_client
 
