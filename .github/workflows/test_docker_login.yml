@@ -1,0 +1,26 @@
+---
+name: Test Docker login
+on:
+  push:
+    branches: [bugfix/permissions-to-assume-aws-role-v2]
+jobs:
+  publish_to_docker:
+    name: Test docker login
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
+          aws-region: eu-central-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
