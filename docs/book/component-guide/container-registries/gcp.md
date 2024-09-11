@@ -167,7 +167,7 @@ zenml service-connector list-resources --connector-type gcp --resource-type dock
 
 {% code title="Example Command Output" %}
 ```text
-The following 'docker-registry' resources can be accessed by 'gcp' service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by 'gcp' service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
 ┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨

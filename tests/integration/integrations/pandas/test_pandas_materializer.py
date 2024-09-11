@@ -17,7 +17,9 @@ import datetime
 import pandas
 
 from tests.unit.test_general import _test_materializer
-from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.integrations.pandas.materializers.pandas_materializer import (
+    PandasMaterializer,
+)
 
 
 def test_pandas_materializer():

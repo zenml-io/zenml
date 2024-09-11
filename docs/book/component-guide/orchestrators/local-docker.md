@@ -55,7 +55,7 @@ def return_one() -> int:
 
 
 settings = {
-    "orchestrator.local_docker": LocalDockerOrchestratorSettings(
+    "orchestrator": LocalDockerOrchestratorSettings(
         run_args={"cpu_count": 3}
     )
 }

@@ -17,10 +17,10 @@ from steps.trainer.trainer_step import trainer
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import LIGHTGBM
+from zenml.integrations.constants import LIGHTGBM, PANDAS
 
 docker_settings = DockerSettings(
-    required_integrations=[LIGHTGBM], apt_packages=["libgomp1"]
+    required_integrations=[LIGHTGBM, PANDAS], apt_packages=["libgomp1"]
 )
 
 

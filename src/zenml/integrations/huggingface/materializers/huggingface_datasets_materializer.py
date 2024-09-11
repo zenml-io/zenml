@@ -31,9 +31,11 @@ from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.integrations.pandas.materializers.pandas_materializer import (
+    PandasMaterializer,
+)
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.utils import io_utils
 
 if TYPE_CHECKING:

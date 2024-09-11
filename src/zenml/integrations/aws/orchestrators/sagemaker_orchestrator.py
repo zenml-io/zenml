@@ -372,7 +372,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
             logger.info(
-                "Executing synchronously. Waiting for pipeline to finish..."
+                "Executing synchronously. Waiting for pipeline to finish... \n"
+                "At this point you can `Ctrl-C` out without cancelling the execution."
             )
             try:
                 pipeline_execution.wait(

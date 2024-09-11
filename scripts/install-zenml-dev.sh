@@ -37,6 +37,11 @@ install_integrations() {
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy"
+
+    # Ignore tensorflow and deepchecks only on Python 3.12
+    if [ "$python_version" = "3.12" ]; then
+        ignore_integrations="$ignore_integrations tensorflow deepchecks"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""

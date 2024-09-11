@@ -8745,6 +8745,10 @@ class SqlZenStore(BaseZenStore):
                 # For Python versions <3.9, leave out the third parameter to
                 # _evaluate
                 target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            elif sys.version_info >= (3, 12, 4):
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, recursive_guard=frozenset()
+                )
             else:
                 target_schema = schema_ref._evaluate(
                     vars(zenml_schemas), {}, frozenset()
