@@ -15,6 +15,7 @@
 
 import base64
 import datetime
+import functools
 import random
 import string
 from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
@@ -185,16 +186,19 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
     Returns:
         The object with the substitution function applied to all string values.
     """
+    substitute_ = functools.partial(
+        substitute_string, substitution_func=substitution_func
+    )
+
     if isinstance(value, BaseModel):
-        model_values = substitute_string(value.model_dump(mode="json"))
+        model_values = {
+            k: substitute_(v) for k, v in value.model_dump(mode="json").items()
+        }
         return type(value).model_validate(model_values)
     elif isinstance(value, Dict):
-        return {
-            substitute_string(k): substitute_string(v)
-            for k, v in value.items()
-        }
+        return {substitute_(k): substitute_(v) for k, v in value.items()}
     elif isinstance(value, (List, Set, Tuple)):
-        return type(value)(substitute_string(v) for v in value)
+        return type(value)(substitute_(v) for v in value)
     elif isinstance(value, str):
         return substitution_func(value)
 

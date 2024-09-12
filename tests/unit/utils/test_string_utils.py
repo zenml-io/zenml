@@ -14,6 +14,8 @@
 
 from typing import List
 
+from pydantic import BaseModel
+
 from zenml.utils import string_utils
 
 
@@ -44,3 +46,71 @@ def test_random_str_is_random() -> None:
         new_str = string_utils.random_str(16)
         assert new_str not in lst
         lst.append(new_str)
+
+
+def test_string_substitution() -> None:
+    """Test string substitution."""
+
+    class ModelClass(BaseModel):
+        string_attribute: str
+        int_attribute: int
+
+    model = ModelClass(string_attribute="string_value", int_attribute=1)
+    model_sub = ModelClass(
+        string_attribute="string_value_suffix", int_attribute=1
+    )
+    substitution_func = lambda s: s + "_suffix"
+
+    assert (
+        string_utils.substitute_string(1, substitution_func=substitution_func)
+        == 1
+    )
+    assert (
+        string_utils.substitute_string(
+            0.1, substitution_func=substitution_func
+        )
+        == 0.1
+    )
+    assert (
+        string_utils.substitute_string(
+            None, substitution_func=substitution_func
+        )
+        == None
+    )
+    assert string_utils.substitute_string(
+        ["a", "b", 1], substitution_func=substitution_func
+    ) == ["a_suffix", "b_suffix", 1]
+    assert string_utils.substitute_string(
+        ("a", "b", 1), substitution_func=substitution_func
+    ) == ("a_suffix", "b_suffix", 1)
+    assert string_utils.substitute_string(
+        set(["a", "b", 1]), substitution_func=substitution_func
+    ) == set(["a_suffix", "b_suffix", 1])
+    assert string_utils.substitute_string(
+        {"key": "value"}, substitution_func=substitution_func
+    ) == {"key_suffix": "value_suffix"}
+    assert (
+        string_utils.substitute_string(
+            model, substitution_func=substitution_func
+        )
+        == model_sub
+    )
+
+    combined = [
+        2,
+        0.2,
+        None,
+        "string",
+        {3: "value", "key": model},
+        set(["set_value", 4]),
+    ]
+    assert string_utils.substitute_string(
+        combined, substitution_func=substitution_func
+    ) == [
+        2,
+        0.2,
+        None,
+        "string_suffix",
+        {3: "value_suffix", "key_suffix": model_sub},
+        set(["set_value_suffix", 4]),
+    ]

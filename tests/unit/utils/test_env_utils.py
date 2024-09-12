@@ -12,13 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from contextlib import ExitStack as does_not_raise
 
 import pytest
+from pydantic import BaseModel
 
 from zenml.utils.env_utils import (
     reconstruct_environment_variables,
     split_environment_variables,
+    substitute_env_variable_placeholders,
 )
 
 
@@ -70,3 +73,51 @@ def test_split_too_large_env_var_fails():
 
     with pytest.raises(RuntimeError):
         split_environment_variables(env=env, size_limit=4)
+
+
+def test_env_var_substitution(mocker):
+    """Test environment var substitution."""
+    mocker.patch.dict(os.environ, {"A": "1"})
+
+    class M(BaseModel):
+        string_attribute: str
+
+    assert (
+        substitute_env_variable_placeholders("prefix_${A}_suffix")
+        == "prefix_1_suffix"
+    )
+    # Non existent -> empty string
+    assert (
+        substitute_env_variable_placeholders("prefix_${B}_suffix")
+        == "prefix__suffix"
+    )
+
+    # Wrong patterns
+    assert (
+        substitute_env_variable_placeholders("prefix_{A}_suffix")
+        == "prefix_{A}_suffix"
+    )
+    assert (
+        substitute_env_variable_placeholders("prefix_{{A}}_suffix")
+        == "prefix_{{A}}_suffix"
+    )
+
+    # Complex objects
+    key = "prefix_${A}_suffix"
+    val = "prefix_1_suffix"
+    combined = [
+        2,
+        0.2,
+        None,
+        key,
+        {3: key, key: M(string_attribute=key)},
+        set([key, 4]),
+    ]
+    assert substitute_env_variable_placeholders(combined) == [
+        2,
+        0.2,
+        None,
+        val,
+        {3: val, val: M(string_attribute=val)},
+        set([val, 4]),
+    ]
