@@ -18,7 +18,7 @@ import datetime
 import functools
 import random
 import string
-from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
+from typing import Any, Callable, Dict, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -194,12 +194,14 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
         model_values = {
             k: substitute_(v) for k, v in value.model_dump(mode="json").items()
         }
-        return type(value).model_validate(model_values)
+        return cast(V, type(value).model_validate(model_values))
     elif isinstance(value, Dict):
-        return {substitute_(k): substitute_(v) for k, v in value.items()}
-    elif isinstance(value, (List, Set, Tuple)):
-        return type(value)(substitute_(v) for v in value)
+        return cast(
+            V, {substitute_(k): substitute_(v) for k, v in value.items()}
+        )
+    elif isinstance(value, (list, set, tuple)):
+        return cast(V, type(value)(substitute_(v) for v in value))
     elif isinstance(value, str):
-        return substitution_func(value)
+        return cast(V, substitution_func(value))
 
     return value

@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import Any, Dict, List, Optional, TypeVar, cast
+from typing import Any, Dict, List, Match, Optional, TypeVar, cast
 
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -120,7 +120,7 @@ def substitute_env_variable_placeholders(value: V) -> V:
         The object with placeholders substituted.
     """
 
-    def _replace_with_env_variable_value(match: re.Match) -> str:
+    def _replace_with_env_variable_value(match: Match[str]) -> str:
         key = match.group(1)
         if value := os.getenv(key):
             return value
