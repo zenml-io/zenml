@@ -191,9 +191,21 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
     )
 
     if isinstance(value, BaseModel):
-        model_values = {
-            k: substitute_(v) for k, v in value.model_dump(mode="json").items()
-        }
+        model_values = {}
+
+        for k, v in dict(value).items():
+            new_value = substitute_(v)
+
+            if k not in value.model_fields_set and new_value == getattr(
+                value, k
+            ):
+                # This is a default value on the model and was not set
+                # explicitly. In this case, we don't include it in the model
+                # values to keep the `exclude_unset` behavior the same
+                continue
+
+            model_values[k] = new_value
+
         return cast(V, type(value).model_validate(model_values))
     elif isinstance(value, Dict):
         return cast(
