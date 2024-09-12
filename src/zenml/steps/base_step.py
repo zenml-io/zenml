@@ -601,6 +601,15 @@ class BaseStep(metaclass=BaseStepMeta):
             if run_without_stack:
                 return self.call_entrypoint(*args, **kwargs)
             else:
+                from zenml import constants
+
+                if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+                    logger.info(
+                        "Preventing execution of step '%s' during importing.",
+                        self.name,
+                    )
+                    return
+
                 return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
