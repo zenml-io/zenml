@@ -174,7 +174,7 @@ def format_name_template(
 
 
 def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
-    """Recursively substitue strings in objects.
+    """Recursively substitute strings in objects.
 
     Args:
         value: An object in which the strings should be recursively substituted.

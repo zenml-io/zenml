@@ -1067,8 +1067,8 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     assert not is_placeholder_request(run_request)
 
 
-def test_env_var_substitution(mocker, clean_client, empty_pipeline):
-    """Test env var substituion in pipeline config."""
+def test_env_var_substitution(mocker, clean_client, empty_pipeline):  # noqa: F811
+    """Test env var substitution in pipeline config."""
     mocker.patch.dict(os.environ, {"A": "1"})
 
     empty_pipeline.configure(extra={"key": "${A}_suffix"})

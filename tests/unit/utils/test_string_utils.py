@@ -59,7 +59,8 @@ def test_string_substitution() -> None:
     model_sub = ModelClass(
         string_attribute="string_value_suffix", int_attribute=1
     )
-    substitution_func = lambda s: s + "_suffix"
+    def substitution_func(s):
+        return s + "_suffix"
 
     assert (
         string_utils.substitute_string(1, substitution_func=substitution_func)
@@ -75,7 +76,7 @@ def test_string_substitution() -> None:
         string_utils.substitute_string(
             None, substitution_func=substitution_func
         )
-        == None
+        is None
     )
     assert string_utils.substitute_string(
         ["a", "b", 1], substitution_func=substitution_func
