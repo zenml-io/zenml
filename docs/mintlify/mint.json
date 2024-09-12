@@ -29,6 +29,14 @@
     {
       "name": "API Reference",
       "url": "api-reference"
+    },
+    {
+      "name": "Core Code Docs",
+      "url": "core-code-docs"
+    },
+    {
+      "name": "Integration Docs",
+      "url": "integration-docs"
     }
   ],
   "anchors": [
@@ -48,7 +56,9 @@
       "url": "https://mintlify.com/blog"
     }
   ],
-  "versions": ["v2", "v1"],
+  "versions": [
+    "v1"
+  ],
   "navigation": [
     {
       "group": "Get Started",
@@ -74,6 +84,140 @@
       "version": "v1",
       "pages": [
         "api-reference/introduction"
+      ]
+    },
+    {
+      "group": "Core Code Docs",
+      "pages": [
+        {
+          "group": "v1",
+          "pages": [
+            "mkdocs/v1/core_code_docs/core-hooks",
+            "mkdocs/v1/core_code_docs/core-annotators",
+            "mkdocs/v1/core_code_docs/core-zen_stores",
+            "mkdocs/v1/core_code_docs/core-constants",
+            "mkdocs/v1/core_code_docs/core-plugins",
+            "mkdocs/v1/core_code_docs/core-experiment_trackers",
+            "mkdocs/v1/core_code_docs/core-types",
+            "mkdocs/v1/core_code_docs/core-logger",
+            "mkdocs/v1/core_code_docs/core-logging",
+            "mkdocs/v1/core_code_docs/core-entrypoints",
+            "mkdocs/v1/core_code_docs/core-environment",
+            "mkdocs/v1/core_code_docs/core-enums",
+            "mkdocs/v1/core_code_docs/core-lineage_graph",
+            "mkdocs/v1/core_code_docs/core-assistant",
+            "mkdocs/v1/core_code_docs/core-code_repositories",
+            "mkdocs/v1/core_code_docs/core-analytics",
+            "mkdocs/v1/core_code_docs/core-exceptions",
+            "mkdocs/v1/core_code_docs/core-artifacts",
+            "mkdocs/v1/core_code_docs/core-client_lazy_loader",
+            "mkdocs/v1/core_code_docs/core-event_hub",
+            "mkdocs/v1/core_code_docs/core-feature_stores",
+            "mkdocs/v1/core_code_docs/core-new",
+            "mkdocs/v1/core_code_docs/core-model",
+            "mkdocs/v1/core_code_docs/core-io",
+            "mkdocs/v1/core_code_docs/core-utils",
+            "mkdocs/v1/core_code_docs/core-services",
+            "mkdocs/v1/core_code_docs/core-_hub",
+            "mkdocs/v1/core_code_docs/core-metadata",
+            "mkdocs/v1/core_code_docs/core-secret",
+            "mkdocs/v1/core_code_docs/core-console",
+            "mkdocs/v1/core_code_docs/core-api",
+            "mkdocs/v1/core_code_docs/core-service_connectors",
+            "mkdocs/v1/core_code_docs/core-data_validators",
+            "mkdocs/v1/core_code_docs/core-actions",
+            "mkdocs/v1/core_code_docs/core-orchestrators",
+            "mkdocs/v1/core_code_docs/core-steps",
+            "mkdocs/v1/core_code_docs/core-image_builders",
+            "mkdocs/v1/core_code_docs/core-models",
+            "mkdocs/v1/core_code_docs/core-model_registries",
+            "mkdocs/v1/core_code_docs/core-artifact_stores",
+            "mkdocs/v1/core_code_docs/core-post_execution",
+            "mkdocs/v1/core_code_docs/core-alerter",
+            "mkdocs/v1/core_code_docs/core-pipelines",
+            "mkdocs/v1/core_code_docs/core-stack_deployments",
+            "mkdocs/v1/core_code_docs/core-stack",
+            "mkdocs/v1/core_code_docs/core-materializers",
+            "mkdocs/v1/core_code_docs/core-model_deployers",
+            "mkdocs/v1/core_code_docs/core-event_sources",
+            "mkdocs/v1/core_code_docs/core-config",
+            "mkdocs/v1/core_code_docs/core-client",
+            "mkdocs/v1/core_code_docs/core-zen_server",
+            "mkdocs/v1/core_code_docs/core-step_operators",
+            "mkdocs/v1/core_code_docs/core-container_registries"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Integration Docs",
+      "pages": [
+        {
+          "group": "v1",
+          "pages": [
+            "mkdocs/v1/integration_code_docs/integrations-sklearn",
+            "mkdocs/v1/integration_code_docs/integrations-kubernetes",
+            "mkdocs/v1/integration_code_docs/integrations-great_expectations",
+            "mkdocs/v1/integration_code_docs/integrations-comet",
+            "mkdocs/v1/integration_code_docs/integrations-pandas",
+            "mkdocs/v1/integration_code_docs/integrations-bitbucket",
+            "mkdocs/v1/integration_code_docs/integrations-pillow",
+            "mkdocs/v1/integration_code_docs/integrations-whylogs",
+            "mkdocs/v1/integration_code_docs/integrations-github",
+            "mkdocs/v1/integration_code_docs/integrations-facets",
+            "mkdocs/v1/integration_code_docs/integrations-utils",
+            "mkdocs/v1/integration_code_docs/integrations-databricks",
+            "mkdocs/v1/integration_code_docs/integrations-pycaret",
+            "mkdocs/v1/integration_code_docs/integrations-gitlab",
+            "mkdocs/v1/integration_code_docs/integrations-label_studio",
+            "mkdocs/v1/integration_code_docs/integrations-evidently",
+            "mkdocs/v1/integration_code_docs/integrations-tensorflow",
+            "mkdocs/v1/integration_code_docs/integrations-numpy",
+            "mkdocs/v1/integration_code_docs/integrations-neptune",
+            "mkdocs/v1/integration_code_docs/integrations-registry",
+            "mkdocs/v1/integration_code_docs/integrations-mlflow",
+            "mkdocs/v1/integration_code_docs/integrations-pytorch",
+            "mkdocs/v1/integration_code_docs/integrations-skypilot_azure",
+            "mkdocs/v1/integration_code_docs/integrations-lightning",
+            "mkdocs/v1/integration_code_docs/integrations-skypilot",
+            "mkdocs/v1/integration_code_docs/integrations-tensorboard",
+            "mkdocs/v1/integration_code_docs/integrations-pytorch_lightning",
+            "mkdocs/v1/integration_code_docs/integrations-constants",
+            "mkdocs/v1/integration_code_docs/integrations-feast",
+            "mkdocs/v1/integration_code_docs/integrations-kaniko",
+            "mkdocs/v1/integration_code_docs/integrations-lightgbm",
+            "mkdocs/v1/integration_code_docs/integrations-kubeflow",
+            "mkdocs/v1/integration_code_docs/integrations-pigeon",
+            "mkdocs/v1/integration_code_docs/integrations-argilla",
+            "mkdocs/v1/integration_code_docs/integrations-scipy",
+            "mkdocs/v1/integration_code_docs/integrations-llama_index",
+            "mkdocs/v1/integration_code_docs/integrations-tekton",
+            "mkdocs/v1/integration_code_docs/integrations-skypilot_lambda",
+            "mkdocs/v1/integration_code_docs/integrations-aws",
+            "mkdocs/v1/integration_code_docs/integrations-airflow",
+            "mkdocs/v1/integration_code_docs/integrations-xgboost",
+            "mkdocs/v1/integration_code_docs/integrations-integration",
+            "mkdocs/v1/integration_code_docs/integrations-gcp",
+            "mkdocs/v1/integration_code_docs/integrations-bentoml",
+            "mkdocs/v1/integration_code_docs/integrations-skypilot_aws",
+            "mkdocs/v1/integration_code_docs/integrations-prodigy",
+            "mkdocs/v1/integration_code_docs/integrations-s3",
+            "mkdocs/v1/integration_code_docs/integrations-hyperai",
+            "mkdocs/v1/integration_code_docs/integrations-langchain",
+            "mkdocs/v1/integration_code_docs/integrations-neural_prophet",
+            "mkdocs/v1/integration_code_docs/integrations-seldon",
+            "mkdocs/v1/integration_code_docs/integrations-polars",
+            "mkdocs/v1/integration_code_docs/integrations-skypilot_gcp",
+            "mkdocs/v1/integration_code_docs/integrations-huggingface",
+            "mkdocs/v1/integration_code_docs/integrations-spark",
+            "mkdocs/v1/integration_code_docs/integrations-wandb",
+            "mkdocs/v1/integration_code_docs/integrations-azure",
+            "mkdocs/v1/integration_code_docs/integrations-discord",
+            "mkdocs/v1/integration_code_docs/integrations-openai",
+            "mkdocs/v1/integration_code_docs/integrations-deepchecks",
+            "mkdocs/v1/integration_code_docs/integrations-slack"
+          ]
+        }
       ]
     }
   ],
