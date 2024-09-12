@@ -59,6 +59,7 @@ def test_string_substitution() -> None:
     model_sub = ModelClass(
         string_attribute="string_value_suffix", int_attribute=1
     )
+
     def substitution_func(s):
         return s + "_suffix"
 
