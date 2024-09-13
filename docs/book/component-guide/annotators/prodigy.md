@@ -91,7 +91,7 @@ example, you might run:
 zenml annotator dataset annotate your_dataset --command="textcat.manual news_topics ./news_headlines.jsonl --label Technology,Politics,Economy,Entertainment"
 ```
 
-This would launch the Prodigy interface for the `textcat.manual` recipe with the
+This would launch the Prodigy interface for [the `textcat.manual` recipe](https://prodi.gy/docs/recipes#textcat-manual) with the
 `news_topics` dataset and the labels `Technology`, `Politics`, `Economy`, and
 `Entertainment`. The data would be loaded from the `news_headlines.jsonl` file.
 
