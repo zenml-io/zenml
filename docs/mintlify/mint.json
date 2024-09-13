@@ -90,7 +90,7 @@
       "group": "Core Code Docs",
       "pages": [
         {
-          "group": "v1",
+          "group": "v2",
           "pages": [
             "core-code-docs/v1/zenml",
             "core-code-docs/v1/core-hooks",
