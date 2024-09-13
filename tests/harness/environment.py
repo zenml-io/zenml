@@ -165,10 +165,7 @@ class TestEnvironment:
 
         Returns:
             A dictionary mapping component types to a list of mandatory
-            components.
-
-        Raises:
-            AssertionError: If the components have not been collected yet.
+                components.
         """
         if self._mandatory_components is not None:
             return self._mandatory_components
@@ -433,11 +430,12 @@ class TestEnvironment:
                 provisioned on entry, it will not be deprovisioned.
 
         Yields:
-            A ZenML client connected to the environment.
+            Client: A ZenML client connected to the environment.
 
         Raises:
             RuntimeError: If the environment is disabled.
-            Exception: The exception caught during provisioning.
+            e: The exception caught during provisioning.
+            e1: The exception caught during cleanup.
         """
         if self.is_disabled:
             raise RuntimeError(

@@ -402,7 +402,7 @@ class TestHarness(metaclass=TestHarnessMetaClass):
             cleanup: Whether to clean up the stack after the test.
 
         Yields:
-            The active stack that the test should use.
+            Stack: The active stack that the test should use.
         """
         test_config = self._get_test_module_requirements(module)
         if test_config is None:

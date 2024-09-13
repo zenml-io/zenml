@@ -124,7 +124,7 @@ class TestConfig(BaseTestConfigModel):
             cleanup: Whether to clean up the stack after the test.
 
         Yields:
-            The active stack that the test should use.
+            Stack: The active stack that the test should use.
 
         Raises:
             RuntimeError: If the stack requirements are not met or if multiple

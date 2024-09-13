@@ -59,6 +59,7 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
         vault_namespace: The Vault Enterprise namespace.
         mount_point: The mount point to use for all secrets.
         max_versions: The maximum number of secret versions to keep.
+        model_config: The model configuration.
     """
 
     type: SecretsStoreType = SecretsStoreType.HASHICORP
