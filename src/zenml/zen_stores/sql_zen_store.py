@@ -7243,7 +7243,6 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the full stack creation fails, due to the corrupted
                 input.
             Exception: If the full stack creation fails, due to unforeseen
-                errors.
         """
         with Session(self.engine) as session:
             # For clean-up purposes, each created entity is tracked here
@@ -9947,7 +9946,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            e: If a workspace with the given name already exists.
+            e: If a model version with this name already exists.
         """
         if model_version.number is not None:
             raise ValueError(
