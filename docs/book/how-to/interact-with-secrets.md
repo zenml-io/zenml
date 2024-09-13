@@ -71,9 +71,9 @@ Other Client methods used for secrets management include `get_secret` to fetch a
 
 ## Set scope for secrets
 
-ZenML secrets can be scoped to a workspace or a user. This allows you to create secrets that are only accessible within a specific workspace or to one user.
+ZenML secrets can be scoped to a user. This allows you to create secrets that are only accessible to one user.
 
-By default, all created secrets are scoped to the active workspace. To create a secret and scope it to your active user instead, you can pass the `--scope` argument to the CLI command:
+By default, all created secrets are scoped to the active user. To create a secret and scope it to your active user instead, you can pass the `--scope` argument to the CLI command:
 
 ```shell
 zenml secret create <SECRET_NAME> \
@@ -82,7 +82,7 @@ zenml secret create <SECRET_NAME> \
     --<KEY_2>=<VALUE_2>
 ```
 
-Scopes also act as individual namespaces. When you are referencing a secret by name in your pipelines and stacks, ZenML will first look for a secret with that name scoped to the active user, and if it doesn't find one, it will look for one in the active workspace.
+Scopes also act as individual namespaces. When you are referencing a secret by name in your pipelines and stacks, ZenML will look for a secret with that name scoped to the active user.
 
 ## Accessing registered secrets
 

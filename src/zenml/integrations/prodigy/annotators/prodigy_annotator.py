@@ -221,7 +221,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset metadata for the given name.
 
-        If you would like the labelled data, use `get_labeled_data` instead.
+        If you would like the labeled data, use `get_labeled_data` instead.
 
         Args:
             **kwargs: Additional keyword arguments to pass to the Prodigy client.

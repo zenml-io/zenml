@@ -14,6 +14,7 @@
 """Integration tests for pipeline run models."""
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
@@ -77,7 +78,11 @@ def test_scheduled_pipeline_run_has_schedule_id(
         step_2=int_plus_one_test_step(),
     )
     schedule = Schedule(cron_expression="*/5 * * * *")
-    pipeline_instance.run(schedule=schedule)
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        pipeline_instance.run(schedule=schedule)
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]

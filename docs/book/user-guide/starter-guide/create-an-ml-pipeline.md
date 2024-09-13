@@ -70,7 +70,6 @@ Copy this code into a new file and name it `run.py`. Then run it with your comma
 $ python run.py
 
 Initiating a new run for the pipeline: simple_ml_pipeline.
-Registered new version: (version 2).
 Executing a new run.
 Using user: hamza@zenml.io
 Using stack: default
@@ -195,10 +194,10 @@ def svc_trainer(
 ```
 
 {% hint style="info" %}
-If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the step function outside of a ZenML pipeline. For example:
+If you want to run just a single step on your ZenML stack, all you need to do is call the step function outside of a ZenML pipeline. For example:
 
 ```python
-svc_trainer(X_train=..., y_train=...)
+model, train_acc = svc_trainer(X_train=..., y_train=...)
 ```
 {% endhint %}
 

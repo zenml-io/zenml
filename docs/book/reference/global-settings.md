@@ -32,16 +32,13 @@ The first time that ZenML is run on a machine, it creates the global config dire
 
 ```
 Initializing the ZenML global configuration version to 0.13.2
-Creating default workspace 'default' ...
 Creating default user 'default' ...
-Creating default stack for user 'default' in workspace default...
-Active workspace not set. Setting it to the default.
-The active stack is not set. Setting the active stack to the default workspace stack.
+Creating default stack for user 'default'...
+The active stack is not set. Setting the active stack to the default stack.
 Using the default store for the global config.
 Unable to find ZenML repository in your current working directory (/tmp/folder) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-Running with active workspace: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ SHARED │ OWNER   │ ARTIFACT_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────┼─────────┼────────────────┼──────────────┨
@@ -66,10 +63,12 @@ The following is an example of the layout of the global config directory immedia
 
 As shown above, the global config directory stores the following information:
 
-1.  The `config.yaml` file stores the global configuration settings: the unique ZenML client ID, the active database configuration, the analytics-related options, the active Stack, and the active Workspace. This is an example of the `config.yaml` file contents immediately after initialization:
+1.  The `config.yaml` file stores the global configuration settings: the unique
+    ZenML client ID, the active database configuration, the analytics-related
+    options, and the active Stack. This is an example of the `config.yaml` file
+    contents immediately after initialization:
 
     ```yaml
-    active_workspace_name: default
     active_stack_id: ...
     analytics_opt_in: true
     store:
@@ -92,7 +91,7 @@ In addition to the above, you may also find the following files and folders unde
 In order to help us better understand how the community uses ZenML, the pip package reports **anonymized** usage statistics. You can always opt out by using the CLI command:
 
 ```bash
-zenml config analytics opt-out
+zenml analytics opt-out
 ```
 
 #### Why does ZenML collect analytics? <a href="#motivation" id="motivation"></a>

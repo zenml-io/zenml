@@ -37,8 +37,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -109,6 +111,17 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="ID of the trigger execution that triggered this run.",
     )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the pipeline run.",
+    )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Update Model ------------------
@@ -119,6 +132,20 @@ class PipelineRunUpdate(BaseModel):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+    # TODO: we should maybe have a different update model here, the upper three attributes should only be for internal use
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the pipeline run."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the pipeline run."
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -151,6 +178,13 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this pipeline run explicitly.",
+        default=None,
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -193,12 +227,23 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    code_path: Optional[str] = Field(
+        default=None,
+        title="Optional path where the code is stored in the artifact store.",
+    )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
+    )
 
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline run.",
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -334,6 +379,15 @@ class PipelineRunResponse(
         return self.get_body().deployment_id
 
     @property
+    def model_version_id(self) -> Optional[UUID]:
+        """The `model_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().model_version_id
+
+    @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
         """The `run_metadata` property.
 
@@ -406,6 +460,24 @@ class PipelineRunResponse(
         return self.get_metadata().orchestrator_run_id
 
     @property
+    def code_path(self) -> Optional[str]:
+        """The `code_path` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().code_path
+
+    @property
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_id
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
@@ -414,11 +486,20 @@ class PipelineRunResponse(
         """
         return self.get_resources().model_version
 
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().tags
+
 
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedFilter):
+class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
@@ -428,6 +509,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         "build_id",
         "schedule_id",
         "stack_id",
+        "template_id",
         "pipeline_name",
     ]
     name: Optional[str] = Field(
@@ -480,6 +562,11 @@ class PipelineRunFilter(WorkspaceScopedFilter):
     code_repository_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Code repository used for the Pipeline Run",
+        union_mode="left_to_right",
+    )
+    template_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
         union_mode="left_to_right",
     )
     status: Optional[str] = Field(
@@ -573,5 +660,12 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 PipelineBuildSchema.id == self.build_id,
             )
             custom_filters.append(pipeline_build_filter)
+
+        if self.template_id:
+            run_template_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.template_id == self.template_id,
+            )
+            custom_filters.append(run_template_filter)
 
         return custom_filters

@@ -20,9 +20,11 @@ You should use the GCP container registry if:
 ### How to deploy it
 
 {% hint style="info" %}
-Don't want to deploy the container registry manually? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including a Google Artifact Registry? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -165,7 +167,7 @@ zenml service-connector list-resources --connector-type gcp --resource-type dock
 
 {% code title="Example Command Output" %}
 ```text
-The following 'docker-registry' resources can be accessed by 'gcp' service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by 'gcp' service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
 ┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨

@@ -138,14 +138,6 @@ def test_compiling_pipeline_with_extra_step_config_does_not_fail(
         )
 
 
-def test_default_run_name():
-    """Tests the default run name value."""
-    assert (
-        Compiler()._get_default_run_name(pipeline_name="my_pipeline")
-        == "my_pipeline-{date}-{time}"
-    )
-
-
 def test_step_sorting(empty_step, local_stack):
     """Tests that the steps in the compiled deployment are sorted correctly."""
 
@@ -160,7 +152,7 @@ def test_step_sorting(empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
@@ -216,7 +208,7 @@ def test_stack_component_settings_merging(
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -266,7 +258,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -314,7 +306,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
     with pipeline_instance:
         pipeline_instance.entrypoint()
 
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -370,7 +362,7 @@ def test_success_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -422,7 +414,7 @@ def test_failure_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -467,7 +459,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -503,10 +495,14 @@ def test_spec_compilation(local_stack):
     pipeline_instance = p(step_1=s1(), step_2=s2())
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    _, spec = Compiler().compile(
-        pipeline=pipeline_instance,
-        stack=local_stack,
-        run_configuration=PipelineRunConfiguration(),
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
     )
     other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
 
@@ -535,3 +531,65 @@ def test_spec_compilation(local_stack):
 
     assert spec == expected_spec
     assert other_spec == expected_spec
+
+
+def test_stack_component_shortcut_keys(
+    mocker, one_step_pipeline, empty_step, local_stack
+):
+    """Tests settings stack component settings with the shortcut key."""
+
+    class StubSettings(BaseSettings):
+        value: str = ""
+
+    step_instance = empty_step()
+    pipeline_instance = one_step_pipeline(step_instance)
+
+    full_key_settings = StubSettings(value="full_key")
+    shortcut_settings = StubSettings(value="shortcut")
+
+    orchestrator_class = type(local_stack.orchestrator)
+    mocker.patch.object(
+        orchestrator_class,
+        "settings_class",
+        new_callable=mocker.PropertyMock,
+        return_value=StubSettings,
+    )
+
+    pipeline_instance_with_shortcut_settings = pipeline_instance.with_options(
+        settings={"orchestrator": shortcut_settings}
+    )
+
+    with pipeline_instance_with_shortcut_settings:
+        pipeline_instance_with_shortcut_settings.entrypoint()
+
+    with does_not_raise():
+        deployment = Compiler().compile(
+            pipeline=pipeline_instance_with_shortcut_settings,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+
+    assert "orchestrator" not in deployment.pipeline_configuration.settings
+    compiled_settings = deployment.pipeline_configuration.settings[
+        "orchestrator.default"
+    ]
+    assert compiled_settings.value == "shortcut"
+
+    # The pipeline config has settings for both the full as well as the
+    # shortcut key, which means it should fail during compilation
+    pipeline_instance_with_duplicate_settings = pipeline_instance.with_options(
+        settings={
+            "orchestrator": shortcut_settings,
+            "orchestrator.default": full_key_settings,
+        }
+    )
+
+    with pipeline_instance_with_duplicate_settings:
+        pipeline_instance_with_duplicate_settings.entrypoint()
+
+    with pytest.raises(ValueError):
+        deployment = Compiler().compile(
+            pipeline=pipeline_instance_with_duplicate_settings,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )

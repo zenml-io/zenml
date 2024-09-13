@@ -59,8 +59,8 @@ class GcpIntegration(Integration):
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes","kfp"]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the GCP integration."""
         from zenml.integrations.gcp import service_connectors  # noqa
 

@@ -13,20 +13,13 @@ When using a stack with remote storage, nothing changes except the fact that the
 <figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-```shell
-zenml stack deploy --provider aws
-```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
-
-```shell
-zenml stack register <STACK_NAME> --provider aws
-```
+Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
 ## Provisioning and registering a remote artifact store
@@ -207,7 +200,7 @@ You can list your artifact versions as follows:
 {% tab title="CLI" %}
 ```shell
 # This will give you the artifacts from the last 15 minutes
-zenml artifact version list --created="gte:$(date -d '15 minutes ago' '+%Y-%m-%d %H:%M:%S')"
+zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
 {% endtab %}
 

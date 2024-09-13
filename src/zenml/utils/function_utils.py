@@ -34,12 +34,12 @@ from zenml.utils.function_utils import _cli_wrapped_function
 import sys
 sys.path.append(r"{func_path}")
 
-from {func_module} import {func_name} as func_to_wrap
+from {func_module} import {func_name} as step_function
 
-if entrypoint:=getattr(func_to_wrap, "entrypoint", None):
-    func = _cli_wrapped_function(entrypoint)
+if unwrapped_entrypoint:=getattr(step_function, "unwrapped_entrypoint", None):
+    func = _cli_wrapped_function(unwrapped_entrypoint)
 else:
-    func = _cli_wrapped_function(func_to_wrap)
+    func = _cli_wrapped_function(step_function.entrypoint)
 """
 _CLI_WRAPPED_MAINS = {
     "accelerate": """
@@ -107,7 +107,7 @@ def _is_valid_optional_arg(arg_type: Any) -> bool:
             if (
                 args[0] not in _ALLOWED_TYPES
                 and not _is_valid_collection_arg(args[0])
-            ) or args[1] != type(None):
+            ) or args[1] is not type(None):
                 return False
         return True
     return False
@@ -204,13 +204,13 @@ def _cli_wrapped_function(func: F) -> F:
 
 @contextmanager
 def create_cli_wrapped_script(
-    func: F, flavour: str = "accelerate"
+    func: F, flavor: str = "accelerate"
 ) -> Iterator[Tuple[Path, Path]]:
     """Create a script with the CLI-wrapped function.
 
     Args:
         func: The function to use.
-        flavour: The flavour to use.
+        flavor: The flavor to use.
 
     Yields:
         The paths of the script and the output.
@@ -241,7 +241,7 @@ def create_cli_wrapped_script(
                     func_module=clean_module_name,
                     func_name=func.__name__,
                 )
-                script += _CLI_WRAPPED_MAINS[flavour].format(
+                script += _CLI_WRAPPED_MAINS[flavor].format(
                     output_file=str(output_path.absolute())
                 )
                 f.write(script)

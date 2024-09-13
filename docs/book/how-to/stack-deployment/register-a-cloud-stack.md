@@ -1,8 +1,6 @@
 ---
-description: Seamlessly register a cloud stack using existing infrastructure
+description: Seamlessly register a cloud stack by using existing infrastructure
 ---
-
-# Register a cloud stack with existing infrastructure
 
 In ZenML, the [stack](../../user-guide/production-guide/understand-stacks.md) 
 is a fundamental concept that represents the configuration of your 
@@ -20,50 +18,111 @@ stack**.
 If you do not have the required infrastructure pieces already deployed
 on your cloud, you can also use [the 1-click deployment tool to build your 
 cloud stack](deploy-a-cloud-stack.md).
+
+Alternatively, if you prefer to have more control over where and how resources
+are provisioned in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md)
+to manage your infrastructure as code yourself.
 {% endhint %}
 
 # How to use the Stack Wizard?
 
-At the moment, the stack wizard can only be accessed through our CLI.
+The stack wizard is available to you by both our CLI and our dashboard.
 
 {% tabs %}
+{% tab title="Dashboard" %}
+
+If you are using the dashboard, the stack wizard is available through 
+the stacks page. 
+
+![The new stacks page](../../.gitbook/assets/stack-wizard-new-stack.png)
+
+Here you can click on "+ New Stack" and choose the option "Use existing Cloud".
+
+![New stack options](../../.gitbook/assets/stack-wizard-options.png)
+
+Next, you have to select the cloud provider that you want to work with.
+
+![Stack Wizard Cloud Selection](../../.gitbook/assets/stack-wizard-cloud-selection.png)
+
+Choose one of the possible authentication methods based on your provider and
+fill in the required fields.
+
+![Wizard Example](../../.gitbook/assets/stack-wizard-example.png)
+
+<details>
+
+<summary>AWS: Authentication methods</summary>
+
+There are several different methods to authenticate with AWS:
+
+![Wizard Example](../../.gitbook/assets/stack-wizard-aws-auth.png)
+
+</details>
+
+{% hint style="warning" %}
+On the dashboard, the stack wizard only works with AWS. We are working on 
+bringing support to GCP and Azure as well. If you would like to use these 
+providers, you can still use the CLI or stay tuned for further updates.
+{% endhint %}
+
+From this step forward, ZenML will show you different selections of resources 
+that you can use from your existing infrastructure so that you can create the 
+required stack components such as an artifact store, an orchestrator, 
+and a container registry.
+
+{% endtab %}
 {% tab title="CLI" %}
 
 In order to register a remote stack over the CLI with the stack wizard,
 you can use the following command:
 
 ```shell
-zenml stack register <STACK_NAME> -p {aws|gcp}
+zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 ```
 
-To register the cloud stack, the first thing that the wizard needs is a service 
-connector. You can either use an existing connector by providing its ID or name 
-`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` or the wizard will create one for you.
+To register the cloud stack, the first thing that the wizard needs is a [service 
+connector](../auth-management/service-connectors-guide.md). You can either use 
+an existing connector by providing its ID or name 
+`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only) or the wizard will create one 
+for you.
 
-Similar to the service connector, you can also use existing stack components.
-However, this is only possible if these components are already configured with 
-the same service connector that you provided through the parameter 
-described above.
-
-{% hint style="warning" %}
-Currently, the stack wizard only works on AWS and GCP. We are working on bringing 
-support to Azure as well. Stay in touch for further updates.
+{% hint style="info" %}
+Similar to the service connector, if you use the CLI, you can also use existing 
+stack components. However, this is only possible if these components are already 
+configured with the same service connector that you provided through the 
+parameter described above.
 {% endhint %}
 
 ### Define Service Connector
 
-Below you will find cloud-specific selection options. Based on your selection, you will have to provide the required parameters listed 
-below. This will allow ZenML to create a Service Connector and 
-authenticate you to use your cloud resources.
+As the very first step the configuration wizard will check if the selected 
+cloud provider credentials can be acquired automatically from the local environment.
+If the credentials are found, you will be offered to use them or proceed to 
+manual configuration.
 
-#### AWS
+{% code title="Example prompt for AWS auto-configuration" %}
+```
+AWS cloud service connector has detected connection 
+credentials in your environment.
+Would you like to use these credentials or create a new 
+configuration by providing connection details? [y/n] (y):
+```
+{% endcode %}
+
+If you decline auto-configuration next you might be offered the list of already 
+created service connectors available on the server: pick one of them and proceed or pick 
+`0` to create a new one.
+
+<details>
+<summary>AWS: Authentication methods</summary>
 
 If you select `aws` as your cloud provider, and you haven't selected a connector
-yet, you will be prompted to select an authentication method for your stack.
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
 
-{% code title="Example Command Output" %}
+{% code title="Available authentication methods for AWS" %}
 ```
-                  Available authentication methods for aws                   
+                  Available authentication methods for AWS                   
 ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Choice  ┃ Name                           ┃ Required                       ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -107,15 +166,20 @@ yet, you will be prompted to select an authentication method for your stack.
 └─────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 {% endcode %}
+</details>
 
-#### GCP
+<details>
+<summary>GCP: Authentication methods</summary>
+
+
 
 If you select `gcp` as your cloud provider, and you haven't selected a connector
-yet, you will be prompted to select an authentication method for your stack.
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
 
-{% code title="Example Command Output" %}
+{% code title="Available authentication methods for GCP" %}
 ```
-                  Available authentication methods for gcp                   
+                  Available authentication methods for GCP                   
 ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Choice  ┃ Name                           ┃ Required                       ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -155,38 +219,85 @@ yet, you will be prompted to select an authentication method for your stack.
 └─────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 {% endcode %}
+</details>
 
-### Defining cloud components
+<details>
+<summary>Azure: Authentication methods</summary>
 
-Next, for each missing component, the available resources will be listed to 
-you as follows:
+If you select `azure` as your cloud provider, and you haven't selected a 
+connector or declined auto-configuration, you will be prompted to select an 
+authentication method for your cloud connector.
 
-{% code title="Example Command Output for Artifact Stores" %}
+{% code title="Available authentication methods for Azure" %}
 ```
-                           Available GCP storages                            
-┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice        ┃ Storage                                                   ┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]           │ gs://***************************                          │
-├───────────────┼───────────────────────────────────────────────────────────┤
-│ [1]           │ gs://***************************                          │
-└───────────────┴───────────────────────────────────────────────────────────┘
+    Available authentication methods for AZURE                         
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice ┃ Name                    ┃ Required                           ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]    │ Azure Service Principal │ client_secret  (Service principal  │
+│        │                         │ client secret)                     │
+│        │                         │ tenant_id  (Azure Tenant ID)       │
+│        │                         │ client_id  (Azure Client ID)       │
+│        │                         │                                    │
+├────────┼─────────────────────────┼────────────────────────────────────┤
+│ [1]    │ Azure Access Token      │ token  (Azure Access Token)        │
+│        │                         │                                    │
+└────────┴─────────────────────────┴────────────────────────────────────┘
 ```
 {% endcode %}
 
-### Final steps
+</details>
+
+### Defining cloud components
+
+Next, you will define three major components of your target stack:
+- artifact store
+- orchestrator
+- container registry
+
+All three are crucial for a basic cloud stack. Extra components can be added later 
+if they are needed.
+
+For each component, you will be asked:
+- if you would like to reuse one of the existing components connected via a defined 
+service connector (if any)
+
+{% code title="Example Command Output for available orchestrator" %}
+```
+                    Available orchestrator
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice           ┃ Name                                               ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]              │ Create a new orchestrator                          │
+├──────────────────┼────────────────────────────────────────────────────┤
+│ [1]              │ existing_orchestrator_1                            │
+├──────────────────┼────────────────────────────────────────────────────┤
+│ [2]              │ existing_orchestrator_2                            │
+└──────────────────┴────────────────────────────────────────────────────┘
+```
+{% endcode %}
+
+- to create a new one from available to the service connector resources 
+(if the existing not picked)
+
+{% code title="Example Command Output for Artifact Stores" %}
+```
+                        Available GCP storages                            
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice        ┃ Storage                                               ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]           │ gs://***************************                      │
+├───────────────┼───────────────────────────────────────────────────────┤
+│ [1]           │ gs://***************************                      │
+└───────────────┴───────────────────────────────────────────────────────┘
+```
+{% endcode %}
 
 Based on your selection, ZenML will create the stack component and ultimately 
 register the stack for you.
 
 {% endtab %}
 
-{% tab title="Dashboard" %}
-
-We are working hard to bring this feature to our dashboard as well. Stay in 
-touch for further updates.
-
-{% endtab %}
 {% endtabs %}
 
 There you have it! Through the wizard, you just registered a cloud stack 

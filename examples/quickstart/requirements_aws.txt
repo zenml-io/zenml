@@ -1,0 +1,14 @@
+zenml[server]==0.66.0
+notebook
+pyarrow
+datasets
+transformers
+transformers[torch]
+torch
+sentencepiece
+protobuf
+sagemaker>=2.117.0
+s3
+s3fs
+aws-profile-manager
+kubernetes

@@ -1314,7 +1314,6 @@ def test_get_service_account():
         assert user.is_service_account is True
         assert user.full_name == ""
         assert user.email_opted_in is False
-        assert user.hub_token is None
 
         # Get a service account as a user account by name
         with pytest.raises(KeyError):
@@ -2495,7 +2494,7 @@ def test_count_stack_components():
     assert store.count_stack_components(filter_model) == count_before
 
     with ComponentContext(
-        StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
+        StackComponentType.ARTIFACT_STORE, config={}, flavor="local"
     ):
         assert store.count_stack_components(filter_model) == count_before + 1
 

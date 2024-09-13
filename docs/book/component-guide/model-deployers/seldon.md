@@ -187,7 +187,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 
 {% code title="Example Command Output" %}
 ```
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨

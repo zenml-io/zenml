@@ -68,7 +68,7 @@ Do not give pipelines or pipeline instances the name "pipeline". Doing this will
 {% endhint %}
 
 {% hint style="info" %}
-Pipeline names are their unique identifiers, so using the same name for different pipelines will create a mixed history where two versions of a pipeline are two very different entities.
+Pipeline names are their unique identifiers, so using the same name for different pipelines will create a mixed history where two runs of a pipeline are two very different entities.
 {% endhint %}
 
 #### .dockerignore

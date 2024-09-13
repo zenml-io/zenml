@@ -68,7 +68,7 @@ skypilot_settings = Skypilot<PROVIDER>OrchestratorSettings(
 
 @pipeline(
    settings={
-       "orchestrator.vm_<PROVIDER>": skypilot_settings
+       "orchestrator": skypilot_settings
    }
 )
 ```
@@ -80,7 +80,7 @@ You can also configure resources per step:
 ```
 high_resource_settings = Skypilot<PROVIDER>OrchestratorSettings(...)
 
-@step(settings={"orchestrator.vm_<PROVIDER>": high_resource_settings})  
+@step(settings={"orchestrator": high_resource_settings})  
 def resource_intensive_step():
    ...
 ```

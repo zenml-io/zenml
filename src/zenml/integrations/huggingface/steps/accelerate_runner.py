@@ -17,14 +17,15 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 
 import cloudpickle as pickle
-from accelerate.commands.launch import (  # type: ignore[import-untyped]
+from accelerate.commands.launch import (
     launch_command,
     launch_command_parser,
 )
 
+from zenml import get_pipeline_context
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
@@ -34,10 +35,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def run_with_accelerate(
-    step_function: BaseStep,
-    num_processes: Optional[int] = None,
-    use_cpu: bool = False,
-) -> BaseStep:
+    step_function_top_level: Optional[BaseStep] = None,
+    **accelerate_launch_kwargs: Any,
+) -> Union[Callable[[BaseStep], BaseStep], BaseStep]:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -45,6 +45,8 @@ def run_with_accelerate(
         ```python
         from zenml import step, pipeline
         from zenml.integrations.hugginface.steps import run_with_accelerate
+
+        @run_with_accelerate(num_processes=4, multi_gpu=True)
         @step
         def training_step(some_param: int, ...):
             # your training code is below
@@ -52,98 +54,113 @@ def run_with_accelerate(
 
         @pipeline
         def training_pipeline(some_param: int, ...):
-            run_with_accelerate(training_step, num_processes=4)(some_param, ...)
+            training_step(some_param, ...)
         ```
 
     Args:
-        step_function: The step function to run.
-        num_processes: The number of processes to use.
-        use_cpu: Whether to use the CPU.
+        step_function_top_level: The step function to run with accelerate [optional].
+            Used in functional calls like `run_with_accelerate(some_func,foo=bar)()`.
+        accelerate_launch_kwargs: A dictionary of arguments to pass along to the
+            `accelerate launch` command, including hardware selection, resource
+            allocation, and training paradigm options. Visit
+            https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch
+            for more details.
 
     Returns:
         The accelerate-enabled version of the step.
     """
 
-    def _decorator(entrypoint: F) -> F:
-        @functools.wraps(entrypoint)
-        def inner(*args: Any, **kwargs: Any) -> Any:
-            if args:
-                raise ValueError(
-                    "Accelerated steps do not support positional arguments."
-                )
+    def _decorator(step_function: BaseStep) -> BaseStep:
+        def _wrapper(
+            entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+        ) -> F:
+            @functools.wraps(entrypoint)
+            def inner(*args: Any, **kwargs: Any) -> Any:
+                if args:
+                    raise ValueError(
+                        "Accelerated steps do not support positional arguments."
+                    )
 
-            if not use_cpu:
-                import torch
+                with create_cli_wrapped_script(
+                    entrypoint, flavor="accelerate"
+                ) as (
+                    script_path,
+                    output_path,
+                ):
+                    commands = [str(script_path.absolute())]
+                    for k, v in kwargs.items():
+                        k = _cli_arg_name(k)
+                        if isinstance(v, bool):
+                            if v:
+                                commands.append(f"--{k}")
+                        elif type(v) in (list, tuple, set):
+                            for each in v:
+                                commands += [f"--{k}", f"{each}"]
+                        else:
+                            commands += [f"--{k}", f"{v}"]
+                    logger.debug(commands)
 
-                logger.info("Starting accelerate job...")
-
-                device_count = torch.cuda.device_count()
-                if num_processes is None:
-                    _num_processes = device_count
-                else:
-                    if num_processes > device_count:
-                        logger.warning(
-                            f"Number of processes ({num_processes}) is greater than "
-                            f"the number of available GPUs ({device_count}). Using all GPUs."
+                    parser = launch_command_parser()
+                    args = parser.parse_args(commands)
+                    for k, v in accelerate_launch_kwargs.items():
+                        if k in args:
+                            setattr(args, k, v)
+                        else:
+                            logger.warning(
+                                f"You passed in `{k}` as an `accelerate launch` argument, but it was not accepted. "
+                                "Please check https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch "
+                                "to find out more about supported arguments and retry."
+                            )
+                    try:
+                        launch_command(args)
+                    except Exception as e:
+                        logger.error(
+                            "Accelerate training job failed... See error message for details."
                         )
-                        _num_processes = device_count
+                        raise RuntimeError(
+                            "Accelerate training job failed."
+                        ) from e
                     else:
-                        _num_processes = num_processes
-            else:
-                _num_processes = num_processes or 1
+                        logger.info(
+                            "Accelerate training job finished successfully."
+                        )
+                        return pickle.load(open(output_path, "rb"))
 
-            with create_cli_wrapped_script(
-                entrypoint, flavour="accelerate"
-            ) as (
-                script_path,
-                output_path,
-            ):
-                commands = ["--num_processes", str(_num_processes)]
-                if use_cpu:
-                    commands += [
-                        "--cpu",
-                        "--num_cpu_threads_per_process",
-                        "10",
-                    ]
-                commands.append(str(script_path.absolute()))
-                for k, v in kwargs.items():
-                    k = _cli_arg_name(k)
-                    if isinstance(v, bool):
-                        if v:
-                            commands.append(f"--{k}")
-                    elif isinstance(v, str):
-                        commands += [f"--{k}", '"{v}"']
-                    elif type(v) in (list, tuple, set):
-                        for each in v:
-                            commands.append(f"--{k}")
-                            if isinstance(each, str):
-                                commands.append(f'"{each}"')
-                            else:
-                                commands.append(f"{each}")
-                    else:
-                        commands += [f"--{k}", f"{v}"]
+            return cast(F, inner)
 
-                logger.debug(commands)
+        try:
+            get_pipeline_context()
+        except RuntimeError:
+            pass
+        else:
+            raise RuntimeError(
+                f"`{run_with_accelerate.__name__}` decorator cannot be used "
+                "in a functional way with steps, please apply decoration "
+                "directly to a step instead. This behavior will be also "
+                "allowed in future, but now it faces technical limitations.\n"
+                "Example (allowed):\n"
+                f"@{run_with_accelerate.__name__}(...)\n"
+                f"def {step_function.name}(...):\n"
+                "    ...\n"
+                "Example (not allowed):\n"
+                "def my_pipeline(...):\n"
+                f"    run_with_accelerate({step_function.name},...)(...)\n"
+            )
 
-                parser = launch_command_parser()
-                args = parser.parse_args(commands)
-                try:
-                    launch_command(args)
-                except Exception as e:
-                    logger.error(
-                        "Accelerate training job failed... See error message for details."
-                    )
-                    raise RuntimeError(
-                        "Accelerate training job failed."
-                    ) from e
-                else:
-                    logger.info(
-                        "Accelerate training job finished successfully."
-                    )
-                    return pickle.load(open(output_path, "rb"))
+        setattr(
+            step_function, "unwrapped_entrypoint", step_function.entrypoint
+        )
+        setattr(
+            step_function,
+            "entrypoint",
+            _wrapper(
+                step_function.entrypoint,
+                accelerate_launch_kwargs=accelerate_launch_kwargs,
+            ),
+        )
 
-        return cast(F, inner)
+        return step_function
 
-    setattr(step_function, "entrypoint", _decorator(step_function.entrypoint))
-
-    return step_function
+    if step_function_top_level:
+        return _decorator(step_function_top_level)
+    return _decorator

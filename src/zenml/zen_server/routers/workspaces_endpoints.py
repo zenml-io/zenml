@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
-    FULL_STACK,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -31,6 +30,7 @@ from zenml.constants import (
     PIPELINES,
     REPORTABLE_RESOURCES,
     RUN_METADATA,
+    RUN_TEMPLATES,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -52,7 +52,6 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    FullStackRequest,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -76,6 +75,9 @@ from zenml.models import (
     PipelineRunResponse,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
     ScheduleRequest,
     ScheduleResponse,
     SecretRequest,
@@ -109,7 +111,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions_for_models,
     get_allowed_resource_ids,
     verify_permission,
     verify_permission_for_model,
@@ -311,62 +312,13 @@ def list_workspace_stacks(
 def create_stack(
     workspace_name_or_id: Union[str, UUID],
     stack: StackRequest,
-    _: AuthContext = Security(authorize),
-) -> StackResponse:
-    """Creates a stack for a particular workspace.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        stack: Stack to register.
-
-    Returns:
-        The created stack.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            does not match the current workspace.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if stack.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating stacks outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-
-    if stack.components:
-        components = [
-            zen_store().get_stack_component(id)
-            for ids in stack.components.values()
-            for id in ids
-        ]
-
-        batch_verify_permissions_for_models(components, action=Action.READ)
-
-    return verify_permissions_and_create_entity(
-        request_model=stack,
-        resource_type=ResourceType.STACK,
-        create_method=zen_store().create_stack,
-    )
-
-
-@router.post(
-    WORKSPACES + "/{workspace_name_or_id}" + FULL_STACK,
-    response_model=StackResponse,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_full_stack(
-    workspace_name_or_id: Union[str, UUID],
-    full_stack: FullStackRequest,
     auth_context: AuthContext = Security(authorize),
 ) -> StackResponse:
     """Creates a stack for a particular workspace.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
-        full_stack: Stack to register.
+        stack: Stack to register.
         auth_context: Authentication context.
 
     Returns:
@@ -374,8 +326,9 @@ def create_full_stack(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
+    # Check the service connector creation
     is_connector_create_needed = False
-    for connector_id_or_info in full_stack.service_connectors:
+    for connector_id_or_info in stack.service_connectors:
         if isinstance(connector_id_or_info, UUID):
             service_connector = zen_store().get_service_connector(
                 connector_id_or_info, hydrate=False
@@ -385,32 +338,37 @@ def create_full_stack(
             )
         else:
             is_connector_create_needed = True
+
+    # Check the component creation
     if is_connector_create_needed:
         verify_permission(
             resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
         )
-
     is_component_create_needed = False
-    for component_id_or_info in full_stack.components.values():
-        if isinstance(component_id_or_info, UUID):
-            component = zen_store().get_stack_component(
-                component_id_or_info, hydrate=False
-            )
-            verify_permission_for_model(model=component, action=Action.READ)
-        else:
-            is_component_create_needed = True
+    for components in stack.components.values():
+        for component_id_or_info in components:
+            if isinstance(component_id_or_info, UUID):
+                component = zen_store().get_stack_component(
+                    component_id_or_info, hydrate=False
+                )
+                verify_permission_for_model(
+                    model=component, action=Action.READ
+                )
+            else:
+                is_component_create_needed = True
     if is_component_create_needed:
         verify_permission(
             resource_type=ResourceType.STACK_COMPONENT,
             action=Action.CREATE,
         )
 
+    # Check the stack creation
     verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
 
-    full_stack.user = auth_context.user.id
-    full_stack.workspace = workspace.id
+    stack.user = auth_context.user.id
+    stack.workspace = workspace.id
 
-    return zen_store().create_full_stack(full_stack)
+    return zen_store().create_stack(stack)
 
 
 @router.get(
@@ -763,6 +721,81 @@ def create_deployment(
         request_model=deployment,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
         create_method=zen_store().create_deployment,
+    )
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + RUN_TEMPLATES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_run_templates(
+    workspace_name_or_id: Union[str, UUID],
+    filter_model: RunTemplateFilter = Depends(
+        make_dependable(RunTemplateFilter)
+    ),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[RunTemplateResponse]:
+    """Get a page of run templates.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        Page of run templates.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    filter_model.set_scope_workspace(workspace.id)
+
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.RUN_TEMPLATE,
+        list_method=zen_store().list_run_templates,
+        hydrate=hydrate,
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + RUN_TEMPLATES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_run_template(
+    workspace_name_or_id: Union[str, UUID],
+    run_template: RunTemplateRequest,
+    _: AuthContext = Security(authorize),
+) -> RunTemplateResponse:
+    """Create a run template.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        run_template: Run template to create.
+
+    Returns:
+        The created run template.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the
+            run template does not match the current workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if run_template.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating run templates outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+
+    return verify_permissions_and_create_entity(
+        request_model=run_template,
+        resource_type=ResourceType.RUN_TEMPLATE,
+        create_method=zen_store().create_run_template,
     )
 
 

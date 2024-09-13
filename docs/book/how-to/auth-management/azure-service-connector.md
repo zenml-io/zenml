@@ -191,8 +191,6 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                        ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                             ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-05 09:47:42.415949                                                     ┃
@@ -268,8 +266,6 @@ zenml service-connector describe azure-service-principal
 ┃ EXPIRES IN       │ N/A                                                                            ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                        ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                             ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
@@ -363,8 +359,6 @@ Service connector 'azure-session-token' of type 'azure' with id '94d64103-9902-4
 ┃ EXPIRES IN       │ 42m25s                                                                         ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                        ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                             ┃
 ┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
@@ -756,7 +750,6 @@ Successfully connected container registry `acr-demo-registry` to the following r
 {% code title="Example Command Output" %}
 ````
 ```
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered image_builder `local`.
 ```
@@ -813,8 +806,7 @@ Active repository stack set to:'gcp-demo'
 {% code title="Example Command Output" %}
 ````
 ```
-$ python run.py 
-Registered pipeline simple_pipeline (version 1).
+$ python run.py
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0
@@ -852,7 +844,7 @@ Hello World!
 Step simple_step_two has finished in 3.203s.
 Pod of step simple_step_two completed.
 Orchestration pod completed.
-Dashboard URL: https://zenml.stefan.20.23.46.143.nip.io/workspaces/default/pipelines/98c41e2a-1ab0-4ec9-8375-6ea1ab473686/runs
+Dashboard URL: https://zenml.stefan.20.23.46.143.nip.io/default/pipelines/98c41e2a-1ab0-4ec9-8375-6ea1ab473686/runs
 ```
 ````
 {% endcode %}

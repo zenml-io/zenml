@@ -15,7 +15,6 @@
 
 import os
 import platform
-from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
@@ -70,6 +69,12 @@ def get_environment() -> str:
         return EnvironmentType.BITBUCKET_CI
     elif Environment.in_ci():
         return EnvironmentType.GENERIC_CI
+    elif Environment.in_github_codespaces():
+        return EnvironmentType.GITHUB_CODESPACES
+    elif Environment.in_vscode_remote_container():
+        return EnvironmentType.VSCODE_REMOTE_CONTAINER
+    elif Environment.in_lightning_ai_studio():
+        return EnvironmentType.LIGHTNING_AI_STUDIO
     elif Environment.in_docker():
         return EnvironmentType.DOCKER
     elif Environment.in_container():
@@ -257,16 +262,45 @@ class Environment(metaclass=SingletonMetaClass):
         if Environment.in_google_colab():
             return True
 
-        if find_spec("IPython") is not None:
-            from IPython import get_ipython
+        try:
+            ipython = get_ipython()  # type: ignore[name-defined]
+        except NameError:
+            return False
 
-            if get_ipython().__class__.__name__ in [
-                "TerminalInteractiveShell",
-                "ZMQInteractiveShell",
-                "DatabricksShell",
-            ]:
-                return True
+        if ipython.__class__.__name__ in [
+            "TerminalInteractiveShell",
+            "ZMQInteractiveShell",
+            "DatabricksShell",
+        ]:
+            return True
         return False
+
+    @staticmethod
+    def in_github_codespaces() -> bool:
+        """If the current Python process is running in GitHub Codespaces.
+
+        Returns:
+            `True` if the current Python process is running in GitHub Codespaces,
+            `False` otherwise.
+        """
+        return (
+            "CODESPACES" in os.environ
+            or "GITHUB_CODESPACE_TOKEN" in os.environ
+            or "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN" in os.environ
+        )
+
+    @staticmethod
+    def in_vscode_remote_container() -> bool:
+        """If the current Python process is running in a VS Code Remote Container.
+
+        Returns:
+            `True` if the current Python process is running in a VS Code Remote Container,
+            `False` otherwise.
+        """
+        return (
+            "REMOTE_CONTAINERS" in os.environ
+            or "VSCODE_REMOTE_CONTAINERS_SESSION" in os.environ
+        )
 
     @staticmethod
     def in_paperspace_gradient() -> bool:
@@ -338,6 +372,19 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current process is running in WSL, `False` otherwise.
         """
         return "microsoft-standard" in platform.uname().release
+
+    @staticmethod
+    def in_lightning_ai_studio() -> bool:
+        """If the current Python process is running in Lightning.ai studios.
+
+        Returns:
+            `True` if the current Python process is running in Lightning.ai studios,
+            `False` otherwise.
+        """
+        return (
+            "LIGHTNING_CLOUD_URL" in os.environ
+            and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
+        )
 
     def register_component(
         self, component: "BaseEnvironmentComponent"

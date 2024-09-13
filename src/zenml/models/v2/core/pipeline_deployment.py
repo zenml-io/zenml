@@ -18,8 +18,8 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
@@ -71,28 +71,24 @@ class PipelineDeploymentBase(BaseZenModel):
         default=None,
         title="The version of the ZenML installation on the server side.",
     )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None,
+        title="The pipeline version hash of the deployment.",
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None,
+        title="The pipeline spec of the deployment.",
+    )
 
     @property
-    def requires_included_files(self) -> bool:
-        """Whether the deployment requires included files.
+    def should_prevent_build_reuse(self) -> bool:
+        """Whether the deployment prevents a build reuse.
 
         Returns:
-            Whether the deployment requires included files.
+            Whether the deployment prevents a build reuse.
         """
         return any(
-            step.config.docker_settings.source_files == SourceFileMode.INCLUDE
-            for step in self.step_configurations.values()
-        )
-
-    @property
-    def requires_code_download(self) -> bool:
-        """Whether the deployment requires downloading some code files.
-
-        Returns:
-            Whether the deployment requires downloading some code files.
-        """
-        return any(
-            step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
+            step.config.docker_settings.prevent_build_reuse
             for step in self.step_configurations.values()
         )
 
@@ -115,6 +111,14 @@ class PipelineDeploymentRequest(
     code_reference: Optional["CodeReferenceRequest"] = Field(
         default=None,
         title="The code reference associated with the deployment.",
+    )
+    code_path: Optional[str] = Field(
+        default=None,
+        title="Optional path where the code is stored in the artifact store.",
+    )
+    template: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the deployment.",
     )
 
 
@@ -150,6 +154,17 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     server_version: Optional[str] = Field(
         title="The version of the ZenML installation on the server side."
     )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None, title="The pipeline version hash of the deployment."
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None, title="The pipeline spec of the deployment."
+    )
+    code_path: Optional[str] = Field(
+        default=None,
+        title="Optional path where the code is stored in the artifact store.",
+    )
+
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the deployment."
     )
@@ -166,6 +181,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     code_reference: Optional[CodeReferenceResponse] = Field(
         default=None,
         title="The code reference associated with the deployment.",
+    )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
     )
 
 
@@ -252,6 +271,33 @@ class PipelineDeploymentResponse(
         return self.get_metadata().server_version
 
     @property
+    def pipeline_version_hash(self) -> Optional[str]:
+        """The `pipeline_version_hash` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_version_hash
+
+    @property
+    def pipeline_spec(self) -> Optional[PipelineSpec]:
+        """The `pipeline_spec` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_spec
+
+    @property
+    def code_path(self) -> Optional[str]:
+        """The `code_path` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().code_path
+
+    @property
     def pipeline(self) -> Optional[PipelineResponse]:
         """The `pipeline` property.
 
@@ -297,16 +343,13 @@ class PipelineDeploymentResponse(
         return self.get_metadata().code_reference
 
     @property
-    def requires_code_download(self) -> bool:
-        """Whether the deployment requires downloading some code files.
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
 
         Returns:
-            Whether the deployment requires downloading some code files.
+            the value of the property.
         """
-        return any(
-            step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
-            for step in self.step_configurations.values()
-        )
+        return self.get_metadata().template_id
 
 
 # ------------------ Filter Model ------------------
@@ -343,5 +386,10 @@ class PipelineDeploymentFilter(WorkspaceScopedFilter):
     schedule_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Schedule associated with the deployment.",
+        union_mode="left_to_right",
+    )
+    template_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Template used as base for the deployment.",
         union_mode="left_to_right",
     )

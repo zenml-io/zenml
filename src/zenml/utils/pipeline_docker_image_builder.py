@@ -17,11 +17,9 @@ import itertools
 import os
 import subprocess
 import sys
-from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
-    DefaultDict,
     Dict,
     List,
     Optional,
@@ -40,7 +38,6 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
-    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
 from zenml.enums import OperatingSystemType
@@ -57,10 +54,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DOCKER_IMAGE_WORKDIR = "/app"
-DOCKER_IMAGE_ZENML_CONFIG_DIR = ".zenconfig"
-DOCKER_IMAGE_ZENML_CONFIG_PATH = (
-    f"{DOCKER_IMAGE_WORKDIR}/{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
-)
+DOCKER_IMAGE_ZENML_CONFIG_PATH = f"{DOCKER_IMAGE_WORKDIR}/.zenconfig"
 
 DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
@@ -277,9 +271,7 @@ class PipelineDockerImageBuilder:
             requirements_files = self.gather_requirements_files(
                 docker_settings=docker_settings,
                 stack=stack,
-                # Only pass code repo to include its dependencies if we actually
-                # need to download code
-                code_repository=code_repository if download_files else None,
+                code_repository=code_repository,
             )
 
             self._add_requirements_files(
@@ -296,6 +288,14 @@ class PipelineDockerImageBuilder:
             apt_packages = docker_settings.apt_packages.copy()
             if docker_settings.install_stack_requirements:
                 apt_packages += stack.apt_packages
+
+            # include apt packages from all required integrations
+            for integration in docker_settings.required_integrations:
+                # get the integration
+                integration_cls = integration_registry.integrations[
+                    integration
+                ]
+                apt_packages += integration_cls.APT_PACKAGES
 
             if apt_packages:
                 logger.info(
@@ -330,7 +330,6 @@ class PipelineDockerImageBuilder:
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
-                download_files=download_files,
                 requirements_files=requirements_files,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
@@ -436,8 +435,9 @@ class PipelineDockerImageBuilder:
             requirements files.
             The files will be in the following order:
             - Packages installed in the local Python environment
+            - Requirements defined by stack integrations
+            - Requirements defined by user integrations
             - User-defined requirements
-            - Requirements defined by user-defined and/or stack integrations
         """
         requirements_files: List[Tuple[str, str, List[str]]] = []
 
@@ -472,43 +472,6 @@ class PipelineDockerImageBuilder:
                 logger.info(
                     "- Including python packages from local environment"
                 )
-
-        # Generate requirements files for all ZenML Hub plugins
-        if docker_settings.required_hub_plugins:
-            (
-                hub_internal_requirements,
-                hub_pypi_requirements,
-            ) = PipelineDockerImageBuilder._get_hub_requirements(
-                docker_settings.required_hub_plugins
-            )
-
-            # Plugin packages themselves
-            for i, (index, packages) in enumerate(
-                hub_internal_requirements.items()
-            ):
-                file_name = f".zenml_hub_internal_requirements_{i}"
-                file_lines = [f"-i {index}", *packages]
-                file_contents = "\n".join(file_lines)
-                requirements_files.append(
-                    (file_name, file_contents, ["--no-deps"])
-                )
-                if log:
-                    logger.info(
-                        "- Including internal hub packages from index `%s`: %s",
-                        index,
-                        ", ".join(f"`{r}`" for r in packages),
-                    )
-
-            # PyPI requirements of plugin packages
-            if hub_pypi_requirements:
-                file_name = ".zenml_hub_pypi_requirements"
-                file_contents = "\n".join(hub_pypi_requirements)
-                requirements_files.append((file_name, file_contents, []))
-                if log:
-                    logger.info(
-                        "- Including hub requirements from PyPI: %s",
-                        ", ".join(f"`{r}`" for r in hub_pypi_requirements),
-                    )
 
         if docker_settings.install_stack_requirements:
             stack_requirements = stack.requirements()
@@ -592,63 +555,9 @@ class PipelineDockerImageBuilder:
         return requirements_files
 
     @staticmethod
-    def _get_hub_requirements(
-        required_hub_plugins: List[str],
-    ) -> Tuple[Dict[str, List[str]], List[str]]:
-        """Get package requirements for ZenML Hub plugins.
-
-        Args:
-            required_hub_plugins: List of hub plugin names in the format
-                `(<author_username>/)<plugin_name>(==<version>)`.
-
-        Returns:
-            - A dict of the hub plugin packages themselves (which need to be
-                installed from a custom index, mapping index URLs to lists of
-                package names.
-            - A list of all unique dependencies of the required hub plugins
-                (which can be installed from PyPI).
-        """
-        from zenml._hub.client import HubClient
-        from zenml._hub.utils import parse_plugin_name, plugin_display_name
-
-        client = HubClient()
-
-        internal_requirements: DefaultDict[str, List[str]] = defaultdict(list)
-        pypi_requirements: List[str] = []
-
-        for plugin_str in required_hub_plugins:
-            author, name, version = parse_plugin_name(
-                plugin_str, version_separator="=="
-            )
-
-            plugin = client.get_plugin(
-                name=name,
-                version=version,
-                author=author,
-            )
-
-            if plugin and plugin.index_url and plugin.package_name:
-                internal_requirements[plugin.index_url].append(
-                    plugin.package_name
-                )
-                if plugin.requirements:
-                    pypi_requirements.extend(plugin.requirements)
-            else:
-                display_name = plugin_display_name(name, version, author)
-                logger.warning(
-                    "Hub plugin `%s` does not exist or cannot be installed."
-                    "Skipping installation of this plugin.",
-                    display_name,
-                )
-
-        pypi_requirements = sorted(set(pypi_requirements))
-        return dict(internal_requirements), pypi_requirements
-
-    @staticmethod
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
-        download_files: bool,
         requirements_files: Sequence[Tuple[str, str, List[str]]] = (),
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
@@ -658,7 +567,6 @@ class PipelineDockerImageBuilder:
         Args:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
-            download_files: Whether to download files in the build context.
             requirements_files: List of tuples that contain three items:
                 - the name of a requirements file,
                 - the content of that file,
@@ -726,9 +634,6 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if download_files:
-            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
-
         lines.append(
             f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
         )

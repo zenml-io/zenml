@@ -42,6 +42,7 @@ class SourceType(Enum):
     INTERNAL = "internal"
     DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"
+    NOTEBOOK = "notebook"
     UNKNOWN = "unknown"
 
 
@@ -229,6 +230,59 @@ class CodeRepositorySource(Source):
         return value
 
 
+class NotebookSource(Source):
+    """Source representing an object defined in a notebook.
+
+    Attributes:
+        replacement_module: Name of the module from which this source should
+            be loaded in case the code is not running in a notebook.
+        artifact_store_id: ID of the artifact store in which the replacement
+            module code is stored.
+    """
+
+    replacement_module: Optional[str] = None
+    artifact_store_id: Optional[UUID] = None
+    type: SourceType = SourceType.NOTEBOOK
+
+    @field_validator("type")
+    @classmethod
+    def _validate_type(cls, value: SourceType) -> SourceType:
+        """Validate the source type.
+
+        Args:
+            value: The source type.
+
+        Raises:
+            ValueError: If the source type is not `NOTEBOOK`.
+
+        Returns:
+            The source type.
+        """
+        if value != SourceType.NOTEBOOK:
+            raise ValueError("Invalid source type.")
+
+        return value
+
+    @field_validator("module")
+    @classmethod
+    def _validate_module(cls, value: str) -> str:
+        """Validate the module.
+
+        Args:
+            value: The module.
+
+        Raises:
+            ValueError: If the module is not `__main__`.
+
+        Returns:
+            The module.
+        """
+        if value != "__main__":
+            raise ValueError("Invalid module for notebook source.")
+
+        return value
+
+
 def convert_source(source: Any) -> Any:
     """Converts an old source string to a source object.
 
@@ -245,5 +299,6 @@ def convert_source(source: Any) -> Any:
 
 
 SourceWithValidator = Annotated[
-    SerializeAsAny[Source], BeforeValidator(convert_source)
+    SerializeAsAny[Source],
+    BeforeValidator(convert_source),
 ]

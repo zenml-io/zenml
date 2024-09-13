@@ -243,8 +243,6 @@ Service connector 'gcp-implicit' of type 'gcp' with id '0c49a7fe-5e87-41b9-adbe-
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                  ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                  ┃
-┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                       ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-05-19 08:04:51.037955                                               ┃
@@ -350,8 +348,6 @@ Service connector 'gcp-user-account' of type 'gcp' with id 'ddbce93f-df14-4861-a
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                  ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                  ┃
-┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                       ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-05-19 08:09:44.102934                                               ┃
@@ -443,8 +439,6 @@ Service connector 'gcp-service-account' of type 'gcp' with id '4b3d41c9-6a6f-46d
 ┃ EXPIRES IN       │ N/A                                  ┃
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ OWNER            │ default                              ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ WORKSPACE        │ default                              ┃
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ SHARED           │ ➖                                   ┃
 ┠──────────────────┼──────────────────────────────────────┨
@@ -680,8 +674,6 @@ owned by user 'default'.
 ┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER                  │ default                                                                  ┃
 ┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE              │ default                                                                  ┃
-┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT             │ 2024-01-30 20:44:14.020514                                               ┃
 ┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ UPDATED_AT             │ 2024-01-30 20:44:14.020516                                               ┃
@@ -801,8 +793,6 @@ Service connector 'gcp-oauth2-token' of type 'gcp' with id 'ec4d7d85-c71c-476b-a
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                  ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                  ┃
-┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                       ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-05-19 09:04:33.557126                                               ┃
@@ -916,8 +906,6 @@ Service connector 'gcp-auto' of type 'gcp' with id 'fe16f141-7406-437e-a579-aceb
 ┃ EXPIRES IN       │ N/A                                                                      ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                  ┃
-┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                  ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                       ┃
 ┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
@@ -1214,7 +1202,7 @@ zenml service-connector list-resources --resource-type gcs-bucket
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 'gcs-bucket' resources can be accessed by service connectors configured in your workspace:
+The following 'gcs-bucket' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
@@ -1237,7 +1225,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
@@ -1257,7 +1245,7 @@ zenml service-connector list-resources --resource-type docker-registry
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
@@ -1284,7 +1272,6 @@ The following 'docker-registry' resources can be accessed by service connectors 
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered artifact_store `gcs-zenml-bucket-sl`.
 ```
@@ -1301,7 +1288,6 @@ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcp-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1323,7 +1309,6 @@ Successfully connected artifact store `gcs-zenml-bucket-sl` to the following res
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered orchestrator `gke-zenml-test-cluster`.
 ```
@@ -1340,7 +1325,6 @@ zenml orchestrator connect gke-zenml-test-cluster --connector gcp-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected orchestrator `gke-zenml-test-cluster` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
@@ -1361,7 +1345,6 @@ Successfully connected orchestrator `gke-zenml-test-cluster` to the following re
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered container_registry `gcr-zenml-core`.
 ```
@@ -1378,7 +1361,6 @@ zenml container-registry connect gcr-zenml-core --connector gcp-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected container registry `gcr-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1399,7 +1381,6 @@ Successfully connected container registry `gcr-zenml-core` to the following reso
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered image_builder `local`.
 ```
@@ -1416,7 +1397,6 @@ zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o gke-zenml-test-cluster -
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Stack 'gcp-demo' successfully registered!
 Active global stack set to:'gcp-demo'
 ```
@@ -1458,7 +1438,6 @@ Active global stack set to:'gcp-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image europe-west1-docker.pkg.dev/zenml-core/test/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
@@ -1487,7 +1466,7 @@ Hello World!
 Step step_2 has finished in 3.136s.
 Pod of step step_2 completed.
 Orchestration pod completed.
-Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
+Dashboard URL: http://34.148.132.191/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
 ```
 ````
 {% endcode %}
@@ -1677,7 +1656,6 @@ zenml service-connector list
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered artifact_store `gcs-zenml-bucket-sl`.
 ```
@@ -1694,7 +1672,6 @@ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcs-zenml-bucket-sl
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1715,7 +1692,6 @@ Successfully connected artifact store `gcs-zenml-bucket-sl` to the following res
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered image_builder `gcp-zenml-core`.
 ```
@@ -1732,7 +1708,6 @@ zenml image-builder connect gcp-zenml-core --connector gcp-cloud-builder-zenml-c
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected image builder `gcp-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
@@ -1755,7 +1730,6 @@ Successfully connected image builder `gcp-zenml-core` to the following resources
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered orchestrator `vertex-ai-zenml-core`.
 ```
@@ -1772,7 +1746,6 @@ zenml orchestrator connect vertex-ai-zenml-core --connector vertex-ai-zenml-core
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected orchestrator `vertex-ai-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
@@ -1793,7 +1766,6 @@ Successfully connected orchestrator `vertex-ai-zenml-core` to the following reso
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered container_registry `gcr-zenml-core`.
 ```
@@ -1810,7 +1782,6 @@ zenml container-registry connect gcr-zenml-core --connector gcr-zenml-core
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected container registry `gcr-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
@@ -1831,7 +1802,6 @@ Successfully connected container registry `gcr-zenml-core` to the following reso
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Stack 'gcp-demo' successfully registered!
 Active repository stack set to:'gcp-demo'
 ```
@@ -1873,7 +1843,6 @@ Active repository stack set to:'gcp-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, shapely<2.0
@@ -1914,7 +1883,7 @@ PipelineState.PIPELINE_STATE_RUNNING
 ...
 PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
 INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
-Dashboard URL: https://34.148.132.191/workspaces/default/pipelines/17cac6b5-3071-45fa-a2ef-cda4a7965039/runs
+Dashboard URL: https://34.148.132.191/default/pipelines/17cac6b5-3071-45fa-a2ef-cda4a7965039/runs
 ```
 ````
 {% endcode %}

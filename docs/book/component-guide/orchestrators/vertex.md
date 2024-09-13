@@ -23,9 +23,11 @@ You should use the Vertex orchestrator if:
 ## How to deploy it
 
 {% hint style="info" %}
-Don't want to deploy the orchestrator manually? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including a Vertex AI orchestrator? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -230,40 +232,14 @@ In order to cancel a scheduled Vertex pipeline, you need to manually delete the 
 
 ### Additional configuration
 
-For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure labels for your Vertex Pipeline jobs or specify which GPU to use.
 
 ```python
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
 from kubernetes.client.models import V1Toleration
 
 vertex_settings = VertexOrchestratorSettings(
-    pod_settings={
-        "affinity": {
-            "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                    "nodeSelectorTerms": [
-                        {
-                            "matchExpressions": [
-                                {
-                                    "key": "node.kubernetes.io/name",
-                                    "operator": "In",
-                                    "values": ["my_powerful_node_group"],
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
-        "tolerations": [
-            V1Toleration(
-                key="node.kubernetes.io/name",
-                operator="Equal",
-                value="",
-                effect="NoSchedule"
-            )
-        ]
-    }
+    labels={"key": "value"}
 )
 ```
 
@@ -273,13 +249,27 @@ If your pipelines steps have certain hardware requirements, you can specify them
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
 
+To run your pipeline (or some steps of it) on a GPU, you will need to set both a node selector
+and the gpu count as follows:
+```python
+vertex_settings = VertexOrchestratorSettings(
+    pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-accelerator": "NVIDIA_TESLA_A100"
+        },
+    }
+)
+resource_settings = ResourceSettings(gpu_count=1)
+```
+You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
+
 These settings can then be specified on either pipeline-level or step-level:
 
 ```python
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )
@@ -289,7 +279,7 @@ def my_pipeline():
 # OR specify settings on step-level
 @step(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )

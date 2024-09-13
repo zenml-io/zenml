@@ -22,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -38,7 +39,11 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
-from zenml.constants import STEP_SOURCE_PARAMETER_NAME
+from zenml.constants import (
+    ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
+    STEP_SOURCE_PARAMETER_NAME,
+    handle_bool_env_var,
+)
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -51,14 +56,16 @@ from zenml.steps.entrypoint_function_utils import (
 )
 from zenml.steps.utils import (
     resolve_type_annotation,
+    run_as_single_step_pipeline,
 )
 from zenml.utils import (
     dict_utils,
+    materializer_utils,
+    notebook_utils,
     pydantic_utils,
     settings_utils,
     source_code_utils,
     source_utils,
-    typing_utils,
 )
 
 if TYPE_CHECKING:
@@ -248,6 +255,8 @@ class BaseStep(metaclass=BaseStepMeta):
             retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
+
+        notebook_utils.try_to_save_notebook_cell_code(self.source_object)
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
@@ -479,7 +488,7 @@ class BaseStep(metaclass=BaseStepMeta):
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
-                f"Wrong arguments when calling step `{self.name}`: {e}"
+                f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
         artifacts = {}
@@ -583,9 +592,34 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside the context of a pipeline,
-            # we simply call the entrypoint
-            return self.call_entrypoint(*args, **kwargs)
+            from zenml import constants, get_step_context
+
+            # If the environment variable was set to explicitly not run on the
+            # stack, we do that.
+            run_without_stack = handle_bool_env_var(
+                ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
+            )
+            if run_without_stack:
+                return self.call_entrypoint(*args, **kwargs)
+
+            try:
+                get_step_context()
+            except RuntimeError:
+                pass
+            else:
+                # We're currently inside the execution of a different step
+                # -> We don't want to launch another single step pipeline here,
+                # but instead just call the step function
+                return self.call_entrypoint(*args, **kwargs)
+
+            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+                logger.info(
+                    "Preventing execution of step '%s'.",
+                    self.name,
+                )
+                return
+
+            return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
             input_artifacts,
@@ -980,7 +1014,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
         if conflicting_parameters:
             is_plural = "s" if len(conflicting_parameters) > 1 else ""
-            msg = f"Configured parameter{is_plural} for the step `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+            msg = f"Configured parameter{is_plural} for the step '{self.name}' conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
             for key, values in conflicting_parameters.items():
                 msg += (
                     f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
@@ -1023,7 +1057,7 @@ To avoid this consider setting step parameters only in one place (config or code
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
                     f"Got unexpected materializers for non-existent "
-                    f"output '{output_name}' in step `{self.name}`. "
+                    f"output '{output_name}' in step '{self.name}'. "
                     f"Only materializers for the outputs "
                     f"{allowed_output_names} of this step can"
                     f" be registered."
@@ -1036,7 +1070,7 @@ To avoid this consider setting step parameters only in one place (config or code
                     ):
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
-                            f"for output '{output_name}' of step `{self.name}` "
+                            f"for output '{output_name}' of step '{self.name}' "
                             "does not resolve to a `BaseMaterializer` subclass."
                         )
 
@@ -1070,7 +1104,9 @@ To avoid this consider setting step parameters only in one place (config or code
                 or key in client_lazy_loaders
             ):
                 continue
-            raise StepInterfaceError(f"Missing entrypoint input {key}.")
+            raise StepInterfaceError(
+                f"Missing entrypoint input '{key}' in step '{self.name}'."
+            )
 
     def _finalize_configuration(
         self,
@@ -1093,6 +1129,11 @@ To avoid this consider setting step parameters only in one place (config or code
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
 
+        Raises:
+            StepInterfaceError: If explicit materializers were specified for an
+                output but they do not work for the data type(s) defined by
+                the type annotation.
+
         Returns:
             The finalized step configuration.
         """
@@ -1114,9 +1155,45 @@ To avoid this consider setting step parameters only in one place (config or code
                 output_name, PartialArtifactConfiguration()
             )
 
-            from zenml.steps.utils import get_args
+            if output.materializer_source:
+                # The materializer source was configured by the user. We
+                # validate that their configured materializer supports the
+                # output type. If the output annotation is a Union, we check
+                # that at least one of the specified materializers works with at
+                # least one of the types in the Union. If that's not the case,
+                # it would be a guaranteed failure at runtime and we fail early
+                # here.
+                if output_annotation.resolved_annotation is Any:
+                    continue
 
-            if not output.materializer_source:
+                materializer_classes: List[Type["BaseMaterializer"]] = [
+                    source_utils.load(materializer_source)
+                    for materializer_source in output.materializer_source
+                ]
+
+                for data_type in output_annotation.get_output_types():
+                    try:
+                        materializer_utils.select_materializer(
+                            data_type=data_type,
+                            materializer_classes=materializer_classes,
+                        )
+                        break
+                    except RuntimeError:
+                        pass
+                else:
+                    materializer_strings = [
+                        materializer_source.import_path
+                        for materializer_source in output.materializer_source
+                    ]
+                    raise StepInterfaceError(
+                        "Invalid materializers specified for output "
+                        f"{output_name} of step {self.name}. None of the "
+                        f"materializers ({materializer_strings}) are "
+                        "able to save or load data of the type that is defined "
+                        "for the output "
+                        f"({output_annotation.resolved_annotation})."
+                    )
+            else:
                 if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name]["default_materializer_source"] = (
@@ -1126,26 +1203,9 @@ To avoid this consider setting step parameters only in one place (config or code
                     )
                     continue
 
-                if typing_utils.is_union(
-                    typing_utils.get_origin(
-                        output_annotation.resolved_annotation
-                    )
-                    or output_annotation.resolved_annotation
-                ):
-                    output_types = tuple(
-                        type(None)
-                        if typing_utils.is_none_type(output_type)
-                        else output_type
-                        for output_type in get_args(
-                            output_annotation.resolved_annotation
-                        )
-                    )
-                else:
-                    output_types = (output_annotation.resolved_annotation,)
-
                 materializer_sources = []
 
-                for output_type in output_types:
+                for output_type in output_annotation.get_output_types():
                     materializer_class = materializer_registry[output_type]
                     materializer_sources.append(
                         source_utils.resolve(materializer_class)

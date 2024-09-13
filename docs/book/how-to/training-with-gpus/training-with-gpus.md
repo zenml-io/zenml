@@ -32,7 +32,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 )
 
 
-@step(settings={"orchestrator.vm_aws": skypilot_settings)
+@step(settings={"orchestrator": skypilot_settings)
 def training_step(...) -> ...:
     # train a model
 ```
@@ -40,7 +40,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](../../component-guide/step-operators/step-operators.md) which allow you to execute individual steps of ../...your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](../../component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled

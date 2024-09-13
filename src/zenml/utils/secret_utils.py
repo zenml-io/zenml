@@ -146,7 +146,7 @@ def is_secret_field(field: "FieldInfo") -> bool:
             logger.warning(
                 f"The 'json_schema_extra' of the field '{field.title}' is "
                 "not defined as a dict. This might lead to unexpected "
-                "behaviour as we are checking it is a secret text field. "
+                "behavior as we are checking it is a secret text field. "
                 "Returning 'False' as default..."
             )
 
@@ -177,7 +177,7 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
             logger.warning(
                 f"The 'json_schema_extra' of the field '{field.title}' is "
                 "not defined as a dict. This might lead to unexpected "
-                "behaviour as we are checking it is a clear text field. "
+                "behavior as we are checking it is a clear text field. "
                 "Returning 'False' as default..."
             )
 

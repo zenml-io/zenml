@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     SERVICE_CONNECTOR_CLIENT,
+    SERVICE_CONNECTOR_FULL_STACK,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
@@ -29,11 +30,16 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     ServiceConnectorFilter,
+    ServiceConnectorInfo,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesInfo,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+)
+from zenml.service_connectors.service_connector_utils import (
+    get_resources_options_from_resource_model_for_full_stack,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -393,3 +399,52 @@ def get_service_connector_type(
         The requested service connector type.
     """
     return zen_store().get_service_connector_type(connector_type)
+
+
+@router.post(
+    SERVICE_CONNECTOR_FULL_STACK,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_resources_based_on_service_connector_info(
+    connector_info: Optional[ServiceConnectorInfo] = None,
+    connector_uuid: Optional[UUID] = None,
+    _: AuthContext = Security(authorize),
+) -> ServiceConnectorResourcesInfo:
+    """Gets the list of resources that a service connector can access.
+
+    Args:
+        connector_info: The service connector info.
+        connector_uuid: The service connector uuid.
+
+    Returns:
+        The list of resources that the service connector configuration has
+        access to and consumable from UI/CLI.
+
+    Raises:
+        ValueError: If both connector_info and connector_uuid are provided.
+        ValueError: If neither connector_info nor connector_uuid are provided.
+    """
+    if connector_info is not None and connector_uuid is not None:
+        raise ValueError(
+            "Only one of connector_info or connector_uuid must be provided."
+        )
+    if connector_info is None and connector_uuid is None:
+        raise ValueError(
+            "Either connector_info or connector_uuid must be provided."
+        )
+
+    if connector_info is not None:
+        verify_permission(
+            resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+        )
+    elif connector_uuid is not None:
+        verify_permission(
+            resource_type=ResourceType.SERVICE_CONNECTOR,
+            action=Action.READ,
+            resource_id=connector_uuid,
+        )
+
+    return get_resources_options_from_resource_model_for_full_stack(
+        connector_details=connector_info or connector_uuid  # type: ignore[arg-type]
+    )

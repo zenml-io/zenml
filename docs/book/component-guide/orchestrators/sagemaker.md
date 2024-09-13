@@ -27,9 +27,11 @@ The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.am
 ## How to deploy it
 
 {% hint style="info" %}
-Don't want to deploy the orchestrator manually? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including a Sagemaker orchestrator? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -90,7 +92,7 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
     --execution_role=<YOUR_IAM_ROLE_ARN> \ 
     --aws_access_key_id=...
     --aws_secret_access_key=...
-    --aws_region=...
+    --region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
@@ -184,17 +186,15 @@ For example, settings can be provided in the following way:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
-    processor_args={
-        "instance_type": "ml.t3.medium",
-        "volume_size_in_gb": 30
-    }
+    instance_type="ml.m5.large",
+    volume_size_in_gb=30,
 )
 ```
 
 They can then be applied to a step as follows:
 
 ```python
-@step(settings={"orchestrator.sagemaker": sagemaker_orchestrator_settings})
+@step(settings={"orchestrator": sagemaker_orchestrator_settings})
 ```
 
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.

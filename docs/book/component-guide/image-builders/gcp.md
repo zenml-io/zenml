@@ -17,9 +17,11 @@ You should use the Google Cloud image builder if:
 ### How to deploy it
 
 {% hint style="info" %}
-Don't want to deploy the image builder manually? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including the Google Cloud image builder? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -107,7 +109,7 @@ zenml service-connector list-resources --resource-type gcp-generic
 
 {% code title="Example Command Output" %}
 ```
-The following 'gcp-generic' resources can be accessed by service connectors configured in your workspace:
+The following 'gcp-generic' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────┼────────────────┨

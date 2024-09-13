@@ -20,6 +20,7 @@ from uuid import UUID
 
 import boto3
 import sagemaker
+from botocore.exceptions import WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -371,12 +372,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
             logger.info(
-                "Executing synchronously. Waiting for pipeline to finish..."
+                "Executing synchronously. Waiting for pipeline to finish... \n"
+                "At this point you can `Ctrl-C` out without cancelling the execution."
             )
-            pipeline_execution.wait(
-                delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
-            )
-            logger.info("Pipeline completed successfully.")
+            try:
+                pipeline_execution.wait(
+                    delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                )
+                logger.info("Pipeline completed successfully.")
+            except WaiterError:
+                raise RuntimeError(
+                    "Timed out while waiting for pipeline execution to finish. For long-running "
+                    "pipelines we recommend configuring your orchestrator for asynchronous execution. "
+                    "The following command does this for you: \n"
+                    f"`zenml orchestrator update {self.name} --synchronous=False`"
+                )
 
     def _get_region_name(self) -> str:
         """Returns the AWS region name.

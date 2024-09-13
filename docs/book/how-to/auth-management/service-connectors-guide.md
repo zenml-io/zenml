@@ -318,7 +318,7 @@ zenml service-connector list-resources
 
 {% code title="Example Command Output" %}
 ```
-The following resources can be accessed by service connectors configured in your workspace:
+The following resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                   ┃
 ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
@@ -1392,7 +1392,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 
 {% code title="Example Command Output" %}
 ```
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                      ┃
 ┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┨
@@ -1518,9 +1518,9 @@ zenml service-connector list-resources
 
 {% code title="Example Command Output" %}
 ```
-Fetching all service connector resources can take a long time, depending on the number of connectors configured in your workspace. Consider using the '--connector-type', '--resource-type' and '--resource-id' 
+Fetching all service connector resources can take a long time, depending on the number of connectors that you have configured. Consider using the '--connector-type', '--resource-type' and '--resource-id' 
 options to narrow down the list of resources to fetch.
-The following resources can be accessed by service connectors configured in your workspace:
+The following resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                                          ┃
 ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
@@ -1579,7 +1579,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 
 {% code title="Example Command Output" %}
 ```
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME  │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                                                ┃
 ┠──────────────────────────────────────┼─────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
@@ -1610,7 +1610,7 @@ zenml service-connector list-resources --resource-type s3-bucket --resource-id z
 
 {% code title="Example Command Output" %}
 ```
-The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors configured in your workspace:
+The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
 ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────┼────────────────┨
@@ -1675,12 +1675,11 @@ zenml artifact-store connect s3-zenfiles --connector aws-multi-type
 {% code title="Example Command Output" %}
 ```
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered artifact_store `s3-zenfiles`.
 
 $ zenml service-connector list-resources --resource-type s3-bucket --resource-id zenfiles
-The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors configured in your workspace:
+The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
 ┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼────────────────┨
@@ -1692,7 +1691,6 @@ The  's3-bucket' resource with name 'zenfiles' can be accessed by service connec
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
 $ zenml artifact-store connect s3-zenfiles --connector aws-multi-type
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected artifact store `s3-zenfiles` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓

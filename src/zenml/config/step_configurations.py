@@ -55,10 +55,10 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[Tuple[Source, ...]] = None
+    materializer_source: Optional[Tuple[SourceWithValidator, ...]] = None
     # TODO: This could be moved to the `PipelineDeployment` as it's the same
     # for all steps/outputs
-    default_materializer_source: Optional[Source] = None
+    default_materializer_source: Optional[SourceWithValidator] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -109,7 +109,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: Tuple[Source, ...]
+    materializer_source: Tuple[SourceWithValidator, ...]
 
     @field_validator("materializer_source", mode="before")
     @classmethod

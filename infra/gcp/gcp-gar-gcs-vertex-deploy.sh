@@ -24,6 +24,24 @@ ZENML_SERVER_URL=
 ZENML_SERVER_API_TOKEN=
 ### END CONFIGURATION ###
 
+if [ -z "$ZENML_SERVER_URL" ] || [ -z "$ZENML_SERVER_API_TOKEN" ]; then
+    echo "ERROR: The ZENML_SERVER_URL and ZENML_SERVER_API_TOKEN variables must be set."
+    echo "Please set these variables in the script before running it."
+    exit 1
+fi
+
+if [ -z "$ZENML_STACK_NAME" ]; then
+    echo "ERROR: The ZENML_STACK_NAME variable must be set."
+    echo "Please set this variable in the script before running it."
+    exit 1
+fi
+
+if [ -z "$ZENML_STACK_REGION" ]; then
+    echo "ERROR: The ZENML_STACK_REGION variable must be set."
+    echo "Please set this variable in the script before running it."
+    exit 1
+fi
+
 # Extract the project ID and project number from the gcloud configuration
 PROJECT_ID=$(gcloud config get-value project)
 
@@ -35,6 +53,7 @@ fi
 
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
+
 # Enable the necessary services
 #
 # The following services must be enabled in your GCP project:
@@ -44,8 +63,7 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNum
 # * Artifact Registry API - ZenML uses the Artifact Registry GCP service to store and manage Docker images.
 # * Cloud Storage API - ZenML uses the Cloud Storage GCP service to store and manage data.
 # * Vertex AI API - ZenML uses the Vertex AI GCP service to manage machine learning resources.
-# * Cloud Functions API - used to automatically register the ZenML stack in the ZenML server.
-# * Cloud Build and Compute Engine API - required for the Cloud Functions to run.
+# * Cloud Build - ZenML uses the Cloud Build GCP service to build and push Docker images.
 echo
 echo "##################################################"
 echo "Enabling necessary GCP services..."
@@ -59,10 +77,8 @@ services=(
     "storage-api.googleapis.com"
     "ml.googleapis.com"
     "aiplatform.googleapis.com"
-    "cloudfunctions.googleapis.com"
-    "cloudbuild.googleapis.com"
     "cloudresourcemanager.googleapis.com"
-    "compute.googleapis.com"
+    "cloudbuild.googleapis.com"
 )
 
 # Enable the services
@@ -84,23 +100,6 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PROJECT_NUMBER@cloudservices.gserviceaccount.com" \
     --role="roles/resourcemanager.projectIamAdmin" \
     --condition=None
-
-# Grant the Compute Engine default service account the necessary permissions
-#
-# The GCP Cloud Functions uses the default compute service account
-# (https://cloud.google.com/functions/docs/securing/function-identity#runtime-sa)
-# to run. You must first grant this service the appropriate permissions to
-# create and manage Artifact Registry resources.
-echo
-echo "##################################################"
-echo "Granting Cloud Functions the necessary permissions..."
-echo "##################################################"
-echo
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-    --role="roles/artifactregistry.admin" \
-    --condition=None
-
 
 # Create the Deployment Manager deployment
 #
@@ -125,7 +124,53 @@ set -e
 if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
     echo "ERROR: The deployment failed. Please check the logs for more information."
     echo
-    echo "Hint: sometimes it helps if you delete and retry the deployment. You can do this by running the following commands:"
+    echo "This usually happens for one of the following reasons:"
+    echo
+    echo "1. Temporary issues related to enabling services or granting permissions in newly created projects. This is "
+    echo "usually solved by deleting and retrying the deployment."
+    echo "2. One of the GCP services required for the stack (S3 or GCP Artifact Registry) is not available in the "
+    echo "region you selected. In this case, please configure a different region and try again."
+    echo
+    echo "To retry the deployment after you addressed the possible cause, you can run the following commands:"
+    echo
+    echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
+    echo "./gcp-gar-gcs-vertex-deploy.sh"
+    echo
+    exit 1
+fi
+
+echo
+echo "##################################################"
+echo "Extracting the Deployment Manager deployment output..."
+echo "##################################################"
+echo
+
+manifest=$(gcloud deployment-manager manifests list --deployment $ZENML_STACK_NAME --format="value(name)")
+zenml_stack_json=$(
+    gcloud deployment-manager manifests describe $manifest --deployment $ZENML_STACK_NAME --format="value(layout)" \
+    | python -c 'import sys, yaml; print(yaml.safe_load(sys.stdin)["resources"][0]["outputs"][-1]["finalValue"])'
+)
+
+echo
+echo "##################################################"
+echo "Registering the ZenML stack with the ZenML server..."
+echo "##################################################"
+echo
+
+set +e
+# Register the ZenML stack with the ZenML server
+curl -X POST "$ZENML_SERVER_URL/api/v1/workspaces/default/stacks" \
+    -H "Authorization: Bearer $ZENML_SERVER_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$zenml_stack_json"
+# Fetch the exit code of the registration
+REGISTRATION_EXIT_CODE=$?
+set -e
+
+if [ $REGISTRATION_EXIT_CODE -ne 0 ]; then
+    echo "ERROR: The ZenML stack registration failed. Please check the logs for more information."
+    echo
+    echo "This could happen if the ZenML server URL or API token is incorrect. Please check the configuration and try again:"
     echo
     echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
     echo "./gcp-gar-gcs-vertex-deploy.sh"
