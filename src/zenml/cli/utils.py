@@ -42,6 +42,7 @@ from typing import (
 import click
 import pkg_resources
 import yaml
+from click import ClickException
 from pydantic import BaseModel, SecretStr
 from rich import box, table
 from rich.console import Console

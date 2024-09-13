@@ -118,6 +118,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         Returns:
             The Docker image repo digest.
+
         Raises:
             RuntimeError: If no container registry is passed, or if the upload
                 to the artifact store has failed.
