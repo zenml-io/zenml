@@ -7218,6 +7218,8 @@ class SqlZenStore(BaseZenStore):
         )
 
     # ----------------------------- Stacks -----------------------------
+
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequest) -> StackResponse:
         """Register a full stack.
 
