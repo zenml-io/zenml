@@ -265,7 +265,11 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """Gets the unlabeled data for the given dataset.
 
         Args:
-            **kwargs: Additional keyword arguments to pass to the Prodigy client.
+            **kwargs: Additional keyword arguments to pass to the Prodigy
+                client.
+
+        Returns:
+            Any: This method does not return anything as it raises an exception.
 
         Raises:
             NotImplementedError: Prodigy doesn't allow fetching unlabeled data.

@@ -528,14 +528,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         Returns:
             The ZenML Seldon Core deployment service object that can be used to
             interact with the remote Seldon Core server.
-
-        Raises:
-            SeldonClientError: if a Seldon Core client error is encountered
-                while provisioning the Seldon Core deployment server.
-            RuntimeError: if `timeout` is set to a positive value that is
-                exceeded while waiting for the Seldon Core deployment server
-                to start, or if an operational failure is encountered before
-                it reaches a ready state.
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
@@ -582,6 +574,10 @@ class SeldonModelDeployer(BaseModelDeployer):
             timeout: timeout in seconds to wait for the service to stop.
             force: if True, force the service to stop.
 
+        Returns:
+            The SeldonDeploymentService object that can be used to interact
+                with the remote Seldon Core server.
+
         Raises:
             NotImplementedError: stopping Seldon Core model servers is not
                 supported.
@@ -604,6 +600,10 @@ class SeldonModelDeployer(BaseModelDeployer):
                 active. . If set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
+
+        Returns:
+            The SeldonDeploymentService object that can be used to interact
+                with the remote Seldon Core server.
 
         Raises:
             NotImplementedError: since we don't support starting Seldon Core

@@ -276,7 +276,7 @@ class HyperAIServiceConnector(ServiceConnector):
         """Connect to a HyperAI instance. Returns an authenticated SSH client.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -295,7 +295,7 @@ class HyperAIServiceConnector(ServiceConnector):
         """There is no local client for the HyperAI connector, so it does nothing.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Raises:
@@ -327,7 +327,11 @@ class HyperAIServiceConnector(ServiceConnector):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that
                 supports multiple instances.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to
+                use.
+
+        Returns:
+            The configured connector.
 
         Raises:
             NotImplementedError: If the connector auto-configuration fails or

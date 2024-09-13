@@ -116,8 +116,8 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             The Docker image name with digest.
 
         Raises:
-            RuntimeError: If no container registry is passed.
-            RuntimeError: If the Cloud Build build fails.
+            RuntimeError: If no container registry is passed, or if the Cloud
+                Build build fails.
         """
         if not container_registry:
             raise RuntimeError(

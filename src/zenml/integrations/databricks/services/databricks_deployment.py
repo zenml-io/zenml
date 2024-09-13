@@ -113,7 +113,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
 
         Args:
             config: service configuration
-            attrs: additional attributes to set on the service
+            **attrs: additional attributes to set on the service
         """
         super().__init__(config=config, **attrs)
 
@@ -362,7 +362,10 @@ class DatabricksDeploymentService(BaseDeploymentService):
             tail: only retrieve the last NUM lines of log output.
 
         Yields:
-            A generator that can be accessed to get the service logs.
+            str: Each line of the service logs.
+
+        Returns:
+            Generator[str, bool, None]: A generator that yields log lines.
         """
         logger.info(
             "Databricks Endpoints provides access to the logs of your Endpoints through the UI in the `Logs` tab of your Endpoint"

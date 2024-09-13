@@ -192,7 +192,7 @@ class EvidentlyMetricConfig(BaseModel):
                 takes.
             skip_id_column: Whether to skip the ID column when applying the
                 generator.
-            parameters: Additional optional parameters needed to instantiate the
+            **parameters: Additional optional parameters needed to instantiate the
                 Evidently Metric. These will be passed to the Evidently
                 `generate_column_metrics` function.
 
@@ -271,7 +271,7 @@ class EvidentlyMetricConfig(BaseModel):
         Args:
             metric: The Evidently Metric or MetricPreset class, class name or
                 class path.
-            parameters: Additional optional parameters needed to instantiate the
+            **parameters: Additional optional parameters needed to instantiate the
                 Evidently Metric or MetricPreset.
 
         Returns:

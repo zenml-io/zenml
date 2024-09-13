@@ -146,6 +146,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If the model already exists.
+            KeyError: If the model does not exist.
 
         Returns:
             The registered model.
@@ -575,7 +576,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             created_before: The maximum creation time of the model versions.
             order_by_date: The order of the model versions by creation time,
                 either ascending or descending.
-            kwargs: Additional keyword arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The model versions.
@@ -666,7 +667,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Args:
             name: The name of the model.
             version: The version of the model.
-            kwargs: Additional keyword arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The model version.

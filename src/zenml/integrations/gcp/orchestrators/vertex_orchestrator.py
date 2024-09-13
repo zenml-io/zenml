@@ -336,13 +336,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             environment: Environment variables to set in the orchestration
                 environment.
 
-        Raises:
-            ValueError: If the attribute `pipeline_root` is not set and it
-                can be not generated using the path of the artifact store in the
-                stack because it is not a
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
-                raised if attempting to schedule pipeline run without using the
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+        Returns:
+            The pipeline run id.
         """
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name

@@ -121,9 +121,6 @@ class BitbucketEvent(BaseEvent):
     def event_type(self) -> Union[BitbucketEventType, str]:
         """The type of Bitbucket event.
 
-        Args:
-            The type of the event based on Bitbucket specific fields.
-
         Returns:
             The type of the event.
         """

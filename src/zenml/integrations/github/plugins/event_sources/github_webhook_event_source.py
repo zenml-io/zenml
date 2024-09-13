@@ -131,9 +131,6 @@ class GithubEvent(BaseEvent):
     def event_type(self) -> Union[GithubEventType, str]:
         """The type of github event.
 
-        Args:
-            The type of the event based on github specific fields.
-
         Returns:
             The type of the event.
         """

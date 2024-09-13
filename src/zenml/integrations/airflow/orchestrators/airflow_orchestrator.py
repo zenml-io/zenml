@@ -201,6 +201,8 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The DAG object.
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)

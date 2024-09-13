@@ -118,10 +118,9 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         Returns:
             The Docker image repo digest.
-
         Raises:
-            RuntimeError: If no container registry is passed.
-            RuntimeError: If the upload to the artifact store has failed.
+            RuntimeError: If no container registry is passed, or if the upload
+                to the artifact store has failed.
         """
         self._check_prerequisites()
         if not container_registry:
@@ -345,7 +344,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             pod_name: Name of the Pod to delete.
 
         Raises:
-            subprocess.CalledProcessError: If the kubectl call to delete
+            e: If the kubectl call to delete
                 the Pod failed.
         """
         command = [
@@ -363,7 +362,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             subprocess.run(command, stdout=subprocess.PIPE, check=True)
         except subprocess.CalledProcessError as e:
             logger.error(e.output)
-            raise
+            raise e
 
         logger.info("Deleted Kaniko build Pod %s.", pod_name)
 

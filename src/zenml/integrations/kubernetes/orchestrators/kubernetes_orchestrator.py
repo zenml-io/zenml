@@ -342,6 +342,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The pipeline run id.
+
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
         """

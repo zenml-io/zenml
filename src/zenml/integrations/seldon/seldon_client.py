@@ -944,9 +944,6 @@ class SeldonClient:
         Returns:
             A generator that can be accessed to get the service logs.
 
-        Yields:
-            The next log line.
-
         Raises:
             SeldonClientError: if an unknown error occurs while fetching
                 the logs.
@@ -1032,7 +1029,6 @@ class SeldonClient:
         Raises:
             SeldonClientError: if an unknown error occurs during the creation of
                 the secret.
-            k8s_client.rest.ApiException: unexpected error.
         """
         try:
             logger.debug(f"Creating Secret resource: {name}")

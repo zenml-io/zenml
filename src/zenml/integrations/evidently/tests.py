@@ -186,7 +186,7 @@ class EvidentlyTestConfig(BaseModel):
             columns: The columns to apply the generator to. Takes the same
                 values that the Evidently `generate_column_tests` function
                 takes.
-            parameters: Additional optional parameters needed to instantiate the
+            **parameters: Additional optional parameters needed to instantiate the
                 Evidently Test. These will be passed to the Evidently
                 `generate_column_tests` function.
 
@@ -264,7 +264,7 @@ class EvidentlyTestConfig(BaseModel):
         Args:
             test: The Evidently Test or TestPreset class, class name or
                 class path.
-            parameters: Additional optional parameters needed to instantiate the
+            **parameters: Additional optional parameters needed to instantiate the
                 Evidently Test or TestPreset.
 
         Returns:

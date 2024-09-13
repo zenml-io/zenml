@@ -315,9 +315,10 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             onerror: Unused argument to conform to interface.
 
         Yields:
-            An Iterable of Tuples, each of which contain the path of the current
-            directory path, a list of directories inside the current directory
-            and a list of files inside the current directory.
+            Tuple[PathType, List[PathType], List[PathType]]: A tuple containing:
+                - The path of the current directory (PathType)
+                - A list of directories inside the current directory (List[PathType])
+                - A list of files inside the current directory (List[PathType])
         """
         # TODO [ENG-153]: Additional params
         for (

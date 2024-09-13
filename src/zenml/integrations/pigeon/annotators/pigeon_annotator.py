@@ -54,6 +54,9 @@ class PigeonAnnotator(BaseAnnotator):
     def get_url(self) -> str:
         """Get the URL of the Pigeon annotator.
 
+        Returns:
+            The URL of the Pigeon annotator.
+
         Raises:
             NotImplementedError: Pigeon annotator does not have a URL.
         """
@@ -64,6 +67,9 @@ class PigeonAnnotator(BaseAnnotator):
 
         Args:
             dataset_name: Name of the dataset (annotation file).
+
+        Returns:
+            The URL of the Pigeon annotator for the given dataset.
 
         Raises:
             NotImplementedError: Pigeon annotator does not have a URL.
@@ -242,6 +248,9 @@ class PigeonAnnotator(BaseAnnotator):
 
         Args:
             **kwargs: keyword arguments.
+
+        Returns:
+            This method does not return anything as it raises an exception.
 
         Raises:
             NotImplementedError: Pigeon annotator does not support adding datasets.

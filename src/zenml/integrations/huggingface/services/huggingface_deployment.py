@@ -73,7 +73,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
 
         Args:
             config: service configuration
-            attrs: additional attributes to set on the service
+            **attrs: additional attributes to set on the service
         """
         super().__init__(config=config, **attrs)
 
