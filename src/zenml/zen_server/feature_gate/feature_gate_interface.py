@@ -30,7 +30,7 @@ class FeatureGateInterface(ABC):
             resource: The resource the user wants to create
 
         Raises:
-            UpgradeRequiredError in case a subscription limit is reached
+            UpgradeRequiredError: in case a subscription limit is reached
         """
 
     @abstractmethod

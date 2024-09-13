@@ -102,9 +102,8 @@ def parse_return_type_annotations(
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
-            duplicate output names.
-        RuntimeError: If type annotations should be enforced and a type
-            annotation is missing.
+            duplicate output names or if type annotations should be enforced
+            and annotation is missing.
 
     Returns:
         - A dictionary mapping output names to their output signatures.
@@ -504,6 +503,7 @@ def run_as_single_step_pipeline(
     that was used to store them.
 
     Args:
+        __step: The step to run.
         *args: Entrypoint function arguments.
         **kwargs: Entrypoint function keyword arguments.
 

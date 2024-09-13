@@ -114,8 +114,7 @@ class PipelineDockerImageBuilder:
             RuntimeError: If the stack does not contain an image builder.
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
-                image build.
-            ValueError: If the specified Dockerfile does not exist.
+                image build or if the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None

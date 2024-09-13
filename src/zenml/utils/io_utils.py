@@ -16,7 +16,7 @@
 import fnmatch
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterator
 
 import click
 
@@ -124,7 +124,7 @@ def copy_dir(
             copy(str(source_path), str(destination_path), overwrite)
 
 
-def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
+def find_files(dir_path: "PathType", pattern: str) -> Iterator[str]:
     """Find files in a directory that match pattern.
 
     Args:
@@ -132,7 +132,7 @@ def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
         pattern: pattern like *.png.
 
     Yields:
-        All matching filenames in the directory.
+        str: All matching filenames in the directory.
     """
     for root, _, files in walk(dir_path):
         for basename in files:

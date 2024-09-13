@@ -69,7 +69,7 @@ def get_stack_spec_file_path(stack_name: str) -> str:
         The path to the stack spec file for the given stack name.
 
     Raises:
-        KeyError: If the stack does not exist.
+        e: If the stack does not exist.
     """
     try:
         stack = Client().get_stack(
