@@ -71,7 +71,7 @@ class MlflowIntegration(Integration):
         from zenml.integrations.numpy import NumpyIntegration
         from zenml.integrations.pandas import PandasIntegration
 
-        reqs = cls.REQUIREMENTS
+        reqs = cls.REQUIREMENTS.copy()
         if sys.version_info.minor >= 12:
             logger.debug(
                 "The MLflow integration on Python 3.12 and above is not yet "
