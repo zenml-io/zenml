@@ -470,6 +470,9 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
             last_retry: Whether this is the last retry of the step.
+
+        Raises:
+            Exception: If the step run information could not be prepared.
         """
         # Prepare step run information.
         step_run_info = StepRunInfo(
@@ -504,11 +507,11 @@ class StepLauncher:
                     output_artifact_uris=output_artifact_uris,
                     last_retry=last_retry,
                 )
-        except:  # noqa: E722
+        except Exception as e:
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())
             )
-            raise
+            raise Exception("Failed to run step") from e
 
         duration = time.time() - start_time
         logger.info(

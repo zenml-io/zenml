@@ -1135,9 +1135,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 ID.
 
         Raises:
-            RuntimeError: If the method is called on an inactive pipeline.
-            RuntimeError: If the invocation was called with an artifact from
-                a different pipeline.
+            RuntimeError: If the method is called on an inactive pipeline or if
+                the invocation was called with an artifact from a different
+                pipeline.
 
         Returns:
             The step invocation ID.
@@ -1189,8 +1189,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         Raises:
             RuntimeError: If no ID suffix is allowed and an invocation for the
-                same ID already exists.
-            RuntimeError: If no unique invocation ID can be found.
+                same ID already exists or if no unique invocation ID can be found.
 
         Returns:
             The invocation ID.

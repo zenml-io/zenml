@@ -128,7 +128,7 @@ def deploy_pipeline(
             will be deleted in case the pipeline deployment failed.
 
     Raises:
-        Exception: Any exception that happened while deploying or running
+        e: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
     stack.prepare_pipeline_deployment(deployment=deployment)

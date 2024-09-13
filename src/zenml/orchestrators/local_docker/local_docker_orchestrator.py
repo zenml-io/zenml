@@ -105,6 +105,9 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The pipeline run object.
+
         Raises:
             RuntimeError: If a step fails.
         """

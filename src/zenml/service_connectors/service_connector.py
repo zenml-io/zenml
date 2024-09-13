@@ -190,7 +190,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         """Initialize a new service connector instance.
 
         Args:
-            kwargs: Additional keyword arguments to pass to the base class
+            **kwargs: Additional keyword arguments to pass to the base class
                 constructor.
         """
         super().__init__(**kwargs)
@@ -259,6 +259,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 for. Only called with resource types that do not support
                 multiple instances.
 
+        Returns:
+            The default resource ID for the resource type.
+
         Raises:
             RuntimeError: If the resource type does not support multiple
                 instances and the connector implementation did not provide a
@@ -290,7 +293,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         be used.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Returns:
@@ -317,7 +320,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         be used.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -354,7 +357,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect a resource type that
                 supports multiple instances.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             A connector instance configured with authentication credentials
@@ -885,7 +888,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 canonical form.
             require_resource_type: Whether the resource type is required.
             require_resource_id: Whether the resource ID is required.
-            kwargs: Additional runtime arguments.
+            **kwargs: Additional runtime arguments.
 
         Returns:
             The validated resource type and resource ID.
@@ -987,7 +990,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         Args:
             verify: Whether to verify that the connector can access the
                 configured resource before connecting to it.
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Returns:
@@ -1048,7 +1051,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 connector implementation may choose to either require or ignore
                 this parameter if it does not support or detect a resource type
                 that supports multiple instances.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             A connector instance configured with authentication credentials
@@ -1115,7 +1118,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         main service connector.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:

@@ -54,6 +54,9 @@ class LocalOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline is deployed.
             environment: Environment variables to set in the orchestration
                 environment.
+
+        Returns:
+            The pipeline run object.
         """
         if deployment.schedule:
             logger.warning(

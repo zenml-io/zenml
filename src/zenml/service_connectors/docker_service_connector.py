@@ -253,7 +253,7 @@ class DockerServiceConnector(ServiceConnector):
         Initialize, authenticate and return a python-docker client.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -274,7 +274,7 @@ class DockerServiceConnector(ServiceConnector):
         """Configure the local Docker client to authenticate to a Docker/OCI registry.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -329,7 +329,11 @@ class DockerServiceConnector(ServiceConnector):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that
                 supports multiple instances.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to
+                use.
+
+        Returns:
+            The auto-configured Docker service connector.
 
         Raises:
             NotImplementedError: If the connector auto-configuration fails or

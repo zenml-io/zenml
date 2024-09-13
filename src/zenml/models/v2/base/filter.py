@@ -416,7 +416,7 @@ class BaseFilter(BaseModel):
         Args:
             authenticated_user_id: ID of the authenticated user. All entities
                 owned by this user will be included.
-            column_allowed_ids: Set of IDs per column to limit the query to.
+            **column_allowed_ids: Set of IDs per column to limit the query to.
                 If given, the remaining filters will be applied to entities
                 within this set only. If `None`, the remaining filters will
                 be applied to all entries in the table.

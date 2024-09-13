@@ -233,9 +233,10 @@ class LocalFilesystem(BaseFilesystem):
             onerror: Callable that gets called if an error occurs.
 
         Yields:
-            Tuples, each containing the path of the current directory,
-            a list of directories inside the current directory, and
-            a list of files inside the current directory.
+            Tuple[PathType, List[PathType], List[PathType]]: A tuple containing:
+                - The path of the current directory (PathType)
+                - A list of directories inside the current directory (List[PathType])
+                - A list of files inside the current directory (List[PathType])
         """
         yield from os.walk(  # type: ignore[type-var, misc]
             top, topdown=topdown, onerror=onerror
