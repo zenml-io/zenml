@@ -92,6 +92,7 @@
         {
           "group": "v1",
           "pages": [
+            "core-code-docs/v1/zenml",
             "core-code-docs/v1/core-hooks",
             "core-code-docs/v1/core-annotators",
             "core-code-docs/v1/core-zen_stores",
