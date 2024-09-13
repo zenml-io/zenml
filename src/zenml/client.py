@@ -4309,7 +4309,7 @@ class Client(metaclass=ClientMetaClass):
             artifact_version: The artifact version to delete.
 
         Raises:
-            Exception: If the artifact store is inaccessible.
+            e: If the artifact store is inaccessible.
         """
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
@@ -5791,7 +5791,7 @@ class Client(metaclass=ClientMetaClass):
                 equivalent to the one requested, a `ValueError` exception is
                 raised. May be omitted for connectors and resource types that do
                 not support multiple resource instances.
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Returns:
