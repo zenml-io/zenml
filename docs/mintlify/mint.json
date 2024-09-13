@@ -86,70 +86,7 @@
         "api-reference/introduction"
       ]
     },
-    {
-      "group": "Core Code Docs",
-      "pages": [
-        {
-          "group": "v1",
-          "pages": [
-            "core-code-docs/v1/zenml",
-            "core-code-docs/v1/core-hooks",
-            "core-code-docs/v1/core-annotators",
-            "core-code-docs/v1/core-zen_stores",
-            "core-code-docs/v1/core-constants",
-            "core-code-docs/v1/core-plugins",
-            "core-code-docs/v1/core-experiment_trackers",
-            "core-code-docs/v1/core-types",
-            "core-code-docs/v1/core-logger",
-            "core-code-docs/v1/core-logging",
-            "core-code-docs/v1/core-entrypoints",
-            "core-code-docs/v1/core-environment",
-            "core-code-docs/v1/core-enums",
-            "core-code-docs/v1/core-lineage_graph",
-            "core-code-docs/v1/core-assistant",
-            "core-code-docs/v1/core-code_repositories",
-            "core-code-docs/v1/core-analytics",
-            "core-code-docs/v1/core-exceptions",
-            "core-code-docs/v1/core-artifacts",
-            "core-code-docs/v1/core-client_lazy_loader",
-            "core-code-docs/v1/core-event_hub",
-            "core-code-docs/v1/core-feature_stores",
-            "core-code-docs/v1/core-new",
-            "core-code-docs/v1/core-model",
-            "core-code-docs/v1/core-io",
-            "core-code-docs/v1/core-utils",
-            "core-code-docs/v1/core-services",
-            "core-code-docs/v1/core-_hub",
-            "core-code-docs/v1/core-metadata",
-            "core-code-docs/v1/core-secret",
-            "core-code-docs/v1/core-console",
-            "core-code-docs/v1/core-api",
-            "core-code-docs/v1/core-service_connectors",
-            "core-code-docs/v1/core-data_validators",
-            "core-code-docs/v1/core-actions",
-            "core-code-docs/v1/core-orchestrators",
-            "core-code-docs/v1/core-steps",
-            "core-code-docs/v1/core-image_builders",
-            "core-code-docs/v1/core-models",
-            "core-code-docs/v1/core-model_registries",
-            "core-code-docs/v1/core-artifact_stores",
-            "core-code-docs/v1/core-post_execution",
-            "core-code-docs/v1/core-alerter",
-            "core-code-docs/v1/core-pipelines",
-            "core-code-docs/v1/core-stack_deployments",
-            "core-code-docs/v1/core-stack",
-            "core-code-docs/v1/core-materializers",
-            "core-code-docs/v1/core-model_deployers",
-            "core-code-docs/v1/core-event_sources",
-            "core-code-docs/v1/core-config",
-            "core-code-docs/v1/core-client",
-            "core-code-docs/v1/core-zen_server",
-            "core-code-docs/v1/core-step_operators",
-            "core-code-docs/v1/core-container_registries"
-          ]
-        }
-      ]
-    },
+    
     {
       "group": "Integration Docs",
       "pages": [
