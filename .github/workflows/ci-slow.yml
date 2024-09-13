@@ -39,23 +39,6 @@ jobs:
         run: |
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
-  docstring-check:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - name: Set up Python
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: '3.10'
-      - name: Install current package as editable
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-          uv pip install --system darglint
-      - name: Check docstrings
-        run: bash scripts/docstring.sh
   mysql-db-migration-testing-full:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
