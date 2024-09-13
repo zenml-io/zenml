@@ -167,7 +167,7 @@ def main() -> None:
     )
     logger.info(output)
     output = main_studio.run(
-        "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+        "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
     )
     logger.info(output)
 
@@ -251,7 +251,7 @@ def main() -> None:
                 )
                 logger.info(output)
                 output = studio.run(
-                    "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+                    "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
                 )
                 logger.info(output)
                 for command in step_settings.custom_commands or []:

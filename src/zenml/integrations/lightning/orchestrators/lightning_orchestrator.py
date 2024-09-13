@@ -103,20 +103,34 @@ class LightningOrchestrator(WheeledOrchestrator):
 
         Args:
             deployment: The pipeline deployment to prepare or run.
+
+        Raises:
+            ValueError: If the user id and api key or username and organization
         """
         settings = cast(
             LightningOrchestratorSettings, self.get_settings(deployment)
         )
-        if settings.user_id:
+        if not settings.user_id or not settings.api_key:
+            raise ValueError(
+                "Lightning orchestrator requires either `user_id` and `api_key` to be set in the settings."
+            )
+        if settings.user_id and settings.api_key:
             os.environ["LIGHTNING_USER_ID"] = settings.user_id
-        if settings.api_key:
             os.environ["LIGHTNING_API_KEY"] = settings.api_key
-        if settings.username:
-            os.environ["LIGHTNING_USERNAME"] = settings.username
-        if settings.teamspace:
-            os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
-        if settings.organization:
-            os.environ["LIGHTNING_ORG"] = settings.organization
+            if settings.username:
+                os.environ["LIGHTNING_USERNAME"] = settings.username
+            elif settings.organization:
+                os.environ["LIGHTNING_ORG"] = settings.organization
+            else:
+                raise ValueError(
+                    "Lightning orchestrator requires either `username` or `organization` to be set in the settings."
+                )
+            if settings.teamspace:
+                os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
+        else:
+            raise ValueError(
+                "Lightning orchestrator requires either `user_id` and `api_key` or `username` or `organization` to be set in the settings."
+            )
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -267,9 +281,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         ) as code_file:
             code_archive.write_archive(code_file)
             code_path = code_file.name
-
         filename = f"{orchestrator_run_name}.tar.gz"
-
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
         orchestrator_run_id = str(uuid4())
@@ -393,7 +405,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             studio.run(f"uv pip install {pipeline_requirements_to_string}")
             studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
             )
 
             for custom_command in settings.custom_commands or []:
@@ -476,6 +488,9 @@ class LightningOrchestrator(WheeledOrchestrator):
                 code_path,
                 remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
             )
+            studio.upload_file(
+                "/var/folders/0_/5_j3kkj525s3yz7tt0y3jb0r0000gn/T/tmphfwgyyzc.tar.gz",
+            )
             studio.run(
                 f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
@@ -489,7 +504,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
             studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
             )
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
@@ -564,7 +579,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio.run("pip install uv")
         studio.run(f"uv pip install {details['requirements']}")
         studio.run(
-            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
         )
         # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
         for command in custom_commands or []:
