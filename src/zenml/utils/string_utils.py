@@ -193,7 +193,7 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
     if isinstance(value, BaseModel):
         model_values = {}
 
-        for k, v in dict(value).items():
+        for k, v in value.__iter__():
             new_value = substitute_(v)
 
             if k not in value.model_fields_set and new_value == getattr(
