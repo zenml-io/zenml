@@ -128,7 +128,7 @@ class ServiceSchema(NamedSchema, table=True):
         Args:
             include_metadata: Whether to include metadata in the response.
             include_resources: Whether to include resources in the response.
-            kwargs: Additional keyword arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The created `ServiceResponse`.

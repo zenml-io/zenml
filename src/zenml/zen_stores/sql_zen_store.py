@@ -5047,7 +5047,7 @@ class SqlZenStore(BaseZenStore):
         # noqa: DAR401
         Raises:
             ValueError: If the request does not contain an orchestrator run ID.
-            EntityExistsError: If a run with the same name already exists.
+            create_error: If a run with the same name already exists.
             RuntimeError: If the run fetching failed unexpectedly.
 
         Returns:
@@ -6119,10 +6119,11 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the primary secrets
                 store to the backup secrets store.
 
-        # noqa: DAR401
         Raises:
             BackupSecretsStoreNotConfiguredError: if no backup secrets store is
                 configured.
+            Exception: if the values could not be backed up to the backup
+                secrets store.
         """
         if not self.backup_secrets_store:
             raise BackupSecretsStoreNotConfiguredError(
@@ -6185,10 +6186,11 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the backup secrets
                 store to the primary secrets store.
 
-        # noqa: DAR401
         Raises:
             BackupSecretsStoreNotConfiguredError: if no backup secrets store is
                 configured.
+            Exception: if the values could not be restored to the primary
+                secret store.
         """
         if not self.backup_secrets_store:
             raise BackupSecretsStoreNotConfiguredError(
@@ -6899,7 +6901,7 @@ class SqlZenStore(BaseZenStore):
         field is left as is.
 
         Args:
-            service_connectors: The service connectors to populate.
+            *service_connectors: The service connectors to populate.
         """
         for service_connector in service_connectors:
             if not service_connector_registry.is_registered(
@@ -9945,7 +9947,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a workspace with the given name already exists.
+            e: If a workspace with the given name already exists.
         """
         if model_version.number is not None:
             raise ValueError(

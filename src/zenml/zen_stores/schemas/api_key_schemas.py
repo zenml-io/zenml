@@ -126,8 +126,6 @@ class APIKeySchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
-            **kwargs: Keyword arguments to filter models.
-
         Returns:
             The created APIKeyResponse.
         """

@@ -166,12 +166,10 @@ def create_secret(
     "list", help="List all registered secrets that match the filter criteria."
 )
 @list_options(SecretFilter)
-@click.pass_context
-def list_secrets(ctx: click.Context, **kwargs: Any) -> None:
-    """List secrets.
+def list_secrets(**kwargs: Any) -> None:
+    """List all secrets that fulfill the filter criteria.
 
     Args:
-        ctx: The click context.
         **kwargs: Keyword arguments to filter the secrets.
     """
     client = Client()
