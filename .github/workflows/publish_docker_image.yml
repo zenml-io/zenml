@@ -17,6 +17,9 @@ jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
