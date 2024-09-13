@@ -73,9 +73,9 @@ install_integrations() {
 
     # TODO: remove after testing this in the CI
     # shows what is installing docstring-parser
-    uv pip install pipdeptree
+    uv pip install $PIP_ARGS pipdeptree
     pipdeptree -r -p docstring-parser
-    uv pip uninstall pipdeptree -y
+    uv pip uninstall $PIP_ARGS pipdeptree -y
 
     # to avoid conflicts with the one installed 
     # by pydoclint (i.e. docstring-parser-fork)
