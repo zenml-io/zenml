@@ -60,7 +60,6 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
-from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
@@ -384,11 +383,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             job = ml_client.jobs.create_or_update(pipeline_job)
             logger.info(f"Pipeline {run_name} has been started.")
 
-            # Publish run metadata if possible
-            self._publish_run_metadata(
-                job=job,
-                placeholder_run=placeholder_run,
-            )
+            metadata = {}
+
+            # URL to the AzureML's pipeline view
+            if orchestrator_url := self._generate_orchestrator_url(job):
+                metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+            yield metadata
 
             assert job.services is not None
             assert job.name is not None
@@ -461,36 +462,3 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 f"There was an issue while extracting the pipeline url: {e}"
             )
             return None
-
-    def _publish_run_metadata(
-        self,
-        job: Any,
-        placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
-        """Publishes run metadata upon pipeline execution.
-
-        Args:
-            job: The generated Job object from Azure
-            placeholder_run: The placeholder run that is generated before
-                pipeline execution
-        """
-        try:
-            # If the placeholder_run is already created, add metadata
-            if placeholder_run is not None:
-                pipeline_metadata = {}
-
-                # URL to the AzureML's pipeline view
-                if orchestrator_url := self._generate_orchestrator_url(job):
-                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
-                        orchestrator_url
-                    )
-
-                if pipeline_metadata:
-                    publish_pipeline_run_metadata(
-                        pipeline_run_id=placeholder_run.id,
-                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
-                    )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue publishing the run metadata: {e}"
-            )

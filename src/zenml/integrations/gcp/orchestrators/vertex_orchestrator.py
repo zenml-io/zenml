@@ -72,7 +72,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
-from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils import yaml_utils
@@ -252,8 +251,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             ):
                 logger.warning(
                     "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property, with optional `start_time` and/or `end_time`. "
-                    "All other properties are ignored."
+                    "`cron_expression` property, with optional `start_time` "
+                    "and/or `end_time`. All other properties are ignored."
                 )
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
@@ -584,7 +583,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         run_name: str,
         settings: VertexOrchestratorSettings,
         schedule: Optional["ScheduleResponse"] = None,
-        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
@@ -595,11 +593,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
             schedule: The schedule the pipeline will run on.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Raises:
-            RuntimeError: If the Vertex Orchestrator fails to provision or any other Runtime errors
+            RuntimeError: If the Vertex Orchestrator fails to provision or any
+                other Runtime errors.
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
@@ -675,10 +672,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     run._dashboard_uri(),
                 )
 
-                # Publish run metadata if possible
-                self._publish_run_metadata(
-                    job=run, placeholder_run=placeholder_run
-                )
+                metadata = {}
+
+                # URL to the Vertex's pipeline view
+                if orchestrator_url := self._generate_orchestrator_url(run):
+                    metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+                # URL to the corresponding Logs Explorer page
+                if logs_url := self._generate_orchestrator_docs_url(run):
+                    metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+
+                yield metadata
 
                 if settings.synchronous:
                     logger.info(
@@ -783,39 +787,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 f"There was an issue while extracting the logs url: {e}"
             )
             return None
-
-    def _publish_run_metadata(
-        self,
-        job: aiplatform.PipelineJob,
-        placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
-        """Publishes run metadata upon pipeline execution."""
-        try:
-            # If the placeholder_run is already created, add metadata
-            if placeholder_run is not None:
-                pipeline_metadata = {}
-
-                # URL to the Vertex's pipeline view
-                if orchestrator_url := self._generate_orchestrator_url(job):
-                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
-                        orchestrator_url
-                    )
-
-                # URL to the corresponding Logs Explorer page
-                if logs_url := self._generate_orchestrator_docs_url(job):
-                    pipeline_metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(
-                        logs_url
-                    )
-
-                if pipeline_metadata:
-                    publish_pipeline_run_metadata(
-                        pipeline_run_id=placeholder_run.id,
-                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
-                    )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue publishing the run metadata: {e}"
-            )
 
     def _configure_container_resources(
         self,

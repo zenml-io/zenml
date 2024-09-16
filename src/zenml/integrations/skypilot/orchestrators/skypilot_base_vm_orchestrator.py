@@ -39,7 +39,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 
@@ -149,7 +149,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs each pipeline step in a separate Skypilot container.
 
@@ -158,8 +157,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             Exception: If the pipeline run fails.

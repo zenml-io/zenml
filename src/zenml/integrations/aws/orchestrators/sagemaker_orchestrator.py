@@ -44,7 +44,6 @@ from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_conf
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
-from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
@@ -376,11 +375,22 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             "when using the Sagemaker Orchestrator."
         )
 
-        # Publish run metadata if possible
-        self._publish_run_metadata(
-            job=pipeline_execution,
-            placeholder_run=placeholder_run,
-        )
+        # Pipeline Metadata
+        metadata = {}
+
+        # URL to the Sagemaker's pipeline view
+        if orchestrator_url := self._generate_orchestrator_url(
+            pipeline_execution
+        ):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+        # URL to the corresponding CloudWatch page
+        if logs_url := self._generate_orchestrator_docs_url(
+            pipeline_execution
+        ):
+            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+
+        yield metadata
 
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
@@ -528,42 +538,3 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 f"There was an issue while extracting the logs url: {e}"
             )
             return None
-
-    def _publish_run_metadata(
-        self,
-        job: Any,
-        placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
-        """Publishes run metadata upon pipeline execution.
-
-        Args:
-            job: The generated Job object from Azure
-            placeholder_run: The placeholder run that is generated before
-                pipeline execution
-        """
-        try:
-            # If the placeholder_run is already created, add metadata
-            if placeholder_run is not None:
-                pipeline_metadata = {}
-
-                # URL to the Sagemaker's pipeline view
-                if orchestrator_url := self._generate_orchestrator_url(job):
-                    pipeline_metadata[METADATA_ORCHESTRATOR_URL] = Uri(
-                        orchestrator_url
-                    )
-
-                # URL to the corresponding CloudWatch page
-                if logs_url := self._generate_orchestrator_docs_url(job):
-                    pipeline_metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(
-                        logs_url
-                    )
-
-                if pipeline_metadata:
-                    publish_pipeline_run_metadata(
-                        pipeline_run_id=placeholder_run.id,
-                        pipeline_run_metadata={self.id: pipeline_metadata},  # type: ignore[dict-item]
-                    )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue publishing the run metadata: {e}"
-            )

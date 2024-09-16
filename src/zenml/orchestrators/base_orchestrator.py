@@ -20,6 +20,7 @@ from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
@@ -124,7 +125,6 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -160,8 +160,6 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Returns:
             The optional return value from this method will be returned by the
@@ -190,16 +188,26 @@ class BaseOrchestrator(StackComponent, ABC):
         environment = get_config_environment_vars(deployment=deployment)
 
         try:
-            result = self.prepare_or_run_pipeline(
+            if result := self.prepare_or_run_pipeline(
                 deployment=deployment,
                 stack=stack,
                 environment=environment,
                 placeholder_run=placeholder_run,
-            )
+            ):
+                for metadata_dict in result:
+                    try:
+                        if placeholder_run:
+                            publish_pipeline_run_metadata(
+                                pipeline_run_id=placeholder_run.id,
+                                pipeline_run_metadata={self.id: metadata_dict},
+                            )
+                    except Exception as e:
+                        logger.debug(
+                            "Something went went wrong trying to publish the"
+                            f"run metadata: {e}"
+                        )
         finally:
             self._cleanup_run()
-
-        return result
 
     def run_step(self, step: "Step") -> None:
         """Runs the given step.
