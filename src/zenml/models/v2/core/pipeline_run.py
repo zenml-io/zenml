@@ -606,6 +606,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the user that created the run.",
     )
+    # TODO: Remove once frontend is ready for it. This is replaced by the more
+    # generic `pipeline` filter below.
+    pipeline_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline associated with the run",
+    )
     pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the pipeline associated with the run.",
@@ -754,6 +760,17 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 ),
             )
             custom_filters.append(model_filter)
+
+        if self.pipeline_name is not None:
+            pipeline_name_filter = and_(
+                PipelineRunSchema.pipeline_id == PipelineSchema.id,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.pipeline_name,
+                    table=PipelineSchema,
+                    column="name",
+                ),
+            )
+            custom_filters.append(pipeline_name_filter)
 
         if self.templatable is not None:
             if self.templatable is True:
