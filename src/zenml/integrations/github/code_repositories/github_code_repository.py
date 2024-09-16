@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import requests
 from github import Github, GithubException
@@ -151,7 +151,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             raise RuntimeError("Invalid repository subdirectory.")
 
         os.makedirs(directory, exist_ok=True)
-
+        tmp_symlinks: List[Tuple[str, str]] = []
         for content in contents:
             local_path = os.path.join(directory, content.name)
             if content.type == "dir":
@@ -160,12 +160,25 @@ class GitHubCodeRepository(BaseCodeRepository):
                     directory=local_path,
                     repo_sub_directory=content.path,
                 )
+            elif content.type == "symlink":
+                symlink_content = self.github_repo.get_contents(
+                    content.path, ref=commit
+                )
+                symlink_target = symlink_content.raw_data["target"]
+                tmp_symlinks.append((local_path, symlink_target))
+                # As it cannot be assumed at this point that the targets of the
+                # symlink already exist, the symlinks are first collected here and processed later.
             else:
                 try:
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
+        for symlink in tmp_symlinks:
+            symlink_source, symlink_target = symlink
+            create_symlink_in_local_repo_copy(
+                symlink_source=symlink_source, symlink_target=symlink_target
+            )
 
     def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
         """Gets the local repository context.
@@ -202,3 +215,55 @@ class GitHubCodeRepository(BaseCodeRepository):
             return True
 
         return False
+
+
+def create_symlink_in_local_repo_copy(
+    symlink_source: str, symlink_target: str
+) -> None:
+    """This function attempts to create a symbolic link at `local_path` that points to `symlink_target`.
+
+    If a file or directory already exists at `local_path`, it will
+    be removed before the symbolic link is created.
+
+    Args:
+        symlink_source: The path where the symbolic link should be created.
+        symlink_target: The path that the symbolic link should point to.
+
+    Raises:
+        FileNotFoundError: Informs that the target directory specified by
+            `symlink_target` does not exist.
+        PermissionError: Informs that there are insufficient permissions to
+            create the symbolic link.
+        NotImplementedError: Informs that symbolic links are not supported on
+            the current operating system.
+        OSError: Any other OS-related errors that occur.
+    """
+    try:
+        if os.path.exists(symlink_source):
+            if os.path.isdir(symlink_source):
+                os.rmdir(symlink_source)
+            else:
+                os.remove(
+                    symlink_source,
+                )
+        os.symlink(symlink_target, symlink_source)
+    except FileNotFoundError:
+        logger.warning(
+            "The target directory of the symbolic link '%s' does not exist. "
+            "The creation of the symbolic link is skipped.",
+            symlink_target,
+        )
+    except PermissionError:
+        logger.warning(
+            "You do not have the necessary permissions to create the symbolic link. "
+            "The creation of the symbolic link '%s' is skipped.",
+            symlink_source,
+        )
+    except NotImplementedError:
+        logger.warning(
+            "Symbolic links are not supported on this operating system. "
+            "The creation of the symbolic link '%s' is skipped.",
+            symlink_source,
+        )
+    except OSError as e:
+        logger.warning("An OS error occurred: %s", e)
