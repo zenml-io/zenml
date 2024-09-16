@@ -49,7 +49,6 @@ from google.cloud import aiplatform
 from kfp import dsl
 from kfp.compiler import Compiler
 
-from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
@@ -466,29 +465,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     step_settings = cast(
                         VertexOrchestratorSettings, self.get_settings(step)
                     )
-                    pod_settings = step_settings.pod_settings
-
-                    node_selector_constraint: Optional[Tuple[str, str]] = None
-                    if pod_settings and (
-                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                        in pod_settings.node_selectors.keys()
-                    ):
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            pod_settings.node_selectors[
-                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                            ],
-                        )
-                    elif step_settings.node_selector_constraint:
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            step_settings.node_selector_constraint[1],
-                        )
-
                     self._configure_container_resources(
-                        dynamic_component=task,
-                        resource_settings=step.config.resource_settings,
-                        node_selector_constraint=node_selector_constraint,
+                        dynamic_component=task, settings=step_settings
                     )
 
             return dynamic_pipeline
@@ -721,32 +699,24 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     def _configure_container_resources(
         self,
         dynamic_component: dsl.PipelineTask,
-        resource_settings: "ResourceSettings",
-        node_selector_constraint: Optional[Tuple[str, str]] = None,
+        settings: "VertexOrchestratorSettings",
     ) -> dsl.PipelineTask:
         """Adds resource requirements to the container.
 
         Args:
             dynamic_component: The dynamic component to add the resource
                 settings to.
-            resource_settings: The resource settings to use for this
-                container.
-            node_selector_constraint: Node selector constraint to apply to
-                the container.
+            settings: The settings to apply.
 
         Returns:
-            The dynamic component with the resource settings applied.
+            The dynamic component with the settings applied.
         """
-        # Set optional CPU, RAM and GPU constraints for the pipeline
-        if resource_settings:
-            cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
-
-        if cpu_limit is not None:
+        if cpu_limit := settings.cpu_count or self.config.cpu_limit:
             dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
-            resource_settings.memory[:-1]
-            if resource_settings.memory
+            settings.memory[:-1]
+            if settings.memory
             else self.config.memory_limit
         )
         if memory_limit is not None:
@@ -755,16 +725,28 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             )
 
         gpu_limit = (
-            resource_settings.gpu_count
-            if resource_settings.gpu_count is not None
+            settings.accelerator_count
+            if settings.accelerator_count is not None
             else self.config.gpu_limit
         )
 
-        if node_selector_constraint:
-            _, value = node_selector_constraint
+        accelerator = None
+        if acc := settings.get_converted_accelerator():
+            accelerator = acc
+        elif settings.pod_settings and (
+            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+            in settings.pod_settings.node_selectors
+        ):
+            accelerator = settings.pod_settings.node_selectors[
+                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+            ]
+        elif settings.node_selector_constraint:
+            accelerator = settings.node_selector_constraint[1]
+
+        if accelerator:
             if gpu_limit is not None and gpu_limit > 0:
                 dynamic_component = (
-                    dynamic_component.set_accelerator_type(value)
+                    dynamic_component.set_accelerator_type(accelerator)
                     .set_accelerator_limit(gpu_limit)
                     .set_gpu_limit(gpu_limit)
                 )
@@ -773,8 +755,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     "Accelerator type %s specified, but the GPU limit is not "
                     "set or set to 0. The accelerator type will be ignored. "
                     "To fix this warning, either remove the specified "
-                    "accelerator type or set the `gpu_count` using the "
-                    "ResourceSettings (https://docs.zenml.io/how-to/training-with-gpus#specify-resource-requirements-for-steps)."
+                    "accelerator type or set the `accelerator_count` using the "
+                    "ResourceSettings (https://docs.zenml.io/how-to/training-with-gpus#specify-resource-requirements-for-steps).",
+                    accelerator,
                 )
 
         return dynamic_component
