@@ -598,10 +598,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
              the Execution ID of the run in SageMaker.
         """
         try:
-            _, _, execution_id = dissect_pipeline_execution_arn(
-                pipeline_execution.arn
-            )
-            return execution_id
+            return pipeline_execution.arn
 
         except Exception as e:
             logger.warning(
