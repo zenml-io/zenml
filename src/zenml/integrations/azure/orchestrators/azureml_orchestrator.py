@@ -69,7 +69,7 @@ from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -203,7 +203,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
 
@@ -212,8 +211,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If the creation of the schedule fails.

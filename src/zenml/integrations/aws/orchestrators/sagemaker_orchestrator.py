@@ -59,7 +59,7 @@ from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
@@ -180,7 +180,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -189,8 +188,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Raises:
             RuntimeError: If a connector is used that does not return a
