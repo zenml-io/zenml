@@ -18,8 +18,8 @@ from typing import Optional, Union
 
 from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
 
-from zenml.enums import AcceleratorType, InstanceType
 from zenml.config.base_settings import BaseSettings
+from zenml.enums import AcceleratorType
 from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 
@@ -79,13 +79,13 @@ class ResourceSettings(BaseSettings):
         union_mode="left_to_right", default=None
     )
     accelerator_count: Optional[NonNegativeInt] = None
-    instance_type: Optional[Union[InstanceType, str]] = Field(
-        union_mode="left_to_right", default=None
-    )
+    instance_type: Optional[str] = None
 
     # DEPRECATED
     gpu_count: Optional[NonNegativeInt] = None
-    _deprecation_validator = deprecate_pydantic_attributes(("gpu_count", "accelerator_count"))
+    _deprecation_validator = deprecate_pydantic_attributes(
+        ("gpu_count", "accelerator_count")
+    )
 
     @property
     def empty(self) -> bool:

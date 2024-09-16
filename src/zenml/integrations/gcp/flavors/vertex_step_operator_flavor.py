@@ -14,11 +14,13 @@
 """Vertex step operator flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type, Union
-from zenml.enums import AcceleratorType, InstanceType
-from pydantic import NonNegativeInt, Field
+
+from pydantic import Field, NonNegativeInt
+
 from zenml.config.stack_component_resource_settings import (
     StackComponentResourceSettings,
 )
+from zenml.enums import AcceleratorType
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_STEP_OPERATOR_FLAVOR,
@@ -56,15 +58,49 @@ class VertexStepOperatorResourceSettings(StackComponentResourceSettings):
         boot_disk_type: Type of the boot disk. (Default: pd-ssd)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
     """
+
     accelerator: Optional[Union[AcceleratorType, str]] = Field(
         union_mode="left_to_right", default=None
     )
     accelerator_count: Optional[NonNegativeInt] = None
-    instance_type: Optional[Union[InstanceType, str]] = Field(
-        union_mode="left_to_right", default="n1-standard-4"
-    )
+    instance_type: Optional[str] = "n1-standard-4"
     boot_disk_size_gb: int = 100
     boot_disk_type: str = "pd-ssd"
+
+    def get_converted_accelerator(self) -> Optional[str]:
+        """Get the converted accelerator type.
+
+        Raises:
+            ValueError: If an unsupported accelerator type was provided.
+
+        Returns:
+            The converted accelerator type.
+        """
+        if not isinstance(self.accelerator, AcceleratorType):
+            return self.accelerator
+
+        accelerator_mapping = {
+            AcceleratorType.A100: "NVIDIA_TESLA_A100",
+            AcceleratorType.A100_80GB: "NVIDIA_A100_80GB",
+            AcceleratorType.H100_80GB: "NVIDIA_H100_80GB",
+            AcceleratorType.P4: "NVIDIA_TESLA_P4",
+            AcceleratorType.P100: "NVIDIA_TESLA_P100",
+            AcceleratorType.V100: "NVIDIA_TESLA_V100",
+            AcceleratorType.L4: "NVIDIA_L4",
+            AcceleratorType.T4: "NVIDIA_TESLA_T4",
+        }
+
+        if converted_value := accelerator_mapping.get(self.accelerator):
+            return converted_value
+        else:
+            raise ValueError(
+                "Unsupported accelerator type for Vertex step operator: "
+                f"{self.accelerator}. If you think this is a mistake and the "
+                "accelerator is supported, please contact the ZenML team. "
+                "To solve this issue in the meantime, you can always provide a "
+                "raw string value for the accelerator that gets directly "
+                "passed to Vertex."
+            )
 
 
 class VertexStepOperatorSettings(VertexStepOperatorResourceSettings):

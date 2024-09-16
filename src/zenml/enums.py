@@ -414,8 +414,6 @@ class StackDeploymentProvider(StrEnum):
     AZURE = "azure"
 
 
-
-
 class AcceleratorType(StrEnum):
     # Vertex
     K80 = "K80"
@@ -431,7 +429,3 @@ class AcceleratorType(StrEnum):
     TPU_V3 = "TPU_V3"
     TPU_V4_POD = "TPU_V4_POD"
     TPU_V5_LITEPOD = "TPU_V5_LITEPOD"
-
-
-# Or MachineType?
-class InstanceType(StrEnum): ...

@@ -189,7 +189,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             RuntimeError: If the run fails.
         """
         settings = cast(VertexStepOperatorSettings, self.get_settings(info))
-        validate_accelerator_type(settings.accelerator)
+        accelerator = settings.get_converted_accelerator()
+        validate_accelerator_type(accelerator)
 
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
@@ -217,9 +218,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                     {
                         "machine_spec": {
                             "machine_type": settings.instance_type,
-                            "accelerator_type": settings.accelerator,
+                            "accelerator_type": accelerator,
                             "accelerator_count": settings.accelerator_count
-                            if settings.accelerator
+                            if accelerator
                             else 0,
                         },
                         "replica_count": 1,

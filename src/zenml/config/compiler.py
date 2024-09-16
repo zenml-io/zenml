@@ -659,6 +659,9 @@ class Compiler:
         ]
 
         if ignored_keys:
+            # TODO: should this be a warning at runtime as well, to get more
+            # awareness? And also to catch the case when users run from the
+            # dashboard
             logger.warning(
                 "Ignoring the following resource settings for step `%s` "
                 "because your active %s does not support them: %s",
@@ -666,6 +669,7 @@ class Compiler:
                 "step operator" if step_operator else "orchestrator",
                 ignored_keys,
             )
+
 
 def convert_component_shortcut_settings_keys(
     settings: Dict[str, "BaseSettings"], stack: "Stack"
