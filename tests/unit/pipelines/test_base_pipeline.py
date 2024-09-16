@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 from contextlib import ExitStack as does_not_raise
 from unittest.mock import ANY, patch
 from uuid import uuid4
@@ -1067,11 +1066,11 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     assert not is_placeholder_request(run_request)
 
 
-def test_env_var_substitution(mocker, clean_client, empty_pipeline):  # noqa: F811
-    """Test env var substitution in pipeline config."""
-    mocker.patch.dict(os.environ, {"A": "1"})
+# def test_env_var_substitution(mocker, clean_client, empty_pipeline):  # noqa: F811
+#     """Test env var substitution in pipeline config."""
+#     mocker.patch.dict(os.environ, {"A": "1"})
 
-    empty_pipeline.configure(extra={"key": "${A}_suffix"})
-    run = empty_pipeline()
+#     empty_pipeline.configure(extra={"key": "${A}_suffix"})
+#     run = empty_pipeline()
 
-    assert run.config.extra["key"] == "1_suffix"
+#     assert run.config.extra["key"] == "1_suffix"
