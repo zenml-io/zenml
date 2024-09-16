@@ -3770,6 +3770,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
+        templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
@@ -3805,6 +3806,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
+            templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             user: The name/ID of the user to filter by.
             pipeline: The name/ID of the pipeline to filter by.
@@ -3848,6 +3850,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository=code_repository,
             stack=stack,
             model=model,
+            templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(

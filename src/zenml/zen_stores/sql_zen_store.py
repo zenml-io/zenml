@@ -975,6 +975,7 @@ class SqlZenStore(BaseZenStore):
         """
         query = query.distinct()
         query = filter_model.apply_filter(query=query, table=table)
+        query = query.distinct()
 
         # Get the total amount of items in the database for a given query
         custom_fetch_result: Optional[Sequence[Any]] = None
@@ -7219,6 +7220,8 @@ class SqlZenStore(BaseZenStore):
         )
 
     # ----------------------------- Stacks -----------------------------
+
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequest) -> StackResponse:
         """Register a full stack.
 
