@@ -974,6 +974,7 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
+        query = query.distinct()
 
         # Get the total amount of items in the database for a given query
         custom_fetch_result: Optional[Sequence[Any]] = None

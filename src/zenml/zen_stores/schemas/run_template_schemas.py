@@ -177,6 +177,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         if (
             self.source_deployment
             and self.source_deployment.build
+            and not self.source_deployment.build.is_local
             and self.source_deployment.build.stack
         ):
             runnable = True
