@@ -181,7 +181,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on Sagemaker.
 
         Args:
@@ -499,14 +499,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def generate_metadata(
         self, execution: Any
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
             execution: The corresponding _PipelineExecution object.
         """
         # Metadata
-        metadata = dict()
+        metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
         if run_id := self._generate_orchestrator_run_id(execution):
@@ -589,7 +589,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _generate_orchestrator_run_id(pipeline_execution: Any) -> Optional[str]:
+    def _generate_orchestrator_run_id(
+        pipeline_execution: Any,
+    ) -> Optional[str]:
         """Fetch the Orchestrator Run ID upon pipeline execution.
 
         Args:

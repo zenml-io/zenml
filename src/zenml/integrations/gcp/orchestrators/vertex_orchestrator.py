@@ -309,7 +309,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Creates a KFP JSON pipeline.
 
         # noqa: DAR402
@@ -580,7 +580,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         run_name: str,
         settings: VertexOrchestratorSettings,
         schedule: Optional["ScheduleResponse"] = None,
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
         Args:
@@ -793,14 +793,14 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def generate_metadata(
         self, job: aiplatform.PipelineJob
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the corresponding Vertex PipelineJob.
 
         Args:
             job: The corresponding PipelineJob object.
         """
         # Metadata
-        metadata = dict()
+        metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
         if run_id := self._generate_orchestrator_run_id(job):
@@ -864,7 +864,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             return None
 
     @staticmethod
-    def _generate_orchestrator_run_id(job: aiplatform.PipelineJob) -> Optional[str]:
+    def _generate_orchestrator_run_id(
+        job: aiplatform.PipelineJob,
+    ) -> Optional[str]:
         """Fetch the Orchestrator Run ID upon pipeline execution.
 
         Args:
@@ -874,7 +876,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             the Execution ID of the run in Vertex.
         """
         try:
-            return job.job_id
+            if job.job_id:
+                return str(job.job_id)
+
+            return None
         except Exception as e:
             logger.warning(
                 f"There was an issue while extracting the pipeline run ID: {e}"

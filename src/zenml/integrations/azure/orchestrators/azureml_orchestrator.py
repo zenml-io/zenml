@@ -204,7 +204,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
 
         Args:
@@ -440,16 +440,14 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             )
             return {}
 
-    def generate_metadata(
-        self, job: Any
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    def generate_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated AzureML PipelineJob.
 
         Args:
             job: The corresponding PipelineJob object.
         """
         # Metadata
-        metadata = dict()
+        metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
         if run_id := self._generate_orchestrator_run_id(job):
@@ -495,7 +493,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         """
         try:
             if job.name:
-                return job.name
+                return str(job.name)
 
             return None
 
