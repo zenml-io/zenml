@@ -273,6 +273,7 @@ class DockerServiceConnector(ServiceConnector):
         # but the best we can do without modifying the docker library.
         self._configure_local_client()
         docker_client = docker_utils._try_get_docker_client_from_env()
+        self._authorize_client(docker_client, self.resource_id)
 
         return docker_client
 
