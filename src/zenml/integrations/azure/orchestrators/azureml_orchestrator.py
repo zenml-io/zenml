@@ -47,7 +47,10 @@ from azure.identity import DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.step_configurations import Step
-from zenml.constants import METADATA_ORCHESTRATOR_URL
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_RUN_ID,
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.enums import StackComponentType
 from zenml.integrations.azure.azureml_utils import create_or_get_compute
 from zenml.integrations.azure.flavors.azureml import AzureMLComputeTypes
@@ -384,13 +387,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             job = ml_client.jobs.create_or_update(pipeline_job)
             logger.info(f"Pipeline {run_name} has been started.")
 
-            metadata = {}
-
-            # URL to the AzureML's pipeline view
-            if orchestrator_url := self._generate_orchestrator_url(job):
-                metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
-
-            yield metadata
+            # Yield metadata based on the generated job object
+            yield from self.generate_metadata(job)
 
             assert job.services is not None
             assert job.name is not None
@@ -442,12 +440,33 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             )
             return {}
 
+    def generate_metadata(
+        self, job: Any
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+        """Generate run metadata based on the generated AzureML PipelineJob.
+
+        Args:
+            job: The corresponding PipelineJob object.
+        """
+        # Metadata
+        metadata = dict()
+
+        # Orchestrator Run ID
+        if run_id := self._generate_orchestrator_run_id(job):
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+
+        # URL to the AzureML's pipeline view
+        if orchestrator_url := self._generate_orchestrator_url(job):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+        yield metadata
+
     @staticmethod
     def _generate_orchestrator_url(job: Any) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
-            job: The corresponding _PipelineExecution object.
+            job: The corresponding PipelineJob object.
 
         Returns:
              the URL to the dashboard view in AzureML.
@@ -461,5 +480,27 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         except Exception as e:
             logger.warning(
                 f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    @staticmethod
+    def _generate_orchestrator_run_id(job: Any) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+             the URL to the dashboard view in AzureML.
+        """
+        try:
+            if job.name:
+                return job.name
+
+            return None
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline run ID: {e}"
             )
             return None

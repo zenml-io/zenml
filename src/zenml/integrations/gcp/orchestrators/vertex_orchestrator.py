@@ -54,6 +54,7 @@ from kfp.compiler import Compiler
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
+    METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -668,17 +669,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     run._dashboard_uri(),
                 )
 
-                metadata = {}
-
-                # URL to the Vertex's pipeline view
-                if orchestrator_url := self._generate_orchestrator_url(run):
-                    metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
-
-                # URL to the corresponding Logs Explorer page
-                if logs_url := self._generate_orchestrator_docs_url(run):
-                    metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
-
-                yield metadata
+                # Yield metadata based on the generated job object
+                yield from self.generate_metadata(run)
 
                 if settings.synchronous:
                     logger.info(
@@ -736,53 +728,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }
-
-    @staticmethod
-    def _generate_orchestrator_url(
-        job: aiplatform.PipelineJob,
-    ) -> Optional[str]:
-        """Generate the Orchestrator Dashboard URL upon pipeline execution.
-
-        Args:
-            job: The corresponding PipelineJob object.
-
-        Returns:
-             the URL to the dashboard view in Vertex.
-        """
-        try:
-            return str(job._dashboard_uri())
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the pipeline url: {e}"
-            )
-            return None
-
-    @staticmethod
-    def _generate_orchestrator_docs_url(
-        job: aiplatform.PipelineJob,
-    ) -> Optional[str]:
-        """Generate the Logs Explorer URL upon pipeline execution.
-
-        Args:
-            job: The corresponding PipelineJob object.
-
-        Returns:
-            the URL querying the pipeline logs in Logs Explorer on GCP.
-        """
-        try:
-            base_url = "https://console.cloud.google.com/logs/query"
-            query = f"""
-            resource.type="aiplatform.googleapis.com/PipelineJob"
-            resource.labels.pipeline_job_id="{job.job_id}"
-            """
-            encoded_query = urllib.parse.quote(query)
-            return f"{base_url}?project={job.project}&query={encoded_query}"
-
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the logs url: {e}"
-            )
-            return None
 
     def _configure_container_resources(
         self,
@@ -845,3 +790,93 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
 
         return dynamic_component
+
+    def generate_metadata(
+        self, job: aiplatform.PipelineJob
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+        """Generate run metadata based on the corresponding Vertex PipelineJob.
+
+        Args:
+            job: The corresponding PipelineJob object.
+        """
+        # Metadata
+        metadata = dict()
+
+        # Orchestrator Run ID
+        if run_id := self._generate_orchestrator_run_id(job):
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+
+        # URL to the Vertex's pipeline view
+        if orchestrator_url := self._generate_orchestrator_url(job):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+        # URL to the corresponding Logs Explorer page
+        if logs_url := self._generate_orchestrator_logs_url(job):
+            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+
+        yield metadata
+
+    @staticmethod
+    def _generate_orchestrator_url(
+        job: aiplatform.PipelineJob,
+    ) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+             the URL to the dashboard view in Vertex.
+        """
+        try:
+            return str(job._dashboard_uri())
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    @staticmethod
+    def _generate_orchestrator_logs_url(
+        job: aiplatform.PipelineJob,
+    ) -> Optional[str]:
+        """Generate the Logs Explorer URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+            the URL querying the pipeline logs in Logs Explorer on GCP.
+        """
+        try:
+            base_url = "https://console.cloud.google.com/logs/query"
+            query = f"""
+             resource.type="aiplatform.googleapis.com/PipelineJob"
+             resource.labels.pipeline_job_id="{job.job_id}"
+             """
+            encoded_query = urllib.parse.quote(query)
+            return f"{base_url}?project={job.project}&query={encoded_query}"
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the logs url: {e}"
+            )
+            return None
+
+    @staticmethod
+    def _generate_orchestrator_run_id(job: aiplatform.PipelineJob) -> Optional[str]:
+        """Fetch the Orchestrator Run ID upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+            the Execution ID of the run in Vertex.
+        """
+        try:
+            return job.job_id
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline run ID: {e}"
+            )
+            return None

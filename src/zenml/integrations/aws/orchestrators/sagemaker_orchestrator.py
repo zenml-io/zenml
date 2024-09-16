@@ -39,6 +39,7 @@ from sagemaker.workflow.steps import ProcessingStep
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
+    METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.enums import StackComponentType
@@ -66,6 +67,34 @@ MAX_POLLING_ATTEMPTS = 100
 POLLING_DELAY = 30
 
 logger = get_logger(__name__)
+
+
+def dissect_pipeline_execution_arn(
+    pipeline_execution_arn: str,
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Extract region name, pipeline name, and execution id from the ARN.
+
+    Args:
+        pipeline_execution_arn: the pipeline execution ARN
+
+    Returns:
+        Region Name, Pipeline Name, Execution ID in order
+    """
+    # Extract region_name
+    region_match = re.search(r"sagemaker:(.*?):", pipeline_execution_arn)
+    region_name = region_match.group(1) if region_match else None
+
+    # Extract pipeline_name
+    pipeline_match = re.search(
+        r"pipeline/(.*?)/execution", pipeline_execution_arn
+    )
+    pipeline_name = pipeline_match.group(1) if pipeline_match else None
+
+    # Extract execution_id
+    execution_match = re.search(r"execution/(.*)", pipeline_execution_arn)
+    execution_id = execution_match.group(1) if execution_match else None
+
+    return region_name, pipeline_name, execution_id
 
 
 class SagemakerOrchestrator(ContainerizedOrchestrator):
@@ -378,28 +407,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         pipeline.create(role_arn=self.config.execution_role)
-        pipeline_execution = pipeline.start()
+        execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
             "when using the Sagemaker Orchestrator."
         )
 
-        # Pipeline Metadata
-        metadata = {}
-
-        # URL to the Sagemaker's pipeline view
-        if orchestrator_url := self._generate_orchestrator_url(
-            pipeline_execution
-        ):
-            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
-
-        # URL to the corresponding CloudWatch page
-        if logs_url := self._generate_orchestrator_docs_url(
-            pipeline_execution
-        ):
-            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
-
-        yield metadata
+        # Yield metadata based on the generated execution object
+        yield from self.generate_metadata(execution=execution)
 
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
@@ -409,7 +424,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "execution."
             )
             try:
-                pipeline_execution.wait(
+                execution.wait(
                     delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
                 )
                 logger.info("Pipeline completed successfully.")
@@ -482,8 +497,33 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         return region_name, pipeline_name, execution_id
 
+    def generate_metadata(
+        self, execution: Any
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+        """Generate run metadata based on the generated Sagemaker Execution.
+
+        Args:
+            execution: The corresponding _PipelineExecution object.
+        """
+        # Metadata
+        metadata = dict()
+
+        # Orchestrator Run ID
+        if run_id := self._generate_orchestrator_run_id(execution):
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+
+        # URL to the Sagemaker's pipeline view
+        if orchestrator_url := self._generate_orchestrator_url(execution):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+        # URL to the corresponding CloudWatch page
+        if logs_url := self._generate_orchestrator_logs_url(execution):
+            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+
+        yield metadata
+
+    @staticmethod
     def _generate_orchestrator_url(
-        self,
         pipeline_execution: Any,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
@@ -496,7 +536,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         try:
             region_name, pipeline_name, execution_id = (
-                self._dissect_pipeline_execution_arn(pipeline_execution.arn)
+                dissect_pipeline_execution_arn(pipeline_execution.arn)
             )
 
             # Get the Sagemaker session
@@ -519,21 +559,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             return None
 
-    def _generate_orchestrator_docs_url(
-        self,
+    @staticmethod
+    def _generate_orchestrator_logs_url(
         pipeline_execution: Any,
     ) -> Optional[str]:
-        """Generate the Logs Explorer URL upon pipeline execution.
+        """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding PipelineJob object.
+            pipeline_execution: The corresponding _PipelineExecution object.
 
         Returns:
-            the URL querying the pipeline logs in Logs Explorer on GCP.
+            the URL querying the pipeline logs in CloudWatch on AWS.
         """
         try:
-            region_name, _, execution_id = (
-                self._dissect_pipeline_execution_arn(pipeline_execution.arn)
+            region_name, _, execution_id = dissect_pipeline_execution_arn(
+                pipeline_execution.arn
             )
 
             return (
@@ -546,4 +586,27 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             logger.warning(
                 f"There was an issue while extracting the logs url: {e}"
             )
+            return None
+
+    @staticmethod
+    def _generate_orchestrator_run_id(pipeline_execution: Any) -> Optional[str]:
+        """Fetch the Orchestrator Run ID upon pipeline execution.
+
+        Args:
+            pipeline_execution: The corresponding _PipelineExecution object.
+
+        Returns:
+             the Execution ID of the run in SageMaker.
+        """
+        try:
+            _, _, execution_id = dissect_pipeline_execution_arn(
+                pipeline_execution.arn
+            )
+            return execution_id
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline run ID: {e}"
+            )
+
             return None
