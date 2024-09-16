@@ -37,6 +37,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -81,7 +82,6 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import (
         PipelineDeploymentResponse,
-        PipelineRunResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack
@@ -308,8 +308,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """Creates a KFP JSON pipeline.
 
         # noqa: DAR402
@@ -342,11 +341,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
 
         Raises:
-            ValueError: If the attribute `pipeline_root` is not set and it
+            ValueError: If the attribute `pipeline_root` is not set, and it
                 can be not generated using the path of the artifact store in the
                 stack because it is not a
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
@@ -565,16 +562,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         )
 
         # Using the Google Cloud AIPlatform client, upload and execute the
-        # pipeline
-        # on the Vertex AI Pipelines service.
-        self._upload_and_run_pipeline(
+        # pipeline on the Vertex AI Pipelines service.
+        if metadata := self._upload_and_run_pipeline(
             pipeline_name=deployment.pipeline_configuration.name,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
             settings=settings,
             schedule=deployment.schedule,
-            placeholder_run=placeholder_run,
-        )
+        ):
+            yield from metadata
 
     def _upload_and_run_pipeline(
         self,
@@ -583,7 +579,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         run_name: str,
         settings: VertexOrchestratorSettings,
         schedule: Optional["ScheduleResponse"] = None,
-    ) -> None:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
         Args:

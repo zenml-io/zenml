@@ -15,7 +15,16 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 import boto3
@@ -143,7 +152,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """Prepares or runs a pipeline on Sagemaker.
 
         Args:

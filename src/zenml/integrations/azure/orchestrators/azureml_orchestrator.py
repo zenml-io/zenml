@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -200,7 +201,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """Prepares or runs a pipeline on AzureML.
 
         Args:

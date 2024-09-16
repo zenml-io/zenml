@@ -14,12 +14,13 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
 
 from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -125,7 +126,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-    ) -> Any:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """The method needs to be implemented by the respective orchestrator.
 
         Depending on the type of orchestrator you'll have to perform slightly
@@ -192,7 +193,6 @@ class BaseOrchestrator(StackComponent, ABC):
                 deployment=deployment,
                 stack=stack,
                 environment=environment,
-                placeholder_run=placeholder_run,
             ):
                 for metadata_dict in result:
                     try:
