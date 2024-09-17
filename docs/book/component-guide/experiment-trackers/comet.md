@@ -62,10 +62,10 @@ zenml experiment-tracker register comet_tracker \
     --project_name={{comet_secret.project_name}} \
     --api_key={{comet_secret.api_key}}
     ...
-```
 
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e comet_experiment_tracker ... --set
+```
 
 {% hint style="info" %}
 Read more about [ZenML Secrets](../../getting-started/deploying-zenml/secret-management.md) in the ZenML documentation.
