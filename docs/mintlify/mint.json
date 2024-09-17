@@ -250,9 +250,9 @@
       ]
     },
     {
-      "group": "Common Questions Answered",
+      "group": "🔍 Common Questions Answered",
       "pages": [
-        "using-zenml/common-questions-answered/index"
+        "using-zenml/common-questions-answered/FAQ"
       ]
     },
     {
