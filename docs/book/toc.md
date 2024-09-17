@@ -184,7 +184,9 @@
 * [🔌 Connect to a server](how-to/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
-* [🔐 Interact with secrets](how-to/interact-with-secrets.md)
+* [🔐 Interact with secrets](how-to/interact-with-secrets/README.md)
+  * [Configure secrets storage](how-to/interact-with-secrets/configure-secrets-storage.md)
+  * [Use a custom secret store](how-to/interact-with-secrets/use-a-custom-secret-store.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
 
 ## Stack Components
