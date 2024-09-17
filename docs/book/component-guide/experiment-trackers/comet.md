@@ -6,7 +6,7 @@ description: Logging and visualizing experiments with Comet.
 
 The Comet Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
-<figure><img src="../../.gitbook/assets/comet_pipeline.png" alt=""><figcaption><p>A pipeline with a comet experiment tracker url as metadata</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/comet_pipeline.png" alt=""><figcaption><p>A pipeline with a Comet experiment tracker url as metadata</p></figcaption></figure>
 
 ### When would you want to use it?
 
@@ -91,9 +91,9 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 
 {% endtabs %}
 
-<figure><img src="../../.gitbook/assets/comet_stack.png" alt=""><figcaption><p>A stack with the comet experiment tracker</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/comet_stack.png" alt=""><figcaption><p>A stack with the Comet experiment tracker</p></figcaption></figure>
 
-For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerConfig).
+For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs for our Comet integration](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerConfig).
 
 ### How do you use it?
 
@@ -149,7 +149,7 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-<figure><img src="../../.gitbook/assets/comet_pipeline.png" alt=""><figcaption><p>A pipeline with a comet experiment tracker url as metadata</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/comet_pipeline.png" alt=""><figcaption><p>A pipeline with a Comet experiment tracker url as metadata</p></figcaption></figure>
 
 Alternatively, you can see an overview of all experiments at `https://www.comet.com/{WORKSPACE_NAME}/{PROJECT_NAME}/experiments/`.
 
