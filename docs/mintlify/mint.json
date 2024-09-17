@@ -35,6 +35,14 @@
       "url": "stack-components"
     },
     {
+      "name": "Guides",
+      "url": "user-guide"
+    },
+    {
+      "name": "Deploying ZenML",
+      "url": "deploying-zenml"
+    },
+    {
       "name": "Code Docs",
       "url": "code-docs"
     },
@@ -77,9 +85,18 @@
     {
       "group": "📚 User Guide",
       "pages": [
-        "user-guide/starter-guide",
-        "user-guide/production-guide",
-        "user-guide/llmops-guide"
+        "user-guide/guides/starter-guide",
+        "user-guide/guides/production-guide",
+        "user-guide/guides/llmops-guide"
+      ]
+    },
+    {
+      "group": "🧑‍💻 Examples",
+      "pages": [
+        "user-guide/examples/quickstart",
+        "user-guide/examples/basic-nlp",
+        "user-guide/examples/e2e-batch",
+        "user-guide/examples/llm-finetuning"
       ]
     },
     {
@@ -230,6 +247,18 @@
       "group": "🧩 Stacks",
       "pages": [
         "stack-components/introduction"
+      ]
+    },
+    {
+      "group": "Deploying ZenML",
+      "pages": [
+        "deploying-zenml/introduction"
+      ]
+    },
+    {
+      "group": "Common Questions Answered",
+      "pages": [
+        "deploying-zenml/common-questions-answered"
       ]
     },
     {

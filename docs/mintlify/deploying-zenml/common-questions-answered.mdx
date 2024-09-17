@@ -1,0 +1,15 @@
+### How do I deploy ZenML on my internal company cluster?
+
+Read the documentation on self-hosted ZenML deployments in which several options are presented.
+
+### How do I deploy cloud infrastructure and/or MLOps stacks?
+
+ZenML is designed to be stack-agnostic, so you can use it with any cloud infrastructure or MLOps stack. Each of the documentation pages for stack components explain how to deploy these components on the most popular cloud providers.
+
+We also build and maintain the mlstacks package and library which offers a dedicated way to spin up infrastructure for your ZenML pipelines. It's fully integrated into ZenML's CLI and is a great way to get started with deploying your infrastructure. ZenML also publishes and maintains modules on the Terraform Registry (which are used by mlstacks under the hood) which you can also use as a standalone solution if you are familiar with Terraform.
+
+We also have a one-click deployment solution for stacks in the Dashboard.
+
+### How do I upgrade my ZenML client and/or server?
+
+Upgrading your ZenML client package is as simple as running pip install --upgrade zenml in your terminal. For upgrading your ZenML server, please refer to the dedicated documentation section which covers most of the ways you might do this as well as common troubleshooting steps.
