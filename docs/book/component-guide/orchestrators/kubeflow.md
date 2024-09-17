@@ -258,7 +258,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator": kubeflow_settings
+        "orchestrator.kubeflow": kubeflow_settings
     }
 )
 
