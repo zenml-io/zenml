@@ -81,7 +81,7 @@
       ]
     },
     {
-      "group": "Learn More",
+      "group": "🧑‍💻 Learn More",
       "pages": [
         "learn-more/community-content",
         "learn-more/faq"
@@ -239,6 +239,13 @@
               "pages": ["using-zenml/use-specialized-hardware/configure-python-environments/index"]
             }
           ]
+        },
+        {
+          "group": "🔧 Control How ZenML Works",
+          "pages": [
+            "using-zenml/control-how-zenml-works/environment-variables",
+            "using-zenml/control-how-zenml-works/global-settings"
+          ]
         }
       ]
     },
@@ -255,13 +262,13 @@
       ]
     },
     {
-      "group": "Deploying ZenML",
+      "group": "🚀 Deploying ZenML",
       "pages": [
         "deploying-zenml/introduction"
       ]
     },
     {
-      "group": "Common Questions Answered",
+      "group": "🔍 Common Questions Answered",
       "pages": [
         "deploying-zenml/common-questions-answered"
       ]
