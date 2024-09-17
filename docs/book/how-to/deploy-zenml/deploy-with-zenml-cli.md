@@ -4,9 +4,9 @@ description: Deploying ZenML on cloud using the ZenML CLI.
 
 # Deploy with ZenML CLI
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](./README.md#deploying-a-zenml-server) to learn about other options that you have.
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](../../getting-started/deploying-zenml.md) to learn about other options that you have.
 
-Before we begin, it will help to understand the [architecture](./README.md) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
+Before we begin, it will help to understand the [architecture](../../getting-started/zenml-pro/system-architectures.md) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
 
 ## Option 1: Starting from scratch
 
