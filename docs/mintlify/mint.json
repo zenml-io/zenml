@@ -77,9 +77,14 @@
       "pages": [
         "getting-started/introduction",
         "getting-started/installation",
-        "getting-started/core-concepts",
-        "getting-started/deploying-zenml",
-        "getting-started/zenml-pro"
+        "getting-started/core-concepts"
+      ]
+    },
+    {
+      "group": "Learn More",
+      "pages": [
+        "learn-more/community-content",
+        "learn-more/faq"
       ]
     },
     {
