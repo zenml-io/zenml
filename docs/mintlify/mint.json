@@ -27,8 +27,8 @@
   },
   "tabs": [
     {
-      "name": "How-To",
-      "url": "how-to"
+      "name": "Using ZenML",
+      "url": "using-zenml"
     },
     {
       "name": "Stack Components",
@@ -92,41 +92,113 @@
         {
           "group": "🏃‍♂️ Run Pipelines",
           "pages": [
-            "how-to/run-pipelines/set-up-project-repository",
-            "how-to/run-pipelines/build-a-pipeline",
-            "how-to/run-pipelines/trigger-a-pipeline",
-            "how-to/run-pipelines/create-and-run-templates",
-            "how-to/run-pipelines/use-configuration-files",
-            "how-to/run-pipelines/customize-docker-builds",
-            "how-to/run-pipelines/run-remote-pipelines-from-notebooks"
+            "using-zenml/run-pipelines/introduction",
+            {
+              "group": "Set Up Project Repository",
+              "pages": ["using-zenml/run-pipelines/set-up-project-repository/index"]
+            },
+            {
+              "group": "Build a Pipeline",
+              "pages": ["using-zenml/run-pipelines/build-a-pipeline/index"]
+            },
+            {
+              "group": "Advanced Pipeline Features",
+              "pages": ["using-zenml/run-pipelines/advanced-pipeline-features/index"]
+            },
+            {
+              "group": "Pipeline Lifecycle Management",
+              "pages": ["using-zenml/run-pipelines/pipeline-lcm/index"]
+            },
+            {
+              "group": "Trigger a Pipeline",
+              "pages": ["using-zenml/run-pipelines/trigger-a-pipeline/index"]
+            },
+            {
+              "group": "Create and Run Templates",
+              "pages": ["using-zenml/run-pipelines/create-and-run-templates/index"]
+            },
+            {
+              "group": "Use Configuration Files",
+              "pages": ["using-zenml/run-pipelines/use-configuration-files/index"]
+            },
+            {
+              "group": "Customize Docker Builds",
+              "pages": ["using-zenml/run-pipelines/customize-docker-builds/index"]
+            },
+            {
+              "group": "Run Remote Pipelines from Notebooks",
+              "pages": ["using-zenml/run-pipelines/run-remote-pipelines-from-notebooks/index"]
+            }
           ]
         },
         {
-          "group": "👁️ Observe and track pipelines",
+          "group": "👁️ Observe and Track Pipelines",
           "pages": [
-            "how-to/observability/control-logging",
-            "how-to/observability/handle-data-artifacts",
-            "how-to/observability/visualizing-artifacts",
-            "how-to/observability/use-the-model-control-plane",
-            "how-to/observability/track-metrics-and-metadata",
-            "how-to/observability/popular-integrations"
+            "using-zenml/observe-and-track-pipelines/introduction",
+            {
+              "group": "Control Logging",
+              "pages": ["using-zenml/observe-and-track-pipelines/control-logging/index"]
+            },
+            {
+              "group": "Handle Data Artifacts",
+              "pages": ["using-zenml/observe-and-track-pipelines/handle-data-artifacts/index"]
+            },
+            {
+              "group": "Visualizing Artifacts",
+              "pages": ["using-zenml/observe-and-track-pipelines/visualizing-artifacts/index"]
+            },
+            {
+              "group": "Use the Model Control Plane",
+              "pages": ["using-zenml/observe-and-track-pipelines/use-the-model-control-plane/index"]
+            },
+            {
+              "group": "Track Metrics and Metadata",
+              "pages": ["using-zenml/observe-and-track-pipelines/track-metrics-and-metadata/index"]
+            },
+            {
+              "group": "Popular Integrations",
+              "pages": ["using-zenml/observe-and-track-pipelines/popular-integrations/index"]
+            }
           ]
         },
         {
           "group": "🏗️ Ease Infrastructure Setup",
           "pages": [
-            "how-to/easing-infrastructure-setup/manage-stacks-and-components",
-            "how-to/easing-infrastructure-setup/connect-services",
-            "how-to/easing-infrastructure-setup/connect-to-a-server",
-            "how-to/easing-infrastructure-setup/interact-with-secrets",
-            "how-to/easing-infrastructure-setup/debug-and-solve-issues"
+            "using-zenml/ease-infrastructure-setup/introduction",
+            {
+              "group": "Manage Stacks and Components",
+              "pages": ["using-zenml/ease-infrastructure-setup/manage-stacks-and-components/index"]
+            },
+            {
+              "group": "Connect Services",
+              "pages": ["using-zenml/ease-infrastructure-setup/connect-services/index"]
+            },
+            {
+              "group": "Connect to a Server",
+              "pages": ["using-zenml/ease-infrastructure-setup/connect-to-a-server/index"]
+            },
+            {
+              "group": "Interact with Secrets",
+              "pages": ["using-zenml/ease-infrastructure-setup/interact-with-secrets/index"]
+            },
+            {
+              "group": "Debug and Solve Issues",
+              "pages": ["using-zenml/ease-infrastructure-setup/debug-and-solve-issues/index"]
+            }
           ]
         },
         {
           "group": "💻 Use Specialized Hardware",
           "pages": [
-            "how-to/use-specialized-hardware/train-with-gpus",
-            "how-to/use-specialized-hardware/configure-python-environments"
+            "using-zenml/use-specialized-hardware/introduction",
+            {
+              "group": "Train with GPUs",
+              "pages": ["using-zenml/use-specialized-hardware/train-with-gpus/index"]
+            },
+            {
+              "group": "Configure Python Environments",
+              "pages": ["using-zenml/use-specialized-hardware/configure-python-environments/index"]
+            }
           ]
         }
       ]
