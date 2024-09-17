@@ -5,7 +5,7 @@
 * [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
-* [🤔 Deploying ZenML](getting-started/deploying-zenml/README.md)
+* [🤔 Deploying ZenML](getting-started/deploying-zenml.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
   * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
