@@ -87,7 +87,7 @@
       ]
     },
     {
-      "group": "🛠️ How-To",
+      "group": "🛠️ Using ZenML",
       "pages": [
         {
           "group": "🏃‍♂️ Run Pipelines",
@@ -99,15 +99,36 @@
             },
             {
               "group": "Build a Pipeline",
-              "pages": ["using-zenml/run-pipelines/build-a-pipeline/index"]
+              "pages": [
+                "using-zenml/run-pipelines/build-a-pipeline/index",
+                "using-zenml/run-pipelines/build-a-pipeline/configuring-a-pipeline-at-runtime",
+                "using-zenml/run-pipelines/build-a-pipeline/control-caching-behavior",
+                "using-zenml/run-pipelines/build-a-pipeline/schedule-a-pipeline",
+                "using-zenml/run-pipelines/build-a-pipeline/step-output-typing-and-annotation",
+                "using-zenml/run-pipelines/build-a-pipeline/use-pipeline-step-parameters"
+              ]
             },
             {
               "group": "Advanced Pipeline Features",
-              "pages": ["using-zenml/run-pipelines/advanced-pipeline-features/index"]
+              "pages": [
+                "using-zenml/run-pipelines/advanced-pipeline-features/index",
+                "using-zenml/run-pipelines/advanced-pipeline-features/access-secrets-in-a-step",
+                "using-zenml/run-pipelines/advanced-pipeline-features/control-execution-order-of-steps",
+                "using-zenml/run-pipelines/advanced-pipeline-features/hyper-parameter-tuning",
+                "using-zenml/run-pipelines/advanced-pipeline-features/name-your-pipeline-and-runs",
+                "using-zenml/run-pipelines/advanced-pipeline-features/retry-steps",
+                "using-zenml/run-pipelines/advanced-pipeline-features/using-a-custom-step-invocation-id"
+              ]
             },
             {
               "group": "Pipeline Lifecycle Management",
-              "pages": ["using-zenml/run-pipelines/pipeline-lcm/index"]
+              "pages": [
+                "using-zenml/run-pipelines/pipeline-lcm/index",
+                "using-zenml/run-pipelines/pipeline-lcm/delete-a-pipeline",
+                "using-zenml/run-pipelines/pipeline-lcm/fetching-pipelines",
+                "using-zenml/run-pipelines/pipeline-lcm/get-past-pipeline-step-runs",
+                "using-zenml/run-pipelines/pipeline-lcm/use-failure-success-hooks"
+              ]
             },
             {
               "group": "Trigger a Pipeline",
