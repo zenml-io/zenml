@@ -37,6 +37,14 @@
     {
       "name": "Integration Docs",
       "url": "integration-docs"
+    },
+    {
+      "name": "How-To",
+      "url": "how-to"
+    },
+    {
+      "name": "Stack Components",
+      "url": "stack-components"
     }
   ],
   "anchors": [
@@ -219,6 +227,57 @@
             "integration-docs/v1/integrations-slack"
           ]
         }
+      ]
+    },
+    {
+      "group": "How-To",
+      "pages": [
+        {
+          "group": "Run Pipelines",
+          "pages": [
+            "how-to/run-pipelines/set-up-project-repository",
+            "how-to/run-pipelines/build-a-pipeline",
+            "how-to/run-pipelines/trigger-a-pipeline",
+            "how-to/run-pipelines/create-and-run-templates",
+            "how-to/run-pipelines/use-configuration-files",
+            "how-to/run-pipelines/customize-docker-builds",
+            "how-to/run-pipelines/run-remote-pipelines-from-notebooks"
+          ]
+        },
+        {
+          "group": "Observability",
+          "pages": [
+            "how-to/observability/control-logging",
+            "how-to/observability/handle-data-artifacts",
+            "how-to/observability/visualizing-artifacts",
+            "how-to/observability/use-the-model-control-plane",
+            "how-to/observability/track-metrics-and-metadata",
+            "how-to/observability/popular-integrations"
+          ]
+        },
+        {
+          "group": "Easing Infrastructure Setup",
+          "pages": [
+            "how-to/easing-infrastructure-setup/manage-stacks-and-components",
+            "how-to/easing-infrastructure-setup/connect-services",
+            "how-to/easing-infrastructure-setup/connect-to-a-server",
+            "how-to/easing-infrastructure-setup/interact-with-secrets",
+            "how-to/easing-infrastructure-setup/debug-and-solve-issues"
+          ]
+        },
+        {
+          "group": "Use Specialized Hardware",
+          "pages": [
+            "how-to/use-specialized-hardware/train-with-gpus",
+            "how-to/use-specialized-hardware/configure-python-environments"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Stack Components",
+      "pages": [
+        "stack-components/introduction"
       ]
     }
   ],
