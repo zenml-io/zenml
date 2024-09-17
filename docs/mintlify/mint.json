@@ -225,6 +225,12 @@
       ]
     },
     {
+      "group": "Common Questions Answered",
+      "pages": [
+        "using-zenml/common-questions-answered/index"
+      ]
+    },
+    {
       "group": "🧩 Stack Components",
       "pages": [
         "stack-components/introduction"
