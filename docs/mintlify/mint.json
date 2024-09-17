@@ -27,24 +27,24 @@
   },
   "tabs": [
     {
-      "name": "API Reference",
-      "url": "api-reference"
-    },
-    {
-      "name": "Core Code Docs",
-      "url": "core-code-docs"
-    },
-    {
-      "name": "Integration Docs",
-      "url": "integration-docs"
-    },
-    {
       "name": "How-To",
       "url": "how-to"
     },
     {
       "name": "Stack Components",
       "url": "stack-components"
+    },
+    {
+      "name": "Integration Docs",
+      "url": "integration-docs"
+    },
+    {
+      "name": "Core Code Docs",
+      "url": "core-code-docs"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
     }
   ],
   "anchors": [
@@ -69,97 +69,76 @@
   ],
   "navigation": [
     {
-      "group": "Get Started",
-      "version": "v1",
+      "group": "🚀 Getting Started",
       "pages": [
-        "v1/introduction"
+        "getting-started/introduction",
+        "getting-started/installation",
+        "getting-started/core-concepts",
+        "getting-started/deploying-zenml",
+        "getting-started/zenml-pro"
       ]
     },
     {
-      "group": "Essentials",
-      "version": "v1",
+      "group": "📚 User Guide",
       "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation",
-        "essentials/reusable-snippets"
+        "user-guide/starter-guide",
+        "user-guide/production-guide",
+        "user-guide/llmops-guide"
       ]
     },
     {
-      "group": "API Documentation",
-      "version": "v1",
-      "pages": [
-        "api-reference/introduction"
-      ]
-    },
-    {
-      "group": "Core Code Docs",
+      "group": "🛠️ How-To",
       "pages": [
         {
-          "group": "v2",
+          "group": "🏃‍♂️ Run Pipelines",
           "pages": [
-            "core-code-docs/v1/zenml",
-            "core-code-docs/v1/core-hooks",
-            "core-code-docs/v1/core-annotators",
-            "core-code-docs/v1/core-zen_stores",
-            "core-code-docs/v1/core-constants",
-            "core-code-docs/v1/core-plugins",
-            "core-code-docs/v1/core-experiment_trackers",
-            "core-code-docs/v1/core-types",
-            "core-code-docs/v1/core-logger",
-            "core-code-docs/v1/core-logging",
-            "core-code-docs/v1/core-entrypoints",
-            "core-code-docs/v1/core-environment",
-            "core-code-docs/v1/core-enums",
-            "core-code-docs/v1/core-lineage_graph",
-            "core-code-docs/v1/core-assistant",
-            "core-code-docs/v1/core-code_repositories",
-            "core-code-docs/v1/core-analytics",
-            "core-code-docs/v1/core-exceptions",
-            "core-code-docs/v1/core-artifacts",
-            "core-code-docs/v1/core-client_lazy_loader",
-            "core-code-docs/v1/core-event_hub",
-            "core-code-docs/v1/core-feature_stores",
-            "core-code-docs/v1/core-new",
-            "core-code-docs/v1/core-model",
-            "core-code-docs/v1/core-io",
-            "core-code-docs/v1/core-utils",
-            "core-code-docs/v1/core-services",
-            "core-code-docs/v1/core-_hub",
-            "core-code-docs/v1/core-metadata",
-            "core-code-docs/v1/core-secret",
-            "core-code-docs/v1/core-console",
-            "core-code-docs/v1/core-api",
-            "core-code-docs/v1/core-service_connectors",
-            "core-code-docs/v1/core-data_validators",
-            "core-code-docs/v1/core-actions",
-            "core-code-docs/v1/core-orchestrators",
-            "core-code-docs/v1/core-steps",
-            "core-code-docs/v1/core-image_builders",
-            "core-code-docs/v1/core-models",
-            "core-code-docs/v1/core-model_registries",
-            "core-code-docs/v1/core-artifact_stores",
-            "core-code-docs/v1/core-post_execution",
-            "core-code-docs/v1/core-alerter",
-            "core-code-docs/v1/core-pipelines",
-            "core-code-docs/v1/core-stack_deployments",
-            "core-code-docs/v1/core-stack",
-            "core-code-docs/v1/core-materializers",
-            "core-code-docs/v1/core-model_deployers",
-            "core-code-docs/v1/core-event_sources",
-            "core-code-docs/v1/core-config",
-            "core-code-docs/v1/core-client",
-            "core-code-docs/v1/core-zen_server",
-            "core-code-docs/v1/core-step_operators",
-            "core-code-docs/v1/core-container_registries"
+            "how-to/run-pipelines/set-up-project-repository",
+            "how-to/run-pipelines/build-a-pipeline",
+            "how-to/run-pipelines/trigger-a-pipeline",
+            "how-to/run-pipelines/create-and-run-templates",
+            "how-to/run-pipelines/use-configuration-files",
+            "how-to/run-pipelines/customize-docker-builds",
+            "how-to/run-pipelines/run-remote-pipelines-from-notebooks"
+          ]
+        },
+        {
+          "group": "👁️ Observability",
+          "pages": [
+            "how-to/observability/control-logging",
+            "how-to/observability/handle-data-artifacts",
+            "how-to/observability/visualizing-artifacts",
+            "how-to/observability/use-the-model-control-plane",
+            "how-to/observability/track-metrics-and-metadata",
+            "how-to/observability/popular-integrations"
+          ]
+        },
+        {
+          "group": "🏗️ Easing Infrastructure Setup",
+          "pages": [
+            "how-to/easing-infrastructure-setup/manage-stacks-and-components",
+            "how-to/easing-infrastructure-setup/connect-services",
+            "how-to/easing-infrastructure-setup/connect-to-a-server",
+            "how-to/easing-infrastructure-setup/interact-with-secrets",
+            "how-to/easing-infrastructure-setup/debug-and-solve-issues"
+          ]
+        },
+        {
+          "group": "💻 Use Specialized Hardware",
+          "pages": [
+            "how-to/use-specialized-hardware/train-with-gpus",
+            "how-to/use-specialized-hardware/configure-python-environments"
           ]
         }
       ]
     },
     {
-      "group": "Integration Docs",
+      "group": "🧩 Stack Components",
+      "pages": [
+        "stack-components/introduction"
+      ]
+    },
+    {
+      "group": "🔌 Integration Docs",
       "pages": [
         {
           "group": "v1",
@@ -230,54 +209,73 @@
       ]
     },
     {
-      "group": "How-To",
+      "group": "🧠 Core Code Docs",
       "pages": [
         {
-          "group": "Run Pipelines",
+          "group": "v2",
           "pages": [
-            "how-to/run-pipelines/set-up-project-repository",
-            "how-to/run-pipelines/build-a-pipeline",
-            "how-to/run-pipelines/trigger-a-pipeline",
-            "how-to/run-pipelines/create-and-run-templates",
-            "how-to/run-pipelines/use-configuration-files",
-            "how-to/run-pipelines/customize-docker-builds",
-            "how-to/run-pipelines/run-remote-pipelines-from-notebooks"
-          ]
-        },
-        {
-          "group": "Observability",
-          "pages": [
-            "how-to/observability/control-logging",
-            "how-to/observability/handle-data-artifacts",
-            "how-to/observability/visualizing-artifacts",
-            "how-to/observability/use-the-model-control-plane",
-            "how-to/observability/track-metrics-and-metadata",
-            "how-to/observability/popular-integrations"
-          ]
-        },
-        {
-          "group": "Easing Infrastructure Setup",
-          "pages": [
-            "how-to/easing-infrastructure-setup/manage-stacks-and-components",
-            "how-to/easing-infrastructure-setup/connect-services",
-            "how-to/easing-infrastructure-setup/connect-to-a-server",
-            "how-to/easing-infrastructure-setup/interact-with-secrets",
-            "how-to/easing-infrastructure-setup/debug-and-solve-issues"
-          ]
-        },
-        {
-          "group": "Use Specialized Hardware",
-          "pages": [
-            "how-to/use-specialized-hardware/train-with-gpus",
-            "how-to/use-specialized-hardware/configure-python-environments"
+            "core-code-docs/v1/zenml",
+            "core-code-docs/v1/core-hooks",
+            "core-code-docs/v1/core-annotators",
+            "core-code-docs/v1/core-zen_stores",
+            "core-code-docs/v1/core-constants",
+            "core-code-docs/v1/core-plugins",
+            "core-code-docs/v1/core-experiment_trackers",
+            "core-code-docs/v1/core-types",
+            "core-code-docs/v1/core-logger",
+            "core-code-docs/v1/core-logging",
+            "core-code-docs/v1/core-entrypoints",
+            "core-code-docs/v1/core-environment",
+            "core-code-docs/v1/core-enums",
+            "core-code-docs/v1/core-lineage_graph",
+            "core-code-docs/v1/core-assistant",
+            "core-code-docs/v1/core-code_repositories",
+            "core-code-docs/v1/core-analytics",
+            "core-code-docs/v1/core-exceptions",
+            "core-code-docs/v1/core-artifacts",
+            "core-code-docs/v1/core-client_lazy_loader",
+            "core-code-docs/v1/core-event_hub",
+            "core-code-docs/v1/core-feature_stores",
+            "core-code-docs/v1/core-new",
+            "core-code-docs/v1/core-model",
+            "core-code-docs/v1/core-io",
+            "core-code-docs/v1/core-utils",
+            "core-code-docs/v1/core-services",
+            "core-code-docs/v1/core-_hub",
+            "core-code-docs/v1/core-metadata",
+            "core-code-docs/v1/core-secret",
+            "core-code-docs/v1/core-console",
+            "core-code-docs/v1/core-api",
+            "core-code-docs/v1/core-service_connectors",
+            "core-code-docs/v1/core-data_validators",
+            "core-code-docs/v1/core-actions",
+            "core-code-docs/v1/core-orchestrators",
+            "core-code-docs/v1/core-steps",
+            "core-code-docs/v1/core-image_builders",
+            "core-code-docs/v1/core-models",
+            "core-code-docs/v1/core-model_registries",
+            "core-code-docs/v1/core-artifact_stores",
+            "core-code-docs/v1/core-post_execution",
+            "core-code-docs/v1/core-alerter",
+            "core-code-docs/v1/core-pipelines",
+            "core-code-docs/v1/core-stack_deployments",
+            "core-code-docs/v1/core-stack",
+            "core-code-docs/v1/core-materializers",
+            "core-code-docs/v1/core-model_deployers",
+            "core-code-docs/v1/core-event_sources",
+            "core-code-docs/v1/core-config",
+            "core-code-docs/v1/core-client",
+            "core-code-docs/v1/core-zen_server",
+            "core-code-docs/v1/core-step_operators",
+            "core-code-docs/v1/core-container_registries"
           ]
         }
       ]
     },
     {
-      "group": "Stack Components",
+      "group": "📘 API Documentation",
       "pages": [
-        "stack-components/introduction"
+        "api-reference/introduction"
       ]
     }
   ],
