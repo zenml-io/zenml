@@ -102,7 +102,7 @@
           ]
         },
         {
-          "group": "👁️ Observability",
+          "group": "👁️ Observe and track pipelines",
           "pages": [
             "how-to/observability/control-logging",
             "how-to/observability/handle-data-artifacts",
@@ -113,7 +113,7 @@
           ]
         },
         {
-          "group": "🏗️ Easing Infrastructure Setup",
+          "group": "🏗️ Ease Infrastructure Setup",
           "pages": [
             "how-to/easing-infrastructure-setup/manage-stacks-and-components",
             "how-to/easing-infrastructure-setup/connect-services",
