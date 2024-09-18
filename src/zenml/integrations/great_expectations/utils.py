@@ -32,7 +32,7 @@ def create_batch_definition(
     context: AbstractDataContext,
     dataset: pd.DataFrame,
     data_asset_name: Optional[str],
-) -> Tuple[BatchDefinition, Dict[str, Any]]:
+) -> Tuple[BatchDefinition, Dict[str, Any], str]:
     """Create a temporary runtime GE batch request from a dataset step artifact.
 
     Args:
@@ -41,7 +41,9 @@ def create_batch_definition(
         data_asset_name: Optional custom name for the data asset.
 
     Returns:
-        A Great Expectations runtime batch request.
+        batch_definition: A Great Expectations runtime batch request.
+        batch_parameters: A dictionary of batch parameters.
+        datasource_name: The name of the datasource.
     """
     try:
         # get pipeline name, step name and run id
@@ -68,4 +70,4 @@ def create_batch_definition(
 
     batch_parameters = {"dataframe": dataset}
 
-    return batch_definition, batch_parameters
+    return batch_definition, batch_parameters, datasource_name
