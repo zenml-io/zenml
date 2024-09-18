@@ -47,9 +47,46 @@ We can now use the model deployer in our stack.
 zenml stack update <CUSTOM_STACK_NAME> --model-deployer=<MODEL_DEPLOYER_NAME>
 ```
 
-See the [huggingface\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.huggingface.steps.huggingface\_deployer.huggingface\_model\_deployer\_step) for an example of using the Hugging Face Model Deployer to deploy a model inside a ZenML pipeline step.
+## How to use it
 
-## Configuration
+There are two mechanisms for using the Hugging Face model deployer integration:
+
+* Using the pre-built [huggingface\_model\_deployer\_step](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/steps/huggingface_deployer.py#L35) to deploy a Hugging Face model.
+* Running batch inference on a deployed Hugging Face model using the [HuggingFaceDeploymentService](https://github.com/zenml-io/zenml/blob/04cdf96576edd8fc615dceb7e0bf549301dc97bd/tests/integration/examples/huggingface/steps/prediction_service_loader/prediction_service_loader.py#L27)
+
+If you'd like to see this in action, check out this example of of [a deployment pipeline](https://github.com/zenml-io/zenml/blob/main/tests/integration/examples/huggingface/pipelines/deployment_pipelines/deployment_pipeline.py#L29) and [an inference pipeline](https://github.com/zenml-io/zenml/blob/main/tests/integration/examples/huggingface/pipelines/deployment_pipelines/inference_pipeline.py).
+
+### Details on how to deploy a model
+
+The pre-built [huggingface\_model\_deployer\_step](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/steps/huggingface_deployer.py#L35) exposes a [`HuggingFaceServiceConfig`](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.services.huggingface_deployment.HuggingFaceServiceConfig) that you can use in your pipeline. Here is an example snippet:
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+from zenml.integrations.constants import HUGGINGFACE
+from zenml.integrations.huggingface.services import HuggingFaceServiceConfig
+from zenml.integrations.huggingface.steps import (
+    huggingface_model_deployer_step,
+)
+
+docker_settings = DockerSettings(
+    required_integrations=[HUGGINGFACE],
+)
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
+def huggingface_deployment_pipeline(
+    model_name: str = "hf",
+    timeout: int = 1200,
+):
+    service_config = HuggingFaceServiceConfig(model_name=model_name)
+
+    # Deployment step
+    huggingface_model_deployer_step(
+        service_config=service_config,
+        timeout=timeout,
+    )
+```
 
 Within the `HuggingFaceServiceConfig` you can configure:
 
@@ -72,9 +109,9 @@ Within the `HuggingFaceServiceConfig` you can configure:
 * `namespace`: The namespace where the Inference Endpoint will be created. The same namespace can be passed used while registering the Hugging Face model deployer.
 * `endpoint_type`: (Optional) The type of the Inference Endpoint, which can be `"protected"`, `"public"` (default) or `"private"`.
 
-For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-huggingface/#zenml.integrations.huggingface.model\_deployers) and Hugging Face endpoint [code](https://github.com/huggingface/huggingface\_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/huggingface\_hub/hf\_api.py#L6957).
+For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-huggingface/) and Hugging Face endpoint [code](https://github.com/huggingface/huggingface_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/huggingface_hub/hf_api.py#L6957).
 
-### Run inference on a provisioned inference endpoint
+### Details on how to run inference on a provisioned inference endpoint
 
 The following code example shows how to run inference against a provisioned inference endpoint:
 
