@@ -35,7 +35,6 @@ from zenml.models import (
 )
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
-from zenml.utils.status_utils import refresh_run_status
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -511,10 +510,8 @@ def refresh_pipeline_run(run_name_or_id: str) -> None:
     """
     try:
         # Fetch and update the run
-        run = Client().get_pipeline_run(
-            name_id_or_prefix=run_name_or_id,
-        )
-        refresh_run_status(run)
+        run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
+        run.refresh_run_status()
 
     except KeyError as e:
         cli_utils.error(str(e))

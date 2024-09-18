@@ -137,7 +137,8 @@ class PipelineRunUpdate(BaseModel):
         "configured by this pipeline run explicitly.",
         default=None,
     )
-    # TODO: we should maybe have a different update model here, the upper three attributes should only be for internal use
+    # TODO: we should maybe have a different update model here, the upper
+    #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the pipeline run."
     )
@@ -304,6 +305,44 @@ class PipelineRunResponse(
         )
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
+
+    def refresh_run_status(self) -> None:
+        """Function to refresh the status of a pipeline.
+
+        Raises:
+            ValueError: If the stack of the run response is None.
+        """
+        # Check the stack
+        if self.stack is None:
+            raise ValueError(
+                "The pipeline run response does not have a stack. It may "
+                "have been deleted or you might not have access to it."
+            )
+
+        # Create the orchestrator instance
+        from zenml.enums import StackComponentType
+        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+        component_model = self.stack.components[
+            StackComponentType.ORCHESTRATOR
+        ][0]
+        orchestrator = BaseOrchestrator.from_model(
+            component_model=component_model
+        )
+
+        # Fetch the status
+        status = orchestrator.fetch_status(run=self)
+
+        # If it is different from the current status, update it
+        if status != self.status:
+            from zenml.client import Client
+            from zenml.models import PipelineRunUpdate
+
+            client = Client()
+            client.zen_store.update_run(
+                run_id=self.id,
+                run_update=PipelineRunUpdate(status=status),
+            )
 
     # Body and metadata properties
     @property

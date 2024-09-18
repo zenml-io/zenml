@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     GRAPH,
     PIPELINE_CONFIGURATION,
+    REFRESH,
     RUNS,
     STATUS,
     STEPS,
@@ -267,3 +268,26 @@ def get_run_status(
         id=run_id, get_method=zen_store().get_run, hydrate=False
     )
     return run.status
+
+
+@router.get(
+    "/{run_id}" + REFRESH,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def refresh_run_status(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Refreshes the status of a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run to refresh.
+    """
+    # Verify access to the run
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=True,
+    )
+    run.refresh_run_status()
