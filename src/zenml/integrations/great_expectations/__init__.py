@@ -30,7 +30,7 @@ class GreatExpectationsIntegration(Integration):
     """Definition of Great Expectations integration for ZenML."""
 
     NAME = GREAT_EXPECTATIONS
-    REQUIREMENTS = ["great-expectations>=0.17.15,<1.0"]
+    REQUIREMENTS = ["great-expectations~=1.0.0"]
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
