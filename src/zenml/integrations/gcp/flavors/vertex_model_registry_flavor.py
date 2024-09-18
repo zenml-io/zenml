@@ -18,35 +18,33 @@ from typing import TYPE_CHECKING, Optional, Type
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
-    VERTEX_MODEL_REGISTRY_FLAVOR
-)
-from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
-    VertexBaseConfig,
+    VERTEX_MODEL_REGISTRY_FLAVOR,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
-from zenml.models import ServiceConnectorRequirements
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistryConfig,
     BaseModelRegistryFlavor,
 )
+from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.model_registries import (
         VertexAIModelRegistry,
     )
 
+
 class VertexAIModelRegistrySettings(BaseSettings):
     """Settings for the VertexAI model registry."""
-    
+
     location: str
-       
+
 
 class VertexAIModelRegistryConfig(
-    BaseModelRegistryConfig, 
-    GoogleCredentialsConfigMixin, 
-    VertexAIModelRegistrySettings
+    BaseModelRegistryConfig,
+    GoogleCredentialsConfigMixin,
+    VertexAIModelRegistrySettings,
 ):
     """Configuration for the VertexAI model registry."""
 
@@ -79,7 +77,7 @@ class VertexAIModelRegistryFlavor(BaseModelRegistryFlavor):
         return ServiceConnectorRequirements(
             resource_type=GCP_RESOURCE_TYPE,
         )
-        
+
     @property
     def docs_url(self) -> Optional[str]:
         """A url to point at docs explaining this flavor.

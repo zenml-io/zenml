@@ -32,7 +32,6 @@ from zenml.model_registries.base_model_registry import (
     RegisteredModel,
     RegistryModelVersion,
 )
-from zenml.stack.stack_component import StackComponentConfig
 
 logger = get_logger(__name__)
 
@@ -43,17 +42,19 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     @property
     def config(self) -> VertexAIModelRegistryConfig:
         """Returns the config of the model registry.
-        
+
         Returns:
             The configuration.
         """
         return cast(VertexAIModelRegistryConfig, self._config)
-    
+
     def setup_aiplatform(self) -> None:
         """Setup the Vertex AI platform."""
         credentials, project_id = self._get_authentication()
         aiplatform.init(
-            project=project_id, location=self.config.location, credentials=credentials
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
         )
 
     def register_model(

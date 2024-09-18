@@ -20,7 +20,9 @@ from google.api_core import exceptions
 from google.cloud import aiplatform
 from pydantic import BaseModel, Field
 
-from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import VertexBaseConfig
+from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
+    VertexBaseConfig,
+)
 from zenml.logger import get_logger
 from zenml.services import ServiceState, ServiceStatus, ServiceType
 from zenml.services.service import BaseDeploymentService, ServiceConfig
@@ -29,6 +31,7 @@ logger = get_logger(__name__)
 
 POLLING_TIMEOUT = 1200
 UUID_SLICE_LENGTH: int = 8
+
 
 def sanitize_labels(labels: Dict[str, str]) -> None:
     """Update the label values to be valid Kubernetes labels.
@@ -46,7 +49,8 @@ def sanitize_labels(labels: Dict[str, str]) -> None:
         labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
             "-_."
         )
-        
+
+
 class VertexAIDeploymentConfig(VertexBaseConfig, ServiceConfig):
     """Vertex AI service configurations."""
 

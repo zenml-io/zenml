@@ -29,7 +29,7 @@ from zenml.utils.io_utils import (
 
 logger = get_logger(__name__)
 
-DEFAULT_FILENAME = "artifact.pkl"
+DEFAULT_FILENAME = "model.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 
 
