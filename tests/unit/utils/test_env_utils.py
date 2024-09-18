@@ -86,9 +86,18 @@ def test_env_var_substitution(mocker):
         substitute_env_variable_placeholders("prefix_${A}_suffix")
         == "prefix_1_suffix"
     )
+
+    # Non existent -> Raise when configured
+    with pytest.raises(KeyError):
+        substitute_env_variable_placeholders(
+            "prefix_${B}_suffix", raise_when_missing=True
+        )
+
     # Non existent -> empty string
     assert (
-        substitute_env_variable_placeholders("prefix_${B}_suffix")
+        substitute_env_variable_placeholders(
+            "prefix_${B}_suffix", raise_when_missing=False
+        )
         == "prefix__suffix"
     )
 

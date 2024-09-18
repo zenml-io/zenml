@@ -110,11 +110,16 @@ def reconstruct_environment_variables(
             env.pop(key)
 
 
-def substitute_env_variable_placeholders(value: V) -> V:
+def substitute_env_variable_placeholders(
+    value: V, raise_when_missing: bool = True
+) -> V:
     """Substitute environment variable placeholders in an object.
 
     Args:
         value: The object in which to substitute the placeholders.
+        raise_when_missing: If True, an exception will be raised when an
+            environment variable is missing. Otherwise, a warning will be logged
+            instead.
 
     Returns:
         The object with placeholders substituted.
@@ -122,16 +127,22 @@ def substitute_env_variable_placeholders(value: V) -> V:
 
     def _replace_with_env_variable_value(match: Match[str]) -> str:
         key = match.group(1)
-        if value := os.getenv(key):
-            return value
+        if key in os.environ:
+            return os.environ[key]
         else:
-            logger.debug(
-                "Unable to substitute environment variable placeholder %s "
-                "because the environment variable is not set, using an empty "
-                "string instead.",
-                key,
-            )
-            return ""
+            if raise_when_missing:
+                raise KeyError(
+                    "Unable to substitute environment variable placeholder "
+                    f"'{key}' because the environment variable is not set."
+                )
+            else:
+                logger.warning(
+                    "Unable to substitute environment variable placeholder %s "
+                    "because the environment variable is not set, using an "
+                    "empty string instead.",
+                    key,
+                )
+                return ""
 
     def _substitution_func(v: str) -> str:
         return ENV_VARIABLE_PLACEHOLDER_PATTERN.sub(
