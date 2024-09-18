@@ -39,7 +39,6 @@ from great_expectations.data_context.types.base import (
 from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
 )
-from great_expectations.profile.user_configurable_profiler import   # type: ignore[import-untyped]
 
 from zenml import get_step_context
 from zenml.client import Client
@@ -52,7 +51,7 @@ from zenml.integrations.great_expectations.flavors.great_expectations_data_valid
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
 )
-from zenml.integrations.great_expectations.utils import create_batch_definition, create_batch_request
+from zenml.integrations.great_expectations.utils import create_batch_definition
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
@@ -198,7 +197,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         if not self._context:
             expectations_store_name = "zenml_expectations_store"
-            validations_store_name = "zenml_validations_store"
+            validation_results_store_name = "zenml_validation_results_store"
             checkpoint_store_name = "zenml_checkpoint_store"
 
             # Define default configuration options that plug the GX stores
@@ -208,15 +207,15 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     expectations_store_name: self.get_store_config(
                         "ExpectationsStore", "expectations"
                     ),
-                    validations_store_name: self.get_store_config(
-                        "ValidationsStore", "validations"
+                    validation_results_store_name: self.get_store_config(
+                        "ValidationResultsStore", "validation_results"
                     ),
                     checkpoint_store_name: self.get_store_config(
                         "CheckpointStore", "checkpoints"
                     ),
                 },
                 expectations_store_name=expectations_store_name,
-                validations_store_name=validations_store_name,
+                validation_results_store_name=validation_results_store_name,
                 checkpoint_store_name=checkpoint_store_name,
                 data_docs_sites={
                     "zenml_artifact_store": self.get_data_docs_config(
@@ -235,7 +234,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
             else:
                 # create an ephemeral in-memory data context that is not
-                # backed by a local YAML file (see https://docs.greatexpectations.io/docs/oss/guides/setup/configuring_data_contexts/instantiating_data_contexts/instantiate_data_context/).
+                # backed by a local YAML file (see https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/create_a_data_context?context_type=ephemeral).
                 if self.context_config:
                     # Use the data context configuration provided in the stack
                     # component configuration
@@ -249,16 +248,14 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     # already baked in the initial configuration
                     configure_zenml_stores = False
 
-                self._context = EphemeralDataContext(
-                    project_config=context_config
-                )
+                self._context = get_context(mode="ephemeral", project_config=context_config)
 
             if configure_zenml_stores:
                 self._context.config.expectations_store_name = (
                     expectations_store_name
                 )
                 self._context.config.validation_results_store_name = (
-                    validations_store_name
+                    validation_results_store_name
                 )
                 self._context.config.checkpoint_store_name = (
                     checkpoint_store_name
@@ -319,6 +316,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
         action_list: Optional[List[ge.checkpoint.actions.ValidationAction]] = None,
+        result_format: str = "SUMMARY",
         **kwargs: Any,
     ) -> CheckpointResult:
         """Great Expectations data validation.
@@ -347,13 +345,15 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 dataset in the Great Expectations docs.
             action_list: A list of additional Great Expectations actions to run after
                 the validation check.
-            kwargs: Additional keyword arguments (unused).
+            result_format: The format of the validation results.
+            kwargs: Additional keyword arguments.
 
         Returns:
             The Great Expectations validation (checkpoint) result.
 
         Raises:
-            ValueError: if the `expectation_suite_name` argument is omitted.
+            ValueError: if the expectation suite name and expectations list are both provided
+                or if neither are provided
         """
         if comparison_dataset is not None:
             logger.warning(
@@ -399,7 +399,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             data=batch_definition, suite=expectation_suite,
             name=f"{run_name}_{step_name}"
         )
-
         validation_defintion = context.validation_definitions.add(validation_defintion)
 
         # create a checkpoint
@@ -407,9 +406,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         checkpoint = ge.Checkpoint(
             name=checkpoint_name,
             validation_definitions=[validation_defintion],
-            actions=action_list,
+            actions=action_list or [],
             # get it from the kwargs
-            result_format={"result_format": kwargs.get("result_format", "SUMMARY")},
+            result_format={"result_format": result_format},
         )
 
         checkpoint = context.checkpoints.add(checkpoint)

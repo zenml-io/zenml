@@ -14,9 +14,6 @@
 
 """Great Expectations data profiling and validation standard steps."""
 
-from zenml.integrations.great_expectations.steps.ge_profiler import (
-    great_expectations_profiler_step,
-)
 from zenml.integrations.great_expectations.steps.ge_validator import (
     great_expectations_validator_step,
 )

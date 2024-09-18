@@ -19,8 +19,10 @@ from great_expectations.expectations.expectation import Expectation
 
 from pydantic import BaseModel
 
+from zenml.config.source import Source, SourceType
 from zenml.logger import get_logger
 from zenml.utils import source_utils
+from importlib import import_module
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,7 @@ class GreatExpectationExpectationConfig(BaseModel):
 
     This class defines the configuration parameters that can be used to
     customize the behavior of a Great Expectation Expectation. This includes
-    the expectation name (in the right case), and any input options that the
+    the expectation name (in snake case), and any input options that the
     expectation expects. This could be the column name, the value to 
     compare against, etc.
 
@@ -43,11 +45,13 @@ class GreatExpectationExpectationConfig(BaseModel):
     parameters.
 
     Attributes:
-        expectation_name: The name of the Great Expectation expectation to apply.
-        kwargs: Additional keyword arguments to pass to the expectation.
+        expectation_name: The name of the Great Expectation expectation to apply in snake case.
+        expectation_args: Input arguments to pass to the expectation. These can be 
+            used to pass the column name, the value to compare against, etc.
+
     """
     expectation_name: str
-    kwargs: Dict[str, Any] = {}\
+    expectation_args: Dict[str, Any] = {}
     
     @staticmethod
     def get_expectation_class(expectation_name: str) -> Type[Expectation]:
@@ -62,11 +66,14 @@ class GreatExpectationExpectationConfig(BaseModel):
                 if the expectation name does not map to a valid Great Expectation
                 expectation class.
         """
+        module_name = f"great_expectations.expectations.core.{expectation_name}"
+        class_name = "".join(word.capitalize() for word in expectation_name.split("_"))
+        
         return source_utils.load_and_validate_class(
-            f"great_expectations.expectations.{expectation_name}",
+            source=Source(module=module_name, attribute=class_name, type=SourceType.USER),
             expected_class=Expectation,
         )
-    
+
     def get_expectation(self) -> Expectation:
         """Get the Great Expectation expectation object associated with this config.
 
@@ -75,7 +82,7 @@ class GreatExpectationExpectationConfig(BaseModel):
         """
         try:
             expectation_class = self.get_expectation_class(self.expectation_name)
-            expectation = expectation_class(**self.kwargs)
+            expectation = expectation_class(**self.expectation_args)
         except TypeError:
             raise ValueError(
                 f"Could not map the `{self.expectation_name}` expectation "
@@ -85,7 +92,7 @@ class GreatExpectationExpectationConfig(BaseModel):
             raise ValueError(
                 f"An error occurred while trying to instantiate the "
                 f"`{self.expectation_name}` expectation class "
-                f"with the following parameters: {self.kwargs}"
+                f"with the following parameters: {self.expectation_args}"
                 f"Exception: {str(e)}"
             )
         

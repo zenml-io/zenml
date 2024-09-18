@@ -16,22 +16,26 @@
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
+from great_expectations.checkpoint.checkpoint import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
 
 from zenml import step
+from zenml.integrations.great_expectations.data_validators.expectations import GreatExpectationExpectationConfig
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
-
+import great_expectations as ge
 
 @step
 def great_expectations_validator_step(
     dataset: pd.DataFrame,
-    expectation_suite_name: str,
+    expectation_suite_name: Optional[str] = None,
     data_asset_name: Optional[str] = None,
-    action_list: Optional[List[Dict[str, Any]]] = None,
+    action_list: Optional[List[ge.checkpoint.actions.ValidationAction]] = None,
+    expectation_parameters: Optional[Dict[str, Any]] = None,
+    expectations_list: Optional[List[GreatExpectationExpectationConfig]] = None,
+    result_format: str = "SUMMARY",
     exit_on_error: bool = False,
 ) -> CheckpointResult:
     """Shortcut function to create a new instance of the GreatExpectationsValidatorStep step.
@@ -51,6 +55,12 @@ def great_expectations_validator_step(
             after the validation check.
         exit_on_error: Set this flag to raise an error and exit the pipeline
             early if the validation fails.
+        expectation_parameters: Additional parameters to pass to the
+            expectation suite.
+        expectations_list: A list of expectations to run.
+        result_format: The format of the validation results.
+        **kwargs: Additional arguments to pass to the Great Expectations
+            validator.
 
     Returns:
         The Great Expectations validation (checkpoint) result.
@@ -66,6 +76,9 @@ def great_expectations_validator_step(
         expectation_suite_name=expectation_suite_name,
         data_asset_name=data_asset_name,
         action_list=action_list,
+        expectation_parameters=expectation_parameters,
+        expectations_list=expectations_list,
+        result_format=result_format,
     )
 
     if exit_on_error and not results.success:
