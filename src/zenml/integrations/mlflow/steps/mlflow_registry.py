@@ -146,9 +146,8 @@ def mlflow_register_model_step(
         metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
     if metadata.zenml_workspace is None:
         metadata.zenml_workspace = zenml_workspace
-    if metadata.model_extra:
-        if metadata.model_extra.get("mlflow_run_id", None) is None:
-            metadata.model_extra["mlflow_run_id"] = mlflow_run_id
+    if metadata.model_extra.get("mlflow_run_id", None) is None:
+        metadata.model_extra["mlflow_run_id"] = mlflow_run_id
 
     # Register model version
     model_version = model_registry.register_model_version(
