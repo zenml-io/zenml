@@ -236,6 +236,9 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         default=None,
         description="Template used for the pipeline run.",
     )
+    is_templatable: bool = Field(
+        description="Whether a template can be created from this run.",
+    )
 
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
@@ -517,6 +520,15 @@ class PipelineRunResponse(
         return self.get_metadata().template_id
 
     @property
+    def is_templatable(self) -> bool:
+        """The `is_templatable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().is_templatable
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
@@ -550,6 +562,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack_id",
         "template_id",
         "pipeline_name",
+        "templatable",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -623,6 +636,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
+    templatable: Optional[bool] = None
 
     def get_custom_filters(
         self,
@@ -634,7 +648,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlmodel import and_
+        from sqlmodel import and_, col, or_
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
@@ -706,5 +720,41 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
+
+        if self.templatable is not None:
+            if self.templatable is True:
+                templatable_filter = and_(
+                    # The following condition is not perfect as it does not
+                    # consider stacks with custom flavor components or local
+                    # components, but the best we can do currently with our
+                    # table columns.
+                    PipelineRunSchema.deployment_id
+                    == PipelineDeploymentSchema.id,
+                    PipelineDeploymentSchema.build_id
+                    == PipelineBuildSchema.id,
+                    col(PipelineBuildSchema.is_local).is_(False),
+                    col(PipelineBuildSchema.stack_id).is_not(None),
+                )
+            else:
+                templatable_filter = or_(
+                    col(PipelineRunSchema.deployment_id).is_(None),
+                    and_(
+                        PipelineRunSchema.deployment_id
+                        == PipelineDeploymentSchema.id,
+                        col(PipelineDeploymentSchema.build_id).is_(None),
+                    ),
+                    and_(
+                        PipelineRunSchema.deployment_id
+                        == PipelineDeploymentSchema.id,
+                        PipelineDeploymentSchema.build_id
+                        == PipelineBuildSchema.id,
+                        or_(
+                            col(PipelineBuildSchema.is_local).is_(True),
+                            col(PipelineBuildSchema.stack_id).is_(None),
+                        ),
+                    ),
+                )
+
+            custom_filters.append(templatable_filter)
 
         return custom_filters

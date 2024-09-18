@@ -55,7 +55,7 @@ from zenml.client import Client
 
 annotator = Client().active_stack.annotator
 
-annotations = annotator.launch(
+annotations = annotator.annotate(
     data=[
         'I love this movie',
         'I was really disappointed by the book'
@@ -75,7 +75,7 @@ from IPython.display import display, Image
 
 annotator = Client().active_stack.annotator
 
-annotations = annotator.launch(
+annotations = annotator.annotate(
     data=[
         '/path/to/image1.png',
         '/path/to/image2.png'
