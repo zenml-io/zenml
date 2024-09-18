@@ -42,7 +42,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
@@ -59,7 +59,7 @@ from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
@@ -175,6 +175,53 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         return SagemakerOrchestratorSettings
 
+    def _get_sagemaker_session(self) -> sagemaker.Session:
+        """Method to create the sagemaker session with proper authentication.
+
+        Returns:
+            The Sagemaker Session.
+
+        Raises:
+            RuntimeError: If the connector returns the wrong type for the
+                session.
+        """
+        # Get authenticated session
+        # Option 1: Service connector
+        boto_session: boto3.Session
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        # Option 2: Explicit configuration
+        # Args that are not provided will be taken from the default AWS config.
+        else:
+            boto_session = boto3.Session(
+                aws_access_key_id=self.config.aws_access_key_id,
+                aws_secret_access_key=self.config.aws_secret_access_key,
+                region_name=self.config.region,
+                profile_name=self.config.aws_profile,
+            )
+            # If a role ARN is provided for authentication, assume the role
+            if self.config.aws_auth_role_arn:
+                sts = boto_session.client("sts")
+                response = sts.assume_role(
+                    RoleArn=self.config.aws_auth_role_arn,
+                    RoleSessionName="zenml-sagemaker-orchestrator",
+                )
+                credentials = response["Credentials"]
+                boto_session = boto3.Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=self.config.region,
+                )
+        return sagemaker.Session(
+            boto_session=boto_session, default_bucket=self.config.bucket
+        )
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -211,42 +258,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
         )
 
-        # Get authenticated session
-        # Option 1: Service connector
-        boto_session: boto3.Session
-        if connector := self.get_connector():
-            boto_session = connector.connect()
-            if not isinstance(boto_session, boto3.Session):
-                raise RuntimeError(
-                    f"Expected to receive a `boto3.Session` object from the "
-                    f"linked connector, but got type `{type(boto_session)}`."
-                )
-        # Option 2: Explicit configuration
-        # Args that are not provided will be taken from the default AWS config.
-        else:
-            boto_session = boto3.Session(
-                aws_access_key_id=self.config.aws_access_key_id,
-                aws_secret_access_key=self.config.aws_secret_access_key,
-                region_name=self.config.region,
-                profile_name=self.config.aws_profile,
-            )
-            # If a role ARN is provided for authentication, assume the role
-            if self.config.aws_auth_role_arn:
-                sts = boto_session.client("sts")
-                response = sts.assume_role(
-                    RoleArn=self.config.aws_auth_role_arn,
-                    RoleSessionName="zenml-sagemaker-orchestrator",
-                )
-                credentials = response["Credentials"]
-                boto_session = boto3.Session(
-                    aws_access_key_id=credentials["AccessKeyId"],
-                    aws_secret_access_key=credentials["SecretAccessKey"],
-                    aws_session_token=credentials["SessionToken"],
-                    region_name=self.config.region,
-                )
-        session = sagemaker.Session(
-            boto_session=boto_session, default_bucket=self.config.bucket
-        )
+        session = self._get_sagemaker_session()
 
         # Sagemaker does not allow environment variables longer than 256
         # characters to be passed to Processor steps. If an environment variable
@@ -493,6 +505,55 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         execution_id = execution_match.group(1) if execution_match else None
 
         return region_name, pipeline_name, execution_id
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Returns:
+            the actual status of the pipeline job.
+
+        Raises:
+            AssertionError: If the run was not executed by to this orchestrator.
+            ValueError: If it fetches an unknown state or if we can not fetch
+                the orchestrator run ID.
+        """
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the Sagemaker client
+        session = self._get_sagemaker_session()
+        sagemaker_client = session.sagemaker_client
+
+        # Fetch the status of the _PipelineExecution
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not fetch "
+                "the status."
+            )
+        status = sagemaker_client.describe_pipeline_execution(
+            PipelineExecutionArn=run_id
+        )["PipelineExecutionStatus"]
+
+        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+        # https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/PipelineState
+        if status in ["Executing", "Stopping"]:
+            return ExecutionStatus.RUNNING
+        elif status in ["Stopped", "Failed"]:
+            return ExecutionStatus.FAILED
+        elif status in ["Succeeded"]:
+            return ExecutionStatus.COMPLETED
+        else:
+            raise ValueError("Unknown status for the pipeline execution.")
 
     def generate_metadata(
         self, execution: Any

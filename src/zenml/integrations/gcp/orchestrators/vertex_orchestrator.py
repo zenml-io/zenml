@@ -48,6 +48,7 @@ from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
+from google.cloud.aiplatform_v1.types import PipelineState
 from kfp import dsl
 from kfp.compiler import Compiler
 
@@ -58,7 +59,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.constants import (
     GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
@@ -83,6 +84,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import (
         PipelineDeploymentResponse,
+        PipelineRunResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack
@@ -601,8 +603,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         job_id = _clean_pipeline_name(run_name)
 
         # Get the credentials that would be used to create the Vertex AI
-        # Pipelines
-        # job.
+        # Pipelines job.
         credentials, project_id = self._get_authentication()
 
         # Instantiate the Vertex AI Pipelines job
@@ -790,6 +791,72 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
 
         return dynamic_component
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Returns:
+            the actual status of the pipeline job.
+
+        Raises:
+            AssertionError: If the run was not executed by to this orchestrator.
+            ValueError: If it fetches an unknown state or if we can not fetch
+                the orchestrator run ID.
+        """
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the Vertex client
+        credentials, project_id = self._get_authentication()
+        aiplatform.init(
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
+        )
+
+        # Fetch the status of the PipelineJob
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not fetch "
+                "the status."
+            )
+        status = aiplatform.PipelineJob.get(run_id).state
+
+        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
+        if status in [PipelineState.PIPELINE_STATE_UNSPECIFIED]:
+            return run.status
+        elif status in [
+            PipelineState.PIPELINE_STATE_QUEUED,
+            PipelineState.PIPELINE_STATE_PENDING,
+        ]:
+            return ExecutionStatus.INITIALIZING
+        elif status in [
+            PipelineState.PIPELINE_STATE_RUNNING,
+            PipelineState.PIPELINE_STATE_PAUSED,
+        ]:
+            return ExecutionStatus.RUNNING
+        elif status in [PipelineState.PIPELINE_STATE_SUCCEEDED]:
+            return ExecutionStatus.COMPLETED
+
+        elif status in [
+            PipelineState.PIPELINE_STATE_FAILED,
+            PipelineState.PIPELINE_STATE_CANCELLING,
+            PipelineState.PIPELINE_STATE_CANCELLED,
+        ]:
+            return ExecutionStatus.FAILED
+        else:
+            raise ValueError("Unknown status for the pipeline job.")
 
     def generate_metadata(
         self, job: aiplatform.PipelineJob

@@ -51,7 +51,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.azure.azureml_utils import create_or_get_compute
 from zenml.integrations.azure.flavors.azureml import AzureMLComputeTypes
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
@@ -69,7 +69,7 @@ from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -436,6 +436,75 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 f"job: {e}"
             )
             return {}
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Returns:
+            the actual status of the pipeline execution.
+
+        Raises:
+            AssertionError: If the run was not executed by to this orchestrator.
+            ValueError: If it fetches an unknown state or if we can not fetch
+                the orchestrator run ID.
+        """
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the AzureML client
+        if connector := self.get_connector():
+            credentials = connector.connect()
+        else:
+            credentials = DefaultAzureCredential()
+
+        ml_client = MLClient(
+            credential=credentials,
+            subscription_id=self.config.subscription_id,
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace,
+        )
+
+        # Fetch the status of the PipelineJob
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not fetch "
+                "the status."
+            )
+        status = ml_client.jobs.get(run_id).status
+
+        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+        # https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.pipelinejob?view=azure-python#azure-ai-ml-entities-pipelinejob-status
+        if status in [
+            "NotStarted",
+            "Starting",
+            "Provisioning",
+            "Preparing",
+            "Queued",
+        ]:
+            return ExecutionStatus.INITIALIZING
+        elif status in ["Running", "Finalizing"]:
+            return ExecutionStatus.RUNNING
+        elif status in [
+            "CancelRequested",
+            "Failed",
+            "Canceled",
+            "NotResponding",
+        ]:
+            return ExecutionStatus.FAILED
+        elif status in ["Completed"]:
+            return ExecutionStatus.COMPLETED
+        else:
+            raise ValueError("Unknown status for the pipeline job.")
 
     def generate_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated AzureML PipelineJob.

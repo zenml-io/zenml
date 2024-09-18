@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
 
 from pydantic import model_validator
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
@@ -255,6 +255,13 @@ class BaseOrchestrator(StackComponent, ABC):
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run."""
+        raise NotImplementedError(
+            "The fetch status functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
 
 
 class BaseOrchestratorFlavor(Flavor):
