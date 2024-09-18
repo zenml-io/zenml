@@ -310,12 +310,12 @@ class PipelineRunResponse(
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
 
     def refresh_run_status(self) -> None:
-        """Function to refresh the status of a pipeline.
+        """Method to refresh the status of a pipeline run.
 
         Raises:
             ValueError: If the stack of the run response is None.
         """
-        # Check the stack
+        # Check if the stack still accessible
         if self.stack is None:
             raise ValueError(
                 "The pipeline run response does not have a stack. It may "
