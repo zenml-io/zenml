@@ -392,7 +392,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             expectation_suite = context.suites.get(name=expectation_suite_name)
 
         # TODO need to create a batch definition
-        batch_definition, batch_parameters = create_batch_definition(context, dataset, data_asset_name)                
+        batch_definition, batch_parameters, datasource_name = create_batch_definition(context, dataset, data_asset_name)                
         
         # create a validation definition
         validation_defintion = ge.ValidationDefinition(
@@ -421,6 +421,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 expectation_parameters=expectation_parameters
             )
         finally:
-            context.delete_datasource(batch_definition.data_asset.datasource.name)
+            context.delete_datasource(datasource_name)
 
         return results
