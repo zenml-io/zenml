@@ -271,7 +271,8 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     )
     latest_run_status: Optional[str] = Field(
         default=None,
-        description="Filter by the status of the latest run of a pipeline.",
+        description="Filter by the status of the latest run of a pipeline. "
+        "This will always be applied as an `AND` filter for now.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -331,7 +332,13 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
                         == latest_pipeline_run_subquery.c.created,
                     ),
                 )
-                .where(PipelineRunSchema.status == self.latest_run_status)
+                .where(
+                    self.generate_custom_query_conditions_for_column(
+                        value=self.latest_run_status,
+                        table=PipelineRunSchema,
+                        column="status",
+                    )
+                )
             )
 
         return query

@@ -142,7 +142,10 @@ class Filter(BaseModel, ABC):
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
 
-    ALLOWED_OPS: ClassVar[List[str]] = [GenericFilterOps.EQUALS]
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
+    ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a boolean column.
@@ -153,6 +156,9 @@ class BoolFilter(Filter):
         Returns:
             A list of query conditions.
         """
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         return column == self.value
 
 
@@ -161,6 +167,7 @@ class StrFilter(Filter):
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.STARTSWITH,
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
@@ -181,6 +188,9 @@ class StrFilter(Filter):
             return column.startswith(f"{self.value}")
         if self.operation == GenericFilterOps.ENDSWITH:
             return column.endswith(f"{self.value}")
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         return column == self.value
 
 
@@ -203,6 +213,9 @@ class UUIDFilter(StrFilter):
         if self.operation == GenericFilterOps.EQUALS:
             return column == self.value
 
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         # For all other operations, cast and handle the column as string
         return super().generate_query_conditions_from_column(
             column=cast_if(column, sqlalchemy.String)
@@ -216,6 +229,7 @@ class NumericFilter(Filter):
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -239,6 +253,8 @@ class NumericFilter(Filter):
             return column <= self.value
         if self.operation == GenericFilterOps.LT:
             return column < self.value
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
         return column == self.value
 
 

@@ -244,6 +244,7 @@ class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
     EQUALS = "equals"
+    NOT_EQUALS = "notequals"
     CONTAINS = "contains"
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
