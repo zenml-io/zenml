@@ -112,25 +112,20 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         if not settings.user_id or not settings.api_key:
             raise ValueError(
-                "Lightning orchestrator requires either `user_id` and `api_key` to be set in the settings."
+                "Lightning orchestrator requires `user_id` and `api_key` both to be set in the settings."
             )
-        if settings.user_id and settings.api_key:
-            os.environ["LIGHTNING_USER_ID"] = settings.user_id
-            os.environ["LIGHTNING_API_KEY"] = settings.api_key
-            if settings.username:
-                os.environ["LIGHTNING_USERNAME"] = settings.username
-            elif settings.organization:
-                os.environ["LIGHTNING_ORG"] = settings.organization
-            else:
-                raise ValueError(
-                    "Lightning orchestrator requires either `username` or `organization` to be set in the settings."
-                )
-            if settings.teamspace:
-                os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
+        os.environ["LIGHTNING_USER_ID"] = settings.user_id
+        os.environ["LIGHTNING_API_KEY"] = settings.api_key
+        if settings.username:
+            os.environ["LIGHTNING_USERNAME"] = settings.username
+        elif settings.organization:
+            os.environ["LIGHTNING_ORG"] = settings.organization
         else:
             raise ValueError(
-                "Lightning orchestrator requires either `user_id` and `api_key` or `username` or `organization` to be set in the settings."
+                "Lightning orchestrator requires either `username` or `organization` to be set in the settings."
             )
+        if settings.teamspace:
+            os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -488,9 +483,6 @@ class LightningOrchestrator(WheeledOrchestrator):
                 code_path,
                 remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
             )
-            studio.upload_file(
-                "/var/folders/0_/5_j3kkj525s3yz7tt0y3jb0r0000gn/T/tmphfwgyyzc.tar.gz",
-            )
             studio.run(
                 f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
@@ -503,9 +495,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
-            studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
-            )
+            studio.run("pip install zenml")
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
                 output = studio.run(
