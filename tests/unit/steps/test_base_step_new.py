@@ -238,3 +238,19 @@ def test_configure_step_with_wrong_materializers():
 
     with pytest.raises(StepInterfaceError):
         step_without_str_union_return._finalize_configuration({}, {}, {}, {})
+
+
+@step
+def step_that_calls_another_step() -> None:
+    step_with_single_output()
+
+
+def test_calling_steps_within_steps_works():
+    """Tests that calling a step within another step works."""
+
+    @pipeline
+    def test_pipeline():
+        step_that_calls_another_step()
+
+    with does_not_raise():
+        test_pipeline()

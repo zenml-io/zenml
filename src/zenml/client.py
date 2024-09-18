@@ -3748,6 +3748,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
+        templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
@@ -3778,6 +3779,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
+            templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3811,6 +3813,7 @@ class Client(metaclass=ClientMetaClass):
             num_steps=num_steps,
             tag=tag,
             unlisted=unlisted,
+            templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(
