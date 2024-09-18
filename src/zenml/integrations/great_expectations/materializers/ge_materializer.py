@@ -16,18 +16,14 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
-    CheckpointResult,
-)
+from great_expectations.checkpoint.checkpoint import Checkpoint, CheckpointResult
 from great_expectations.core import (  # type: ignore[import-untyped]
     ExpectationSuite,
 )
 from great_expectations.core.expectation_validation_result import (  # type: ignore[import-untyped]
     ExpectationSuiteValidationResult,
 )
-from great_expectations.data_context.types.base import (
-    CheckpointConfig,
-)
+
 from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
@@ -80,7 +76,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
                 return ExpectationSuiteValidationResult(**value)
             return value
 
-        artifact_dict["checkpoint_config"] = CheckpointConfig(
+        artifact_dict["checkpoint_config"] = Checkpoint(
             **artifact_dict["checkpoint_config"]
         )
         validation_dict = {}
