@@ -708,7 +708,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(run_template_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 PipelineRunSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -717,7 +717,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(user_filter)
 
-        if self.pipeline is not None:
+        if self.pipeline:
             pipeline_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -761,7 +761,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(model_filter)
 
-        if self.pipeline_name is not None:
+        if self.pipeline_name:
             pipeline_name_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
                 self.generate_custom_query_conditions_for_column(

@@ -377,7 +377,7 @@ class StackFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(component_id_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 StackSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -386,7 +386,7 @@ class StackFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(user_filter)
 
-        if self.component is not None:
+        if self.component:
             component_filter = and_(
                 StackCompositionSchema.stack_id == StackSchema.id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,

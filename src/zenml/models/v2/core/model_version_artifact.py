@@ -288,7 +288,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(custom_name_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 ModelVersionArtifactSchema.artifact_version_id
                 == ArtifactVersionSchema.id,

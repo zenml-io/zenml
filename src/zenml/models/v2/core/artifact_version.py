@@ -556,7 +556,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(custom_name_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 ArtifactVersionSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -565,7 +565,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(user_filter)
 
-        if self.model is not None:
+        if self.model:
             model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,

@@ -360,7 +360,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
             UserSchema,
         )
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 PipelineSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(

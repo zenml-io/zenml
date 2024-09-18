@@ -212,7 +212,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(pipeline_run_name_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 ModelVersionPipelineRunSchema.pipeline_run_id
                 == PipelineRunSchema.id,

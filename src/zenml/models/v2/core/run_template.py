@@ -409,7 +409,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(pipeline_filter)
 
-        if self.user is not None:
+        if self.user:
             user_filter = and_(
                 RunTemplateSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -418,7 +418,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(user_filter)
 
-        if self.pipeline is not None:
+        if self.pipeline:
             pipeline_filter = and_(
                 RunTemplateSchema.source_deployment_id
                 == PipelineDeploymentSchema.id,
