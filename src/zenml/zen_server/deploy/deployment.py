@@ -21,19 +21,27 @@ from zenml.enums import ServerProviderType
 from zenml.services.service_status import ServiceState
 
 
-class ServerDeploymentConfig(BaseModel):
-    """Generic server deployment configuration.
+class LocalServerDeploymentConfig(BaseModel):
+    """Generic local server deployment configuration.
 
-    All server deployment configurations should inherit from this class and
-    handle extra attributes as provider specific attributes.
+    All local server deployment configurations should inherit from this class
+    and handle extra attributes as provider specific attributes.
 
     Attributes:
-        name: Name of the server deployment.
         provider: The server provider type.
     """
 
-    name: str
     provider: ServerProviderType
+
+    @property
+    def url(self) -> Optional[str]:
+        """Get the configured server URL.
+
+        Returns:
+            The configured server URL.
+        """
+        return None
+
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
@@ -44,8 +52,8 @@ class ServerDeploymentConfig(BaseModel):
     )
 
 
-class ServerDeploymentStatus(BaseModel):
-    """Server deployment status.
+class LocalServerDeploymentStatus(BaseModel):
+    """Local server deployment status.
 
     Ideally this should convey the following information:
 
@@ -72,7 +80,7 @@ class ServerDeploymentStatus(BaseModel):
     ca_crt: Optional[str] = None
 
 
-class ServerDeployment(BaseModel):
+class LocalServerDeployment(BaseModel):
     """Server deployment.
 
     Attributes:
@@ -80,8 +88,8 @@ class ServerDeployment(BaseModel):
         status: The server deployment status.
     """
 
-    config: ServerDeploymentConfig
-    status: Optional[ServerDeploymentStatus] = None
+    config: LocalServerDeploymentConfig
+    status: Optional[LocalServerDeploymentStatus] = None
 
     @property
     def is_running(self) -> bool:

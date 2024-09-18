@@ -37,8 +37,8 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationError,
     field_validator,
-    model_validator,
 )
 from requests.adapters import HTTPAdapter, Retry
 
@@ -115,6 +115,9 @@ from zenml.enums import (
 from zenml.exceptions import AuthorizationException, MethodNotAllowedError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.login.credentials import APIToken
+from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.utils import is_zenml_pro_server_url
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -173,6 +176,7 @@ from zenml.models import (
     OAuthDeviceFilter,
     OAuthDeviceResponse,
     OAuthDeviceUpdate,
+    OAuthTokenResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -281,10 +285,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         api_key: The service account API key to use to connect to the Zen
-            server.
-        api_token: The API token to use to connect to the Zen server. Generated
-            by the client and stored in the configuration file on the first
-            login and every time the API key is refreshed.
+            server. This is only set if the API key is configured explicitly via
+            environment variables or the ZenML global configuration file. API
+            keys configured via the CLI are stored in the credentials store
+            instead.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
@@ -294,31 +298,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    username: Optional[str] = None
-    password: Optional[str] = None
     api_key: Optional[str] = None
-    api_token: Optional[str] = None
-    verify_ssl: Union[bool, str] = Field(True, union_mode="left_to_right")
+    verify_ssl: Union[bool, str] = Field(
+        default=True, union_mode="left_to_right"
+    )
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
-
-    @model_validator(mode="after")
-    def validate_credentials(self) -> "RestZenStoreConfiguration":
-        """Validates the credentials provided in the values dictionary.
-
-        Raises:
-            ValueError: If neither api_token nor username nor api_key is set.
-
-        Returns:
-            The values dictionary.
-        """
-        # Check if the values dictionary contains either an API token, an API
-        # key or a username as non-empty strings.
-        if self.api_token or self.username or self.api_key:
-            return self
-        raise ValueError(
-            "Neither api_token nor username nor api_key is set in the "
-            "store config."
-        )
 
     @field_validator("url")
     @classmethod
@@ -411,8 +395,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         # because the `verify_ssl` attribute can be expanded to the contents
         # of the certificate file.
         validate_assignment=False,
-        # Forbid extra attributes set in the class.
-        extra="forbid",
+        # Ignore extra attributes set in the class.
+        extra="ignore",
     )
 
 
@@ -422,7 +406,7 @@ class RestZenStore(BaseZenStore):
     config: RestZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.REST
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
-    _api_token: Optional[str] = None
+    _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
 
     # ====================================
@@ -638,20 +622,6 @@ class RestZenStore(BaseZenStore):
             response_model=APIKeyResponse,
             params={"hydrate": hydrate},
         )
-
-    def set_api_key(self, api_key: str) -> None:
-        """Set the API key to use for authentication.
-
-        Args:
-            api_key: The API key to use for authentication.
-        """
-        self.config.api_key = api_key
-        self.clear_session()
-        # TODO: find a way to persist the API key in the configuration file
-        #  without calling _write_config() here.
-        # This is the only place where we need to explicitly call
-        # _write_config() to persist the global configuration.
-        GlobalConfiguration()._write_config()
 
     def list_api_keys(
         self,
@@ -3979,76 +3949,151 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
-    def _get_auth_token(self) -> str:
-        """Get the authentication token for the REST store.
+    @property
+    def api_token(self) -> str:
+        """Get or generate an API token.
 
         Returns:
-            The authentication token.
+            The API token.
 
         Raises:
             ValueError: if the response from the server isn't in the right
                 format.
         """
-        if self._api_token is None:
-            # Check if the API token is already stored in the config
-            if self.config.api_token:
-                self._api_token = self.config.api_token
-            # Check if the username and password are provided in the config
-            elif (
-                self.config.username is not None
-                and self.config.password is not None
-                or self.config.api_key is not None
-            ):
-                data: Optional[Dict[str, str]] = None
-                if self.config.api_key is not None:
-                    data = {
-                        "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
-                        "password": self.config.api_key,
-                    }
-                elif (
-                    self.config.username is not None
-                    and self.config.password is not None
-                ):
-                    data = {
-                        "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
-                        "username": self.config.username,
-                        "password": self.config.password,
-                    }
+        if self._api_token is None or self._api_token.expired:
+            # Check if a valid API token is already in the cache
+            credentials_store = get_credentials_store()
+            token = credentials_store.get_token(self.url, allow_expired=True)
+            if token and not token.expired:
+                self._api_token = token
+                return self._api_token.access_token
 
-                response = self._handle_response(
-                    requests.post(
-                        self.url + API + VERSION_1 + LOGIN,
-                        data=data,
-                        verify=self.config.verify_ssl,
-                        timeout=self.config.http_timeout,
-                    )
-                )
-                if (
-                    not isinstance(response, dict)
-                    or "access_token" not in response
-                ):
-                    raise ValueError(
-                        f"Bad API Response. Expected access token dict, got "
-                        f"{type(response)}"
-                    )
-                self._api_token = response["access_token"]
-                self.config.api_token = self._api_token
+            # Token is expired or not found in the cache. Time to get a new one.
+
+            if not token:
+                logger.debug(f"Authenticating to {self.url}")
             else:
-                raise ValueError(
-                    "No API token, API key or username/password provided. "
-                    "Please provide either an API token, an API key or a "
-                    "username and password in the ZenML config."
+                logger.debug(
+                    f"Authentication token for {self.url} expired; refreshing..."
                 )
-        return self._api_token
+
+            data: Optional[Dict[str, str]] = None
+            headers: Optional[Dict[str, str]] = {}
+
+            # Check if an API key is configured:
+            #
+            # 1. If an API key is configured in the REST store configuration
+            # (i.e. via environment variables or the ZenML global configuration
+            # file), it has precedence.
+            # 2. If an API key is kept in the credentials store, it is used
+            # as a fallback.
+            api_key = self.config.api_key or credentials_store.get_api_key(
+                self.url
+            )
+
+            api_key_hint = (
+                "\nHint: If you're getting this error in an automated, "
+                "non-interactive workload like a pipeline run or a CI/CD job, "
+                "you should use a service account API key to authenticate to "
+                "the server instead of temporary CLI login credentials. For "
+                "more information, see "
+                "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+            )
+
+            if api_key is not None:
+                # An API key is configured. Use it as a password to
+                # authenticate.
+                data = {
+                    "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
+                    "password": api_key,
+                }
+            elif is_zenml_pro_server_url(self.url):
+                # ZenML Pro tenants use a proprietary authorization grant
+                # where the ZenML Pro API session token is exchanged for a
+                # regular ZenML server access token.
+
+                # Get the ZenML Pro API session token, if cached and valid
+                pro_token = credentials_store.get_pro_token(allow_expired=True)
+                if not pro_token:
+                    raise AuthorizationException(
+                        "You need to be logged in to ZenML Pro in order to "
+                        f"access the ZenML Pro server '{self.url}'. Please run "
+                        "'zenml login' to log in or choose a different server."
+                        + api_key_hint
+                    )
+
+                elif pro_token.expired:
+                    raise AuthorizationException(
+                        "Your ZenML Pro login session has expired. "
+                        "Please log in again using 'zenml login'."
+                        + api_key_hint
+                    )
+
+                data = {
+                    "grant_type": OAuthGrantTypes.ZENML_EXTERNAL.value,
+                }
+                headers.update(
+                    {"Authorization": "Bearer " + pro_token.access_token}
+                )
+            else:
+                if not token:
+                    raise AuthorizationException(
+                        "No valid credentials found. Please run 'zenml login "
+                        f"--url {self.url}' to connect to the current server."
+                        + api_key_hint
+                    )
+                elif token.expired:
+                    raise AuthorizationException(
+                        "Your authentication to the current server has expired. "
+                        "Please log in again using 'zenml login --url "
+                        f"{self.url}'." + api_key_hint
+                    )
+
+            response = self._handle_response(
+                requests.post(
+                    self.url + API + VERSION_1 + LOGIN,
+                    data=data,
+                    verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
+                    headers=headers,
+                )
+            )
+            try:
+                token_response = OAuthTokenResponse.model_validate(response)
+            except ValidationError as e:
+                raise AuthorizationException(
+                    "Unexpected response received while authenticating to "
+                    f"the server {e}"
+                ) from e
+
+            # Cache the token
+            self._api_token = credentials_store.set_token(
+                self.url, token_response
+            )
+
+            # Update the server info in the credentials store with the latest
+            # information from the server.
+            # NOTE: this is the best place to do this because we know that
+            # the token is valid and the server is reachable.
+            try:
+                server_info = self.get_store_info()
+            except Exception as e:
+                logger.warning(f"Failed to get server info: {e}.")
+            else:
+                credentials_store.update_server_info(self.url, server_info)
+
+        return self._api_token.access_token
 
     @property
     def session(self) -> requests.Session:
-        """Authenticate to the ZenML server.
+        """Initialize and return a requests session.
 
         Returns:
-            A requests session with the authentication token.
+            A requests session.
         """
         if self._session is None:
+            # We only need to initialize the session once over the lifetime
+            # of the client. We can swap the token out when it expires.
             if self.config.verify_ssl is False:
                 urllib3.disable_warnings(
                     urllib3.exceptions.InsecureRequestWarning
@@ -4059,40 +4104,58 @@ class RestZenStore(BaseZenStore):
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
-            token = self._get_auth_token()
-            self._session.headers.update({"Authorization": "Bearer " + token})
-            logger.debug("Authenticated to ZenML server.")
+
+        # Note that we return an unauthenticated session here. An API token
+        # is only fetched and set in the authorization header when and if it is
+        # needed.
         return self._session
 
-    def clear_session(self) -> None:
-        """Clear the authentication session and any cached API tokens.
+    def authenticate(self, client_triggered: bool = False) -> None:
+        """Authenticate or re-authenticate to the ZenML server.
 
-        Raises:
-            AuthorizationException: If the API token can't be reset because
-                the store configuration does not contain username and password
-                or an API key to fetch a new token.
+        Args:
+            client_triggered: Whether the authentication was triggered by the
+                client or by the server
         """
-        self._session = None
+        # This is called to trigger an authentication flow, either because
+        # the current API token is expired or no longer valid, or because
+        # a configuration change has happened or merely because an
+        # authentication was never attempted before.
+        #
+        # 1. Drop the API token currently being used, if any.
+        # 2. Clear the current API token from the credentials store, if any,
+        # otherwise it will just be re-used on the next call.
+        # 3. Get a new API token
+
+        # The authentication token could have expired or invalidated through
+        # other means; refresh it and try again. This will clear any cached
+        # token and trigger a new authentication flow.
+        if self._api_token and not client_triggered:
+            if self._api_token.expired:
+                logger.info(
+                    "Authentication session expired; attempting to "
+                    "re-authenticate."
+                )
+            else:
+                logger.info(
+                    "Authentication session was invalidated by the server; "
+                    "This can happen for example if the user's permissions "
+                    "have been revoked or if the server has been restarted "
+                    "and lost its session state. Attempting to "
+                    "re-authenticate."
+                )
+        else:
+            # Never authenticated since the client was created or the client
+            # was explicitly triggered to authenticate.
+            logger.debug(f"Authenticating to {self.url}...")
+
         self._api_token = None
-        # Clear the configured API token only if it's possible to fetch a new
-        # one from the server using other credentials (username/password or
-        # service account API key).
-        if (
-            self.config.username is not None
-            and self.config.password is not None
-            or self.config.api_key is not None
-        ):
-            self.config.api_token = None
-        elif self.config.api_token:
-            raise AuthorizationException(
-                "Unable to refresh invalid API token. This is probably "
-                "because you're connected to your ZenML server with device "
-                "authentication. Rerunning `zenml connect --url "
-                f"{self.config.url}` should solve this issue. "
-                "If you're seeing this error from an automated workload, "
-                "you should probably use a service account to start that "
-                "workload to prevent this error"
-            )
+
+        # Set or refresh the authentication token
+        self.session.headers.update(
+            {"Authorization": "Bearer " + self.api_token}
+        )
+        logger.debug(f"Authenticated to {self.url}")
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -4177,11 +4240,14 @@ class RestZenStore(BaseZenStore):
                 )
             )
         except AuthorizationException:
-            # The authentication token could have expired; refresh it and try
-            # again. This will clear any cached token and trigger a new
-            # authentication flow.
-            self.clear_session()
-            logger.info("Authentication token expired; refreshing...")
+            # TODO: we MUST differentiate between authentication errors that need
+            #  to be handled by re-authenticating and other authorization errors
+            #  like the ones coming from using service connectors. Otherwise, any
+            #  authorization error will invalidate the current API token.
+
+            # We authenticate or re-authenticate here and then try the request
+            # again, this time with an API token in the header.
+            self.authenticate()
 
         try:
             return self._handle_response(
@@ -4194,11 +4260,11 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException:
-            logger.info(
-                "Your authentication token has expired. Please re-authenticate."
-            )
-            raise
+        except AuthorizationException as e:
+            raise AuthorizationException(
+                "Authorization failed. Please check your credentials and your "
+                f"permissions and try again: {e}"
+            ) from e
 
     def get(
         self,

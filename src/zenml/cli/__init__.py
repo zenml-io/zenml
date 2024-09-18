@@ -2523,6 +2523,7 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.login import *
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa

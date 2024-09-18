@@ -30,7 +30,7 @@ from tests.harness.model import (
 )
 
 if TYPE_CHECKING:
-    from zenml.zen_server.deploy.deployment import ServerDeployment
+    from zenml.zen_server.deploy.deployment import LocalServerDeployment
 
 
 class ServerSQLiteTestDeployment(BaseTestDeployment):
@@ -49,21 +49,21 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         self.default_deployment = ClientSQLiteTestDeployment(config)
 
     @property
-    def server(self) -> Optional["ServerDeployment"]:
+    def server(self) -> Optional["LocalServerDeployment"]:
         """Returns the ZenML server corresponding to this configuration.
 
         Returns:
             The server for the deployment if it exists, None otherwise.
         """
         from zenml.enums import ServerProviderType
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
         # Managing the local server deployment is done through a default
         # local deployment with the same config.
         with self.default_deployment.connect():
-            deployer = ServerDeployer()
+            deployer = LocalServerDeployer()
             servers = deployer.list_servers(
-                provider_type=ServerProviderType.LOCAL
+                provider_type=ServerProviderType.DAEMON
             )
             if not servers:
                 return None
@@ -91,8 +91,10 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         """
         from zenml.enums import ServerProviderType
         from zenml.utils.networking_utils import scan_for_available_port
-        from zenml.zen_server.deploy.deployer import ServerDeployer
-        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
+        from zenml.zen_server.deploy.deployment import (
+            LocalServerDeploymentConfig,
+        )
 
         if sys.platform == "win32":
             raise RuntimeError(
@@ -121,10 +123,10 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
                     "Could not find an available port for the ZenML server."
                 )
 
-            deployer = ServerDeployer()
-            server_config = ServerDeploymentConfig(
+            deployer = LocalServerDeployer()
+            server_config = LocalServerDeploymentConfig(
                 name=self.config.name,
-                provider=ServerProviderType.LOCAL,
+                provider=ServerProviderType.DAEMON,
                 port=port,
             )
             deployer.deploy_server(server_config)
@@ -135,7 +137,7 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
 
     def down(self) -> None:
         """Stops the ZenML deployment."""
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
         server = self.server
         if server is None:
@@ -147,7 +149,7 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through the default
         # deployment with the same config.
         with self.default_deployment.connect():
-            deployer = ServerDeployer()
+            deployer = LocalServerDeployer()
             deployer.remove_server(server.config.name)
 
         self.default_deployment.down()

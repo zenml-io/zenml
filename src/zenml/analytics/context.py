@@ -80,7 +80,12 @@ class AnalyticsContext:
             gc = GlobalConfiguration()
             store_info = gc.zen_store.get_store_info()
 
-            if self.in_server:
+            # For local ZenML servers, we always use the client's analytics
+            # opt-in configuration.
+            if (
+                self.in_server
+                and store_info.deployment_type != ServerDeploymentType.LOCAL
+            ):
                 self.analytics_opt_in = store_info.analytics_enabled
             else:
                 self.analytics_opt_in = gc.analytics_opt_in

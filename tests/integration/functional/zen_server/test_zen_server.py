@@ -21,7 +21,10 @@ from zenml.client import Client
 from zenml.constants import DEFAULT_USERNAME
 from zenml.enums import StoreType
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_server.deploy import ServerDeployer, ServerDeploymentConfig
+from zenml.zen_server.deploy import (
+    LocalServerDeployer,
+    LocalServerDeploymentConfig,
+)
 from zenml.zen_server.utils import server_config
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -41,13 +44,13 @@ def test_server_up_down(clean_client, mocker):
         os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
     )
     port = scan_for_available_port(start=8003, stop=9000)
-    deployment_config = ServerDeploymentConfig(
+    deployment_config = LocalServerDeploymentConfig(
         name="test_server",
         provider="local",
         port=port,
     )
     endpoint = f"http://127.0.0.1:{port}"
-    deployer = ServerDeployer()
+    deployer = LocalServerDeployer()
 
     try:
         server = deployer.deploy_server(
@@ -90,5 +93,5 @@ def test_rate_limit_is_not_impacted_by_successful_requests():
 
     repeat = server_config().login_rate_limit_minute * 2
     for _ in range(repeat):
-        zen_store.clear_session()
+        zen_store.authenticate()
         zen_store.session
