@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex AI model deployer flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Dict, Optional, Sequence, Type
 
 from pydantic import BaseModel
 
@@ -22,7 +22,6 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
@@ -39,13 +38,11 @@ class VertexBaseConfig(BaseModel):
     artifact_uri: Optional[str] = None
     model_id: Optional[str] = None
     is_default_version: Optional[bool] = None
-    serving_container_command: Optional[Sequence[str]] = None,
-    serving_container_args: Optional[Sequence[str]] = None,
-    serving_container_environment_variables: Optional[
-        Dict[str, str]
-    ] = None,
-    serving_container_ports: Optional[Sequence[int]] = None,
-    serving_container_grpc_ports: Optional[Sequence[int]] = None,
+    serving_container_command: Optional[Sequence[str]] = None
+    serving_container_args: Optional[Sequence[str]] = None
+    serving_container_environment_variables: Optional[Dict[str, str]] = None
+    serving_container_ports: Optional[Sequence[int]] = None
+    serving_container_grpc_ports: Optional[Sequence[int]] = None
     deployed_model_display_name: Optional[str] = None
     traffic_percentage: Optional[int] = 0
     traffic_split: Optional[Dict[str, int]] = None
@@ -58,33 +55,26 @@ class VertexBaseConfig(BaseModel):
     metadata: Optional[Dict[str, str]] = None
     network: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
-    sync=True,
+    sync: Optional[bool] = True
     deploy_request_timeout: Optional[int] = None
     autoscaling_target_cpu_utilization: Optional[float] = None
     autoscaling_target_accelerator_duty_cycle: Optional[float] = None
     enable_access_logging: Optional[bool] = None
     disable_container_logging: Optional[bool] = None
-    
-    
-    
 
 
-class VertexModelDeployerConfig(
-    BaseModelDeployerConfig, VertexBaseConfig
-):
+class VertexModelDeployerConfig(BaseModelDeployerConfig, VertexBaseConfig):
     """Configuration for the Vertex AI model deployer.
 
     Attributes:
-        model_name: The name of the model.
         project_id: The project ID.
         location: The location of the model.
-        version: The version of the model.
     """
 
     # The namespace to list endpoints for. Set to `"*"` to list all endpoints
     # from all namespaces (i.e. personal namespace and all orgs the user belongs to).
-    model_name: str
-    
+    project_id: str
+    location: Optional[str] = None
 
 
 class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -124,7 +114,7 @@ class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_registry/vertexai.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/gcp.png"
 
     @property
     def config_class(self) -> Type[VertexModelDeployerConfig]:

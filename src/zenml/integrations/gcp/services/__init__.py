@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Initialization of the MLflow Service."""
 
-from zenml.integrations.mlflow.services.mlflow_deployment import (  # noqa
-    MLFlowDeploymentConfig,
-    MLFlowDeploymentService,
+from zenml.integrations.gcp.services.vertex_deployment import (  # noqa
+    VertexServiceConfig,
+    VertexDeploymentService,
 )
+
+__all__ = ["VertexServiceConfig", "VertexDeploymentService"]

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Vertex AI Model Deployer."""
 
-from typing import ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import ClassVar, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -23,9 +23,6 @@ from zenml.integrations.gcp import VERTEX_SERVICE_ARTIFACT
 from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
     VertexModelDeployerConfig,
     VertexModelDeployerFlavor,
-)
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsMixin,
 )
 from zenml.integrations.gcp.services.vertex_deployment import (
     VertexDeploymentService,
@@ -43,12 +40,18 @@ from zenml.stack.stack_validator import StackValidator
 
 logger = get_logger(__name__)
 
-class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
-    """Vertex implementation of the BaseModelDeployer."""
+
+class VertexModelDeployer(BaseModelDeployer):
+    """Vertex AI endpoint model deployer."""
+
+    NAME: ClassVar[str] = "Vertex AI"
+    FLAVOR: ClassVar[Type["BaseModelDeployerFlavor"]] = (
+        VertexModelDeployerFlavor
+    )
 
     @property
     def config(self) -> VertexModelDeployerConfig:
-        """Config class for the Vertex AI Model deployer settings class.
+        """Returns the `VertexModelDeployerConfig` config.
 
         Returns:
             The configuration.
@@ -60,14 +63,13 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Validates the stack.
 
         Returns:
-            A validator that checks that the stack contains a remote artifact
-            store.
+            A validator that checks that the stack contains required GCP components.
         """
 
-        def _validate_if_secret_or_token_is_present(
+        def _validate_gcp_stack(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            """Check if secret or token is present in the stack.
+            """Check if GCP components are properly configured in the stack.
 
             Args:
                 stack: The stack to validate.
@@ -76,33 +78,34 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
                 A tuple with a boolean indicating whether the stack is valid
                 and a message describing the validation result.
             """
-            return bool(self.config.token or self.config.secret_name), (
-                "The Vertex AI model deployer requires either a secret name"
-                " or a token to be present in the stack."
-            )
+            if not self.config.project_id or not self.config.location:
+                return False, (
+                    "The Vertex AI model deployer requires a GCP project and "
+                    "location to be specified in the configuration."
+                )
+            return True, "Stack is valid for Vertex AI model deployment."
 
         return StackValidator(
-            custom_validation_function=_validate_if_secret_or_token_is_present,
+            custom_validation_function=_validate_gcp_stack,
         )
 
-    def _create_new_service(
-        self, id: UUID, timeout: int, config: VertexServiceConfig
+    def _create_deployment_service(
+        self, id: UUID, timeout: int, config: VertexModelDeployerConfig
     ) -> VertexDeploymentService:
-        """Creates a new VertexDeploymentService.
+        """Creates a new DatabricksDeploymentService.
 
         Args:
-            id: the UUID of the model to be deployed with Vertex AI model deployer.
-            timeout: the timeout in seconds to wait for the Vertex AI inference endpoint
+            id: the UUID of the model to be deployed with Databricks model deployer.
+            timeout: the timeout in seconds to wait for the Databricks inference endpoint
                 to be provisioned and successfully started or updated.
-            config: the configuration of the model to be deployed with Vertex AI model deployer.
+            config: the configuration of the model to be deployed with Databricks model deployer.
 
         Returns:
-            The VertexServiceConfig object that can be used to interact
-            with the Vertex AI inference endpoint.
+            The VertexModelDeployerConfig object that can be used to interact
+            with the Databricks inference endpoint.
         """
         # create a new service for the new model
         service = VertexDeploymentService(uuid=id, config=config)
-
         logger.info(
             f"Creating an artifact {VERTEX_SERVICE_ARTIFACT} with service instance attached as metadata."
             " If there's an active pipeline and/or model this artifact will be associated with it."
@@ -110,65 +113,47 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         service.start(timeout=timeout)
         return service
 
-    def _clean_up_existing_service(
-        self,
-        timeout: int,
-        force: bool,
-        existing_service: VertexDeploymentService,
-    ) -> None:
-        """Stop existing services.
-
-        Args:
-            timeout: the timeout in seconds to wait for the Vertex AI
-                deployment to be stopped.
-            force: if True, force the service to stop
-            existing_service: Existing Vertex AI deployment service
-        """
-        # stop the older service
-        existing_service.stop(timeout=timeout, force=force)
-
     def perform_deploy_model(
         self,
         id: UUID,
         config: ServiceConfig,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new Vertex AI deployment service or update an existing one.
-
-        This should serve the supplied model and deployment configuration.
+        """Deploy a model to Vertex AI.
 
         Args:
-            id: the UUID of the model to be deployed with Vertex AI.
-            config: the configuration of the model to be deployed with Vertex AI.
-            timeout: the timeout in seconds to wait for the Vertex AI endpoint
-                to be provisioned and successfully started or updated. If set
-                to 0, the method will return immediately after the Vertex AI
-                server is provisioned, without waiting for it to fully start.
+            id: the UUID of the service to be created.
+            config: the configuration of the model to be deployed.
+            timeout: the timeout for the deployment operation.
 
         Returns:
-            The ZenML Vertex AI deployment service object that can be used to
-            interact with the remote Vertex AI inference endpoint server.
+            The ZenML Vertex AI deployment service object.
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(VertexServiceConfig, config)
-            # create a new VertexDeploymentService instance
-            service = self._create_new_service(
-                id=id, timeout=timeout, config=config
-            )
+            service = self._create_deployment_service(id=id, config=config)
             logger.info(
-                f"Creating a new Vertex AI inference endpoint service: {service}"
+                f"Creating a new Vertex AI deployment service: {service}"
             )
-            # Add telemetry with metadata that gets the stack metadata and
-            # differentiates between pure model and custom code deployments
-            stack = Client().active_stack
+            service.start(timeout=timeout)
+
+            client = Client()
+            stack = client.active_stack
             stack_metadata = {
                 component_type.value: component.flavor
                 for component_type, component in stack.components.items()
             }
             analytics_handler.metadata = {
-                "store_type": Client().zen_store.type.value,
+                "store_type": client.zen_store.type.value,
                 **stack_metadata,
             }
+
+            # Create a service artifact
+            client.create_artifact(
+                name=VERTEX_SERVICE_ARTIFACT,
+                artifact_store_id=client.active_stack.artifact_store.id,
+                producer=service,
+            )
 
         return service
 
@@ -178,7 +163,7 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> BaseService:
-        """Method to stop a model server.
+        """Stop a Vertex AI deployment service.
 
         Args:
             service: The service to stop.
@@ -196,7 +181,7 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         service: BaseService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Method to start a model server.
+        """Start a Vertex AI deployment service.
 
         Args:
             service: The service to start.
@@ -214,7 +199,7 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
-        """Method to delete all configuration of a model server.
+        """Delete a Vertex AI deployment service.
 
         Args:
             service: The service to delete.
@@ -222,23 +207,66 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
             force: If True, force the service to stop.
         """
         service = cast(VertexDeploymentService, service)
-        self._clean_up_existing_service(
-            existing_service=service, timeout=timeout, force=force
-        )
+        service.stop(timeout=timeout, force=force)
+        service.delete()
 
     @staticmethod
-    def get_model_server_info(  # type: ignore[override]
+    def get_model_server_info(
         service_instance: "VertexDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """Return implementation specific information that might be relevant to the user.
+        """Get information about the deployed model server.
 
         Args:
-            service_instance: Instance of a VertexDeploymentService
+            service_instance: The VertexDeploymentService instance.
 
         Returns:
-            Model server information.
+            A dictionary containing information about the model server.
         """
         return {
-            "PREDICTION_URL": service_instance.get_prediction_url(),
+            "PREDICTION_URL": service_instance.prediction_url,
             "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
         }
+
+    def find_model_server(
+        self,
+        running: Optional[bool] = None,
+        service_uuid: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        run_name: Optional[str] = None,
+        pipeline_step_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_uri: Optional[str] = None,
+        model_version: Optional[str] = None,
+    ) -> List[BaseService]:
+        """Find deployed model servers in Vertex AI.
+
+        Args:
+            running: Filter by running status.
+            service_uuid: Filter by service UUID.
+            pipeline_name: Filter by pipeline name.
+            run_name: Filter by run name.
+            pipeline_step_name: Filter by pipeline step name.
+            model_name: Filter by model name.
+            model_uri: Filter by model URI.
+            model_version: Filter by model version.
+
+        Returns:
+            A list of services matching the given criteria.
+        """
+        client = Client()
+        services = client.list_services(
+            service_type=VertexDeploymentService.SERVICE_TYPE,
+            running=running,
+            service_uuid=service_uuid,
+            pipeline_name=pipeline_name,
+            run_name=run_name,
+            pipeline_step_name=pipeline_step_name,
+            model_name=model_name,
+            model_uri=model_uri,
+            model_version=model_version,
+        )
+
+        return [
+            VertexDeploymentService.from_model(service_model)
+            for service_model in services
+        ]

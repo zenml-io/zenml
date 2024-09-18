@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization of the Vertex AI model deployers."""
 
-from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (  # noqa
-    VertexModelDeployer,
+from zenml.integrations.gcp.model_registries.vertex_model_registry import (
+    VertexAIModelRegistry
 )
 
-__all__ = ["VertexModelDeployer"]
+__all__ = ["VertexAIModelRegistry"]

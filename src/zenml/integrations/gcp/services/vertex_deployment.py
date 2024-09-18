@@ -13,35 +13,76 @@
 #  permissions and limitations under the License.
 """Implementation of the Vertex AI Deployment service."""
 
-from typing import TYPE_CHECKING, Any, Generator, Optional, Tuple, cast
+import re
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
-from pydantic import Field
-
+from google.api_core import exceptions
 from google.cloud import aiplatform
+from pydantic import BaseModel, Field
 
-from zenml.client import Client
-from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
-    VertexBaseConfig,
-)
+from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import VertexBaseConfig
 from zenml.logger import get_logger
 from zenml.services import ServiceState, ServiceStatus, ServiceType
 from zenml.services.service import BaseDeploymentService, ServiceConfig
-
-if TYPE_CHECKING:
-    from google.auth.credentials import Credentials
 
 logger = get_logger(__name__)
 
 POLLING_TIMEOUT = 1200
 UUID_SLICE_LENGTH: int = 8
 
+def sanitize_labels(labels: Dict[str, str]) -> None:
+    """Update the label values to be valid Kubernetes labels.
 
-class VertexServiceConfig(VertexBaseConfig, ServiceConfig):
+    See:
+    https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+    Args:
+        labels: the labels to sanitize.
+    """
+    for key, value in labels.items():
+        # Kubernetes labels must be alphanumeric, no longer than
+        # 63 characters, and must begin and end with an alphanumeric
+        # character ([a-z0-9A-Z])
+        labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
+            "-_."
+        )
+        
+class VertexAIDeploymentConfig(VertexBaseConfig, ServiceConfig):
     """Vertex AI service configurations."""
+
+    def get_vertex_deployment_labels(self) -> Dict[str, str]:
+        """Generate labels for the VertexAI deployment from the service configuration.
+
+        These labels are attached to the VertexAI deployment resource
+        and may be used as label selectors in lookup operations.
+
+        Returns:
+            The labels for the VertexAI deployment.
+        """
+        labels = {}
+        if self.pipeline_name:
+            labels["zenml_pipeline_name"] = self.pipeline_name
+        if self.pipeline_step_name:
+            labels["zenml_pipeline_step_name"] = self.pipeline_step_name
+        if self.model_name:
+            labels["zenml_model_name"] = self.model_name
+        if self.model_uri:
+            labels["zenml_model_uri"] = self.model_uri
+        sanitize_labels(labels)
+        return labels
+
+
+class VertexPredictionServiceEndpoint(BaseModel):
+    """Vertex AI Prediction Service Endpoint."""
+
+    endpoint_name: str
+    endpoint_url: Optional[str] = None
 
 
 class VertexServiceStatus(ServiceStatus):
     """Vertex AI service status."""
+
+    endpoint: Optional[VertexPredictionServiceEndpoint] = None
 
 
 class VertexDeploymentService(BaseDeploymentService):
@@ -59,12 +100,12 @@ class VertexDeploymentService(BaseDeploymentService):
         flavor="vertex",
         description="Vertex AI inference endpoint prediction service",
     )
-    config: VertexServiceConfig
+    config: VertexAIDeploymentConfig
     status: VertexServiceStatus = Field(
         default_factory=lambda: VertexServiceStatus()
     )
 
-    def __init__(self, config: VertexServiceConfig, credentials: Tuple["Credentials", str], **attrs: Any):
+    def __init__(self, config: VertexAIDeploymentConfig, **attrs: Any):
         """Initialize the Vertex AI deployment service.
 
         Args:
@@ -72,55 +113,7 @@ class VertexDeploymentService(BaseDeploymentService):
             attrs: additional attributes to set on the service
         """
         super().__init__(config=config, **attrs)
-        self._config = config
-        self._project, self._credentials = credentials  # Store credentials as a private attribute
-        
-    @property
-    def config(self) -> VertexServiceConfig:
-        """Returns the config of the deployment service.
-
-        Returns:
-            The config of the deployment service.
-        """
-        return cast(VertexServiceConfig, self._config)
-
-    def get_token(self) -> str:
-        """Get the Vertex AI token.
-
-        Raises:
-            ValueError: If token not found.
-
-        Returns:
-            Vertex AI token.
-        """
-        client = Client()
-        token = None
-        if self.config.secret_name:
-            secret = client.get_secret(self.config.secret_name)
-            token = secret.secret_values["token"]
-        else:
-            from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
-                VertexModelDeployer,
-            )
-
-            model_deployer = client.active_stack.model_deployer
-            if not isinstance(model_deployer, VertexModelDeployer):
-                raise ValueError(
-                    "VertexModelDeployer is not active in the stack."
-                )
-            token = model_deployer.config.token or None
-        if not token:
-            raise ValueError("Token not found.")
-        return token
-
-    @property
-    def vertex_model(self) -> aiplatform.Model:
-        """Get the deployed Vertex AI inference endpoint.
-
-        Returns:
-            Vertex AI inference endpoint.
-        """
-        return aiplatform.Model(f"projects/{self.__project}/locations/{self.config.location}/models/{self.config.model_id}")
+        aiplatform.init(project=config.project, location=config.location)
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -130,64 +123,67 @@ class VertexDeploymentService(BaseDeploymentService):
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
-        return self.hf_endpoint.url if self.is_running else None
+        return (
+            self.status.endpoint.endpoint_url if self.status.endpoint else None
+        )
+
+    def get_endpoints(self) -> List[aiplatform.Endpoint]:
+        """Get all endpoints for the current project and location."""
+        return aiplatform.Endpoint.list()
+
+    def _generate_endpoint_name(self) -> str:
+        """Generate a unique name for the Vertex AI Inference Endpoint.
+
+        Returns:
+            A unique name for the Vertex AI Inference Endpoint.
+        """
+        return f"{self.config.model_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
 
     def provision(self) -> None:
-        """Provision or update remote Vertex AI deployment instance.
-
-        Raises:
-            Exception: If any unexpected error while creating inference endpoint.
-        """
+        """Provision or update remote Vertex AI deployment instance."""
         try:
-            # Attempt to create and wait for the inference endpoint
-            vertex_endpoint = self.vertex_model.deploy(
-                deployed_model_display_name=self.config.deployed_model_display_name,
-                traffic_percentage=self.config.traffic_percentage,
-                traffic_split=self.config.traffic_split,
+            model = aiplatform.Model(
+                model_name=self.config.model_name,
+                version=self.config.model_version,
+            )
+
+            endpoint = aiplatform.Endpoint.create(
+                display_name=self._generate_endpoint_name()
+            )
+
+            deployment = endpoint.deploy(
+                model=model,
                 machine_type=self.config.machine_type,
                 min_replica_count=self.config.min_replica_count,
                 max_replica_count=self.config.max_replica_count,
                 accelerator_type=self.config.accelerator_type,
                 accelerator_count=self.config.accelerator_count,
                 service_account=self.config.service_account,
-                metadata=self.config.metadata,
-                deploy_request_timeout=self.config.deploy_request_timeout,
-                autoscaling_target_cpu_utilization=self.config.autoscaling_target_cpu_utilization,
-                autoscaling_target_accelerator_duty_cycle=self.config.autoscaling_target_accelerator_duty_cycle,
-                enable_access_logging=self.config.enable_access_logging,
-                disable_container_logging=self.config.disable_container_logging,
+                network=self.config.network,
                 encryption_spec_key_name=self.config.encryption_spec_key_name,
-                deploy_request_timeout=self.config.deploy_request_timeout,
+                explanation_metadata=self.config.explanation_metadata,
+                explanation_parameters=self.config.explanation_parameters,
+                sync=True,
+            )
+
+            self.status.endpoint = VertexPredictionServiceEndpoint(
+                endpoint_name=endpoint.resource_name,
+                endpoint_url=endpoint.resource_name,
+            )
+            self.status.update_state(ServiceState.ACTIVE)
+
+            logger.info(
+                f"Vertex AI inference endpoint successfully deployed. "
+                f"Endpoint: {endpoint.resource_name}"
             )
 
         except Exception as e:
             self.status.update_state(
                 new_state=ServiceState.ERROR, error=str(e)
             )
-            # Catch-all for any other unexpected errors
-            raise Exception(
-                f"An unexpected error occurred while provisioning the Vertex AI inference endpoint: {e}"
+            raise RuntimeError(
+                f"An error occurred while provisioning the Vertex AI inference endpoint: {e}"
             )
-
-        # Check if the endpoint URL is available after provisioning
-        if vertex_endpoint.
-            logger.info(
-                f"Vertex AI inference endpoint successfully deployed and available. Endpoint URL: {hf_endpoint.url}"
-            )
-        else:
-            logger.error(
-                "Failed to start Vertex AI inference endpoint service: No URL available, please check the Vertex AI console for more details."
-            )
-
-    def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the Vertex AI deployment.
-
-        Returns:
-            The operational state of the Vertex AI deployment and a message
-            providing additional information about that state (e.g. a
-            description of the error, if one is encountered).
-        """
-        pass
 
     def deprovision(self, force: bool = False) -> None:
         """Deprovision the remote Vertex AI deployment instance.
@@ -196,43 +192,97 @@ class VertexDeploymentService(BaseDeploymentService):
             force: if True, the remote deployment instance will be
                 forcefully deprovisioned.
         """
-        try:
-            self.vertex_model.undeploy()
-        except HfHubHTTPError:
-            logger.error(
-                "Vertex AI Inference Endpoint is deleted or cannot be found."
-            )
+        if self.status.endpoint:
+            try:
+                endpoint = aiplatform.Endpoint(
+                    endpoint_name=self.status.endpoint.endpoint_name
+                )
+                endpoint.undeploy_all()
+                endpoint.delete(force=force)
+                self.status.endpoint = None
+                self.status.update_state(ServiceState.INACTIVE)
+                logger.info(
+                    f"Vertex AI Inference Endpoint {self.status.endpoint.endpoint_name} has been deprovisioned."
+                )
+            except exceptions.NotFound:
+                logger.warning(
+                    f"Vertex AI Inference Endpoint {self.status.endpoint.endpoint_name} not found. It may have been already deleted."
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to deprovision Vertex AI Inference Endpoint: {e}"
+                )
 
-    def predict(self, data: "Any", max_new_tokens: int) -> "Any":
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the current operational state of the Vertex AI deployment.
+
+        Returns:
+            The operational state of the Vertex AI deployment and a message
+            providing additional information about that state.
+        """
+        if not self.status.endpoint:
+            return ServiceState.INACTIVE, "Endpoint not provisioned"
+
+        try:
+            endpoint = aiplatform.Endpoint(
+                endpoint_name=self.status.endpoint.endpoint_name
+            )
+            deployments = endpoint.list_deployments()
+
+            if not deployments:
+                return ServiceState.INACTIVE, "No active deployments"
+
+            # Check the state of all deployments
+            for deployment in deployments:
+                if deployment.state == "ACTIVE":
+                    return ServiceState.ACTIVE, "Deployment is active"
+                elif deployment.state == "DEPLOYING":
+                    return (
+                        ServiceState.PENDING_STARTUP,
+                        "Deployment is in progress",
+                    )
+                elif deployment.state in ["FAILED", "DELETING"]:
+                    return (
+                        ServiceState.ERROR,
+                        f"Deployment is in {deployment.state} state",
+                    )
+
+            return ServiceState.INACTIVE, "No active deployments found"
+
+        except exceptions.NotFound:
+            return ServiceState.INACTIVE, "Endpoint not found"
+        except Exception as e:
+            return ServiceState.ERROR, f"Error checking status: {str(e)}"
+
+    def predict(self, instances: List[Any]) -> List[Any]:
         """Make a prediction using the service.
 
         Args:
-            data: input data
-            max_new_tokens: Number of new tokens to generate
+            instances: List of instances to predict.
 
         Returns:
-            The prediction result.
+            The prediction results.
 
         Raises:
-            Exception: if the service is not running
-            NotImplementedError: if task is not supported.
+            Exception: if the service is not running or prediction fails.
         """
         if not self.is_running:
             raise Exception(
                 "Vertex AI endpoint inference service is not running. "
                 "Please start the service before making predictions."
             )
-        if self.prediction_url is not None:
-            if self.hf_endpoint.task == "text-generation":
-                result = self.inference_client.task_generation(
-                    data, max_new_tokens=max_new_tokens
-                )
-        else:
-            # TODO: Add support for all different supported tasks
-            raise NotImplementedError(
-                "Tasks other than text-generation is not implemented."
+
+        if not self.status.endpoint:
+            raise Exception("Endpoint information is missing.")
+
+        try:
+            endpoint = aiplatform.Endpoint(
+                endpoint_name=self.status.endpoint.endpoint_name
             )
-        return result
+            response = endpoint.predict(instances=instances)
+            return response.predictions
+        except Exception as e:
+            raise RuntimeError(f"Prediction failed: {str(e)}")
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
@@ -247,17 +297,27 @@ class VertexDeploymentService(BaseDeploymentService):
             A generator that can be accessed to get the service logs.
         """
         logger.info(
-            "Vertex AI Endpoints provides access to the logs of "
-            "your Endpoints through the UI in the “Logs” tab of your Endpoint"
+            "Vertex AI Endpoints provides access to the logs through "
+            "Cloud Logging. Please check the Google Cloud Console for detailed logs."
         )
-        return  # type: ignore
+        yield "Logs are available in Google Cloud Console."
 
-    def _generate_an_endpoint_name(self) -> str:
-        """Generate a unique name for the Vertex AI Inference Endpoint.
+    @property
+    def is_running(self) -> bool:
+        """Check if the service is running.
 
         Returns:
-            A unique name for the Vertex AI Inference Endpoint.
+            True if the service is in the ACTIVE state, False otherwise.
         """
-        return (
-            f"{self.config.service_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
-        )
+        state, _ = self.check_status()
+        return state == ServiceState.ACTIVE
+
+    def start(self) -> None:
+        """Start the Vertex AI deployment service."""
+        if not self.is_running:
+            self.provision()
+
+    def stop(self) -> None:
+        """Stop the Vertex AI deployment service."""
+        if self.is_running:
+            self.deprovision()
