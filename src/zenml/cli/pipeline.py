@@ -35,6 +35,7 @@ from zenml.models import (
 )
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
+from zenml.utils.status_utils import refresh_run_status
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -498,6 +499,29 @@ def delete_pipeline_run(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
+
+
+@runs.command("refresh")
+@click.argument("run_name_or_id", type=str, required=True)
+def refresh_pipeline_run(run_name_or_id: str) -> None:
+    """Refresh the status of a pipeline run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to refresh.
+    """
+    try:
+        # Fetch and update the run
+        run = Client().get_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+        )
+        refresh_run_status(run)
+
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Refreshed the status of pipeline run '{run.name}'."
+        )
 
 
 @pipeline.group()
