@@ -399,9 +399,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 f"Installing requirements: {pipeline_requirements_to_string}"
             )
             studio.run(f"uv pip install {pipeline_requirements_to_string}")
-            studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
-            )
+            studio.run("pip install zenml -y")
 
             for custom_command in settings.custom_commands or []:
                 studio.run(
@@ -495,7 +493,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
-            studio.run("pip install zenml")
+            studio.run("pip install zenml -y")
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
                 output = studio.run(
@@ -568,9 +566,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         studio.run("pip install uv")
         studio.run(f"uv pip install {details['requirements']}")
-        studio.run(
-            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git"
-        )
+        studio.run("pip install zenml -y")
         # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
         for command in custom_commands or []:
             output = studio.run(
