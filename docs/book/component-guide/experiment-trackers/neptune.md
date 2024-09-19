@@ -97,6 +97,7 @@ from neptune.utils import stringify_unsupported
 from zenml import get_step_context
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+from sklearn.datasets import load_iris
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.integrations.neptune.experiment_trackers import NeptuneExperimentTracker
@@ -255,7 +256,7 @@ def train_model() -> SVC:
     
     model.fit(X_train, y_train)
 
-    # Log the model to Neptune
+    # Log parameters and model to Neptune
     neptune_run = get_neptune_run()
     neptune_run["parameters"] = params
     neptune_run["estimator/pickled-model"] = npt_utils.get_pickled_model(model)
@@ -282,7 +283,7 @@ def evaluate_model(model: SVC):
         context.step_run.get_metadata().model_dump()
     )
     
-    # Log metrics using Neptune
+    # Log accuracy metric to Neptune
     neptune_run["metrics/accuracy"] = accuracy
 
     return accuracy
