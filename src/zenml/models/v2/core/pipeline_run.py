@@ -313,6 +313,9 @@ class PipelineRunResponse(
     def refresh_run_status(self) -> "PipelineRunResponse":
         """Method to refresh the status of a pipeline run.
 
+        Returns:
+            The updated pipeline.
+
         Raises:
             ValueError: If the stack of the run response is None.
         """
