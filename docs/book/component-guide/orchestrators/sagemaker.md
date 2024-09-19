@@ -203,6 +203,38 @@ Check out [this docs page](../../how-to/use-configuration-files/runtime-configur
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator) .
 
+### Using Warm Pools for your pipelines
+
+[Warm Pools in SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/train-warm-pools.html) can significantly reduce the startup time of your pipeline steps, leading to faster iterations and improved development efficiency. This feature keeps compute instances in a "warm" state, ready to quickly start new jobs.
+
+To enable Warm Pools, use the `SagemakerOrchestratorSettings` class:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    keep_alive_period_in_seconds = 300, # 5 minutes, default value
+)
+```
+
+This configuration keeps instances warm for 5 minutes after each job completes, allowing subsequent jobs to start faster if initiated within this timeframe. The reduced startup time can be particularly beneficial for iterative development processes or frequently run pipelines.
+
+If you prefer not to use Warm Pools, you can explicitly disable them:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    keep_alive_period_in_seconds = None,
+)
+```
+
+By default, the SageMaker orchestrator uses Training Steps where possible, which can offer performance benefits and better integration with SageMaker's training capabilities. To disable this behavior:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    use_training_steps_where_possible = False
+)
+```
+
+These settings allow you to fine-tune your SageMaker orchestrator configuration, balancing between faster startup times with Warm Pools and more control over resource usage. By optimizing these settings, you can potentially reduce overall pipeline runtime and improve your development workflow efficiency.
+
 #### S3 data access in ZenML steps
 
 In Sagemaker jobs, it is possible to [access data that is located in S3](https://docs.aws.amazon.com/sagemaker/latest/dg/model-access-training-data.html). Similarly, it is possible to write data from a job to a bucket. The ZenML Sagemaker orchestrator supports this via the `SagemakerOrchestratorSettings` and hence at component, pipeline, and step levels.
