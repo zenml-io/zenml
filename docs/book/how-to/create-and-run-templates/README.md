@@ -22,6 +22,8 @@ custom parameters.
 - **API-Friendly**: Perfect for integration with other tools and 
 automation workflows.
 
+![Run Template](../../.gitbook/assets/run-templates.gif)
+
 ## Getting Started
 
 {% hint style="success" %}
