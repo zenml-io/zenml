@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from typing import Optional
 from unittest.mock import ANY, patch
 from uuid import uuid4
 
@@ -27,10 +28,15 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase, PipelineRunResponse
+from zenml.models import (
+    Page,
+    PipelineBuildBase,
+    PipelineDeploymentBase,
+    PipelineRunResponse,
+)
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseParameters, step
-from typing import Optional
+
 
 def create_pipeline_with_param_value(param_value: int):
     """Creates pipeline instance with a step named 'step' which has a parameter named 'value'."""
@@ -489,7 +495,7 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 
     def assert_cache_enabled(
         deployment: PipelineDeploymentBase,
-        placeholder_run: Optional[PipelineRunResponse] = None
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ):
         assert deployment.pipeline_configuration.enable_cache is True
         for step_ in deployment.step_configurations.values():
@@ -497,7 +503,7 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 
     def assert_cache_disabled(
         deployment: PipelineDeploymentBase,
-        placeholder_run: Optional[PipelineRunResponse] = None
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ):
         assert deployment.pipeline_configuration.enable_cache is False
         for step_ in deployment.step_configurations.values():
