@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -104,7 +104,7 @@ def list_runs(
 def get_run(
     run_id: UUID,
     hydrate: bool = True,
-    refresh_status: Optional[bool] = False,
+    refresh_status: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
