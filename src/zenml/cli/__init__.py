@@ -1715,6 +1715,13 @@ To delete a pipeline run, use:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
+To refresh the status of a pipeline run, you can use the `refresh` command (
+only supported for pipelines executed on Vertex, Sagemaker or AzureML).
+
+```bash
+zenml pipeline runs refresh <PIPELINE_RUN_NAME_OR_ID>
+```
+
 If you run any of your pipelines with `pipeline.run(schedule=...)`, ZenML keeps
 track of the schedule and you can list all schedules via:
 
