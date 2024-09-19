@@ -229,9 +229,9 @@ def test_integration_requirements_exporting(tmp_path) -> None:
     from zenml.integrations.mlflow import MlflowIntegration
 
     flow_integration_requirements = set(
-        AirflowIntegration.REQUIREMENTS
-        + KubeflowIntegration.REQUIREMENTS
-        + MlflowIntegration.REQUIREMENTS
+        AirflowIntegration.get_requirements()
+        + KubeflowIntegration.get_requirements()
+        + MlflowIntegration.get_requirements()
     )
 
     command = [
