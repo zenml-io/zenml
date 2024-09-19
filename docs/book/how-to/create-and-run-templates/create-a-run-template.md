@@ -1,5 +1,5 @@
 ---
-description: Create a run template
+description: From a pipeline run to a template
 ---
 
 # Create a run template from a previous pipeline run

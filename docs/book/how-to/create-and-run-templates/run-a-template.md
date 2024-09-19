@@ -1,5 +1,5 @@
 ---
-description: Run a template
+description: From a template to a pipeline run
 ---
 
 # Run a template
@@ -9,9 +9,9 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
 [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
-Once you have created your run template, you can **run** it and create a new 
-pipeline run that will run on the same stack. During this process, you can 
-seamlessly readjust the configuration of your pipelines and steps.
+Once your template is set up, you can **run** it and create a new pipeline run 
+that will be conducted on the same stack. Before it starts, you have a window
+to seamlessly readjust the configuration of your pipelines and steps.
 
 ## Run a template using the Python SDK
 
@@ -40,7 +40,7 @@ In order to run a template from the dashboard:
 - You can go to a specific template page and click on `Run Template`.
 
 Either way, you will be forwarded to a page where you will see the 
-`Run Details`. Here, you have the option to upload [a `.yaml` configurations
+`Run Details`. Here, you have the option to upload a `.yaml` [configurations
 file](https://docs.zenml.io/how-to/use-configuration-files) or change the 
 configuration on the go by using our editor **(powered with auto-completion and 
 type hints)**.

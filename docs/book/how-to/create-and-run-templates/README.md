@@ -8,16 +8,15 @@ to simplify and accelerate your workflow!
 
 ## What are Run Templates?
 
-**Run Templates** allow you to create pre-configured pipeline run that can 
-be easily executed from the ZenML dashboard or via our Client/REST API. 
-Think of them as blueprints for your pipeline runs, ready to be customized 
-on the fly.
+**Run Templates** are pre-defined, parameterized configurations for your ZenML 
+pipelines that can be easily executed from the ZenML dashboard or via our 
+Client/REST API. Think of them as blueprints for your pipeline runs, ready 
+to be customized on the fly.
 
 ## Why Use Run Templates?
 
 - **Efficient Iteration**: Test different configurations rapidly without 
 modifying your codebase.
-- **Consistency**: Ensure standardized runs across your team.
 - **Accessibility**: Empower non-technical team members to run pipelines with 
 custom parameters.
 - **API-Friendly**: Perfect for integration with other tools and 
