@@ -6,7 +6,7 @@ description: Create a run template
 
 {% hint style="success" %}
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) get access.
+[sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 In order to create a run template, you need **a pipeline run that was executed

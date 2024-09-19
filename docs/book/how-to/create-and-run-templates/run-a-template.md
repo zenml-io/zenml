@@ -6,7 +6,7 @@ description: Run a template
 
 {% hint style="success" %}
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) get access.
+[sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 Once you have created your run template, you can **run** it and create a new 
@@ -42,8 +42,8 @@ In order to run a template from the dashboard:
 Either way, you will be forwarded to a page where you will see the 
 `Run Details`. Here, you have the option to upload [a `.yaml` configurations
 file](https://docs.zenml.io/how-to/use-configuration-files) or change the 
-configuration on the go by using our editor (powered with auto-completion and 
-type checking).
+configuration on the go by using our editor **(powered with auto-completion and 
+type hints)**.
 
 ![Run Details](../../.gitbook/assets/run-templates-run-1.png)
 
