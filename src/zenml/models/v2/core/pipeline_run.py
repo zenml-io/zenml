@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -325,12 +326,15 @@ class PipelineRunResponse(
         # Create the orchestrator instance
         from zenml.enums import StackComponentType
         from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+        from zenml.stack.stack_component import StackComponent
 
         component_model = self.stack.components[
             StackComponentType.ORCHESTRATOR
         ][0]
-        orchestrator = BaseOrchestrator.from_model(
-            component_model=component_model
+
+        orchestrator = cast(
+            BaseOrchestrator,
+            StackComponent.from_model(component_model=component_model),
         )
 
         # Fetch the status

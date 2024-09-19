@@ -180,9 +180,6 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which to run the pipeline.
             placeholder_run: An optional placeholder run for the deployment.
                 This will be deleted in case the pipeline deployment failed.
-
-        Returns:
-            Orchestrator-specific return value.
         """
         self._prepare_run(deployment=deployment)
 
@@ -257,7 +254,15 @@ class BaseOrchestrator(StackComponent, ABC):
         self._active_deployment = None
 
     def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
-        """Refreshes the status of a specific pipeline run."""
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: A pipeline run response to fetch its status.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+        """
         raise NotImplementedError(
             "The fetch status functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."

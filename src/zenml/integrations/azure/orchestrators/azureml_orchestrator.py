@@ -214,6 +214,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If the creation of the schedule fails.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # Authentication
         if connector := self.get_connector():
@@ -451,6 +454,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
         """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
         # Make sure that the run belongs to this orchestrator
         assert (
             self.id
@@ -472,7 +482,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
         elif run.orchestrator_run_id is not None:
             run_id = run.orchestrator_run_id
         else:
@@ -511,6 +521,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         Args:
             job: The corresponding PipelineJob object.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # Metadata
         metadata: Dict[str, MetadataType] = dict()

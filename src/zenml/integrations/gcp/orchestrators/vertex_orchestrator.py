@@ -352,6 +352,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
                 raised if attempting to schedule pipeline run without using the
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
@@ -596,6 +599,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Raises:
             RuntimeError: If the Vertex Orchestrator fails to provision or any
                 other Runtime errors.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
@@ -806,6 +812,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
         """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
         # Make sure that the run belongs to this orchestrator
         assert (
             self.id
@@ -822,7 +835,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
         elif run.orchestrator_run_id is not None:
             run_id = run.orchestrator_run_id
         else:
@@ -865,6 +878,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         Args:
             job: The corresponding PipelineJob object.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # Metadata
         metadata: Dict[str, MetadataType] = dict()

@@ -241,6 +241,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 `boto3.Session` object.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         if deployment.schedule:
             logger.warning(
@@ -520,6 +523,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
         """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
         # Make sure that the run belongs to this orchestrator
         assert (
             self.id
@@ -532,7 +542,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         # Fetch the status of the _PipelineExecution
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata.get(METADATA_ORCHESTRATOR_RUN_ID).value
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
         elif run.orchestrator_run_id is not None:
             run_id = run.orchestrator_run_id
         else:
@@ -562,6 +572,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Args:
             execution: The corresponding _PipelineExecution object.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # Metadata
         metadata: Dict[str, MetadataType] = dict()
@@ -659,11 +672,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
              the Execution ID of the run in SageMaker.
         """
         try:
-            return pipeline_execution.arn
+            return str(pipeline_execution.arn)
 
         except Exception as e:
             logger.warning(
                 f"There was an issue while extracting the pipeline run ID: {e}"
             )
-
             return None
