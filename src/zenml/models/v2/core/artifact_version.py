@@ -437,6 +437,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "has_custom_name",
         "user",
         "model",
+        "pipeline_run",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -494,13 +495,19 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    user: Optional[str] = Field(
+    user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the artifact version.",
     )
-    model: Optional[str] = Field(
+    model: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name/ID of the model that is associated with this artifact version.",
+        description="Name/ID of the model that is associated with this "
+        "artifact version.",
+    )
+    pipeline_run: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of a pipeline run that is associated with this "
+        "artifact version.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -513,15 +520,17 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlmodel import and_, select
+        from sqlmodel import and_, or_, select
 
         from zenml.zen_stores.schemas import (
             ArtifactSchema,
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionArtifactSchema,
+            PipelineRunSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
+            StepRunSchema,
             UserSchema,
         )
 
@@ -575,6 +584,30 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 ),
             )
             custom_filters.append(model_filter)
+
+        pipeline_run = ""
+
+        if pipeline_run:
+            pipeline_run_filter = and_(
+                or_(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == StepRunOutputArtifactSchema.artifact_id,
+                        StepRunOutputArtifactSchema.step_id
+                        == StepRunSchema.id,
+                    ),
+                    and_(
+                        ArtifactVersionSchema.id
+                        == StepRunInputArtifactSchema.artifact_id,
+                        StepRunInputArtifactSchema.step_id == StepRunSchema.id,
+                    ),
+                ),
+                StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=PipelineRunSchema
+                ),
+            )
+            custom_filters.append(pipeline_run_filter)
 
         return custom_filters
 

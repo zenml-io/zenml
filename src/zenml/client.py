@@ -4196,6 +4196,7 @@ class Client(metaclass=ClientMetaClass):
         has_custom_name: Optional[bool] = None,
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
+        pipeline_run: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
@@ -4226,6 +4227,7 @@ class Client(metaclass=ClientMetaClass):
             tag: A tag to filter by.
             user: Filter by user name or ID.
             model: Filter by model name or ID.
+            pipeline_run: Filter by pipeline run name or ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4256,6 +4258,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             user=user,
             model=model,
+            pipeline_run=pipeline_run,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
