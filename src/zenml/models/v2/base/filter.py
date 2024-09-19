@@ -253,14 +253,59 @@ class NumericFilter(Filter):
     ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
-        """Generate query conditions for a UUID column.
+        """Generate query conditions for a numeric column.
 
         Args:
-            column: The UUID column of an SQLModel table on which to filter.
+            column: The numeric column of an SQLModel table on which to filter.
 
         Returns:
             A list of query conditions.
         """
+        if self.operation == GenericFilterOps.GTE:
+            return column >= self.value
+        if self.operation == GenericFilterOps.GT:
+            return column > self.value
+        if self.operation == GenericFilterOps.LTE:
+            return column <= self.value
+        if self.operation == GenericFilterOps.LT:
+            return column < self.value
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+        return column == self.value
+
+
+class DatetimeFilter(Filter):
+    """Filter for all datetime fields."""
+
+    value: Union[datetime, Tuple[datetime, datetime]] = Field(
+        union_mode="left_to_right"
+    )
+
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
+        GenericFilterOps.IN,
+    ]
+
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a datetime column.
+
+        Args:
+            column: The datetime column of an SQLModel table on which to filter.
+
+        Returns:
+            A list of query conditions.
+        """
+        if self.operation == GenericFilterOps.IN:
+            assert isinstance(self.value, Tuple)
+            lower_bound, upper_bound = self.value
+            return column.between(lower_bound, upper_bound)
+
+        assert isinstance(self.value, datetime)
         if self.operation == GenericFilterOps.GTE:
             return column >= self.value
         if self.operation == GenericFilterOps.GT:
@@ -742,20 +787,31 @@ class BaseFilter(BaseModel):
         """
         try:
             if isinstance(value, datetime):
-                datetime_value = value
+                filter_value = value
             else:
-                datetime_value = datetime.strptime(
-                    value, FILTERING_DATETIME_FORMAT
-                )
+                if "," in value:
+                    lower_bound, upper_bound = value.split(",", 1)
+                    filter_value = (
+                        datetime.strptime(
+                            lower_bound, FILTERING_DATETIME_FORMAT
+                        ),
+                        datetime.strptime(
+                            upper_bound, FILTERING_DATETIME_FORMAT
+                        ),
+                    )
+                else:
+                    filter_value = datetime.strptime(
+                        value, FILTERING_DATETIME_FORMAT
+                    )
         except ValueError as e:
             raise ValueError(
                 "The datetime filter only works with values in the following "
                 f"format: {FILTERING_DATETIME_FORMAT}"
             ) from e
-        datetime_filter = NumericFilter(
+        datetime_filter = DatetimeFilter(
             operation=GenericFilterOps(operator),
             column=column,
-            value=datetime_value,
+            value=filter_value,
         )
         return datetime_filter
 

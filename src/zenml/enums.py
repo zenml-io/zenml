@@ -252,6 +252,7 @@ class GenericFilterOps(StrEnum):
     GT = "gt"
     LTE = "lte"
     LT = "lt"
+    IN = "in"
 
 
 class SorterOps(StrEnum):
