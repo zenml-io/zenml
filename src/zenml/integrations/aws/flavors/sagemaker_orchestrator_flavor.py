@@ -30,6 +30,9 @@ from zenml.utils.secret_utils import SecretField
 if TYPE_CHECKING:
     from zenml.integrations.aws.orchestrators import SagemakerOrchestrator
 
+DEFAULT_TRAINING_INSTANCE_TYPE = "ml.m5.xlarge"
+DEFAULT_PROCESSING_INSTANCE_TYPE = "ml.t3.medium"
+
 
 class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator.
@@ -42,6 +45,13 @@ class SagemakerOrchestratorSettings(BaseSettings):
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
         processor_tags: Tags to apply to the Processor assigned to the step.
+        keep_alive_period_in_seconds: The time in seconds after which the
+            provisioned instance will be terminated if not used. This is only
+            applicable for TrainingStep type and it is not possible to use
+            TrainingStep type if the `output_data_s3_uri` is set to Dict[str, str].
+        use_training_steps_where_possible: Whether to use the TrainingStep
+            type if possible. It is not possible to use TrainingStep type
+            if the `output_data_s3_uri` is set to Dict[str, str].
         processor_args: Arguments that are directly passed to the SageMaker
             Processor for a specific step, allowing for overriding the default
             settings provided when configuring the component. See
@@ -74,11 +84,13 @@ class SagemakerOrchestratorSettings(BaseSettings):
                     Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
 
-    instance_type: str = "ml.t3.medium"
+    instance_type: Optional[str] = None
     processor_role: Optional[str] = None
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     processor_tags: Dict[str, str] = {}
+    keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
+    use_training_steps_where_possible: bool = True
 
     processor_args: Dict[str, Any] = {}
     input_data_s3_mode: str = "File"
