@@ -58,14 +58,14 @@ Once the resource group is created, go to the overview page of your new resource
 group and click `+ Create`. This will open up the marketplace where you can 
 select a variety of resource to create. Look for `Azure Machine Learning`.
 
-![Azure Marketplace](../../.gitbook/assets/azure_5.png)
+![Azure Role Assignments](../../.gitbook/assets/azure_5.png)
 
 Select it, and you will start the process of creating an AzureML workspace. 
 As you can see from the `Workspace details`, AzureML workspaces come equipped 
 with a storage account, key vault, and application insights. It is highly 
 recommended that you create a container registry as well.
 
-![AzureML Workspace Details](../../.gitbook/assets/azure_6.png)
+![Azure Role Assignments](../../.gitbook/assets/azure_6.png)
 
 ## 3. Create the required role assignments
 
