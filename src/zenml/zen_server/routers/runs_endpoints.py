@@ -124,7 +124,7 @@ def get_run(
     )
     if refresh_status:
         try:
-            run.refresh_run_status()
+            run = run.refresh_run_status()
         except Exception as e:
             logger.warning(
                 "An error occurred while refreshing the status of the "

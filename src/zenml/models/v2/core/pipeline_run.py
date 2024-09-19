@@ -310,7 +310,7 @@ class PipelineRunResponse(
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
 
-    def refresh_run_status(self) -> None:
+    def refresh_run_status(self) -> "PipelineRunResponse":
         """Method to refresh the status of a pipeline run.
 
         Raises:
@@ -346,10 +346,12 @@ class PipelineRunResponse(
             from zenml.models import PipelineRunUpdate
 
             client = Client()
-            client.zen_store.update_run(
+            return client.zen_store.update_run(
                 run_id=self.id,
                 run_update=PipelineRunUpdate(status=status),
             )
+
+        return self
 
     # Body and metadata properties
     @property
