@@ -301,7 +301,7 @@ class DatetimeFilter(Filter):
             A list of query conditions.
         """
         if self.operation == GenericFilterOps.IN:
-            assert isinstance(self.value, Tuple)
+            assert isinstance(self.value, tuple)
             lower_bound, upper_bound = self.value
             return column.between(lower_bound, upper_bound)
 
@@ -771,7 +771,7 @@ class BaseFilter(BaseModel):
     @staticmethod
     def _define_datetime_filter(
         column: str, value: Any, operator: GenericFilterOps
-    ) -> NumericFilter:
+    ) -> DatetimeFilter:
         """Define a datetime filter for a given column.
 
         Args:
@@ -786,23 +786,19 @@ class BaseFilter(BaseModel):
             ValueError: If the value is not a valid datetime.
         """
         try:
+            filter_value: Union[datetime, Tuple[datetime, datetime]]
             if isinstance(value, datetime):
                 filter_value = value
+            elif "," in value:
+                lower_bound, upper_bound = value.split(",", 1)
+                filter_value = (
+                    datetime.strptime(lower_bound, FILTERING_DATETIME_FORMAT),
+                    datetime.strptime(upper_bound, FILTERING_DATETIME_FORMAT),
+                )
             else:
-                if "," in value:
-                    lower_bound, upper_bound = value.split(",", 1)
-                    filter_value = (
-                        datetime.strptime(
-                            lower_bound, FILTERING_DATETIME_FORMAT
-                        ),
-                        datetime.strptime(
-                            upper_bound, FILTERING_DATETIME_FORMAT
-                        ),
-                    )
-                else:
-                    filter_value = datetime.strptime(
-                        value, FILTERING_DATETIME_FORMAT
-                    )
+                filter_value = datetime.strptime(
+                    value, FILTERING_DATETIME_FORMAT
+                )
         except ValueError as e:
             raise ValueError(
                 "The datetime filter only works with values in the following "
