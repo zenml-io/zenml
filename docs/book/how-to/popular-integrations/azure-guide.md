@@ -67,14 +67,32 @@ recommended that you create a container registry as well.
 
 ![AzureML Workspace Details](../../.gitbook/assets/azure_6.png)
 
-## 3. Created the required role assignments
+## 3. Create the required role assignments
 
-TODO: Write this!
+Now, that you have your app registration and the resources, you have to create 
+the corresponding role assignments. In order to do this, go to 
+your resource group, open up `Access control (IAM)` on the left side and 
+`+Add` a new role assignment.
+
+![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-1.png)
+
+In the role assignment page, search for AzureML which will show you a list of 
+roles defined with the scope of AzureML workspaces.
+
+![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-2.png)
+
+One by one, you have to select `AzureML Compute Operator`, 
+`AzureML Data Scientist`, and `AzureML Registry User` and click `Next`.
+
+![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-3.png)
+
+Finally, click `+Select Members`, search for your registered app by its ID, and
+assign the role accordingly.
 
 ## 4. Create a service connector
 
-Once you have created the service principal and the client secret, you can 
-go ahead and create [a ZenML Azure Service Connector](../../how-to/auth-management/azure-service-connector.md).
+Now you have everything set up, you can go ahead and create [a ZenML Azure 
+Service Connector](../../how-to/auth-management/azure-service-connector.md).
 
 ```bash
 zenml service-connector register azure_connector --type azure \
@@ -87,7 +105,7 @@ zenml service-connector register azure_connector --type azure \
 You will use this service connector later on to connect your components with 
 proper authentication.
 
-## 4. Create Stack Components
+## 5. Create Stack Components
 
 In order to run any workflows on Azure using ZenML, you need an artifact store,
 an orchestrator and a container registry.
@@ -143,7 +161,7 @@ zenml container-registry register azure_container_registry -f azure \
 For more information regarding Azure container registries, feel free to
 [check the docs](../../component-guide/container-registries/azure.md).
 
-## 5. Create a Stack
+## 6. Create a Stack
 
 Now, you can use the registered components to create an Azure ZenML stack:
 
@@ -155,7 +173,7 @@ zenml stack register azure_stack \
     --set
 ```
 
-## 6. ...and you are done.
+## 7. ...and you are done.
 
 Just like that, you now have a fully working Azure stack ready to go. 
 Feel free to take it for a spin by running a pipeline on it.
