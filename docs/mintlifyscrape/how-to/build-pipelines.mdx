@@ -1,0 +1,60 @@
+---
+title: "⛓️Build a pipeline"
+description: "Building pipelines is as simple as adding the `@step` and `@pipeline` decorators to your code."
+---
+
+Copy
+
+```
+@step  # Just add this decorator
+
+def load_data() -> dict:
+
+    training_data = [[1, 2], [3, 4], [5, 6]]
+
+    labels = [0, 1, 0]
+
+    return {'features': training_data, 'labels': labels}
+
+@step
+
+def train_model(data: dict) -> None:
+
+    total_features = sum(map(sum, data['features']))
+
+    total_labels = sum(data['labels'])
+
+    # Train some model here
+
+    print(f"Trained model using {len(data['features'])} data points. "
+
+          f"Feature sum is {total_features}, label sum is {total_labels}")
+
+@pipeline  # This function combines steps together 
+
+def simple_ml_pipeline():
+
+    dataset = load_data()
+
+    train_model(dataset)
+```
+
+You can now run this pipeline by simply calling the function:
+
+Copy
+
+```
+simple_ml_pipeline()
+```
+
+When this pipeline is executed, the run of the pipeline gets logged to the ZenML dashboard where you can now go to look at its DAG and all the associated metadata. To access the dashboard you need to have a ZenML server either running locally or remotely. See our documentation on this [here](/getting-started/deploying-zenml).
+
+![](/images/how-to/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-6c068a86e4470feb37d2c2f7a5c25e2a2d51a805%252FSimplePipelineDag.png)
+
+DAG representation in the ZenML Dashboard.
+
+Check below for more advanced ways to build and interact with your pipeline.
+
+[Configure pipeline/step parameters](/how-to/build-pipelines/use-pipeline-step-parameters)[Name and annotate step outputs](/how-to/build-pipelines/step-output-typing-and-annotation)[Control caching behavior](/how-to/build-pipelines/control-caching-behavior)[Run pipeline from a pipeline](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/how-to/build-pipelines/trigger-a-pipeline-from-another.md)[Control the execution order of steps](/how-to/build-pipelines/control-execution-order-of-steps)[Customize the step invocation ids](/how-to/build-pipelines/using-a-custom-step-invocation-id)[Name your pipeline runs](/how-to/build-pipelines/name-your-pipeline-and-runs)[Use failure/success hooks](/how-to/build-pipelines/use-failure-success-hooks)[Hyperparameter tuning](/how-to/build-pipelines/hyper-parameter-tuning)[Attach metadata to steps](/how-to/track-metrics-metadata/attach-metadata-to-steps)[Fetch metadata within steps](/how-to/track-metrics-metadata/fetch-metadata-within-steps)[Fetch metadata during pipeline composition](/how-to/track-metrics-metadata/fetch-metadata-within-pipeline)[Enable or disable logs storing](/how-to/control-logging/enable-or-disable-logs-storing)[Special Metadata Types](/how-to/track-metrics-metadata/logging-metadata)[Access secrets in a step](/how-to/build-pipelines/access-secrets-in-a-step)
+
+![ZenML Scarf](/images/how-to)

@@ -1,0 +1,28 @@
+---
+title: "Get past pipeline/step runs"
+---
+
+In order to get past pipeline/step runs, you can use the `get_pipeline` method in combination with the `last_run` property or just index into the runs:
+
+Copy
+
+```
+from zenml.client import Client
+
+client = Client()
+
+# Retrieve a pipeline by its name
+
+p = client.get_pipeline("mlflow_train_deploy_pipeline")
+
+# Get the latest run of this pipeline
+
+latest_run = p.last_run
+
+# Alternatively you can also access runs by index or name
+
+first_run = p[0]
+
+```
+
+![ZenML Scarf](/images/how-to/build-pipelines)

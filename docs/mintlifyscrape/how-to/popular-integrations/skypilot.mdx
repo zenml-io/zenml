@@ -1,0 +1,117 @@
+---
+title: "Skypilot"
+description: "Use Skypilot with ZenML."
+---
+
+The ZenML SkyPilot VM Orchestrator allows you to provision and manage VMs on any supported cloud provider (AWS, GCP, Azure, Lambda Labs) for running your ML pipelines. It simplifies the process and offers cost savings and high GPU availability.
+
+## Prerequisites
+
+To use the SkyPilot VM Orchestrator, you'll need:
+
+* ZenML SkyPilot integration for your cloud provider installed (`zenml integration install <PROVIDER> skypilot_<PROVIDER>`)
+* Docker installed and running
+* A remote artifact store and container registry in your ZenML stack
+* A remote ZenML deployment
+* Appropriate permissions to provision VMs on your cloud provider
+* A service connector configured to authenticate with your cloud provider (not needed for Lambda Labs)
+
+## Configuring the Orchestrator
+
+Configuration steps vary by cloud provider:
+
+AWS, GCP, Azure:
+
+1. Install the SkyPilot integration and connectors extra for your provider
+2. Register a service connector with credentials that have SkyPilot's required permissions
+3. Register the orchestrator and connect it to the service connector
+4. Register and activate a stack with the new orchestrator
+
+Copy
+
+```
+zenml service-connector register -skypilot-vm -t  --auto-configure
+
+zenml orchestrator register  --flavor vm_  
+
+zenml orchestrator connect  --connector -skypilot-vm
+
+zenml stack register  -o  ... --set
+```
+
+Lambda Labs:
+
+1. Install the SkyPilot Lambda integration
+2. Register a secret with your Lambda Labs API key
+3. Register the orchestrator with the API key secret
+4. Register and activate a stack with the new orchestrator
+
+Copy
+
+```
+zenml secret create lambda_api_key --scope user --api_key=
+
+zenml orchestrator register  --flavor vm_lambda --api_key={{lambda_api_key.api_key}}
+
+zenml stack register  -o  ... --set
+```
+
+## Running a Pipeline
+
+Once configured, you can run any ZenML pipeline using the SkyPilot VM Orchestrator. Each step will run in a Docker container on a provisioned VM.
+
+## Additional Configuration
+
+You can further configure the orchestrator using cloud-specific `Settings` objects:
+
+Copy
+
+```
+from zenml.integrations.skypilot_.flavors.skypilot_orchestrator__vm_flavor import SkypilotOrchestratorSettings
+
+skypilot_settings = SkypilotOrchestratorSettings(
+
+   cpus="2",
+
+   memory="16", 
+
+   accelerators="V100:2",
+
+   use_spot=True,
+
+   region=,
+
+   ...  
+
+)
+
+@pipeline(
+
+   settings={
+
+       "orchestrator": skypilot_settings
+
+   }
+
+)
+```
+
+This allows specifying VM size, spot usage, region, and more.
+
+You can also configure resources per step:
+
+Copy
+
+```
+high_resource_settings = SkypilotOrchestratorSettings(...)
+
+@step(settings={"orchestrator": high_resource_settings})  
+
+def resource_intensive_step():
+
+   ...
+```
+
+For more details and advanced options, see the [full SkyPilot VM Orchestrator documentation](/stack-components/orchestrators/skypilot-vm).
+
+![ZenML Scarf](/images/how-to/popular-integrations)

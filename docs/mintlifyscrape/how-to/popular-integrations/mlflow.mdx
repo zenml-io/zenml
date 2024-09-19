@@ -1,0 +1,136 @@
+---
+title: "MLflow"
+description: "Learn how to use the MLflow Experiment Tracker with ZenML."
+---
+
+The ZenML MLflow Experiment Tracker integration and stack component allows you to log and visualize information from your pipeline steps using MLflow, without having to write extra MLflow code.
+
+## Prerequisites
+
+To use the MLflow Experiment Tracker, you'll need:
+
+* ZenML `mlflow` integration installed (`zenml integration install mlflow -y`)
+* An MLflow deployment, either local (scenario 1) or remote with proxied artifact storage (scenario 5)
+
+## Configuring the Experiment Tracker
+
+There are two main MLflow deployment scenarios:
+
+1. Local (scenario 1): Use a local artifact store, only suitable for running ZenML locally. No extra configuration needed.
+
+Copy
+
+```
+zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
+
+zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
+```
+
+1. Remote with proxied artifact storage (scenario 5): Can be used with any stack components. Requires authentication configuration.
+
+For remote, you'll need to configure authentication using one of:
+
+* Basic authentication (not recommended for production)
+* ZenML secrets (recommended)
+
+To use ZenML secrets:
+
+Copy
+
+```
+zenml secret create mlflow_secret \
+
+   --username= \
+
+   --password=
+   
+
+zenml experiment-tracker register mlflow \
+
+   --flavor=mlflow \
+
+   --tracking_username={{mlflow_secret.username}} \
+
+   --tracking_password={{mlflow_secret.password}} \
+
+   ...
+```
+
+## Using the Experiment Tracker
+
+To log information with MLflow in a pipeline step:
+
+1. Enable the experiment tracker using the `@step` decorator
+2. Use MLflow's logging or auto-logging capabilities as usual
+
+Copy
+
+```
+import mlflow
+
+@step(experiment_tracker="")
+
+def train_step(...):
+
+   mlflow.tensorflow.autolog()
+   
+
+   mlflow.log_param(...)
+
+   mlflow.log_metric(...)
+
+   mlflow.log_artifact(...)
+   
+
+   ...
+```
+
+## Viewing Results
+
+You can find the URL to the MLflow experiment for a ZenML run:
+
+Copy
+
+```
+last_run = client.get_pipeline("").last_run
+
+trainer_step = last_run.get_step("")
+
+tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
+```
+
+This will link to your deployed MLflow instance UI, or the local MLflow experiment file.
+
+## Additional Configuration
+
+You can further configure the experiment tracker using `MLFlowExperimentTrackerSettings`:
+
+Copy
+
+```
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
+
+mlflow_settings = MLFlowExperimentTrackerSettings(
+
+   nested=True,
+
+   tags={"key": "value"}  
+
+)
+
+@step(
+
+   experiment_tracker="",
+
+   settings={
+
+       "experiment_tracker": mlflow_settings
+
+   }  
+
+)
+```
+
+For more details and advanced options, see the [full MLflow Experiment Tracker documentation](/stack-components/experiment-trackers/mlflow).
+
+![ZenML Scarf](/images/how-to/popular-integrations)

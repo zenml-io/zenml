@@ -1,0 +1,24 @@
+---
+title: "Disabling visualizations"
+description: "Disabling visualizations."
+---
+
+If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline or step level:
+
+Copy
+
+```
+@step(enable_artifact_visualization=False)
+
+def my_step():
+
+    ...
+
+@pipeline(enable_artifact_visualization=False)
+
+def my_pipeline():
+
+    ...
+```
+
+![ZenML Scarf](/images/how-to/visualize-artifacts)

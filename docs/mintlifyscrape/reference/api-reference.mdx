@@ -1,0 +1,83 @@
+---
+title: "👀API reference"
+description: "See the ZenML API reference."
+---
+
+The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc` of your ZenML server:
+
+In the local case (i.e. using `zenml up`, the docs are available on `http://127.0.0.1:8237/docs`)
+
+![](/images/reference/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-77d96edd4380d120912f9b082fc8f43a85e7e04f%252Fzenml_api_docs.png)
+
+ZenML API docs
+
+![](/images/reference/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-81edde5195fab2fb8f941a5957d1b3b7b136ffbd%252Fzenml_api_redoc.png)
+
+ZenML API Redoc
+
+## Using a bearer token to access the API programmatically
+
+If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, the following steps need to be followed:
+
+1. Create a [service account](/how-to/connecting-to-zenml/connect-with-a-service-account):
+
+Copy
+
+```
+zenml service-account create myserviceaccount
+```
+
+This will print out the `<ZENML_API_KEY>`, you can use in the next command.
+
+1. Get an access token by using the `/api/v1/login` endpoint:
+
+Copy
+
+```
+
+curl -X 'POST' \
+
+  '/api/v1/login' \
+
+  -H 'accept: application/json' \
+
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+
+  -d 'grant_type=zenml-api-key&username=&password='\''&client_id=&device_code='
+```
+
+This will return a response like this:
+
+Copy
+
+```
+{
+
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+
+  "token_type": "bearer",
+
+  "expires_in": 3600,
+
+  "refresh_token": null,
+
+  "scope": null
+
+}
+```
+
+1. Use the access token to make subsequent curl commands:
+
+Copy
+
+```
+curl -X 'GET' \
+
+  '/api/v1/pipelines?hydrate=false&name=training' \
+
+  -H 'accept: application/json' \
+
+  -H 'Authorization: Bearer '
+```
+
+![ZenML Scarf](/images/reference)

@@ -1,0 +1,70 @@
+---
+title: "Schedule a pipeline"
+description: "Learn how to set, pause and stop a schedule for pipelines."
+---
+
+Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
+
+| Orchestrator                                                              | Scheduling Support |
+| ------------------------------------------------------------------------- | ------------------ |
+| [AirflowOrchestrator](/stack-components/orchestrators/airflow)            | ✅                  |
+| [AzureMLOrchestrator](/stack-components/orchestrators/azureml)            | ✅                  |
+| [DatabricksOrchestrator](/stack-components/orchestrators/databricks)      | ✅                  |
+| [HyperAIOrchestrator](/stack-components/orchestrators/hyperai)            | ✅                  |
+| [KubeflowOrchestrator](/stack-components/orchestrators/kubeflow)          | ✅                  |
+| [KubernetesOrchestrator](/stack-components/orchestrators/kubernetes)      | ✅                  |
+| [LocalOrchestrator](/stack-components/orchestrators/local)                | ⛔️                 |
+| [LocalDockerOrchestrator](/stack-components/orchestrators/local-docker)   | ⛔️                 |
+| [SagemakerOrchestrator](/stack-components/orchestrators/sagemaker)        | ⛔️                 |
+| [SkypilotAWSOrchestrator](/stack-components/orchestrators/skypilot-vm)    | ⛔️                 |
+| [SkypilotAzureOrchestrator](/stack-components/orchestrators/skypilot-vm)  | ⛔️                 |
+| [SkypilotGCPOrchestrator](/stack-components/orchestrators/skypilot-vm)    | ⛔️                 |
+| [SkypilotLambdaOrchestrator](/stack-components/orchestrators/skypilot-vm) | ⛔️                 |
+| [TektonOrchestrator](/stack-components/orchestrators/tekton)              | ⛔️                 |
+| [VertexOrchestrator](/stack-components/orchestrators/vertex)              | ✅                  |
+
+### Set a schedule
+
+Copy
+
+```
+from zenml.config.schedule import Schedule
+
+from zenml import pipeline
+
+from datetime import datetime
+
+@pipeline()
+
+def my_pipeline(...):
+
+    ...
+
+# Use cron expressions
+
+schedule = Schedule(cron_expression="5 14 * * 3")
+
+# or alternatively use human-readable notations
+
+schedule = Schedule(start_time=datetime.now(), interval_second=1800)
+
+my_pipeline = my_pipeline.with_options(schedule=schedule)
+
+my_pipeline()
+```
+
+Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.schedule.Schedule) to learn more about the different scheduling options.
+
+### Pause/Stop a schedule
+
+The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+
+Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created.
+
+---
+
+### See Also:
+
+[Schedules rely on remote orchestrators, learn about those here](/stack-components/orchestrators)
+
+![ZenML Scarf](/images/how-to/build-pipelines)

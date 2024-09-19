@@ -1,0 +1,46 @@
+---
+title: "Deleting a pipeline"
+description: "Learn how to delete pipelines."
+---
+
+In order to delete a pipeline, you can either use the CLI or the Python SDK:
+
+CLIPython SDK
+
+Copy
+
+```
+zenml pipeline delete 
+```
+
+Copy
+
+```
+from zenml.client import Client
+
+Client().delete_pipeline()
+```
+
+Deleting a pipeline does not automatically delete any of its associated runs or artifacts.
+
+## Delete a pipeline run
+
+To delete a pipeline run, you can use the following CLI command or the client:
+
+CLIPython SDK
+
+Copy
+
+```
+zenml pipeline runs delete 
+```
+
+Copy
+
+```
+from zenml.client import Client
+
+Client().delete_pipeline_run()
+```
+
+![ZenML Scarf](/images/how-to/build-pipelines)

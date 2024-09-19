@@ -1,0 +1,114 @@
+---
+title: "Configure a code repository"
+description: "Connect a Git repository to ZenML to track code changes and collaborate on MLOps projects."
+---
+
+Throughout the lifecycle of a MLOps pipeline, it can get quite tiresome to always wait for a Docker build every time after running a pipeline (even if the local Docker cache is used). However, there is a way to just have one pipeline build and keep reusing it until a change to the pipeline environment is made: by connecting a code repository.
+
+With ZenML, connecting to a Git repository optimizes the Docker build processes. It also has the added bonus of being a better way of managing repository changes and enabling better code collaboration. Here is how the flow changes when running a pipeline:
+
+![](/images/user-guide/production-guide/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-bce622fd61f1356f1622280b02cc8ea2b74b305c%252Frun_with_repository.png)
+
+Sequence of events that happen when running a pipeline on a remote stack with a code repository
+
+1. You trigger a pipeline run on your local machine. ZenML parses the `@pipeline` function to determine the necessary steps.
+2. The local client requests stack information from the ZenML server, which responds with the cloud stack configuration.
+3. The local client detects that we're using a code repository and requests the information from the git repo.
+4. Instead of building a new Docker image, the client checks if an existing image can be reused based on the current Git commit hash and other environment metadata.
+5. The client initiates a run in the orchestrator, which sets up the execution environment in the cloud, such as a VM.
+6. The orchestrator downloads the code directly from the Git repository and uses the existing Docker image to run the pipeline steps.
+7. Pipeline steps execute, storing artifacts in the cloud-based artifact store.
+8. Throughout the execution, the pipeline run status and metadata are reported back to the ZenML server.
+
+By connecting a Git repository, you avoid redundant builds and make your MLOps processes more efficient. Your team can work on the codebase simultaneously, with ZenML handling the version tracking and ensuring that the correct code version is always used for each run.
+
+## Creating a GitHub Repository
+
+While ZenML supports [many different flavors of git repositories](/how-to/setting-up-a-project-repository/connect-your-git-repository), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
+
+1. Sign in to [GitHub](https://github.com/).
+2. Click the "+" icon and select "New repository."
+3. Name your repository, set its visibility, and add a README or .gitignore if needed.
+4. Click "Create repository."
+
+We can now push our local code (from the [previous chapters](/user-guide/production-guide/understand-stacks#run-a-pipeline-on-the-new-local-stack)) to GitHub with these commands:
+
+Copy
+
+```
+# Initialize a Git repository
+
+git init
+
+# Add files to the repository
+
+git add .
+
+# Commit the files
+
+git commit -m "Initial commit"
+
+# Add the GitHub remote
+
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+
+# Push to GitHub
+
+git push -u origin master
+```
+
+Replace `YOUR_USERNAME` and `YOUR_REPOSITORY_NAME` with your GitHub information.
+
+## Linking to ZenML
+
+To connect your GitHub repository to ZenML, you'll need a GitHub Personal Access Token (PAT).
+
+How to get a PAT for GitHub
+
+1. Go to your GitHub account settings and click on [Developer settings](https://github.com/settings/tokens?type=beta).
+2. Select "Personal access tokens" and click on "Generate new token".
+3. Give your token a name and a description.  
+![](/images/user-guide/production-guide/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-0efd0f56d3428d5ae6f5e5659131eece8e6bb60e%252Fgithub-fine-grained-token-name.png)
+4. We recommend selecting the specific repository and then giving `contents` read-only access.  
+![](/images/user-guide/production-guide/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-71ba96b3e607f1b26cbf600cdce09cc87c9cb74c%252Fgithub-token-set-permissions.png)  
+![](/images/user-guide/production-guide/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-4b89b6c5f6aeae9976561cb95cd907d8047e5ef1%252Fgithub-token-permissions-overview.png)
+5. Click on "Generate token" and copy the token to a safe place.  
+![](/images/user-guide/production-guide/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-55a6da34d3d8caa3d634200c93fcd2c9e021ed22%252Fcopy-github-fine-grained-token.png)
+
+Now, we can install the GitHub integration and register your repository:
+
+Copy
+
+```
+zenml integration install github
+
+zenml code-repository register  --type=github \
+
+--url=https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git \
+
+--owner=YOUR_USERNAME --repository=YOUR_REPOSITORY_NAME \
+
+--token=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+```
+
+Fill in `<REPO_NAME>`, `YOUR_USERNAME`, `YOUR_REPOSITORY_NAME`, and `YOUR_GITHUB_PERSONAL_ACCESS_TOKEN` with your details.
+
+Your code is now connected to your ZenML server. ZenML will automatically detect if your source files are being tracked by GitHub and store the commit hash for each subsequent pipeline run.
+
+You can try this out by running our training pipeline again:
+
+Copy
+
+```
+# This will build the Docker image the first time
+
+python run.py --training-pipeline
+
+# This will skip Docker building
+
+python run.py --training-pipeline
+```
+
+You can read more about [the ZenML Git Integration here](/how-to/setting-up-a-project-repository/connect-your-git-repository).
+
+![ZenML Scarf](/images/user-guide/production-guide)

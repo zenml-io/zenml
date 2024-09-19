@@ -1,0 +1,17 @@
+---
+title: "Configuring a pipeline at runtime"
+description: "Configuring a pipeline at runtime."
+---
+
+It is often the case that there is a need to run a pipeline with a different configuration. In this case, you should in most cases use the [pipeline.with\_options](/how-to/use-configuration-files) method. You can do this:
+
+1. Either by explicitly configuring options like `with_options(steps="trainer": {"parameters": {"param1": 1}})`
+2. Or by passing a YAML file using `with_options(config_file="path_to_yaml_file")`.
+
+You can learn more about these options [here](/how-to/use-configuration-files).
+
+However, there is one exception: if you would like to trigger a pipeline from the client or another pipeline, you would need to pass the `PipelineRunConfiguration` object. Learn more about this [here](/how-to/trigger-pipelines/trigger-a-pipeline-from-another).
+
+[Using config files](/how-to/use-configuration-files)
+
+![ZenML Scarf](/images/how-to/build-pipelines)

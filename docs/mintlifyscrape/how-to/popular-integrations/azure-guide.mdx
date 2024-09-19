@@ -1,0 +1,204 @@
+---
+title: "Run on Azure"
+description: "A simple guide to create an Azure stack to run your ZenML pipelines"
+---
+
+This page aims to quickly set up a minimal production stack on Azure. With just a few simple steps, you will set up a resource group, a service principal with correct permissions and the relevant ZenML stack and components.
+
+Would you like to skip ahead and deploy a full Azure ZenML cloud stack already?
+
+Check out the [in-browser stack deployment wizard](/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack.
+
+To follow this guide, you need:
+
+* An active Azure account.
+* ZenML [installed](/getting-started/installation).
+* ZenML `azure` integration installed with `zenml integration install azure`.
+
+## 1\. Set up proper credentials
+
+You can start by [creating a service principal by creating an app registration](https://github.com/Azure/MachineLearningNotebooks/blob/master/how-to-use-azureml/manage-azureml-service/authentication-in-azureml/authentication-in-azureml.ipynb) on Azure:
+
+1. Go to the App Registrations on the Azure portal.
+2. Click on `+ New registration`,
+3. Give it a name and click register.
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-a80fcbd259c3fb7ee23f99b80ebe9a9ce2885be0%252Fazure_1.png)
+
+Azure App Registrations
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-7f1788094a1b61f41fefbb6fc6a27c5d8c355c26%252Fazure_2.png)
+
+Azure App Registrations
+
+Once you create the service principal, you will get an Application ID and Tenant ID as they will be needed later.
+
+Next, go to your service principal and click on the `Certificates & secrets` in the `Manage` menu. Here, you have to create a client secret. Note down the secret value as it will be needed later.
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-98d7a44a9dc864b20d27fdf1c23d2a21f578d45e%252Fazure_3.png)
+
+Azure App Registrations
+
+## 2\. Create a service connector
+
+Once you have created the service principal and the client secret, you can go ahead and create [a ZenML Azure Service Connector](/how-to/auth-management/azure-service-connector).
+
+Copy
+
+```
+zenml service-connector register azure_connector --type azure \
+
+  --auth-method service-principal \
+
+  --client_secret= \
+
+  --tenant_id= \
+
+  --client_id=
+```
+
+You will use this service connector later on to connect your components with proper authentication.
+
+## 3\. Create a resource group and the AzureML instance
+
+Now, you have to [create a resource group on Azure](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal). To do this, go to the Azure portal and go to the `Resource Groups` page and click `+ Create`.
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-4192ce97428cfa7f6f2c7c27d1d6458f044b9cda%252Fazure_4.png)
+
+Azure Resource Groups
+
+Once the resource group is created, go to the overview page of your new resource group and click `+ Create`. This will open up the marketplace where you can select a variety of resource to create. Look for `Azure Machine Learning`.
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-35e217ceecb111bc7f6059f5c2d0166cb870b61b%252Fazure_5.png)
+
+Azure Marketplace
+
+Select it, and you will start the process of creating an AzureML workspace. As you can see from the `Workspace details`, AzureML workspaces come equipped with a storage account, key vault, and application insights. It is highly recommended that you create a container registry as well.
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-6c1843e6feb8b5291c11aec65081afd0d0b95746%252Fazure_6.png)
+
+AzureML Workspace Details
+
+## 4\. Create Stack Components
+
+In order to run any workflows on Azure using ZenML, you need an artifact store, an orchestrator and a container registry.
+
+### Artifact Store (Azure Blob Storage)
+
+For the artifact store, we will be using the storage account attached to our AzureML workspace. But before registering the component itself, you have to create a container for blob storage. To do this, go to the corresponding storage account in your workspace and create a new container:
+
+![](/images/how-to/popular-integrations/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-6a788efaa043e64462488a48b9f418f987e247d6%252Fazure_7.png)
+
+Azure Blob Storage
+
+Once you create the container, you can go ahead, register your artifact store using its path and connect it to your service connector:
+
+Copy
+
+```
+zenml artifact-store register azure_artifact_store -f azure \
+
+  --path= \ 
+
+  --connector azure_connector
+```
+
+For more information regarding Azure Blob Storage artifact stores, feel free to [check the docs](/stack-components/artifact-stores/azure).
+
+### Orchestrator (AzureML)
+
+As for the orchestrator, no additional setup is needed. Simply use the following command to register it and connect it your service connector:
+
+Copy
+
+```
+zenml orchestrator register azure_orchestrator -f azureml \
+
+    --subscription_id= \
+
+    --resource_group= \
+
+    --workspace= \ 
+
+    --connector azure_connector
+```
+
+For more information regarding AzureML orchestrator, feel free to [check the docs](/stack-components/orchestrators/azureml).
+
+### Container Registry (Azure Container Registry)
+
+Similar to the orchestrator, you can register and connect your container registry using the following command:
+
+Copy
+
+```
+zenml container-registry register azure_container_registry -f azure \
+
+  --uri= \ 
+
+  --connector azure_connector
+```
+
+For more information regarding Azure container registries, feel free to [check the docs](/stack-components/container-registries/azure).
+
+## 5\. Create a Stack
+
+Now, you can use the registered components to create an Azure ZenML stack:
+
+Copy
+
+```
+zenml stack register azure_stack \
+
+    -o azure_orchestrator \
+
+    -a azure_artifact_store \
+
+    -c azure_container_registry \
+
+    --set
+```
+
+## 6\. ...and you are done.
+
+Just like that, you now have a fully working Azure stack ready to go. Feel free to take it for a spin by running a pipeline on it.
+
+Define a ZenML pipeline:
+
+Copy
+
+```
+from zenml import pipeline, step
+
+@step
+
+def hello_world() -> str:
+
+    return "Hello from Azure!"
+
+@pipeline
+
+def azure_pipeline():
+
+    hello_world()
+
+if __name__ == "__main__":
+
+    azure_pipeline()
+```
+
+Save this code to run.py and execute it. The pipeline will use Azure Blob Storage for artifact storage, AzureML for orchestration, and an Azure container registry.
+
+Copy
+
+```
+python run.py
+```
+
+Now that you have a functional Azure stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
+
+* Dive deeper into ZenML's [production guide](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/user-guide/production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
+* Explore ZenML's [integrations](/stack-components/component-guide) with other popular tools and frameworks in the machine learning ecosystem.
+* Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
+
+![ZenML Scarf](/images/how-to/popular-integrations)

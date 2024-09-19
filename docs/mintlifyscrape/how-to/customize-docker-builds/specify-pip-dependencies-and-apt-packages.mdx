@@ -1,0 +1,159 @@
+---
+title: "Specify pip dependencies and apt packages"
+---
+
+The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
+
+When a [pipeline is run with a remote orchestrator](/how-to/configure-python-environments) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](/how-to/configure-python-environments#-configure-python-environments) component of your stack.
+
+For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
+
+By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
+
+* Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
+
+Copy
+
+```
+# or use "poetry_export"
+
+docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline(...):
+
+    ...
+```
+
+If required, a custom command can be provided. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
+
+Copy
+
+```
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(replicate_local_python_environment=[
+
+    "poetry",
+
+    "export",
+
+    "--extras=train",
+
+    "--format=requirements.txt"
+
+])
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline(...):
+
+    ...
+```
+
+* Specify a list of requirements in code:  
+Copy  
+```  
+docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])  
+@pipeline(settings={"docker": docker_settings})  
+def my_pipeline(...):  
+    ...  
+```
+* Specify a requirements file:  
+Copy  
+```  
+docker_settings = DockerSettings(requirements="/path/to/requirements.txt")  
+@pipeline(settings={"docker": docker_settings})  
+def my_pipeline(...):  
+    ...  
+```
+* Specify a list of [ZenML integrations](/stack-components/component-guide) that you're using in your pipeline:
+
+Copy
+
+```
+from zenml.integrations.constants import PYTORCH, EVIDENTLY
+
+docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline(...):
+
+    ...
+```
+
+* Specify a list of apt packages in code:  
+Copy  
+```  
+docker_settings = DockerSettings(apt_packages=["git"])  
+@pipeline(settings={"docker": docker_settings})  
+def my_pipeline(...):  
+    ...  
+```
+* Prevent ZenML from automatically installing the requirements of your stack:  
+Copy  
+```  
+docker_settings = DockerSettings(install_stack_requirements=False)  
+  @pipeline(settings={"docker": docker_settings})  
+  def my_pipeline(...):  
+      ...  
+```
+* In some cases the steps of your pipeline will have conflicting requirements or some steps of your pipeline will require large dependencies that don't need to be installed to run the remaining steps of your pipeline. For this case, ZenML allows you to specify custom Docker settings for steps in your pipeline.
+
+Copy
+
+```
+docker_settings = DockerSettings(requirements=["tensorflow"])
+
+@step(settings={"docker": docker_settings})
+
+def my_training_step(...):
+
+    ...
+```
+
+You can combine these methods but do make sure that your list of requirements does not overlap with the ones specified explicitly in the Docker settings.
+
+Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
+
+* The packages installed in your local python environment
+* The packages required by the stack unless this is disabled by setting `install_stack_requirements=False`.
+* The packages specified via the `required_integrations`
+* The packages specified via the `requirements` attribute
+* You can specify additional arguments for the installer used to install your Python packages as follows:
+
+Copy
+
+```
+# This will result in a `pip install --timeout=1000 ...` call when installing packages in the
+
+# Docker image
+
+docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline(...):
+
+    ...
+```
+
+* **Experimental**: If you want to use [uv](https://github.com/astral-sh/uv) for faster resolving and installation of your Python packages, you can use by it as follows:
+
+Copy
+
+```
+docker_settings = DockerSettings(python_package_installer="uv")
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline(...):
+
+    ...
+```
+
+`uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
+
+![ZenML Scarf](/images/how-to/customize-docker-builds)

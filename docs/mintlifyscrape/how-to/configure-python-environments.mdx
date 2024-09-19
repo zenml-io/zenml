@@ -1,0 +1,51 @@
+---
+title: "🐍Configure Python environments"
+description: "Navigating multiple development environments."
+---
+
+ZenML deployments often involve multiple environments. This guide helps you manage dependencies and configurations across these environments.
+
+Here is a visual overview of the different environments:
+
+![](/images/how-to/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-d8e78972e622d1d55bf77284af44112ddcea9dde%252FSystemArchitecture.png)
+
+Left box is the client environment, middle is the zenml server environment, and the right most contains the build environments
+
+## Client Environment (or the Runner environment)
+
+The client environment (sometimes known as the runner environment) is where the ZenML pipelines are _compiled_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
+
+* A local development environment
+* A CI runner in production.
+* A [ZenML Pro](https://zenml.io/pro) runner.
+* A `runner` image orchestrated by the ZenML server to start pipelines.
+
+In all the environments, you should use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies. Ensure you install the ZenML package and any required [integrations](/stack-components/component-guide).
+
+The client environment typically follows these key steps when starting a pipeline:
+
+1. Compiling an intermediate pipeline representation via the `@pipeline` function.
+2. Creating or triggering [pipeline and step build environments](/stack-components/image-builders) if running remotely.
+3. Triggering a run in the [orchestrator](/stack-components/orchestrators).
+
+Please note that the `@pipeline` function in your code is **only ever called** in this environment. Therefore, any computational logic that is executed in the pipeline function needs to be relevant to this so-called _compile time_, rather than at _execution_ time, which happens later.
+
+## ZenML Server Environment
+
+The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](/getting-started/deploying-zenml). To manage dependencies, install them during [ZenML deployment](/getting-started/deploying-zenml), but only if you have custom integrations, as most are built-in.
+
+See also [here](/how-to/configure-python-environments/configure-the-server-environment) for more on [configuring the server environment](/how-to/configure-python-environments/configure-the-server-environment).
+
+## Execution Environments
+
+When running locally, there is no real concept of an `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](/stack-components/orchestrators). In order to achieve this, ZenML builds Docker images known as `execution environments`.
+
+ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](/how-to/customize-docker-builds) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
+
+## Image Builder Environment
+
+By default, execution environments are created locally in the [client environment](/how-to/configure-python-environments#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](/stack-components/image-builders), a special [stack component](/stack-components/component-guide), allowing users to build and push Docker images in a different specialized _image builder environment_.
+
+Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](/stack-components/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
+
+![ZenML Scarf](/images/how-to)

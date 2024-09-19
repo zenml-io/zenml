@@ -1,0 +1,17 @@
+---
+title: "Find out which configuration was used for a run"
+---
+
+Sometimes you might want to extract the used configuration from a pipeline that has already run. You can do this simply by loading the pipeline run and accessing its `config` attribute.
+
+Copy
+
+```
+from zenml.client import Client
+
+pipeline_run = Client().get_pipeline_run("")
+
+configuration = pipeline_run.config
+```
+
+![ZenML Scarf](/images/how-to/use-configuration-files)

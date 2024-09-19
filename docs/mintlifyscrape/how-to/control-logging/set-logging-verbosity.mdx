@@ -1,0 +1,42 @@
+---
+title: "Set logging verbosity"
+description: "How to set the logging verbosity in ZenML."
+---
+
+By default, ZenML sets the logging verbosity to `INFO`. If you wish to change this, you can do so by setting the following environment variable:
+
+Copy
+
+```
+export ZENML_LOGGING_VERBOSITY=INFO
+```
+
+Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`. This will set the logs to whichever level you suggest.
+
+Note that setting this on the [client environment](/how-to/configure-python-environments#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically set the same logging verbosity for remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
+
+If you wish to control for [remote pipeline runs](/user-guide/production-guide/cloud-orchestration), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
+
+Copy
+
+```
+docker_settings = DockerSettings(environment={"ZENML_LOGGING_VERBOSITY": "DEBUG"})
+
+# Either add it to the decorator
+
+@pipeline(settings={"docker": docker_settings})
+
+def my_pipeline() -> None:
+
+    my_step()
+
+# Or configure the pipelines options
+
+my_pipeline = my_pipeline.with_options(
+
+    settings={"docker": docker_settings}
+
+)
+```
+
+![ZenML Scarf](/images/how-to/control-logging)

@@ -1,0 +1,81 @@
+---
+title: "Associate a pipeline with a Model"
+---
+
+The most common use-case for a Model is to associate it with a pipeline.
+
+Copy
+
+```
+from zenml import pipeline
+
+from zenml import Model
+
+@pipeline(
+
+    model=Model(
+
+        name="ClassificationModel",  # Give your models unique names
+
+        tags=["MVP", "Tabular"]  # Use tags for future filtering
+
+    )
+
+)
+
+def my_pipeline():
+
+    ...
+```
+
+This will associate this pipeline with the model specified. In case the model already exists, this will create a new version of that model.
+
+In case you want to attach the pipeline to an existing model version, specify this as well.
+
+Copy
+
+```
+from zenml import pipeline
+
+from zenml import Model
+
+from zenml.enums import ModelStages
+
+@pipeline(
+
+    model=Model(
+
+        name="ClassificationModel",  # Give your models unique names
+
+        tags=["MVP", "Tabular"],  # Use tags for future filtering
+
+        version=ModelStages.LATEST  # Alternatively use a stage: [STAGING, PRODUCTION]]
+
+    )
+
+)
+
+def my_pipeline():
+
+    ...
+```
+
+Feel free to also move the Model configuration into your configuration files:
+
+Copy
+
+```
+...
+
+model:
+
+  name: text_classifier
+
+  description: A breast cancer classifier
+
+  tags: ["classifier","sgd"]
+
+...
+```
+
+![ZenML Scarf](/images/how-to/use-the-model-control-plane)

@@ -1,0 +1,47 @@
+---
+title: "Compose pipelines"
+description: "Reuse steps between pipelines."
+---
+
+Sometimes it can be useful to extract some common functionality into separate functions in order to avoid code duplication. To facilitate this, ZenML allows you to compose your pipelines:
+
+Copy
+
+```
+from zenml import pipeline
+
+@pipeline
+
+def data_loading_pipeline(mode: str):
+
+    if mode == "train":
+
+        data = training_data_loader_step()
+
+    else:
+
+        data = test_data_loader_step()
+    
+
+    processed_data = preprocessing_step(data)
+
+    return processed_data
+
+@pipeline
+
+def training_pipeline():
+
+    training_data = data_loading_pipeline(mode="train")
+
+    model = training_step(data=training_data)
+
+    test_data = data_loading_pipeline(mode="test")
+
+    evaluation_step(model=model, data=test_data)
+```
+
+Here we are calling one pipeline from within another pipeline, so functionally the `data_loading_pipeline` is functioning as a step within the `training_pipeline`, i.e. the steps of the former are added to the latter. Only the parent pipeline will be visible in the dashboard. In order to actually trigger a pipeline from another, see [here](/how-to/trigger-pipelines/trigger-a-pipeline-from-another)
+
+[Learn more about orchestrators here](/stack-components/orchestrators)
+
+![ZenML Scarf](/images/how-to/build-pipelines)

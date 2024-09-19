@@ -1,0 +1,28 @@
+---
+title: "Default visualizations"
+description: "Types of visualizations in ZenML."
+---
+
+ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
+
+![](/images/how-to/visualize-artifacts/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-af44911569839bbee15fbb6e9319d07a18547a6e%252Fartifact_visualization_dashboard.png)
+
+ZenML Artifact Visualizations
+
+Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
+
+![](/images/how-to/visualize-artifacts/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-a86291aed36991866c98fc65a9b759d8821cfb2f%252Fartifact_visualization_evidently.png)
+
+output.visualize() Output
+
+Some examples of default visualizations are:
+
+* A statistical representation of a [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) Dataframe represented as a png image.
+* Drift detection reports by [Evidently](/stack-components/data-validators/evidently), [Great Expectations](/stack-components/data-validators/great-expectations), and [whylogs](/stack-components/data-validators/whylogs).
+* A [Hugging Face](https://zenml.io/integrations/huggingface) datasets viewer embedded as a HTML iframe.
+
+![](/images/how-to/visualize-artifacts/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-f147cf9b09333ecd6b5abdb92f15d4d5031208ab%252Fartifact_visualization_huggingface.gif)
+
+output.visualize() output for the Hugging Face datasets viewer
+
+![ZenML Scarf](/images/how-to/visualize-artifacts)

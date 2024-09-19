@@ -1,0 +1,145 @@
+---
+title: "Kubeflow"
+description: "Run your ML pipelines on Kubeflow Pipelines."
+---
+
+The ZenML Kubeflow Orchestrator allows you to run your ML pipelines on Kubeflow Pipelines without writing Kubeflow code.
+
+## Prerequisites
+
+To use the Kubeflow Orchestrator, you'll need:
+
+* ZenML `kubeflow` integration installed (`zenml integration install kubeflow`)
+* Docker installed and running
+* `kubectl` installed (optional, see below)
+* A Kubernetes cluster with Kubeflow Pipelines installed (see deployment guide for your cloud provider)
+* A remote artifact store and container registry in your ZenML stack
+* A remote ZenML server deployed to the cloud
+* The name of your Kubernetes context pointing to the remote cluster (optional, see below)
+
+## Configuring the Orchestrator
+
+There are two ways to configure the orchestrator:
+
+1. Using a [Service Connector](/how-to/auth-management/service-connectors-guide) to connect to the remote cluster (recommended for cloud-managed clusters). No local `kubectl` context needed.
+
+Copy
+
+```
+zenml orchestrator register  --flavor kubeflow
+
+zenml service-connector list-resources --resource-type kubernetes-cluster -e  
+
+zenml orchestrator connect  --connector 
+
+zenml stack update -o 
+```
+
+1. Configuring `kubectl` with a context pointing to the remote cluster and setting `kubernetes_context` in the orchestrator config:
+
+Copy
+
+```
+zenml orchestrator register  \
+
+    --flavor=kubeflow \
+
+    --kubernetes_context=
+    
+
+zenml stack update -o 
+```
+
+## Running a Pipeline
+
+Once configured, you can run any ZenML pipeline using the Kubeflow Orchestrator:
+
+Copy
+
+```
+python your_pipeline.py
+```
+
+This will create a Kubernetes pod for each step in your pipeline. You can view pipeline runs in the Kubeflow UI.
+
+## Additional Configuration
+
+You can further configure the orchestrator using `KubeflowOrchestratorSettings`:
+
+Copy
+
+```
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
+
+kubeflow_settings = KubeflowOrchestratorSettings(
+
+   client_args={},  
+
+   user_namespace="my_namespace",
+
+   pod_settings={
+
+       "affinity": {...},
+
+       "tolerations": [...]
+
+   }
+
+)
+
+@pipeline(
+
+   settings={
+
+       "orchestrator": kubeflow_settings
+
+   }
+
+)
+```
+
+This allows specifying client arguments, user namespace, pod affinity/tolerations, and more.
+
+## Multi-Tenancy Deployments
+
+For multi-tenant Kubeflow deployments, specify the `kubeflow_hostname` ending in `/pipeline` when registering the orchestrator:
+
+Copy
+
+```
+zenml orchestrator register  \
+
+   --flavor=kubeflow \
+
+   --kubeflow_hostname= # e.g. https://mykubeflow.example.com/pipeline
+```
+
+And provide the namespace, username and password in the orchestrator settings:
+
+Copy
+
+```
+kubeflow_settings = KubeflowOrchestratorSettings(
+
+   client_username="admin",
+
+   client_password="abc123", 
+
+   user_namespace="namespace_name"
+
+)
+
+@pipeline(
+
+   settings={
+
+       "orchestrator": kubeflow_settings
+
+   }
+
+)
+```
+
+For more advanced options and details, refer to the [full Kubeflow Orchestrator documentation](/stack-components/orchestrators/kubeflow).
+
+![ZenML Scarf](/images/how-to/popular-integrations)

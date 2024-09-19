@@ -1,0 +1,36 @@
+---
+title: "View logs on the dashboard"
+---
+
+By default, ZenML uses a logging handler to capture the logs that occur during the execution of a step. Users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
+
+Copy
+
+```
+import logging
+
+from zenml import step
+
+@step 
+
+def my_step() -> None:
+
+    logging.warning("`Hello`")  # You can use the regular `logging` module.
+
+    print("World.")  # You can utilize `print` statements as well. 
+```
+
+These logs are stored within the respective artifact store of your stack. This means that you can only view these logs in the dashboard _if the deployed ZenML server has direct access to the underlying artifact store_. There are two cases in which this will be true:
+
+* In case of a local ZenML server (via `zenml up`), both local and remote artifact stores may be accessible, depending on configuration of the client.
+* In case of a deployed ZenML server, logs for runs on a [local artifact store](/stack-components/artifact-stores/local) will not be accessible. Logs for runs using a [remote artifact store](/user-guide/production-guide/remote-storage) **may be** accessible, if the artifact store has been configured with a [service connector](/how-to/auth-management/service-connectors-guide). Please read [this chapter](/user-guide/production-guide/remote-storage) of the production guide to learn how to configure a remote artifact store with a service connector.
+
+If configured correctly, the logs are displayed in the dashboard as follows:
+
+![](/images/how-to/control-logging/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-392577be3d3026770e0a4a4e92f8d30f7b2ce293%252Fzenml_step_logs.png)
+
+Displaying step logs on the dashboard
+
+If you do not want to store the logs for your pipeline (for example due to performance reduction or storage limits), you can follow [these instructions](/how-to/control-logging/enable-or-disable-logs-storing).
+
+![ZenML Scarf](/images/how-to/control-logging)

@@ -1,0 +1,86 @@
+---
+title: "Trigger a pipeline from REST API"
+description: "Trigger a pipeline from the rest API."
+---
+
+This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](https://cloud.zenml.io) get access. OSS users can only trigger a pipeline by calling the pipeline function inside their runner script.
+
+Triggering a pipeline from the REST API **only** works if you've created at least one run template for that pipeline.
+
+As a pre-requisite, you need a pipeline name. After you have it, there are three calls that need to be made in order to trigger a pipeline from the REST API:
+
+1. `GET /pipelines?name=<PIPELINE_NAME>` \-> This returns a response, where a <PIPELINE\_ID> can be copied
+2. `GET /run_templates?pipeline_id=<PIPELINE_ID>` \-> This returns a list of responses where a <TEMPLATE\_ID> can be chosen
+3. `POST /run_templates/<TEMPLATE_ID>/runs` \-> This runs the pipeline. You can pass the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.pipeline%5Frun%5Fconfiguration.PipelineRunConfiguration) in the body
+
+## A worked example
+
+Learn how to get a bearer token for the curl commands [here](/reference/api-reference#using-a-bearer-token-to-access-the-api-programmatically).
+
+Here is an example. Let's say would we like to re-run a pipeline called `training`. We first query the `/pipelines` endpoint:
+
+Copy
+
+```
+curl -X 'GET' \
+
+  '/api/v1/pipelines?hydrate=false&name=training' \
+
+  -H 'accept: application/json' \
+
+  -H 'Authorization: Bearer '
+```
+
+![](/images/how-to/trigger-pipelines/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-c642e94846c2625d57cc8046836c0e6e21afbb04%252Frest_api_step_1.png)
+
+Identifying the pipeline ID
+
+We can take the ID from any object in the list of responses. In this case, the <PIPELINE\_ID> is `c953985e-650a-4cbf-a03a-e49463f58473` in the response.
+
+After this, we take the pipeline ID and call the `/run_templates?pipeline_id=<PIPELINE_ID>` API:
+
+Copy
+
+```
+curl -X 'GET' \
+
+  '/api/v1/run_templates?hydrate=false&logical_operator=and&page=1&size=20&pipeline_id=b826b714-a9b3-461c-9a6e-1bde3df3241d' \
+
+  -H 'accept: application/json' \
+
+  -H 'Authorization: Bearer '
+```
+
+We can now take the <TEMPLATE\_ID> from this response. Here it is `b826b714-a9b3-461c-9a6e-1bde3df3241d`.
+
+![](/images/how-to/trigger-pipelines/files%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FSXceRPgF1t4PqY7HbePb%252Fuploads%252Fgit-blob-4b916dffbbae60f42790125d34a7f043e43e3a13%252Frest_api_step_2.png)
+
+Identifying the template ID
+
+Finally, we can use the template ID to trigger the pipeline with a different configuration:
+
+Copy
+
+```
+curl -X 'POST' \
+
+  '/api/v1/run_templates/b826b714-a9b3-461c-9a6e-1bde3df3241d/runs' \
+
+  -H 'accept: application/json' \
+
+  -H 'Content-Type: application/json' \
+
+  -H 'Authorization: Bearer ' \
+
+  -d '{
+
+  "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}
+
+}'
+```
+
+A positive response means your pipeline has been re-triggered with a different config!
+
+[Learn how to run a pipeline directly from another](/how-to/trigger-pipelines/trigger-a-pipeline-from-another)[Learn how to run a pipeline directly from the Python client](/how-to/trigger-pipelines/trigger-a-pipeline-from-client)
+
+![ZenML Scarf](/images/how-to/trigger-pipelines)

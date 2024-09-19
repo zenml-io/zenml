@@ -1,0 +1,56 @@
+---
+title: "🚨Trigger a pipeline"
+description: "There are numerous ways to trigger a pipeline, apart from calling the runner script."
+---
+
+A pipeline can be run via Python like this:
+
+Copy
+
+```
+@step  # Just add this decorator
+
+def load_data() -> dict:
+
+    training_data = [[1, 2], [3, 4], [5, 6]]
+
+    labels = [0, 1, 0]
+
+    return {'features': training_data, 'labels': labels}
+
+@step
+
+def train_model(data: dict) -> None:
+
+    total_features = sum(map(sum, data['features']))
+
+    total_labels = sum(data['labels'])
+
+    # Train some model here
+
+    print(f"Trained model using {len(data['features'])} data points. "
+
+          f"Feature sum is {total_features}, label sum is {total_labels}")
+
+@pipeline  # This function combines steps together 
+
+def simple_ml_pipeline():
+
+    dataset = load_data()
+
+    train_model(dataset)
+```
+
+You can now run this pipeline by simply calling the function:
+
+Copy
+
+```
+simple_ml_pipeline()
+```
+
+However, there are other ways to trigger a pipeline, specifically a pipeline with a remote stack (remote orchestrator, artifact store, and container registry).
+
+[Trigger a pipeline from Python SDK](/how-to/trigger-pipelines/trigger-a-pipeline-from-client)[Trigger a pipeline from another](/how-to/trigger-pipelines/trigger-a-pipeline-from-another)[Trigger a pipeline from the REST API](/how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api)
+
+![ZenML Scarf](/images/how-to)
