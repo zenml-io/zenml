@@ -585,9 +585,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(model_filter)
 
-        pipeline_run = ""
-
-        if pipeline_run:
+        if self.pipeline_run:
             pipeline_run_filter = and_(
                 or_(
                     and_(
@@ -604,7 +602,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 ),
                 StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.model, table=PipelineRunSchema
+                    value=self.pipeline_run, table=PipelineRunSchema
                 ),
             )
             custom_filters.append(pipeline_run_filter)
