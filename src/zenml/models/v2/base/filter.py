@@ -197,6 +197,22 @@ class StrFilter(Filter):
 class UUIDFilter(StrFilter):
     """Filter for all uuid fields which are mostly treated like strings."""
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def _remove_hyphens_from_value(cls, value: Any) -> Any:
+        """Remove hyphens from the value to enable string comparisons.
+
+        Args:
+            value: The filter value.
+
+        Returns:
+            The filter value with removed hyphens.
+        """
+        if isinstance(value, str):
+            return value.replace("-", "")
+
+        return value
+
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a UUID column.
 
