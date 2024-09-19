@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -30,6 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.lineage_graph.lineage_graph import LineageGraph
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     PipelineRunFilter,
@@ -58,6 +59,9 @@ router = APIRouter(
     tags=["runs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+logger = get_logger(__name__)
 
 
 @router.get(
@@ -100,6 +104,7 @@ def list_runs(
 def get_run(
     run_id: UUID,
     hydrate: bool = True,
+    refresh_status: Optional[bool] = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -108,13 +113,24 @@ def get_run(
         run_id: ID of the pipeline run to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        refresh_status: Flag deciding whether we should try to refresh
+            the status of the pipeline run using its orchestrator.
 
     Returns:
         The pipeline run.
     """
-    return verify_permissions_and_get_entity(
+    run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=hydrate
     )
+    if refresh_status:
+        try:
+            run.refresh_run_status()
+        except Exception as e:
+            logger.warning(
+                "An error occurred while refreshing the status of the "
+                f"pipeline run: {e}"
+            )
+    return run
 
 
 @router.put(
