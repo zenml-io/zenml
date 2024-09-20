@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 def vllm_model_deployer_step(
     model: str,
     tokenizer: Optional[str] = None,
-    timeout: int = 30,
+    timeout: int = 1200,
     deploy_decision: bool = True,
 ) -> VLLMDeploymentService:
     """Model deployer pipeline step for vLLM.

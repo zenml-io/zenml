@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 class VLLMServiceConfig(LocalDaemonServiceConfig):
     """vLLM service configurations."""
 
+    blocking: bool = True
     model: Optional[str] = None
     tokenizer: Optional[str] = None
 
