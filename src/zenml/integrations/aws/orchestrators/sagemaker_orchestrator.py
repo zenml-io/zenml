@@ -238,16 +238,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
-            use_training_step_in_step = step_settings.model_dump(
-                exclude_unset=True
-            ).get("use_training_step", None)
-            if use_training_step_in_step is not None:
-                use_train_step = use_training_step_in_step
-            else:
-                use_train_step = self.config.use_training_step
+            use_training_step = (
+                step_settings.use_training_step
+                if step_settings.use_training_step is not None
+                else self.config.use_training_step
+                if self.config.use_training_step is not None
+                else True
+            )
 
             # Retrieve Executor arguments provided in the Step settings.
-            if use_train_step:
+            if use_training_step:
                 args_for_step_executor = step_settings.estimator_args or {}
             else:
                 args_for_step_executor = step_settings.processor_args or {}
@@ -337,7 +337,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if step_settings.output_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.output_data_s3_uri, str):
-                if use_train_step:
+                if use_training_step:
                     output_path = step_settings.output_data_s3_uri
                 else:
                     outputs = [
@@ -361,7 +361,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            if use_train_step:
+            if use_training_step:
                 # Create Estimator and TrainingStep
                 estimator = sagemaker.estimator.Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,

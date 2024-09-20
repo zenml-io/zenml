@@ -229,7 +229,7 @@ By default, the SageMaker orchestrator uses Training Steps where possible, which
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
-    use_training_steps_where_possible = False
+    use_training_step = False
 )
 ```
 

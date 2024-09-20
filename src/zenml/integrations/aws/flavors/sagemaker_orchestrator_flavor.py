@@ -102,7 +102,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     max_runtime_in_seconds: int = 86400
     tags: Dict[str, str] = {}
     keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
-    use_training_step: bool = True
+    use_training_step: Optional[bool] = None
 
     processor_args: Dict[str, Any] = {}
     estimator_args: Dict[str, Any] = {}
