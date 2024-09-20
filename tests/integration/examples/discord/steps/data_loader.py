@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 
 from typing import Tuple
-from typing_extensions import Annotated
+
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
+from typing_extensions import Annotated
 
 from zenml import step
 
@@ -27,7 +28,7 @@ def digits_data_loader() -> (
         Annotated[np.ndarray, "X_train"],
         Annotated[np.ndarray, "X_test"],
         Annotated[np.ndarray, "y_train"],
-        Annotated[np.ndarray, "y_test"]
+        Annotated[np.ndarray, "y_test"],
     ]
 ):
     """Loads the digits dataset as a tuple of flattened numpy arrays."""
