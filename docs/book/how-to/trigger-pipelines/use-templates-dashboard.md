@@ -9,18 +9,13 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
 
 ## Create a template
 
-In order to create a template over the dashboard, go to your pipelines page 
-and switch over to the templates tab:
+In order to create a template over the dashboard, go a pipeline run that you 
+executed on a remote stack (i.e. at least a remote orchestrator, artifact 
+store, and container registry):
 
 ![Create Templates on the dashboard](../../.gitbook/assets/run-templates-create-1.png)
 
-You can click `+ New Template`, give it a name and choose a pipeline and run
-to create a template.
-
-{% hint style="warning" %}
-You need to select **a pipeline run that was executed on a remote stack** 
-(i.e. at least a remote orchestrator, artifact store, and container registry)
-{% endhint %}
+Click on `+ New Template`, give it a name and click `Create`:
 
 ![Template Details](../../.gitbook/assets/run-templates-create-2.png)
 
