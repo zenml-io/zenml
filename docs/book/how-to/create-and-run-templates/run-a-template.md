@@ -10,8 +10,8 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
 {% endhint %}
 
 Once your template is set up, you can **run** it and create a new pipeline run 
-that will be conducted on the same stack. Before it starts, you have a window
-to seamlessly readjust the configuration of your pipelines and steps.
+that will be conducted on the same stack. Before it starts, you have the option
+to modify the configuration of your pipeline and steps.
 
 ## Run a template using the Python SDK
 
