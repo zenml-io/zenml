@@ -362,21 +362,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             if use_train_step:
-                # Create Processor and ProcessingStep
-                processor = sagemaker.processing.Processor(
-                    entrypoint=entrypoint,
-                    env=environment,
-                    **args_for_step_executor,
-                )
-
-                sagemaker_step = ProcessingStep(
-                    name=step_name,
-                    processor=processor,
-                    depends_on=step.spec.upstream_steps,
-                    inputs=inputs,
-                    outputs=outputs,
-                )
-            else:
                 # Create Estimator and TrainingStep
                 estimator = sagemaker.estimator.Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
@@ -390,6 +375,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     depends_on=step.spec.upstream_steps,
                     inputs=inputs,
                     estimator=estimator,
+                )
+            else:
+                # Create Processor and ProcessingStep
+                processor = sagemaker.processing.Processor(
+                    entrypoint=entrypoint,
+                    env=environment,
+                    **args_for_step_executor,
+                )
+
+                sagemaker_step = ProcessingStep(
+                    name=step_name,
+                    processor=processor,
+                    depends_on=step.spec.upstream_steps,
+                    inputs=inputs,
+                    outputs=outputs,
                 )
 
             sagemaker_steps.append(sagemaker_step)
