@@ -46,6 +46,9 @@ Client().trigger_pipeline(
 )
 ```
 
+Once you trigger the template, a new run will be executed on the same stack as 
+the original run was executed on.
+
 ## Advanced Usage: Run a template from another pipeline
 
 It is also possible to use the same logic to run a pipeline within another 

@@ -34,11 +34,12 @@ In order to run a template from the dashboard:
 Either way, you will be forwarded to a page where you will see the 
 `Run Details`. Here, you have the option to upload a `.yaml` [configurations
 file](https://docs.zenml.io/how-to/use-configuration-files) or change the 
-configuration on the go by using our editor **(powered with auto-completion and 
-type hints)**.
+configuration on the go by using our editor.
 
 ![Run Details](../../.gitbook/assets/run-templates-run-1.png)
 
+Once you run the template, a new run will be executed on the same stack as 
+the original run was executed on.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

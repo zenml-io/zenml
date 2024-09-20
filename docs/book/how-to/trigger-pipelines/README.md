@@ -2,7 +2,7 @@
 description: There are numerous ways to trigger a pipeline
 ---
 
-In ZenML, the simplest way to run a pipeline to use your pipeline definition:
+In ZenML, the simplest way to execute a run is to use your pipeline function:
 
 ```python
 from zenml import step, pipeline
@@ -20,10 +20,12 @@ def train_model(data: dict) -> None:
     total_features = sum(map(sum, data['features']))
     total_labels = sum(data['labels'])
 
-    # Train some model here
+    # Train some model here...
 
-    print(f"Trained model using {len(data['features'])} data points. "
-          f"Feature sum is {total_features}, label sum is {total_labels}")
+    print(
+        f"Trained model using {len(data['features'])} data points. "
+        f"Feature sum is {total_features}, label sum is {total_labels}."
+    )
 
 
 @pipeline  # This function combines steps together 
