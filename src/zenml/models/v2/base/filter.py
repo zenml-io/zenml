@@ -804,6 +804,23 @@ class BaseFilter(BaseModel):
                 "The datetime filter only works with values in the following "
                 f"format: {FILTERING_DATETIME_FORMAT}"
             ) from e
+
+        if operator == GenericFilterOps.IN and not isinstance(
+            filter_value, tuple
+        ):
+            raise ValueError(
+                "Two comma separated datetime values are required for the `in` "
+                "operator."
+            )
+
+        if operator != GenericFilterOps.IN and not isinstance(
+            filter_value, datetime
+        ):
+            raise ValueError(
+                "Only a single datetime value is allowed for operator "
+                f"{operator}."
+            )
+
         datetime_filter = DatetimeFilter(
             operation=GenericFilterOps(operator),
             column=column,
