@@ -567,7 +567,7 @@ class BaseFilter(BaseModel):
             value, operator = cls._resolve_operator(value)
 
             # Define the filter
-            filter = cls._define_filter(
+            filter = FilterGenerator(cls).define_filter(
                 column=key, value=value, operator=operator
             )
             list_of_filters.append(filter)
@@ -600,9 +600,185 @@ class BaseFilter(BaseModel):
                 operator = GenericFilterOps(split_value[0])
         return value, operator
 
-    @classmethod
-    def _define_filter(
-        cls, column: str, value: Any, operator: GenericFilterOps
+    def generate_name_or_id_query_conditions(
+        self,
+        value: Union[UUID, str],
+        table: Type["NamedSchema"],
+    ) -> "ColumnElement[bool]":
+        """Generate filter conditions for name or id of a table.
+
+        Args:
+            value: The filter value.
+            table: The table to filter.
+
+        Returns:
+            The query conditions.
+        """
+        from sqlmodel import or_
+
+        value, operator = BaseFilter._resolve_operator(value)
+        value = str(value)
+
+        conditions = []
+
+        try:
+            filter_ = FilterGenerator(table).define_filter(
+                column="id", value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
+        except ValueError:
+            # UUID filter with equal operators and no full UUID fail with
+            # a ValueError. In this case, we already know that the filter
+            # will not produce any result and can simply ignore it.
+            pass
+
+        filter_ = FilterGenerator(table).define_filter(
+            column="name", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
+
+        return or_(*conditions)
+
+    def generate_custom_query_conditions_for_column(
+        self,
+        value: Any,
+        table: Type[SQLModel],
+        column: str,
+    ) -> "ColumnElement[bool]":
+        """Generate custom filter conditions for a column of a table.
+
+        Args:
+            value: The filter value.
+            table: The table which contains the column.
+            column: The column name.
+
+        Returns:
+            The query conditions.
+        """
+        value, operator = BaseFilter._resolve_operator(value)
+        filter_ = FilterGenerator(table).define_filter(
+            column=column, value=value, operator=operator
+        )
+        return filter_.generate_query_conditions(table=table)
+
+    @property
+    def offset(self) -> int:
+        """Returns the offset needed for the query on the data persistence layer.
+
+        Returns:
+            The offset for the query.
+        """
+        return self.size * (self.page - 1)
+
+    def generate_filter(
+        self, table: Type[SQLModel]
+    ) -> Union["ColumnElement[bool]"]:
+        """Generate the filter for the query.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+
+        Raises:
+            RuntimeError: If a valid logical operator is not supplied.
+        """
+        from sqlmodel import and_, or_
+
+        filters = []
+        for column_filter in self.list_of_filters:
+            filters.append(
+                column_filter.generate_query_conditions(table=table)
+            )
+        for custom_filter in self.get_custom_filters():
+            filters.append(custom_filter)
+        if self.logical_operator == LogicalOperators.OR:
+            return or_(False, *filters)
+        elif self.logical_operator == LogicalOperators.AND:
+            return and_(True, *filters)
+        else:
+            raise RuntimeError("No valid logical operator was supplied.")
+
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        This can be overridden by subclasses to define custom filters that are
+        not based on the columns of the underlying table.
+
+        Returns:
+            A list of custom filters.
+        """
+        return []
+
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        rbac_filter = self.generate_rbac_filter(table=table)
+
+        if rbac_filter is not None:
+            query = query.where(rbac_filter)
+
+        filters = self.generate_filter(table=table)
+
+        if filters is not None:
+            query = query.where(filters)
+
+        return query
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        column, operand = self.sorting_params
+
+        if operand == SorterOps.DESCENDING:
+            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
+        else:
+            sort_clause = asc(getattr(table, column))
+
+        # We always add the `id` column as a tiebreaker to ensure a stable,
+        # repeatable order of items, otherwise subsequent pages might contain
+        # the same items.
+        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+
+        return query
+
+
+class FilterGenerator:
+    """Helper class to define filters for a class."""
+
+    def __init__(self, model_class: Type[BaseModel]) -> None:
+        """Initialize the object.
+
+        Args:
+            model_class: The model class for which to define filters.
+        """
+        self._model_class = model_class
+
+    def define_filter(
+        self, column: str, value: Any, operator: GenericFilterOps
     ) -> Filter:
         """Define a filter for a given column.
 
@@ -615,23 +791,23 @@ class BaseFilter(BaseModel):
             A Filter object.
         """
         # Create datetime filters
-        if cls.is_datetime_field(column):
-            return cls._define_datetime_filter(
+        if self.is_datetime_field(column):
+            return self._define_datetime_filter(
                 column=column,
                 value=value,
                 operator=operator,
             )
 
         # Create UUID filters
-        if cls.is_uuid_field(column):
-            return cls._define_uuid_filter(
+        if self.is_uuid_field(column):
+            return self._define_uuid_filter(
                 column=column,
                 value=value,
                 operator=operator,
             )
 
         # Create int filters
-        if cls.is_int_field(column):
+        if self.is_int_field(column):
             return NumericFilter(
                 operation=GenericFilterOps(operator),
                 column=column,
@@ -639,15 +815,15 @@ class BaseFilter(BaseModel):
             )
 
         # Create bool filters
-        if cls.is_bool_field(column):
-            return cls._define_bool_filter(
+        if self.is_bool_field(column):
+            return self._define_bool_filter(
                 column=column,
                 value=value,
                 operator=operator,
             )
 
         # Create str filters
-        if cls.is_str_field(column):
+        if self.is_str_field(column):
             return StrFilter(
                 operation=GenericFilterOps(operator),
                 column=column,
@@ -656,8 +832,8 @@ class BaseFilter(BaseModel):
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {cls.model_fields[column].annotation} might not be "
-            "supported for filtering. Defaulting to a string filter."
+            f"The Datatype {self._model_class.model_fields[column].annotation} might "
+            "not be supported for filtering. Defaulting to a string filter."
         )
         return StrFilter(
             operation=GenericFilterOps(operator),
@@ -665,8 +841,7 @@ class BaseFilter(BaseModel):
             value=str(value),
         )
 
-    @classmethod
-    def check_field_annotation(cls, k: str, type_: Any) -> bool:
+    def check_field_annotation(self, k: str, type_: Any) -> bool:
         """Checks whether a model field has a certain annotation.
 
         Args:
@@ -681,7 +856,7 @@ class BaseFilter(BaseModel):
             otherwise.
         """
         try:
-            annotation = cls.model_fields[k].annotation
+            annotation = self._model_class.model_fields[k].annotation
 
             if annotation is not None:
                 return (
@@ -690,14 +865,13 @@ class BaseFilter(BaseModel):
                 )
             else:
                 raise ValueError(
-                    f"The field '{k}' inside the model {cls.__name__} "
+                    f"The field '{k}' inside the model {self._model_class.__name__} "
                     "does not have an annotation."
                 )
         except TypeError:
             return False
 
-    @classmethod
-    def is_datetime_field(cls, k: str) -> bool:
+    def is_datetime_field(self, k: str) -> bool:
         """Checks if it's a datetime field.
 
         Args:
@@ -706,10 +880,9 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a datetime field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=datetime)
+        return self.check_field_annotation(k=k, type_=datetime)
 
-    @classmethod
-    def is_uuid_field(cls, k: str) -> bool:
+    def is_uuid_field(self, k: str) -> bool:
         """Checks if it's a UUID field.
 
         Args:
@@ -718,10 +891,9 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a UUID field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=UUID)
+        return self.check_field_annotation(k=k, type_=UUID)
 
-    @classmethod
-    def is_int_field(cls, k: str) -> bool:
+    def is_int_field(self, k: str) -> bool:
         """Checks if it's an int field.
 
         Args:
@@ -730,10 +902,9 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is an int field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=int)
+        return self.check_field_annotation(k=k, type_=int)
 
-    @classmethod
-    def is_bool_field(cls, k: str) -> bool:
+    def is_bool_field(self, k: str) -> bool:
         """Checks if it's a bool field.
 
         Args:
@@ -742,10 +913,9 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a bool field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=bool)
+        return self.check_field_annotation(k=k, type_=bool)
 
-    @classmethod
-    def is_str_field(cls, k: str) -> bool:
+    def is_str_field(self, k: str) -> bool:
         """Checks if it's a string field.
 
         Args:
@@ -754,10 +924,9 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a string field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=str)
+        return self.check_field_annotation(k=k, type_=str)
 
-    @classmethod
-    def is_sort_by_field(cls, k: str) -> bool:
+    def is_sort_by_field(self, k: str) -> bool:
         """Checks if it's a sort by field.
 
         Args:
@@ -766,7 +935,7 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a sort by field, False otherwise.
         """
-        return cls.check_field_annotation(k=k, type_=str) and k == "sort_by"
+        return self.check_field_annotation(k=k, type_=str) and k == "sort_by"
 
     @staticmethod
     def _define_datetime_filter(
@@ -890,168 +1059,3 @@ class BaseFilter(BaseModel):
             column=column,
             value=bool(value),
         )
-
-    def generate_name_or_id_query_conditions(
-        self,
-        value: Union[UUID, str],
-        table: Type["NamedSchema"],
-    ) -> "ColumnElement[bool]":
-        """Generate filter conditions for name or id of a table.
-
-        Args:
-            value: The filter value.
-            table: The table to filter.
-
-        Returns:
-            The query conditions.
-        """
-        from sqlmodel import or_
-
-        value, operator = BaseFilter._resolve_operator(value)
-        value = str(value)
-
-        conditions = []
-
-        try:
-            filter_ = self._define_filter(
-                column="id", value=value, operator=operator
-            )
-            conditions.append(filter_.generate_query_conditions(table=table))
-        except ValueError:
-            # UUID filter with equal operators and no full UUID fail with
-            # a ValueError. In this case, we already know that the filter
-            # will not produce any result and can simply ignore it.
-            pass
-
-        filter_ = self._define_filter(
-            column="name", value=value, operator=operator
-        )
-        conditions.append(filter_.generate_query_conditions(table=table))
-
-        return or_(*conditions)
-
-    def generate_custom_query_conditions_for_column(
-        self,
-        value: Any,
-        table: Type[SQLModel],
-        column: str,
-    ) -> "ColumnElement[bool]":
-        """Generate custom filter conditions for a column of a table.
-
-        Args:
-            value: The filter value.
-            table: The table which contains the column.
-            column: The column name.
-
-        Returns:
-            The query conditions.
-        """
-        value, operator = BaseFilter._resolve_operator(value)
-        filter_ = self._define_filter(
-            column=column, value=value, operator=operator
-        )
-        return filter_.generate_query_conditions(table=table)
-
-    @property
-    def offset(self) -> int:
-        """Returns the offset needed for the query on the data persistence layer.
-
-        Returns:
-            The offset for the query.
-        """
-        return self.size * (self.page - 1)
-
-    def generate_filter(
-        self, table: Type[SQLModel]
-    ) -> Union["ColumnElement[bool]"]:
-        """Generate the filter for the query.
-
-        Args:
-            table: The Table that is being queried from.
-
-        Returns:
-            The filter expression for the query.
-
-        Raises:
-            RuntimeError: If a valid logical operator is not supplied.
-        """
-        from sqlmodel import and_, or_
-
-        filters = []
-        for column_filter in self.list_of_filters:
-            filters.append(
-                column_filter.generate_query_conditions(table=table)
-            )
-        for custom_filter in self.get_custom_filters():
-            filters.append(custom_filter)
-        if self.logical_operator == LogicalOperators.OR:
-            return or_(False, *filters)
-        elif self.logical_operator == LogicalOperators.AND:
-            return and_(True, *filters)
-        else:
-            raise RuntimeError("No valid logical operator was supplied.")
-
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        This can be overridden by subclasses to define custom filters that are
-        not based on the columns of the underlying table.
-
-        Returns:
-            A list of custom filters.
-        """
-        return []
-
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        rbac_filter = self.generate_rbac_filter(table=table)
-
-        if rbac_filter is not None:
-            query = query.where(rbac_filter)
-
-        filters = self.generate_filter(table=table)
-
-        if filters is not None:
-            query = query.where(filters)
-
-        return query
-
-    def apply_sorting(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Apply sorting to the query.
-
-        Args:
-            query: The query to which to apply the sorting.
-            table: The query table.
-
-        Returns:
-            The query with sorting applied.
-        """
-        column, operand = self.sorting_params
-
-        if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
-        else:
-            sort_clause = asc(getattr(table, column))
-
-        # We always add the `id` column as a tiebreaker to ensure a stable,
-        # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
-
-        return query
