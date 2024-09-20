@@ -240,14 +240,35 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
-            # Retrieve Processor arguments provided in the Step settings.
-            args_for_step_executor = step_settings.processor_args or {}
+            only_processing_step_possible = (
+                not step_settings.use_training_steps_where_possible
+            )
+            if not only_processing_step_possible and (
+                isinstance(step_settings.output_data_s3_uri, dict)
+                or (
+                    isinstance(step_settings.output_data_s3_uri, str)
+                    and (
+                        step_settings.output_data_s3_mode
+                        != sagemaker.clarify.ProcessingOutputHandler.S3UploadMode.ENDOFJOB.value
+                    )
+                )
+            ):
+                only_processing_step_possible = True
+
+            # Retrieve Executor arguments provided in the Step settings.
+            if only_processing_step_possible:
+                args_for_step_executor = step_settings.processor_args or {}
+            else:
+                args_for_step_executor = step_settings.estimator_args or {}
 
             # Set default values from configured orchestrator Component to arguments
             # to be used when they are not present in processor_args.
             args_for_step_executor.setdefault(
                 "role",
-                step_settings.processor_role or self.config.execution_role,
+                step_settings.execution_role
+                or step_settings.processor_role
+                or self.config.execution_role
+                or self.config.processor_role,
             )
             args_for_step_executor.setdefault(
                 "volume_size_in_gb", step_settings.volume_size_in_gb
@@ -255,17 +276,30 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             args_for_step_executor.setdefault(
                 "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
             )
+            tags = step_settings.tags or step_settings.processor_tags
             args_for_step_executor.setdefault(
                 "tags",
                 (
                     [
                         {"Key": key, "Value": value}
-                        for key, value in step_settings.processor_tags.items()
+                        for key, value in tags.items()
                     ]
-                    if step_settings.processor_tags
+                    if tags
                     else None
                 ),
             )
+            if only_processing_step_possible:
+                args_for_step_executor.setdefault(
+                    "instance_type",
+                    step_settings.instance_type
+                    or DEFAULT_PROCESSING_INSTANCE_TYPE,
+                )
+            else:
+                args_for_step_executor.setdefault(
+                    "instance_type",
+                    step_settings.instance_type
+                    or DEFAULT_TRAINING_INSTANCE_TYPE,
+                )
 
             # Set values that cannot be overwritten
             args_for_step_executor["image_uri"] = image
@@ -315,22 +349,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Construct S3 outputs from container for step
-            only_processing_step_possible = False
             outputs = None
             output_path = None
+
             if step_settings.output_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.output_data_s3_uri, str):
-                outputs = [
-                    ProcessingOutput(
-                        source="/opt/ml/processing/output/data",
-                        destination=step_settings.output_data_s3_uri,
-                        s3_upload_mode=step_settings.output_data_s3_mode,
-                    )
-                ]
-                output_path = step_settings.output_data_s3_uri
+                if only_processing_step_possible:
+                    outputs = [
+                        ProcessingOutput(
+                            source="/opt/ml/processing/output/data",
+                            destination=step_settings.output_data_s3_uri,
+                            s3_upload_mode=step_settings.output_data_s3_mode,
+                        )
+                    ]
+                else:
+                    output_path = step_settings.output_data_s3_uri
             elif isinstance(step_settings.output_data_s3_uri, dict):
-                only_processing_step_possible = True
                 outputs = []
                 for (
                     channel,
@@ -352,8 +387,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 processor = sagemaker.processing.Processor(
                     entrypoint=entrypoint,
                     env=environment,
-                    instance_type=step_settings.instance_type
-                    or DEFAULT_PROCESSING_INSTANCE_TYPE,
                     **args_for_step_executor,
                 )
 
@@ -371,8 +404,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     output_path=output_path,
                     environment=environment,
                     container_entry_point=entrypoint,
-                    instance_type=step_settings.instance_type
-                    or DEFAULT_TRAINING_INSTANCE_TYPE,
                     **args_for_step_executor,
                 )
                 sagemaker_step = TrainingStep(
@@ -391,7 +422,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=self.config.execution_role)
+        pipeline.create(
+            role_arn=self.config.execution_role or self.config.processor_role
+        )
         pipeline_execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "

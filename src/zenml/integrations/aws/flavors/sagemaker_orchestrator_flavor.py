@@ -25,6 +25,7 @@ from zenml.integrations.aws import (
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -39,19 +40,22 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     Attributes:
         instance_type: The instance type to use for the processing job.
-        processor_role: The IAM role to use for the step execution on a Processor.
+        execution_role: The IAM role to use for the step execution.
+        processor_role: DEPRECATED: use `execution_role` instead.
         volume_size_in_gb: The size of the EBS volume to use for the processing
             job.
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
-        processor_tags: Tags to apply to the Processor assigned to the step.
+        tags: Tags to apply to the Processor/Estimator assigned to the step.
+        processor_tags: DEPRECATED: use `tags` instead.
         keep_alive_period_in_seconds: The time in seconds after which the
             provisioned instance will be terminated if not used. This is only
             applicable for TrainingStep type and it is not possible to use
             TrainingStep type if the `output_data_s3_uri` is set to Dict[str, str].
         use_training_steps_where_possible: Whether to use the TrainingStep
             type if possible. It is not possible to use TrainingStep type
-            if the `output_data_s3_uri` is set to Dict[str, str].
+            if the `output_data_s3_uri` is set to Dict[str, str] or if the
+            `output_data_s3_mode` != "EndOfJob".
         processor_args: Arguments that are directly passed to the SageMaker
             Processor for a specific step, allowing for overriding the default
             settings provided when configuring the component. See
@@ -60,6 +64,13 @@ class SagemakerOrchestratorSettings(BaseSettings):
             For processor_args.instance_type, check
             https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
             for a list of available instance types.
+        estimator_args: Arguments that are directly passed to the SageMaker
+            Estimator for a specific step, allowing for overriding the default
+            settings provided when configuring the component. See
+            https://sagemaker.readthedocs.io/en/stable/api/training/estimators.html#sagemaker.estimator.Estimator
+            for a full list of arguments.
+            For a list of available instance types, check
+            https://docs.aws.amazon.com/sagemaker/latest/dg/cmn-info-instance-types.html.
         input_data_s3_mode: How data is made available to the container.
             Two possible input modes: File, Pipe.
         input_data_s3_uri: S3 URI where data is located if not locally,
@@ -85,14 +96,16 @@ class SagemakerOrchestratorSettings(BaseSettings):
     """
 
     instance_type: Optional[str] = None
-    processor_role: Optional[str] = None
+    execution_role: Optional[str] = None
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
-    processor_tags: Dict[str, str] = {}
+    tags: Dict[str, str] = {}
     keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
     use_training_steps_where_possible: bool = True
 
     processor_args: Dict[str, Any] = {}
+    estimator_args: Dict[str, Any] = {}
+
     input_data_s3_mode: str = "File"
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
         default=None, union_mode="left_to_right"
@@ -101,6 +114,12 @@ class SagemakerOrchestratorSettings(BaseSettings):
     output_data_s3_mode: str = "EndOfJob"
     output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
         default=None, union_mode="left_to_right"
+    )
+
+    processor_role: Optional[str] = None
+    processor_tags: Dict[str, str] = {}
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "processor_role", "processor_tags"
     )
 
 
