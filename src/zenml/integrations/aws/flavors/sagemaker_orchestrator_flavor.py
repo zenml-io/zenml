@@ -120,7 +120,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     processor_role: Optional[str] = None
     processor_tags: Dict[str, str] = {}
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "processor_role", "processor_tags"
+        ("processor_role", "execution_role"), ("processor_tags", "tags")
     )
 
     @model_validator(mode="before")

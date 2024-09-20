@@ -241,9 +241,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             use_training_step = (
                 step_settings.use_training_step
                 if step_settings.use_training_step is not None
-                else self.config.use_training_step
-                if self.config.use_training_step is not None
-                else True
+                else (
+                    self.config.use_training_step
+                    if self.config.use_training_step is not None
+                    else True
+                )
             )
 
             # Retrieve Executor arguments provided in the Step settings.
@@ -256,10 +258,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # to be used when they are not present in processor_args.
             args_for_step_executor.setdefault(
                 "role",
-                step_settings.execution_role
-                or step_settings.processor_role
-                or self.config.execution_role
-                or self.config.processor_role,
+                step_settings.execution_role or self.config.execution_role,
             )
             args_for_step_executor.setdefault(
                 "volume_size_in_gb", step_settings.volume_size_in_gb
@@ -267,7 +266,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             args_for_step_executor.setdefault(
                 "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
             )
-            tags = step_settings.tags or step_settings.processor_tags
+            tags = step_settings.tags
             args_for_step_executor.setdefault(
                 "tags",
                 (
@@ -401,9 +400,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(
-            role_arn=self.config.execution_role or self.config.processor_role
-        )
+        pipeline.create(role_arn=self.config.execution_role)
         pipeline_execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
