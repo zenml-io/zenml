@@ -18,13 +18,12 @@ import shutil
 from typing import ClassVar, Dict, Optional, Type, cast
 from uuid import UUID
 
-from flavors.vllm_model_deployer_flavor import (
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
+from zenml.integrations.vllm.flavors.vllm_model_deployer_flavor import (
     VLLMModelDeployerConfig,
     VLLMModelDeployerFlavor,
 )
-
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.vllm.services.vllm_deployment import (
     VLLMDeploymentService,
     VLLMServiceConfig,

@@ -45,3 +45,6 @@ class VLLMIntegration(Integration):
         from zenml.integrations.vllm.flavors import VLLMModelDeployerFlavor
 
         return [VLLMModelDeployerFlavor]
+
+
+VLLMIntegration.check_installation()

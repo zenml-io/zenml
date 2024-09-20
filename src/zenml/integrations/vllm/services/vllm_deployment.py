@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the vLLM Inference Server Service."""
 
-from argparse import Namespace
 from typing import Any, Optional
 
 from zenml.logger import get_logger
@@ -30,20 +29,8 @@ logger = get_logger(__name__)
 class VLLMServiceConfig(LocalDaemonServiceConfig):
     """vLLM service configurations."""
 
-    model: str
-    tokenizer: Optional[str]
-    dtype: str = "auto"
-    gpu_memory_utilization: float = 0.90
-    tensor_parallel_size: int = 1
-
-    # Note: There are additional parameters such as SSL parameters
-    # Ref: https://github.com/vllm-project/vllm/blob/855c8ae2c9a4085b1ebd66d9a978fb23f47f822c/vllm/entrypoints/openai/api_server.py#L546
-    host: str = "localhost"
-    port: int = 8000
-
-    # # Allow extra args
-    # # More vllm args: https://github.com/vllm-project/vllm/blob/7c7714d856eee6fa94aade729b67f00584f72a4c/vllm/engine/arg_utils.py#L82
-    # model_config = ConfigDict(extra="allow")
+    model: Optional[str] = None
+    tokenizer: Optional[str] = None
 
 
 class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
@@ -72,14 +59,22 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             "Starting vLLM inference server service as blocking "
             "process... press CTRL+C once to stop it."
         )
-        args = Namespace(**self.config.model_dump())
+
         import uvloop
         from vllm.entrypoints.openai.api_server import run_server
+        from vllm.entrypoints.openai.cli_args import make_arg_parser
+        from vllm.utils import FlexibleArgumentParser
 
         try:
-            uvloop.run(run_server(args))
+            parser = make_arg_parser(FlexibleArgumentParser())
+            args = parser.parse_args()
+            logger.info(f"Args: {args}")
+            # Update the arguments in place
+            args.__dict__.update(self.config.model_dump())
+            logger.info(f"Args: {args}")
+            uvloop.run(run_server(args=args))
         except KeyboardInterrupt:
-            logger.info("Stopping BentoML prediction service...")
+            logger.info("Stopping vLLM prediction service...")
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -90,7 +85,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         """
         if not self.is_running:
             return None
-        return f"http://{self.config.host}:{self.config.port}/v1"
+        return "http://localhost:8000/v1"
 
     @property
     def healthcheck_url(self) -> Optional[str]:
@@ -101,7 +96,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         """
         if not self.is_running:
             return None
-        return f"http://{self.config.host}:{self.config.port}/health"
+        return "http://localhost:8000/health"
 
     def predict(self, data: "Any") -> "Any":
         """Make a prediction using the service.

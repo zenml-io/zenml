@@ -28,14 +28,9 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(enable_cache=True)
+@step(enable_cache=False)
 def vllm_model_deployer_step(
-    model_name: str,
-    port: int = 8000,
-    host: str = "localhost",
-    dtype: str = "auto",
-    gpu_memory_utilization: float = 0.90,
-    tensor_parallel_size: int = 1,
+    model: str,
     tokenizer: Optional[str] = None,
     timeout: int = 30,
     deploy_decision: bool = True,
@@ -45,13 +40,7 @@ def vllm_model_deployer_step(
     This step deploys a given Bento to a local vLLM http prediction server.
 
     Args:
-        model_name: Name or path to huggingface model
-        host: Host for serving local vllm server
-        port: Port for serving local vllm server
-        dtype: Data type for model weights and activations.
-        gpu_memory_utilization: The fraction of GPU memory to be used for the model
-            executor, which can range from 0 to 1.
-        tensor_parallel_size: Number of tensor parallel replicas.
+        model: Name or path to huggingface model
         tokenizer: Name or path of the huggingface tokenizer to use.
             If unspecified, model name or path will be used.
         timeout: the number of seconds to wait for the service to start/stop.
@@ -72,14 +61,15 @@ def vllm_model_deployer_step(
 
     # create a config for the new model service
     predictor_cfg = VLLMServiceConfig(
-        model_name=model_name,
+        model=model,
         tokenizer=tokenizer,
-        dtype=dtype,
-        gpu_memory_utilization=gpu_memory_utilization,
-        tensor_parallel_size=tensor_parallel_size,
-        host=host,
-        port=port,
+        model_name="default",  # Required for ServiceConfig
     )
+
+    # update the step configuration with the real pipeline runtime information
+    predictor_cfg = predictor_cfg.model_copy()
+    predictor_cfg.pipeline_name = pipeline_name
+    predictor_cfg.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
@@ -96,7 +86,7 @@ def vllm_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Reusing last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{model_name}'..."
+            f"'{model}'..."
         )
         if not service.is_running:
             service.start(timeout=timeout)
