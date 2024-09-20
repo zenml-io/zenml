@@ -1,36 +1,28 @@
 ---
-description: From a template to a pipeline run
+description: Create and run a template over the ZenML Dashboard
 ---
-
-# Run a template
 
 {% hint style="success" %}
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
 [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
-Once your template is set up, you can **run** it and create a new pipeline run 
-that will be conducted on the same stack. Before it starts, you have a window
-to seamlessly readjust the configuration of your pipelines and steps.
+## Create a template
 
-## Run a template using the Python SDK
+In order to create a template over the dashboard, go to your pipelines page 
+and switch over to the templates tab:
 
-You can use the ZenML client to run a template:
+![Create Templates on the dashboard](../../.gitbook/assets/run-templates-create-1.png)
 
-```python
-from zenml.client import Client
+You can click `+ New Template`, give it a name and choose a pipeline and run
+to create a template.
 
-template = Client().get_run_template("TEMPLATE_NAME")
+{% hint style="warning" %}
+You need to select **a pipeline run that was executed on a remote stack** 
+(i.e. at least a remote orchestrator, artifact store, and container registry)
+{% endhint %}
 
-config = template.config_template
-
-# [OPTIONAL] ---- modify the config here ----
-
-Client().trigger_pipeline(
-    template_id=template.id,
-    run_configuration=config,
-)
-```
+![Template Details](../../.gitbook/assets/run-templates-create-2.png)
 
 ## Run a template using the dashboard
 
@@ -46,6 +38,7 @@ configuration on the go by using our editor **(powered with auto-completion and
 type hints)**.
 
 ![Run Details](../../.gitbook/assets/run-templates-run-1.png)
+
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

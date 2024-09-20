@@ -1,14 +1,13 @@
 ---
-description: >-
-  There are numerous ways to trigger a pipeline, apart from
-  calling the runner script.
+description: There are numerous ways to trigger a pipeline
 ---
 
-# 🚨 Trigger a pipeline
-
-A pipeline can be run via Python like this:
+In ZenML, the simplest way to run a pipeline to use your pipeline definition:
 
 ```python
+from zenml import step, pipeline
+
+
 @step  # Just add this decorator
 def load_data() -> dict:
     training_data = [[1, 2], [3, 4], [5, 6]]
@@ -31,16 +30,35 @@ def train_model(data: dict) -> None:
 def simple_ml_pipeline():
     dataset = load_data()
     train_model(dataset)
+
+
+if __name__ == "__main__":
+    simple_ml_pipeline()
 ```
 
-You can now run this pipeline by simply calling the function:
+However, there are other ways to trigger a pipeline, specifically a pipeline 
+with a remote stack (remote orchestrator, artifact store, and container 
+registry).
 
-```python
-simple_ml_pipeline()
-```
+## Run Templates
 
-However, there are other ways to trigger a pipeline, specifically a pipeline with a remote stack (remote
-orchestrator, artifact store, and container registry).
+**Run Templates** are pre-defined, parameterized configurations for your ZenML 
+pipelines that can be easily executed from the ZenML dashboard or via our 
+Client/REST API. Think of them as blueprints for your pipeline runs, ready 
+to be customized on the fly.
+
+{% hint style="success" %}
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
+[sign up here](https://cloud.zenml.io) to get access.
+{% endhint %}
+
+![Run Template](../../.gitbook/assets/run-templates.gif)
+
+{% hint style="warning" %}
+It is important to note that in order to create a run template, you will 
+need **a pipeline run that was executed on a remote stack** (i.e. at least a 
+remote orchestrator, artifact store, and container registry).
+{% endhint %}
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Trigger a pipeline from Python SDK</td><td></td><td></td><td><a href="trigger-a-pipeline-from-client.md">trigger-a-pipeline-from-client.md</a></td></tr><tr><td>Trigger a pipeline from another</td><td></td><td></td><td><a href="trigger-a-pipeline-from-another.md">trigger-a-pipeline-from-another.md</a></td></tr><tr><td>Trigger a pipeline from the REST API</td><td></td><td></td><td><a href="trigger-a-pipeline-from-rest-api.md">trigger-a-pipeline-from-rest-api.md</a></td></tr></tbody></table>
 
