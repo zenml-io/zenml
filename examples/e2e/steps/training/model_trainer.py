@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Tuple
 
 import mlflow
 import pandas as pd
@@ -25,9 +26,10 @@ from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    mlflow_register_model_step,
-)
+
+# from zenml.integrations.mlflow.steps.mlflow_registry import (
+#    mlflow_register_model_step,
+# )
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,8 +51,11 @@ def model_trainer(
     model: ClassifierMixin,
     target: str,
     name: str,
-) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="model", is_model_artifact=True)
+) -> Tuple[
+    Annotated[
+        ClassifierMixin, ArtifactConfig(name="model", is_model_artifact=True)
+    ],
+    Annotated[str, "uri"],
 ]:
     """Configure and train a model on the training dataset.
 
@@ -82,6 +87,9 @@ def model_trainer(
     Returns:
         The trained model artifact.
     """
+    step_context = get_step_context()
+    # Get the URI where the output will be saved.
+    uri = step_context.get_output_artifact_uri(output_name="model")
 
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Initialize the model with the hyperparameters indicated in the step
@@ -94,19 +102,9 @@ def model_trainer(
     )
 
     # register mlflow model
-    mlflow_register_model_step.entrypoint(
-        model,
-        name=name,
-    )
-    # keep track of mlflow version for future use
-    model_registry = Client().active_stack.model_registry
-    if model_registry:
-        version = model_registry.get_latest_model_version(
-            name=name, stage=None
-        )
-        if version:
-            model_ = get_step_context().model
-            model_.log_metadata({"model_registry_version": version.version})
-    ### YOUR CODE ENDS HERE ###
+    # mlflow_register_model_step.entrypoint(
+    #    model,
+    #    name=name,
+    # )
 
-    return model
+    return model, uri
