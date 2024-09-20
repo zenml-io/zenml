@@ -69,10 +69,8 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         try:
             parser = make_arg_parser(FlexibleArgumentParser())
             args = parser.parse_args()
-            logger.info(f"Args: {args}")
             # Update the arguments in place
             args.__dict__.update(self.config.model_dump())
-            logger.info(f"Args: {args}")
             uvloop.run(run_server(args=args))
         except KeyboardInterrupt:
             logger.info("Stopping vLLM prediction service...")
