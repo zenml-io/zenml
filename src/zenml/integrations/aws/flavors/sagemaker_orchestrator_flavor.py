@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 DEFAULT_TRAINING_INSTANCE_TYPE = "ml.m5.xlarge"
 DEFAULT_PROCESSING_INSTANCE_TYPE = "ml.t3.medium"
+DEFAULT_OUTPUT_DATA_S3_MODE = "EndOfJob"
 
 
 class SagemakerOrchestratorSettings(BaseSettings):
@@ -52,8 +53,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
             provisioned instance will be terminated if not used. This is only
             applicable for TrainingStep type and it is not possible to use
             TrainingStep type if the `output_data_s3_uri` is set to Dict[str, str].
-        use_training_steps_where_possible: Whether to use the TrainingStep
-            type if possible. It is not possible to use TrainingStep type
+        use_training_step: Whether to use the TrainingStep type.
+            It is not possible to use TrainingStep type
             if the `output_data_s3_uri` is set to Dict[str, str] or if the
             `output_data_s3_mode` != "EndOfJob".
         processor_args: Arguments that are directly passed to the SageMaker
@@ -101,7 +102,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     max_runtime_in_seconds: int = 86400
     tags: Dict[str, str] = {}
     keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
-    use_training_steps_where_possible: bool = True
+    use_training_step: bool = True
 
     processor_args: Dict[str, Any] = {}
     estimator_args: Dict[str, Any] = {}
@@ -111,7 +112,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
         default=None, union_mode="left_to_right"
     )
 
-    output_data_s3_mode: str = "EndOfJob"
+    output_data_s3_mode: str = DEFAULT_OUTPUT_DATA_S3_MODE
     output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
         default=None, union_mode="left_to_right"
     )
@@ -121,6 +122,43 @@ class SagemakerOrchestratorSettings(BaseSettings):
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "processor_role", "processor_tags"
     )
+
+    @model_validator(mode="before")
+    def validate_model(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Check if model is configured correctly.
+
+        Args:
+            data: The model data.
+
+        Returns:
+            The validated model data.
+
+        Raises:
+            ValueError: If the model is configured incorrectly.
+        """
+        use_training_step = data.get("use_training_step", True)
+        output_data_s3_uri = data.get("output_data_s3_uri", None)
+        output_data_s3_mode = data.get(
+            "output_data_s3_mode", DEFAULT_OUTPUT_DATA_S3_MODE
+        )
+        if use_training_step and (
+            isinstance(output_data_s3_uri, dict)
+            or (
+                isinstance(output_data_s3_uri, str)
+                and (output_data_s3_mode != DEFAULT_OUTPUT_DATA_S3_MODE)
+            )
+        ):
+            raise ValueError(
+                "`use_training_step=True` is not supported when `output_data_s3_uri` is a dict or "
+                f"when `output_data_s3_mode` is not '{DEFAULT_OUTPUT_DATA_S3_MODE}'."
+            )
+        instance_type = data.get("instance_type", None)
+        if instance_type is None:
+            if use_training_step:
+                data["instance_type"] = DEFAULT_TRAINING_INSTANCE_TYPE
+            else:
+                data["instance_type"] = DEFAULT_PROCESSING_INSTANCE_TYPE
+        return data
 
 
 class SagemakerOrchestratorConfig(

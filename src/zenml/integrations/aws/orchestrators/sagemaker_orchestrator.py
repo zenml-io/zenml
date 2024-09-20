@@ -33,8 +33,6 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
-    DEFAULT_PROCESSING_INSTANCE_TYPE,
-    DEFAULT_TRAINING_INSTANCE_TYPE,
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
 )
@@ -240,26 +238,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
-            only_processing_step_possible = (
-                not step_settings.use_training_steps_where_possible
-            )
-            if not only_processing_step_possible and (
-                isinstance(step_settings.output_data_s3_uri, dict)
-                or (
-                    isinstance(step_settings.output_data_s3_uri, str)
-                    and (
-                        step_settings.output_data_s3_mode
-                        != sagemaker.clarify.ProcessingOutputHandler.S3UploadMode.ENDOFJOB.value
-                    )
-                )
-            ):
-                only_processing_step_possible = True
+            use_training_step_in_step = step_settings.model_dump(
+                exclude_unset=True
+            ).get("use_training_step", None)
+            if use_training_step_in_step is not None:
+                use_train_step = use_training_step_in_step
+            else:
+                use_train_step = self.config.use_training_step
 
             # Retrieve Executor arguments provided in the Step settings.
-            if only_processing_step_possible:
-                args_for_step_executor = step_settings.processor_args or {}
-            else:
+            if use_train_step:
                 args_for_step_executor = step_settings.estimator_args or {}
+            else:
+                args_for_step_executor = step_settings.processor_args or {}
 
             # Set default values from configured orchestrator Component to arguments
             # to be used when they are not present in processor_args.
@@ -288,18 +279,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     else None
                 ),
             )
-            if only_processing_step_possible:
-                args_for_step_executor.setdefault(
-                    "instance_type",
-                    step_settings.instance_type
-                    or DEFAULT_PROCESSING_INSTANCE_TYPE,
-                )
-            else:
-                args_for_step_executor.setdefault(
-                    "instance_type",
-                    step_settings.instance_type
-                    or DEFAULT_TRAINING_INSTANCE_TYPE,
-                )
+            args_for_step_executor.setdefault(
+                "instance_type", step_settings.instance_type
+            )
 
             # Set values that cannot be overwritten
             args_for_step_executor["image_uri"] = image
@@ -355,7 +337,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if step_settings.output_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.output_data_s3_uri, str):
-                if only_processing_step_possible:
+                if use_train_step:
+                    output_path = step_settings.output_data_s3_uri
+                else:
                     outputs = [
                         ProcessingOutput(
                             source="/opt/ml/processing/output/data",
@@ -363,8 +347,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                             s3_upload_mode=step_settings.output_data_s3_mode,
                         )
                     ]
-                else:
-                    output_path = step_settings.output_data_s3_uri
             elif isinstance(step_settings.output_data_s3_uri, dict):
                 outputs = []
                 for (
@@ -379,10 +361,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            if (
-                only_processing_step_possible
-                or not step_settings.use_training_steps_where_possible
-            ):
+            if use_train_step:
                 # Create Processor and ProcessingStep
                 processor = sagemaker.processing.Processor(
                     entrypoint=entrypoint,

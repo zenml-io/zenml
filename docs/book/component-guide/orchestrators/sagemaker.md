@@ -197,7 +197,7 @@ They can then be applied to a step as follows:
 @step(settings={"orchestrator": sagemaker_orchestrator_settings})
 ```
 
-For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
+For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` (for Processing Steps) or `ml.m5.xlarge` (for Training Steps) with 30GB additional storage. See the next section for details on how ZenML decides which Sagemaker Step type to use.
 
 Check out [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings in general.
 
@@ -297,6 +297,10 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     }
 )
 ```
+
+{% hint style="warning" %}
+Using multichannel output or output mode except `EndOfJob` will make it impossible to use TrainingStep and also Warm Pools. See corresponding section of this document for details.
+{% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
 
