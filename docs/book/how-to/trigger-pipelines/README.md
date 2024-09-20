@@ -56,12 +56,6 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
 
 ![Run Template](../../.gitbook/assets/run-templates.gif)
 
-{% hint style="warning" %}
-It is important to note that in order to create a run template, you will 
-need **a pipeline run that was executed on a remote stack** (i.e. at least a 
-remote orchestrator, artifact store, and container registry).
-{% endhint %}
-
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Trigger a pipeline from Python SDK</td><td></td><td></td><td><a href="trigger-a-pipeline-from-client.md">trigger-a-pipeline-from-client.md</a></td></tr><tr><td>Trigger a pipeline from another</td><td></td><td></td><td><a href="trigger-a-pipeline-from-another.md">trigger-a-pipeline-from-another.md</a></td></tr><tr><td>Trigger a pipeline from the REST API</td><td></td><td></td><td><a href="trigger-a-pipeline-from-rest-api.md">trigger-a-pipeline-from-rest-api.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
