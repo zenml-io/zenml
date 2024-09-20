@@ -6,17 +6,16 @@ description: >-
 
 # Great Expectations
 
-The Great Expectations [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data profiling and data quality tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
+The Great Expectations [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data validation tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
 
 ### When would you want to use it?
 
-[Great Expectations](https://greatexpectations.io/) is an open-source library that helps keep the quality of your data in check through data testing, documentation, and profiling, and to improve communication and observability. Great Expectations works with tabular data in a variety of formats and data sources, of which ZenML currently supports only `pandas.DataFrame` as part of its pipelines.
+[Great Expectations](https://greatexpectations.io/) is an open-source library that helps keep the quality of your data in check through data testing, and documentation and to improve communication and observability. Great Expectations works with tabular data in a variety of formats and data sources, of which ZenML currently supports only `pandas.DataFrame` as part of its pipelines.
 
 You should use the Great Expectations Data Validator when you need the following data validation features that are possible with Great Expectations:
 
-* [Data Profiling](https://docs.greatexpectations.io/docs/oss/guides/expectations/creating_custom_expectations/how_to_add_support_for_the_auto_initializing_framework_to_a_custom_expectation/#build-a-custom-profiler-for-your-expectation): generates a set of validation rules (Expectations) automatically by inferring them from the properties of an input dataset.
-* [Data Quality](https://docs.greatexpectations.io/docs/oss/guides/validation/checkpoints/how_to_pass_an_in_memory_dataframe_to_a_checkpoint/): runs a set of predefined or inferred validation rules (Expectations) against an in-memory dataset.
-* [Data Docs](https://docs.greatexpectations.io/docs/reference/learn/terms/data_docs_store/): generate and maintain human-readable documentation of all your data validation rules, data quality checks and their results.
+* [Data Validation](https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/run_a_checkpoint): runs a set of predefined or inferred validation rules (Expectations) against an in-memory dataset.
+* [Data Docs](https://docs.greatexpectations.io/docs/core/configure_project_settings/configure_data_docs/): generate and maintain human-readable documentation of all your data validation rules, data quality checks and their results.
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors) if you need a different set of data validation features.
 
@@ -105,80 +104,16 @@ For more, up-to-date information on the Great Expectations Data Validator config
 
 The core Great Expectations concepts that you should be aware of when using it within ZenML pipelines are Expectations / Expectation Suites, Validations and Data Docs.
 
-ZenML wraps the Great Expectations' functionality in the form of two standard steps:
-
-* a Great Expectations data profiler that can be used to automatically generate Expectation Suites from an input `pandas.DataFrame` dataset
-* a Great Expectations data validator that uses an existing Expectation Suite to validate an input `pandas.DataFrame` dataset
+ZenML wraps the Great Expectations' functionality in the form of a standard data validator step that uses an existing Expectation Suite or a list of Expectations to validate an input `pandas.DataFrame` dataset
 
 You can visualize Great Expectations Suites and Results in Jupyter notebooks or view them directly in the ZenML dashboard.
 
-#### The Great Expectation's data profiler step
-
-The standard Great Expectation's data profiler step builds an Expectation Suite automatically by running a [`UserConfigurableProfiler`](https://docs.greatexpectations.io/docs/guides/expectations/how\_to\_create\_and\_edit\_expectations\_with\_a\_profiler) on an input `pandas.DataFrame` dataset. The generated Expectation Suite is saved in the Great Expectations Expectation Store, but also returned as an `ExpectationSuite` artifact that is versioned and saved in the ZenML Artifact Store. The step automatically rebuilds the Data Docs.
-
-At a minimum, the step configuration expects a name to be used for the Expectation Suite:
-
-```python
-from zenml.integrations.great_expectations.steps import (
-    great_expectations_profiler_step,
-)
-
-ge_profiler_step = great_expectations_profiler_step.with_options(
-    parameters={
-        "expectation_suite_name": "steel_plates_suite",
-        "data_asset_name": "steel_plates_train_df",
-    }
-)
-```
-
-The step can then be inserted into your pipeline where it can take in a pandas dataframe, e.g.:
-
-```python
-from zenml import pipeline
-
-docker_settings = DockerSettings(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
-
-@pipeline(settings={"docker": docker_settings})
-def profiling_pipeline():
-    """Data profiling pipeline for Great Expectations.
-
-    The pipeline imports a reference dataset from a source then uses the builtin
-    Great Expectations profiler step to generate an expectation suite (i.e.
-    validation rules) inferred from the schema and statistical properties of the
-    reference dataset.
-
-    Args:
-        importer: reference data importer step
-        profiler: data profiler step
-    """
-    dataset, _ = importer()
-    ge_profiler_step(dataset)
-
-
-profiling_pipeline()
-```
-
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great\_expectations\_profiler\_step) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
-
-```python
-@step
-def great_expectations_profiler_step(
-    dataset: pd.DataFrame,
-    expectation_suite_name: str,
-    data_asset_name: Optional[str] = None,
-    profiler_kwargs: Optional[Dict[str, Any]] = None,
-    overwrite_existing_suite: bool = True,
-) -> ExpectationSuite:
-    ...
-```
-
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great\_expectations\_profiler\_step) in the SDK docs.
 
 #### The Great Expectations data validator step
 
-The standard Great Expectations data validator step validates an input `pandas.DataFrame` dataset by running an existing Expectation Suite on it. The validation results are saved in the Great Expectations Validation Store, but also returned as an `CheckpointResult` artifact that is versioned and saved in the ZenML Artifact Store. The step automatically rebuilds the Data Docs.
+The standard Great Expectations data validator step validates an input `pandas.DataFrame` dataset by running an existing Expectation Suite or a list of Expectations on it. The validation results are saved in the Great Expectations Validation Store, but also returned as an `CheckpointResult` artifact that is versioned and saved in the ZenML Artifact Store. The step automatically rebuilds the Data Docs.
 
-At a minimum, the step configuration expects the name of the Expectation Suite to be used for the validation:
+At a minimum, the step configuration expects the name of the Expectation Suite or a list of Expectations to be used for the validation. In the example below we use a list of Expectations, with each expectation defined as a `GreatExpectationExpectationConfig` object, with the name of the expectation in snake case and the arguments of the expectation as a dictionary:
 
 ```python
 from zenml.integrations.great_expectations.steps import (
@@ -187,13 +122,18 @@ from zenml.integrations.great_expectations.steps import (
 
 ge_validator_step = great_expectations_validator_step.with_options(
     parameters={
-        "expectation_suite_name": "steel_plates_suite",
-        "data_asset_name": "steel_plates_train_df",
-    }
+        "expectations_list": [
+            GreatExpectationExpectationConfig(
+                expectation_name="expect_column_values_to_not_be_null",
+                expectation_args={"column": "X_Minimum"},
+            )
+        ],
+        "data_asset_name": "my_data_asset",
+    },
 )
 ```
 
-The step can then be inserted into your pipeline where it can take in a pandas dataframe and a bool flag used solely for order reinforcement purposes, e.g.:
+The step can then be inserted into your pipeline where it can take in a pandas dataframe e.g.:
 
 ```python
 docker_settings = DockerSettings(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
@@ -211,23 +151,26 @@ def validation_pipeline():
         validator: dataset validation step
         checker: checks the validation results
     """
-    dataset, condition = importer()
-    results = ge_validator_step(dataset, condition)
+    dataset = importer()
+    results = ge_validator_step(dataset)
     message = checker(results)
 
 
 validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great\_expectations\_validator\_step) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great\_expectations\_validator\_step) , the step takes in a `pandas.DataFrame` dataset and it returns a Great Expectations `CheckpointResult` object:
 
 ```python
 @step
 def great_expectations_validator_step(
     dataset: pd.DataFrame,
-    expectation_suite_name: str,
+    expectation_suite_name: Optional[str] = None,
     data_asset_name: Optional[str] = None,
-    action_list: Optional[List[Dict[str, Any]]] = None,
+    action_list: Optional[List[ge.checkpoint.actions.ValidationAction]] = None,
+    expectation_parameters: Optional[Dict[str, Any]] = None,
+    expectations_list: Optional[List[GreatExpectationExpectationConfig]] = None,
+    result_format: str = "SUMMARY",
     exit_on_error: bool = False,
 ) -> CheckpointResult:
 ```
@@ -262,18 +205,13 @@ def create_custom_expectation_suite(
     # context = ge.get_context()
 
     expectation_suite_name = "custom_suite"
-    suite = context.create_expectation_suite(
-        expectation_suite_name=expectation_suite_name
+    expectation_suite = ExpectationSuite(
+        name=expectation_suite_name,
+        expectations=[],
     )
-    expectation_configuration = ExpectationConfiguration(...)
-    suite.add_expectation(expectation_configuration=expectation_configuration)
-    ...
-    context.save_expectation_suite(
-        expectation_suite=suite,
-        expectation_suite_name=expectation_suite_name,
-    )
+    context.suites.add(expectation_suite)
     context.build_data_docs()
-    return suite
+    return expectation_suite
 ```
 
 The same approach must be used if you are using a Great Expectations configuration managed by ZenML and are using the Jupyter notebooks generated by the Great Expectations CLI.
