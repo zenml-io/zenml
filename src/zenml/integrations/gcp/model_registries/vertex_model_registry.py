@@ -64,19 +64,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> RegisteredModel:
         """Register a model to the Vertex AI model registry."""
-        try:
-            model = aiplatform.Model.upload(
-                display_name=name,
-                description=description,
-                labels=metadata,
-                serving_container_image_uri="us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest",  # Placeholder
-            )
-            breakpoint()
-            return RegisteredModel(
-                name=name, description=description, metadata=metadata
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to register model: {str(e)}")
+        raise NotImplementedError(
+            "Vertex AI does not support registering models, you can only register model versions, skipping model registration..."
+        )
 
     def delete_model(
         self,
@@ -97,19 +87,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         remove_metadata: Optional[List[str]] = None,
     ) -> RegisteredModel:
         """Update a model in the Vertex AI model registry."""
-        try:
-            model = aiplatform.Model(model_name=name)
-            if description:
-                model.description = description
-            if metadata:
-                model.labels.update(metadata)
-            if remove_metadata:
-                for key in remove_metadata:
-                    model.labels.pop(key, None)
-            model.update()
-            return self.get_model(name)
-        except Exception as e:
-            raise RuntimeError(f"Failed to update model: {str(e)}")
+        raise NotImplementedError(
+            "Vertex AI does not support updating models, you can only update model versions, skipping model registration..."
+        )
 
     def get_model(self, name: str) -> RegisteredModel:
         """Get a model from the Vertex AI model registry."""
@@ -129,17 +109,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
         """List models in the Vertex AI model registry."""
-        filter_expr = []
+        filter_expr = 'labels.managed_by="ZenML"'
         if name:
-            filter_expr.append(f"display_name={name}")
+            filter_expr = filter_expr + f' AND  display_name="{name}"'
         if metadata:
             for key, value in metadata.items():
-                filter_expr.append(f"labels.{key}={value}")
-
-        filter_str = " AND ".join(filter_expr) if filter_expr else None
-
+                filter_expr = filter_expr + f' AND  labels.{key}="{value}"'
         try:
-            models = aiplatform.Model.list(filter=filter_str)
+            models = aiplatform.Model.list(filter=filter_expr)
             return [
                 RegisteredModel(
                     name=model.display_name,
@@ -163,7 +140,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """Register a model version to the Vertex AI model registry."""
         metadata_dict = metadata.model_dump() if metadata else {}
         serving_container_image_uri = metadata_dict.get(
-            "serving_container_image_uri", None
+            "serving_container_image_uri",
+            None
+            or "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
         )
         is_default_version = metadata_dict.get("is_default_version", False)
         self.setup_aiplatform()
@@ -171,7 +150,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             version_info = aiplatform.Model.upload(
                 artifact_uri=model_source_uri,
                 display_name=f"{name}_{version}",
-                serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
+                serving_container_image_uri=serving_container_image_uri,
                 description=description,
                 is_default_version=is_default_version,
                 labels=metadata_dict,
@@ -215,18 +194,16 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> RegistryModelVersion:
         """Update a model version in the Vertex AI model registry."""
         try:
-            model_version = aiplatform.ModelVersion(
-                model_name=f"{name}@{version}"
-            )
-            if description:
-                model_version.description = description
+            model_version = aiplatform.Model(model_name=f"{name}@{version}")
+            labels = model_version.labels
             if metadata:
-                model_version.labels.update(metadata.dict())
+                metadata_dict = metadata.model_dump() if metadata else {}
+                for key, value in metadata_dict.items():
+                    labels[key] = value
             if remove_metadata:
                 for key in remove_metadata:
-                    model_version.labels.pop(key, None)
-            model_version.update()
-            # Note: Vertex AI doesn't have built-in stages, so we ignore the 'stage' parameter
+                    labels.pop(key, None)
+            model_version.update(description=description, labels=labels)
             return self.get_model_version(name, version)
         except Exception as e:
             raise RuntimeError(f"Failed to update model version: {str(e)}")
@@ -236,14 +213,12 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> RegistryModelVersion:
         """Get a model version from the Vertex AI model registry."""
         try:
-            model_version = aiplatform.ModelVersion(
-                model_name=f"{name}@{version}"
-            )
+            model_version = aiplatform.Model(model_name=f"{name}@{version}")
             return RegistryModelVersion(
                 version=model_version.version_id,
                 model_source_uri=model_version.artifact_uri,
                 model_format="Custom",  # Vertex AI doesn't provide this info directly
-                registered_model=self.get_model(name),
+                registered_model=self.get_model(model_version.name),
                 description=model_version.description,
                 created_at=model_version.create_time,
                 last_updated_at=model_version.update_time,
@@ -288,7 +263,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                     version=v.version_id,
                     model_source_uri=v.artifact_uri,
                     model_format="Custom",  # Vertex AI doesn't provide this info directly
-                    registered_model=self.get_model(name),
+                    registered_model=self.get_model(v.name),
                     description=v.description,
                     created_at=v.create_time,
                     last_updated_at=v.update_time,
@@ -297,13 +272,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 )
                 for v in versions
             ]
-
-            if order_by_date:
-                results.sort(
-                    key=lambda x: x.created_at,
-                    reverse=(order_by_date.lower() == "desc"),
-                )
-
+            
             if count:
                 results = results[:count]
 

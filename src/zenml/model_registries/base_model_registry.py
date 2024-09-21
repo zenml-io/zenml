@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Type, cast
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml import __version__
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
@@ -62,7 +63,8 @@ class ModelRegistryModelMetadata(BaseModel):
     model and its development process.
     """
 
-    zenml_version: Optional[str] = None
+    managed_by: str = "ZenML"
+    zenml_version: str = __version__
     zenml_run_name: Optional[str] = None
     zenml_pipeline_name: Optional[str] = None
     zenml_pipeline_uuid: Optional[str] = None
