@@ -272,7 +272,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 )
                 for v in versions
             ]
-            
+
             if count:
                 results = results[:count]
 
