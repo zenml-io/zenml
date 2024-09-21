@@ -65,15 +65,16 @@ class SkypilotKubernetesOrchestrator(SkypilotBaseOrchestrator):
         """
         return SkypilotKubernetesOrchestratorSettings
 
-    # def prepare_environment_variable(self, set: bool = True) -> None:
-    #    """Set up Environment variables that are required for the orchestrator.
+    def prepare_environment_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the orchestrator.
 
-    #    Args:
-    #        set: Whether to set the environment variables or not.
+        Args:
+            set: Whether to set the environment variables or not.
 
-    #    Raises:
-    #        ValueError: If no service connector is found.
-    #    """
+        Raises:
+            ValueError: If no service connector is found.
+        """
+
     #    connector = self.get_connector()
     #    if connector is None:
     #        raise ValueError(
