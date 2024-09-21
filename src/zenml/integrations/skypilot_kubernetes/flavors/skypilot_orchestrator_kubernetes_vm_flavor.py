@@ -20,7 +20,7 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.integrations.skypilot_kubernetes import (
-    SKYPILOT_Kubernetes_ORCHESTRATOR_FLAVOR,
+    SKYPILOT_KUBERNETES_ORCHESTRATOR_FLAVOR,
 )
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
@@ -55,7 +55,7 @@ class SkypilotKubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Name of the orchestrator flavor.
         """
-        return SKYPILOT_Kubernetes_ORCHESTRATOR_FLAVOR
+        return SKYPILOT_KUBERNETES_ORCHESTRATOR_FLAVOR
 
     @property
     def service_connector_requirements(

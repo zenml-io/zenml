@@ -19,18 +19,18 @@ orchestrator for a remote orchestration of ZenML pipelines on VMs.
 from typing import List, Type
 
 from zenml.integrations.constants import (
-    SKYPILOT_Kubernetes,
+    SKYPILOT_KUBERNETES,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-SKYPILOT_Kubernetes_ORCHESTRATOR_FLAVOR = "vm_kubernetes"
+SKYPILOT_KUBERNETES_ORCHESTRATOR_FLAVOR = "vm_kubernetes"
 
 
 class SkypilotKubernetesIntegration(Integration):
     """Definition of Skypilot Kubernetes Integration for ZenML."""
 
-    NAME = SKYPILOT_Kubernetes
+    NAME = SKYPILOT_KUBERNETES
     # all 0.6.x versions of skypilot[kubernetes] are compatible
     REQUIREMENTS = ["skypilot[kubernetes]~=0.6.0"]
     APT_PACKAGES = ["openssh-client", "rsync"]
