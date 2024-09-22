@@ -13,9 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization for BentoML services."""
 
-from zenml.integrations.bentoml.services.bentoml_deployment import (  # noqa
-    BentoMLDeploymentConfig,
-    BentoMLDeploymentService,
+from zenml.integrations.bentoml.services.bentoml_local_deployment import (  # noqa
+    BentoMLLocalDeploymentConfig,
+    BentoMLLocalDeploymentService,
+)
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (  # noqa
+    BentoMLContainerDeploymentConfig,
+    BentoMLContainerDeploymentService,
 )
 
-__all__ = ["BentoMLDeploymentConfig", "BentoMLDeploymentService"]
+__all__ = [
+    "BentoMLLocalDeploymentConfig",
+    "BentoMLLocalDeploymentService",
+    "BentoMLContainerDeploymentConfig",
+    "BentoMLContainerDeploymentService",
+]
