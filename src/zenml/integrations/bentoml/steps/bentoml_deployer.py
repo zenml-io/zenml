@@ -142,6 +142,7 @@ def bentoml_model_deployer_step(
                 ssl_ca_certs=ssl_ca_certs,
                 ssl_ciphers=ssl_ciphers,
             ),
+            production=production,
         )
         service_type = BentoMLLocalDeploymentService.SERVICE_TYPE
     
@@ -175,7 +176,7 @@ def bentoml_model_deployer_step(
             BentoMLContainerDeploymentService,
             model_deployer.deploy_model(
                 replace=True,
-                config=predictor_cfg,
+                config=cast(BentoMLContainerDeploymentConfig, predictor_cfg),
                 timeout=timeout,
                 service_type=service_type,
             ),
@@ -185,7 +186,7 @@ def bentoml_model_deployer_step(
             BentoMLLocalDeploymentService,
             model_deployer.deploy_model(
                 replace=True,
-                config=predictor_cfg,
+                config=cast(BentoMLLocalDeploymentConfig, predictor_cfg),
                 timeout=timeout,
                 service_type=service_type,
             ),

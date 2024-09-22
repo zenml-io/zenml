@@ -20,7 +20,7 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     """BentoML container deployment configuration."""
     model_name: str
     model_uri: str
-    bento_tag: Union[str, Tag]
+    bento_tag: str
     bento_uri: Optional[str] = None
     platform: Optional[str] = None
     image: Optional[str] = None
@@ -121,7 +121,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         else:
             image_tag = None
             # bentoml will use the bento tag as the name of the image
-            self.config.image = str(self.config.bento_tag)
+            self.config.image = self.config.bento_tag
         try:
             bentoml.container.build(
                 bento_tag=self.config.bento_tag,

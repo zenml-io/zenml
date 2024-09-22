@@ -121,7 +121,7 @@ class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
 
     model_name: str
     model_uri: str
-    bento_tag: Union[str, Tag]
+    bento_tag: str
     bento_uri: Optional[str] = None
     apis: List[str] = []
     workers: int = 1
