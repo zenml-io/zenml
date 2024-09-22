@@ -1,12 +1,16 @@
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import bentoml
 from bentoml import Tag
 from bentoml.client import Client
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT, BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
 from zenml.logger import get_logger
 from zenml.services.container.container_service import ContainerService, ContainerServiceConfig
 from zenml.services.container.container_service_endpoint import ContainerServiceEndpoint, ContainerServiceEndpointConfig
 from zenml.services.service import BaseDeploymentService
+from zenml.services.service_endpoint import ServiceEndpointProtocol
+from zenml.services.service_monitor import HTTPEndpointHealthMonitor, HTTPEndpointHealthMonitorConfig
 from zenml.services.service_type import ServiceType
 
 
@@ -26,6 +30,8 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     apis: List[str] = []
     workers: int = 1
     backlog: int = 2048
+    host: Optional[str] = None
+    port: Optional[int] = None
 
 
 class BentoMLContainerDeploymentEndpointConfig(ContainerServiceEndpointConfig):
@@ -72,6 +78,40 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
     config: BentoMLContainerDeploymentConfig
     endpoint: BentoMLContainerDeploymentEndpoint
+
+    def __init__(
+        self,
+        config: Union[BentoMLContainerDeploymentConfig, Dict[str, Any]],
+        **attrs: Any,
+    ) -> None:
+        """Initialize the BentoML deployment service.
+
+        Args:
+            config: service configuration
+            attrs: additional attributes to set on the service
+        """
+        # ensure that the endpoint is created before the service is initialized
+        # TODO [ENG-700]: implement a service factory or builder for BentoML
+        #   deployment services
+        if (
+            isinstance(config, BentoMLContainerDeploymentConfig)
+            and "endpoint" not in attrs
+        ):
+            endpoint = BentoMLContainerDeploymentEndpoint(
+                config=BentoMLContainerDeploymentEndpointConfig(
+                    protocol=ServiceEndpointProtocol.HTTP,
+                    port=config.port or BENTOML_DEFAULT_PORT,
+                    ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    prediction_url_path=BENTOML_PREDICTION_URL_PATH,
+                ),
+                monitor=HTTPEndpointHealthMonitor(
+                    config=HTTPEndpointHealthMonitorConfig(
+                        healthcheck_uri_path=BENTOML_HEALTHCHECK_URL_PATH,
+                    )
+                ),
+            )
+            attrs["endpoint"] = endpoint
+        super().__init__(config=config, **attrs)
 
     def _containerize_bento(self) -> None:
         """Containerize the bento."""
