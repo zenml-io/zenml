@@ -74,12 +74,13 @@ class SkypilotKubernetesOrchestrator(SkypilotBaseOrchestrator):
         Raises:
             ValueError: If no service connector is found.
         """
-    #    connector = self.get_connector()
-    #    if connector is None:
-    #        raise ValueError(
-    #            "No service connector found. Please make sure to set up a connector "
-    #            "that is compatible with this orchestrator."
-    #        )
+        # connector = self.get_connector()
+        # if connector is None:
+        #    raise ValueError(
+        #        "No service connector found. Please make sure to set up a connector "
+        #        "that is compatible with this orchestrator."
+        #    )
+
     #    if set:
     #        # The Kubernetes connector creates a local configuration profile with the name computed from
     #        # the first 8 digits of its UUID.

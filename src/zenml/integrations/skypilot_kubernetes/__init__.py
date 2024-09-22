@@ -32,7 +32,7 @@ class SkypilotKubernetesIntegration(Integration):
 
     NAME = SKYPILOT_KUBERNETES
     # all 0.6.x versions of skypilot[kubernetes] are compatible
-    REQUIREMENTS = ["skypilot[kubernetes]~=0.6.0"]
+    REQUIREMENTS = ["skypilot[kubernetes]~=0.6.1"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod

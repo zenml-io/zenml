@@ -133,8 +133,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
         connector = self.get_connector()
-        assert connector is not None
-        connector.configure_local_client()
+        #$assert connector is not None
+        #connector.configure_local_client()
 
     @abstractmethod
     def prepare_environment_variable(self, set: bool = True) -> None:
@@ -250,6 +250,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         entrypoint_str = " ".join(command)
         arguments_str = " ".join(args)
 
+        task_envs = environment
         docker_environment_str = " ".join(
             f"-e {k}={v}" for k, v in environment.items()
         )
@@ -271,13 +272,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 f"sudo docker login --username $DOCKER_USERNAME --password "
                 f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
             )
-            task_envs = {
-                "DOCKER_USERNAME": docker_username,
-                "DOCKER_PASSWORD": docker_password,
-            }
+            task_envs["DOCKER_USERNAME"] = (docker_username,)
+            task_envs["DOCKER_PASSWORD"] = (docker_password,)
         else:
             setup = None
-            task_envs = None
 
         # Run the entire pipeline
 
@@ -285,15 +283,25 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         self.prepare_environment_variable(set=True)
 
         try:
+            if isinstance(self.cloud, sky.clouds.Kubernetes):
+                image = image
+                run_command = f"/opt/venv/bin/{entrypoint_str} {arguments_str}"
+                setup = None
+                down = False
+                idle_minutes_to_autostop = None
+            else:
+                image = settings.image_id
+                run_command = f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+                down = settings.down
+                idle_minutes_to_autostop = settings.idle_minutes_to_autostop
             task = sky.Task(
-                run=f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+                run=run_command,
                 setup=setup,
                 envs=task_envs,
             )
-            logger.debug(
-                f"Running run: sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
-            )
+            logger.debug(run_command)
             logger.debug(f"Running run: {setup}")
+
             task = task.set_resources(
                 sky.Resources(
                     cloud=self.cloud,
@@ -306,15 +314,22 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     job_recovery=settings.job_recovery,
                     region=settings.region,
                     zone=settings.zone,
-                    image_id=settings.image_id,
+                    image_id=image,
                     disk_size=settings.disk_size,
                     disk_tier=settings.disk_tier,
                 )
             )
-
             # Set the cluster name
-            cluster_name = settings.cluster_name
-            if cluster_name is None:
+            if settings.cluster_name:
+                sky.exec(
+                    task,
+                    settings.cluster_name,
+                    down=down,
+                    stream_logs=settings.stream_logs,
+                    backend=None,
+                    detach_run=True,
+                )
+            else:
                 # Find existing cluster
                 for i in sky.status(refresh=True):
                     if isinstance(
@@ -324,21 +339,19 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         logger.info(
                             f"Found existing cluster {cluster_name}. Reusing..."
                         )
-            if cluster_name is None:
                 cluster_name = self.sanitize_cluster_name(
                     f"{orchestrator_run_name}"
                 )
-
-            # Launch the cluster
-            sky.launch(
-                task,
-                cluster_name,
-                retry_until_up=settings.retry_until_up,
-                idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-                down=settings.down,
-                stream_logs=settings.stream_logs,
-                detach_setup=True,
-            )
+                # Launch the cluster
+                sky.launch(
+                    task,
+                    cluster_name,
+                    retry_until_up=settings.retry_until_up,
+                    idle_minutes_to_autostop=idle_minutes_to_autostop,
+                    down=down,
+                    stream_logs=settings.stream_logs,
+                    detach_setup=True,
+                )
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")
