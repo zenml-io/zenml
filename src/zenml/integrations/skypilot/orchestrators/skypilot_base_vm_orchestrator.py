@@ -132,9 +132,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
-        # connector = self.get_connector()
-        # $assert connector is not None
-        # connector.configure_local_client()
+        connector = self.get_connector()
+        assert connector is not None
+        connector.configure_local_client()
 
     @abstractmethod
     def prepare_environment_variable(self, set: bool = True) -> None:
@@ -297,8 +297,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 setup=setup,
                 envs=task_envs,
             )
-            logger.debug(run_command)
-            logger.debug(f"Running run: {setup}")
+            logger.debug(f"Running run: {run_command}")
 
             task = task.set_resources(
                 sky.Resources(
