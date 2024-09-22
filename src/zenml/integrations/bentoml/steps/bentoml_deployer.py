@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
 
-from typing import List, Optional, cast
+from typing import List, Literal, Optional, cast
 
 import bentoml
 from bentoml._internal.bento import bento
@@ -22,12 +22,14 @@ from zenml import get_step_context, step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
-from zenml.integrations.bentoml.services.bentoml_deployment import (
-    BentoMLDeploymentConfig,
-    BentoMLDeploymentService,
+from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentConfig, BentoMLContainerDeploymentService
+from zenml.integrations.bentoml.services.bentoml_local_deployment import (
+    BentoMLLocalDeploymentConfig,
+    BentoMLLocalDeploymentService,
     SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
+from zenml.services.service import BaseService
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -38,6 +40,7 @@ def bentoml_model_deployer_step(
     bento: bento.Bento,
     model_name: str,
     port: int,
+    deployment_type: Literal["local", "container"] = "local",
     deploy_decision: bool = True,
     workers: Optional[int] = 1,
     backlog: Optional[int] = 2048,
@@ -52,7 +55,7 @@ def bentoml_model_deployer_step(
     ssl_ca_certs: Optional[str] = None,
     ssl_ciphers: Optional[str] = None,
     timeout: int = 30,
-) -> BentoMLDeploymentService:
+) -> BaseService:
     """Model deployer pipeline step for BentoML.
 
     This step deploys a given Bento to a local BentoML http prediction server.
@@ -102,40 +105,58 @@ def bentoml_model_deployer_step(
         apis_paths = list(apis.keys())
         return apis_paths
 
-    # create a config for the new model service
-    predictor_cfg = BentoMLDeploymentConfig(
-        model_name=model_name,
-        bento=str(bento.tag),
-        model_uri=bento.info.labels.get("model_uri"),
-        bento_uri=bento.info.labels.get("bento_uri"),
-        apis=service_apis(str(bento.tag)),
-        workers=workers,
-        host=host,
-        backlog=backlog,
-        working_dir=working_dir or source_utils.get_source_root(),
-        port=port,
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
-        ssl_parameters=SSLBentoMLParametersConfig(
-            ssl_certfile=ssl_certfile,
-            ssl_keyfile=ssl_keyfile,
-            ssl_keyfile_password=ssl_keyfile_password,
-            ssl_version=ssl_version,
-            ssl_cert_reqs=ssl_cert_reqs,
-            ssl_ca_certs=ssl_ca_certs,
-            ssl_ciphers=ssl_ciphers,
-        ),
-    )
-
+    if deployment_type == "container":
+        # create a config for the new model service
+        predictor_cfg = BentoMLContainerDeploymentConfig(
+            model_name=model_name,
+            bento_tag=str(bento.tag),
+            model_uri=bento.info.labels.get("model_uri"),
+            bento_uri=bento.info.labels.get("bento_uri"),
+            apis=service_apis(str(bento.tag)),
+            host=host,
+            port=port,
+            workers=workers,
+            backlog=backlog,
+        )
+        service_type = BentoMLContainerDeploymentService.SERVICE_TYPE
+    else:
+        predictor_cfg = BentoMLLocalDeploymentConfig(
+            model_name=model_name,
+            bento_tag=str(bento.tag),
+            model_uri=bento.info.labels.get("model_uri"),
+            bento_uri=bento.info.labels.get("bento_uri"),
+            apis=service_apis(str(bento.tag)),
+            workers=workers,
+            host=host,
+            backlog=backlog,
+            working_dir=working_dir or source_utils.get_source_root(),
+            port=port,
+            pipeline_name=pipeline_name,
+            pipeline_step_name=step_name,
+            ssl_parameters=SSLBentoMLParametersConfig(
+                ssl_certfile=ssl_certfile,
+                ssl_keyfile=ssl_keyfile,
+                ssl_keyfile_password=ssl_keyfile_password,
+                ssl_version=ssl_version,
+                ssl_cert_reqs=ssl_cert_reqs,
+                ssl_ca_certs=ssl_ca_certs,
+                ssl_ciphers=ssl_ciphers,
+            ),
+        )
+        service_type = BentoMLLocalDeploymentService.SERVICE_TYPE
+    
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
         config=predictor_cfg.model_dump(),
-        service_type=BentoMLDeploymentService.SERVICE_TYPE,
+        service_type=service_type,
     )
 
     # Creating a new service with inactive state and status by default
     if existing_services:
-        service = cast(BentoMLDeploymentService, existing_services[0])
+        if deployment_type == "container":
+            service = cast(BentoMLContainerDeploymentService, existing_services[0])
+        else:
+            service = cast(BentoMLLocalDeploymentService, existing_services[0])
 
     if not deploy_decision and existing_services:
         logger.info(
@@ -149,15 +170,26 @@ def bentoml_model_deployer_step(
         return service
 
     # create a new model deployment and replace an old one if it exists
-    new_service = cast(
-        BentoMLDeploymentService,
-        model_deployer.deploy_model(
-            replace=True,
-            config=predictor_cfg,
-            timeout=timeout,
-            service_type=BentoMLDeploymentService.SERVICE_TYPE,
-        ),
-    )
+    if deployment_type == "container":
+        new_service = cast(
+            BentoMLContainerDeploymentService,
+            model_deployer.deploy_model(
+                replace=True,
+                config=predictor_cfg,
+                timeout=timeout,
+                service_type=service_type,
+            ),
+        )
+    else:
+        new_service = cast(
+            BentoMLLocalDeploymentService,
+            model_deployer.deploy_model(
+                replace=True,
+                config=predictor_cfg,
+                timeout=timeout,
+                service_type=service_type,
+            ),
+        )
 
     logger.info(
         f"BentoML deployment service started and reachable at:\n"
