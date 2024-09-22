@@ -1,0 +1,164 @@
+---
+title: "Configure your pipeline to add compute"
+description: "Add more resources to your pipeline configuration."
+icon: sliders
+---
+
+Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install in the Docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:
+
+```Bash
+pipeline_args["config_path"] = os.path.join(
+    config_folder, "training_rf.yaml"
+)
+# Configure the pipeline
+training_pipeline_configured = training_pipeline.with_options(**pipeline_args)
+# Create a run
+training_pipeline_configured()
+```
+
+The above commands [configure our training pipeline](/versions/0.66.0/user-guide/starter-guide/create-an-ml-pipeline#configure-with-a-yaml-file) with a YAML configuration called `training_rf.yaml` (found [here in the source code](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/configs/training%5Frf.yaml)). Let's learn more about this configuration file.
+
+<Info>
+The `with_options` command that points to a YAML config is only one way to configure a pipeline. We can also directly configure a pipeline or a step in the decorator:
+
+```Bash
+@pipeline(settings=...)
+```
+
+However, it is best to not mix configuration from code to ensure separation of concerns in our codebase.
+</Info>
+
+## Breaking down our configuration YAML
+
+The YAML configuration of a ZenML pipeline can be very simple, as in this case. Let's break it down and go through each section one by one:
+
+### The Docker settings
+
+```Bash
+settings:
+
+  docker:
+
+    required_integrations:
+
+      - sklearn
+
+    requirements:
+
+      - pyarrow
+```
+
+The first section is the so-called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](/versions/0.66.0/user-guide/production-guide/cloud-orchestration#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable the `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This Docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.docker%5Fsettings.DockerSettings) class in the Python SDK.
+
+### Associating a ZenML Model
+
+The next section is about associating a [ZenML Model](/versions/0.66.0/user-guide/starter-guide/track-ml-models) with this pipeline.
+
+
+
+```Bash
+
+# Configuration of the Model Control Plane
+model:
+  name: breast_cancer_classifier
+  version: rf
+  license: Apache 2.0
+  description: A breast cancer classifier
+  tags: ["breast_cancer", "classifier"]
+```
+
+You will see that this configuration lines up with the model created after executing these pipelines:
+<Tabs>
+  <Tab title="CLI">
+```Bash
+# List all versions of the breast_cancer_classifier
+zenml model version list breast_cancer_classifier
+```
+  </Tab>
+  <Tab title="Dashboard">
+[ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
+<Frame caption="All model versions listed">
+  <img src="/images/user-guide/production-guide/Fmcp_model_versions_list.png" />
+</Frame>
+  </Tab>
+</Tabs>
+
+### Passing parameters
+
+The last part of the config YAML is the `parameters` key:
+
+```Bash
+# Configure the pipeline
+parameters:
+  model_type: "rf"  # Choose between rf/sgd
+```
+
+This parameters key aligns with the parameters that the pipeline expects. In this case, the pipeline expects a string called `model_type` that will inform it which type of model to use:
+
+```Bash
+@pipeline
+def training_pipeline(model_type: str):
+...
+```
+
+So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](/versions/0.66.0/how-to/use-configuration-files/what-can-be-configured), but for now, we can move on to scaling our pipeline.
+
+## Scaling compute on the cloud
+
+When we ran our pipeline with the above config, ZenML used some sane defaults to pick the resource requirements for that pipeline. However, in the real world, you might want to add more memory, CPU, or even a GPU depending on the pipeline at hand.
+
+This is as easy as adding the following section to your local `training_rf.yaml` file:
+
+```Bash
+# These are the resources for the entire pipeline, i.e., each step
+settings:
+  ...
+
+  # Adapt this to vm_gcp accordingly
+  orchestrator:
+    memory: 32 # in GB
+
+...
+steps:
+  model_trainer:
+    settings:
+      orchestrator:
+        cpus: 8
+```
+
+Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator` key corresponds to the [SkypilotBaseOrchestratorSettings](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot%5Forchestrator%5Fbase%5Fvm%5Fconfig.SkypilotBaseOrchestratorSettings) class in the Python SDK.
+<Accordion
+  title="Instructions for Microsoft Azure Users"
+>
+ As discussed [before](/versions/0.66.0/user-guide/production-guide/cloud-orchestration), we are using the [Kubernetes orchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes) for Azure users. In order to scale compute for the Kubernetes orchestrator, the YAML file needs to look like this:
+
+ ```Bash
+  # These are the resources for the entire pipeline, i.e., each step
+  settings:
+    ...
+
+    resources:
+      memory: "32GB"
+
+  ...
+  steps:
+    model_trainer:
+      settings:
+        resources:
+          memory: "8GB"
+```
+</Accordion>
+
+
+<Info>
+Read more about settings in ZenML [here](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) and [here](/versions/0.66.0/how-to/training-with-gpus)
+</Info>
+Now let's run the pipeline again:
+
+```Bash
+python run.py --training-pipeline
+```
+
+Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
+
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [ResourceSettings here](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration), including the ability to [attach a GPU](/versions/0.66.0/how-to/training-with-gpus#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).

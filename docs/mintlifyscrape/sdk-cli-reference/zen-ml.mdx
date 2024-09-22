@@ -1,0 +1,276 @@
+---
+title: Welcome to the ZenML Api Docs
+mode: wide
+sidebarTitle: zenML
+---
+
+
+## Actions
+
+Actions allow configuring a given action for later execution.
+
+## Alerter
+
+Alerters allow you to send alerts from within your pipeline.
+
+This is useful to immediately get notified when failures happen, and also for general monitoring / reporting.
+
+## Analytics
+
+The 'analytics' module of ZenML.
+
+## Annotators
+
+Initialization of the ZenML annotator stack component.
+
+## Api
+
+Public Python API of ZenML.
+
+Everything defined/imported here should be highly import-optimized so we don't slow down the CLI.
+
+## Artifact Stores
+
+ZenML's artifact-store stores artifacts in a file system.
+
+In ZenML, the inputs and outputs which go through any step is treated as an artifact and as its name suggests, an `ArtifactStore` is a place where these artifacts get stored.
+
+Out of the box, ZenML comes with the `BaseArtifactStore` and `LocalArtifactStore` implementations. While the `BaseArtifactStore` establishes an interface for people who want to extend it to their needs, the `LocalArtifactStore` is a simple implementation for a local setup.
+
+Moreover, additional artifact stores can be found in specific `integrations` modules, such as the `GCPArtifactStore` in the `gcp` integration and the `AzureArtifactStore` in the `azure` integration.
+
+## Artifacts
+
+## Client Lazy Loader
+Lazy loading functionality for Client methods.
+
+## Client
+
+Client implementation.
+
+## Code Repositories
+
+Initialization of the ZenML code repository base abstraction.
+
+## Config
+
+The `config` module contains classes and functions that manage user-specific configuration.
+
+ZenML's configuration is stored in a file called `config.yaml`, located on the user's directory for configuration files. (The exact location differs from operating system to operating system.)
+
+The `GlobalConfiguration` class is the main class in this module. It provides a Pydantic configuration object that is used to store and retrieve configuration. This `GlobalConfiguration` object handles the serialization and deserialization of the configuration options that are stored in the file in order to persist the configuration across sessions.
+
+## Console
+ZenML console implementation.
+
+## Constants
+
+ZenML constants.
+
+## Container Registries
+
+Initialization for ZenML's container registries module.
+
+A container registry is a store for (Docker) containers. A ZenML workflow involving a container registry would automatically containerize your code to be transported across stacks running remotely. As part of the deployment to the cluster, the ZenML base image would be downloaded (from a cloud container registry) and used as the basis for the deployed 'run'.
+
+For instance, when you are running a local container-based stack, you would therefore have a local container registry which stores the container images you create that bundle up your pipeline code. You could also use a remote container registry like the Elastic Container Registry at AWS in a more production setting.
+
+## Data Validators
+Data validators are stack components responsible for data profiling and validation.
+
+## Entrypoints
+
+Initializations for ZenML entrypoints module.
+
+## Enums
+
+ZenML enums.
+
+## Environment
+
+Environment implementation.
+
+## Event Hub
+
+ZenML Event Hub module.
+
+The Event Hub is responsible for receiving all Events and dispatching them to the relevant Subscribers/Triggers.
+
+## Event Sources
+Base Classes for Event Sources.
+
+## Exceptions
+
+ZenML specific exception definitions.
+
+## Experiment Trackers
+
+Experiment trackers let you track your ML experiments.
+
+They log the parameters used and allow you to compare between runs. In the ZenML world, every pipeline run is considered an experiment, and ZenML facilitates the storage of experiment results through ExperimentTracker stack components. This establishes a clear link between pipeline runs and experiments.
+
+## Feature Stores
+
+A feature store enables an offline and online serving of feature data.
+
+Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use within a team or wider organization.
+
+As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data will almost certainly be different from how you access that data as part of a real-time or online inference setting. Feast solves the problem of developing train-serve skew where those two sources of data diverge from each other.
+
+## Hooks
+
+The hooks package exposes some standard hooks that can be used in ZenML.
+
+Hooks are functions that run after a step has exited.
+
+## Image Builders
+
+Image builders allow you to build container images.
+
+## Io
+
+The `io` module handles file operations for the ZenML package.
+
+It offers a standard interface for reading, writing and manipulating files and directories. It is heavily influenced and inspired by the `io` module of `tfx`.
+
+## Lineage Graph
+
+Initialization of lineage generation module.
+
+## Logger
+
+Logger implementation.
+
+## Logging
+
+Logging utilities.
+
+## Materializers
+
+Initialization of ZenML materializers.
+
+Materializers are used to convert a ZenML artifact into a specific format. They are most often used to handle the input or output of ZenML steps, and can be extended by building on the `BaseMaterializer` class.
+
+## Metadata
+Initialization of ZenML metadata.
+
+ZenML metadata is any additional, dynamic information that is associated with your pipeline runs and artifacts at runtime.
+
+## Model Deployers
+
+Model deployers are stack components responsible for online model serving.
+
+Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
+
+Add a model deployer to your ZenML stack to be able to implement continuous model deployment pipelines that train models and continuously deploy them to a model prediction web service.
+
+When present in a stack, the model deployer also acts as a registry for models that are served with ZenML. You can use the model deployer to list all models that are currently deployed for online inference or filtered according to a particular pipeline run or step, or to suspend, resume or delete an external model server managed through ZenML.
+
+## Model Registries
+
+Initialization of the MLflow Service.
+
+Model registries are centralized repositories that facilitate the collaboration and management of machine learning models. They provide functionalities such as version control, metadata tracking, and storage of model artifacts, enabling data scientists to efficiently share and keep track of their models within a team or organization.
+
+## Model
+
+Concepts related to the Model Control Plane feature.
+
+## Models
+
+Pydantic models for the various concepts in ZenML.
+
+## New
+
+## Orchestrators
+
+Initialization for ZenML orchestrators.
+
+An orchestrator is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. You can think of it as the 'root' of any pipeline job that you run during your experimentation.
+
+ZenML supports a local orchestrator out of the box which allows you to run your pipelines in a local environment. We also support using Apache Airflow as the orchestrator to handle the steps of your pipeline.
+
+## Pipelines
+
+A ZenML pipeline consists of tasks that execute in order and yield artifacts.
+
+The artifacts are automatically stored within the artifact store and metadata is tracked by ZenML. Each individual task within a pipeline is known as a step. The standard pipelines within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch, building on the `BasePipeline` class.
+
+Pipelines can be written as simple functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
+
+## Plugins
+
+## Post Execution
+
+Deprecated post-execution utility functions.
+
+## Secret
+Initialization of the ZenML Secret module.
+
+A ZenML Secret is a grouping of key-value pairs. These are accessed and administered via the ZenML Secret Store.
+
+## Service Connectors
+
+ZenML Service Connectors.
+
+## Services
+
+Initialization of the ZenML services module.
+
+A service is a process or set of processes that outlive a pipeline run.
+
+## Stack Deployments
+
+ZenML Stack Deployments.
+
+## Stack
+
+Initialization of the ZenML Stack.
+
+The stack is essentially all the configuration for the infrastructure of your MLOps platform.
+
+A stack is made up of multiple components. Some examples are:
+
+* An Artifact Store
+* An Orchestrator
+* A Step Operator (Optional)
+* A Container Registry (Optional)
+
+## Step Operators
+
+Step operators allow you to run steps on custom infrastructure.
+
+While an orchestrator defines how and where your entire pipeline runs, a step operator defines how and where an individual step runs. This can be useful in a variety of scenarios. An example could be if one step within a pipeline should run on a separate environment equipped with a GPU (like a trainer step).
+
+## Steps
+
+Initializer for ZenML steps.
+
+A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of a Directed Acyclic Graph (or DAG). Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline.
+
+Conceptually, a Step is a discrete and independent part of a pipeline that is responsible for one particular aspect of data manipulation inside a ZenML pipeline.
+
+Steps can be subclassed from the `BaseStep` class, or used via our `@step` decorator.
+
+## Types
+
+Custom ZenML types.
+
+## Utils
+
+Initialization of the utils module.
+
+The `utils` module contains utility functions handling analytics, reading and writing YAML data as well as other general purpose functions.
+
+## Zen Server
+ZenML Server Implementation.
+
+The ZenML Server is a centralized service meant for use in a collaborative setting in which stacks, stack components, flavors, pipeline and pipeline runs can be shared over the network with other users.
+
+You can use the `zenml server up` command to spin up ZenML server instances that are either running locally as daemon processes or docker containers, or to deploy a ZenML server remotely on a managed cloud platform. The other CLI commands in the same `zenml server` group can be used to manage the server instances deployed from your local machine.
+
+To connect the local ZenML client to one of the managed ZenML servers, call `zenml server connect` with the name of the server you want to connect to.
+
+## Zen Stores
+
+ZenStores define ways to store ZenML relevant data locally or remotely.

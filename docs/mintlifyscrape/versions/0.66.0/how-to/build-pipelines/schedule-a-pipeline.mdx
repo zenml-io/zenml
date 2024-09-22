@@ -1,0 +1,67 @@
+---
+title: "Schedule a pipeline"
+description: "Learn how to set, pause and stop a schedule for pipelines."
+icon: calendar
+---
+
+<Info>
+    Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
+</Info>
+
+| Orchestrator                                                              | Scheduling Support |
+| ------------------------------------------------------------------------- | ------------------ |
+| [AirflowOrchestrator](/versions/0.66.0/stack-components/orchestrators/airflow)            | <Icon icon="square-check"/>                  |
+| [AzureMLOrchestrator](/versions/0.66.0/stack-components/orchestrators/azureml)            | <Icon icon="square-check"/>                  |
+| [DatabricksOrchestrator](/versions/0.66.0/stack-components/orchestrators/databricks)      | <Icon icon="square-check"/>                  |
+| [HyperAIOrchestrator](/versions/0.66.0/stack-components/orchestrators/hyperai)            | <Icon icon="square-check"/>                  |
+| [KubeflowOrchestrator](/versions/0.66.0/stack-components/orchestrators/kubeflow)          | <Icon icon="square-check"/>                  |
+| [KubernetesOrchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes)      | <Icon icon="square-check"/>                  |
+| [LocalOrchestrator](/versions/0.66.0/stack-components/orchestrators/local)                | <Icon icon="circle-xmark"/>                 |
+| [LocalDockerOrchestrator](/versions/0.66.0/stack-components/orchestrators/local-docker)   | <Icon icon="circle-xmark"/>                 |
+| [SagemakerOrchestrator](/versions/0.66.0/stack-components/orchestrators/sagemaker)        | <Icon icon="circle-xmark"/>                 |
+| [SkypilotAWSOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)    | <Icon icon="circle-xmark"/>                 |
+| [SkypilotAzureOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)  | <Icon icon="circle-xmark"/>                 |
+| [SkypilotGCPOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)    | <Icon icon="circle-xmark"/>                 |
+| [SkypilotLambdaOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm) | <Icon icon="circle-xmark"/>                 |
+| [TektonOrchestrator](/versions/0.66.0/stack-components/orchestrators/tekton)              | <Icon icon="circle-xmark"/>                 |
+| [VertexOrchestrator](/versions/0.66.0/stack-components/orchestrators/vertex)              | <Icon icon="square-check"/>                  |
+
+### Set a schedule
+
+```py
+from zenml.config.schedule import Schedule
+from zenml import pipeline
+from datetime import datetime
+
+@pipeline()
+def my_pipeline(...):
+    ...
+
+# Use cron expressions
+schedule = Schedule(cron_expression="5 14 * * 3")
+# or alternatively use human-readable notations
+schedule = Schedule(start_time=datetime.now(), interval_second=1800)
+
+my_pipeline = my_pipeline.with_options(schedule=schedule)
+my_pipeline()
+```
+
+<Info>
+    Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.schedule.Schedule) to learn more about the different scheduling options.
+</Info>
+
+### Pause/Stop a schedule
+
+The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+
+<Note>
+    Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created.
+</Note>
+
+---
+
+### See Also:
+
+<CardGroup cols={2}>
+   <Card title="Learn about remote orchestrators" icon="server" href="/versions/0.66.0/stack-components/orchestrators" horizontal />
+</CardGroup>

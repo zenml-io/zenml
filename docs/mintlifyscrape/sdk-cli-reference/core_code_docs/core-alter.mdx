@@ -1,0 +1,259 @@
+---
+title: Alerter
+description: Alerters allow you to send alerts from within your pipeline.
+---
+
+
+## `zenml.alerter` `special`
+
+This is useful to immediately get notified when failures happen, and also for general monitoring / reporting.
+
+### `base_alerter`
+
+Base class for all ZenML alerters.
+
+#### `BaseAlerter`
+([StackComponent](../core-stack/#zenml.stack.stack_component.StackComponent "zenml.stack.stack_component.StackComponent"), ABC)
+
+Base class for all ZenML alerters.
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+ ```py
+
+ class BaseAlerter(StackComponent, ABC):
+    """Base class for all ZenML alerters."""
+
+    @property
+    def config(self) -> BaseAlerterConfig:
+        """Returns the `BaseAlerterConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseAlerterConfig, self._config)
+
+    def post(
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+    ) -> bool:
+        """Post a message to a chat service.
+
+        Args:
+            message: Message to be posted.
+            params: Optional parameters of this function.
+
+        Returns:
+            bool: True if operation succeeded, else False.
+        """
+        return True
+
+    def ask(
+        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+    ) -> bool:
+        """Post a message to a chat service and wait for approval.
+
+        This can be useful to easily get a human in the loop, e.g., when
+        deploying models.
+
+        Args:
+            question: Question to ask (message to be posted).
+            params: Optional parameters of this function.
+
+        Returns:
+            bool: True if operation succeeded and was approved, else False.
+        """
+        return True
+```
+</Accordion>
+
+##### `config: BaseAlerterConfig` `property` `readonly`
+
+Returns the `BaseAlerterConfig` config.
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `BaseAlerterConfig` | The configuration. |
+
+##### `ask(self, question, params=None)`
+
+Post a message to a chat service and wait for approval.
+
+This can be useful to easily get a human in the loop, e.g., when deploying models.
+
+**Parameters:**
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `question` | `str` | Question to ask (message to be posted). | _required_ |
+| `params` | `Optional[zenml.alerter.base_alerter.BaseAlerterStepParameters]` | Optional parameters of this function. | `None` |
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `bool` | True if operation succeeded and was approved, else False. |
+
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+```py
+def ask(
+    self, question: str, params: Optional[BaseAlerterStepParameters] = None
+) -> bool:
+  """Post a message to a chat service and wait for approval.
+
+ This can be useful to easily get a human in the loop, e.g., when
+ deploying models.
+
+ Args:
+ question: Question to ask (message to be posted).
+ params: Optional parameters of this function.
+
+ Returns:
+ bool: True if operation succeeded and was approved, else False.
+ """
+    return True
+```
+</Accordion>
+
+
+
+
+##### `post(self, message, params=None)`
+
+Post a message to a chat service.
+
+**Parameters:**
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `message` | `str` | Message to be posted. | _required_ |
+| `params` | `Optional[zenml.alerter.base_alerter.BaseAlerterStepParameters]` | Optional parameters of this function. | `None` |
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `bool` | True if operation succeeded, else False. |
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+```py
+
+def post(
+    self, message: str, params: Optional[BaseAlerterStepParameters] = None
+) -> bool:
+  """Post a message to a chat service.
+
+ Args:
+ message: Message to be posted.
+ params: Optional parameters of this function.
+
+ Returns:
+ bool: True if operation succeeded, else False.
+ """
+    return True
+```
+</Accordion>
+
+
+#### `BaseAlerterConfig`
+ ([StackComponentConfig](/core-stack/#zenml.stack.stack_component.StackComponentConfig "zenml.stack.stack_component.StackComponentConfig"))
+
+Base config for alerters.
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+  ```py
+
+  class BaseAlerterConfig(StackComponentConfig):
+  """Base config for alerters."""
+```
+</Accordion>
+
+
+
+#### `BaseAlerterFlavor`
+([Flavor](/core-stack/#zenml.stack.flavor.Flavor "zenml.stack.flavor.Flavor"), ABC)
+
+Base class for all ZenML alerter flavors.
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+```
+class BaseAlerterFlavor(Flavor, ABC):
+  """Base class for all ZenML alerter flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+  """Returns the flavor type.
+
+ Returns:
+ The flavor type.
+ """
+        return StackComponentType.ALERTER
+
+    @property
+    def config_class(self) -> Type[BaseAlerterConfig]:
+  """Returns BaseAlerterConfig class.
+
+ Returns:
+ The BaseAlerterConfig class.
+ """
+        return BaseAlerterConfig
+
+    @property
+    def implementation_class(self) -> Type[BaseAlerter]:
+  """Implementation class.
+
+ Returns:
+ The implementation class.
+ """
+        return BaseAlerter
+```
+</Accordion>
+
+
+##### `config_class: Type[zenml.alerter.base_alerter.BaseAlerterConfig]` `property` `readonly`
+
+Returns BaseAlerterConfig class.
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `Type[zenml.alerter.base_alerter.BaseAlerterConfig]` | The BaseAlerterConfig class. |
+
+##### `implementation_class: Type[zenml.alerter.base_alerter.BaseAlerter]` `property` `readonly`
+
+Implementation class.
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `Type[zenml.alerter.base_alerter.BaseAlerter]` | The implementation class. |
+
+##### `type: StackComponentType` `property` `readonly`
+
+Returns the flavor type.
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `StackComponentType` | The flavor type. |
+
+#### `BaseAlerterStepParameters (BaseModel)`
+
+Step parameters definition for all alerters.
+<Accordion
+  title="Source code in `zenml/alerter/base_alerter.py`"
+>
+```py
+class BaseAlerterStepParameters(BaseModel):
+  """Step parameters definition for all alerters."""
+```
+</Accordion>
