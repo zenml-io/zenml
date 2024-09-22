@@ -198,7 +198,7 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         ssl_params = self.config.ssl_parameters or SSLBentoMLParametersConfig()
         # verify if to deploy in production mode or development mode
         logger.info("Running in production mode.")
-        from bentoml.serve import serve_http_production
+        from bentoml.serving import serve_http_production
 
         try:
             serve_http_production(
