@@ -272,8 +272,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 f"sudo docker login --username $DOCKER_USERNAME --password "
                 f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
             )
-            task_envs["DOCKER_USERNAME"] = (docker_username,)
-            task_envs["DOCKER_PASSWORD"] = (docker_password,)
+            task_envs["DOCKER_USERNAME"] = docker_username
+            task_envs["DOCKER_PASSWORD"] = docker_password
         else:
             setup = None
 
@@ -284,13 +284,11 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         try:
             if isinstance(self.cloud, sky.clouds.Kubernetes):
-                image = image
                 run_command = f"/opt/venv/bin/{entrypoint_str} {arguments_str}"
                 setup = None
                 down = False
                 idle_minutes_to_autostop = None
             else:
-                image = settings.image_id
                 run_command = f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
                 down = settings.down
                 idle_minutes_to_autostop = settings.idle_minutes_to_autostop
@@ -314,7 +312,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     job_recovery=settings.job_recovery,
                     region=settings.region,
                     zone=settings.zone,
-                    image_id=image,
+                    image_id=image
+                    if isinstance(self.cloud, sky.clouds.Kubernetes)
+                    else settings.image_id,
                     disk_size=settings.disk_size,
                     disk_tier=settings.disk_tier,
                 )
