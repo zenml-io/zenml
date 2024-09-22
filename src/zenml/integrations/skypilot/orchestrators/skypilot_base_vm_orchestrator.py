@@ -132,9 +132,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
-        connector = self.get_connector()
-        #$assert connector is not None
-        #connector.configure_local_client()
+        # connector = self.get_connector()
+        # $assert connector is not None
+        # connector.configure_local_client()
 
     @abstractmethod
     def prepare_environment_variable(self, set: bool = True) -> None:
