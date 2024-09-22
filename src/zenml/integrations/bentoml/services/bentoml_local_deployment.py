@@ -16,11 +16,13 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from bentoml import Tag
 from bentoml.client import Client
 from pydantic import BaseModel, Field
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
+    BENTOML_DEFAULT_PORT,
     BENTOML_HEALTHCHECK_URL_PATH,
     BENTOML_PREDICTION_URL_PATH,
 )
@@ -100,14 +102,15 @@ class SSLBentoMLParametersConfig(BaseModel):
     ssl_ciphers: Optional[str] = None
 
 
-class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
+class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
     """BentoML model deployment configuration.
 
     Attributes:
         model_name: name of the model to deploy
         model_uri: URI of the model to deploy
         port: port to expose the service on
-        bento: Bento package to deploy
+        bento_tag: Bento package to deploy. A bento tag is a combination of the
+            name of the bento and its version.
         workers: number of workers to use
         backlog: number of requests to queue
         production: whether to run in production mode
@@ -118,7 +121,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
 
     model_name: str
     model_uri: str
-    bento: str
+    bento_tag: Union[str, Tag]
     bento_uri: Optional[str] = None
     apis: List[str] = []
     workers: int = 1
@@ -132,7 +135,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     )
 
 
-class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
+class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
     """BentoML deployment service used to start a local prediction server for BentoML models.
 
     Attributes:
@@ -143,19 +146,19 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="bentoml-deployment",
+        name="bentoml-local-deployment",
         type="model-serving",
         flavor="bentoml",
-        description="BentoML prediction service",
+        description="BentoML local prediction service",
         logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png",
     )
 
-    config: BentoMLDeploymentConfig
+    config: BentoMLLocalDeploymentConfig
     endpoint: BentoMLDeploymentEndpoint
 
     def __init__(
         self,
-        config: Union[BentoMLDeploymentConfig, Dict[str, Any]],
+        config: Union[BentoMLLocalDeploymentConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
         """Initialize the BentoML deployment service.
@@ -168,13 +171,13 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         # TODO [ENG-700]: implement a service factory or builder for BentoML
         #   deployment services
         if (
-            isinstance(config, BentoMLDeploymentConfig)
+            isinstance(config, BentoMLLocalDeploymentConfig)
             and "endpoint" not in attrs
         ):
             endpoint = BentoMLDeploymentEndpoint(
                 config=BentoMLDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
-                    port=config.port,
+                    port=config.port or BENTOML_DEFAULT_PORT,
                     ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                     prediction_url_path=BENTOML_PREDICTION_URL_PATH,
                 ),
@@ -202,7 +205,7 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
 
         try:
             serve_http_production(
-                self.config.bento,
+                self.config.bento_tag,
                 working_dir=self.config.working_dir,
                 port=self.config.port,
                 api_workers=self.config.workers,
