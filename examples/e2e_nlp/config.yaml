@@ -28,7 +28,6 @@ settings:
       - mlflow
       - discord
     requirements:
-      - accelerate
       - zenml[server]
 
 extra:
