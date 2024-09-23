@@ -625,7 +625,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             session = pipeline_execution.sagemaker_session
 
             # List the Studio domains and get the Studio Domain ID
-            # TODO: Solve this with the config
             domains_response = session.sagemaker_client.list_domains()
             studio_domain_id = domains_response["Domains"][0]["DomainId"]
 
