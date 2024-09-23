@@ -78,7 +78,44 @@
       "pages": [
         "getting-started/introduction",
         "getting-started/installation",
-        "getting-started/core-concepts"
+        "getting-started/core-concepts",
+        {
+          "group": " Deploying ZenML",
+          "icon": "person-circle-question",
+          "iconType": "solid",
+          "pages": [
+            "getting-started/deploying-zenml",
+            "getting-started/deploying-zenml/deploy-with-zenml-cli",
+            "getting-started/deploying-zenml/deploy-with-docker",
+            "getting-started/deploying-zenml/deploy-with-helm",
+            "getting-started/deploying-zenml/deploy-using-huggingface-spaces",
+            "getting-started/deploying-zenml/deploy-with-custom-image",
+            {
+              "group": "Manage deployed services",
+              "icon": "gear",
+              "iconType": "solid",
+              "pages": [
+                "getting-started/deploying-zenml/manage-the-deployed-services",
+                "getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
+                "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
+                "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
+                "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
+              ]
+            },
+            "getting-started/deploying-zenml/secret-management"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "ZenML Pro",
+      "icon": "cloud",
+      "iconType": "solid",
+      "pages":[
+        "getting-started/zenml-pro",
+        "getting-started/zenml-pro/system-architectures",
+        "getting-started/zenml-pro/zenml-pro",
+        "getting-started/zenml-pro/user-management"
       ]
     },
     {
