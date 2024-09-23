@@ -322,8 +322,8 @@ class PipelineRunResponse(
         # Check if the stack still accessible
         if self.stack is None:
             raise ValueError(
-                "The pipeline run response does not have a stack. It may "
-                "have been deleted or you might not have access to it."
+                "The stack that this pipeline run response was executed on"
+                "has been deleted."
             )
 
         # Create the orchestrator instance
@@ -337,8 +337,8 @@ class PipelineRunResponse(
         )
         if len(orchestrator_list) == 0:
             raise ValueError(
-                "The pipeline run response does not have an orchestrator. "
-                "It may have been deleted or you might not have access to it."
+                "The orchestrator that this pipeline run response was "
+                "executed with has been deleted."
             )
 
         orchestrator = cast(
