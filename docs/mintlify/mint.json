@@ -381,6 +381,31 @@
       ]
     },
     {
+      "group": "Reference",
+      "pages":[
+        "getting-started/reference/python-client",
+        "getting-started/reference/global-settings",
+        "getting-started/reference/environment-variables",
+        "getting-started/reference/api-reference",
+        "getting-started/reference/sdk-cli-reference",
+        "getting-started/reference/how-do-i",
+        "getting-started/reference/community-and-content",
+        "getting-started/reference/faq"
+      ]
+    },
+    {
+      "group": " Migration guide",
+      "icon": "arrows-spin",
+      "iconType": "solid",
+      "pages": [
+        "getting-started/reference/migration-guide/migration-guide",
+        "getting-started/reference/migration-guide/migration-zero-twenty",
+        "getting-started/reference/migration-guide/migration-zero-thirty",
+        "getting-started/reference/migration-guide/migration-zero-forty",
+        "getting-started/reference/migration-guide/migration-zero-sixty"
+      ]
+    },
+    {
       "group": "🔍 Common Questions Answered",
       "pages": [
         "using-zenml/common-questions-answered/FAQ"
