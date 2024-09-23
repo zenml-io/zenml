@@ -973,6 +973,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
+        query = query.distinct()
         query = filter_model.apply_filter(query=query, table=table)
         query = query.distinct()
 
