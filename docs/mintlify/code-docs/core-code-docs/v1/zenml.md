@@ -7814,11 +7814,11 @@ Raises:
 
 A dictionary of computed field names and their corresponding ComputedFieldInfo objects.
 
-#### model_config *: ClassVar[ConfigDict]* *= {'extra': 'allow', 'validate_assignment': True}*
+#### `model_config`: `ClassVar[ConfigDict]` = `{'extra': 'allow', 'validate_assignment': True}`
 
 Configuration for the model, should be a dictionary conforming to [ConfigDict][pydantic.config.ConfigDict].
 
-#### model_fields *: ClassVar[dict[str, FieldInfo]]* *= {'active_stack_id': FieldInfo(annotation=Union[UUID, NoneType], required=False, default=None), 'active_workspace_id': FieldInfo(annotation=Union[UUID, NoneType], required=False, default=None)}*
+#### `model_fields`: `ClassVar[dict[str, FieldInfo]]` = `{'active_stack_id': FieldInfo(annotation=Union[UUID, NoneType], required=False, default=None), 'active_workspace_id': FieldInfo(annotation=Union[UUID, NoneType], required=False, default=None)}`
 
 Metadata about the fields defined on the model,
 mapping of field names to [FieldInfo][pydantic.fields.FieldInfo].

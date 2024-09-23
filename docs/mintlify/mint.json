@@ -1,24 +1,24 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
+  "name": "ZenML",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
+    "primary": "#7a3ef4",
+    "light": "#7a3ef4",
+    "dark": "#7a3ef4",
     "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
+      "from": "#7a3ef4",
+      "to": "#7a3ef4"
     }
   },
   "topbarLinks": [
     {
       "name": "Support",
-      "url": "mailto:hi@mintlify.com"
+      "url": "https://zenml.io/slack"
     }
   ],
   "topbarCtaButton": {
@@ -48,14 +48,15 @@
     },
     {
       "name": "API Reference",
-      "url": "api-reference"
+      "url": "api-reference",
+      "openapi": "/openapi.json"
     }
   ],
   "anchors": [
     {
-      "name": "Documentation",
-      "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
+      "name": "About",
+      "icon": "users",
+      "url": "https://www.zenml.io"
     },
     {
       "name": "Community",
@@ -423,6 +424,8 @@
   "footerSocials": {
     "x": "https://x.com/zenml_io",
     "github": "https://github.com/zenml_io",
-    "linkedin": "https://www.linkedin.com/company/zenml"
+    "linkedin": "https://www.linkedin.com/company/zenml",
+    "slack": "https://zenml.io/slack-invite",
+    "youtube": "https://www.youtube.com/@ZenML"
   }
 }
