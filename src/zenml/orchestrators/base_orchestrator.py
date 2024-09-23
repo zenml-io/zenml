@@ -186,12 +186,12 @@ class BaseOrchestrator(StackComponent, ABC):
         environment = get_config_environment_vars(deployment=deployment)
 
         try:
-            if result := self.prepare_or_run_pipeline(
+            if metadata_iterator := self.prepare_or_run_pipeline(
                 deployment=deployment,
                 stack=stack,
                 environment=environment,
             ):
-                for metadata_dict in result:
+                for metadata_dict in metadata_iterator:
                     try:
                         if placeholder_run:
                             publish_pipeline_run_metadata(
