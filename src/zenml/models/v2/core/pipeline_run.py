@@ -310,7 +310,7 @@ class PipelineRunResponse(
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
 
     def refresh_run_status(self) -> "PipelineRunResponse":
-        """Method to refresh the status of a pipeline run.
+        """Method to refresh the status of a run if it is initializing/running.
 
         Returns:
             The updated pipeline.
@@ -318,37 +318,39 @@ class PipelineRunResponse(
         Raises:
             ValueError: If the stack of the run response is None.
         """
-        # Check if the stack still accessible
-        if self.stack is None:
-            raise ValueError(
-                "The stack that this pipeline run response was executed on"
-                "has been deleted."
-            )
-
-        # Create the orchestrator instance
-        from zenml.enums import StackComponentType
-        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-        from zenml.stack.stack_component import StackComponent
-
-        # Check if the stack still accessible
-        orchestrator_list = self.stack.components.get(
-            StackComponentType.ORCHESTRATOR, []
-        )
-        if len(orchestrator_list) == 0:
-            raise ValueError(
-                "The orchestrator that this pipeline run response was "
-                "executed with has been deleted."
-            )
-
-        orchestrator = cast(
-            BaseOrchestrator,
-            StackComponent.from_model(component_model=orchestrator_list[0]),
-        )
-
         if self.status in [
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.RUNNING,
         ]:
+            # Check if the stack still accessible
+            if self.stack is None:
+                raise ValueError(
+                    "The stack that this pipeline run response was executed on"
+                    "has been deleted."
+                )
+
+            # Create the orchestrator instance
+            from zenml.enums import StackComponentType
+            from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+            from zenml.stack.stack_component import StackComponent
+
+            # Check if the stack still accessible
+            orchestrator_list = self.stack.components.get(
+                StackComponentType.ORCHESTRATOR, []
+            )
+            if len(orchestrator_list) == 0:
+                raise ValueError(
+                    "The orchestrator that this pipeline run response was "
+                    "executed with has been deleted."
+                )
+
+            orchestrator = cast(
+                BaseOrchestrator,
+                StackComponent.from_model(
+                    component_model=orchestrator_list[0]
+                ),
+            )
+
             # Fetch the status
             status = orchestrator.fetch_status(run=self)
 
