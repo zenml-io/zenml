@@ -597,6 +597,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         node_selector_constraint,
                     )
 
+            return dynamic_pipeline
+
         def _update_yaml_with_environment(
             yaml_file_path: str, environment: Dict[str, str]
         ) -> None:
