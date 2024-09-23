@@ -468,7 +468,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
 
-        region_name, _, _ = self._dissect_pipeline_execution_arn(
+        region_name, _, _ = dissect_pipeline_execution_arn(
             pipeline_execution_arn=pipeline_execution_arn
         )
 
@@ -480,34 +480,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
         run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
         return run_metadata
-
-    @staticmethod
-    def _dissect_pipeline_execution_arn(
-        pipeline_execution_arn: str,
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        """Extract region name, pipeline name, and execution id from the ARN.
-
-        Args:
-            pipeline_execution_arn: the pipeline execution ARN
-
-        Returns:
-            Region Name, Pipeline Name, Execution ID in order
-        """
-        # Extract region_name
-        region_match = re.search(r"sagemaker:(.*?):", pipeline_execution_arn)
-        region_name = region_match.group(1) if region_match else None
-
-        # Extract pipeline_name
-        pipeline_match = re.search(
-            r"pipeline/(.*?)/execution", pipeline_execution_arn
-        )
-        pipeline_name = pipeline_match.group(1) if pipeline_match else None
-
-        # Extract execution_id
-        execution_match = re.search(r"execution/(.*)", pipeline_execution_arn)
-        execution_id = execution_match.group(1) if execution_match else None
-
-        return region_name, pipeline_name, execution_id
 
     def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
         """Refreshes the status of a specific pipeline run.
