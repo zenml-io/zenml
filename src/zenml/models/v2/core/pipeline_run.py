@@ -346,19 +346,23 @@ class PipelineRunResponse(
             StackComponent.from_model(component_model=orchestrator_list[0]),
         )
 
-        # Fetch the status
-        status = orchestrator.fetch_status(run=self)
+        if self.status in [
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        ]:
+            # Fetch the status
+            status = orchestrator.fetch_status(run=self)
 
-        # If it is different from the current status, update it
-        if status != self.status:
-            from zenml.client import Client
-            from zenml.models import PipelineRunUpdate
+            # If it is different from the current status, update it
+            if status != self.status:
+                from zenml.client import Client
+                from zenml.models import PipelineRunUpdate
 
-            client = Client()
-            return client.zen_store.update_run(
-                run_id=self.id,
-                run_update=PipelineRunUpdate(status=status),
-            )
+                client = Client()
+                return client.zen_store.update_run(
+                    run_id=self.id,
+                    run_update=PipelineRunUpdate(status=status),
+                )
 
         return self
 
