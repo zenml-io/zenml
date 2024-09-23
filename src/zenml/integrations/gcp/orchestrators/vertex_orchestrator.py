@@ -677,7 +677,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
 
                 # Yield metadata based on the generated job object
-                yield from self.generate_metadata(run)
+                yield from self.compute_metadata(run)
 
                 if settings.synchronous:
                     logger.info(
@@ -871,7 +871,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         else:
             raise ValueError("Unknown status for the pipeline job.")
 
-    def generate_metadata(
+    def compute_metadata(
         self, job: aiplatform.PipelineJob
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the corresponding Vertex PipelineJob.
@@ -886,21 +886,21 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
-        if run_id := self._generate_orchestrator_run_id(job):
+        if run_id := self._compute_orchestrator_run_id(job):
             metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
         # URL to the Vertex's pipeline view
-        if orchestrator_url := self._generate_orchestrator_url(job):
+        if orchestrator_url := self._compute_orchestrator_url(job):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding Logs Explorer page
-        if logs_url := self._generate_orchestrator_logs_url(job):
+        if logs_url := self._compute_orchestrator_logs_url(job):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 
     @staticmethod
-    def _generate_orchestrator_url(
+    def _compute_orchestrator_url(
         job: aiplatform.PipelineJob,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
@@ -920,7 +920,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             return None
 
     @staticmethod
-    def _generate_orchestrator_logs_url(
+    def _compute_orchestrator_logs_url(
         job: aiplatform.PipelineJob,
     ) -> Optional[str]:
         """Generate the Logs Explorer URL upon pipeline execution.
@@ -947,7 +947,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             return None
 
     @staticmethod
-    def _generate_orchestrator_run_id(
+    def _compute_orchestrator_run_id(
         job: aiplatform.PipelineJob,
     ) -> Optional[str]:
         """Fetch the Orchestrator Run ID upon pipeline execution.

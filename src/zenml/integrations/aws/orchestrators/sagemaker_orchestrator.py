@@ -426,7 +426,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Yield metadata based on the generated execution object
-        yield from self.generate_metadata(execution=execution)
+        yield from self.compute_metadata(execution=execution)
 
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
@@ -537,7 +537,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         else:
             raise ValueError("Unknown status for the pipeline execution.")
 
-    def generate_metadata(
+    def compute_metadata(
         self, execution: Any
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
@@ -552,21 +552,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
-        if run_id := self._generate_orchestrator_run_id(execution):
+        if run_id := self._compute_orchestrator_run_id(execution):
             metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
         # URL to the Sagemaker's pipeline view
-        if orchestrator_url := self._generate_orchestrator_url(execution):
+        if orchestrator_url := self._compute_orchestrator_url(execution):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding CloudWatch page
-        if logs_url := self._generate_orchestrator_logs_url(execution):
+        if logs_url := self._compute_orchestrator_logs_url(execution):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 
     @staticmethod
-    def _generate_orchestrator_url(
+    def _compute_orchestrator_url(
         pipeline_execution: Any,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
@@ -603,7 +603,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _generate_orchestrator_logs_url(
+    def _compute_orchestrator_logs_url(
         pipeline_execution: Any,
     ) -> Optional[str]:
         """Generate the CloudWatch URL upon pipeline execution.
@@ -632,7 +632,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _generate_orchestrator_run_id(
+    def _compute_orchestrator_run_id(
         pipeline_execution: Any,
     ) -> Optional[str]:
         """Fetch the Orchestrator Run ID upon pipeline execution.

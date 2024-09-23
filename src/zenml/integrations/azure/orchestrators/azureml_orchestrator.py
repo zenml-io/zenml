@@ -388,7 +388,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             logger.info(f"Pipeline {run_name} has been started.")
 
             # Yield metadata based on the generated job object
-            yield from self.generate_metadata(job)
+            yield from self.compute_metadata(job)
 
             assert job.services is not None
             assert job.name is not None
@@ -516,7 +516,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         else:
             raise ValueError("Unknown status for the pipeline job.")
 
-    def generate_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
+    def compute_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated AzureML PipelineJob.
 
         Args:
@@ -529,17 +529,17 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         metadata: Dict[str, MetadataType] = dict()
 
         # Orchestrator Run ID
-        if run_id := self._generate_orchestrator_run_id(job):
+        if run_id := self._compute_orchestrator_run_id(job):
             metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
         # URL to the AzureML's pipeline view
-        if orchestrator_url := self._generate_orchestrator_url(job):
+        if orchestrator_url := self._compute_orchestrator_url(job):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         yield metadata
 
     @staticmethod
-    def _generate_orchestrator_url(job: Any) -> Optional[str]:
+    def _compute_orchestrator_url(job: Any) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
@@ -561,7 +561,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _generate_orchestrator_run_id(job: Any) -> Optional[str]:
+    def _compute_orchestrator_run_id(job: Any) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
