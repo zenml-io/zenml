@@ -284,7 +284,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         try:
             if isinstance(self.cloud, sky.clouds.Kubernetes):
-                image = image
                 run_command = f"/opt/venv/bin/{entrypoint_str} {arguments_str}"
                 setup = None
                 down = False
