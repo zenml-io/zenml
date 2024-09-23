@@ -1,0 +1,99 @@
+---
+title: "Best practices"
+description: "Recommended repository structure and best practices."
+icon: grunt
+---
+
+While it doesn't matter how you structure your ZenML project, here is a recommended project structure the core team often uses:
+
+```Bash
+.
+├── .dockerignore
+├── Dockerfile
+├── steps
+│   ├── loader_step
+│   │   ├── .dockerignore (optional)
+│   │   ├── Dockerfile (optional)
+│   │   ├── loader_step.py
+│   │   └── requirements.txt (optional)
+│   └── training_step
+│       └── ...
+├── pipelines
+│   ├── training_pipeline
+│   │   ├── .dockerignore (optional)
+│   │   ├── config.yaml (optional)
+│   │   ├── Dockerfile (optional)
+│   │   ├── training_pipeline.py
+│   │   └── requirements.txt (optional)
+│   └── deployment_pipeline
+│       └── ...
+├── notebooks
+│   └── *.ipynb
+├── requirements.txt
+├── .zen
+└── run.py
+```
+
+All ZenML [Project templates](/versions/0.66.0/how-to/setting-up-a-project-repository/using-project-templates#generating-project-from-a-project-template) are modeled around this basic structure.
+
+#### Steps
+
+Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
+
+#### Logging
+
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+
+```Bash
+# Use ZenML handler
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+...
+
+@step
+def training_data_loader():
+    # This will show up in the dashboard
+    logger.info("My logs")
+```
+
+#### Pipelines
+
+Just like steps, keep your pipelines in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
+
+It is recommended that you separate the pipeline execution from the pipeline definition so that importing the pipeline does not immediately run it.
+<Note>
+    Do not give pipelines or pipeline instances the name "pipeline". Doing this will overwrite the imported `pipeline` and decorator and lead to failures at later stages if more pipelines are decorated there.
+</Note>
+<Info>
+    Pipeline names are their unique identifiers, so using the same name for different pipelines will create a mixed history where two runs of a pipeline are two very different entities.
+</Info>
+
+
+
+#### .dockerignore
+
+Containerized orchestrators and step operators load your complete project files into a Docker image for execution. To speed up the process and reduce Docker image sizes, exclude all unnecessary files (like data, virtual environments, git repos, etc.) within the `.dockerignore`.
+
+#### Dockerfile (optional)
+
+By default, ZenML uses the official [zenml Docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](/versions/0.66.0/how-to/customize-docker-builds).
+
+#### Notebooks
+
+Collect all your notebooks in one place.
+
+#### .zen
+
+By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your "source's root". This will be used to resolve import paths and store configurations.
+
+Although this is optional, it is recommended that you do this for all of your projects.
+
+<Note>
+    All of your import paths should be relative to the source's root.
+</Note>
+
+#### run.py
+
+Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the implicit source's root.
+

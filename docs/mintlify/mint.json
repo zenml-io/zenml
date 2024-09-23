@@ -146,145 +146,253 @@
       "group": "🛠️ Using ZenML",
       "pages": [
         {
-          "group": "🏃‍♂️ Run Pipelines",
+          "group": " Set up a project repository",
+          "icon": "cat",
+          "iconType": "solid",
           "pages": [
-            "using-zenml/run-pipelines/introduction",
-            {
-              "group": "Set Up Project Repository",
-              "pages": ["using-zenml/run-pipelines/set-up-project-repository/index"]
-            },
-            {
-              "group": "Build a Pipeline",
-              "pages": [
-                "using-zenml/run-pipelines/build-a-pipeline/index",
-                "using-zenml/run-pipelines/build-a-pipeline/configuring-a-pipeline-at-runtime",
-                "using-zenml/run-pipelines/build-a-pipeline/control-caching-behavior",
-                "using-zenml/run-pipelines/build-a-pipeline/schedule-a-pipeline",
-                "using-zenml/run-pipelines/build-a-pipeline/step-output-typing-and-annotation",
-                "using-zenml/run-pipelines/build-a-pipeline/use-pipeline-step-parameters"
-              ]
-            },
-            {
-              "group": "Advanced Pipeline Features",
-              "pages": [
-                "using-zenml/run-pipelines/advanced-pipeline-features/index",
-                "using-zenml/run-pipelines/advanced-pipeline-features/access-secrets-in-a-step",
-                "using-zenml/run-pipelines/advanced-pipeline-features/control-execution-order-of-steps",
-                "using-zenml/run-pipelines/advanced-pipeline-features/hyper-parameter-tuning",
-                "using-zenml/run-pipelines/advanced-pipeline-features/name-your-pipeline-and-runs",
-                "using-zenml/run-pipelines/advanced-pipeline-features/retry-steps",
-                "using-zenml/run-pipelines/advanced-pipeline-features/using-a-custom-step-invocation-id"
-              ]
-            },
-            {
-              "group": "Pipeline Lifecycle Management",
-              "pages": [
-                "using-zenml/run-pipelines/pipeline-lcm/index",
-                "using-zenml/run-pipelines/pipeline-lcm/delete-a-pipeline",
-                "using-zenml/run-pipelines/pipeline-lcm/fetching-pipelines",
-                "using-zenml/run-pipelines/pipeline-lcm/get-past-pipeline-step-runs",
-                "using-zenml/run-pipelines/pipeline-lcm/use-failure-success-hooks"
-              ]
-            },
-            {
-              "group": "Trigger a Pipeline",
-              "pages": ["using-zenml/run-pipelines/trigger-a-pipeline/index"]
-            },
-            {
-              "group": "Create and Run Templates",
-              "pages": ["using-zenml/run-pipelines/create-and-run-templates/index"]
-            },
-            {
-              "group": "Use Configuration Files",
-              "pages": ["using-zenml/run-pipelines/use-configuration-files/index"]
-            },
-            {
-              "group": "Customize Docker Builds",
-              "pages": ["using-zenml/run-pipelines/customize-docker-builds/index"]
-            },
-            {
-              "group": "Run Remote Pipelines from Notebooks",
-              "pages": ["using-zenml/run-pipelines/run-remote-pipelines-from-notebooks/index"]
-            }
+            "using-zenml/setting-up-a-project-repository/setting-up-a-project-repository",
+            "using-zenml/setting-up-a-project-repository/connect-your-git-repository",
+            "using-zenml/setting-up-a-project-repository/using-project-templates",
+            "using-zenml/setting-up-a-project-repository/best-practices"
           ]
         },
         {
-          "group": "👁️ Observe and Track Pipelines",
+          "group": " Build a pipeline",
+          "icon": "link",
+          "iconType": "solid",
           "pages": [
-            "using-zenml/observe-and-track-pipelines/introduction",
-            {
-              "group": "Control Logging",
-              "pages": ["using-zenml/observe-and-track-pipelines/control-logging/index"]
-            },
-            {
-              "group": "Handle Data Artifacts",
-              "pages": ["using-zenml/observe-and-track-pipelines/handle-data-artifacts/index"]
-            },
-            {
-              "group": "Visualizing Artifacts",
-              "pages": ["using-zenml/observe-and-track-pipelines/visualizing-artifacts/index"]
-            },
-            {
-              "group": "Use the Model Control Plane",
-              "pages": ["using-zenml/observe-and-track-pipelines/use-the-model-control-plane/index"]
-            },
-            {
-              "group": "Track Metrics and Metadata",
-              "pages": ["using-zenml/observe-and-track-pipelines/track-metrics-and-metadata/index"]
-            },
-            {
-              "group": "Popular Integrations",
-              "pages": ["using-zenml/observe-and-track-pipelines/popular-integrations/index"]
-            }
+            "using-zenml/build-pipelines/build-pipelines",
+            "using-zenml/build-pipelines/use-pipeline-step-parameters",
+            "using-zenml/build-pipelines/configuring-a-pipeline-at-runtime",
+            "using-zenml/build-pipelines/step-output-typing-and-annotation",
+            "using-zenml/build-pipelines/control-caching-behavior",
+            "using-zenml/build-pipelines/schedule-a-pipeline",
+            "using-zenml/build-pipelines/delete-a-pipeline",
+            "using-zenml/build-pipelines/compose-pipelines",
+            "using-zenml/build-pipelines/retry-steps",
+            "using-zenml/build-pipelines/run-pipelines-asynchronously",
+            "using-zenml/build-pipelines/control-execution-order-of-steps",
+            "using-zenml/build-pipelines/using-a-custom-step-invocation-id",
+            "using-zenml/build-pipelines/name-your-pipeline-and-runs",
+            "using-zenml/build-pipelines/use-failure-success-hooks",
+            "using-zenml/build-pipelines/hyper-parameter-tuning",
+            "using-zenml/build-pipelines/access-secrets-in-a-step",
+            "using-zenml/build-pipelines/run-an-individual-step",
+            "using-zenml/build-pipelines/fetching-pipelines",
+            "using-zenml/build-pipelines/get-past-pipeline-step-runs"
           ]
         },
         {
-          "group": "🏗️ Ease Infrastructure Setup",
+          "group": " Trigger a pipeline",
+          "icon": "bullhorn",
+          "iconType": "solid",
           "pages": [
-            "using-zenml/ease-infrastructure-setup/introduction",
-            {
-              "group": "Manage Stacks and Components",
-              "pages": ["using-zenml/ease-infrastructure-setup/manage-stacks-and-components/index"]
-            },
-            {
-              "group": "Connect Services",
-              "pages": ["using-zenml/ease-infrastructure-setup/connect-services/index"]
-            },
-            {
-              "group": "Connect to a Server",
-              "pages": ["using-zenml/ease-infrastructure-setup/connect-to-a-server/index"]
-            },
-            {
-              "group": "Interact with Secrets",
-              "pages": ["using-zenml/ease-infrastructure-setup/interact-with-secrets/index"]
-            },
-            {
-              "group": "Debug and Solve Issues",
-              "pages": ["using-zenml/ease-infrastructure-setup/debug-and-solve-issues/index"]
-            }
+            "using-zenml/trigger-pipelines/trigger-pipelines",
+            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-client",
+            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-another",
+            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-rest-api"
           ]
         },
         {
-          "group": "💻 Use Specialized Hardware",
+          "group": " Create and run templates",
+          "icon": "circle-play",
+          "iconType": "solid",
           "pages": [
-            "using-zenml/use-specialized-hardware/introduction",
-            {
-              "group": "Train with GPUs",
-              "pages": ["using-zenml/use-specialized-hardware/train-with-gpus/index"]
-            },
-            {
-              "group": "Configure Python Environments",
-              "pages": ["using-zenml/use-specialized-hardware/configure-python-environments/index"]
-            }
+            "using-zenml/create-and-run-templates/create-and-run-templates",
+            "using-zenml/create-and-run-templates/create-a-run-template",
+            "using-zenml/create-and-run-templates/run-a-template"
           ]
         },
         {
-          "group": "🔧 Control How ZenML Works",
+          "group": " Use configuration files",
+          "icon": "files",
+          "iconType": "solid",
           "pages": [
-            "using-zenml/control-how-zenml-works/environment-variables",
-            "using-zenml/control-how-zenml-works/global-settings"
+            "using-zenml/use-configuration-files/use-configuration-files",
+            "using-zenml/use-configuration-files/how-to-use-config",
+            "using-zenml/use-configuration-files/what-can-be-configured",
+            "using-zenml/use-configuration-files/runtime-configuration",
+            "using-zenml/use-configuration-files/configuration-hierarchy",
+            "using-zenml/use-configuration-files/retrieve-used-configuration-of-a-run",
+            "using-zenml/use-configuration-files/autogenerate-a-template-yaml-file"
           ]
-        }
+        },
+        {
+          "group": " Customize Docker builds",
+          "icon": "docker",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/customize-docker-builds/customize-docker-builds",
+            "using-zenml/customize-docker-builds/docker-settings-on-a-pipeline",
+            "using-zenml/customize-docker-builds/docker-settings-on-a-step",
+            "versions/0.66.0/how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
+            "using-zenml/customize-docker-builds/use-your-own-docker-files",
+            "using-zenml/customize-docker-builds/which-files-are-built-into-the-image",
+            "using-zenml/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
+            "using-zenml/customize-docker-builds/define-where-an-image-is-built"
+          ]
+        },
+        {
+          "group": " Run remote pipelines from notebooks",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+          ]
+        },
+        {
+          "group": " Manage stacks & components",
+          "icon": "hammer",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/stack-deployment/stack-deployment",
+            "using-zenml/stack-deployment/deploy-a-cloud-stack",
+            "using-zenml/stack-deployment/deploy-a-cloud-stack-with-terraform",
+            "using-zenml/stack-deployment/register-a-cloud-stack",
+            "using-zenml/stack-deployment/deploy-a-stack-using-mlstacks",
+            "using-zenml/stack-deployment/reference-secrets-in-stack-configuration",
+            "using-zenml/stack-deployment/implement-a-custom-stack-component",
+            "using-zenml/stack-deployment/implement-a-custom-integration"
+          ]
+        },
+        {
+          "group": " Train with GPUs",
+          "icon": "car",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/training-with-gpus/training-with-gpus",
+            "using-zenml/training-with-gpus/accelerate-distributed-training"
+          ]
+        },
+        {
+          "group": " Control logging",
+          "icon": "tree",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/control-logging/control-logging",
+            "using-zenml/control-logging/view-logs-on-the-dasbhoard",
+            "using-zenml/control-logging/enable-or-disable-logs-storing",
+            "using-zenml/control-logging/set-logging-verbosity",
+            "using-zenml/control-logging/disable-rich-traceback",
+            "using-zenml/control-logging/disable-colorful-logging"
+          ]
+        },
+        {
+          "group": " Handle Data/Artifacts",
+          "icon": "server",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/handle-data-artifacts/handle-data-artifacts",
+            "using-zenml/handle-data-artifacts/artifact-versioning",
+            "using-zenml/handle-data-artifacts/return-multiple-outputs-from-a-step",
+            "using-zenml/handle-data-artifacts/delete-an-artifact",
+            "using-zenml/handle-data-artifacts/tagging",
+            "using-zenml/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
+            "using-zenml/handle-data-artifacts/handle-custom-data-types",
+            "using-zenml/handle-data-artifacts/load-artifacts-into-memory",
+            "using-zenml/handle-data-artifacts/unmaterialized-artifacts",
+            "using-zenml/handle-data-artifacts/passing-artifacts-between-pipelines"
+          ]
+        },
+        {
+          "group": " Visualizing artifacts",
+          "icon": "chart-simple",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/visualize-artifacts/visualize-artifacts",
+            "using-zenml/visualize-artifacts/types-of-visualizations",
+            "using-zenml/visualize-artifacts/creating-custom-visualizations",
+            "using-zenml/visualize-artifacts/visualizations-in-dashboard",
+            "using-zenml/visualize-artifacts/disabling-visualizations"
+          ]
+        },
+        {
+          "group": " Use the Model Control Plane",
+          "icon": "plane",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/use-the-model-control-plane/use-the-model-control-plane",
+            "using-zenml/use-the-model-control-plane/register-a-model",
+            "using-zenml/use-the-model-control-plane/delete-a-model",
+            "using-zenml/use-the-model-control-plane/associate-a-pipeline-with-a-model",
+            "using-zenml/use-the-model-control-plane/connecting-artifacts-via-a-model",
+            "using-zenml/use-the-model-control-plane/model-versions",
+            "using-zenml/use-the-model-control-plane/load-a-model-in-code",
+            "using-zenml/use-the-model-control-plane/promote-a-model",
+            "using-zenml/use-the-model-control-plane/linking-model-binaries-data-to-models",
+            "using-zenml/use-the-model-control-plane/load-artifacts-from-model"
+          ]
+        },
+        {
+          "group": " Track metrics and metadata",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/track-metrics-metadata/track-metrics-metadata",
+            "using-zenml/track-metrics-metadata/attach-metadata-to-a-model",
+            "using-zenml/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "using-zenml/track-metrics-metadata/attach-metadata-to-steps",
+            "using-zenml/track-metrics-metadata/grouping-metadata",
+            "using-zenml/track-metrics-metadata/logging-metadata",
+            "using-zenml/track-metrics-metadata/fetch-metadata-within-steps",
+            "using-zenml/track-metrics-metadata/fetch-metadata-within-pipeline"
+          ]
+        },
+        {
+          "group": " Popular integrations",
+          "icon": "link-slash",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/popular-integrations/popular-integrations",
+            "using-zenml/popular-integrations/aws-guide",
+            "using-zenml/popular-integrations/gcp-guide",
+            "using-zenml/popular-integrations/azure-guide",
+            "using-zenml/popular-integrations/kubeflow",
+            "using-zenml/popular-integrations/kubernetes",
+            "using-zenml/popular-integrations/mlflow",
+            "using-zenml/popular-integrations/skypilot"
+          ]
+        },
+        {
+          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/auth-management/auth-management",
+            "using-zenml/auth-management/service-connectors-guide",
+            "using-zenml/auth-management/best-security-practices",
+            "using-zenml/auth-management/docker-service-connector",
+            "using-zenml/auth-management/kubernetes-service-connector",
+            "using-zenml/auth-management/aws-service-connector",
+            "using-zenml/auth-management/gcp-service-connector",
+            "using-zenml/auth-management/azure-service-connector",
+            "using-zenml/auth-management/hyperai-service-connector"
+          ]
+        },
+        {
+          "group": " Configure Python environments",
+          "icon": "python",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/configure-python-environments/configure-python-environments",
+            "using-zenml/configure-python-environments/handling-dependencies",
+            "using-zenml/configure-python-environments/configure-the-server-environment"
+          ]
+        },
+        {
+          "group": " Connect to a server",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "using-zenml/connecting-to-zenml/connecting-to-zenml",
+            "using-zenml/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "using-zenml/connecting-to-zenml/connect-with-a-service-account"
+          ]
+        },
+        "using-zenml/interact-with-secrets",
+        "using-zenml/debug-and-solve-issues"
       ]
     },
     {

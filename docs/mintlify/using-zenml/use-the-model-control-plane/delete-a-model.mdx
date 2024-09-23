@@ -1,0 +1,42 @@
+---
+title: "Deleting a Model"
+description: "Learn how to delete models."
+icon: trash
+---
+
+Deleting a model or a specific model version means removing all links between the Model entity and artifacts + pipeline runs, and will also delete all metadata associated with that Model.
+
+## Deleting all versions of a model
+
+<Tabs>
+<Tab title="CLI">
+```bash
+
+zenml model delete
+```
+</Tab>
+<Tab title="Python SDK">
+```py
+
+from zenml.client import Client
+Client().delete_model()
+```
+</Tab>
+</Tabs>
+
+
+## Delete a specific version of a model
+<Tabs>
+<Tab title="CLI">
+```bash
+zenml model version delete <MODEL_VERSION_NAME>
+```
+</Tab>
+<Tab title="Python SDK">
+```py
+from zenml.client import Client
+
+Client().delete_model_version(<MODEL_VERSION_ID>)
+```
+</Tab>
+</Tabs>

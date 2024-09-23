@@ -1,0 +1,27 @@
+---
+title: "Trigger a pipeline from Python Client"
+description: "Trigger a pipeline using the ZenML Client."
+icon: python
+---
+
+<Info>
+    This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](https://cloud.zenml.io) get access. OSS users can only trigger a pipeline by calling the pipeline function inside their runner script.
+</Info>
+
+Triggering a pipeline from the Python client **only** works if you've created at least one run template for that pipeline.
+
+```py
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+
+if __name__ == "__main__":
+    run_config = PipelineRunConfiguration(steps={"trainer": {"parameters": {"data_artifact_id": data_artifact_id}}})
+    Client().trigger_pipeline("training_pipeline", run_configuration=run_config)
+```
+
+Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.pipeline%5Frun%5Fconfiguration.PipelineRunConfiguration) and [trigger\_pipeline](https://sdkdocs.zenml.io/0.60.0/core%5Fcode%5Fdocs/core-client/#zenml.client.Client) in the [SDK Docs](https://sdkdocs.zenml.io/).
+
+
+
+<CardGroup>
+ <Card title="Run Pipeline from Another" icon="diagram-project" href="/versions/0.66.0/how-to/trigger-pipelines/trigger-a-pipeline-from-another" horizontal/> <Card title="Run Pipeline from REST API" icon="code" href="/versions/0.66.0/how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api" horizontal/></CardGroup>

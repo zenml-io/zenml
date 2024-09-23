@@ -1,0 +1,11 @@
+---
+title: "Limitations of defining steps in notebook cells"
+description: "If you want to run ZenML steps defined in notebook cells remotely (either with a remote [orchestrator](/versions/0.66.0/stack-components/orchestrators) or [step operator](/versions/0.66.0/stack-components/step-operators)), the cells defining your steps must meet the following conditions"
+icon: play
+---
+
+
+
+* The cell can only contain python code, no Jupyter magic commands or shell commands starting with a `%` or `!`.
+* The cell **must not** call code from other notebook cells. Functions or classes imported from python files are allowed.
+* The cell **must not** rely on imports of previous cells. This means your cell must perform all the imports it needs itself, including ZenML imports like `from zenml import step`.
