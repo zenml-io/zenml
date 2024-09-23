@@ -25,7 +25,7 @@ from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
-from sagemaker.workflow.steps import ProcessingStep
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
@@ -238,47 +238,61 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
-            # Retrieve Processor arguments provided in the Step settings.
-            processor_args_for_step = step_settings.processor_args or {}
+            use_training_step = (
+                step_settings.use_training_step
+                if step_settings.use_training_step is not None
+                else (
+                    self.config.use_training_step
+                    if self.config.use_training_step is not None
+                    else True
+                )
+            )
+
+            # Retrieve Executor arguments provided in the Step settings.
+            if use_training_step:
+                args_for_step_executor = step_settings.estimator_args or {}
+            else:
+                args_for_step_executor = step_settings.processor_args or {}
 
             # Set default values from configured orchestrator Component to arguments
             # to be used when they are not present in processor_args.
-            processor_args_for_step.setdefault(
-                "instance_type", step_settings.instance_type
-            )
-            processor_args_for_step.setdefault(
+            args_for_step_executor.setdefault(
                 "role",
-                step_settings.processor_role or self.config.execution_role,
+                step_settings.execution_role or self.config.execution_role,
             )
-            processor_args_for_step.setdefault(
+            args_for_step_executor.setdefault(
                 "volume_size_in_gb", step_settings.volume_size_in_gb
             )
-            processor_args_for_step.setdefault(
+            args_for_step_executor.setdefault(
                 "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
             )
-            processor_args_for_step.setdefault(
+            tags = step_settings.tags
+            args_for_step_executor.setdefault(
                 "tags",
-                [
-                    {"Key": key, "Value": value}
-                    for key, value in step_settings.processor_tags.items()
-                ]
-                if step_settings.processor_tags
-                else None,
+                (
+                    [
+                        {"Key": key, "Value": value}
+                        for key, value in tags.items()
+                    ]
+                    if tags
+                    else None
+                ),
+            )
+            args_for_step_executor.setdefault(
+                "instance_type", step_settings.instance_type
             )
 
             # Set values that cannot be overwritten
-            processor_args_for_step["image_uri"] = image
-            processor_args_for_step["instance_count"] = 1
-            processor_args_for_step["sagemaker_session"] = session
-            processor_args_for_step["entrypoint"] = entrypoint
-            processor_args_for_step["base_job_name"] = orchestrator_run_name
-            processor_args_for_step["env"] = environment
+            args_for_step_executor["image_uri"] = image
+            args_for_step_executor["instance_count"] = 1
+            args_for_step_executor["sagemaker_session"] = session
+            args_for_step_executor["base_job_name"] = orchestrator_run_name
 
             # Convert network_config to sagemaker.network.NetworkConfig if present
-            network_config = processor_args_for_step.get("network_config")
+            network_config = args_for_step_executor.get("network_config")
             if network_config and isinstance(network_config, dict):
                 try:
-                    processor_args_for_step["network_config"] = NetworkConfig(
+                    args_for_step_executor["network_config"] = NetworkConfig(
                         **network_config
                     )
                 except TypeError:
@@ -317,17 +331,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Construct S3 outputs from container for step
             outputs = None
+            output_path = None
 
             if step_settings.output_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.output_data_s3_uri, str):
-                outputs = [
-                    ProcessingOutput(
-                        source="/opt/ml/processing/output/data",
-                        destination=step_settings.output_data_s3_uri,
-                        s3_upload_mode=step_settings.output_data_s3_mode,
-                    )
-                ]
+                if use_training_step:
+                    output_path = step_settings.output_data_s3_uri
+                else:
+                    outputs = [
+                        ProcessingOutput(
+                            source="/opt/ml/processing/output/data",
+                            destination=step_settings.output_data_s3_uri,
+                            s3_upload_mode=step_settings.output_data_s3_mode,
+                        )
+                    ]
             elif isinstance(step_settings.output_data_s3_uri, dict):
                 outputs = []
                 for (
@@ -342,17 +360,37 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            # Create Processor and ProcessingStep
-            processor = sagemaker.processing.Processor(
-                **processor_args_for_step
-            )
-            sagemaker_step = ProcessingStep(
-                name=step_name,
-                processor=processor,
-                depends_on=step.spec.upstream_steps,
-                inputs=inputs,
-                outputs=outputs,
-            )
+            if use_training_step:
+                # Create Estimator and TrainingStep
+                estimator = sagemaker.estimator.Estimator(
+                    keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
+                    output_path=output_path,
+                    environment=environment,
+                    container_entry_point=entrypoint,
+                    **args_for_step_executor,
+                )
+                sagemaker_step = TrainingStep(
+                    name=step_name,
+                    depends_on=step.spec.upstream_steps,
+                    inputs=inputs,
+                    estimator=estimator,
+                )
+            else:
+                # Create Processor and ProcessingStep
+                processor = sagemaker.processing.Processor(
+                    entrypoint=entrypoint,
+                    env=environment,
+                    **args_for_step_executor,
+                )
+
+                sagemaker_step = ProcessingStep(
+                    name=step_name,
+                    processor=processor,
+                    depends_on=step.spec.upstream_steps,
+                    inputs=inputs,
+                    outputs=outputs,
+                )
+
             sagemaker_steps.append(sagemaker_step)
 
         # construct the pipeline from the sagemaker_steps
