@@ -128,23 +128,6 @@
       ]
     },
     {
-      "group": "📚 User Guide",
-      "pages": [
-        "user-guide/guides/starter-guide",
-        "user-guide/guides/production-guide",
-        "user-guide/guides/llmops-guide"
-      ]
-    },
-    {
-      "group": "🧑‍💻 Examples",
-      "pages": [
-        "user-guide/examples/quickstart",
-        "user-guide/examples/basic-nlp",
-        "user-guide/examples/e2e-batch",
-        "user-guide/examples/llm-finetuning"
-      ]
-    },
-    {
       "group": "🛠️ Using ZenML",
       "pages": [
         {
@@ -567,6 +550,106 @@
             "stack-components/feature-stores/custom"
           ]
         }
+      ]
+    },
+    {
+      "group": "📚 User Guides",
+      "pages": [
+        {
+          "group": " Starter guide",
+          "icon": "egg",
+          "iconType": "solid",
+          "pages": [
+            "user-guide/guides/starter-guide",
+            "user-guide/guides/starter-guide/create-an-ml-pipeline",
+            "user-guide/guides/starter-guide/cache-previous-executions",
+            "user-guide/guides/starter-guide/manage-artifacts",
+            "user-guide/guides/starter-guide/track-ml-models",
+            "user-guide/guides/starter-guide/starter-project"
+          ]
+        },
+        {
+          "group": " Production guide",
+          "icon": "the-red-yeti",
+          "iconType": "solid",
+          "pages": [
+            "user-guide/guides/production-guide",
+            "user-guide/guides/production-guide/deploying-zenml",
+            "user-guide/guides/production-guide/understand-stacks",
+            "user-guide/guides/production-guide/remote-storage",
+            "user-guide/guides/production-guide/cloud-orchestration",
+            "user-guide/guides/production-guide/configure-pipeline",
+            "user-guide/guides/production-guide/connect-code-repository",
+            "user-guide/guides/production-guide/ci-cd",
+            "user-guide/guides/production-guide/end-to-end"
+          ]
+        },
+        {
+          "group": " LLMOps guide",
+          "icon": "earlybirds",
+          "iconType": "solid",
+          "pages": [
+            "user-guide/guides/llmops-guide",
+            {
+              "group": "RAG with ZenML",
+              "icon": "robot",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/rag-with-zenml",
+                "user-guide/guides/llmops-guide/rag-with-zenml/rag-85-loc",
+                "user-guide/guides/llmops-guide/rag-with-zenml/understanding-rag",
+                "user-guide/guides/llmops-guide/rag-with-zenml/data-ingestion",
+                "user-guide/guides/llmops-guide/rag-with-zenml/embeddings-generation",
+                "user-guide/guides/llmops-guide/rag-with-zenml/storing-embeddings-in-a-vector-database",
+                "user-guide/guides/llmops-guide/rag-with-zenml/basic-rag-inference-pipeline"
+              ]
+            },
+            {
+              "group": "Evaluation and metrics",
+              "icon": "chart-line",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/evaluation",
+                "user-guide/guides/llmops-guide/evaluation/evaluation-in-65-loc",
+                "user-guide/guides/llmops-guide/evaluation/retrieval",
+                "user-guide/guides/llmops-guide/evaluation/generation",
+                "user-guide/guides/llmops-guide/evaluation/evaluation-in-practice"
+              ]
+            },
+            {
+              "group": "Reranking for better retrieval",
+              "icon": "ranking-star",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/reranking",
+                "user-guide/guides/llmops-guide/reranking/understanding-reranking",
+                "user-guide/guides/llmops-guide/reranking/implementing-reranking",
+                "user-guide/guides/llmops-guide/reranking/evaluating-reranking-performance"
+              ]
+            },
+            {
+              "group": "Improve retrieval by finetuning embeddings",
+               "icon": "bullseye-arrow",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/finetuning-embeddings",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/synthetic-data-generation",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings"
+              ]
+            },
+            "user-guide/guides/llmops-guide/finetuning-llms"
+           ]
+          }
+        ]
+    },
+    {
+      "group": "🧑‍💻 Examples",
+      "pages": [
+        "user-guide/examples/quickstart",
+        "user-guide/examples/basic-nlp",
+        "user-guide/examples/e2e-batch",
+        "user-guide/examples/llm-finetuning"
       ]
     },
     {
