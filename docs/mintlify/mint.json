@@ -225,7 +225,7 @@
             "using-zenml/customize-docker-builds/customize-docker-builds",
             "using-zenml/customize-docker-builds/docker-settings-on-a-pipeline",
             "using-zenml/customize-docker-builds/docker-settings-on-a-step",
-            "versions/0.66.0/how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
+            "using-zenml/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
             "using-zenml/customize-docker-builds/use-your-own-docker-files",
             "using-zenml/customize-docker-builds/which-files-are-built-into-the-image",
             "using-zenml/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
@@ -404,7 +404,167 @@
     {
       "group": "🧩 Stacks",
       "pages": [
-        "stack-components/introduction"
+        "stack-components/component-guide",
+        {
+          "group": " Orchestrators",
+              "icon": "battery-full",
+              "iconType": "solid",
+          "pages": [
+            "stack-components/orchestrators/orchestrators",
+            "stack-components/orchestrators/local",
+            "stack-components/orchestrators/local-docker",
+            "stack-components/orchestrators/kubeflow",
+            "stack-components/orchestrators/kubernetes",
+            "stack-components/orchestrators/vertex",
+            "stack-components/orchestrators/sagemaker",
+            "stack-components/orchestrators/azureml",
+            "stack-components/orchestrators/databricks",
+            "stack-components/orchestrators/tekton",
+            "stack-components/orchestrators/airflow",
+            "stack-components/orchestrators/skypilot-vm",
+            "stack-components/orchestrators/hyperai",
+            "stack-components/orchestrators/lightning",
+            "stack-components/orchestrators/custom"
+          ]
+        },
+        {
+          "group": " Artifact Stores",
+          "icon": "store",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/artifact-stores/artifact-stores",
+            "stack-components/artifact-stores/local",
+            "stack-components/artifact-stores/s3",
+            "stack-components/artifact-stores/gcp",
+            "stack-components/artifact-stores/azure",
+            "stack-components/artifact-stores/custom"
+          ]
+        },
+        {
+          "group": " Container Registries",
+          "icon": "docker",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/container-registries/container-registries",
+            "stack-components/container-registries/default",
+            "stack-components/container-registries/dockerhub",
+            "stack-components/container-registries/aws",
+            "stack-components/container-registries/gcp",
+            "stack-components/container-registries/azure",
+            "stack-components/container-registries/github",
+            "stack-components/container-registries/custom"
+          ]
+        },
+        {
+          "group": " Data Validators",
+          "icon": "vial",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/data-validators/data-validators",
+            "stack-components/data-validators/great-expectations",
+            "stack-components/data-validators/deepchecks",
+            "stack-components/data-validators/evidently",
+            "stack-components/data-validators/whylogs",
+            "stack-components/data-validators/custom"
+          ]
+        },
+        {
+          "group": " Experiment Trackers",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/experiment-trackers/experiment-trackers",
+            "stack-components/experiment-trackers/comet",
+            "stack-components/experiment-trackers/mlflow",
+            "stack-components/experiment-trackers/neptune",
+            "stack-components/experiment-trackers/wandb",
+            "stack-components/experiment-trackers/custom"
+          ]
+        },
+        {
+          "group": " Model Deployers",
+          "icon": "person-running",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/model-deployers/model-deployers",
+            "stack-components/model-deployers/mlflow",
+            "stack-components/model-deployers/seldon",
+            "stack-components/model-deployers/bentoml",
+            "stack-components/model-deployers/huggingface",
+            "stack-components/model-deployers/databricks",
+            "stack-components/model-deployers/custom"
+          ]
+        },
+        {
+          "group": " Step Operators",
+          "icon": "stairs",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/step-operators/step-operators",
+            "stack-components/step-operators/sagemaker",
+            "stack-components/step-operators/vertex",
+            "stack-components/step-operators/azureml",
+            "stack-components/step-operators/kubernetes",
+            "stack-components/step-operators/spark-kubernetes",
+            "stack-components/step-operators/custom"
+          ]
+        },
+        {
+          "group": " Alerters",
+          "icon": "exclamation",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/alerters/alerters",
+            "stack-components/alerters/discord",
+            "stack-components/alerters/slack",
+            "stack-components/alerters/custom"
+          ]
+        },
+        {
+          "group": " Image Builders",
+          "icon": "image",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/image-builders/image-builders",
+            "stack-components/image-builders/local",
+            "stack-components/image-builders/kaniko",
+            "stack-components/image-builders/gcp",
+            "stack-components/image-builders/custom"
+          ]
+        },
+        {
+          "group": " Annotators",
+          "icon": "tag",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/annotators/annotators",
+            "stack-components/annotators/argilla",
+            "stack-components/annotators/label-studio",
+            "stack-components/annotators/pigeon",
+            "stack-components/annotators/prodigy",
+            "stack-components/annotators/custom"
+          ]
+        },
+        {
+          "group": " Model Registries",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/model-registries/model-registries",
+            "stack-components/model-registries/mlflow",
+            "stack-components/model-registries/custom"
+          ]
+        },
+        {
+          "group": " Feature Stores",
+          "icon": "shop",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/feature-stores/feature-stores",
+            "stack-components/feature-stores/feast",
+            "stack-components/feature-stores/custom"
+          ]
+        }
       ]
     },
     {
