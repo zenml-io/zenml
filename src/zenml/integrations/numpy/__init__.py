@@ -21,7 +21,7 @@ class NumpyIntegration(Integration):
     """Definition of Numpy integration for ZenML."""
 
     NAME = NUMPY
-    REQUIREMENTS = ["numpy"]
+    REQUIREMENTS = ["numpy<3.0.0"]
 
     @classmethod
     def activate(cls) -> None:
