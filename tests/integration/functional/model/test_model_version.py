@@ -479,7 +479,7 @@ class TestModel:
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                pipeline="_inner_pipeline_test_deletion_of_links",
                 sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
@@ -509,7 +509,7 @@ class TestModel:
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                pipeline="_inner_pipeline_test_deletion_of_links",
                 sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
