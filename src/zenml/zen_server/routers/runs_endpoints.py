@@ -28,7 +28,7 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.lineage_graph.lineage_graph import LineageGraph
 from zenml.logger import get_logger
 from zenml.models import (
@@ -47,7 +47,8 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -118,13 +119,36 @@ def get_run(
 
     Returns:
         The pipeline run.
+
+    Raises:
+        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
     run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=hydrate
     )
     if refresh_status:
         try:
+            # Check the stack and its orchestrator
+            if run.stack is not None:
+                orchestrators = run.stack.components.get(
+                    StackComponentType.ORCHESTRATOR, []
+                )
+                if orchestrators:
+                    verify_permission_for_model(
+                        model=orchestrators[0], action=Action.READ
+                    )
+                else:
+                    raise RuntimeError(
+                        f"The orchestrator, the run '{run.id}' was executed "
+                        "with, is deleted."
+                    )
+            else:
+                raise RuntimeError(
+                    f"The stack, the run '{run.id}' was executed on, is deleted."
+                )
+
             run = run.refresh_run_status()
+
         except Exception as e:
             logger.warning(
                 "An error occurred while refreshing the status of the "
@@ -299,6 +323,9 @@ def refresh_run_status(
 
     Args:
         run_id: ID of the pipeline run to refresh.
+
+    Raises:
+        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
     # Verify access to the run
     run = verify_permissions_and_get_entity(
@@ -306,4 +333,23 @@ def refresh_run_status(
         get_method=zen_store().get_run,
         hydrate=True,
     )
+
+    # Check the stack and its orchestrator
+    if run.stack is not None:
+        orchestrators = run.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if orchestrators:
+            verify_permission_for_model(
+                model=orchestrators[0], action=Action.READ
+            )
+        else:
+            raise RuntimeError(
+                f"The orchestrator, the run '{run.id}' was executed with, is "
+                "deleted."
+            )
+    else:
+        raise RuntimeError(
+            f"The stack, the run '{run.id}' was executed on, is deleted."
+        )
     run.refresh_run_status()
