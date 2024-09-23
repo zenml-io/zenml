@@ -71,6 +71,7 @@
 * [⛓️ Build a pipeline](how-to/build-pipelines/README.md)
   * [Use pipeline/step parameters](how-to/build-pipelines/use-pipeline-step-parameters.md)
   * [Configuring a pipeline at runtime](how-to/build-pipelines/configuring-a-pipeline-at-runtime.md)
+  * [Reference environment variables in configurations](how-to/build-pipelines/reference-environment-variables-in-configurations.md)
   * [Step output typing and annotation](how-to/build-pipelines/step-output-typing-and-annotation.md)
   * [Control caching behavior](how-to/build-pipelines/control-caching-behavior.md)
   * [Schedule a pipeline](how-to/build-pipelines/schedule-a-pipeline.md)
