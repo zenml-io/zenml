@@ -11,7 +11,7 @@ This component is only meant to be used within the context of a [remote ZenML de
 {% endhint %}
 
 {% hint style="warning" %}
-SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
+SkyPilot VM Orchestrator is currently supported only for Python 3.9.
 {% endhint %}
 
 ## When to use it

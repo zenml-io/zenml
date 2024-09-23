@@ -39,38 +39,18 @@ if hasattr(typing, "Literal"):
 
 # ----- is_none_type -----
 
-if sys.version_info[:2] == (3, 8):
 
-    def is_none_type(type_: Any) -> bool:
-        """Checks if the provided type is none type.
+def is_none_type(type_: Any) -> bool:
+    """Checks if the provided type is a none type.
 
-        Args:
-            type_: type to check.
+    Args:
+        type_: type to check.
 
-        Returns:
-            boolean indicating whether the type is none type.
-        """
-        for none_type in NONE_TYPES:
-            if type_ is none_type:
-                return True
-        # With python 3.8, specifically 3.8.10, Literal "is" checks are very
-        # flakey can change on very subtle changes like use of types in other
-        # modules, hopefully this check avoids that issue.
-        if is_literal_type(type_):  # pragma: no cover
-            return all_literal_values(type_) == (None,)
-        return False
-else:
+    Returns:
+        boolean indicating whether the type is a none type.
+    """
+    return type_ in NONE_TYPES
 
-    def is_none_type(type_: Any) -> bool:
-        """Checks if the provided type is a none type.
-
-        Args:
-            type_: type to check.
-
-        Returns:
-            boolean indicating whether the type is a none type.
-        """
-        return type_ in NONE_TYPES
 
 # ----- is_union -----
 

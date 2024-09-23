@@ -57,13 +57,8 @@ class HuggingfaceIntegration(Integration):
             # - https://github.com/huggingface/datasets/issues/6697
             # TODO try relaxing it back going forward
             "fsspec<=2023.12.0",
+            "transformers",
         ]
-
-        # In python 3.8 higher transformers version lead to other packages breaking
-        if sys.version_info.minor > 8:
-            requirements += ["transformers"]
-        else:
-            requirements += ["transformers<=4.31"]
 
         # Add the pandas integration requirements
         from zenml.integrations.pandas import PandasIntegration
