@@ -15,6 +15,9 @@
       "to": "#7a3ef4"
     }
   },
+  "font": {
+    "family": "Plus Jakarta Sans"
+  },
   "background": { "style": "grid" },
   "layout": "sidenav",
   "topbarLinks": [
@@ -80,51 +83,7 @@
       "pages": [
         "getting-started/introduction",
         "getting-started/installation",
-        "getting-started/core-concepts",
-        {
-          "group": " Deploying ZenML",
-          "icon": "person-circle-question",
-          "iconType": "solid",
-          "pages": [
-            "getting-started/deploying-zenml",
-            "getting-started/deploying-zenml/deploy-with-zenml-cli",
-            "getting-started/deploying-zenml/deploy-with-docker",
-            "getting-started/deploying-zenml/deploy-with-helm",
-            "getting-started/deploying-zenml/deploy-using-huggingface-spaces",
-            "getting-started/deploying-zenml/deploy-with-custom-image",
-            {
-              "group": "Manage deployed services",
-              "icon": "gear",
-              "iconType": "solid",
-              "pages": [
-                "getting-started/deploying-zenml/manage-the-deployed-services",
-                "getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
-                "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
-                "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
-                "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
-              ]
-            },
-            "getting-started/deploying-zenml/secret-management"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "ZenML Pro",
-      "icon": "cloud",
-      "iconType": "solid",
-      "pages":[
-        "getting-started/zenml-pro",
-        "getting-started/zenml-pro/system-architectures",
-        "getting-started/zenml-pro/zenml-pro",
-        "getting-started/zenml-pro/user-management"
-      ]
-    },
-    {
-      "group": "🧑‍💻 Learn More",
-      "pages": [
-        "learn-more/community-content",
-        "learn-more/faq"
+        "getting-started/core-concepts"
       ]
     },
     {
@@ -406,12 +365,6 @@
       ]
     },
     {
-      "group": "🔍 Common Questions Answered",
-      "pages": [
-        "using-zenml/common-questions-answered/FAQ"
-      ]
-    },
-    {
       "group": "🧩 Stacks",
       "pages": [
         "stack-components/component-guide",
@@ -672,15 +625,46 @@
       "group": "🧑‍💻 Examples",
       "pages": [
         "user-guide/examples/quickstart",
-        "user-guide/examples/basic-nlp",
-        "user-guide/examples/e2e-batch",
-        "user-guide/examples/llm-finetuning"
+        "user-guide/examples/end-to-end-batch",
+        "user-guide/examples/basic-nlp-with-bert",
+        "user-guide/examples/computer-vision-with-yolov8",
+        "user-guide/examples/llm-finetuning",
+        "user-guide/examples/more-projects"
       ]
     },
     {
       "group": "🚀 Deploying ZenML",
       "pages": [
-        "deploying-zenml/introduction"
+        "deploying-zenml/deploying-zenml",
+        "deploying-zenml/deploy-with-zenml-cli",
+        "deploying-zenml/deploy-with-docker",
+        "deploying-zenml/deploy-with-helm",
+        "deploying-zenml/deploy-using-huggingface-spaces",
+        "deploying-zenml/deploy-with-custom-image",
+        {
+          "group": "Manage deployed services",
+          "icon": "gear",
+          "iconType": "solid",
+          "pages": [
+            "deploying-zenml/manage-the-deployed-services",
+            "deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
+            "deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
+            "deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
+            "deploying-zenml/manage-the-deployed-services/custom-secret-stores"
+          ]
+        },
+        "deploying-zenml/secret-management"
+      ]
+    },
+    {
+      "group": "ZenML Pro",
+      "icon": "cloud",
+      "iconType": "solid",
+      "pages":[
+        "deploying-zenml/zenml-pro/zenml-pro",
+        "deploying-zenml/zenml-pro/system-architectures",
+        "deploying-zenml/zenml-pro/zenml-saas",
+        "deploying-zenml/zenml-pro/user-management"
       ]
     },
     {
@@ -842,5 +826,11 @@
     "linkedin": "https://www.linkedin.com/company/zenml",
     "slack": "https://zenml.io/slack-invite",
     "youtube": "https://www.youtube.com/@ZenML"
+  },
+  "search": {
+    "prompt": "Chat with the docs..."
+  },
+  "feedback": {
+    "thumbsRating": true
   }
 }
