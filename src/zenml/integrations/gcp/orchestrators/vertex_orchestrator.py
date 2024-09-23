@@ -882,8 +882,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        # Metadata
-        metadata: Dict[str, MetadataType] = dict()
+        metadata: Dict[str, MetadataType] = {}
 
         # Orchestrator Run ID
         if run_id := self._compute_orchestrator_run_id(job):
