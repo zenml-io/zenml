@@ -331,13 +331,19 @@ class PipelineRunResponse(
         from zenml.orchestrators.base_orchestrator import BaseOrchestrator
         from zenml.stack.stack_component import StackComponent
 
-        component_model = self.stack.components[
-            StackComponentType.ORCHESTRATOR
-        ][0]
+        # Check if the stack still accessible
+        orchestrator_list = self.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if len(orchestrator_list) == 0:
+            raise ValueError(
+                "The pipeline run response does not have an orchestrator. "
+                "It may have been deleted or you might not have access to it."
+            )
 
         orchestrator = cast(
             BaseOrchestrator,
-            StackComponent.from_model(component_model=component_model),
+            StackComponent.from_model(component_model=orchestrator_list[0]),
         )
 
         # Fetch the status
