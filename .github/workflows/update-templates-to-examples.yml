@@ -189,7 +189,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.08.28  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.09.23  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
