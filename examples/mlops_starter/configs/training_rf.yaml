@@ -3,7 +3,6 @@ settings:
   docker:
     required_integrations:
       - sklearn
-      - pandas
     requirements:
       - pyarrow
 
