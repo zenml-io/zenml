@@ -259,14 +259,14 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         if sys.path[0] != self.config.working_dir:
             sys.path.insert(0, self.config.working_dir)
 
-        svc = load(bento_identifier=self.config.bento_tag, working_dir=self.config.working_dir)
+        svc = load(bento_identifier=".", working_dir=self.config.working_dir)
         if isinstance(svc, Service):
             # bentoml<1.2
             from bentoml.serving import serve_http_production
 
             try:
                 serve_http_production(
-                    self.config.bento_tag,
+                    ".",
                     port=self.endpoint.status.port,
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
@@ -281,7 +281,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             svc.inject_config()
             try:
                 serve_http(
-                    self.config.bento_tag,
+                    ".",
                     working_dir=self.config.working_dir,
                     port=self.endpoint.status.port,
                     backlog=self.config.backlog,
