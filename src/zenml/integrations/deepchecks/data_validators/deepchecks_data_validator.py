@@ -161,7 +161,7 @@ class DeepchecksDataValidator(BaseDataValidator):
             # only the same type of models can be used for comparison
             if len(set(type(model) for model in models)) > 1:
                 raise TypeError(
-                    f"Models used for comparison checks must be of the same type."
+                    "Models used for comparison checks must be of the same type."
                 )
             model = models[0]
             if isinstance(model, ClassifierMixin):
