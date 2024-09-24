@@ -45,11 +45,11 @@
     },
     {
       "name": "SDK",
-      "url": "code-docs"
+      "url": "sdk"
     },
     {
       "name": "API",
-      "url": "api-reference",
+      "url": "api",
       "openapi": "/openapi.json"
     }
   ],
@@ -80,7 +80,8 @@
       "pages": [
         "getting-started/introduction",
         "getting-started/installation",
-        "getting-started/core-concepts"
+        "getting-started/core-concepts",
+        "getting-started/faq"
       ]
     },
     {
@@ -117,6 +118,24 @@
         "getting-started/deploying-zenml/zenml-pro/system-architectures",
         "getting-started/deploying-zenml/zenml-pro/zenml-saas",
         "getting-started/deploying-zenml/zenml-pro/user-management"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages":[
+        {
+          "group": "Migration Guide",
+          "icon": "arrows-spin",
+          "iconType": "solid",
+          "pages": [
+            "getting-started/migration-guide/migration-guide",
+            "getting-started/migration-guide/migration-zero-twenty",
+            "getting-started/migration-guide/migration-zero-thirty",
+            "getting-started/migration-guide/migration-zero-forty",
+            "getting-started/migration-guide/migration-zero-sixty"
+          ]
+        },
+        "getting-started/reference/community-and-content"
       ]
     },
     {
@@ -217,21 +236,6 @@
             "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
             "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
             "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
-          ]
-        },
-        {
-          "group": " Manage stacks & components",
-          "icon": "hammer",
-          "iconType": "solid",
-          "pages": [
-            "usage/stack-deployment/stack-deployment",
-            "usage/stack-deployment/deploy-a-cloud-stack",
-            "usage/stack-deployment/deploy-a-cloud-stack-with-terraform",
-            "usage/stack-deployment/register-a-cloud-stack",
-            "usage/stack-deployment/deploy-a-stack-using-mlstacks",
-            "usage/stack-deployment/reference-secrets-in-stack-configuration",
-            "usage/stack-deployment/implement-a-custom-stack-component",
-            "usage/stack-deployment/implement-a-custom-integration"
           ]
         },
         {
@@ -369,38 +373,23 @@
           ]
         },
         "usage/interact-with-secrets",
+        "usage/global-settings",
         "usage/debug-and-solve-issues"
       ]
     },
     {
-      "group": "Reference",
-      "pages":[
-        "getting-started/reference/python-client",
-        "getting-started/reference/global-settings",
-        "getting-started/reference/environment-variables",
-        "getting-started/reference/api-reference",
-        "getting-started/reference/sdk-cli-reference",
-        "getting-started/reference/how-do-i",
-        "getting-started/reference/community-and-content",
-        "getting-started/reference/faq"
-      ]
-    },
-    {
-      "group": " Migration guide",
-      "icon": "arrows-spin",
+      "group": " Manage stacks & components",
+      "icon": "hammer",
       "iconType": "solid",
-      "pages": [{
-        "group": "How to migrate",
-        "icon": "arrows-spin",
-        "iconType": "solid",
-        "pages": [
-          "getting-started/reference/migration-guide/migration-guide",
-          "getting-started/reference/migration-guide/migration-zero-twenty",
-          "getting-started/reference/migration-guide/migration-zero-thirty",
-          "getting-started/reference/migration-guide/migration-zero-forty",
-          "getting-started/reference/migration-guide/migration-zero-sixty"
-        ]
-      }
+      "pages": [
+        "stack-components/stack-deployment/stack-deployment",
+        "stack-components/stack-deployment/deploy-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
+        "stack-components/stack-deployment/register-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-stack-using-mlstacks",
+        "stack-components/stack-deployment/reference-secrets-in-stack-configuration",
+        "stack-components/stack-deployment/implement-a-custom-stack-component",
+        "stack-components/stack-deployment/implement-a-custom-integration"
       ]
     },
     {
@@ -674,73 +663,74 @@
     {
       "group": "📚 Code Docs",
       "pages": [
+        "sdk/python-client",
         {
           "group": "Integration Docs",
           "pages": [
             {
               "group": "v1",
               "pages": [
-                "code-docs/integration-docs/v1/integrations-sklearn",
-                "code-docs/integration-docs/v1/integrations-kubernetes",
-                "code-docs/integration-docs/v1/integrations-great_expectations",
-                "code-docs/integration-docs/v1/integrations-comet",
-                "code-docs/integration-docs/v1/integrations-pandas",
-                "code-docs/integration-docs/v1/integrations-bitbucket",
-                "code-docs/integration-docs/v1/integrations-pillow",
-                "code-docs/integration-docs/v1/integrations-whylogs",
-                "code-docs/integration-docs/v1/integrations-github",
-                "code-docs/integration-docs/v1/integrations-facets",
-                "code-docs/integration-docs/v1/integrations-utils",
-                "code-docs/integration-docs/v1/integrations-databricks",
-                "code-docs/integration-docs/v1/integrations-pycaret",
-                "code-docs/integration-docs/v1/integrations-gitlab",
-                "code-docs/integration-docs/v1/integrations-label_studio",
-                "code-docs/integration-docs/v1/integrations-evidently",
-                "code-docs/integration-docs/v1/integrations-tensorflow",
-                "code-docs/integration-docs/v1/integrations-numpy",
-                "code-docs/integration-docs/v1/integrations-neptune",
-                "code-docs/integration-docs/v1/integrations-registry",
-                "code-docs/integration-docs/v1/integrations-mlflow",
-                "code-docs/integration-docs/v1/integrations-pytorch",
-                "code-docs/integration-docs/v1/integrations-skypilot_azure",
-                "code-docs/integration-docs/v1/integrations-lightning",
-                "code-docs/integration-docs/v1/integrations-skypilot",
-                "code-docs/integration-docs/v1/integrations-tensorboard",
-                "code-docs/integration-docs/v1/integrations-pytorch_lightning",
-                "code-docs/integration-docs/v1/integrations-constants",
-                "code-docs/integration-docs/v1/integrations-feast",
-                "code-docs/integration-docs/v1/integrations-kaniko",
-                "code-docs/integration-docs/v1/integrations-lightgbm",
-                "code-docs/integration-docs/v1/integrations-kubeflow",
-                "code-docs/integration-docs/v1/integrations-pigeon",
-                "code-docs/integration-docs/v1/integrations-argilla",
-                "code-docs/integration-docs/v1/integrations-scipy",
-                "code-docs/integration-docs/v1/integrations-llama_index",
-                "code-docs/integration-docs/v1/integrations-tekton",
-                "code-docs/integration-docs/v1/integrations-skypilot_lambda",
-                "code-docs/integration-docs/v1/integrations-aws",
-                "code-docs/integration-docs/v1/integrations-airflow",
-                "code-docs/integration-docs/v1/integrations-xgboost",
-                "code-docs/integration-docs/v1/integrations-integration",
-                "code-docs/integration-docs/v1/integrations-gcp",
-                "code-docs/integration-docs/v1/integrations-bentoml",
-                "code-docs/integration-docs/v1/integrations-skypilot_aws",
-                "code-docs/integration-docs/v1/integrations-prodigy",
-                "code-docs/integration-docs/v1/integrations-s3",
-                "code-docs/integration-docs/v1/integrations-hyperai",
-                "code-docs/integration-docs/v1/integrations-langchain",
-                "code-docs/integration-docs/v1/integrations-neural_prophet",
-                "code-docs/integration-docs/v1/integrations-seldon",
-                "code-docs/integration-docs/v1/integrations-polars",
-                "code-docs/integration-docs/v1/integrations-skypilot_gcp",
-                "code-docs/integration-docs/v1/integrations-huggingface",
-                "code-docs/integration-docs/v1/integrations-spark",
-                "code-docs/integration-docs/v1/integrations-wandb",
-                "code-docs/integration-docs/v1/integrations-azure",
-                "code-docs/integration-docs/v1/integrations-discord",
-                "code-docs/integration-docs/v1/integrations-openai",
-                "code-docs/integration-docs/v1/integrations-deepchecks",
-                "code-docs/integration-docs/v1/integrations-slack"
+                "sdk/integration-docs/v1/integrations-sklearn",
+                "sdk/integration-docs/v1/integrations-kubernetes",
+                "sdk/integration-docs/v1/integrations-great_expectations",
+                "sdk/integration-docs/v1/integrations-comet",
+                "sdk/integration-docs/v1/integrations-pandas",
+                "sdk/integration-docs/v1/integrations-bitbucket",
+                "sdk/integration-docs/v1/integrations-pillow",
+                "sdk/integration-docs/v1/integrations-whylogs",
+                "sdk/integration-docs/v1/integrations-github",
+                "sdk/integration-docs/v1/integrations-facets",
+                "sdk/integration-docs/v1/integrations-utils",
+                "sdk/integration-docs/v1/integrations-databricks",
+                "sdk/integration-docs/v1/integrations-pycaret",
+                "sdk/integration-docs/v1/integrations-gitlab",
+                "sdk/integration-docs/v1/integrations-label_studio",
+                "sdk/integration-docs/v1/integrations-evidently",
+                "sdk/integration-docs/v1/integrations-tensorflow",
+                "sdk/integration-docs/v1/integrations-numpy",
+                "sdk/integration-docs/v1/integrations-neptune",
+                "sdk/integration-docs/v1/integrations-registry",
+                "sdk/integration-docs/v1/integrations-mlflow",
+                "sdk/integration-docs/v1/integrations-pytorch",
+                "sdk/integration-docs/v1/integrations-skypilot_azure",
+                "sdk/integration-docs/v1/integrations-lightning",
+                "sdk/integration-docs/v1/integrations-skypilot",
+                "sdk/integration-docs/v1/integrations-tensorboard",
+                "sdk/integration-docs/v1/integrations-pytorch_lightning",
+                "sdk/integration-docs/v1/integrations-constants",
+                "sdk/integration-docs/v1/integrations-feast",
+                "sdk/integration-docs/v1/integrations-kaniko",
+                "sdk/integration-docs/v1/integrations-lightgbm",
+                "sdk/integration-docs/v1/integrations-kubeflow",
+                "sdk/integration-docs/v1/integrations-pigeon",
+                "sdk/integration-docs/v1/integrations-argilla",
+                "sdk/integration-docs/v1/integrations-scipy",
+                "sdk/integration-docs/v1/integrations-llama_index",
+                "sdk/integration-docs/v1/integrations-tekton",
+                "sdk/integration-docs/v1/integrations-skypilot_lambda",
+                "sdk/integration-docs/v1/integrations-aws",
+                "sdk/integration-docs/v1/integrations-airflow",
+                "sdk/integration-docs/v1/integrations-xgboost",
+                "sdk/integration-docs/v1/integrations-integration",
+                "sdk/integration-docs/v1/integrations-gcp",
+                "sdk/integration-docs/v1/integrations-bentoml",
+                "sdk/integration-docs/v1/integrations-skypilot_aws",
+                "sdk/integration-docs/v1/integrations-prodigy",
+                "sdk/integration-docs/v1/integrations-s3",
+                "sdk/integration-docs/v1/integrations-hyperai",
+                "sdk/integration-docs/v1/integrations-langchain",
+                "sdk/integration-docs/v1/integrations-neural_prophet",
+                "sdk/integration-docs/v1/integrations-seldon",
+                "sdk/integration-docs/v1/integrations-polars",
+                "sdk/integration-docs/v1/integrations-skypilot_gcp",
+                "sdk/integration-docs/v1/integrations-huggingface",
+                "sdk/integration-docs/v1/integrations-spark",
+                "sdk/integration-docs/v1/integrations-wandb",
+                "sdk/integration-docs/v1/integrations-azure",
+                "sdk/integration-docs/v1/integrations-discord",
+                "sdk/integration-docs/v1/integrations-openai",
+                "sdk/integration-docs/v1/integrations-deepchecks",
+                "sdk/integration-docs/v1/integrations-slack"
               ]
             }
           ]
@@ -751,60 +741,60 @@
             {
               "group": "v1",
               "pages": [
-                "code-docs/core-code-docs/v1/zenml",
-                "code-docs/core-code-docs/v1/core-hooks",
-                "code-docs/core-code-docs/v1/core-annotators",
-                "code-docs/core-code-docs/v1/core-zen_stores",
-                "code-docs/core-code-docs/v1/core-constants",
-                "code-docs/core-code-docs/v1/core-plugins",
-                "code-docs/core-code-docs/v1/core-experiment_trackers",
-                "code-docs/core-code-docs/v1/core-types",
-                "code-docs/core-code-docs/v1/core-logger",
-                "code-docs/core-code-docs/v1/core-logging",
-                "code-docs/core-code-docs/v1/core-entrypoints",
-                "code-docs/core-code-docs/v1/core-environment",
-                "code-docs/core-code-docs/v1/core-enums",
-                "code-docs/core-code-docs/v1/core-lineage_graph",
-                "code-docs/core-code-docs/v1/core-assistant",
-                "code-docs/core-code-docs/v1/core-code_repositories",
-                "code-docs/core-code-docs/v1/core-analytics",
-                "code-docs/core-code-docs/v1/core-exceptions",
-                "code-docs/core-code-docs/v1/core-artifacts",
-                "code-docs/core-code-docs/v1/core-client_lazy_loader",
-                "code-docs/core-code-docs/v1/core-event_hub",
-                "code-docs/core-code-docs/v1/core-feature_stores",
-                "code-docs/core-code-docs/v1/core-new",
-                "code-docs/core-code-docs/v1/core-model",
-                "code-docs/core-code-docs/v1/core-io",
-                "code-docs/core-code-docs/v1/core-utils",
-                "code-docs/core-code-docs/v1/core-services",
-                "code-docs/core-code-docs/v1/core-_hub",
-                "code-docs/core-code-docs/v1/core-metadata",
-                "code-docs/core-code-docs/v1/core-secret",
-                "code-docs/core-code-docs/v1/core-console",
-                "code-docs/core-code-docs/v1/core-api",
-                "code-docs/core-code-docs/v1/core-service_connectors",
-                "code-docs/core-code-docs/v1/core-data_validators",
-                "code-docs/core-code-docs/v1/core-actions",
-                "code-docs/core-code-docs/v1/core-orchestrators",
-                "code-docs/core-code-docs/v1/core-steps",
-                "code-docs/core-code-docs/v1/core-image_builders",
-                "code-docs/core-code-docs/v1/core-models",
-                "code-docs/core-code-docs/v1/core-model_registries",
-                "code-docs/core-code-docs/v1/core-artifact_stores",
-                "code-docs/core-code-docs/v1/core-post_execution",
-                "code-docs/core-code-docs/v1/core-alerter",
-                "code-docs/core-code-docs/v1/core-pipelines",
-                "code-docs/core-code-docs/v1/core-stack_deployments",
-                "code-docs/core-code-docs/v1/core-stack",
-                "code-docs/core-code-docs/v1/core-materializers",
-                "code-docs/core-code-docs/v1/core-model_deployers",
-                "code-docs/core-code-docs/v1/core-event_sources",
-                "code-docs/core-code-docs/v1/core-config",
-                "code-docs/core-code-docs/v1/core-client",
-                "code-docs/core-code-docs/v1/core-zen_server",
-                "code-docs/core-code-docs/v1/core-step_operators",
-                "code-docs/core-code-docs/v1/core-container_registries"
+                "sdk/core-sdk/v1/zenml",
+                "sdk/core-sdk/v1/core-hooks",
+                "sdk/core-sdk/v1/core-annotators",
+                "sdk/core-sdk/v1/core-zen_stores",
+                "sdk/core-sdk/v1/core-constants",
+                "sdk/core-sdk/v1/core-plugins",
+                "sdk/core-sdk/v1/core-experiment_trackers",
+                "sdk/core-sdk/v1/core-types",
+                "sdk/core-sdk/v1/core-logger",
+                "sdk/core-sdk/v1/core-logging",
+                "sdk/core-sdk/v1/core-entrypoints",
+                "sdk/core-sdk/v1/core-environment",
+                "sdk/core-sdk/v1/core-enums",
+                "sdk/core-sdk/v1/core-lineage_graph",
+                "sdk/core-sdk/v1/core-assistant",
+                "sdk/core-sdk/v1/core-code_repositories",
+                "sdk/core-sdk/v1/core-analytics",
+                "sdk/core-sdk/v1/core-exceptions",
+                "sdk/core-sdk/v1/core-artifacts",
+                "sdk/core-sdk/v1/core-client_lazy_loader",
+                "sdk/core-sdk/v1/core-event_hub",
+                "sdk/core-sdk/v1/core-feature_stores",
+                "sdk/core-sdk/v1/core-new",
+                "sdk/core-sdk/v1/core-model",
+                "sdk/core-sdk/v1/core-io",
+                "sdk/core-sdk/v1/core-utils",
+                "sdk/core-sdk/v1/core-services",
+                "sdk/core-sdk/v1/core-_hub",
+                "sdk/core-sdk/v1/core-metadata",
+                "sdk/core-sdk/v1/core-secret",
+                "sdk/core-sdk/v1/core-console",
+                "sdk/core-sdk/v1/core-api",
+                "sdk/core-sdk/v1/core-service_connectors",
+                "sdk/core-sdk/v1/core-data_validators",
+                "sdk/core-sdk/v1/core-actions",
+                "sdk/core-sdk/v1/core-orchestrators",
+                "sdk/core-sdk/v1/core-steps",
+                "sdk/core-sdk/v1/core-image_builders",
+                "sdk/core-sdk/v1/core-models",
+                "sdk/core-sdk/v1/core-model_registries",
+                "sdk/core-sdk/v1/core-artifact_stores",
+                "sdk/core-sdk/v1/core-post_execution",
+                "sdk/core-sdk/v1/core-alerter",
+                "sdk/core-sdk/v1/core-pipelines",
+                "sdk/core-sdk/v1/core-stack_deployments",
+                "sdk/core-sdk/v1/core-stack",
+                "sdk/core-sdk/v1/core-materializers",
+                "sdk/core-sdk/v1/core-model_deployers",
+                "sdk/core-sdk/v1/core-event_sources",
+                "sdk/core-sdk/v1/core-config",
+                "sdk/core-sdk/v1/core-client",
+                "sdk/core-sdk/v1/core-zen_server",
+                "sdk/core-sdk/v1/core-step_operators",
+                "sdk/core-sdk/v1/core-container_registries"
               ]
             }
           ]
@@ -814,7 +804,7 @@
     {
       "group": "📘 API Documentation",
       "pages": [
-        "api-reference/introduction"
+        "api/api-reference"
       ]
     }
   ],
