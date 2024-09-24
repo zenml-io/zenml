@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Union
 
 import bentoml
@@ -169,6 +170,10 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
         self.endpoint.prepare_for_start()
 
+        # Ensure the BentoML directory exists and has the correct permissions
+        bentoml_home = os.environ.get("BENTOML_HOME", "/home/bentoml")
+        os.chmod(bentoml_home, 0o755)
+        
         # Run serve inside the container
         bentoml.serve(
             bento=self.config.bento_tag,
