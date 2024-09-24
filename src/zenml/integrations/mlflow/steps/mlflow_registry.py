@@ -147,6 +147,7 @@ def mlflow_register_model_step(
     if metadata.zenml_workspace is None:
         metadata.zenml_workspace = zenml_workspace
 
+    # Check the model extra
     if metadata.model_extra is None:
         metadata.__pydantic_extra__ = {"mlflow_run_id": mlflow_run_id}
     elif metadata.model_extra.get("mlflow_run_id", None) is None:
