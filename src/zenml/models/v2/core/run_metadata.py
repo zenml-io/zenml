@@ -80,10 +80,6 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
 
         Returns:
             the value itself.
-
-        Raises:
-            AssertionError: if the length of the field is longer than the
-                maximum threshold.
         """
         assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "
@@ -101,10 +97,6 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
 
         Returns:
             the value itself.
-
-        Raises:
-            AssertionError: if the length of the field is longer than the
-                maximum threshold.
         """
         assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "

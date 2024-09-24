@@ -160,8 +160,8 @@ else:
                 redirected to.
             working_directory: Working directory for the daemon process,
                 defaults to the root directory.
-            args: Positional arguments to pass to the daemon function.
-            kwargs: Keyword arguments to pass to the daemon function.
+            *args: Positional arguments to pass to the daemon function.
+            **kwargs: Keyword arguments to pass to the daemon function.
 
         Raises:
             FileExistsError: If the PID file already exists.

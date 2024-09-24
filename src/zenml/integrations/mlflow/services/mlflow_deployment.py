@@ -167,7 +167,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
 
         Args:
             config: service configuration
-            attrs: additional attributes to set on the service
+            **attrs: additional attributes to set on the service
         """
         # ensure that the endpoint is created before the service is initialized
         # TODO [ENG-700]: implement a service factory or builder for MLflow

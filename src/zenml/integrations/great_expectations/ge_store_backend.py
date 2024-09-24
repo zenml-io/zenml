@@ -48,7 +48,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
 
         Args:
             prefix: Subpath prefix to use for this store backend.
-            kwargs: Additional keyword arguments passed by the Great Expectations
+            **kwargs: Additional keyword arguments passed by the Great Expectations
                 core. These are transparently passed to the `TupleStoreBackend`
                 constructor.
         """
@@ -145,6 +145,9 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
     def _get_all(self) -> List[Any]:
         """Get all objects in the store.
 
+        Returns:
+            A list of all objects in the store.
+
         Raises:
             NotImplementedError: if the method is not implemented for this store
                 backend.
@@ -159,7 +162,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
         Args:
             key: object key identifier.
             value: object value to set.
-            kwargs: additional keyword arguments (ignored).
+            **kwargs: additional keyword arguments (ignored).
 
         Returns:
             The file path where the object was stored.
@@ -187,7 +190,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
         Args:
             source_key: current object key identifier.
             dest_key: new object key identifier.
-            kwargs: additional keyword arguments (ignored).
+            **kwargs: additional keyword arguments (ignored).
         """
         source_path = self._build_object_path(source_key)
         dest_path = self._build_object_path(dest_key)

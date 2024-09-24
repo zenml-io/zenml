@@ -985,7 +985,7 @@ def list_service_connectors(
     Args:
         ctx: The click context object
         labels: Labels to filter by.
-        kwargs: Keyword arguments to filter the components.
+        **kwargs: Keyword arguments to filter the components.
     """
     client = Client()
 
@@ -1432,8 +1432,7 @@ def update_service_connector(
         auth_method_spec = connector_type_spec.auth_method_dict[auth_method]
 
         # If the authentication method has changed, we need to reconfigure
-        # the connector from scratch; otherwise, we ask the user if they
-        # want to update the existing configuration
+        # the connector or update the existing configuration
         if auth_method != connector.auth_method:
             confirm = True
         else:

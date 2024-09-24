@@ -2488,7 +2488,7 @@ class RestZenStore(BaseZenStore):
         are updated accordingly.
 
         Args:
-            connector_models: The service connector or resource models to
+            *connector_models: The service connector or resource models to
                 populate.
         """
         for service_connector in connector_models:
@@ -4150,7 +4150,7 @@ class RestZenStore(BaseZenStore):
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            kwargs: Additional keyword arguments to pass to the request.
+            **kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The parsed response.
@@ -4213,7 +4213,7 @@ class RestZenStore(BaseZenStore):
             path: The path to the endpoint.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            kwargs: Additional keyword arguments to pass to the request.
+            **kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
@@ -4240,7 +4240,7 @@ class RestZenStore(BaseZenStore):
             path: The path to the endpoint.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            kwargs: Additional keyword arguments to pass to the request.
+            **kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
@@ -4269,7 +4269,7 @@ class RestZenStore(BaseZenStore):
             body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            kwargs: Additional keyword arguments to pass to the request.
+            **kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
@@ -4299,7 +4299,7 @@ class RestZenStore(BaseZenStore):
             body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            kwargs: Additional keyword arguments to pass to the request.
+            **kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
@@ -4513,7 +4513,7 @@ class RestZenStore(BaseZenStore):
         Args:
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
-            filters: Filter parameters to use in the query.
+            **filters: Filter parameters to use in the query.
 
         Returns:
             List of retrieved resources matching the filter criteria.

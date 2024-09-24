@@ -215,6 +215,9 @@ class LightningOrchestrator(WheeledOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The pipeline run id.
+
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
@@ -445,7 +448,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             env_file_path: The path to the environment file.
 
         Raises:
-            Exception: If an error occurs while running the pipeline.
+            e: If an error occurs while running the pipeline.
         """
         logger.info("Setting up Lightning AI client")
         self._set_lightning_env_vars(deployment)

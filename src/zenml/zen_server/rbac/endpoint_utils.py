@@ -106,7 +106,7 @@ def verify_permissions_and_get_entity(
     Args:
         id: The ID of the entity to fetch.
         get_method: The method to fetch the entity.
-        get_method_kwargs: Keyword arguments to pass to the get method.
+        **get_method_kwargs: Keyword arguments to pass to the get method.
 
     Returns:
         A model of the fetched entity.
@@ -128,7 +128,7 @@ def verify_permissions_and_list_entities(
         filter_model: The entity filter model.
         resource_type: The resource type of the entities to list.
         list_method: The method to list the entities.
-        list_method_kwargs: Keyword arguments to pass to the list method.
+        **list_method_kwargs: Keyword arguments to pass to the list method.
 
     Returns:
         A page of entity models.
@@ -199,7 +199,7 @@ def verify_permissions_and_prune_entities(
     Args:
         resource_type: The resource type of the entities to prune.
         prune_method: The method to prune the entities.
-        kwargs: Keyword arguments to pass to the prune method.
+        **kwargs: Keyword arguments to pass to the prune method.
     """
     verify_permission(resource_type=resource_type, action=Action.PRUNE)
     prune_method(**kwargs)

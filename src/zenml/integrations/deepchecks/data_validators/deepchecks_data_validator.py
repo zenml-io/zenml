@@ -354,7 +354,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 check enum value as dictionary keys.
             run_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks Suite `run` method.
-            kwargs: Additional keyword arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             A Deepchecks SuiteResult with the results of the validation.
@@ -429,7 +429,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 check enum value as dictionary keys.
             run_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks Suite `run` method.
-            kwargs: Additional keyword arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             A Deepchecks SuiteResult with the results of the validation.

@@ -54,14 +54,6 @@ class _sanitize_paths:
 
     Extra decoration layer is needed to pass in fixed artifact store root
     path for static methods that are called on filesystems directly.
-
-    Args:
-        func: The function to decorate.
-        fixed_root_path: The fixed artifact store root path.
-        is_static: Whether the function is static or not.
-
-    Returns:
-        Function that calls the input function with sanitized path inputs.
     """
 
     def __init__(self, func: Callable[..., Any], fixed_root_path: str) -> None:

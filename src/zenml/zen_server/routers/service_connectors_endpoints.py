@@ -422,8 +422,8 @@ def get_resources_based_on_service_connector_info(
         access to and consumable from UI/CLI.
 
     Raises:
-        ValueError: If both connector_info and connector_uuid are provided.
-        ValueError: If neither connector_info nor connector_uuid are provided.
+        ValueError: If both connector_info and connector_uuid are provided or
+            if neither connector_info nor connector_uuid are provided.
     """
     if connector_info is not None and connector_uuid is not None:
         raise ValueError(

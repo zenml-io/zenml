@@ -1544,7 +1544,7 @@ class GCPServiceConnector(ServiceConnector):
         in question.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -1599,7 +1599,7 @@ class GCPServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -1750,7 +1750,7 @@ class GCPServiceConnector(ServiceConnector):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that
                 supports multiple instances.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             A GCP connector instance configured with authentication credentials

@@ -254,7 +254,7 @@ class KubernetesServiceConnector(ServiceConnector):
         """Authenticate and connect to a Kubernetes cluster.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -314,7 +314,7 @@ class KubernetesServiceConnector(ServiceConnector):
         Kubernetes client (kubectl).
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -472,7 +472,7 @@ class KubernetesServiceConnector(ServiceConnector):
                 supports multiple instances.
             kubernetes_context: The name of the Kubernetes context to use. If
                 not specified, the active context will be used.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             A configured Kubernetes connector instance.

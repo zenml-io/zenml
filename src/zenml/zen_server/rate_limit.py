@@ -138,14 +138,11 @@ class RequestLimiter:
     @contextmanager
     def limit_failed_requests(
         self, request: Request
-    ) -> Generator[None, Any, Any]:
+    ) -> Generator[None, None, None]:
         """Limits the number of failed requests.
 
         Args:
             request: Request object.
-
-        Yields:
-            None
         """
         self.hit_limiter(request)
 

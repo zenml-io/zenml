@@ -62,12 +62,12 @@ def mlflow_register_model_step(
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
         description: A description of the model version.
-        metadata: A list of metadata to associate with the model version
+        metadata: A dictionary of metadata to associate with the model version.
 
     Raises:
-        ValueError: If the model registry is not an MLflow model registry.
-        ValueError: If the experiment tracker is not an MLflow experiment tracker.
-        RuntimeError: If no model source URI is provided and no model is found.
+        ValueError: If the model registry is not an MLflow model registry,
+            if the experiment tracker is not an MLflow experiment tracker,
+            or if no model source URI is provided and no model is found.
         RuntimeError: If no run ID is provided and no run is found.
     """
     # get the experiment tracker and check if it is an MLflow experiment tracker.

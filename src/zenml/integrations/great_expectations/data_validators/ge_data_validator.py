@@ -360,7 +360,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 the profiler.
             overwrite_existing_suite: Whether to overwrite an existing
                 expectation suite, if one exists with that name.
-            kwargs: Additional keyword arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             The inferred Expectation Suite.
@@ -466,7 +466,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 dataset in the Great Expectations docs.
             action_list: A list of additional Great Expectations actions to run after
                 the validation check.
-            kwargs: Additional keyword arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             The Great Expectations validation (checkpoint) result.

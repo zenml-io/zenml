@@ -213,7 +213,7 @@ def create_cli_wrapped_script(
         flavor: The flavor to use.
 
     Yields:
-        The paths of the script and the output.
+        Tuple[Path, Path]: The paths of the script and the output.
 
     Raises:
         ValueError: If the function is not defined in a module.

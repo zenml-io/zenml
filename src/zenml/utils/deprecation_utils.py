@@ -73,8 +73,6 @@ def deprecate_pydantic_attributes(
             data: All values passed at model initialization.
 
         Raises:
-            AssertionError: If either the deprecated or replacement attribute
-                don't exist.
             TypeError: If the deprecated attribute is a required attribute.
             ValueError: If the deprecated attribute and replacement attribute
                 contain different values.

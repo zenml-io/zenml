@@ -219,9 +219,8 @@ def mlflow_model_registry_deployer_step(
 
     Raises:
         ValueError: if neither registry_model_version nor registry_model_stage
-            is not provided
-        ValueError: if No MLflow experiment tracker is found in the current
-            active stack
+            is not provided or if No MLflow experiment tracker is found in the
+            current active stack
         LookupError: if no model version is found in the MLflow model registry.
     """
     if not registry_model_version and not registry_model_stage:

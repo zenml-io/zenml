@@ -1380,7 +1380,7 @@ class AWSServiceConnector(ServiceConnector):
         in question.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -1449,7 +1449,7 @@ class AWSServiceConnector(ServiceConnector):
                 connector's UUID in the form 'zenml-<uuid[:8]>'. If a profile
                 with the given or generated name already exists, the profile is
                 overwritten.
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -1551,7 +1551,7 @@ class AWSServiceConnector(ServiceConnector):
             role_arn: The ARN of the AWS role to assume. Applicable only if the
                 IAM role authentication method is specified or long-term
                 credentials are discovered.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             An AWS connector instance configured with authentication credentials

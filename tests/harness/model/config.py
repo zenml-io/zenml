@@ -70,8 +70,6 @@ class Configuration(BaseTestConfigModel):
             ValidationError: if you try to validate through a JSON string. You
                 need to provide a config_file path when you create a
                 FileSyncModel.
-            AssertionError: if the raw input does not include a config_file
-                path for the configuration file.
         """
         # Disable json validation
         if info.mode == "json":

@@ -382,6 +382,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
+
+        Returns:
+            The stopped service.
         """
 
     def stop_model_server(
@@ -437,6 +440,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
+
+        Returns:
+            The started service.
         """
 
     def start_model_server(

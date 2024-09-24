@@ -170,7 +170,7 @@ def list_secrets(**kwargs: Any) -> None:
     """List all secrets that fulfill the filter criteria.
 
     Args:
-        kwargs: Keyword arguments to filter the secrets.
+        **kwargs: Keyword arguments to filter the secrets.
     """
     client = Client()
     with console.status("Listing secrets..."):

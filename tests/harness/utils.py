@@ -93,7 +93,8 @@ def environment_session(
             deprovisioned on exit.
 
     Yields:
-        The active environment and a client connected with it.
+        Tuple[TestEnvironment, Client]: A tuple containing the active
+            environment and a client connected with it.
     """
     # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
@@ -147,7 +148,7 @@ def clean_repo_session(
         cleanup: Whether to clean up the repository on exit.
 
     Yields:
-        A ZenML client connected to the repository.
+        Client: A ZenML client connected to the repository.
     """
     # original working directory
     orig_cwd = os.getcwd()
@@ -191,7 +192,7 @@ def clean_workspace_session(
             workspace.
 
     Yields:
-        A ZenML client configured to use the workspace.
+        Client: A ZenML client configured to use the workspace.
     """
     from zenml.utils.string_utils import random_str
 
@@ -233,7 +234,7 @@ def clean_default_client_session(
         tmp_path_factory: A pytest fixture that provides a temporary directory.
 
     Yields:
-        A clean ZenML client.
+        Client: A clean ZenML client.
     """
     # save the current global configuration and client singleton instances
     # to restore them later, then reset them
@@ -318,7 +319,7 @@ def setup_test_stack_session(
     clean_repo: bool = False,
     check_requirements: bool = True,
     no_cleanup: bool = False,
-) -> Generator[Stack, None, None]:
+) -> Generator["Stack", None, None]:
     """Context manager to configure a stack adapted to the requirements of the current test module.
 
     Args:
@@ -337,7 +338,7 @@ def setup_test_stack_session(
         no_cleanup: Whether to skip cleaning up the test stack on exit.
 
     Yields:
-        An active ZenML stack matching the requirements of the test module.
+        Stack: An active ZenML stack matching the requirements of the test module.
 
     Raises:
         ValueError: If `tmp_path_factory` is not provided when `clean_repo`

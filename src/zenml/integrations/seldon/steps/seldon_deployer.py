@@ -205,9 +205,9 @@ def seldon_custom_model_deployer_step(
         timeout: the timeout in seconds to wait for the deployment to start
 
     Raises:
-        ValueError: if the custom deployer is not defined
-        ValueError: if predict function path is not valid
-        TypeError: if predict function path is not a callable function
+        ValueError: if the custom deployer is not defined or if the predict
+            function path is not valid
+        TypeError: if the predict function path is not a callable function
         DoesNotExistException: if an entity does not exist raise an exception
         RuntimeError: if the build is missing for the pipeline run
 
@@ -363,11 +363,9 @@ def seldon_mlflow_registry_deployer_step(
         Seldon Core deployment service
 
     Raises:
-        ValueError: if registry_model_name is not provided
-        ValueError: if neither registry_model_version nor
-            registry_model_stage is provided
-        ValueError: if the MLflow experiment tracker is not available in the
-            active stack
+        ValueError: if registry_model_name is not provided or if neither
+            registry_model_version nor registry_model_stage is provided or if
+            the MLflow experiment tracker is not available in the active stack
         LookupError: if no model version is found in the MLflow model registry.
     """
     # import here to avoid failing the pipeline if the step is not used

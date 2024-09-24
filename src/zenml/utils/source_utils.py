@@ -429,9 +429,6 @@ def prepend_python_path(path: str) -> Iterator[None]:
     Args:
         path: Path that will be prepended to sys.path for the duration of
             the context manager.
-
-    Yields:
-        None
     """
     try:
         sys.path.insert(0, path)

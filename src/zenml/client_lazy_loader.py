@@ -60,8 +60,8 @@ class ClientLazyLoader(BaseModel):
         """Call mocked attribute.
 
         Args:
-            args: Positional arguments.
-            kwargs: Keyword arguments.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
             self

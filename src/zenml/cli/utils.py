@@ -42,6 +42,7 @@ from typing import (
 import click
 import pkg_resources
 import yaml
+from click import ClickException
 from pydantic import BaseModel, SecretStr
 from rich import box, table
 from rich.console import Console
@@ -164,7 +165,7 @@ def error(text: str) -> NoReturn:
     Raises:
         ClickException: when called.
     """
-    raise click.ClickException(message=click.style(text, fg="red", bold=True))
+    raise ClickException(message=click.style(text, fg="red", bold=True))
 
 
 def warning(
@@ -223,7 +224,7 @@ def print_table(
         obj: A List containing dictionaries.
         title: Title of the table.
         caption: Caption of the table.
-        columns: Optional column configurations to be used in the table.
+        **columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
@@ -2638,7 +2639,7 @@ def temporary_active_stack(
             this contextmanager will not do anything.
 
     Yields:
-        The active stack.
+        Stack: The active stack.
     """
     from zenml.client import Client
 

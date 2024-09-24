@@ -175,8 +175,8 @@ def generate_stack_component_list_command(
         """Prints a table of stack components.
 
         Args:
-            ctx: The click context object
-            kwargs: Keyword arguments to filter the components.
+            ctx: The click context object.
+            **kwargs: Keyword arguments to filter the components.
         """
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
@@ -2019,7 +2019,7 @@ def connect_stack_component_with_service_connector(
                 f"'{component_model.name}' {display_name} in your "
                 f"workspace. {additional_info}You can create a new "
                 "connector using the 'zenml service-connector register' "
-                "command or list the compatible resources using the "
+                f"command or list the compatible resources using the "
                 f"'zenml service-connector list-resources{command_args}' "
                 "command."
             )

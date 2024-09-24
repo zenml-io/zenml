@@ -77,8 +77,8 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 
         Args:
             client: pre-configured Kubernetes client.
-            args: standard KFP client positional arguments.
-            kwargs: standard KFP client keyword arguments.
+            *args: standard KFP client positional arguments.
+            **kwargs: standard KFP client keyword arguments.
         """
         self._k8s_client = client
         super().__init__(*args, **kwargs)
@@ -89,8 +89,8 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
         Initializes the KFP configuration from the Kubernetes client.
 
         Args:
-            args: standard KFP client positional arguments.
-            kwargs: standard KFP client keyword arguments.
+            *args: standard KFP client positional arguments.
+            **kwargs: standard KFP client keyword arguments.
 
         Returns:
             The KFP configuration.
@@ -471,6 +471,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+
+        Returns:
+            The Tekton run id.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook

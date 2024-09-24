@@ -163,9 +163,9 @@ class EntrypointFunctionDefinition(NamedTuple):
         Raises:
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
-                annotated as an `UnmaterializedArtifact`.
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
+                annotated as an `UnmaterializedArtifact` or if the input value
+                is not valid for the type annotation provided for the function
+                parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
@@ -259,11 +259,9 @@ def validate_entrypoint_function(
 
     Raises:
         StepInterfaceError: If the entrypoint function has variable arguments
-            or keyword arguments.
-        StepInterfaceError: If the entrypoint function has multiple
-            `BaseParameter` arguments.
-        StepInterfaceError: If the entrypoint function has multiple
-            `StepContext` arguments.
+            or keyword arguments or if the entrypoint function has multiple
+            `BaseParameter` arguments, or if the entrypoint function has
+            multiple `StepContext` arguments.
         RuntimeError: If type annotations should be enforced and a type
             annotation is missing.
 

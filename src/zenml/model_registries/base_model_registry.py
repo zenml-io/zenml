@@ -244,6 +244,9 @@ class BaseModelRegistry(StackComponent, ABC):
         Raises:
             KeyError: If the model does not exist.
             RuntimeError: If update fails.
+
+        Returns:
+            The updated registered model.
         """
 
     @abstractmethod
@@ -379,7 +382,7 @@ class BaseModelRegistry(StackComponent, ABC):
             created_before: The timestamp before which to list model versions.
             order_by_date: Whether to sort by creation time, this can
                 be "asc" or "desc".
-            kwargs: Additional keyword arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             A list of model versions.

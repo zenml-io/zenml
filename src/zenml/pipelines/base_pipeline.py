@@ -98,6 +98,9 @@ class BasePipeline(Pipeline, ABC):
         Args:
             *args: Connect method arguments.
             **kwargs: Connect method keyword arguments.
+
+        Raises:
+            NotImplementedError: If the connect method is not implemented.
         """
         raise NotImplementedError
 

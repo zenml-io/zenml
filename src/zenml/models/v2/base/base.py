@@ -220,6 +220,9 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
     ) -> "BaseResponse[AnyBody, AnyMetadata, AnyResources]":
         """Abstract method to fetch the hydrated version of the model.
 
+        Returns:
+            The hydrated version of the model.
+
         Raises:
             NotImplementedError: in case the method is not implemented.
         """
@@ -404,6 +407,9 @@ class BaseIdentifiedResponse(
         self,
     ) -> "BaseIdentifiedResponse[AnyDatedBody, AnyMetadata, AnyResources]":
         """Abstract method to fetch the hydrated version of the model.
+
+        Returns:
+            The hydrated version of the model.
 
         Raises:
             NotImplementedError: in case the method is not implemented.

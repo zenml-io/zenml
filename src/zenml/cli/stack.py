@@ -32,6 +32,7 @@ from typing import (
 from uuid import UUID
 
 import click
+from click import Abort, BadParameter
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm
@@ -960,12 +961,15 @@ def rename_stack(
 @stack.command("list")
 @list_options(StackFilter)
 @click.pass_context
-def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
+def list_stacks(
+    ctx: click.Context,
+    **kwargs: Any,
+) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
         ctx: the Click context
-        kwargs: Keyword arguments to filter the stacks.
+        **kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
     with console.status("Listing stacks...\n"):
@@ -1604,12 +1608,12 @@ def validate_name(ctx: click.Context, param: str, value: str) -> str:
         return value
 
     if not re.match(r"^[a-zA-Z0-9-]*$", value):
-        raise click.BadParameter(
+        raise BadParameter(
             "Stack name must contain only alphanumeric characters and hyphens."
         )
 
     if len(value) > 16:
-        raise click.BadParameter(
+        raise BadParameter(
             "Stack name must have a maximum length of 16 characters."
         )
 
@@ -1754,7 +1758,7 @@ def deploy(
             f"automatically redirected to "
             f"{deployment_config.deployment_url_text} in your browser.",
         ):
-            raise click.Abort()
+            raise Abort()
 
         date_start = datetime.utcnow()
 
@@ -2130,8 +2134,9 @@ def deploy_mlstack(
 
 
 @stack.command(
+    "destroy",
     help="Destroy stack components created previously with "
-    "`zenml stack deploy`"
+    "`zenml stack deploy`",
 )
 @click.argument("stack_name", required=True)
 @click.option(
@@ -2393,8 +2398,7 @@ def _get_stack_component_info(
         The info model of the stack component.
 
     Raises:
-        ValueError: If the cloud provider is not supported.
-        ValueError: If the component type is not supported.
+        ValueError: If the cloud provider or component type is not supported.
     """
     from rich.prompt import Prompt
 

@@ -216,8 +216,6 @@ class CodeReferenceSchema(BaseSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
-            kwargs: Additional keyword arguments.
-
         Returns:
             The converted model.
         """

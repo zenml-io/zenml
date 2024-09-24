@@ -116,7 +116,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         Args:
             event: The generic event body
 
-        Return:
+        Returns:
             An instance of the event source specific pydantic model.
         """
 
@@ -133,7 +133,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         Args:
             event_source: The event source to retrieve the secret for.
 
-        Return:
+        Returns:
             The webhook secret associated with the event source, or None if a
             secret is not applicable.
         """

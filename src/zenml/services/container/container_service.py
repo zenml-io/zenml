@@ -495,9 +495,6 @@ class ContainerService(BaseService):
         Args:
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
-
-        Yields:
-            A generator that can be accessed to get the service logs.
         """
         if not self.status.log_file or not os.path.exists(
             self.status.log_file

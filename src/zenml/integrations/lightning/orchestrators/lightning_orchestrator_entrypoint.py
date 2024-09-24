@@ -193,7 +193,7 @@ def main() -> None:
             step_name: Name of the step.
 
         Raises:
-            Exception: If an error occurs while running the step on the STUDIO.
+            e: If an error occurs while running the step on the STUDIO.
         """
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,

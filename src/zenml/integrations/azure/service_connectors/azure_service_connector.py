@@ -920,7 +920,7 @@ class AzureServiceConnector(ServiceConnector):
         in question.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to pass
+            **kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
@@ -985,7 +985,7 @@ class AzureServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            kwargs: Additional implementation specific keyword arguments to use
+            **kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
         Raises:
@@ -1080,7 +1080,7 @@ class AzureServiceConnector(ServiceConnector):
                 restrict the scope of Azure Blob storage containers. If not
                 specified, ZenML will retrieve blob containers from all storage
                 accounts accessible with the discovered credentials.
-            kwargs: Additional implementation specific keyword arguments to use.
+            **kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             An Azure connector instance configured with authentication

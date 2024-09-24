@@ -84,7 +84,7 @@ def list_users(ctx: click.Context, **kwargs: Any) -> None:
 
     Args:
         ctx: The click context object
-        kwargs: Keyword arguments to filter the list of users.
+        **kwargs: Keyword arguments to filter the list of users.
     """
     client = Client()
     with console.status("Listing stacks...\n"):

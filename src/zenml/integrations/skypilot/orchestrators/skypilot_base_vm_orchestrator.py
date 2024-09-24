@@ -158,6 +158,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The Skypilot run id.
+
         Raises:
             Exception: If the pipeline run fails.
             RuntimeError: If the code is running in a notebook.

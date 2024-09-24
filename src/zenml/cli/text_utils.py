@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for CLI output."""
 
-from typing import List
+from typing import Generator, List
 
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Heading, Markdown
@@ -91,15 +91,15 @@ class OldSchoolMarkdownHeading(Heading):
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        """Render the heading.
+    ) -> Generator[RenderResult, None, None]:
+        """Render the heading to the console.
 
         Args:
-            console: The console rendering the content.
+            console: The console to render to.
             options: The console options.
 
         Yields:
-            RenderResult: The rendered content.
+            RenderResult: The rendered heading.
         """
         text = self.text
         text.justify = "left"

@@ -70,6 +70,17 @@ install_integrations() {
 
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
+
+    # TODO: remove after testing this in the CI
+    # shows what is installing docstring-parser
+    uv pip install $PIP_ARGS pipdeptree
+    pipdeptree -r -p docstring-parser
+    uv pip uninstall $PIP_ARGS pipdeptree -y
+
+    # to avoid conflicts with the one installed 
+    # by pydoclint (i.e. docstring-parser-fork)
+    uv pip uninstall docstring-parser -y
+
 }
 
 set -x

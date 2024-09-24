@@ -38,5 +38,8 @@ ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" -
 
 ruff format $SRC  --check
 
+# pydoclint docstring linter
+pydoclint -q $SRC_NO_TESTS
+
 # check type annotations
 mypy $SRC_NO_TESTS

@@ -281,7 +281,7 @@ class SlackAlerter(BaseAlerter):
             """Post an initial message in a channel and start listening.
 
             Args:
-                payload: payload of the received Slack event.
+                **payload: payload of the received Slack event.
             """
             web_client = payload["web_client"]
             blocks = self._create_blocks(message, params)
@@ -294,7 +294,7 @@ class SlackAlerter(BaseAlerter):
             """Listen / handle messages posted in the channel.
 
             Args:
-                payload: payload of the received Slack event.
+                **payload: payload of the received Slack event.
             """
             event = payload["data"]
             if event["channel"] == slack_channel_id:

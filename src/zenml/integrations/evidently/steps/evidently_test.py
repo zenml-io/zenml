@@ -55,9 +55,8 @@ def evidently_test_step(
         A tuple containing the TestSuite in JSON and HTML formats.
 
     Raises:
-        ValueError: If ignored_cols is an empty list
-        ValueError: If column is not found in reference or comparison
-            dataset
+        ValueError: If ignored_cols is an empty list or if any column in
+            ignored_cols is not found in the reference or comparison dataset.
     """
     if not tests:
         tests = EvidentlyTestConfig.default_tests()

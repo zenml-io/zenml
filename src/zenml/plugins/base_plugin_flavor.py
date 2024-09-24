@@ -85,4 +85,7 @@ class BasePluginFlavor(ABC):
 
         Args:
             hydrate: Whether the model should be hydrated.
+
+        Returns:
+            The flavor response model.
         """

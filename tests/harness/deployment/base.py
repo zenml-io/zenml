@@ -282,7 +282,7 @@ class BaseTestDeployment(ABC):
             custom_password: Custom password to use for the connection.
 
         Yields:
-            A ZenML Client configured to connect to this deployment.
+            Client: A ZenML Client configured to connect to this deployment.
 
         Raises:
             RuntimeError: If the deployment is disabled.

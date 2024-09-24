@@ -60,7 +60,7 @@ def run_with_accelerate(
     Args:
         step_function_top_level: The step function to run with accelerate [optional].
             Used in functional calls like `run_with_accelerate(some_func,foo=bar)()`.
-        accelerate_launch_kwargs: A dictionary of arguments to pass along to the
+        **accelerate_launch_kwargs: A dictionary of arguments to pass along to the
             `accelerate launch` command, including hardware selection, resource
             allocation, and training paradigm options. Visit
             https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch

@@ -773,7 +773,7 @@ def _load_file_from_artifact_store(
     Raises:
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
-        IOError: If the artifact store rejects the request.
+        e: If the artifact store rejects the request.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:

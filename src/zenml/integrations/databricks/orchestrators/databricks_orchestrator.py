@@ -226,6 +226,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The Databricks job id.
+
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
@@ -418,8 +421,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             settings: The settings for the Databricks orchestrator.
 
         Raises:
-            ValueError: If the `Job Compute` policy is not found.
-            ValueError: If the `schedule_timezone` is not set when passing
+            ValueError: If the `Job Compute` policy is not found or if the
+                `schedule_timezone` is not set when passing a `cron_expression`.
 
         """
         databricks_client = self._get_databricks_client()

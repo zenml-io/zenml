@@ -183,6 +183,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Returns:
+            The pipeline run id.
+
         Raises:
             RuntimeError: If a step fails.
         """
