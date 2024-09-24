@@ -3,11 +3,12 @@ from typing import Any, Dict, List, Optional, Union
 import bentoml
 from bentoml import Tag
 from bentoml.client import Client
+import docker.errors as docker_errors
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.client import Client as ZenMLClient
 from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT, BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
 from zenml.logger import get_logger
-from zenml.services.container.container_service import ContainerService, ContainerServiceConfig
+from zenml.services.container.container_service import SERVICE_CONTAINER_PATH, ContainerService, ContainerServiceConfig
 from zenml.services.container.container_service_endpoint import ContainerServiceEndpoint, ContainerServiceEndpointConfig
 from zenml.services.service import BaseDeploymentService
 from zenml.services.service_endpoint import ServiceEndpointProtocol
@@ -113,6 +114,81 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             )
             attrs["endpoint"] = endpoint
         super().__init__(config=config, **attrs)
+
+    # override the container start method to use the root user
+    def _start_container(self) -> None:
+        """Start the service docker container associated with this service."""
+        container = self.container
+
+        if container:
+            # the container exists, check if it is running
+            if container.status == "running":
+                logger.debug(
+                    "Container for service '%s' is already running",
+                    self,
+                )
+                return
+
+            # the container is stopped or in an error state, remove it
+            logger.debug(
+                "Removing previous container for service '%s'",
+                self,
+            )
+            container.remove(force=True)
+
+        logger.debug("Starting container for service '%s'...", self)
+
+        try:
+            self.docker_client.images.get(self.config.image)
+        except docker_errors.ImageNotFound:
+            logger.debug(
+                "Pulling container image '%s' for service '%s'...",
+                self.config.image,
+                self,
+            )
+            self.docker_client.images.pull(self.config.image)
+
+        self._setup_runtime_path()
+
+        ports: Dict[int, Optional[int]] = {}
+        if self.endpoint:
+            self.endpoint.prepare_for_start()
+            if self.endpoint.status.port:
+                ports[self.endpoint.status.port] = self.endpoint.status.port
+
+        command, env = self._get_container_cmd()
+        volumes = self._get_container_volumes()
+
+        try:
+            container = self.docker_client.containers.run(
+                name=self.container_id,
+                image=self.config.image,
+                entrypoint=command,
+                detach=True,
+                volumes=volumes,
+                environment=env,
+                remove=False,
+                auto_remove=False,
+                ports=ports,
+                user="root",
+                labels={
+                    "zenml-service-uuid": str(self.uuid),
+                },
+                working_dir=SERVICE_CONTAINER_PATH,
+                extra_hosts={"host.docker.internal": "host-gateway"},
+            )
+
+            logger.debug(
+                "Docker container for service '%s' started with ID: %s",
+                self,
+                self.container_id,
+            )
+        except docker_errors.DockerException as e:
+            logger.error(
+                "Docker container for service '%s' failed to start: %s",
+                self,
+                e,
+            )
 
     def _containerize_and_push_bento(self) -> None:
         """Containerize the bento and push it to the container registry."""
