@@ -1,0 +1,99 @@
+---
+title: "Installation"
+description: "Installing ZenML and getting started."
+icon: user-astronaut
+---
+
+**ZenML** is a Python package that can be installed directly via `pip`:
+
+
+```Bash
+pip install zenml
+```
+
+<Note>
+  Note that ZenML currently supports **Python 3.8, 3.9, 3.10, and 3.11**. Please make sure that you are using a supported Python version.
+</Note>
+
+## Install with the dashboard
+
+ZenML comes bundled with a web dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**, you need to launch the [ZenML Server and Dashboard locally](/versions/0.66.0/getting-started/deploying-zenml). For this, you need to install the optional dependencies for the ZenML Server:
+
+
+```Bash
+pip install "zenml[server]"
+```
+
+<Info>
+  We highly encourage you to install ZenML in a virtual environment. At ZenML, We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
+</Info>
+
+## Installing onto MacOS with Apple Silicon (M1, M2)
+
+A change in how forking works on Macs running on Apple Silicon means that you should set the following environment variable which will ensure that your connections to the server remain unbroken:
+
+
+```Bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+```
+
+You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C%5Fand%5Ffork%5Fin%5FmacOS%5F1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
+
+## Nightly builds
+
+ZenML also publishes nightly builds under the [zenml-nightly package name](https://pypi.org/project/zenml-nightly/). These are built from the latest [develop branch](https://github.com/zenml-io/zenml/tree/develop) (to which work ready for release is published) and are not guaranteed to be stable. To install the nightly build, run:
+
+
+```Bash
+pip install zenml-nightly
+```
+
+## Verifying installations
+
+Once the installation is completed, you can check whether the installation was successful either through Bash:
+
+
+```Bash
+zenml version
+```
+
+or through Python:
+
+
+```Bash
+import zenml
+
+print(zenml.__version__)
+```
+
+If you would like to learn more about the current release, please visit our [PyPi package page.](https://pypi.org/project/zenml)
+
+## Running with Docker
+
+`zenml` is also available as a Docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
+
+```Bash
+docker run -it zenmldocker/zenml /bin/bash
+```
+
+If you would like to run the ZenML server with Docker:
+
+
+```Bash
+docker run -it -d -p 8080:8080 zenmldocker/zenml-server
+```
+
+## Deploying the server
+
+Though ZenML can run entirely as a pip package on a local system, complete with the dashboard. You can do this easily:
+
+
+```Bash
+pip install "zenml[server]"
+
+zenml up  # opens the dashboard locally
+```
+
+However, advanced ZenML features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](/versions/0.66.0/getting-started/deploying-zenml).
+
+For the deployment of ZenML, you have the option to either [self-host](/versions/0.66.0/getting-started/deploying-zenml) it or register for a free [ZenML Pro](https://cloud.zenml.io/signup?utm%5Fsource=docs&utm%5Fmedium=referral%5Flink&utm%5Fcampaign=cloud%5Fpromotion&utm%5Fcontent=signup%5Flink) account.

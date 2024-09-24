@@ -1,0 +1,49 @@
+---
+title: "Trigger a pipeline from another pipeline"
+description: "Trigger a pipeline from another pipeline."
+icon: recycle
+---
+
+<Info>
+    This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](https://cloud.zenml.io) get access. OSS users can only trigger a pipeline by calling the pipeline function inside their runner script.
+</Info>
+
+Triggering a pipeline from another **only** works if you've created at least one run template for that pipeline.
+
+```py
+import pandas as pd
+from zenml import pipeline, step
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+
+@step
+def trainer(data_artifact_id: str):
+    df = load_artifact(data_artifact_id)
+
+@pipeline
+def training_pipeline():
+    trainer()
+
+@step
+def load_data() -> pd.Dataframe:
+    ...
+
+@step
+def trigger_pipeline(df: UnmaterializedArtifact):
+    # By using UnmaterializedArtifact we can get the ID of the artifact
+    run_config = PipelineRunConfiguration(steps={"trainer": {"parameters": {"data_artifact_id": df.id}}})
+    Client().trigger_pipeline("training_pipeline", run_configuration=run_config)
+
+@pipeline
+def loads_data_and_triggers_training():
+    df = load_data()
+    trigger_pipeline(df)  # Will trigger the other pipeline
+```
+
+Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.pipeline%5Frun%5Fconfiguration.PipelineRunConfiguration) and [trigger\_pipeline](https://sdkdocs.zenml.io/0.60.0/core%5Fcode%5Fdocs/core-client/#zenml.client.Client) function object in the [SDK Docs](https://sdkdocs.zenml.io/).
+
+Read more about Unmaterialized Artifacts [here](/versions/0.66.0/how-to/handle-data-artifacts/unmaterialized-artifacts).
+
+<CardGroup>
+<Card title="Run Pipeline from Python Client" icon="python" href="/versions/0.66.0/how-to/trigger-pipelines/trigger-a-pipeline-from-client" horizontal/> <Card title="Run Pipeline from REST API" icon="code" href="/versions/0.66.0/how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api" horizontal/> </CardGroup>
+

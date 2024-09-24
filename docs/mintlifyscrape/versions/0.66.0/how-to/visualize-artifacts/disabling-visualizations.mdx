@@ -1,0 +1,18 @@
+---
+title: "Disabling visualizations"
+description: "Disabling visualizations."
+icon: eye-slash
+---
+
+If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline or step level:
+
+```py
+
+@step(enable_artifact_visualization=False)
+def my_step():
+    ...
+
+@pipeline(enable_artifact_visualization=False)
+def my_pipeline():
+    ...
+```

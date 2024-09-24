@@ -1,0 +1,34 @@
+---
+title: "Group metadata"
+description: "Learn how to group key-value pairs in the dashboard."
+icon: layer-group
+---
+
+<Frame caption="Metadata in the dashboard">
+  <img src="/images/how-to/stack-69.avif"/>
+</Frame>
+
+When logging metadata passing a dictionary of dictionaries in the `metadata` parameter will group the metadata into cards in the ZenML dashboard. This feature helps organize metadata into logical sections, making it easier to visualize and understand.
+
+Here's an example of grouping metadata into cards:
+
+```py
+from zenml.metadata.metadata_types import StorageSize
+
+log_artifact_metadata(
+    metadata={
+        "model_metrics": {
+            "accuracy": 0.95,
+            "precision": 0.92,
+            "recall": 0.90
+        },
+        "data_details": {
+            "dataset_size": StorageSize(1500000),
+            "feature_columns": ["age", "income", "score"]
+        }
+    }
+)
+```
+
+In the ZenML dashboard, "model\_metrics" and "data\_details" would appear as separate cards, each containing their respective key-value pairs.
+

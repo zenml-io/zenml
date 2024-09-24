@@ -1,0 +1,69 @@
+---
+title: "DockerHub"
+description: "Storing container images in DockerHub."
+icon: docker
+---
+
+The DockerHub container registry is a [container registry](/versions/0.66.0/stack-components/container-registries) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+
+### When to use it
+
+You should use the DockerHub container registry if:
+
+* one or more components of your stack need to pull or push container images.
+* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](/versions/0.66.0/stack-components/container-registries#container-registry-flavors).
+
+### How to deploy it
+
+To use the DockerHub container registry, all you need to do is create a [DockerHub](https://hub.docker.com/) account.
+
+When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](/versions/0.66.0/stack-components/orchestrators) or [step operator](/versions/0.66.0/stack-components/step-operators) that you're using in your stack.
+
+### How to find the registry URI
+
+The DockerHub container registry URI should have one of the two following formats:
+
+```bash
+<ACCOUNT_NAME>
+# or
+docker.io/<ACCOUNT_NAME>
+
+# Examples:
+zenml
+my-username
+docker.io/zenml
+docker.io/my-username
+```
+
+To figure out the URI for your registry:
+
+* Find out the account name of your [DockerHub](https://hub.docker.com/) account.
+* Use the account name to fill the template `docker.io/<ACCOUNT_NAME>` and get your URI.
+
+### How to use it
+
+To use the Azure container registry, we need:
+
+* [Docker](https://www.docker.com) installed and running.
+* The registry URI. Check out the [previous section](/versions/0.66.0/stack-components/container-registries/dockerhub#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
+
+We can then register the container registry and use it in our active stack:
+
+
+```bash
+zenml container-registry register <NAME> \
+    --flavor=dockerhub \
+    --uri=<REGISTRY_URI>
+
+# Add the container registry to the active stack
+zenml stack update -c <NAME>
+```
+
+Additionally, we'll need to log in to the container registry so Docker can pull and push images. This will require your DockerHub account name and either your password or preferably a [personal access token](https://docs.docker.com/docker-hub/access-tokens/).
+
+```bash
+docker login
+```
+
+For more information and a full list of configurable attributes of the `dockerhub` container registry, check out the [SDK Docs](https://apidocs.zenml.io/latest/core%5Fcode%5Fdocs/core-container%5Fregistries/#zenml.container%5Fregistries.dockerhub%5Fcontainer%5Fregistry.DockerHubContainerRegistry) .
+

@@ -1,0 +1,37 @@
+---
+title: "Name your pipeline runs"
+icon: signature
+---
+
+In the output logs of a pipeline run you will see the name of the run:
+
+
+```shell
+Pipeline run training_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
+```
+
+This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
+
+
+```py
+training_pipeline = training_pipeline.with_options(
+    run_name="custom_pipeline_run_name"
+)
+training_pipeline()
+```
+
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
+
+* `{{date}}` will resolve to the current date, e.g. `2023_02_19`
+* `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
+
+
+```py
+training_pipeline = training_pipeline.with_options(
+    run_name=f"custom_pipeline_run_name_{{date}}_{{time}}"
+)
+training_pipeline()
+```
+
+Be sure to include the `f` string prefix to allow for the placeholders to be replaced, as shown in the example above. Without the `f` prefix, the placeholders will not be replaced.
+

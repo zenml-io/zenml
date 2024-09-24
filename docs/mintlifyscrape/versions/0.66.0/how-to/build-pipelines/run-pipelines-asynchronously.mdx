@@ -1,0 +1,32 @@
+---
+title: "Run pipelines asynchronously"
+description: "The best way to trigger a pipeline run so that it runs in the background"
+icon: play
+---
+
+By default your pipelines will run synchronously. This means your terminal will follow along the logs as the pipeline is being built/runs.
+
+This behavior can be changed in multiple ways. Either the orchestrator can be configured to always run asynchronously by setting `synchronous=False`. The other option is to temporarily set this at the pipeline configuration level during runtime.
+
+
+```py
+from zenml import pipeline
+
+@pipeline(settings = {"orchestrator": {"synchronous": False}})
+def my_pipeline():
+  ...
+```
+
+or in a yaml config file:
+
+```yaml
+settings:
+  orchestrator.<STACK_NAME>:
+    synchronous: false
+```
+
+---
+
+<CardGroup cols={2}>
+<Card title="Learn about orchestrators" icon="server" href="/versions/0.66.0/stack-components/orchestrators" horizontal />
+</CardGroup>

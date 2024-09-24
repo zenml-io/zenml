@@ -1,0 +1,45 @@
+---
+title: "Overview"
+description: "Stacks are the configuration of your infrastructure."
+icon: hammer
+---
+
+The [stack](/versions/0.66.0/user-guide/production-guide/understand-stacks) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
+
+However, deploying and managing a MLOps stack is tricky <Icon icon="face-sad-cry"/><Icon icon="face-grin-squint"/>. It is not trivial to set up all the different tools that you might need for your pipeline.
+
+* <Icon icon="rainbow"/>Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
+* <Icon icon="face-rolling-eyes"/>Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
+* <Icon icon="road-barrier"/>Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in Vertex AI, it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
+* <Icon icon="lock"/>Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard MLflow tracking server deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
+* <Icon icon="head-side-virus"/>All the components that you deploy must have the right permissions to be able to talk to each other. When you run your pipeline, it is inevitable that some components would need to communicate with the others. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
+* <Icon icon="broom"/>Cleaning up your resources after you're done with your experiments is super important yet very challenging. Many of the components need a range of other resources to work which might slide past your radar if you're not careful. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
+
+All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
+
+This docs section consists of information that makes it easier to provision, configure, and extend stacks and components in ZenML.
+
+
+<CardGroup cols={2}>
+  <Card title="Deploy a cloud stack with ZenML" icon="cloud" href="/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack">
+    Description of deploying a cloud stack with ZenML.
+  </Card>
+  <Card title="Register a cloud stack" icon="clipboard-list" href="/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack">
+    Description of registering a cloud stack.
+  </Card>
+  <Card title="Deploy a cloud stack with Terraform" icon="server" href="/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform">
+    Description of deploying a cloud stack with Terraform.
+  </Card>
+  <Card title="Deploy stack/components using mlstacks" icon="box" href="/versions/0.66.0/how-to/stack-deployment/deploy-a-stack-using-mlstacks">
+    Deploying an entire stack with ZenML's `mlstacks` package.
+  </Card>
+  <Card title="Reference secrets in stack configuration" icon="key" href="/versions/0.66.0/how-to/stack-deployment/reference-secrets-in-stack-configuration">
+    Description of referencing secrets in stack configuration.
+  </Card>
+  <Card title="Implement a custom stack component" icon="puzzle-piece" href="/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component">
+    Creating your custom stack component solutions.
+  </Card>
+  <Card title="Implement a custom integration" icon="plug" href="/versions/0.66.0/how-to/stack-deployment/implement-a-custom-integration">
+    Description of implementing a custom integration.
+  </Card>
+</CardGroup>

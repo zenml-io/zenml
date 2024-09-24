@@ -1,0 +1,26 @@
+---
+title: "Overview"
+description: "Level up your skills in a production setting."
+icon: the-red-yeti
+---
+
+The ZenML production guide builds upon the [Starter guide](/versions/0.66.0/user-guide/starter-guide) and is the next step in the MLOps Engineer journey with ZenML. If you're an ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.
+<Frame caption="ZenML simplifies development of MLOps pipelines that can span multiple production stacks.">
+  <img src="/images/user-guide/Fstack_showcase.png" />
+</Frame>
+
+This guide will focus on shifting gears from running pipelines _locally_ on your machine, to running them in _production_ in the cloud. We'll cover:
+
+<CardGroup cols={2}>
+  <Card title="Deploying ZenML" icon="rocket" href="/versions/0.66.0/user-guide/production-guide/deploying-zenml" horizontal/>
+  <Card title="Understanding stacks" icon="layer-group" href="/versions/0.66.0/user-guide/production-guide/understand-stacks"horizontal />
+  <Card title="Connecting remote storage" icon="database" href="/versions/0.66.0/user-guide/production-guide/remote-storage" horizontal/>
+  <Card title="Orchestrating on the cloud" icon="cloud" href="/versions/0.66.0/user-guide/production-guide/cloud-orchestration"horizontal />
+  <Card title="Configuring the pipeline to scale compute" icon="sliders" href="/versions/0.66.0/user-guide/production-guide/configure-pipeline" horizontal/>
+  <Card title="Configure a code repository" icon="code-branch" href="/versions/0.66.0/user-guide/production-guide/connect-code-repository" horizontal/>
+</CardGroup>
+
+Like in the starter guide, make sure you have a Python environment ready and `virtualenv` installed to follow along with ease. As now we are dealing with cloud infrastructure, you'll also want to select one of the major cloud providers (AWS, GCP, Azure), and make sure the respective CLIs are installed and authorized.
+
+By the end, you will have completed an [end-to-end](/versions/0.66.0/user-guide/production-guide/end-to-end) MLOps project that you can use as inspiration for your own work. Let's get right into it!
+

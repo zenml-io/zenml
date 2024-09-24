@@ -1,0 +1,543 @@
+---
+title: Cli
+description: The ZenML CLI tool is usually downloaded and installed via PyPI and a `pip install zenml` command.
+sidebarTitle: CLI docs
+---
+
+## `zenml.cli` `special`
+
+
+ZenML CLI.
+
+ Please see the Installation & Setup section above for more information about that process.
+
+### How to use the CLI
+
+Our CLI behaves similarly to many other CLIs for basic features. In order to find out which version of ZenML you are running, type:
+
+ ```
+ zenml version
+ ```
+
+If you ever need more information on exactly what a certain command will do, use the `--help` flag attached to the end of your command string.
+
+For example, to get a sense of all the commands available to you while using the `zenml` command, type:
+
+ ```
+ zenml --help
+ ```
+
+If you were instead looking to know more about a specific command, you can type something like this:
+
+ ```
+ zenml artifact-store register --help
+ ```
+
+This will give you information about how to register an artifact store. (See below for more on that).
+
+If you want to instead understand what the concept behind a group is, you can use the `explain` sub-command. For example, to see more details behind what a `artifact-store` is, you can type:
+
+```
+zenml artifact-store explain
+```
+
+This will give you an explanation of that concept in more detail.
+
+### Beginning a Project
+
+In order to start working on your project, initialize a ZenML repository within your current directory with ZenML's own config and resource management tools:
+
+```
+zenml init
+```
+
+This is all you need to begin using all the MLOps goodness that ZenML provides!
+
+By default, `zenml init` will install its own hidden `.zen` folder inside the current directory from which you are running the command. You can also pass in a directory path manually using the `--path` option:
+
+```
+zenml init --path /path/to/dir
+```
+
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates) to generate a ready-to-use project scaffold in your repository, you can do so by passing the `--template` option:
+
+```
+zenml init --template <name_of_template>
+```
+
+Running the above command will result in input prompts being shown to you. If you would like to rely on default values for the ZenML project template - you can add `--template-with-defaults` to the same command, like this:
+
+```
+zenml init --template <name_of_template> --template-with-defaults
+```
+
+In a similar fashion, if you would like to quickly explore the capabilities of ZenML through a notebook, you can also use:
+
+```
+zenml go
+```
+
+### Cleaning up
+
+If you wish to delete all data relating to your workspace from the directory, use the `zenml clean` command. This will:
+
+* delete all pipelines, pipeline runs and associated metadata
+* delete all artifacts
+
+### Using Integrations
+
+Integrations are the different pieces of a project stack that enable custom functionality. This ranges from bigger libraries like [`kubeflow`](https://www.kubeflow.org/) for orchestration down to smaller visualization tools like [`facets`](https://pair-code.github.io/facets/). Our CLI is an easy way to get started with these integrations.
+
+To list all the integrations available to you, type:
+
+```
+zenml integration list
+```
+
+To see the requirements for a specific integration, use the `requirements` command:
+
+```
+zenml integration requirements INTEGRATION_NAME
+```
+
+If you wish to install the integration, using the requirements listed in the previous command, `install` allows you to do this for your local environment:
+
+```
+zenml integration install INTEGRATION_NAME
+```
+
+Note that if you don't specify a specific integration to be installed, the ZenML CLI will install **all** available integrations.
+
+If you want to install all integrations apart from one or multiple integrations, use the following syntax, for example, which will install all integrations except `feast` and `aws`:
+
+```
+zenml integration install -i feast -i aws
+```
+
+Uninstalling a specific integration is as simple as typing:
+
+```
+zenml integration uninstall INTEGRATION_NAME
+```
+
+For all these `zenml integration` commands, you can pass the `--uv` flag and we will use `uv` as the package manager instead of `pip`. This will resolve and install much faster than with `pip`, but note that it requires `uv` to be installed on your machine. This is an experimental feature and may not work on all systems. In particular, note that installing onto machines with GPU acceleration may not work as expected.
+
+If you would like to export the requirements of all ZenML integrations, you can use the command:
+
+```
+zenml integration export-requirements
+```
+
+Here, you can also select a list of integrations and write the result into and output file:
+
+```
+zenml integration export-requirements gcp kubeflow -o OUTPUT_FILE
+```
+
+### Filtering when listing
+
+Certain CLI `list` commands allow you to filter their output. For example, all stack components allow you to pass custom parameters to the `list` command that will filter the output. To learn more about the available filters, a good quick reference is to use the `--help` command, as in the following example:
+
+```
+zenml orchestrator list --help
+```
+
+You will see a list of all the available filters for the `list` command along with examples of how to use them.
+
+The `--sort_by` option allows you to sort the output by a specific field and takes an `asc` or `desc` argument to specify the order. For example, to sort the output of the `list` command by the `name` field in ascending order, you would type:
+
+```
+zenml orchestrator list --sort_by "asc:name"
+```
+
+For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`, `startswith` and `endswith` keywords along with their particular identifier. For example, for the orchestrator `list` command, you can use the following filter to find all orchestrators that contain the string `sagemaker` in their name:
+
+```
+zenml orchestrator list --name "contains:sagemaker"
+```
+
+For fields marked as being of type `BOOL`, you can use the 'True' or 'False' values to filter the output.
+
+Finally, for fields marked as being of type `DATETIME`, you can pass in datetime values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`, `lte`, `gt` and `lt` keywords (greater than or equal, less than or equal, greater than and less than respectively) to specify the range of the filter. For example, if I wanted to find all orchestrators that were created after the 1st of January 2021, I would type:
+
+```
+zenml orchestrator list --created "gt:2021-01-01 00:00:00"
+```
+
+This syntax can also be combined to create more complex filters using the `or` and `and` keywords.
+
+### Artifact Stores
+
+In ZenML, [the artifact store](https://docs.zenml.io/stack-components/artifact-stores) is where all the inputs and outputs of your pipeline steps are stored. By default, ZenML initializes your repository with an artifact store with everything kept on your local machine. You can get a better understanding about the concept of artifact stores by executing:
+
+```
+zenml artifact-store explain
+```
+
+If you wish to register a new artifact store, do so with the `register` command:
+
+```
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
+```
+
+You can also add any labels to your stack component using the `--label` or `-l` flag:
+
+```
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new artifact store, you have to choose a flavor. To see the full list of available artifact store flavors, you can use the command:
+
+```
+zenml artifact-store flavor list
+```
+
+This list will show you which integration these flavors belong to and which service connectors they are adaptable with. If you would like to get additional information regarding a specific flavor, you can utilize the command:
+
+```
+zenml artifact-store flavor describe FLAVOR_NAME
+```
+
+If you wish to list the artifact stores that have already been registered within your ZenML:
+
+```
+zenml artifact-store list
+```
+
+If you want the name of the artifact store in the active stack, you can also use the `get` command:
+
+```
+zenml artifact-store get
+```
+
+For details about a particular artifact store, use the `describe` command. By default, (without a specific artifact store name passed in) it will describe the active or currently used artifact store:
+
+```
+zenml artifact-store describe ARTIFACT_STORE_NAME
+```
+
+If you wish to update/rename an artifact store, you can use the following commands respectively:
+
+```
+zenml artifact-store update ARTIFACT_STORE_NAME --property_to_update=new_value
+zenml artifact-store rename ARTIFACT_STORE_OLD_NAME ARTIFACT_STORE_NEW_NAME
+```
+
+If you wish to delete a particular artifact store, pass the name of the artifact store into the CLI with the following command:
+
+```
+zenml artifact-store delete ARTIFACT_STORE_NAME
+```
+
+If you would like to connect/disconnect your artifact store to/from a service connector, you can use the following commands:
+
+```
+zenml artifact-store connect ARTIFACT_STORE_NAME -c CONNECTOR_NAME
+zenml artifact-store disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your artifact stores. In order to get a full list of available functions, use the command:
+
+```
+zenml artifact-store --help
+```
+
+### Orchestrators
+
+An [orchestrator](https://docs.zenml.io/stack-components/orchestrators) is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. By default, ZenML initializes your repository with an orchestrator that runs everything on your local machine. In order to get a more detailed explanation, you can use the command:
+
+```
+zenml orchestrator explain
+```
+
+If you wish to register a new orchestrator, do so with the `register` command:
+
+```
+zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```
+zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new orchestrator, you have to choose a flavor. To see the full list of available orchestrator flavors, you can use the command:
+
+```
+zenml orchestrator flavor list
+```
+
+This list will show you which integration these flavors belong to and which service connectors they are adaptable with. If you would like to get additional information regarding a specific flavor, you can utilize the command:
+
+```
+zenml orchestrator flavor describe FLAVOR_NAME
+```
+
+If you wish to list the orchestrators that have already been registered within your ZenML workspace / repository, type:
+
+```
+zenml orchestrator list
+```
+
+If you want the name of the orchestrator in the active stack, you can also use the `get` command:
+
+```
+zenml orchestrator get
+```
+
+For details about a particular orchestrator, use the `describe` command. By default, (without a specific orchestrator name passed in) it will describe the active or currently used orchestrator:
+
+```
+zenml orchestrator describe [ORCHESTRATOR_NAME]
+```
+
+If you wish to update/rename an orchestrator, you can use the following commands respectively:
+
+```
+zenml orchestrator update ORCHESTRATOR_NAME --property_to_update=new_value
+zenml orchestrator rename ORCHESTRATOR_OLD_NAME ORCHESTRATOR_NEW_NAME
+```
+
+If you wish to delete a particular orchestrator, pass the name of the orchestrator into the CLI with the following command:
+
+```
+zenml orchestrator delete ORCHESTRATOR_NAME
+```
+
+If you would like to connect/disconnect your orchestrator to/from a service connector, you can use the following commands:
+
+```
+zenml orchestrator connect ORCHESTRATOR_NAME -c CONNECTOR_NAME
+zenml orchestrator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your orchestrators. In order to get a full list of available functions, use the command:
+
+```
+zenml orchestrators --help
+```
+
+### Container Registries
+
+[The container registry](https://docs.zenml.io/stack-components/container-registries) is where all the images that are used by a container-based orchestrator are stored. To get a better understanding regarding container registries, use the command:
+
+```
+zenml container-registry explain
+```
+
+By default, a default ZenML local stack will not register a container registry. If you wish to register a new container registry, do so with the `register` command:
+
+```
+zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```
+zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR -l key1=value1 -l key2=value2`
+```
+
+As you can see from the command above, when you register a new container registry, you have to choose a flavor. To see the full list of available container registry flavors, you can use the command:
+
+```
+zenml container-registry flavor list
+```
+
+This list will show you which integration these flavors belong to and which service connectors they are adaptable with. If you would like to get additional information regarding a specific flavor, you can utilize the command:
+
+```
+zenml container-registry flavor describe FLAVOR_NAME
+```
+
+To list all container registries available and registered for use, use the `list` command:
+
+```
+zenml container-registry list
+```
+
+If you want the name of the container registry in the active stack, you can also use the `get` command:
+
+```
+zenml container-registry get
+```
+
+For details about a particular container registry, use the `describe` command. By default, (without a specific registry name passed in) it will describe the active or currently used container registry:
+
+```
+zenml container-registry describe [CONTAINER_REGISTRY_NAME]
+```
+
+If you wish to update/rename a container registry, you can use the following commands respectively:
+
+```
+zenml container-registry update CONTAINER_REGISTRY_NAME --property_to_update=new_value
+zenml container-registry rename CONTAINER_REGISTRY_OLD_NAME CONTAINER_REGISTRY_NEW_NAME
+```
+
+To delete a container registry (and all of its contents), use the `delete` command:
+
+```
+zenml container-registry delete REGISTRY_NAME
+```
+
+If you would like to connect/disconnect your container registry to/from a service connector, you can use the following commands:
+
+```
+zenml container-registry connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml container-registry disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your container registries. In order to get a full list of available functions, use the command:
+
+```
+zenml container-registry --help
+```
+
+### Data Validators
+
+In ZenML, [data validators](https://docs.zenml.io/stack-components/data-validators) help you profile and validate your data.
+
+By default, a default ZenML local stack will not register a data validator. If you wish to register a new data validator, do so with the `register` command:
+
+```
+zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR [--DATA_VALIDATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```
+zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new data validator, you have to choose a flavor. To see the full list of available data validator flavors, you can use the command:
+
+```
+zenml data-validator flavor list
+```
+
+This list will show you which integration these flavors belong to and which service connectors they are adaptable with. If you would like to get additional information regarding a specific flavor, you can utilize the command:
+
+```
+zenml data-validator flavor describe FLAVOR_NAME
+```
+
+To list all data validators available and registered for use, use the `list` command:
+
+```
+zenml data-validator list
+```
+
+If you want the name of the data validator in the active stack, use the `get` command:
+
+```
+zenml data-validator get
+```
+
+For details about a particular data validator, use the `describe` command. By default, (without a specific data validator name passed in) it will describe the active or currently-used data validator:
+
+```
+zenml data-validator describe [DATA_VALIDATOR_NAME]
+```
+
+If you wish to update/rename a data validator, you can use the following commands respectively:
+
+```
+zenml data-validator update DATA_VALIDATOR_NAME --property_to_update=new_value
+zenml data-validator rename DATA_VALIDATOR_OLD_NAME DATA_VALIDATOR_NEW_NAME
+```
+
+To delete a data validator (and all of its contents), use the `delete` command:
+
+```
+zenml data-validator delete DATA_VALIDATOR_NAME
+```
+
+If you would like to connect/disconnect your data validator to/from a service connector, you can use the following commands:
+
+```
+zenml data-validator connect DATA_VALIDATOR_NAME -c CONNECTOR_NAME
+zenml data-validator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your data validators. In order to get a full list of available functions, use the command:
+
+```
+zenml data-validator --help
+```
+
+### Experiment Trackers
+
+[Experiment trackers](https://docs.zenml.io/stack-components/experiment-trackers) let you track your ML experiments by logging the parameters and allow you to compare between different runs. To get a better understanding regarding experiment trackers, use the command:
+
+```
+zenml experiment-tracker explain
+```
+
+By default, a default ZenML local stack will not register an experiment tracker. If you want to use an experiment tracker in one of your stacks, you need to first register it:
+
+```
+zenml experiment-tracker register EXPERIMENT_TRACKER_NAME     --flavor=EXPERIMENT_TRACKER_FLAVOR [--EXPERIMENT_TRACKER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```
+zenml experiment-tracker register EXPERIMENT_TRACKER_NAME       --flavor=EXPERIMENT_TRACKER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new experiment tracker, you have to choose a flavor. To see the full list of available experiment tracker flavors, you can use the command:
+
+```
+zenml experiment-tracker flavor list
+```
+
+This list will show you which integration these flavors belong to and which service connectors they are adaptable with. If you would like to get additional information regarding a specific flavor, you can utilize the command:
+
+```
+zenml experiment-tracker flavor describe FLAVOR_NAME
+```
+
+To list all experiment trackers available and registered for use, use the `list` command:
+
+```
+zenml experiment-tracker list
+```
+
+If you want the name of the experiment tracker in the active stack, use the `get` command:
+
+```
+zenml experiment-tracker get
+```
+
+For details about a particular experiment tracker, use the `describe` command. By default, (without a specific experiment tracker name passed in) it will describe the active or currently-used experiment tracker:
+
+```
+zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]
+```
+
+If you wish to update/rename an experiment tracker, you can use the following commands respectively:
+
+```
+zenml experiment-tracker update EXPERIMENT_TRACKER_NAME --property_to_update=new_value
+zenml experiment-tracker rename EXPERIMENT_TRACKER_OLD_NAME EXPERIMENT_TRACKER_NEW_NAME
+```
+
+To delete an experiment tracker, use the `delete` command:
+
+```
+zenml experiment-tracker delete EXPERIMENT_TRACKER_NAME
+```
+
+If you would like to connect/disconnect your experiment tracker to/from a service connector, you can use the following commands:
+
+```
+zenml experiment-tracker connect EXPERIMENT_TRACKER_NAME -c CONNECTOR_NAME
+zenml experiment-tracker disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your experiment trackers. In order to get a full list of available functions, use the command:
+
+```
+zenml experiment-tracker --help
+```

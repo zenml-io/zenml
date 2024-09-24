@@ -1,0 +1,118 @@
+---
+title: "Overview"
+description: "Overview of categories of MLOps components and third-party integrations."
+icon: file-lines
+---
+
+If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your toolchain in a more precise manner.
+
+ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](/versions/0.66.0/user-guide/production-guide/understand-stacks). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), or use one of the many built-in [integrations](/versions/0.66.0/stack-components/component-guide) that implement these abstractions for you.
+
+Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
+
+<CardGroup cols={3}>
+<Card title="Orchestrator" icon="sitemap" href="/versions/0.66.0/stack-components/orchestrators">
+ Orchestrating the runs of your pipeline
+ </Card>
+ <Card title="Artifact Store" icon="box-archive" href="/versions/0.66.0/stack-components/artifact-stores">
+  Storage for the artifacts created by your pipelines
+  </Card>
+  <Card title="Container Registry" icon="docker" href="/versions/0.66.0/stack-components/container-registries">
+   Store for your containers
+   </Card>
+  <Card title="Data Validator" icon="check-double" href="/versions/0.66.0/stack-components/data-validators">
+  Data and model validation
+  </Card>
+  <Card title="Experiment Tracker" icon="flask" href="/versions/0.66.0/stack-components/experiment-trackers">
+  Tracking your ML experiments
+  </Card> <Card title="Model Deployer" icon="rocket" href="/versions/0.66.0/stack-components/model-deployers">
+  Services/platforms responsible for online model serving
+  </Card>
+  <Card title="Step Operator" icon="gear" href="/versions/0.66.0/stack-components/step-operators">
+  Execution of individual steps in specialized runtime environments
+  </Card>
+  <Card title="Alerter" icon="bell" href="/versions/0.66.0/stack-components/alerters">
+   Sending alerts through specified channels
+  </Card> <Card title="Image Builder" icon="image" href="/versions/0.66.0/stack-components/image-builders">
+  Builds container images
+  </Card> <Card title="Annotator" icon="tags" href="/versions/0.66.0/stack-components/annotators">
+  Labeling and annotating data
+  </Card>
+  <Card title="Model Registry" icon="database" href="/versions/0.66.0/stack-components/model-registries">
+  Manage and interact with ML Models
+  </Card>
+   <Card title="Feature Store" icon="layer-group" href="/versions/0.66.0/stack-components/feature-stores">
+   Management of your data/features
+    </Card>
+</CardGroup>
+
+Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
+
+## Writing custom component flavors
+
+You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](/versions/0.66.0/stack-components/orchestrators/custom)).
+
+## Integrations
+
+Categorizing the MLOps stack is a good way to write abstractions for an MLOps pipeline and standardize your processes. But ZenML goes further and also provides concrete implementations of these categories by **integrating** with various tools for each category. Once code is organized into a ZenML pipeline, you can supercharge your ML workflows with the best-in-class solutions from various MLOps areas.
+
+For example, you can orchestrate your ML pipeline workflows using [Airflow](/versions/0.66.0/stack-components/orchestrators/airflow) or [Kubeflow](/versions/0.66.0/stack-components/orchestrators/kubeflow), track experiments using [MLflow Tracking](/versions/0.66.0/stack-components/experiment-trackers/mlflow) or [Weights & Biases](/versions/0.66.0/stack-components/experiment-trackers/wandb), and transition seamlessly from a local [MLflow deployment](/versions/0.66.0/stack-components/model-deployers/mlflow) to a deployed model on Kubernetes using [Seldon Core](/versions/0.66.0/stack-components/model-deployers/seldon).
+
+There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML brings them all together and enables you to manage them in one place. This also allows you to delay the decision of which MLOps tool to use in your stack as you have no vendor lock-in with ZenML and can easily switch out tools as soon as your requirements change.
+
+<Frame caption="ZenML is the glue">
+  <img src="/images/stack-components/stack-components-1.avif"/>
+</Frame>
+
+
+### Available integrations
+
+We have a [dedicated webpage](https://zenml.io/integrations) that indexes all supported ZenML integrations and their categories.
+
+Another easy way of seeing a list of integrations is to see the list of directories in the [integrations directory](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) on our GitHub.
+
+### Installing ZenML integrations
+
+Before you can use integrations, you first need to install them using `zenml integration install`, e.g., you can install [Kubeflow](/versions/0.66.0/stack-components/orchestrators/kubeflow), [MLflow Tracking](/versions/0.66.0/stack-components/experiment-trackers/mlflow), and [Seldon Core](/versions/0.66.0/stack-components/model-deployers/seldon), using:
+
+```bash
+zenml integration install kubeflow mlflow seldon -y
+```
+
+Under the hood, this simply installs the preferred versions of all integrations using pip, i.e., it executes in a sub-process call:
+
+```bash
+pip install kubeflow== mlflow== seldon==
+```
+
+<Info>
+* The `-y` flag confirms all `pip install` commands without asking you for
+
+You can run `zenml integration --help` to see a full list of CLI commands that ZenML provides for interacting with integrations.
+</Info>
+
+Note, that you can also install your dependencies directly, but please note that there is no guarantee that ZenML internals with work with any arbitrary version of any external library.
+
+#### Experimental: Use `uv` for package installation
+
+You can use [uv](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstallations. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`. We will monitor how this performs and update as `uv` becomes more stable.
+
+### Upgrade ZenML integrations
+
+You can upgrade all integrations to their latest possible version using:
+
+```bash
+zenml integration upgrade mlflow pytorch -y
+```
+
+<Info>
+* The `-y` flag confirms all `pip install --upgrade` commands without asking you for confirmation.
+* If no integrations are specified, all installed integrations will be upgraded.
+</Info>
+
+### Help us with integrations!
+
+There are countless tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations that are visible on our public [roadmap](https://zenml.io/roadmap).
+
+We also welcome community contributions. Check our [Contribution Guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) and [External Integration Guide](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/README.md) for more details on how to best contribute to new integrations.
+

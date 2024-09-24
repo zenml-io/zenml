@@ -1,0 +1,206 @@
+---
+title: Scipy
+---
+
+## `zenml.integrations.scipy` `special`
+
+
+Initialization of the Scipy integration.
+
+### `ScipyIntegration`
+ ([Integration](/integrations-integration/#zenml.integrations.integration.Integration "zenml.integrations.integration.Integration"))
+
+Definition of scipy integration for ZenML.
+<Accordion
+  title="Source code in `zenml/integrations/scipy/__init__.py`"
+>
+```py
+class ScipyIntegration(Integration):
+  """Definition of scipy integration for ZenML."""
+
+    NAME = SCIPY
+    REQUIREMENTS = ["scipy"]
+
+    @classmethod
+    def activate(cls) -> None:
+  """Activates the integration."""
+        from zenml.integrations.scipy import materializers  # noqa
+```
+</Accordion>
+
+
+#### `activate()` `classmethod`
+
+Activates the integration.
+<Accordion
+  title="Source code in `zenml/integrations/scipy/__init__.py`"
+
+>
+```py
+@classmethod
+def activate(cls) -> None:
+  """Activates the integration."""
+    from zenml.integrations.scipy import materializers  # noqa
+```
+</Accordion>
+
+
+### `materializers` `special`
+
+Initialization of the Scipy materializers.
+
+#### `sparse_materializer`
+
+Implementation of the Scipy Sparse Materializer.
+
+##### `SparseMaterializer ([BaseMaterializer](../../core_code_docs/core-materializers/#zenml.materializers.base_materializer.BaseMaterializer "zenml.materializers.base_materializer.BaseMaterializer"))`
+
+Materializer to read and write scipy sparse matrices.
+<Accordion
+  title="Source code in `zenml/integrations/scipy/materializers/sparse_materializer.py`"
+>
+```py
+
+class SparseMaterializer(BaseMaterializer):
+  """Materializer to read and write scipy sparse matrices."""
+
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (spmatrix,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+
+    def load(self, data_type: Type[Any]) -> spmatrix:
+  """Reads spmatrix from npz file.
+
+ Args:
+ data_type: The type of the spmatrix to load.
+
+ Returns:
+ A spmatrix object.
+ """
+        with fileio.open(os.path.join(self.uri, DATA_FILENAME), "rb") as f:
+            mat = load_npz(f)
+        return mat
+
+    def save(self, mat: spmatrix) -> None:
+  """Writes a spmatrix to the artifact store as a npz file.
+
+ Args:
+ mat: The spmatrix to write.
+ """
+        with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
+            save_npz(f, mat)
+
+    def extract_metadata(self, mat: spmatrix) -> Dict[str, "MetadataType"]:
+  """Extract metadata from the given `spmatrix` object.
+
+ Args:
+ mat: The `spmatrix` object to extract metadata from.
+
+ Returns:
+ The extracted metadata as a dictionary.
+ """
+        return {
+            "shape": mat.shape,
+            "dtype": DType(mat.dtype),
+            "nnz": mat.nnz,
+        }
+```
+</Accordion>
+
+
+#### `extract_metadata(self, mat)`
+
+Extract metadata from the given `spmatrix` object.
+
+**Parameters:**
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `mat` | `scipy.sparse.spmatrix` | The `spmatrix` object to extract metadata from. | _required_ |
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `Dict[str, MetadataType]` | The extracted metadata as a dictionary. |
+
+
+<Accordion
+  title="Source code in `zenml/integrations/scipy/materializers/sparse_materializer.py`"
+>
+```py
+
+def extract_metadata(self, mat: spmatrix) -> Dict[str, "MetadataType"]:
+  """Extract metadata from the given `spmatrix` object.
+
+ Args:
+ mat: The `spmatrix` object to extract metadata from.
+
+ Returns:
+ The extracted metadata as a dictionary.
+ """
+    return {
+        "shape": mat.shape,
+        "dtype": DType(mat.dtype),
+        "nnz": mat.nnz,
+    }
+```
+</Accordion>
+
+#### `load(self, data_type)`
+
+Reads spmatrix from npz file.
+
+**Parameters:**
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `data_type` | `Type[Any]` | The type of the spmatrix to load. | _required_ |
+
+**Returns:**
+
+| Type | Description |
+| --- | --- |
+| `scipy.sparse.spmatrix` | A spmatrix object. |
+<Accordion
+  title="Source code in `zenml/integrations/scipy/materializers/sparse_materializer.py`"
+>
+```py
+def load(self, data_type: Type[Any]) -> spmatrix:
+  """Reads spmatrix from npz file.
+
+ Args:
+ data_type: The type of the spmatrix to load.
+
+ Returns:
+ A spmatrix object.
+ """
+    with fileio.open(os.path.join(self.uri, DATA_FILENAME), "rb") as f:
+        mat = load_npz(f)
+    return mat
+```
+</Accordion>
+
+#### `save(self, mat)`
+
+Writes a spmatrix to the artifact store as a npz file.
+
+**Parameters:**
+
+| Name | Type | Description | Default |
+| --- | --- | --- | --- |
+| `mat` | `scipy.sparse.spmatrix` | The spmatrix to write. | _required_ |
+<Accordion
+  title="Source code in `zenml/integrations/scipy/materializers/sparse_materializer.py`"
+>
+```py
+def save(self, mat: spmatrix) -> None:
+  """Writes a spmatrix to the artifact store as a npz file.
+
+ Args:
+ mat: The spmatrix to write.
+ """
+    with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
+        save_npz(f, mat)
+```
+</Accordion>
+

@@ -1,0 +1,54 @@
+---
+title: "Enable or disable logs storage"
+description: By default, ZenML uses a logging handler to capture the logs that occur during the execution of a step. Users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
+icon: store-slash
+---
+
+```py
+import logging
+
+from zenml import step
+
+@step
+def my_step() -> None:
+    logging.warning("`Hello`")  # You can use the regular `logging` module.
+    print("World.")  # You can utilize `print` statements as well.
+```
+
+These logs are stored within the respective artifact store of your stack. You can display the logs in the dashboard as follows:
+<Frame caption="Displaying step logs on the dashboard">
+  <img src="/images/how-to/stack-47.avif" />
+</Frame>
+
+<Note>
+    Note that if you are not connected to a cloud artifact store with a service connector configured then you will not be able to view your logs in the dashboard. Read more [here](/versions/0.66.0/how-to/control-logging/view-logs-on-the-dasbhoard).
+</Note>
+
+If you do not want to store the logs in your artifact store, you can:
+
+1. Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
+```py
+from zenml import pipeline, step
+@step(enable_step_logs=False)  # disables logging for this step
+def my_step() -> None:
+    ...
+@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
+def my_pipeline():
+    ...
+```
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](/versions/0.66.0/how-to/configure-python-environments#execution-environments), i.e., on the orchestrator level:
+
+```py
+docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```

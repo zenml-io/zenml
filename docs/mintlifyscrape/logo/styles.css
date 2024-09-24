@@ -1,0 +1,14 @@
+@font-face {
+    font-family: 'Jakarta Sans';
+    src: url('https://m.autopilotapp.com/zenml/fonts/838143.ttf');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  
+  h1,
+  h2,
+  h3 {
+    font-family: 'Jakarta Sans';
+    letter-spacing: normal !important;
+  }
