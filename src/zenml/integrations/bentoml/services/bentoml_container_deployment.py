@@ -30,6 +30,7 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     features: Optional[List[str]] = None
     file: Optional[str] = None
     apis: List[str] = []
+    working_dir: Optional[str] = None
     workers: int = 1
     backlog: int = 2048
     host: Optional[str] = None
