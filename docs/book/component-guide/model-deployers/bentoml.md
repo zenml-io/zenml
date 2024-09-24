@@ -149,7 +149,7 @@ def bento_deployer_pipeline():
 
 The following example shows how to use the `bentoml_model_deployer_step` to deploy the bento bundle to a containerized service running in your local machine. Make sure you have the `docker` CLI installed on your local machine to be able to build an image and deploy the containerized service.
 
-You can choose to give a name and a tag to the image that will be built and pushed to your ZenML Stack's container registry. By default, the bento tag is used.
+You can choose to give a name and a tag to the image that will be built and pushed to your ZenML Stack's container registry. By default, the bento tag is used. If you are providing a custom image name, make sure that you attach the right registry name as prefix to the image name, otherwise the image push will fail.
 
 ```python
 from zenml import pipeline, step
