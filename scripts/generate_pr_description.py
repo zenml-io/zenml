@@ -52,11 +52,9 @@ def generate_pr_description():
             filename = file['filename']
             status = file['status']
 
-            if status == 'added':
-                changes_summary.append(f"Added new file: {filename}")
-            elif status == 'removed':
+            if status == 'removed':
                 changes_summary.append(f"Removed file: {filename}")
-            elif status == 'modified':
+            elif status == 'added' or status == 'modified':
                 if file['binary']:
                     changes_summary.append(f"Modified binary file: {filename}")
                 else:
