@@ -68,6 +68,7 @@ class BentoMLContainerDeploymentEndpoint(ContainerServiceEndpoint):
         uri = self.status.uri
         if not uri:
             return None
+        return os.path.join(uri, self.config.prediction_url_path)
 
 
 class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService):
