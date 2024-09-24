@@ -1,0 +1,50 @@
+name: Sync Release Docs
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    paths:
+      - 'docs/mintlify/**'
+
+jobs:
+  prepare-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ZenML repo
+        uses: actions/checkout@v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyYAML
+
+      - name: Get version from branch name
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/heads/release/}
+
+      - name: Prepare docs update
+        run: |
+          python .github/scripts/prepare_docs_update.py \
+            --source docs/mintlify
+
+      - name: Upload docs data
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-data
+          path: docs_data.json
+
+      - name: Trigger ZenML-docs update
+        env:
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $DOCS_REPO_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/zenml-io/zenml-docs/dispatches \
+            -d '{"event_type": "update_docs", "client_payload": {"version": "${{ steps.get_version.outputs.VERSION }}"}}'
