@@ -32,27 +32,23 @@
   },
   "tabs": [
     {
-      "name": "Using ZenML",
-      "url": "using-zenml"
-    },
-    {
-      "name": "Stacks",
-      "url": "stack-components"
+      "name": "Usage",
+      "url": "usage"
     },
     {
       "name": "Guides",
       "url": "user-guide"
     },
     {
-      "name": "Deploying ZenML",
-      "url": "deploying-zenml"
+      "name": "Stacks",
+      "url": "stack-components"
     },
     {
-      "name": "Code Docs",
+      "name": "SDK",
       "url": "code-docs"
     },
     {
-      "name": "API Reference",
+      "name": "API",
       "url": "api-reference",
       "openapi": "/openapi.json"
     }
@@ -75,7 +71,8 @@
     }
   ],
   "versions": [
-    "v1"
+    "0.66.0",
+    "0.65.0"
   ],
   "navigation": [
     {
@@ -87,6 +84,42 @@
       ]
     },
     {
+      "group": "🖥️ Deploying ZenML",
+      "pages": [
+        "getting-started/deploying-zenml/deploying-zenml",
+        "getting-started/deploying-zenml/deploy-with-zenml-cli",
+        "getting-started/deploying-zenml/deploy-with-docker",
+        "getting-started/deploying-zenml/deploy-with-helm",
+        "getting-started/deploying-zenml/deploy-using-huggingface-spaces",
+        "getting-started/deploying-zenml/deploy-with-custom-image",
+        {
+          "group": "Manage deployed services",
+          "icon": "gear",
+          "iconType": "solid",
+          "pages": [
+            "getting-started/deploying-zenml/manage-the-deployed-services",
+            "getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
+            "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
+            "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
+            "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
+          ]
+        },
+        "getting-started/deploying-zenml/secret-management",
+        "getting-started/deploying-zenml/common-questions-answered"
+      ]
+    },
+    {
+      "group": "ZenML Pro",
+      "icon": "cloud",
+      "iconType": "solid",
+      "pages":[
+        "getting-started/deploying-zenml/zenml-pro/zenml-pro",
+        "getting-started/deploying-zenml/zenml-pro/system-architectures",
+        "getting-started/deploying-zenml/zenml-pro/zenml-saas",
+        "getting-started/deploying-zenml/zenml-pro/user-management"
+      ]
+    },
+    {
       "group": "🛠️ Using ZenML",
       "pages": [
         {
@@ -94,10 +127,10 @@
           "icon": "cat",
           "iconType": "solid",
           "pages": [
-            "using-zenml/setting-up-a-project-repository/setting-up-a-project-repository",
-            "using-zenml/setting-up-a-project-repository/connect-your-git-repository",
-            "using-zenml/setting-up-a-project-repository/using-project-templates",
-            "using-zenml/setting-up-a-project-repository/best-practices"
+            "usage/setting-up-a-project-repository/setting-up-a-project-repository",
+            "usage/setting-up-a-project-repository/connect-your-git-repository",
+            "usage/setting-up-a-project-repository/using-project-templates",
+            "usage/setting-up-a-project-repository/best-practices"
           ]
         },
         {
@@ -105,25 +138,25 @@
           "icon": "link",
           "iconType": "solid",
           "pages": [
-            "using-zenml/build-pipelines/build-pipelines",
-            "using-zenml/build-pipelines/use-pipeline-step-parameters",
-            "using-zenml/build-pipelines/configuring-a-pipeline-at-runtime",
-            "using-zenml/build-pipelines/step-output-typing-and-annotation",
-            "using-zenml/build-pipelines/control-caching-behavior",
-            "using-zenml/build-pipelines/schedule-a-pipeline",
-            "using-zenml/build-pipelines/delete-a-pipeline",
-            "using-zenml/build-pipelines/compose-pipelines",
-            "using-zenml/build-pipelines/retry-steps",
-            "using-zenml/build-pipelines/run-pipelines-asynchronously",
-            "using-zenml/build-pipelines/control-execution-order-of-steps",
-            "using-zenml/build-pipelines/using-a-custom-step-invocation-id",
-            "using-zenml/build-pipelines/name-your-pipeline-and-runs",
-            "using-zenml/build-pipelines/use-failure-success-hooks",
-            "using-zenml/build-pipelines/hyper-parameter-tuning",
-            "using-zenml/build-pipelines/access-secrets-in-a-step",
-            "using-zenml/build-pipelines/run-an-individual-step",
-            "using-zenml/build-pipelines/fetching-pipelines",
-            "using-zenml/build-pipelines/get-past-pipeline-step-runs"
+            "usage/build-pipelines/build-pipelines",
+            "usage/build-pipelines/use-pipeline-step-parameters",
+            "usage/build-pipelines/configuring-a-pipeline-at-runtime",
+            "usage/build-pipelines/step-output-typing-and-annotation",
+            "usage/build-pipelines/control-caching-behavior",
+            "usage/build-pipelines/schedule-a-pipeline",
+            "usage/build-pipelines/delete-a-pipeline",
+            "usage/build-pipelines/compose-pipelines",
+            "usage/build-pipelines/retry-steps",
+            "usage/build-pipelines/run-pipelines-asynchronously",
+            "usage/build-pipelines/control-execution-order-of-steps",
+            "usage/build-pipelines/using-a-custom-step-invocation-id",
+            "usage/build-pipelines/name-your-pipeline-and-runs",
+            "usage/build-pipelines/use-failure-success-hooks",
+            "usage/build-pipelines/hyper-parameter-tuning",
+            "usage/build-pipelines/access-secrets-in-a-step",
+            "usage/build-pipelines/run-an-individual-step",
+            "usage/build-pipelines/fetching-pipelines",
+            "usage/build-pipelines/get-past-pipeline-step-runs"
           ]
         },
         {
@@ -131,10 +164,10 @@
           "icon": "bullhorn",
           "iconType": "solid",
           "pages": [
-            "using-zenml/trigger-pipelines/trigger-pipelines",
-            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-client",
-            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-another",
-            "using-zenml/trigger-pipelines/trigger-a-pipeline-from-rest-api"
+            "usage/trigger-pipelines/trigger-pipelines",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-client",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-another",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
           ]
         },
         {
@@ -142,9 +175,9 @@
           "icon": "circle-play",
           "iconType": "solid",
           "pages": [
-            "using-zenml/create-and-run-templates/create-and-run-templates",
-            "using-zenml/create-and-run-templates/create-a-run-template",
-            "using-zenml/create-and-run-templates/run-a-template"
+            "usage/create-and-run-templates/create-and-run-templates",
+            "usage/create-and-run-templates/create-a-run-template",
+            "usage/create-and-run-templates/run-a-template"
           ]
         },
         {
@@ -152,13 +185,13 @@
           "icon": "files",
           "iconType": "solid",
           "pages": [
-            "using-zenml/use-configuration-files/use-configuration-files",
-            "using-zenml/use-configuration-files/how-to-use-config",
-            "using-zenml/use-configuration-files/what-can-be-configured",
-            "using-zenml/use-configuration-files/runtime-configuration",
-            "using-zenml/use-configuration-files/configuration-hierarchy",
-            "using-zenml/use-configuration-files/retrieve-used-configuration-of-a-run",
-            "using-zenml/use-configuration-files/autogenerate-a-template-yaml-file"
+            "usage/use-configuration-files/use-configuration-files",
+            "usage/use-configuration-files/how-to-use-config",
+            "usage/use-configuration-files/what-can-be-configured",
+            "usage/use-configuration-files/runtime-configuration",
+            "usage/use-configuration-files/configuration-hierarchy",
+            "usage/use-configuration-files/retrieve-used-configuration-of-a-run",
+            "usage/use-configuration-files/autogenerate-a-template-yaml-file"
           ]
         },
         {
@@ -166,14 +199,14 @@
           "icon": "docker",
           "iconType": "solid",
           "pages": [
-            "using-zenml/customize-docker-builds/customize-docker-builds",
-            "using-zenml/customize-docker-builds/docker-settings-on-a-pipeline",
-            "using-zenml/customize-docker-builds/docker-settings-on-a-step",
-            "using-zenml/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
-            "using-zenml/customize-docker-builds/use-your-own-docker-files",
-            "using-zenml/customize-docker-builds/which-files-are-built-into-the-image",
-            "using-zenml/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
-            "using-zenml/customize-docker-builds/define-where-an-image-is-built"
+            "usage/customize-docker-builds/customize-docker-builds",
+            "usage/customize-docker-builds/docker-settings-on-a-pipeline",
+            "usage/customize-docker-builds/docker-settings-on-a-step",
+            "usage/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
+            "usage/customize-docker-builds/use-your-own-docker-files",
+            "usage/customize-docker-builds/which-files-are-built-into-the-image",
+            "usage/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
+            "usage/customize-docker-builds/define-where-an-image-is-built"
           ]
         },
         {
@@ -181,9 +214,9 @@
           "icon": "book",
           "iconType": "solid",
           "pages": [
-            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
-            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
-            "using-zenml/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
           ]
         },
         {
@@ -191,14 +224,14 @@
           "icon": "hammer",
           "iconType": "solid",
           "pages": [
-            "using-zenml/stack-deployment/stack-deployment",
-            "using-zenml/stack-deployment/deploy-a-cloud-stack",
-            "using-zenml/stack-deployment/deploy-a-cloud-stack-with-terraform",
-            "using-zenml/stack-deployment/register-a-cloud-stack",
-            "using-zenml/stack-deployment/deploy-a-stack-using-mlstacks",
-            "using-zenml/stack-deployment/reference-secrets-in-stack-configuration",
-            "using-zenml/stack-deployment/implement-a-custom-stack-component",
-            "using-zenml/stack-deployment/implement-a-custom-integration"
+            "usage/stack-deployment/stack-deployment",
+            "usage/stack-deployment/deploy-a-cloud-stack",
+            "usage/stack-deployment/deploy-a-cloud-stack-with-terraform",
+            "usage/stack-deployment/register-a-cloud-stack",
+            "usage/stack-deployment/deploy-a-stack-using-mlstacks",
+            "usage/stack-deployment/reference-secrets-in-stack-configuration",
+            "usage/stack-deployment/implement-a-custom-stack-component",
+            "usage/stack-deployment/implement-a-custom-integration"
           ]
         },
         {
@@ -206,8 +239,8 @@
           "icon": "car",
           "iconType": "solid",
           "pages": [
-            "using-zenml/training-with-gpus/training-with-gpus",
-            "using-zenml/training-with-gpus/accelerate-distributed-training"
+            "usage/training-with-gpus/training-with-gpus",
+            "usage/training-with-gpus/accelerate-distributed-training"
           ]
         },
         {
@@ -215,12 +248,12 @@
           "icon": "tree",
           "iconType": "solid",
           "pages": [
-            "using-zenml/control-logging/control-logging",
-            "using-zenml/control-logging/view-logs-on-the-dasbhoard",
-            "using-zenml/control-logging/enable-or-disable-logs-storing",
-            "using-zenml/control-logging/set-logging-verbosity",
-            "using-zenml/control-logging/disable-rich-traceback",
-            "using-zenml/control-logging/disable-colorful-logging"
+            "usage/control-logging/control-logging",
+            "usage/control-logging/view-logs-on-the-dasbhoard",
+            "usage/control-logging/enable-or-disable-logs-storing",
+            "usage/control-logging/set-logging-verbosity",
+            "usage/control-logging/disable-rich-traceback",
+            "usage/control-logging/disable-colorful-logging"
           ]
         },
         {
@@ -228,16 +261,16 @@
           "icon": "server",
           "iconType": "solid",
           "pages": [
-            "using-zenml/handle-data-artifacts/handle-data-artifacts",
-            "using-zenml/handle-data-artifacts/artifact-versioning",
-            "using-zenml/handle-data-artifacts/return-multiple-outputs-from-a-step",
-            "using-zenml/handle-data-artifacts/delete-an-artifact",
-            "using-zenml/handle-data-artifacts/tagging",
-            "using-zenml/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
-            "using-zenml/handle-data-artifacts/handle-custom-data-types",
-            "using-zenml/handle-data-artifacts/load-artifacts-into-memory",
-            "using-zenml/handle-data-artifacts/unmaterialized-artifacts",
-            "using-zenml/handle-data-artifacts/passing-artifacts-between-pipelines"
+            "usage/handle-data-artifacts/handle-data-artifacts",
+            "usage/handle-data-artifacts/artifact-versioning",
+            "usage/handle-data-artifacts/return-multiple-outputs-from-a-step",
+            "usage/handle-data-artifacts/delete-an-artifact",
+            "usage/handle-data-artifacts/tagging",
+            "usage/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
+            "usage/handle-data-artifacts/handle-custom-data-types",
+            "usage/handle-data-artifacts/load-artifacts-into-memory",
+            "usage/handle-data-artifacts/unmaterialized-artifacts",
+            "usage/handle-data-artifacts/passing-artifacts-between-pipelines"
           ]
         },
         {
@@ -245,11 +278,11 @@
           "icon": "chart-simple",
           "iconType": "solid",
           "pages": [
-            "using-zenml/visualize-artifacts/visualize-artifacts",
-            "using-zenml/visualize-artifacts/types-of-visualizations",
-            "using-zenml/visualize-artifacts/creating-custom-visualizations",
-            "using-zenml/visualize-artifacts/visualizations-in-dashboard",
-            "using-zenml/visualize-artifacts/disabling-visualizations"
+            "usage/visualize-artifacts/visualize-artifacts",
+            "usage/visualize-artifacts/types-of-visualizations",
+            "usage/visualize-artifacts/creating-custom-visualizations",
+            "usage/visualize-artifacts/visualizations-in-dashboard",
+            "usage/visualize-artifacts/disabling-visualizations"
           ]
         },
         {
@@ -257,16 +290,16 @@
           "icon": "plane",
           "iconType": "solid",
           "pages": [
-            "using-zenml/use-the-model-control-plane/use-the-model-control-plane",
-            "using-zenml/use-the-model-control-plane/register-a-model",
-            "using-zenml/use-the-model-control-plane/delete-a-model",
-            "using-zenml/use-the-model-control-plane/associate-a-pipeline-with-a-model",
-            "using-zenml/use-the-model-control-plane/connecting-artifacts-via-a-model",
-            "using-zenml/use-the-model-control-plane/model-versions",
-            "using-zenml/use-the-model-control-plane/load-a-model-in-code",
-            "using-zenml/use-the-model-control-plane/promote-a-model",
-            "using-zenml/use-the-model-control-plane/linking-model-binaries-data-to-models",
-            "using-zenml/use-the-model-control-plane/load-artifacts-from-model"
+            "usage/use-the-model-control-plane/use-the-model-control-plane",
+            "usage/use-the-model-control-plane/register-a-model",
+            "usage/use-the-model-control-plane/delete-a-model",
+            "usage/use-the-model-control-plane/associate-a-pipeline-with-a-model",
+            "usage/use-the-model-control-plane/connecting-artifacts-via-a-model",
+            "usage/use-the-model-control-plane/model-versions",
+            "usage/use-the-model-control-plane/load-a-model-in-code",
+            "usage/use-the-model-control-plane/promote-a-model",
+            "usage/use-the-model-control-plane/linking-model-binaries-data-to-models",
+            "usage/use-the-model-control-plane/load-artifacts-from-model"
           ]
         },
         {
@@ -274,14 +307,14 @@
           "icon": "chart-line",
           "iconType": "solid",
           "pages": [
-            "using-zenml/track-metrics-metadata/track-metrics-metadata",
-            "using-zenml/track-metrics-metadata/attach-metadata-to-a-model",
-            "using-zenml/track-metrics-metadata/attach-metadata-to-an-artifact",
-            "using-zenml/track-metrics-metadata/attach-metadata-to-steps",
-            "using-zenml/track-metrics-metadata/grouping-metadata",
-            "using-zenml/track-metrics-metadata/logging-metadata",
-            "using-zenml/track-metrics-metadata/fetch-metadata-within-steps",
-            "using-zenml/track-metrics-metadata/fetch-metadata-within-pipeline"
+            "usage/track-metrics-metadata/track-metrics-metadata",
+            "usage/track-metrics-metadata/attach-metadata-to-a-model",
+            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "usage/track-metrics-metadata/attach-metadata-to-steps",
+            "usage/track-metrics-metadata/grouping-metadata",
+            "usage/track-metrics-metadata/logging-metadata",
+            "usage/track-metrics-metadata/fetch-metadata-within-steps",
+            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
           ]
         },
         {
@@ -289,14 +322,14 @@
           "icon": "link-slash",
           "iconType": "solid",
           "pages": [
-            "using-zenml/popular-integrations/popular-integrations",
-            "using-zenml/popular-integrations/aws-guide",
-            "using-zenml/popular-integrations/gcp-guide",
-            "using-zenml/popular-integrations/azure-guide",
-            "using-zenml/popular-integrations/kubeflow",
-            "using-zenml/popular-integrations/kubernetes",
-            "using-zenml/popular-integrations/mlflow",
-            "using-zenml/popular-integrations/skypilot"
+            "usage/popular-integrations/popular-integrations",
+            "usage/popular-integrations/aws-guide",
+            "usage/popular-integrations/gcp-guide",
+            "usage/popular-integrations/azure-guide",
+            "usage/popular-integrations/kubeflow",
+            "usage/popular-integrations/kubernetes",
+            "usage/popular-integrations/mlflow",
+            "usage/popular-integrations/skypilot"
           ]
         },
         {
@@ -304,15 +337,15 @@
           "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "using-zenml/auth-management/auth-management",
-            "using-zenml/auth-management/service-connectors-guide",
-            "using-zenml/auth-management/best-security-practices",
-            "using-zenml/auth-management/docker-service-connector",
-            "using-zenml/auth-management/kubernetes-service-connector",
-            "using-zenml/auth-management/aws-service-connector",
-            "using-zenml/auth-management/gcp-service-connector",
-            "using-zenml/auth-management/azure-service-connector",
-            "using-zenml/auth-management/hyperai-service-connector"
+            "usage/auth-management/auth-management",
+            "usage/auth-management/service-connectors-guide",
+            "usage/auth-management/best-security-practices",
+            "usage/auth-management/docker-service-connector",
+            "usage/auth-management/kubernetes-service-connector",
+            "usage/auth-management/aws-service-connector",
+            "usage/auth-management/gcp-service-connector",
+            "usage/auth-management/azure-service-connector",
+            "usage/auth-management/hyperai-service-connector"
           ]
         },
         {
@@ -320,9 +353,9 @@
           "icon": "python",
           "iconType": "solid",
           "pages": [
-            "using-zenml/configure-python-environments/configure-python-environments",
-            "using-zenml/configure-python-environments/handling-dependencies",
-            "using-zenml/configure-python-environments/configure-the-server-environment"
+            "usage/configure-python-environments/configure-python-environments",
+            "usage/configure-python-environments/handling-dependencies",
+            "usage/configure-python-environments/configure-the-server-environment"
           ]
         },
         {
@@ -330,13 +363,13 @@
           "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "using-zenml/connecting-to-zenml/connecting-to-zenml",
-            "using-zenml/connecting-to-zenml/connect-in-with-your-user-interactive",
-            "using-zenml/connecting-to-zenml/connect-with-a-service-account"
+            "usage/connecting-to-zenml/connecting-to-zenml",
+            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "usage/connecting-to-zenml/connect-with-a-service-account"
           ]
         },
-        "using-zenml/interact-with-secrets",
-        "using-zenml/debug-and-solve-issues"
+        "usage/interact-with-secrets",
+        "usage/debug-and-solve-issues"
       ]
     },
     {
@@ -356,12 +389,18 @@
       "group": " Migration guide",
       "icon": "arrows-spin",
       "iconType": "solid",
-      "pages": [
-        "getting-started/reference/migration-guide/migration-guide",
-        "getting-started/reference/migration-guide/migration-zero-twenty",
-        "getting-started/reference/migration-guide/migration-zero-thirty",
-        "getting-started/reference/migration-guide/migration-zero-forty",
-        "getting-started/reference/migration-guide/migration-zero-sixty"
+      "pages": [{
+        "group": "How to migrate",
+        "icon": "arrows-spin",
+        "iconType": "solid",
+        "pages": [
+          "getting-started/reference/migration-guide/migration-guide",
+          "getting-started/reference/migration-guide/migration-zero-twenty",
+          "getting-started/reference/migration-guide/migration-zero-thirty",
+          "getting-started/reference/migration-guide/migration-zero-forty",
+          "getting-started/reference/migration-guide/migration-zero-sixty"
+        ]
+      }
       ]
     },
     {
@@ -630,47 +669,6 @@
         "user-guide/examples/computer-vision-with-yolov8",
         "user-guide/examples/llm-finetuning",
         "user-guide/examples/more-projects"
-      ]
-    },
-    {
-      "group": "🚀 Deploying ZenML",
-      "pages": [
-        "deploying-zenml/deploying-zenml",
-        "deploying-zenml/deploy-with-zenml-cli",
-        "deploying-zenml/deploy-with-docker",
-        "deploying-zenml/deploy-with-helm",
-        "deploying-zenml/deploy-using-huggingface-spaces",
-        "deploying-zenml/deploy-with-custom-image",
-        {
-          "group": "Manage deployed services",
-          "icon": "gear",
-          "iconType": "solid",
-          "pages": [
-            "deploying-zenml/manage-the-deployed-services",
-            "deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
-            "deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
-            "deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
-            "deploying-zenml/manage-the-deployed-services/custom-secret-stores"
-          ]
-        },
-        "deploying-zenml/secret-management"
-      ]
-    },
-    {
-      "group": "ZenML Pro",
-      "icon": "cloud",
-      "iconType": "solid",
-      "pages":[
-        "deploying-zenml/zenml-pro/zenml-pro",
-        "deploying-zenml/zenml-pro/system-architectures",
-        "deploying-zenml/zenml-pro/zenml-saas",
-        "deploying-zenml/zenml-pro/user-management"
-      ]
-    },
-    {
-      "group": "🔍 Common Questions Answered",
-      "pages": [
-        "deploying-zenml/common-questions-answered"
       ]
     },
     {
