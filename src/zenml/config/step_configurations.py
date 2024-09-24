@@ -137,7 +137,6 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
-    name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
@@ -153,10 +152,6 @@ class StepConfigurationUpdate(StrictBaseModel):
     retry: Optional[StepRetryConfig] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "name"
-    )
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):

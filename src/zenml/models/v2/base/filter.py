@@ -54,7 +54,7 @@ from zenml.utils.typing_utils import get_args
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.zen_stores.schemas import BaseSchema
+    from zenml.zen_stores.schemas import BaseSchema, NamedSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -142,7 +142,10 @@ class Filter(BaseModel, ABC):
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
 
-    ALLOWED_OPS: ClassVar[List[str]] = [GenericFilterOps.EQUALS]
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
+    ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a boolean column.
@@ -153,6 +156,9 @@ class BoolFilter(Filter):
         Returns:
             A list of query conditions.
         """
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         return column == self.value
 
 
@@ -161,6 +167,7 @@ class StrFilter(Filter):
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.STARTSWITH,
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
@@ -181,11 +188,30 @@ class StrFilter(Filter):
             return column.startswith(f"{self.value}")
         if self.operation == GenericFilterOps.ENDSWITH:
             return column.endswith(f"{self.value}")
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         return column == self.value
 
 
 class UUIDFilter(StrFilter):
     """Filter for all uuid fields which are mostly treated like strings."""
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def _remove_hyphens_from_value(cls, value: Any) -> Any:
+        """Remove hyphens from the value to enable string comparisons.
+
+        Args:
+            value: The filter value.
+
+        Returns:
+            The filter value with removed hyphens.
+        """
+        if isinstance(value, str):
+            return value.replace("-", "")
+
+        return value
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a UUID column.
@@ -203,6 +229,9 @@ class UUIDFilter(StrFilter):
         if self.operation == GenericFilterOps.EQUALS:
             return column == self.value
 
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+
         # For all other operations, cast and handle the column as string
         return super().generate_query_conditions_from_column(
             column=cast_if(column, sqlalchemy.String)
@@ -216,6 +245,7 @@ class NumericFilter(Filter):
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -223,10 +253,10 @@ class NumericFilter(Filter):
     ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
-        """Generate query conditions for a UUID column.
+        """Generate query conditions for a numeric column.
 
         Args:
-            column: The UUID column of an SQLModel table on which to filter.
+            column: The numeric column of an SQLModel table on which to filter.
 
         Returns:
             A list of query conditions.
@@ -239,6 +269,53 @@ class NumericFilter(Filter):
             return column <= self.value
         if self.operation == GenericFilterOps.LT:
             return column < self.value
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
+        return column == self.value
+
+
+class DatetimeFilter(Filter):
+    """Filter for all datetime fields."""
+
+    value: Union[datetime, Tuple[datetime, datetime]] = Field(
+        union_mode="left_to_right"
+    )
+
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.NOT_EQUALS,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
+        GenericFilterOps.IN,
+    ]
+
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a datetime column.
+
+        Args:
+            column: The datetime column of an SQLModel table on which to filter.
+
+        Returns:
+            A list of query conditions.
+        """
+        if self.operation == GenericFilterOps.IN:
+            assert isinstance(self.value, tuple)
+            lower_bound, upper_bound = self.value
+            return column.between(lower_bound, upper_bound)
+
+        assert isinstance(self.value, datetime)
+        if self.operation == GenericFilterOps.GTE:
+            return column >= self.value
+        if self.operation == GenericFilterOps.GT:
+            return column > self.value
+        if self.operation == GenericFilterOps.LTE:
+            return column <= self.value
+        if self.operation == GenericFilterOps.LT:
+            return column < self.value
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != self.value
         return column == self.value
 
 
@@ -490,7 +567,7 @@ class BaseFilter(BaseModel):
             value, operator = cls._resolve_operator(value)
 
             # Define the filter
-            filter = cls._define_filter(
+            filter = FilterGenerator(cls).define_filter(
                 column=key, value=value, operator=operator
             )
             list_of_filters.append(filter)
@@ -523,272 +600,66 @@ class BaseFilter(BaseModel):
                 operator = GenericFilterOps(split_value[0])
         return value, operator
 
-    @classmethod
-    def _define_filter(
-        cls, column: str, value: Any, operator: GenericFilterOps
-    ) -> Filter:
-        """Define a filter for a given column.
+    def generate_name_or_id_query_conditions(
+        self,
+        value: Union[UUID, str],
+        table: Type["NamedSchema"],
+    ) -> "ColumnElement[bool]":
+        """Generate filter conditions for name or id of a table.
 
         Args:
-            column: The column to filter on.
-            value: The value by which to filter.
-            operator: The operator to use for filtering.
+            value: The filter value.
+            table: The table to filter.
 
         Returns:
-            A Filter object.
+            The query conditions.
         """
-        # Create datetime filters
-        if cls.is_datetime_field(column):
-            return cls._define_datetime_filter(
-                column=column,
-                value=value,
-                operator=operator,
-            )
+        from sqlmodel import or_
 
-        # Create UUID filters
-        if cls.is_uuid_field(column):
-            return cls._define_uuid_filter(
-                column=column,
-                value=value,
-                operator=operator,
-            )
-
-        # Create int filters
-        if cls.is_int_field(column):
-            return NumericFilter(
-                operation=GenericFilterOps(operator),
-                column=column,
-                value=int(value),
-            )
-
-        # Create bool filters
-        if cls.is_bool_field(column):
-            return cls._define_bool_filter(
-                column=column,
-                value=value,
-                operator=operator,
-            )
-
-        # Create str filters
-        if cls.is_str_field(column):
-            return StrFilter(
-                operation=GenericFilterOps(operator),
-                column=column,
-                value=value,
-            )
-
-        # Handle unsupported datatypes
-        logger.warning(
-            f"The Datatype {cls.model_fields[column].annotation} might not be "
-            "supported for filtering. Defaulting to a string filter."
-        )
-        return StrFilter(
-            operation=GenericFilterOps(operator),
-            column=column,
-            value=str(value),
-        )
-
-    @classmethod
-    def check_field_annotation(cls, k: str, type_: Any) -> bool:
-        """Checks whether a model field has a certain annotation.
-
-        Args:
-            k: The name of the field.
-            type_: The type to check.
-
-        Raises:
-            ValueError: if the model field within does not have an annotation.
-
-        Returns:
-            True if the annotation of the field matches the given type, False
-            otherwise.
-        """
-        try:
-            annotation = cls.model_fields[k].annotation
-
-            if annotation is not None:
-                return (
-                    issubclass(type_, get_args(annotation))
-                    or annotation is type_
-                )
-            else:
-                raise ValueError(
-                    f"The field '{k}' inside the model {cls.__name__} "
-                    "does not have an annotation."
-                )
-        except TypeError:
-            return False
-
-    @classmethod
-    def is_datetime_field(cls, k: str) -> bool:
-        """Checks if it's a datetime field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a datetime field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=datetime)
-
-    @classmethod
-    def is_uuid_field(cls, k: str) -> bool:
-        """Checks if it's a UUID field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a UUID field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=UUID)
-
-    @classmethod
-    def is_int_field(cls, k: str) -> bool:
-        """Checks if it's an int field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is an int field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=int)
-
-    @classmethod
-    def is_bool_field(cls, k: str) -> bool:
-        """Checks if it's a bool field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a bool field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=bool)
-
-    @classmethod
-    def is_str_field(cls, k: str) -> bool:
-        """Checks if it's a string field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a string field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=str)
-
-    @classmethod
-    def is_sort_by_field(cls, k: str) -> bool:
-        """Checks if it's a sort by field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a sort by field, False otherwise.
-        """
-        return cls.check_field_annotation(k=k, type_=str) and k == "sort_by"
-
-    @staticmethod
-    def _define_datetime_filter(
-        column: str, value: Any, operator: GenericFilterOps
-    ) -> NumericFilter:
-        """Define a datetime filter for a given column.
-
-        Args:
-            column: The column to filter on.
-            value: The datetime value by which to filter.
-            operator: The operator to use for filtering.
-
-        Returns:
-            A Filter object.
-
-        Raises:
-            ValueError: If the value is not a valid datetime.
-        """
-        try:
-            if isinstance(value, datetime):
-                datetime_value = value
-            else:
-                datetime_value = datetime.strptime(
-                    value, FILTERING_DATETIME_FORMAT
-                )
-        except ValueError as e:
-            raise ValueError(
-                "The datetime filter only works with values in the following "
-                f"format: {FILTERING_DATETIME_FORMAT}"
-            ) from e
-        datetime_filter = NumericFilter(
-            operation=GenericFilterOps(operator),
-            column=column,
-            value=datetime_value,
-        )
-        return datetime_filter
-
-    @staticmethod
-    def _define_uuid_filter(
-        column: str, value: Any, operator: GenericFilterOps
-    ) -> UUIDFilter:
-        """Define a UUID filter for a given column.
-
-        Args:
-            column: The column to filter on.
-            value: The UUID value by which to filter.
-            operator: The operator to use for filtering.
-
-        Returns:
-            A Filter object.
-
-        Raises:
-            ValueError: If the value is not a valid UUID.
-        """
-        # For equality checks, ensure that the value is a valid UUID.
-        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
-            try:
-                UUID(value)
-            except ValueError as e:
-                raise ValueError(
-                    "Invalid value passed as UUID query parameter."
-                ) from e
-
-        # Cast the value to string for further comparisons.
+        value, operator = BaseFilter._resolve_operator(value)
         value = str(value)
 
-        # Generate the filter.
-        uuid_filter = UUIDFilter(
-            operation=GenericFilterOps(operator),
-            column=column,
-            value=value,
-        )
-        return uuid_filter
+        conditions = []
 
-    @staticmethod
-    def _define_bool_filter(
-        column: str, value: Any, operator: GenericFilterOps
-    ) -> BoolFilter:
-        """Define a bool filter for a given column.
+        try:
+            filter_ = FilterGenerator(table).define_filter(
+                column="id", value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
+        except ValueError:
+            # UUID filter with equal operators and no full UUID fail with
+            # a ValueError. In this case, we already know that the filter
+            # will not produce any result and can simply ignore it.
+            pass
+
+        filter_ = FilterGenerator(table).define_filter(
+            column="name", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
+
+        return or_(*conditions)
+
+    def generate_custom_query_conditions_for_column(
+        self,
+        value: Any,
+        table: Type[SQLModel],
+        column: str,
+    ) -> "ColumnElement[bool]":
+        """Generate custom filter conditions for a column of a table.
 
         Args:
-            column: The column to filter on.
-            value: The bool value by which to filter.
-            operator: The operator to use for filtering.
+            value: The filter value.
+            table: The table which contains the column.
+            column: The column name.
 
         Returns:
-            A Filter object.
+            The query conditions.
         """
-        if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
-            logger.warning(
-                "Boolean filters do not support any"
-                "operation except for equals. Defaulting"
-                "to an `equals` comparison."
-            )
-        return BoolFilter(
-            operation=GenericFilterOps.EQUALS,
-            column=column,
-            value=bool(value),
+        value, operator = BaseFilter._resolve_operator(value)
+        filter_ = FilterGenerator(table).define_filter(
+            column=column, value=value, operator=operator
         )
+        return filter_.generate_query_conditions(table=table)
 
     @property
     def offset(self) -> int:
@@ -893,3 +764,298 @@ class BaseFilter(BaseModel):
         query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
 
         return query
+
+
+class FilterGenerator:
+    """Helper class to define filters for a class."""
+
+    def __init__(self, model_class: Type[BaseModel]) -> None:
+        """Initialize the object.
+
+        Args:
+            model_class: The model class for which to define filters.
+        """
+        self._model_class = model_class
+
+    def define_filter(
+        self, column: str, value: Any, operator: GenericFilterOps
+    ) -> Filter:
+        """Define a filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+        """
+        # Create datetime filters
+        if self.is_datetime_field(column):
+            return self._define_datetime_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create UUID filters
+        if self.is_uuid_field(column):
+            return self._define_uuid_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create int filters
+        if self.is_int_field(column):
+            return NumericFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=int(value),
+            )
+
+        # Create bool filters
+        if self.is_bool_field(column):
+            return self._define_bool_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create str filters
+        if self.is_str_field(column):
+            return StrFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=value,
+            )
+
+        # Handle unsupported datatypes
+        logger.warning(
+            f"The Datatype {self._model_class.model_fields[column].annotation} might "
+            "not be supported for filtering. Defaulting to a string filter."
+        )
+        return StrFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=str(value),
+        )
+
+    def check_field_annotation(self, k: str, type_: Any) -> bool:
+        """Checks whether a model field has a certain annotation.
+
+        Args:
+            k: The name of the field.
+            type_: The type to check.
+
+        Raises:
+            ValueError: if the model field within does not have an annotation.
+
+        Returns:
+            True if the annotation of the field matches the given type, False
+            otherwise.
+        """
+        try:
+            annotation = self._model_class.model_fields[k].annotation
+
+            if annotation is not None:
+                return (
+                    issubclass(type_, get_args(annotation))
+                    or annotation is type_
+                )
+            else:
+                raise ValueError(
+                    f"The field '{k}' inside the model {self._model_class.__name__} "
+                    "does not have an annotation."
+                )
+        except TypeError:
+            return False
+
+    def is_datetime_field(self, k: str) -> bool:
+        """Checks if it's a datetime field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a datetime field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=datetime)
+
+    def is_uuid_field(self, k: str) -> bool:
+        """Checks if it's a UUID field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a UUID field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=UUID)
+
+    def is_int_field(self, k: str) -> bool:
+        """Checks if it's an int field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is an int field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=int)
+
+    def is_bool_field(self, k: str) -> bool:
+        """Checks if it's a bool field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a bool field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=bool)
+
+    def is_str_field(self, k: str) -> bool:
+        """Checks if it's a string field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a string field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=str)
+
+    def is_sort_by_field(self, k: str) -> bool:
+        """Checks if it's a sort by field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a sort by field, False otherwise.
+        """
+        return self.check_field_annotation(k=k, type_=str) and k == "sort_by"
+
+    @staticmethod
+    def _define_datetime_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> DatetimeFilter:
+        """Define a datetime filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The datetime value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid datetime.
+        """
+        try:
+            filter_value: Union[datetime, Tuple[datetime, datetime]]
+            if isinstance(value, datetime):
+                filter_value = value
+            elif "," in value:
+                lower_bound, upper_bound = value.split(",", 1)
+                filter_value = (
+                    datetime.strptime(lower_bound, FILTERING_DATETIME_FORMAT),
+                    datetime.strptime(upper_bound, FILTERING_DATETIME_FORMAT),
+                )
+            else:
+                filter_value = datetime.strptime(
+                    value, FILTERING_DATETIME_FORMAT
+                )
+        except ValueError as e:
+            raise ValueError(
+                "The datetime filter only works with values in the following "
+                f"format: {FILTERING_DATETIME_FORMAT}"
+            ) from e
+
+        if operator == GenericFilterOps.IN and not isinstance(
+            filter_value, tuple
+        ):
+            raise ValueError(
+                "Two comma separated datetime values are required for the `in` "
+                "operator."
+            )
+
+        if operator != GenericFilterOps.IN and not isinstance(
+            filter_value, datetime
+        ):
+            raise ValueError(
+                "Only a single datetime value is allowed for operator "
+                f"{operator}."
+            )
+
+        datetime_filter = DatetimeFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=filter_value,
+        )
+        return datetime_filter
+
+    @staticmethod
+    def _define_uuid_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> UUIDFilter:
+        """Define a UUID filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The UUID value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid UUID.
+        """
+        # For equality checks, ensure that the value is a valid UUID.
+        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
+            try:
+                UUID(value)
+            except ValueError as e:
+                raise ValueError(
+                    "Invalid value passed as UUID query parameter."
+                ) from e
+
+        # Cast the value to string for further comparisons.
+        value = str(value)
+
+        # Generate the filter.
+        uuid_filter = UUIDFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=value,
+        )
+        return uuid_filter
+
+    @staticmethod
+    def _define_bool_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> BoolFilter:
+        """Define a bool filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The bool value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+        """
+        if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
+            logger.warning(
+                "Boolean filters do not support any"
+                "operation except for equals. Defaulting"
+                "to an `equals` comparison."
+            )
+        return BoolFilter(
+            operation=GenericFilterOps.EQUALS,
+            column=column,
+            value=bool(value),
+        )

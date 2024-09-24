@@ -122,7 +122,7 @@ zenml service-connector list-resources --resource-type blob-container
 
 {% code title="Example Command Output" %}
 ```
-The following 'blob-container' resources can be accessed by service connectors configured in your workspace:
+The following 'blob-container' resources can be accessed by service connectors:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE     │ RESOURCE NAMES               ┃
 ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────┼──────────────────────────────┨

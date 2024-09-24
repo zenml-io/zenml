@@ -592,16 +592,34 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside the context of a pipeline, either
-            # run the step function or run it as a single step pipeline on the
-            # active stack
+            from zenml import constants, get_step_context
+
+            # If the environment variable was set to explicitly not run on the
+            # stack, we do that.
             run_without_stack = handle_bool_env_var(
                 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
             )
             if run_without_stack:
                 return self.call_entrypoint(*args, **kwargs)
+
+            try:
+                get_step_context()
+            except RuntimeError:
+                pass
             else:
-                return run_as_single_step_pipeline(self, *args, **kwargs)
+                # We're currently inside the execution of a different step
+                # -> We don't want to launch another single step pipeline here,
+                # but instead just call the step function
+                return self.call_entrypoint(*args, **kwargs)
+
+            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+                logger.info(
+                    "Preventing execution of step '%s'.",
+                    self.name,
+                )
+                return
+
+            return run_as_single_step_pipeline(self, *args, **kwargs)
 
         (
             input_artifacts,
