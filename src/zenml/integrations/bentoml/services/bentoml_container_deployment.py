@@ -251,13 +251,13 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
         self.endpoint.prepare_for_start()
 
-        if self.config.working_dir is None:
-            if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
-                self.config.working_dir = os.path.expanduser(self.config.bento_tag)
-            else:
-                self.config.working_dir = "."
-        if sys.path[0] != self.config.working_dir:
-            sys.path.insert(0, self.config.working_dir)
+        # if self.config.working_dir is None:
+        #     if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
+        #         self.config.working_dir = os.path.expanduser(self.config.bento_tag)
+        #     else:
+        #         self.config.working_dir = "."
+        # if sys.path[0] != self.config.working_dir:
+        #     sys.path.insert(0, self.config.working_dir)
 
         svc = load(bento_identifier=".", working_dir=".")
         if isinstance(svc, Service):
