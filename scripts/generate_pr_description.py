@@ -82,7 +82,7 @@ def generate_pr_description():
             max_tokens=1000
         )
 
-        generated_description =response.choices[0].message.content.strip()
+        generated_description = response.choices[0].message.content.strip()
 
         # Replace the placeholder in the template with the generated description
         updated_description = current_description.replace(default_template_indicator, generated_description)
