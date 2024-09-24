@@ -47,6 +47,9 @@ def bentoml_model_deployer_step(
     production: bool = False,
     working_dir: Optional[str] = None,
     host: Optional[str] = None,
+    image: Optional[str] = None,
+    image_tag: Optional[str] = None,
+    platform: Optional[str] = None,
     ssl_certfile: Optional[str] = None,
     ssl_keyfile: Optional[str] = None,
     ssl_keyfile_password: Optional[str] = None,
@@ -70,6 +73,9 @@ def bentoml_model_deployer_step(
         production: whether to deploy the service in production mode.
         working_dir: the working directory to use for the prediction service.
         host: the host to use for the prediction service.
+        image: the image to use for the prediction service in the container deployment.
+        image_tag: the image tag to use for the prediction service in the container deployment.
+        platform: the platform to use to build the image for the container deployment.
         ssl_certfile: the path to the ssl cert file.
         ssl_keyfile: the path to the ssl key file.
         ssl_keyfile_password: the password for the ssl key file.
@@ -115,6 +121,9 @@ def bentoml_model_deployer_step(
             apis=service_apis(str(bento.tag)),
             host=host,
             port=port,
+            image=image,
+            image_tag=image_tag,
+            platform=platform,
             workers=workers,
             backlog=backlog,
         )
