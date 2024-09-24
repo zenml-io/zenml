@@ -1,3 +1,5 @@
+import os
+import sys
 from typing import Any, Dict, List, Optional, Union
 
 import bentoml
@@ -249,7 +251,15 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
         self.endpoint.prepare_for_start()
 
-        svc = load(bento_identifier=self.config.bento_tag, working_dir=self.config.working_dir or '.')
+        if self.config.working_dir is None:
+            if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
+                self.config.working_dir = os.path.expanduser(self.config.bento_tag)
+            else:
+                self.config.working_dir = "."
+        if sys.path[0] != self.config.working_dir:
+            sys.path.insert(0, self.config.working_dir)
+
+        svc = load(bento_identifier=self.config.bento_tag, working_dir=self.config.working_dir)
         if isinstance(svc, Service):
             # bentoml<1.2
             from bentoml.serving import serve_http_production
@@ -272,7 +282,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             try:
                 serve_http(
                     self.config.bento_tag,
-                    working_dir=self.config.working_dir or '.',
+                    working_dir=self.config.working_dir,
                     port=self.endpoint.status.port,
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
