@@ -174,7 +174,6 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             bento=self.config.bento_tag,
             server_type="http",
             port=self.endpoint.status.port,
-            workers=self.config.workers,
             backlog=self.config.backlog,
             host=self.endpoint.status.hostname,
             production=True,
