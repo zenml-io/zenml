@@ -2,16 +2,20 @@ name: Auto PR Description
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, ready_for_review]
+  issue_comment:
+    types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
   auto-describe:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: >
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/generate description'))
     permissions:
       contents: read
       pull-requests: write
@@ -33,6 +37,7 @@ jobs:
 
       - name: Check for previous successful run
         id: check_comment
+        if: github.event_name != 'issue_comment'
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           COMMENT=$(gh api -X GET "/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" | jq '.[] | select(.body | contains("Auto PR description generated successfully")) | .id')
@@ -46,16 +51,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate PR description
-        if: steps.check_comment.outputs.skip == 'false'
+        if: steps.check_comment.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/generate_pr_description.py
 
       - name: Add success comment
-        if: steps.check_comment.outputs.skip == 'false'
+        if: steps.check_comment.outputs.skip != 'true'
         run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           gh issue comment ${PR_NUMBER} --body "Auto PR description generated successfully"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
