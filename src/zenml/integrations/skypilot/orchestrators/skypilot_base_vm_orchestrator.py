@@ -284,7 +284,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         try:
             if isinstance(self.cloud, sky.clouds.Kubernetes):
-                run_command = f"$VIRTUAL_ENV{entrypoint_str} {arguments_str}"
+                run_command = f"${{VIRTUAL_ENV:+$VIRTUAL_ENV/bin/}}{entrypoint_str} {arguments_str}"
                 setup = None
                 down = False
                 idle_minutes_to_autostop = None
