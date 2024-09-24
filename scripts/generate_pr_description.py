@@ -67,22 +67,19 @@ def generate_pr_description():
 
         # Generate description using OpenAI
         openai.api_key = os.environ['OPENAI_API_KEY']
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        response = openai.OpenAI().chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that generates concise pull request descriptions based on changes to files."},
                 {"role": "user", "content": f"Generate a brief, informative pull request description based on these changes:\n\n{changes_text}"}
             ],
-            max_tokens=250
+            max_tokens=1000
         )
 
         generated_description = response.choices[0].message['content'].strip()
 
-        # Replace the placeholder in the template with the generated description
-        updated_description = current_description.replace(default_template_indicator, generated_description)
-
         # Update PR description
-        data = {'body': updated_description}
+        data = {'body': generated_description}
         requests.patch(api_url, json=data, headers=headers)
         print(f"Updated PR description with generated content")
         return True
