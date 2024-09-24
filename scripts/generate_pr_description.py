@@ -87,7 +87,7 @@ def generate_pr_description():
         updated_description = current_description.replace(default_template_indicator, generated_description)
 
         # Update PR description
-        data = {'body': generated_description}
+        data = {'body': updated_description}
         requests.patch(api_url, json=data, headers=headers)
         print(f"Updated PR description with generated content")
         return True
