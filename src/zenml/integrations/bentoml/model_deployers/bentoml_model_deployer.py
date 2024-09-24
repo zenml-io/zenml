@@ -135,7 +135,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "MODEL_URI": service_instance.config.model_uri,
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
-            "DAEMON_PID": str(service_instance.status.pid),
+            "DAEMON_PID": str(service_instance.status.pid) if hasattr(service_instance.status, 'pid') else None,
             "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
