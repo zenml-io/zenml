@@ -250,7 +250,7 @@ We need first to install the SkyPilot integration for Kubernetes, using the foll
   zenml integration install skypilot_kubernetes
 ```
 
-To provision skypilot on kubernetes cluster, your orchestrator stack componenet needs to be configured to authenticate with a 
+To provision skypilot on kubernetes cluster, your orchestrator stack components needs to be configured to authenticate with a 
 [Service Connector](../../how-to/auth-management/service-connectors-guide.md). To configure the Service Connector, you need to register a new service connector configured with the appropriate credentials and permissions to access the K8s cluster. You can then use the service connector to configure your registered the Orchestrator stack component using the following command:
 
 First, check that the Kubernetes service connector type is available using the following command:
