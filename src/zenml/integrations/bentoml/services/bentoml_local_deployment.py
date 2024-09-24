@@ -192,6 +192,9 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
 
     def run(self) -> None:
         """Start the service."""
+        from bentoml import Service
+        from bentoml._internal.service.loader import load
+
         logger.info(
             "Starting BentoML prediction service as blocking "
             "process... press CTRL+C once to stop it."
@@ -201,26 +204,52 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
         ssl_params = self.config.ssl_parameters or SSLBentoMLParametersConfig()
         # verify if to deploy in production mode or development mode
         logger.info("Running in production mode.")
-        from bentoml.serving import serve_http_production
+        svc = load(bento_identifier=self.config.bento_tag, working_dir=self.config.working_dir or '.')
 
-        try:
-            serve_http_production(
-                self.config.bento_tag,
-                working_dir=self.config.working_dir,
-                port=self.config.port,
-                api_workers=self.config.workers,
-                host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-                backlog=self.config.backlog,
-                ssl_certfile=ssl_params.ssl_certfile,
-                ssl_keyfile=ssl_params.ssl_keyfile,
-                ssl_keyfile_password=ssl_params.ssl_keyfile_password,
-                ssl_version=ssl_params.ssl_version,
-                ssl_cert_reqs=ssl_params.ssl_cert_reqs,
-                ssl_ca_certs=ssl_params.ssl_ca_certs,
-                ssl_ciphers=ssl_params.ssl_ciphers,
-            )
-        except KeyboardInterrupt:
-            logger.info("Stopping BentoML prediction service...")
+        if isinstance(svc, Service):
+            # bentoml<1.2
+            from bentoml.serving import serve_http_production
+
+            try:
+                serve_http_production(
+                    self.config.bento_tag,
+                    working_dir=self.config.working_dir,
+                    port=self.config.port,
+                    api_workers=self.config.workers,
+                    host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    backlog=self.config.backlog,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
+                )
+            except KeyboardInterrupt:
+                logger.info("Stopping BentoML prediction service...")
+        else:
+            # bentoml>=1.2
+            from _bentoml_impl.server import serve_http
+
+            svc.inject_config()
+            try:
+                serve_http(
+                    self.config.bento_tag,
+                    working_dir=self.config.working_dir or '.',
+                    host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    port=self.config.port,
+                    backlog=self.config.backlog,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
+                )
+            except KeyboardInterrupt:
+                logger.info("Stopping BentoML prediction service...")
 
     @property
     def prediction_url(self) -> Optional[str]:

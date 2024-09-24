@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional, Union
 
 import bentoml
@@ -166,25 +165,45 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
     def run(self) -> None:
         """Start the service."""
+        from bentoml import Service
+        from bentoml._internal.service.loader import load
+
         logger.info("Starting BentoML container deployment service...")
 
         self.endpoint.prepare_for_start()
 
-        # Ensure the BentoML directory exists and has the correct permissions
-        bentoml_home = os.environ.get("BENTOML_HOME", "/home/bentoml")
-        os.chmod(bentoml_home, 0o755)
-        
-        # Run serve inside the container
-        bentoml.serve(
-            bento=self.config.bento_tag,
-            server_type="http",
-            port=self.endpoint.status.port,
-            backlog=self.config.backlog,
-            host=self.endpoint.status.hostname,
-            production=True,
-        )
+        svc = load(bento_identifier=self.config.bento_tag, working_dir=self.config.working_dir or '.')
+        if isinstance(svc, Service):
+            # bentoml<1.2
+            from bentoml.serving import serve_http_production
 
-    
+            try:
+                serve_http_production(
+                    self.config.bento_tag,
+                    port=self.endpoint.status.port,
+                    backlog=self.config.backlog,
+                    host=self.endpoint.status.hostname,
+                )
+            except Exception as e:
+                logger.error(f"Error starting BentoML container deployment service: {e}")
+                raise e
+        else:
+            # bentoml>=1.2
+            from _bentoml_impl.server import serve_http
+
+            svc.inject_config()
+            try:
+                serve_http(
+                    self.config.bento_tag,
+                    working_dir=self.config.working_dir or '.',
+                    port=self.endpoint.status.port,
+                    backlog=self.config.backlog,
+                    host=self.endpoint.status.hostname,
+                )
+            except Exception as e:
+                logger.error(f"Error starting BentoML container deployment service: {e}")
+                raise e
+
     @property
     def prediction_url(self) -> Optional[str]:
         """Get the URI where the http server is running.
