@@ -364,6 +364,7 @@ PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
 PLUGIN_FLAVORS = "/plugin-flavors"
+REFRESH = "/refresh"
 RUNS = "/runs"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
@@ -430,6 +431,8 @@ SORT_PIPELINES_BY_LATEST_RUN_KEY = "latest_run"
 
 # Metadata constants
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
+METADATA_ORCHESTRATOR_LOGS_URL = "orchestrator_logs_url"
+METADATA_ORCHESTRATOR_RUN_ID = "orchestrator_run_id"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
 

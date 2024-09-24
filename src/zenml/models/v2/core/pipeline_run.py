@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -136,7 +137,8 @@ class PipelineRunUpdate(BaseModel):
         "configured by this pipeline run explicitly.",
         default=None,
     )
-    # TODO: we should maybe have a different update model here, the upper three attributes should only be for internal use
+    # TODO: we should maybe have a different update model here, the upper
+    #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the pipeline run."
     )
@@ -307,6 +309,64 @@ class PipelineRunResponse(
         )
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
+
+    def refresh_run_status(self) -> "PipelineRunResponse":
+        """Method to refresh the status of a run if it is initializing/running.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            ValueError: If the stack of the run response is None.
+        """
+        if self.status in [
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        ]:
+            # Check if the stack still accessible
+            if self.stack is None:
+                raise ValueError(
+                    "The stack that this pipeline run response was executed on"
+                    "has been deleted."
+                )
+
+            # Create the orchestrator instance
+            from zenml.enums import StackComponentType
+            from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+            from zenml.stack.stack_component import StackComponent
+
+            # Check if the stack still accessible
+            orchestrator_list = self.stack.components.get(
+                StackComponentType.ORCHESTRATOR, []
+            )
+            if len(orchestrator_list) == 0:
+                raise ValueError(
+                    "The orchestrator that this pipeline run response was "
+                    "executed with has been deleted."
+                )
+
+            orchestrator = cast(
+                BaseOrchestrator,
+                StackComponent.from_model(
+                    component_model=orchestrator_list[0]
+                ),
+            )
+
+            # Fetch the status
+            status = orchestrator.fetch_status(run=self)
+
+            # If it is different from the current status, update it
+            if status != self.status:
+                from zenml.client import Client
+                from zenml.models import PipelineRunUpdate
+
+                client = Client()
+                return client.zen_store.update_run(
+                    run_id=self.id,
+                    run_update=PipelineRunUpdate(status=status),
+                )
+
+        return self
 
     # Body and metadata properties
     @property

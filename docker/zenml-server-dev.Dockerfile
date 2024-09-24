@@ -53,14 +53,14 @@ COPY src/zenml/__init__.py ./src/zenml/
 # NOTE: we need to uninstall zenml at the end to remove the incomplete
 # installation
 RUN pip install --upgrade pip \
-  && pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
+  && pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
   && pip freeze > requirements.txt
 
 # Copy the source code
 COPY src src
 
 # Run pip install again to install the source code in the virtual environment
-RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
+RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages

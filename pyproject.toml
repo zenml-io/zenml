@@ -73,7 +73,7 @@ pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
-secure = { version = "~0.3.0" , optional = true }
+secure = { version = "~0.3.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -117,11 +117,21 @@ azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 # Optional dependencies for the S3 artifact store
 s3fs = { version = ">=2022.11.0", optional = true }
 
+# Optional dependencies for the Sagemaker orchestrator
+sagemaker = { version = ">=2.117.0", optional = true }
+
 # Optional dependencies for the GCS artifact store
 gcsfs = { version = ">=2022.11.0", optional = true }
 
+# Optional dependencies for the Vertex orchestrator
+kfp = { version = ">=2.6.0", optional = true }
+google-cloud-aiplatform = { version = ">=1.34.0", optional = true }
+
 # Optional dependencies for the Azure artifact store
 adlfs = { version = ">=2021.10.0", optional = true }
+
+# Optional dependencies for the AzureML orchestrator
+azure-ai-ml = { version = "1.18.0", optional = true }
 
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
@@ -212,6 +222,16 @@ connectors-azure = [
     "azure-storage-blob",
     "azure-mgmt-resource",
     "kubernetes",
+]
+sagemaker = [
+    "sagemaker",
+]
+vertex = [
+    "google-cloud-aiplatform",
+    "kfp",
+]
+azureml = [
+    "azure-ai-ml",
 ]
 dev = [
     "bandit",
@@ -341,7 +361,7 @@ exclude = [
 [tool.ruff.lint]
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
-per-file-ignores = {}
+per-file-ignores = { }
 ignore = [
     "E501",
     "F401",

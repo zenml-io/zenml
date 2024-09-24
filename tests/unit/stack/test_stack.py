@@ -183,6 +183,7 @@ def test_stack_deployment(
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
         deployment=deployment,
         stack=stack_with_mock_components,
+        placeholder_run=None,
     )
     assert return_value is pipeline_run_return_value
 
