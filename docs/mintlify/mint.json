@@ -1,24 +1,29 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
+  "name": "ZenML",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
+    "primary": "#7a3ef4",
+    "light": "#7a3ef4",
+    "dark": "#7a3ef4",
     "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
+      "from": "#7a3ef4",
+      "to": "#7a3ef4"
     }
   },
+  "font": {
+    "family": "Plus Jakarta Sans"
+  },
+  "background": { "style": "grid" },
+  "layout": "sidenav",
   "topbarLinks": [
     {
       "name": "Support",
-      "url": "mailto:hi@mintlify.com"
+      "url": "https://zenml.io/slack"
     }
   ],
   "topbarCtaButton": {
@@ -27,31 +32,32 @@
   },
   "tabs": [
     {
-      "name": "How-To",
-      "url": "how-to"
+      "name": "Usage",
+      "url": "usage"
     },
     {
-      "name": "Stack Components",
+      "name": "Guides",
+      "url": "user-guide"
+    },
+    {
+      "name": "Stacks",
       "url": "stack-components"
     },
     {
-      "name": "Integration Docs",
-      "url": "integration-docs"
+      "name": "SDK",
+      "url": "code-docs"
     },
     {
-      "name": "Core Code Docs",
-      "url": "core-code-docs"
-    },
-    {
-      "name": "API Reference",
-      "url": "api-reference"
+      "name": "API",
+      "url": "api-reference",
+      "openapi": "/openapi.json"
     }
   ],
   "anchors": [
     {
-      "name": "Documentation",
-      "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
+      "name": "About",
+      "icon": "users",
+      "url": "https://www.zenml.io"
     },
     {
       "name": "Community",
@@ -65,7 +71,8 @@
     }
   ],
   "versions": [
-    "v1"
+    "0.66.0",
+    "0.65.0"
   ],
   "navigation": [
     {
@@ -73,201 +80,733 @@
       "pages": [
         "getting-started/introduction",
         "getting-started/installation",
-        "getting-started/core-concepts",
-        "getting-started/deploying-zenml",
-        "getting-started/zenml-pro"
+        "getting-started/core-concepts"
       ]
     },
     {
-      "group": "📚 User Guide",
+      "group": "🖥️ Deploying ZenML",
       "pages": [
-        "user-guide/starter-guide",
-        "user-guide/production-guide",
-        "user-guide/llmops-guide"
+        "getting-started/deploying-zenml/deploying-zenml",
+        "getting-started/deploying-zenml/deploy-with-zenml-cli",
+        "getting-started/deploying-zenml/deploy-with-docker",
+        "getting-started/deploying-zenml/deploy-with-helm",
+        "getting-started/deploying-zenml/deploy-using-huggingface-spaces",
+        "getting-started/deploying-zenml/deploy-with-custom-image",
+        {
+          "group": "Manage deployed services",
+          "icon": "gear",
+          "iconType": "solid",
+          "pages": [
+            "getting-started/deploying-zenml/manage-the-deployed-services",
+            "getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server",
+            "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server",
+            "getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components",
+            "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
+          ]
+        },
+        "getting-started/deploying-zenml/secret-management",
+        "getting-started/deploying-zenml/common-questions-answered"
       ]
     },
     {
-      "group": "🛠️ How-To",
+      "group": "ZenML Pro",
+      "icon": "cloud",
+      "iconType": "solid",
+      "pages":[
+        "getting-started/deploying-zenml/zenml-pro/zenml-pro",
+        "getting-started/deploying-zenml/zenml-pro/system-architectures",
+        "getting-started/deploying-zenml/zenml-pro/zenml-saas",
+        "getting-started/deploying-zenml/zenml-pro/user-management"
+      ]
+    },
+    {
+      "group": "🛠️ Using ZenML",
       "pages": [
         {
-          "group": "🏃‍♂️ Run Pipelines",
+          "group": " Set up a project repository",
+          "icon": "cat",
+          "iconType": "solid",
           "pages": [
-            "how-to/run-pipelines/set-up-project-repository",
-            "how-to/run-pipelines/build-a-pipeline",
-            "how-to/run-pipelines/trigger-a-pipeline",
-            "how-to/run-pipelines/create-and-run-templates",
-            "how-to/run-pipelines/use-configuration-files",
-            "how-to/run-pipelines/customize-docker-builds",
-            "how-to/run-pipelines/run-remote-pipelines-from-notebooks"
+            "usage/setting-up-a-project-repository/setting-up-a-project-repository",
+            "usage/setting-up-a-project-repository/connect-your-git-repository",
+            "usage/setting-up-a-project-repository/using-project-templates",
+            "usage/setting-up-a-project-repository/best-practices"
           ]
         },
         {
-          "group": "👁️ Observe and track pipelines",
+          "group": " Build a pipeline",
+          "icon": "link",
+          "iconType": "solid",
           "pages": [
-            "how-to/observability/control-logging",
-            "how-to/observability/handle-data-artifacts",
-            "how-to/observability/visualizing-artifacts",
-            "how-to/observability/use-the-model-control-plane",
-            "how-to/observability/track-metrics-and-metadata",
-            "how-to/observability/popular-integrations"
+            "usage/build-pipelines/build-pipelines",
+            "usage/build-pipelines/use-pipeline-step-parameters",
+            "usage/build-pipelines/configuring-a-pipeline-at-runtime",
+            "usage/build-pipelines/step-output-typing-and-annotation",
+            "usage/build-pipelines/control-caching-behavior",
+            "usage/build-pipelines/schedule-a-pipeline",
+            "usage/build-pipelines/delete-a-pipeline",
+            "usage/build-pipelines/compose-pipelines",
+            "usage/build-pipelines/retry-steps",
+            "usage/build-pipelines/run-pipelines-asynchronously",
+            "usage/build-pipelines/control-execution-order-of-steps",
+            "usage/build-pipelines/using-a-custom-step-invocation-id",
+            "usage/build-pipelines/name-your-pipeline-and-runs",
+            "usage/build-pipelines/use-failure-success-hooks",
+            "usage/build-pipelines/hyper-parameter-tuning",
+            "usage/build-pipelines/access-secrets-in-a-step",
+            "usage/build-pipelines/run-an-individual-step",
+            "usage/build-pipelines/fetching-pipelines",
+            "usage/build-pipelines/get-past-pipeline-step-runs"
           ]
         },
         {
-          "group": "🏗️ Ease Infrastructure Setup",
+          "group": " Trigger a pipeline",
+          "icon": "bullhorn",
+          "iconType": "solid",
           "pages": [
-            "how-to/easing-infrastructure-setup/manage-stacks-and-components",
-            "how-to/easing-infrastructure-setup/connect-services",
-            "how-to/easing-infrastructure-setup/connect-to-a-server",
-            "how-to/easing-infrastructure-setup/interact-with-secrets",
-            "how-to/easing-infrastructure-setup/debug-and-solve-issues"
+            "usage/trigger-pipelines/trigger-pipelines",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-client",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-another",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
           ]
         },
         {
-          "group": "💻 Use Specialized Hardware",
+          "group": " Create and run templates",
+          "icon": "circle-play",
+          "iconType": "solid",
           "pages": [
-            "how-to/use-specialized-hardware/train-with-gpus",
-            "how-to/use-specialized-hardware/configure-python-environments"
+            "usage/create-and-run-templates/create-and-run-templates",
+            "usage/create-and-run-templates/create-a-run-template",
+            "usage/create-and-run-templates/run-a-template"
+          ]
+        },
+        {
+          "group": " Use configuration files",
+          "icon": "files",
+          "iconType": "solid",
+          "pages": [
+            "usage/use-configuration-files/use-configuration-files",
+            "usage/use-configuration-files/how-to-use-config",
+            "usage/use-configuration-files/what-can-be-configured",
+            "usage/use-configuration-files/runtime-configuration",
+            "usage/use-configuration-files/configuration-hierarchy",
+            "usage/use-configuration-files/retrieve-used-configuration-of-a-run",
+            "usage/use-configuration-files/autogenerate-a-template-yaml-file"
+          ]
+        },
+        {
+          "group": " Customize Docker builds",
+          "icon": "docker",
+          "iconType": "solid",
+          "pages": [
+            "usage/customize-docker-builds/customize-docker-builds",
+            "usage/customize-docker-builds/docker-settings-on-a-pipeline",
+            "usage/customize-docker-builds/docker-settings-on-a-step",
+            "usage/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
+            "usage/customize-docker-builds/use-your-own-docker-files",
+            "usage/customize-docker-builds/which-files-are-built-into-the-image",
+            "usage/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
+            "usage/customize-docker-builds/define-where-an-image-is-built"
+          ]
+        },
+        {
+          "group": " Run remote pipelines from notebooks",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+          ]
+        },
+        {
+          "group": " Manage stacks & components",
+          "icon": "hammer",
+          "iconType": "solid",
+          "pages": [
+            "usage/stack-deployment/stack-deployment",
+            "usage/stack-deployment/deploy-a-cloud-stack",
+            "usage/stack-deployment/deploy-a-cloud-stack-with-terraform",
+            "usage/stack-deployment/register-a-cloud-stack",
+            "usage/stack-deployment/deploy-a-stack-using-mlstacks",
+            "usage/stack-deployment/reference-secrets-in-stack-configuration",
+            "usage/stack-deployment/implement-a-custom-stack-component",
+            "usage/stack-deployment/implement-a-custom-integration"
+          ]
+        },
+        {
+          "group": " Train with GPUs",
+          "icon": "car",
+          "iconType": "solid",
+          "pages": [
+            "usage/training-with-gpus/training-with-gpus",
+            "usage/training-with-gpus/accelerate-distributed-training"
+          ]
+        },
+        {
+          "group": " Control logging",
+          "icon": "tree",
+          "iconType": "solid",
+          "pages": [
+            "usage/control-logging/control-logging",
+            "usage/control-logging/view-logs-on-the-dasbhoard",
+            "usage/control-logging/enable-or-disable-logs-storing",
+            "usage/control-logging/set-logging-verbosity",
+            "usage/control-logging/disable-rich-traceback",
+            "usage/control-logging/disable-colorful-logging"
+          ]
+        },
+        {
+          "group": " Handle Data/Artifacts",
+          "icon": "server",
+          "iconType": "solid",
+          "pages": [
+            "usage/handle-data-artifacts/handle-data-artifacts",
+            "usage/handle-data-artifacts/artifact-versioning",
+            "usage/handle-data-artifacts/return-multiple-outputs-from-a-step",
+            "usage/handle-data-artifacts/delete-an-artifact",
+            "usage/handle-data-artifacts/tagging",
+            "usage/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
+            "usage/handle-data-artifacts/handle-custom-data-types",
+            "usage/handle-data-artifacts/load-artifacts-into-memory",
+            "usage/handle-data-artifacts/unmaterialized-artifacts",
+            "usage/handle-data-artifacts/passing-artifacts-between-pipelines"
+          ]
+        },
+        {
+          "group": " Visualizing artifacts",
+          "icon": "chart-simple",
+          "iconType": "solid",
+          "pages": [
+            "usage/visualize-artifacts/visualize-artifacts",
+            "usage/visualize-artifacts/types-of-visualizations",
+            "usage/visualize-artifacts/creating-custom-visualizations",
+            "usage/visualize-artifacts/visualizations-in-dashboard",
+            "usage/visualize-artifacts/disabling-visualizations"
+          ]
+        },
+        {
+          "group": " Use the Model Control Plane",
+          "icon": "plane",
+          "iconType": "solid",
+          "pages": [
+            "usage/use-the-model-control-plane/use-the-model-control-plane",
+            "usage/use-the-model-control-plane/register-a-model",
+            "usage/use-the-model-control-plane/delete-a-model",
+            "usage/use-the-model-control-plane/associate-a-pipeline-with-a-model",
+            "usage/use-the-model-control-plane/connecting-artifacts-via-a-model",
+            "usage/use-the-model-control-plane/model-versions",
+            "usage/use-the-model-control-plane/load-a-model-in-code",
+            "usage/use-the-model-control-plane/promote-a-model",
+            "usage/use-the-model-control-plane/linking-model-binaries-data-to-models",
+            "usage/use-the-model-control-plane/load-artifacts-from-model"
+          ]
+        },
+        {
+          "group": " Track metrics and metadata",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "usage/track-metrics-metadata/track-metrics-metadata",
+            "usage/track-metrics-metadata/attach-metadata-to-a-model",
+            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "usage/track-metrics-metadata/attach-metadata-to-steps",
+            "usage/track-metrics-metadata/grouping-metadata",
+            "usage/track-metrics-metadata/logging-metadata",
+            "usage/track-metrics-metadata/fetch-metadata-within-steps",
+            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
+          ]
+        },
+        {
+          "group": " Popular integrations",
+          "icon": "link-slash",
+          "iconType": "solid",
+          "pages": [
+            "usage/popular-integrations/popular-integrations",
+            "usage/popular-integrations/aws-guide",
+            "usage/popular-integrations/gcp-guide",
+            "usage/popular-integrations/azure-guide",
+            "usage/popular-integrations/kubeflow",
+            "usage/popular-integrations/kubernetes",
+            "usage/popular-integrations/mlflow",
+            "usage/popular-integrations/skypilot"
+          ]
+        },
+        {
+          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "usage/auth-management/auth-management",
+            "usage/auth-management/service-connectors-guide",
+            "usage/auth-management/best-security-practices",
+            "usage/auth-management/docker-service-connector",
+            "usage/auth-management/kubernetes-service-connector",
+            "usage/auth-management/aws-service-connector",
+            "usage/auth-management/gcp-service-connector",
+            "usage/auth-management/azure-service-connector",
+            "usage/auth-management/hyperai-service-connector"
+          ]
+        },
+        {
+          "group": " Configure Python environments",
+          "icon": "python",
+          "iconType": "solid",
+          "pages": [
+            "usage/configure-python-environments/configure-python-environments",
+            "usage/configure-python-environments/handling-dependencies",
+            "usage/configure-python-environments/configure-the-server-environment"
+          ]
+        },
+        {
+          "group": " Connect to a server",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "usage/connecting-to-zenml/connecting-to-zenml",
+            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "usage/connecting-to-zenml/connect-with-a-service-account"
+          ]
+        },
+        "usage/interact-with-secrets",
+        "usage/debug-and-solve-issues"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages":[
+        "getting-started/reference/python-client",
+        "getting-started/reference/global-settings",
+        "getting-started/reference/environment-variables",
+        "getting-started/reference/api-reference",
+        "getting-started/reference/sdk-cli-reference",
+        "getting-started/reference/how-do-i",
+        "getting-started/reference/community-and-content",
+        "getting-started/reference/faq"
+      ]
+    },
+    {
+      "group": " Migration guide",
+      "icon": "arrows-spin",
+      "iconType": "solid",
+      "pages": [{
+        "group": "How to migrate",
+        "icon": "arrows-spin",
+        "iconType": "solid",
+        "pages": [
+          "getting-started/reference/migration-guide/migration-guide",
+          "getting-started/reference/migration-guide/migration-zero-twenty",
+          "getting-started/reference/migration-guide/migration-zero-thirty",
+          "getting-started/reference/migration-guide/migration-zero-forty",
+          "getting-started/reference/migration-guide/migration-zero-sixty"
+        ]
+      }
+      ]
+    },
+    {
+      "group": "🧩 Stacks",
+      "pages": [
+        "stack-components/component-guide",
+        {
+          "group": " Orchestrators",
+              "icon": "battery-full",
+              "iconType": "solid",
+          "pages": [
+            "stack-components/orchestrators/orchestrators",
+            "stack-components/orchestrators/local",
+            "stack-components/orchestrators/local-docker",
+            "stack-components/orchestrators/kubeflow",
+            "stack-components/orchestrators/kubernetes",
+            "stack-components/orchestrators/vertex",
+            "stack-components/orchestrators/sagemaker",
+            "stack-components/orchestrators/azureml",
+            "stack-components/orchestrators/databricks",
+            "stack-components/orchestrators/tekton",
+            "stack-components/orchestrators/airflow",
+            "stack-components/orchestrators/skypilot-vm",
+            "stack-components/orchestrators/hyperai",
+            "stack-components/orchestrators/lightning",
+            "stack-components/orchestrators/custom"
+          ]
+        },
+        {
+          "group": " Artifact Stores",
+          "icon": "store",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/artifact-stores/artifact-stores",
+            "stack-components/artifact-stores/local",
+            "stack-components/artifact-stores/s3",
+            "stack-components/artifact-stores/gcp",
+            "stack-components/artifact-stores/azure",
+            "stack-components/artifact-stores/custom"
+          ]
+        },
+        {
+          "group": " Container Registries",
+          "icon": "docker",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/container-registries/container-registries",
+            "stack-components/container-registries/default",
+            "stack-components/container-registries/dockerhub",
+            "stack-components/container-registries/aws",
+            "stack-components/container-registries/gcp",
+            "stack-components/container-registries/azure",
+            "stack-components/container-registries/github",
+            "stack-components/container-registries/custom"
+          ]
+        },
+        {
+          "group": " Data Validators",
+          "icon": "vial",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/data-validators/data-validators",
+            "stack-components/data-validators/great-expectations",
+            "stack-components/data-validators/deepchecks",
+            "stack-components/data-validators/evidently",
+            "stack-components/data-validators/whylogs",
+            "stack-components/data-validators/custom"
+          ]
+        },
+        {
+          "group": " Experiment Trackers",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/experiment-trackers/experiment-trackers",
+            "stack-components/experiment-trackers/comet",
+            "stack-components/experiment-trackers/mlflow",
+            "stack-components/experiment-trackers/neptune",
+            "stack-components/experiment-trackers/wandb",
+            "stack-components/experiment-trackers/custom"
+          ]
+        },
+        {
+          "group": " Model Deployers",
+          "icon": "person-running",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/model-deployers/model-deployers",
+            "stack-components/model-deployers/mlflow",
+            "stack-components/model-deployers/seldon",
+            "stack-components/model-deployers/bentoml",
+            "stack-components/model-deployers/huggingface",
+            "stack-components/model-deployers/databricks",
+            "stack-components/model-deployers/custom"
+          ]
+        },
+        {
+          "group": " Step Operators",
+          "icon": "stairs",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/step-operators/step-operators",
+            "stack-components/step-operators/sagemaker",
+            "stack-components/step-operators/vertex",
+            "stack-components/step-operators/azureml",
+            "stack-components/step-operators/kubernetes",
+            "stack-components/step-operators/spark-kubernetes",
+            "stack-components/step-operators/custom"
+          ]
+        },
+        {
+          "group": " Alerters",
+          "icon": "exclamation",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/alerters/alerters",
+            "stack-components/alerters/discord",
+            "stack-components/alerters/slack",
+            "stack-components/alerters/custom"
+          ]
+        },
+        {
+          "group": " Image Builders",
+          "icon": "image",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/image-builders/image-builders",
+            "stack-components/image-builders/local",
+            "stack-components/image-builders/kaniko",
+            "stack-components/image-builders/gcp",
+            "stack-components/image-builders/custom"
+          ]
+        },
+        {
+          "group": " Annotators",
+          "icon": "tag",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/annotators/annotators",
+            "stack-components/annotators/argilla",
+            "stack-components/annotators/label-studio",
+            "stack-components/annotators/pigeon",
+            "stack-components/annotators/prodigy",
+            "stack-components/annotators/custom"
+          ]
+        },
+        {
+          "group": " Model Registries",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/model-registries/model-registries",
+            "stack-components/model-registries/mlflow",
+            "stack-components/model-registries/custom"
+          ]
+        },
+        {
+          "group": " Feature Stores",
+          "icon": "shop",
+          "iconType": "solid",
+          "pages": [
+            "stack-components/feature-stores/feature-stores",
+            "stack-components/feature-stores/feast",
+            "stack-components/feature-stores/custom"
           ]
         }
       ]
     },
     {
-      "group": "🧩 Stack Components",
-      "pages": [
-        "stack-components/introduction"
-      ]
-    },
-    {
-      "group": "🔌 Integration Docs",
+      "group": "📚 User Guides",
       "pages": [
         {
-          "group": "v1",
+          "group": " Starter guide",
+          "icon": "egg",
+          "iconType": "solid",
           "pages": [
-            "integration-docs/v1/integrations-sklearn",
-            "integration-docs/v1/integrations-kubernetes",
-            "integration-docs/v1/integrations-great_expectations",
-            "integration-docs/v1/integrations-comet",
-            "integration-docs/v1/integrations-pandas",
-            "integration-docs/v1/integrations-bitbucket",
-            "integration-docs/v1/integrations-pillow",
-            "integration-docs/v1/integrations-whylogs",
-            "integration-docs/v1/integrations-github",
-            "integration-docs/v1/integrations-facets",
-            "integration-docs/v1/integrations-utils",
-            "integration-docs/v1/integrations-databricks",
-            "integration-docs/v1/integrations-pycaret",
-            "integration-docs/v1/integrations-gitlab",
-            "integration-docs/v1/integrations-label_studio",
-            "integration-docs/v1/integrations-evidently",
-            "integration-docs/v1/integrations-tensorflow",
-            "integration-docs/v1/integrations-numpy",
-            "integration-docs/v1/integrations-neptune",
-            "integration-docs/v1/integrations-registry",
-            "integration-docs/v1/integrations-mlflow",
-            "integration-docs/v1/integrations-pytorch",
-            "integration-docs/v1/integrations-skypilot_azure",
-            "integration-docs/v1/integrations-lightning",
-            "integration-docs/v1/integrations-skypilot",
-            "integration-docs/v1/integrations-tensorboard",
-            "integration-docs/v1/integrations-pytorch_lightning",
-            "integration-docs/v1/integrations-constants",
-            "integration-docs/v1/integrations-feast",
-            "integration-docs/v1/integrations-kaniko",
-            "integration-docs/v1/integrations-lightgbm",
-            "integration-docs/v1/integrations-kubeflow",
-            "integration-docs/v1/integrations-pigeon",
-            "integration-docs/v1/integrations-argilla",
-            "integration-docs/v1/integrations-scipy",
-            "integration-docs/v1/integrations-llama_index",
-            "integration-docs/v1/integrations-tekton",
-            "integration-docs/v1/integrations-skypilot_lambda",
-            "integration-docs/v1/integrations-aws",
-            "integration-docs/v1/integrations-airflow",
-            "integration-docs/v1/integrations-xgboost",
-            "integration-docs/v1/integrations-integration",
-            "integration-docs/v1/integrations-gcp",
-            "integration-docs/v1/integrations-bentoml",
-            "integration-docs/v1/integrations-skypilot_aws",
-            "integration-docs/v1/integrations-prodigy",
-            "integration-docs/v1/integrations-s3",
-            "integration-docs/v1/integrations-hyperai",
-            "integration-docs/v1/integrations-langchain",
-            "integration-docs/v1/integrations-neural_prophet",
-            "integration-docs/v1/integrations-seldon",
-            "integration-docs/v1/integrations-polars",
-            "integration-docs/v1/integrations-skypilot_gcp",
-            "integration-docs/v1/integrations-huggingface",
-            "integration-docs/v1/integrations-spark",
-            "integration-docs/v1/integrations-wandb",
-            "integration-docs/v1/integrations-azure",
-            "integration-docs/v1/integrations-discord",
-            "integration-docs/v1/integrations-openai",
-            "integration-docs/v1/integrations-deepchecks",
-            "integration-docs/v1/integrations-slack"
+            "user-guide/guides/starter-guide",
+            "user-guide/guides/starter-guide/create-an-ml-pipeline",
+            "user-guide/guides/starter-guide/cache-previous-executions",
+            "user-guide/guides/starter-guide/manage-artifacts",
+            "user-guide/guides/starter-guide/track-ml-models",
+            "user-guide/guides/starter-guide/starter-project"
           ]
-        }
+        },
+        {
+          "group": " Production guide",
+          "icon": "the-red-yeti",
+          "iconType": "solid",
+          "pages": [
+            "user-guide/guides/production-guide",
+            "user-guide/guides/production-guide/deploying-zenml",
+            "user-guide/guides/production-guide/understand-stacks",
+            "user-guide/guides/production-guide/remote-storage",
+            "user-guide/guides/production-guide/cloud-orchestration",
+            "user-guide/guides/production-guide/configure-pipeline",
+            "user-guide/guides/production-guide/connect-code-repository",
+            "user-guide/guides/production-guide/ci-cd",
+            "user-guide/guides/production-guide/end-to-end"
+          ]
+        },
+        {
+          "group": " LLMOps guide",
+          "icon": "earlybirds",
+          "iconType": "solid",
+          "pages": [
+            "user-guide/guides/llmops-guide",
+            {
+              "group": "RAG with ZenML",
+              "icon": "robot",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/rag-with-zenml",
+                "user-guide/guides/llmops-guide/rag-with-zenml/rag-85-loc",
+                "user-guide/guides/llmops-guide/rag-with-zenml/understanding-rag",
+                "user-guide/guides/llmops-guide/rag-with-zenml/data-ingestion",
+                "user-guide/guides/llmops-guide/rag-with-zenml/embeddings-generation",
+                "user-guide/guides/llmops-guide/rag-with-zenml/storing-embeddings-in-a-vector-database",
+                "user-guide/guides/llmops-guide/rag-with-zenml/basic-rag-inference-pipeline"
+              ]
+            },
+            {
+              "group": "Evaluation and metrics",
+              "icon": "chart-line",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/evaluation",
+                "user-guide/guides/llmops-guide/evaluation/evaluation-in-65-loc",
+                "user-guide/guides/llmops-guide/evaluation/retrieval",
+                "user-guide/guides/llmops-guide/evaluation/generation",
+                "user-guide/guides/llmops-guide/evaluation/evaluation-in-practice"
+              ]
+            },
+            {
+              "group": "Reranking for better retrieval",
+              "icon": "ranking-star",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/reranking",
+                "user-guide/guides/llmops-guide/reranking/understanding-reranking",
+                "user-guide/guides/llmops-guide/reranking/implementing-reranking",
+                "user-guide/guides/llmops-guide/reranking/evaluating-reranking-performance"
+              ]
+            },
+            {
+              "group": "Improve retrieval by finetuning embeddings",
+               "icon": "bullseye-arrow",
+              "iconType": "solid",
+              "pages": [
+                "user-guide/guides/llmops-guide/finetuning-embeddings",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/synthetic-data-generation",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers",
+                "user-guide/guides/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings"
+              ]
+            },
+            "user-guide/guides/llmops-guide/finetuning-llms"
+           ]
+          }
+        ]
+    },
+    {
+      "group": "🧑‍💻 Examples",
+      "pages": [
+        "user-guide/examples/quickstart",
+        "user-guide/examples/end-to-end-batch",
+        "user-guide/examples/basic-nlp-with-bert",
+        "user-guide/examples/computer-vision-with-yolov8",
+        "user-guide/examples/llm-finetuning",
+        "user-guide/examples/more-projects"
       ]
     },
     {
-      "group": "🧠 Core Code Docs",
+      "group": "📚 Code Docs",
       "pages": [
         {
-          "group": "v2",
+          "group": "Integration Docs",
           "pages": [
-            "core-code-docs/v1/zenml",
-            "core-code-docs/v1/core-hooks",
-            "core-code-docs/v1/core-annotators",
-            "core-code-docs/v1/core-zen_stores",
-            "core-code-docs/v1/core-constants",
-            "core-code-docs/v1/core-plugins",
-            "core-code-docs/v1/core-experiment_trackers",
-            "core-code-docs/v1/core-types",
-            "core-code-docs/v1/core-logger",
-            "core-code-docs/v1/core-logging",
-            "core-code-docs/v1/core-entrypoints",
-            "core-code-docs/v1/core-environment",
-            "core-code-docs/v1/core-enums",
-            "core-code-docs/v1/core-lineage_graph",
-            "core-code-docs/v1/core-assistant",
-            "core-code-docs/v1/core-code_repositories",
-            "core-code-docs/v1/core-analytics",
-            "core-code-docs/v1/core-exceptions",
-            "core-code-docs/v1/core-artifacts",
-            "core-code-docs/v1/core-client_lazy_loader",
-            "core-code-docs/v1/core-event_hub",
-            "core-code-docs/v1/core-feature_stores",
-            "core-code-docs/v1/core-new",
-            "core-code-docs/v1/core-model",
-            "core-code-docs/v1/core-io",
-            "core-code-docs/v1/core-utils",
-            "core-code-docs/v1/core-services",
-            "core-code-docs/v1/core-_hub",
-            "core-code-docs/v1/core-metadata",
-            "core-code-docs/v1/core-secret",
-            "core-code-docs/v1/core-console",
-            "core-code-docs/v1/core-api",
-            "core-code-docs/v1/core-service_connectors",
-            "core-code-docs/v1/core-data_validators",
-            "core-code-docs/v1/core-actions",
-            "core-code-docs/v1/core-orchestrators",
-            "core-code-docs/v1/core-steps",
-            "core-code-docs/v1/core-image_builders",
-            "core-code-docs/v1/core-models",
-            "core-code-docs/v1/core-model_registries",
-            "core-code-docs/v1/core-artifact_stores",
-            "core-code-docs/v1/core-post_execution",
-            "core-code-docs/v1/core-alerter",
-            "core-code-docs/v1/core-pipelines",
-            "core-code-docs/v1/core-stack_deployments",
-            "core-code-docs/v1/core-stack",
-            "core-code-docs/v1/core-materializers",
-            "core-code-docs/v1/core-model_deployers",
-            "core-code-docs/v1/core-event_sources",
-            "core-code-docs/v1/core-config",
-            "core-code-docs/v1/core-client",
-            "core-code-docs/v1/core-zen_server",
-            "core-code-docs/v1/core-step_operators",
-            "core-code-docs/v1/core-container_registries"
+            {
+              "group": "v1",
+              "pages": [
+                "code-docs/integration-docs/v1/integrations-sklearn",
+                "code-docs/integration-docs/v1/integrations-kubernetes",
+                "code-docs/integration-docs/v1/integrations-great_expectations",
+                "code-docs/integration-docs/v1/integrations-comet",
+                "code-docs/integration-docs/v1/integrations-pandas",
+                "code-docs/integration-docs/v1/integrations-bitbucket",
+                "code-docs/integration-docs/v1/integrations-pillow",
+                "code-docs/integration-docs/v1/integrations-whylogs",
+                "code-docs/integration-docs/v1/integrations-github",
+                "code-docs/integration-docs/v1/integrations-facets",
+                "code-docs/integration-docs/v1/integrations-utils",
+                "code-docs/integration-docs/v1/integrations-databricks",
+                "code-docs/integration-docs/v1/integrations-pycaret",
+                "code-docs/integration-docs/v1/integrations-gitlab",
+                "code-docs/integration-docs/v1/integrations-label_studio",
+                "code-docs/integration-docs/v1/integrations-evidently",
+                "code-docs/integration-docs/v1/integrations-tensorflow",
+                "code-docs/integration-docs/v1/integrations-numpy",
+                "code-docs/integration-docs/v1/integrations-neptune",
+                "code-docs/integration-docs/v1/integrations-registry",
+                "code-docs/integration-docs/v1/integrations-mlflow",
+                "code-docs/integration-docs/v1/integrations-pytorch",
+                "code-docs/integration-docs/v1/integrations-skypilot_azure",
+                "code-docs/integration-docs/v1/integrations-lightning",
+                "code-docs/integration-docs/v1/integrations-skypilot",
+                "code-docs/integration-docs/v1/integrations-tensorboard",
+                "code-docs/integration-docs/v1/integrations-pytorch_lightning",
+                "code-docs/integration-docs/v1/integrations-constants",
+                "code-docs/integration-docs/v1/integrations-feast",
+                "code-docs/integration-docs/v1/integrations-kaniko",
+                "code-docs/integration-docs/v1/integrations-lightgbm",
+                "code-docs/integration-docs/v1/integrations-kubeflow",
+                "code-docs/integration-docs/v1/integrations-pigeon",
+                "code-docs/integration-docs/v1/integrations-argilla",
+                "code-docs/integration-docs/v1/integrations-scipy",
+                "code-docs/integration-docs/v1/integrations-llama_index",
+                "code-docs/integration-docs/v1/integrations-tekton",
+                "code-docs/integration-docs/v1/integrations-skypilot_lambda",
+                "code-docs/integration-docs/v1/integrations-aws",
+                "code-docs/integration-docs/v1/integrations-airflow",
+                "code-docs/integration-docs/v1/integrations-xgboost",
+                "code-docs/integration-docs/v1/integrations-integration",
+                "code-docs/integration-docs/v1/integrations-gcp",
+                "code-docs/integration-docs/v1/integrations-bentoml",
+                "code-docs/integration-docs/v1/integrations-skypilot_aws",
+                "code-docs/integration-docs/v1/integrations-prodigy",
+                "code-docs/integration-docs/v1/integrations-s3",
+                "code-docs/integration-docs/v1/integrations-hyperai",
+                "code-docs/integration-docs/v1/integrations-langchain",
+                "code-docs/integration-docs/v1/integrations-neural_prophet",
+                "code-docs/integration-docs/v1/integrations-seldon",
+                "code-docs/integration-docs/v1/integrations-polars",
+                "code-docs/integration-docs/v1/integrations-skypilot_gcp",
+                "code-docs/integration-docs/v1/integrations-huggingface",
+                "code-docs/integration-docs/v1/integrations-spark",
+                "code-docs/integration-docs/v1/integrations-wandb",
+                "code-docs/integration-docs/v1/integrations-azure",
+                "code-docs/integration-docs/v1/integrations-discord",
+                "code-docs/integration-docs/v1/integrations-openai",
+                "code-docs/integration-docs/v1/integrations-deepchecks",
+                "code-docs/integration-docs/v1/integrations-slack"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Core Code Docs",
+          "pages": [
+            {
+              "group": "v1",
+              "pages": [
+                "code-docs/core-code-docs/v1/zenml",
+                "code-docs/core-code-docs/v1/core-hooks",
+                "code-docs/core-code-docs/v1/core-annotators",
+                "code-docs/core-code-docs/v1/core-zen_stores",
+                "code-docs/core-code-docs/v1/core-constants",
+                "code-docs/core-code-docs/v1/core-plugins",
+                "code-docs/core-code-docs/v1/core-experiment_trackers",
+                "code-docs/core-code-docs/v1/core-types",
+                "code-docs/core-code-docs/v1/core-logger",
+                "code-docs/core-code-docs/v1/core-logging",
+                "code-docs/core-code-docs/v1/core-entrypoints",
+                "code-docs/core-code-docs/v1/core-environment",
+                "code-docs/core-code-docs/v1/core-enums",
+                "code-docs/core-code-docs/v1/core-lineage_graph",
+                "code-docs/core-code-docs/v1/core-assistant",
+                "code-docs/core-code-docs/v1/core-code_repositories",
+                "code-docs/core-code-docs/v1/core-analytics",
+                "code-docs/core-code-docs/v1/core-exceptions",
+                "code-docs/core-code-docs/v1/core-artifacts",
+                "code-docs/core-code-docs/v1/core-client_lazy_loader",
+                "code-docs/core-code-docs/v1/core-event_hub",
+                "code-docs/core-code-docs/v1/core-feature_stores",
+                "code-docs/core-code-docs/v1/core-new",
+                "code-docs/core-code-docs/v1/core-model",
+                "code-docs/core-code-docs/v1/core-io",
+                "code-docs/core-code-docs/v1/core-utils",
+                "code-docs/core-code-docs/v1/core-services",
+                "code-docs/core-code-docs/v1/core-_hub",
+                "code-docs/core-code-docs/v1/core-metadata",
+                "code-docs/core-code-docs/v1/core-secret",
+                "code-docs/core-code-docs/v1/core-console",
+                "code-docs/core-code-docs/v1/core-api",
+                "code-docs/core-code-docs/v1/core-service_connectors",
+                "code-docs/core-code-docs/v1/core-data_validators",
+                "code-docs/core-code-docs/v1/core-actions",
+                "code-docs/core-code-docs/v1/core-orchestrators",
+                "code-docs/core-code-docs/v1/core-steps",
+                "code-docs/core-code-docs/v1/core-image_builders",
+                "code-docs/core-code-docs/v1/core-models",
+                "code-docs/core-code-docs/v1/core-model_registries",
+                "code-docs/core-code-docs/v1/core-artifact_stores",
+                "code-docs/core-code-docs/v1/core-post_execution",
+                "code-docs/core-code-docs/v1/core-alerter",
+                "code-docs/core-code-docs/v1/core-pipelines",
+                "code-docs/core-code-docs/v1/core-stack_deployments",
+                "code-docs/core-code-docs/v1/core-stack",
+                "code-docs/core-code-docs/v1/core-materializers",
+                "code-docs/core-code-docs/v1/core-model_deployers",
+                "code-docs/core-code-docs/v1/core-event_sources",
+                "code-docs/core-code-docs/v1/core-config",
+                "code-docs/core-code-docs/v1/core-client",
+                "code-docs/core-code-docs/v1/core-zen_server",
+                "code-docs/core-code-docs/v1/core-step_operators",
+                "code-docs/core-code-docs/v1/core-container_registries"
+              ]
+            }
           ]
         }
       ]
@@ -282,6 +821,14 @@
   "footerSocials": {
     "x": "https://x.com/zenml_io",
     "github": "https://github.com/zenml_io",
-    "linkedin": "https://www.linkedin.com/company/zenml"
+    "linkedin": "https://www.linkedin.com/company/zenml",
+    "slack": "https://zenml.io/slack-invite",
+    "youtube": "https://www.youtube.com/@ZenML"
+  },
+  "search": {
+    "prompt": "Chat with the docs..."
+  },
+  "feedback": {
+    "thumbsRating": true
   }
 }

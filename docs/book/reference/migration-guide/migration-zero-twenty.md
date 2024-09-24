@@ -1,5 +1,5 @@
 ---
-description: How to migrate from ZenML <=0.13.2 to 0.20.0.
+description: How to migrate from ZenML <= 0.13.2 to 0.20.0.
 ---
 
 # Migration guide 0.13.2 → 0.20.0

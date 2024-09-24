@@ -1,0 +1,73 @@
+---
+title: "Overview"
+description: "Building pipelines is as simple as adding the `@step` and `@pipeline` decorators to your code."
+mode: wide
+icon: link
+---
+
+```py
+@step  # Just add this decorator
+def load_data() -> dict:
+    training_data = [[1, 2], [3, 4], [5, 6]]
+    labels = [0, 1, 0]
+    return {'features': training_data, 'labels': labels}
+
+
+@step
+def train_model(data: dict) -> None:
+    total_features = sum(map(sum, data['features']))
+    total_labels = sum(data['labels'])
+
+    # Train some model here
+
+    print(f"Trained model using {len(data['features'])} data points. "
+          f"Feature sum is {total_features}, label sum is {total_labels}")
+
+
+@pipeline  # This function combines steps together
+def simple_ml_pipeline():
+    dataset = load_data()
+    train_model(dataset)
+```
+
+You can now run this pipeline by simply calling the function:
+
+```Bash
+simple_ml_pipeline()
+```
+
+When this pipeline is executed, the run of the pipeline gets logged to the ZenML dashboard where you can now go to look at its DAG and all the associated metadata. To access the dashboard you need to have a ZenML server either running locally or remotely. See our documentation on this [here](/versions/0.66.0/getting-started/deploying-zenml).
+<Frame caption="DAG representation in the ZenML Dashboard.">
+  <img src="/images/how-to/FSimplePipelineDag.png" />
+</Frame>
+
+Check below for more advanced ways to build and interact with your pipeline.
+
+<CardGroup cols={2}>
+ <Card title="Configure pipeline/step parameters" icon="gear" href="/versions/0.66.0/how-to/build-pipelines/use-pipeline-step-parameters" horizontal />
+
+<Card title="Name and annotate step outputs" icon="tag" href="/versions/0.66.0/how-to/build-pipelines/step-output-typing-and-annotation" horizontal />
+
+<Card title="Control caching behavior" icon="database" href="/versions/0.66.0/how-to/build-pipelines/control-caching-behavior" horizontal />
+
+<Card title="Run pipeline from a pipeline" icon="play" href="https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/how-to/build-pipelines/trigger-a-pipeline-from-another.md" horizontal />
+
+<Card title="Control execution order of steps" icon="list-ol" href="/versions/0.66.0/how-to/build-pipelines/control-execution-order-of-steps" horizontal />
+
+<Card title="Customize step invocation IDs" icon="fingerprint" href="/versions/0.66.0/how-to/build-pipelines/using-a-custom-step-invocation-id" horizontal />
+
+<Card title="Name your pipeline runs" icon="signature" href="/versions/0.66.0/how-to/build-pipelines/name-your-pipeline-and-runs" horizontal />
+
+ <Card title="Use failure/success hooks" icon="basketball" href="/versions/0.66.0/how-to/build-pipelines/use-failure-success-hooks" horizontal />
+
+<Card title="Hyperparameter tuning" icon="sliders" href="/versions/0.66.0/how-to/build-pipelines/hyper-parameter-tuning" horizontal />
+
+<Card title="Attach metadata to steps" icon="tags" href="/versions/0.66.0/how-to/track-metrics-metadata/attach-metadata-to-steps" horizontal />
+
+<Card title="Fetch metadata within steps" icon="download" href="/versions/0.66.0/how-to/track-metrics-metadata/fetch-metadata-within-steps" horizontal />
+
+ <Card title="Fetch metadata during pipeline composition" icon="code" href="/versions/0.66.0/how-to/track-metrics-metadata/fetch-metadata-within-pipeline" horizontal />
+ <Card title="Enable or disable logs storing" icon="toggle-on" href="/versions/0.66.0/how-to/control-logging/enable-or-disable-logs-storing" horizontal />
+ <Card title="Special Metadata Types" icon="star" href="/versions/0.66.0/how-to/track-metrics-metadata/logging-metadata" horizontal />
+ <Card title="Access secrets in a step" icon="key" href="/versions/0.66.0/how-to/build-pipelines/access-secrets-in-a-step" horizontal />
+ </CardGroup>

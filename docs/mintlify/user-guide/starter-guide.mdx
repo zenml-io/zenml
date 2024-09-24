@@ -1,1 +1,0 @@
-# Starter Guide

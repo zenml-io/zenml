@@ -1,0 +1,54 @@
+---
+title: "Overview"
+description: "Leverage the power of LLMs in your MLOps workflows with ZenML."
+icon: earlybirds
+---
+
+Welcome to the ZenML LLMOps Guide, where we dive into the exciting world of Large Language Models (LLMs) and how to integrate them seamlessly into your MLOps pipelines using ZenML. This guide is designed for ML practitioners and MLOps engineers looking to harness the potential of LLMs while maintaining the robustness and scalability of their workflows.
+<Frame caption="ZenML simplifies the development and deployment of LLM-powered MLOps pipelines.">
+  <img src="/images/user-guide/llms.avif" />
+</Frame>
+
+
+In this guide, we'll explore various aspects of working with LLMs in ZenML, including:
+
+<Card title="RAG with ZenML" icon="robot" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml" horizontal/>
+<CardGroup cols={2}>
+  <Card title="RAG in 85 lines of code" icon="code" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/rag-85-loc" horizontal/>
+  <Card title="Understanding RAG" icon="book" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/understanding-rag" horizontal/>
+  <Card title="Data ingestion and preprocessing" icon="database" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/data-ingestion" horizontal/>
+  <Card title="Embeddings generation" icon="vector-square" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/embeddings-generation" horizontal/>
+  <Card title="Storing embeddings in a vector database" icon="server" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/storing-embeddings-in-a-vector-database" horizontal/>
+  <Card title="Basic RAG inference pipeline" icon="diagram-project" href="/versions/0.66.0/user-guide/llmops-guide/rag-with-zenml/basic-rag-inference-pipeline" horizontal/>
+</CardGroup>
+---
+<Card title="Evaluation and metrics" icon="chart-line" href="/versions/0.66.0/user-guide/llmops-guide/evaluation" horizontal/>
+<CardGroup cols={2}>
+  <Card title="Evaluation in 65 lines of code" icon="code" href="/versions/0.66.0/user-guide/llmops-guide/evaluation/evaluation-in-65-loc" horizontal/>
+  <Card title="Retrieval evaluation" icon="magnifying-glass" href="/versions/0.66.0/user-guide/llmops-guide/evaluation/retrieval" horizontal/>
+  <Card title="Generation evaluation" icon="wand-magic-sparkles" href="/versions/0.66.0/user-guide/llmops-guide/evaluation/generation" horizontal/>
+  <Card title="Evaluation in practice" icon="flask" href="/versions/0.66.0/user-guide/llmops-guide/evaluation/evaluation-in-practice" horizontal/>
+</CardGroup>
+
+---
+<Card title="Reranking for better retrieval" icon="ranking-star" href="/versions/0.66.0/user-guide/llmops-guide/reranking" horizontal/>
+
+<CardGroup cols={2}>
+  <Card title="Understanding reranking" icon="book" href="/versions/0.66.0/user-guide/llmops-guide/reranking/understanding-reranking" horizontal/>
+  <Card title="Implementing reranking in ZenML" icon="code" href="/versions/0.66.0/user-guide/llmops-guide/reranking/implementing-reranking" horizontal/>
+  <Card title="Evaluating reranking performance" icon="chart-line" href="/versions/0.66.0/user-guide/llmops-guide/reranking/evaluating-reranking-performance" horizontal/>
+</CardGroup>
+---
+<Card title="Improve retrieval by finetuning embeddings" icon="bullseye-arrow" href="/versions/0.66.0/user-guide/llmops-guide/finetuning-embeddings"horizontal/>
+<CardGroup cols={2}>
+  <Card title="Synthetic data generation" icon="robot" href="/versions/0.66.0/user-guide/llmops-guide/finetuning-embeddings/synthetic-data-generation" horizontal/>
+  <Card title="Finetuning embeddings with Sentence Transformers" icon="brain" href="/versions/0.66.0/user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers" horizontal/>
+  <Card title="Evaluating finetuned embeddings" icon="chart-line" href="/versions/0.66.0/user-guide/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings" horizontal/>
+</CardGroup>
+---
+<Card title="Finetuning LLMs with ZenML" icon="brain" href="/versions/0.66.0/user-guide/llmops-guide/finetuning-llms" horizontal/>
+To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](/versions/0.66.0/user-guide/starter-guide) and [Production Guide](/versions/0.66.0/user-guide/production-guide) is recommended.
+
+We'll showcase a specific application over the course of this LLM guide, showing how you can work from a simple RAG pipeline to a more complex setup that involves finetuning embeddings, reranking retrieved documents, and even finetuning the LLM itself. We'll do this all for a use case relevant to ZenML: a question answering system that can provide answers to common questions about ZenML. This will help you understand how to apply the concepts covered in this guide to your own projects.
+
+By the end of this guide, you'll have a solid understanding of how to leverage LLMs in your MLOps workflows using ZenML, enabling you to build powerful, scalable, and maintainable LLM-powered applications. First up, let's take a look at a super simple implementation of the RAG paradigm to get started.

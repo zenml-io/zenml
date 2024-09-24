@@ -1,0 +1,79 @@
+---
+title: "API reference"
+description: "See the ZenML API reference."
+icon: eye
+---
+
+The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc` of your ZenML server:
+
+In the local case (i.e. using `zenml up`, the docs are available on `http://127.0.0.1:8237/docs`)
+<Frame caption="ZenML API docs">
+  <img src="/images/api-ref.avif"/>
+</Frame>
+
+<Frame caption="ZenML API Redoc">
+  <img src="/images/api-ref-2.avif"/>
+</Frame>
+
+
+## Using a bearer token to access the API programmatically
+
+If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, the following steps need to be followed:
+
+1. Create a [service account](/versions/0.66.0/how-to/connecting-to-zenml/connect-with-a-service-account):
+
+
+```Bash
+zenml service-account create myserviceaccount
+```
+
+This will print out the `<ZENML_API_KEY>`, you can use in the next command.
+
+1. Get an access token by using the `/api/v1/login` endpoint:
+
+
+```shell
+
+curl -X 'POST' \
+
+  '/api/v1/login' \
+
+  -H 'accept: application/json' \
+
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+
+  -d 'grant_type=zenml-api-key&username=&password='\''&client_id=&device_code='
+```
+
+This will return a response like this:
+
+
+```shell
+{
+
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+
+  "token_type": "bearer",
+
+  "expires_in": 3600,
+
+  "refresh_token": null,
+
+  "scope": null
+
+}
+```
+
+1. Use the access token to make subsequent curl commands:
+
+
+```shell
+curl -X 'GET' \
+
+  '/api/v1/pipelines?hydrate=false&name=training' \
+
+  -H 'accept: application/json' \
+
+  -H 'Authorization: Bearer '
+```
+

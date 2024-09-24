@@ -1,0 +1,165 @@
+---
+title: "Connect your git repository"
+description: "Tracking your code and avoiding unnecessary Docker builds by connecting your git repo."
+icon: github
+---
+
+A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
+
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](/versions/0.66.0/how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+
+Learn more about how code repositories benefit development [here](/versions/0.66.0/how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times).
+
+## Registering a code repository
+
+If you are planning to use one of the [available implementations of code repositories](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#available-implementations), first, you need to install the corresponding ZenML integration:
+
+```Bash
+zenml integration install
+```
+
+Afterward, code repositories can be registered using the CLI:
+
+```Bash
+zenml code-repository register  --type= [--CODE_REPOSITORY_OPTIONS]
+```
+
+For concrete options, check out the section on the [GitHubCodeRepository](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#github), the [GitLabCodeRepository](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#gitlab) or how to develop and register a [custom code repository implementation](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
+
+## Available implementations
+
+ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
+
+### GitHub
+
+ZenML provides built-in support for using GitHub as a code repository for your ZenML pipelines. You can register a GitHub code repository by providing the URL of the GitHub instance, the owner of the repository, the name of the repository, and a GitHub Personal Access Token (PAT) with access to the repository.
+
+Before registering the code repository, first, you have to install the corresponding integration:
+
+```Bash
+zenml integration install github
+```
+
+Afterward, you can register a GitHub code repository by running the following CLI command:
+
+
+```Bash
+zenml code-repository register  --type=github \
+
+--url= --owner= --repository= \
+
+--token=
+```
+
+where \<REPOSITORY> is the name of the code repository you are registering, \<OWNER> is the owner of the repository, \<NAME> is the name of the repository, \<GITHUB_TOKEN> is your GitHub Personal Access Token and \<GITHUB_URL> is the URL of the GitHub instance which defaults to `https://github.com.` You will need to set a URL if you are using GitHub Enterprise.
+
+After registering the GitHub code repository, ZenML will automatically detect if your source files are being tracked by GitHub and store the commit hash for each pipeline run.
+<Accordion
+    title="How to get a token for GitHub"
+>
+ 1. Go to your GitHub account settings and click on [Developer settings](https://github.com/settings/tokens?type=beta).
+2. Select "Personal access tokens" and click on "Generate new token".
+3. Give your token a name and a description.
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-1.avif" />
+</Frame>
+4. We recommend selecting the specific repository and then giving `contents` read-only access.
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-2.avif" />
+</Frame>
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-3.avif" />
+</Frame>
+5. Click on "Generate token" and copy the token to a safe place.
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-4.avif" />
+</Frame>
+</Accordion>
+
+
+### GitLab
+
+ZenML also provides built-in support for using GitLab as a code repository for your ZenML pipelines. You can register a GitLab code repository by providing the URL of the GitLab project, the group of the project, the name of the project, and a GitLab Personal Access Token (PAT) with access to the project.
+
+Before registering the code repository, first, you have to install the corresponding integration:
+
+```Bash
+zenml integration install gitlab
+```
+
+Afterward, you can register a GitLab code repository by running the following CLI command:
+
+```Bash
+zenml code-repository register  --type=gitlab \
+--url= --group= --project= \
+--token=
+```
+
+where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB_TOKEN> is your GitLab Personal Access Token, and \<GITLAB_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
+
+After registering the GitLab code repository, ZenML will automatically detect if your source files are being tracked by GitLab and store the commit hash for each pipeline run.
+<Accordion title="How to get a token for GitLab">
+1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal%5Faccess%5Ftokens).
+2. Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-5.avif" />
+</Frame>
+3. Click on "Create personal access token" and copy the token to a safe place.
+<Frame >
+  <img src="/images/how-to/setting-up-a-project-repository/how-to-6.avif" />
+</Frame>
+</Accordion>
+
+
+
+
+## Developing a custom code repository
+
+If you're using some other platform to store your code, and you still want to use a code repository in ZenML, you can implement and register a custom code repository.
+
+First, you'll need to subclass and implement the abstract methods of the `zenml.code_repositories.BaseCodeRepository` class:
+
+```py
+class BaseCodeRepository(ABC):
+    """Base class for code repositories."""
+
+    @abstractmethod
+    def login(self) -> None:
+        """Logs into the code repository."""
+
+    @abstractmethod
+    def download_files(
+            self, commit: str, directory: str, repo_sub_directory: Optional[str]
+    ) -> None:
+        """Downloads files from the code repository to a local directory.
+
+        Args:
+            commit: The commit hash to download files from.
+            directory: The directory to download files to.
+            repo_sub_directory: The subdirectory in the repository to
+                download files from.
+        """
+
+    @abstractmethod
+    def get_local_context(
+            self, path: str
+    ) -> Optional["LocalRepositoryContext"]:
+        """Gets a local repository context from a path.
+
+        Args:
+            path: The path to the local repository.
+
+        Returns:
+            The local repository context object.
+        """
+```
+
+After you're finished implementing this, you can register it as follows:
+
+```Bash
+# The `CODE_REPOSITORY_OPTIONS` are key-value pairs that your implementation will receive
+# as configuration in its __init__ method. This will usually include stuff like the username
+# and other credentials necessary to authenticate with the code repository platform.
+zenml code-repository register <NAME> --type=custom --source=my_module.MyRepositoryClass \
+    [--CODE_REPOSITORY_OPTIONS]
+```

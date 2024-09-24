@@ -24,7 +24,7 @@ Along the way we will also show you how to:
 
 You can use Google Colab to see ZenML in action, no signup / installation required!
 
-<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/mlops_starter/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ## :computer: Run Locally
 
@@ -36,7 +36,7 @@ pip install "zenml[server]"
 
 # clone the ZenML repository
 git clone https://github.com/zenml-io/zenml.git
-cd zenml/examples/quickstart
+cd zenml/examples/mlops_starter
 ```
 
 Now we're ready to start. You have two options for running the quickstart locally:
@@ -45,13 +45,13 @@ Now we're ready to start. You have two options for running the quickstart locall
 ```bash
 pip install notebook
 jupyter notebook
-# open notebooks/quickstart.ipynb
+# open quickstart.ipynb
 ```
 
 #### Option 2 - Execute the whole ML pipeline from a Python script:
 ```bash
 # Install required zenml integrations
-zenml integration install sklearn -y
+zenml integration install sklearn pandas -y
 
 # Initialize ZenML
 zenml init

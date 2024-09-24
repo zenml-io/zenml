@@ -1,0 +1,24 @@
+---
+title: "Create a run template"
+description: "Create run templates for running pipelines from the server"
+icon: file-circle-plus
+---
+
+<Note>
+This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up
+here](https://cloud.zenml.io) to get access.
+
+The creation of a run template from a pipeline run **only** works for runs that were executed on a remote stack (i.e. at least a remote orchestrator, artifact store, and container registry).
+</Note>
+
+## Create a template in code
+
+```py
+from zenml.client import Client
+
+run = Client().get_pipeline_run(<RUN_NAME_OR_ID>)
+Client().create_run_template(
+    name=<NAME>,
+    deployment_id=run.deployment_id
+)
+```
