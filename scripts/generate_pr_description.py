@@ -24,7 +24,12 @@ def generate_pr_description():
     # GitHub API setup
     token = os.environ['GITHUB_TOKEN']
     repo = os.environ['GITHUB_REPOSITORY']
-    pr_number = os.environ['GITHUB_EVENT_NUMBER']
+    
+    # Get PR number from the event payload
+    with open(os.environ['GITHUB_EVENT_PATH']) as f:
+        event = json.load(f)
+    pr_number = event['pull_request']['number']
+    
     headers = {'Authorization': f'token {token}'}
     api_url = f'https://api.github.com/repos/{repo}/pulls/{pr_number}'
 
@@ -77,6 +82,9 @@ def generate_pr_description():
         )
 
         generated_description = response.choices[0].message['content'].strip()
+
+        # Replace the placeholder in the template with the generated description
+        updated_description = current_description.replace(default_template_indicator, generated_description)
 
         # Update PR description
         data = {'body': generated_description}
