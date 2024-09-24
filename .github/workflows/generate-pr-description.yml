@@ -2,7 +2,7 @@ name: Auto PR Description
 
 on:
   pull_request:
-    types: [opened, edited]
+    types: [opened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
