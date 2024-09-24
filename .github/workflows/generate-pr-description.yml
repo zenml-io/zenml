@@ -2,10 +2,10 @@ name: Auto PR Description
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, edited]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -30,11 +31,38 @@ jobs:
           source $HOME/.cargo/env
           uv pip install --system requests openai
 
+      - name: Check for previous successful run
+        id: check_comment
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          COMMENT=$(gh api -X GET "/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" | jq '.[] | select(.body | contains("Auto PR description generated successfully")) | .id')
+          if [ -n "$COMMENT" ]; then
+            echo "Workflow has already run successfully for this PR."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for potential edits
+        if: steps.check_comment.outputs.skip == 'false'
+        run: sleep 300  # Wait for 5 minutes
+
       - name: Generate PR description
+        if: steps.check_comment.outputs.skip == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/generate_pr_description.py
+
+      - name: Add success comment
+        if: steps.check_comment.outputs.skip == 'false'
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          gh issue comment ${PR_NUMBER} --body "Auto PR description generated successfully"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for errors
         if: failure()

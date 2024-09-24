@@ -85,8 +85,10 @@ def generate_pr_description():
         data = {'body': updated_description}
         requests.patch(api_url, json=data, headers=headers)
         print(f"Updated PR description with generated content")
+        return True
     else:
         print("PR already has a non-default description. No action taken.")
+        return False
 
 if __name__ == "__main__":
     generate_pr_description()
