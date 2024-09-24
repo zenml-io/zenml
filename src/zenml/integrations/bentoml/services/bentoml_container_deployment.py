@@ -177,7 +177,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
                 labels={
                     "zenml-service-uuid": str(self.uuid),
                 },
-                working_dir=SERVICE_CONTAINER_PATH,
+                working_dir="/home/bentoml/bento",
                 extra_hosts={"host.docker.internal": "host-gateway"},
             )
 
@@ -251,17 +251,17 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
         self.endpoint.prepare_for_start()
 
-        # if self.config.working_dir is None:
-        #     if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
-        #         self.config.working_dir = os.path.expanduser(self.config.bento_tag)
-        #     else:
-        #         self.config.working_dir = "."
-        # if sys.path[0] != self.config.working_dir:
-        #     sys.path.insert(0, self.config.working_dir)
+        if self.config.working_dir is None:
+            if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
+                self.config.working_dir = os.path.expanduser(self.config.bento_tag)
+            else:
+                self.config.working_dir = "."
+        if sys.path[0] != self.config.working_dir:
+            sys.path.insert(0, self.config.working_dir)
 
         # print the working directory
         print(os.getcwd())
-        svc = load(bento_identifier=".", working_dir="~/bento")
+        svc = load(bento_identifier=".", working_dir=self.config.working_dir)
         if isinstance(svc, Service):
             # bentoml<1.2
             from bentoml.serving import serve_http_production
@@ -284,7 +284,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             try:
                 serve_http(
                     ".",
-                    working_dir=".",
+                    working_dir=self.config.working_dir,
                     port=self.endpoint.status.port,
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
