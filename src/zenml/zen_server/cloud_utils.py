@@ -22,6 +22,7 @@ class ZenMLCloudConfiguration(BaseModel):
     api_url: str
     oauth2_client_id: str
     oauth2_client_secret: str
+    oauth2_audience: str
 
     @field_validator("api_url")
     @classmethod
@@ -213,6 +214,7 @@ class ZenMLCloudConnection:
         payload = {
             "client_id": self._config.oauth2_client_id,
             "client_secret": self._config.oauth2_client_secret,
+            "audience": self._config.oauth2_audience,
             "grant_type": "client_credentials",
         }
         try:
