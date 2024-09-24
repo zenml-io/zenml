@@ -84,14 +84,22 @@ def generate_pr_description():
 
         generated_description = response.choices[0].message.content.strip()
 
-        # Replace the placeholder in the template with the generated description
-        updated_description = current_description.replace(default_template_indicator, generated_description)
+        # Fetch the latest PR description right before updating
+        pr_info = requests.get(api_url, headers=headers).json()
+        latest_description = pr_info['body'] or ''
 
-        # Update PR description
-        data = {'body': updated_description}
-        requests.patch(api_url, json=data, headers=headers)
-        print(f"Updated PR description with generated content")
-        return True
+        # Only replace the default template indicator with the generated description
+        if default_template_indicator in latest_description:
+            updated_description = latest_description.replace(default_template_indicator, generated_description)
+
+            # Update PR description
+            data = {'body': updated_description}
+            requests.patch(api_url, json=data, headers=headers)
+            print(f"Updated PR description with generated content")
+            return True
+        else:
+            print("Default template indicator no longer present. No changes made.")
+            return False
     else:
         print("PR already has a non-default description. No action taken.")
         return False
