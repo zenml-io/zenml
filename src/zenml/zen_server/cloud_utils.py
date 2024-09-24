@@ -1,6 +1,7 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import requests
@@ -19,11 +20,8 @@ class ZenMLCloudConfiguration(BaseModel):
     """ZenML Pro RBAC configuration."""
 
     api_url: str
-
     oauth2_client_id: str
     oauth2_client_secret: str
-    oauth2_audience: str
-    auth0_domain: str
 
     @field_validator("api_url")
     @classmethod
@@ -68,6 +66,8 @@ class ZenMLCloudConnection:
         """Initialize the RBAC component."""
         self._config = ZenMLCloudConfiguration.from_environment()
         self._session: Optional[requests.Session] = None
+        self._token: Optional[str] = None
+        self._token_expires_at: Optional[datetime] = None
 
     def get(
         self, endpoint: str, params: Optional[Dict[str, Any]]
@@ -91,7 +91,8 @@ class ZenMLCloudConnection:
 
         response = self.session.get(url=url, params=params, timeout=7)
         if response.status_code == 401:
-            # Refresh the auth token and try again
+            # If we get an Unauthorized error from the API serer, we refresh the
+            # auth token and try again
             self._clear_session()
             response = self.session.get(url=url, params=params, timeout=7)
 
@@ -186,6 +187,8 @@ class ZenMLCloudConnection:
     def _clear_session(self) -> None:
         """Clear the authentication session."""
         self._session = None
+        self._token = None
+        self._token_expires_at = None
 
     def _fetch_auth_token(self) -> str:
         """Fetch an auth token for the Cloud API from auth0.
@@ -196,29 +199,49 @@ class ZenMLCloudConnection:
         Returns:
             Auth token.
         """
+        if (
+            self._token is not None
+            and self._token_expires_at is not None
+            and datetime.now(timezone.utc) + timedelta(minutes=5)
+            < self._token_expires_at
+        ):
+            return self._token
+
         # Get an auth token from auth0
-        auth0_url = f"https://{self._config.auth0_domain}/oauth/token"
+        login_url = f"{self._config.api_url}/auth/login"
         headers = {"content-type": "application/x-www-form-urlencoded"}
         payload = {
             "client_id": self._config.oauth2_client_id,
             "client_secret": self._config.oauth2_client_secret,
-            "audience": self._config.oauth2_audience,
             "grant_type": "client_credentials",
         }
         try:
             response = requests.post(
-                auth0_url, headers=headers, data=payload, timeout=7
+                login_url, headers=headers, data=payload, timeout=7
             )
             response.raise_for_status()
         except Exception as e:
             raise RuntimeError(f"Error fetching auth token from auth0: {e}")
 
-        access_token = response.json().get("access_token", "")
+        json_response = response.json()
+        access_token = json_response.get("access_token", "")
+        expires_in = json_response.get("expires_in", 0)
 
-        if not access_token or not isinstance(access_token, str):
+        if (
+            not access_token
+            or not isinstance(access_token, str)
+            or not expires_in
+            or not isinstance(expires_in, int)
+        ):
             raise RuntimeError("Could not fetch auth token from auth0.")
 
-        return str(access_token)
+        self._token = access_token
+        self._token_expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=expires_in
+        )
+
+        assert self._token is not None
+        return self._token
 
 
 def cloud_connection() -> ZenMLCloudConnection:
