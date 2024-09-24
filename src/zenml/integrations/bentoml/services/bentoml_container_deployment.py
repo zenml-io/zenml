@@ -4,6 +4,7 @@ import bentoml
 from bentoml import Tag
 from bentoml.client import Client
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.client import Client as ZenMLClient
 from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT, BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
 from zenml.logger import get_logger
 from zenml.services.container.container_service import ContainerService, ContainerServiceConfig
@@ -25,7 +26,7 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     platform: Optional[str] = None
     image: Optional[str] = None
     image_tag: Optional[str] = None
-    features: List[str] = None
+    features: Optional[List[str]] = None
     file: Optional[str] = None
     apis: List[str] = []
     workers: int = 1
@@ -113,15 +114,24 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             attrs["endpoint"] = endpoint
         super().__init__(config=config, **attrs)
 
-    def _containerize_bento(self) -> None:
-        """Containerize the bento."""
+    def _containerize_and_push_bento(self) -> None:
+        """Containerize the bento and push it to the container registry."""
+        zenml_client = ZenMLClient()
+        container_registry = zenml_client.active_stack.container_registry
         # a tuple of config image and image tag
         if self.config.image and self.config.image_tag:
             image_tag = (self.config.image, self.config.image_tag)
         else:
-            image_tag = None
-            # bentoml will use the bento tag as the name of the image
-            self.config.image = self.config.bento_tag
+            # if container registry is present in the stack, name the image
+            # with the container registry uri, else name the image with the bento tag
+            if container_registry:
+                image_name = f"{container_registry.config.uri}/{self.config.bento_tag}"
+                image_tag = (image_name,)
+                self.config.image = image_name
+            else:
+                # bentoml will use the bento tag as the name of the image
+                image_tag = (self.config.bento_tag,)
+                self.config.image = self.config.bento_tag
         try:
             bentoml.container.build(
                 bento_tag=self.config.bento_tag,
@@ -135,11 +145,21 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         except Exception as e:
             logger.error(f"Error containerizing the bento: {e}")
             raise e
+        
+        if container_registry:
+            logger.info(f"Pushing bento to container registry {container_registry.config.uri}")
+            # push the bento to the image registry
+            container_registry.push_image(self.config.image)
+        else:
+            logger.warning("No container registry found in the active stack. "
+                           "Please add a container registry to your stack to push "
+                           "the bento to an image registry.")
+        
 
     def provision(self) -> None:
         """Provision the service."""
         # containerize the bento
-        self._containerize_bento()
+        self._containerize_and_push_bento()
         # run the container
         super().provision() 
 
