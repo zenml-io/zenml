@@ -237,6 +237,7 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         description="Template used for the pipeline run.",
     )
     is_templatable: bool = Field(
+        default=False,
         description="Whether a template can be created from this run.",
     )
 
