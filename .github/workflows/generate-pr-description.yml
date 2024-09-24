@@ -45,10 +45,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Wait for potential edits
-        if: steps.check_comment.outputs.skip == 'false'
-        run: sleep 60  # Wait for 1 min
-
       - name: Generate PR description
         if: steps.check_comment.outputs.skip == 'false'
         env:
