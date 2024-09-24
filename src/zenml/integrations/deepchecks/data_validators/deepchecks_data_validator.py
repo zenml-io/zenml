@@ -13,15 +13,27 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks data validator."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 import pandas as pd
 from deepchecks.core.checks import BaseCheck
 from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Dataset as TabularData
-from deepchecks.tabular import ModelComparisonSuite, Suite as TabularSuite
+from deepchecks.tabular import ModelComparisonSuite
+from deepchecks.tabular import Suite as TabularSuite
 from deepchecks.tabular.suites import full_suite as full_tabular_suite
-from deepchecks.vision import Suite as VisionSuite, VisionData
+from deepchecks.vision import Suite as VisionSuite
+from deepchecks.vision import VisionData
 from deepchecks.vision.suites import full_suite as full_vision_suite
 from sklearn.base import ClassifierMixin
 from torch.nn import Module
@@ -153,7 +165,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 )
 
         if models:
-            # if there's more than one models, we should set the 
+            # if there's more than one models, we should set the
             # is_multi_model to True
             if len(models) > 1:
                 is_multi_model = True
