@@ -144,15 +144,15 @@
           "icon": "link",
           "iconType": "solid",
           "pages": [
-            "usage/build-pipelines/build-pipelines",
-            "usage/build-pipelines/use-pipeline-step-parameters",
-            "usage/build-pipelines/configuring-a-pipeline-at-runtime",
-            "usage/build-pipelines/step-output-typing-and-annotation",
-            "usage/build-pipelines/control-caching-behavior",
-            "usage/build-pipelines/schedule-a-pipeline",
-            "usage/build-pipelines/compose-pipelines",
-            "usage/build-pipelines/run-pipelines-asynchronously",
-            "usage/build-pipelines/run-an-individual-step"
+            "usage/pipelines/build-pipelines/build-pipelines",
+            "usage/pipelines/build-pipelines/use-pipeline-step-parameters",
+            "usage/pipelines/build-pipelines/configuring-a-pipeline-at-runtime",
+            "usage/pipelines/build-pipelines/step-output-typing-and-annotation",
+            "usage/pipelines/build-pipelines/control-caching-behavior",
+            "usage/pipelines/build-pipelines/schedule-a-pipeline",
+            "usage/pipelines/build-pipelines/compose-pipelines",
+            "usage/pipelines/build-pipelines/run-pipelines-asynchronously",
+            "usage/pipelines/build-pipelines/run-an-individual-step"
           ]
         },
         {
@@ -160,10 +160,10 @@
           "icon": "life-ring",
           "iconType": "solid",
           "pages": [
-            "usage/build-pipelines/delete-a-pipeline",
-            "usage/build-pipelines/fetching-pipelines",
-            "usage/build-pipelines/get-past-pipeline-step-runs",
-            "usage/build-pipelines/use-failure-success-hooks"
+            "usage/pipelines/build-pipelines/delete-a-pipeline",
+            "usage/pipelines/build-pipelines/fetching-pipelines",
+            "usage/pipelines/build-pipelines/get-past-pipeline-step-runs",
+            "usage/pipelines/build-pipelines/use-failure-success-hooks"
           ]
         },
         {
@@ -171,12 +171,12 @@
           "icon": "gear",
           "iconType": "solid",
           "pages": [
-            "usage/build-pipelines/access-secrets-in-a-step",
-            "usage/build-pipelines/control-execution-order-of-steps",
-            "usage/build-pipelines/hyper-parameter-tuning",
-            "usage/build-pipelines/retry-steps",
-            "usage/build-pipelines/using-a-custom-step-invocation-id",
-            "usage/build-pipelines/name-your-pipeline-and-runs"
+            "usage/pipelines/build-pipelines/access-secrets-in-a-step",
+            "usage/pipelines/build-pipelines/control-execution-order-of-steps",
+            "usage/pipelines/build-pipelines/hyper-parameter-tuning",
+            "usage/pipelines/build-pipelines/retry-steps",
+            "usage/pipelines/build-pipelines/using-a-custom-step-invocation-id",
+            "usage/pipelines/build-pipelines/name-your-pipeline-and-runs"
           ]
         },
         {
@@ -184,10 +184,10 @@
           "icon": "bullhorn",
           "iconType": "solid",
           "pages": [
-            "usage/trigger-pipelines/trigger-pipelines",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-client",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-another",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
+            "usage/pipelines/trigger-pipelines/trigger-pipelines",
+            "usage/pipelines/trigger-pipelines/trigger-a-pipeline-from-client",
+            "usage/pipelines/trigger-pipelines/trigger-a-pipeline-from-another",
+            "usage/pipelines/trigger-pipelines/trigger-a-pipeline-from-rest-api"
           ]
         },
         {
@@ -195,9 +195,9 @@
           "icon": "circle-play",
           "iconType": "solid",
           "pages": [
-            "usage/create-and-run-templates/create-and-run-templates",
-            "usage/create-and-run-templates/create-a-run-template",
-            "usage/create-and-run-templates/run-a-template"
+            "usage/pipelines/create-and-run-templates/create-and-run-templates",
+            "usage/pipelines/create-and-run-templates/create-a-run-template",
+            "usage/pipelines/create-and-run-templates/run-a-template"
           ]
         }
       ]
@@ -212,10 +212,10 @@
           "icon": "cat",
           "iconType": "solid",
           "pages": [
-            "usage/setting-up-a-project-repository/setting-up-a-project-repository",
-            "usage/setting-up-a-project-repository/connect-your-git-repository",
-            "usage/setting-up-a-project-repository/using-project-templates",
-            "usage/setting-up-a-project-repository/best-practices"
+            "usage/project-setup/setting-up-a-project-repository/setting-up-a-project-repository",
+            "usage/project-setup/setting-up-a-project-repository/connect-your-git-repository",
+            "usage/project-setup/setting-up-a-project-repository/using-project-templates",
+            "usage/project-setup/setting-up-a-project-repository/best-practices"
           ]
         },
         {
@@ -223,13 +223,13 @@
           "icon": "files",
           "iconType": "solid",
           "pages": [
-            "usage/use-configuration-files/use-configuration-files",
-            "usage/use-configuration-files/how-to-use-config",
-            "usage/use-configuration-files/what-can-be-configured",
-            "usage/use-configuration-files/runtime-configuration",
-            "usage/use-configuration-files/configuration-hierarchy",
-            "usage/use-configuration-files/retrieve-used-configuration-of-a-run",
-            "usage/use-configuration-files/autogenerate-a-template-yaml-file"
+            "usage/project-setup/use-configuration-files/use-configuration-files",
+            "usage/project-setup/use-configuration-files/how-to-use-config",
+            "usage/project-setup/use-configuration-files/what-can-be-configured",
+            "usage/project-setup/use-configuration-files/runtime-configuration",
+            "usage/project-setup/use-configuration-files/configuration-hierarchy",
+            "usage/project-setup/use-configuration-files/retrieve-used-configuration-of-a-run",
+            "usage/project-setup/use-configuration-files/autogenerate-a-template-yaml-file"
           ]
         },
         {
@@ -237,20 +237,20 @@
           "icon": "python",
           "iconType": "solid",
           "pages": [
-            "usage/configure-python-environments/configure-python-environments",
-            "usage/configure-python-environments/handling-dependencies",
-            "usage/configure-python-environments/configure-the-server-environment"
+            "usage/project-setup/configure-python-environments/configure-python-environments",
+            "usage/project-setup/configure-python-environments/handling-dependencies",
+            "usage/project-setup/configure-python-environments/configure-the-server-environment"
           ]
         },
-        "usage/global-settings",
+        "usage/project-setup/global-settings",
         {
           "group": " Use secrets",
           "icon": "lock",
           "iconType": "solid",
           "pages": [
-            "usage/use-secrets/interact-with-secrets",
-            "usage/use-secrets/reference-secrets-in-stack-configuration",
-            "usage/use-secrets/secret-management"
+            "usage/project-setup/use-secrets/interact-with-secrets",
+            "usage/project-setup/use-secrets/reference-secrets-in-stack-configuration",
+            "usage/project-setup/use-secrets/secret-management"
           ]
         },
         {
@@ -258,14 +258,14 @@
           "icon": "docker",
           "iconType": "solid",
           "pages": [
-            "usage/customize-docker-builds/customize-docker-builds",
-            "usage/customize-docker-builds/docker-settings-on-a-pipeline",
-            "usage/customize-docker-builds/docker-settings-on-a-step",
-            "usage/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
-            "usage/customize-docker-builds/use-your-own-docker-files",
-            "usage/customize-docker-builds/which-files-are-built-into-the-image",
-            "usage/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
-            "usage/customize-docker-builds/define-where-an-image-is-built"
+            "usage/project-setup/customize-docker-builds/customize-docker-builds",
+            "usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline",
+            "usage/project-setup/customize-docker-builds/docker-settings-on-a-step",
+            "usage/project-setup/customize-docker-builds/specify-pip-dependencies-and-apt-packages",
+            "usage/project-setup/customize-docker-builds/use-your-own-docker-files",
+            "usage/project-setup/customize-docker-builds/which-files-are-built-into-the-image",
+            "usage/project-setup/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
+            "usage/project-setup/customize-docker-builds/define-where-an-image-is-built"
           ]
         }
       ]
@@ -280,8 +280,8 @@
           "icon": "car",
           "iconType": "solid",
           "pages": [
-            "usage/training-with-gpus/training-with-gpus",
-            "usage/training-with-gpus/accelerate-distributed-training"
+            "usage/resource-data-management/training-with-gpus/training-with-gpus",
+            "usage/resource-data-management/training-with-gpus/accelerate-distributed-training"
           ]
         },
         {
@@ -289,9 +289,9 @@
           "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "usage/connecting-to-zenml/connecting-to-zenml",
-            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
-            "usage/connecting-to-zenml/connect-with-a-service-account"
+            "usage/resource-data-management/connecting-to-zenml/connecting-to-zenml",
+            "usage/resource-data-management/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "usage/resource-data-management/connecting-to-zenml/connect-with-a-service-account"
           ]
         },
         {
@@ -299,15 +299,15 @@
           "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "usage/auth-management/auth-management",
-            "usage/auth-management/service-connectors-guide",
-            "usage/auth-management/best-security-practices",
-            "usage/auth-management/docker-service-connector",
-            "usage/auth-management/kubernetes-service-connector",
-            "usage/auth-management/aws-service-connector",
-            "usage/auth-management/gcp-service-connector",
-            "usage/auth-management/azure-service-connector",
-            "usage/auth-management/hyperai-service-connector"
+            "usage/resource-data-management/auth-management/auth-management",
+            "usage/resource-data-management/auth-management/service-connectors-guide",
+            "usage/resource-data-management/auth-management/best-security-practices",
+            "usage/resource-data-management/auth-management/docker-service-connector",
+            "usage/resource-data-management/auth-management/kubernetes-service-connector",
+            "usage/resource-data-management/auth-management/aws-service-connector",
+            "usage/resource-data-management/auth-management/gcp-service-connector",
+            "usage/resource-data-management/auth-management/azure-service-connector",
+            "usage/resource-data-management/auth-management/hyperai-service-connector"
           ]
         },
         {
@@ -315,16 +315,16 @@
           "icon": "server",
           "iconType": "solid",
           "pages": [
-            "usage/handle-data-artifacts/handle-data-artifacts",
-            "usage/handle-data-artifacts/artifact-versioning",
-            "usage/handle-data-artifacts/return-multiple-outputs-from-a-step",
-            "usage/handle-data-artifacts/delete-an-artifact",
-            "usage/handle-data-artifacts/tagging",
-            "usage/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
-            "usage/handle-data-artifacts/handle-custom-data-types",
-            "usage/handle-data-artifacts/load-artifacts-into-memory",
-            "usage/handle-data-artifacts/unmaterialized-artifacts",
-            "usage/handle-data-artifacts/passing-artifacts-between-pipelines"
+            "usage/resource-data-management/handle-data-artifacts/handle-data-artifacts",
+            "usage/resource-data-management/handle-data-artifacts/artifact-versioning",
+            "usage/resource-data-management/handle-data-artifacts/return-multiple-outputs-from-a-step",
+            "usage/resource-data-management/handle-data-artifacts/delete-an-artifact",
+            "usage/resource-data-management/handle-data-artifacts/tagging",
+            "usage/resource-data-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step",
+            "usage/resource-data-management/handle-data-artifacts/handle-custom-data-types",
+            "usage/resource-data-management/handle-data-artifacts/load-artifacts-into-memory",
+            "usage/resource-data-management/handle-data-artifacts/unmaterialized-artifacts",
+            "usage/resource-data-management/handle-data-artifacts/passing-artifacts-between-pipelines"
           ]
         },
         {
@@ -332,11 +332,11 @@
           "icon": "chart-simple",
           "iconType": "solid",
           "pages": [
-            "usage/visualize-artifacts/visualize-artifacts",
-            "usage/visualize-artifacts/types-of-visualizations",
-            "usage/visualize-artifacts/creating-custom-visualizations",
-            "usage/visualize-artifacts/visualizations-in-dashboard",
-            "usage/visualize-artifacts/disabling-visualizations"
+            "usage/resource-data-management/visualize-artifacts/visualize-artifacts",
+            "usage/resource-data-management/visualize-artifacts/types-of-visualizations",
+            "usage/resource-data-management/visualize-artifacts/creating-custom-visualizations",
+            "usage/resource-data-management/visualize-artifacts/visualizations-in-dashboard",
+            "usage/resource-data-management/visualize-artifacts/disabling-visualizations"
           ]
         },
         {
@@ -344,14 +344,14 @@
           "icon": "chart-line",
           "iconType": "solid",
           "pages": [
-            "usage/track-metrics-metadata/track-metrics-metadata",
-            "usage/track-metrics-metadata/attach-metadata-to-a-model",
-            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
-            "usage/track-metrics-metadata/attach-metadata-to-steps",
-            "usage/track-metrics-metadata/grouping-metadata",
-            "usage/track-metrics-metadata/logging-metadata",
-            "usage/track-metrics-metadata/fetch-metadata-within-steps",
-            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
+            "usage/resource-data-management/track-metrics-metadata/track-metrics-metadata",
+            "usage/resource-data-management/track-metrics-metadata/attach-metadata-to-a-model",
+            "usage/resource-data-management/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "usage/resource-data-management/track-metrics-metadata/attach-metadata-to-steps",
+            "usage/resource-data-management/track-metrics-metadata/grouping-metadata",
+            "usage/resource-data-management/track-metrics-metadata/logging-metadata",
+            "usage/resource-data-management/track-metrics-metadata/fetch-metadata-within-steps",
+            "usage/resource-data-management/track-metrics-metadata/fetch-metadata-within-pipeline"
           ]
         }
       ]
@@ -366,23 +366,23 @@
           "icon": "book",
           "iconType": "solid",
           "pages": [
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+            "usage/development-monitoring/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "usage/development-monitoring/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "usage/development-monitoring/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
           ]
         },
-        "usage/debug-and-solve-issues",
+        "usage/development-monitoring/debug-and-solve-issues",
         {
           "group": " Control logging",
           "icon": "tree",
           "iconType": "solid",
           "pages": [
-            "usage/control-logging/control-logging",
-            "usage/control-logging/view-logs-on-the-dasbhoard",
-            "usage/control-logging/enable-or-disable-logs-storing",
-            "usage/control-logging/set-logging-verbosity",
-            "usage/control-logging/disable-rich-traceback",
-            "usage/control-logging/disable-colorful-logging"
+            "usage/development-monitoring/control-logging/control-logging",
+            "usage/development-monitoring/control-logging/view-logs-on-the-dasbhoard",
+            "usage/development-monitoring/control-logging/enable-or-disable-logs-storing",
+            "usage/development-monitoring/control-logging/set-logging-verbosity",
+            "usage/development-monitoring/control-logging/disable-rich-traceback",
+            "usage/development-monitoring/control-logging/disable-colorful-logging"
           ]
         },
         {
@@ -390,16 +390,16 @@
           "icon": "plane",
           "iconType": "solid",
           "pages": [
-            "usage/use-the-model-control-plane/use-the-model-control-plane",
-            "usage/use-the-model-control-plane/register-a-model",
-            "usage/use-the-model-control-plane/delete-a-model",
-            "usage/use-the-model-control-plane/associate-a-pipeline-with-a-model",
-            "usage/use-the-model-control-plane/connecting-artifacts-via-a-model",
-            "usage/use-the-model-control-plane/model-versions",
-            "usage/use-the-model-control-plane/load-a-model-in-code",
-            "usage/use-the-model-control-plane/promote-a-model",
-            "usage/use-the-model-control-plane/linking-model-binaries-data-to-models",
-            "usage/use-the-model-control-plane/load-artifacts-from-model"
+            "usage/development-monitoring/use-the-model-control-plane/use-the-model-control-plane",
+            "usage/development-monitoring/use-the-model-control-plane/register-a-model",
+            "usage/development-monitoring/use-the-model-control-plane/delete-a-model",
+            "usage/development-monitoring/use-the-model-control-plane/associate-a-pipeline-with-a-model",
+            "usage/development-monitoring/use-the-model-control-plane/connecting-artifacts-via-a-model",
+            "usage/development-monitoring/use-the-model-control-plane/model-versions",
+            "usage/development-monitoring/use-the-model-control-plane/load-a-model-in-code",
+            "usage/development-monitoring/use-the-model-control-plane/promote-a-model",
+            "usage/development-monitoring/use-the-model-control-plane/linking-model-binaries-data-to-models",
+            "usage/development-monitoring/use-the-model-control-plane/load-artifacts-from-model"
           ]
         },
         {
@@ -407,14 +407,14 @@
           "icon": "link-slash",
           "iconType": "solid",
           "pages": [
-            "usage/popular-integrations/popular-integrations",
-            "usage/popular-integrations/aws-guide",
-            "usage/popular-integrations/gcp-guide",
-            "usage/popular-integrations/azure-guide",
-            "usage/popular-integrations/kubeflow",
-            "usage/popular-integrations/kubernetes",
-            "usage/popular-integrations/mlflow",
-            "usage/popular-integrations/skypilot"
+            "usage/development-monitoring/popular-integrations/popular-integrations",
+            "usage/development-monitoring/popular-integrations/aws-guide",
+            "usage/development-monitoring/popular-integrations/gcp-guide",
+            "usage/development-monitoring/popular-integrations/azure-guide",
+            "usage/development-monitoring/popular-integrations/kubeflow",
+            "usage/development-monitoring/popular-integrations/kubernetes",
+            "usage/development-monitoring/popular-integrations/mlflow",
+            "usage/development-monitoring/popular-integrations/skypilot"
           ]
         }
       ]
