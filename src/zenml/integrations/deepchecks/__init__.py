@@ -35,7 +35,7 @@ class DeepchecksIntegration(Integration):
 
     NAME = DEEPCHECKS
     REQUIREMENTS = [
-        "deepchecks[vision]>=0.18.0",
+        "deepchecks[vision]~=0.18.0",
         "torchvision>=0.14.0",
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
