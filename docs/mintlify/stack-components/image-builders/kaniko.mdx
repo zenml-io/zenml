@@ -4,7 +4,7 @@ description: "Building container images with Kaniko."
 icon: hippo
 ---
 
-The Kaniko image builder is an [image builder](/versions/0.66.0/stack-components/image-builders) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
+The Kaniko image builder is an [image builder](/stack-components/image-builders) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
 
 ### When to use it
 
@@ -27,8 +27,8 @@ To use the Kaniko image builder, we need:
 zenml integration install kaniko
 ```
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
-* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
+* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](/stack-components/artifact-stores) as part of your stack.
 * Optionally, you can change the timeout (in seconds) until the Kaniko pod is running in the orchestrator using the `pod_running_timeout` attribute.
 
 We can then register the image builder and use it in our active stack:

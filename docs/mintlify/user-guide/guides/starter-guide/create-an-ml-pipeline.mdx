@@ -146,7 +146,7 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 ### Define a data loader with multiple outputs
 
-A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](/versions/0.66.0/user-guide/starter-guide/manage-artifacts#giving-names-to-your-artifacts). Here we load an open-source dataset and split it into a train and a test dataset.
+A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](/user-guide/guides/starter-guide/manage-artifacts#giving-names-to-your-artifacts). Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```py
 import logging

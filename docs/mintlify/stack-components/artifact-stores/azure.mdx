@@ -4,11 +4,11 @@ description: "Storing artifacts using Azure Blob Storage"
 icon: warehouse
 ---
 
-The Azure Artifact Store is an [Artifact Store](/versions/0.66.0/stack-components/artifact-stores) flavor provided with the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
+The Azure Artifact Store is an [Artifact Store](/stack-components/artifact-stores) flavor provided with the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
 
 ### When would you want to use it?
 
-Running ZenML pipelines with [the local Artifact Store](/versions/0.66.0/stack-components/artifact-stores/local) is usually sufficient if you just want to evaluate ZenML or get started quickly without incurring the trouble and the cost of employing cloud storage services in your stack. However, the local Artifact Store becomes insufficient or unsuitable if you have more elaborate needs for your project:
+Running ZenML pipelines with [the local Artifact Store](/stack-components/artifact-stores/local) is usually sufficient if you just want to evaluate ZenML or get started quickly without incurring the trouble and the cost of employing cloud storage services in your stack. However, the local Artifact Store becomes insufficient or unsuitable if you have more elaborate needs for your project:
 
 * if you want to share your pipeline run results with other team members or stakeholders inside or outside your organization
 * if you have other components in your stack that are running remotely (e.g. a Kubeflow or Kubernetes Orchestrator running in a public cloud).
@@ -17,7 +17,7 @@ Running ZenML pipelines with [the local Artifact Store](/versions/0.66.0/stack-c
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
-You should use the Azure Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Azure Blob Storage managed service. You should consider one of the other [Artifact Store flavors](/versions/0.66.0/stack-components/artifact-stores#artifact-store-flavors) if you don't have access to the Azure Blob Storage service.
+You should use the Azure Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Azure Blob Storage managed service. You should consider one of the other [Artifact Store flavors](/stack-components/artifact-stores#artifact-store-flavors) if you don't have access to the Azure Blob Storage service.
 
 ### How do you deploy it?
 
@@ -43,11 +43,11 @@ zenml artifact-store register az_store -f azure --path=az://container-name
 zenml stack register custom_stack -a az_store ... --set
 ```
 
-Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](/versions/0.66.0/stack-components/artifact-stores/azure#authentication-methods) to match your deployment scenario.
+Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](/stack-components/artifact-stores/azure#authentication-methods) to match your deployment scenario.
 
 #### Authentication Methods
 
-Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Azure Artifact Store with other remote stack components also running in Azure.
+Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Azure Artifact Store with other remote stack components also running in Azure.
 
 You will need the following information to configure Azure credentials for ZenML, depending on which type of Azure credentials you want to use:
 
@@ -71,15 +71,15 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 <Note>
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
 
-* [Orchestrators](/versions/0.66.0/stack-components/orchestrators) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](/versions/0.66.0/stack-components/step-operators) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](/versions/0.66.0/stack-components/model-deployers) need to access the Artifact Store to load served models
+* [Orchestrators](/stack-components/orchestrators) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](/stack-components/step-operators) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](/stack-components/model-deployers) need to access the Artifact Store to load served models
 
-To enable these use cases, it is recommended to use [an Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector) to link your Azure Artifact Store to the remote Azure Blob storage container.
+To enable these use cases, it is recommended to use [an Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector) to link your Azure Artifact Store to the remote Azure Blob storage container.
 </Note>
     </Tab>
     <Tab title="Azure Service Connector (recommended)">
-To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an Azure Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an Azure Service Connector that can be used to access more than one Azure blob storage container or even more than one type of Azure resource:
 
@@ -109,7 +109,7 @@ Successfully registered service connector `azure-blob-demo` with access to the f
 ┗━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-> **Note**: Please remember to grant the Azure service principal permissions to read and write to your Azure Blob storage container as well as to list accessible storage accounts and Blob containers. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [Azure Service Connector Blob storage container resource type documentation](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-blob-storage-container) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](/versions/0.66.0/how-to/auth-management/azure-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the Azure service principal permissions to read and write to your Azure Blob storage container as well as to list accessible storage accounts and Blob containers. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [Azure Service Connector Blob storage container resource type documentation](/usage/resource-data-management/auth-management/azure-service-connector#azure-blob-storage-container) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](/usage/resource-data-management/auth-management/azure-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Azure Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Azure Blob storage container you want to use for your Azure Artifact Store by running e.g.:
 
@@ -230,5 +230,5 @@ For more, up-to-date information on the Azure Artifact Store implementation and 
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored in Azure Blob Storage, using the Azure Artifact Store is no different from [using any other flavor of Artifact Store](/versions/0.66.0/stack-components/artifact-stores#how-to-use-it).
+Aside from the fact that the artifacts are stored in Azure Blob Storage, using the Azure Artifact Store is no different from [using any other flavor of Artifact Store](/stack-components/artifact-stores#how-to-use-it).
 

@@ -12,7 +12,7 @@ We now have a dataset that we can use to finetune our embeddings. You can [inspe
 
 Our pipeline for finetuning the embeddings is relatively simple. We'll do the following:
 
-* load our data either from Hugging Face or [from Argilla via the ZenML annotation integration](/versions/0.66.0/stack-components/annotators/argilla)
+* load our data either from Hugging Face or [from Argilla via the ZenML annotation integration](/stack-components/annotators/argilla)
 * finetune our model using the [Sentence Transformers](https://www.sbert.net/) library
 * evaluate the base and finetuned embeddings
 * visualize the results of the evaluation
@@ -28,7 +28,7 @@ By default the pipeline will load the data from our Hugging Face dataset. If you
 python run.py --embeddings --argilla
 ```
 
-This assumes that you've set up an Argilla annotator in your stack. The code checks for the annotator and downloads the data that was annotated in Argilla. Please see our [guide to using the Argilla integration with ZenML](/versions/0.66.0/stack-components/annotators/argilla) for more details.
+This assumes that you've set up an Argilla annotator in your stack. The code checks for the annotator and downloads the data that was annotated in Argilla. Please see our [guide to using the Argilla integration with ZenML](/stack-components/annotators/argilla) for more details.
 
 ### Finetuning with Sentence Transformers
 

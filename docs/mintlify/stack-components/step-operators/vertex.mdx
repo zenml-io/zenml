@@ -10,7 +10,7 @@ description: "Executing individual steps in Vertex AI."
 You should use the Vertex step operator if:
 
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are not provided by your orchestrator.
-* you have access to Vertex AI. If you're using a different cloud provider, take a look at the [SageMaker](/versions/0.66.0/stack-components/step-operators/sagemaker) or [AzureML](/versions/0.66.0/stack-components/step-operators/azureml) step operators.
+* you have access to Vertex AI. If you're using a different cloud provider, take a look at the [SageMaker](/stack-components/step-operators/sagemaker) or [AzureML](/stack-components/step-operators/azureml) step operators.
 
 ### How to deploy it
 
@@ -27,10 +27,10 @@ To use the Vertex step operator, we need:
 zenml integration install gcp
 ```
 * [Docker](https://www.docker.com) installed and running.
-* Vertex AI enabled and a service account file. See the [deployment section](/versions/0.66.0/stack-components/step-operators/vertex#how-to-deploy-it) for detailed instructions.
-* A [GCR container registry](/versions/0.66.0/stack-components/container-registries/gcp) as part of our stack.
+* Vertex AI enabled and a service account file. See the [deployment section](/stack-components/step-operators/vertex#how-to-deploy-it) for detailed instructions.
+* A [GCR container registry](/stack-components/container-registries/gcp) as part of our stack.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`). See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types) for a list of available machine types.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 You have three different options to provide GCP credentials to the step operator:
 
@@ -54,7 +54,7 @@ zenml step-operator register  \
     --service_account_path= \
 #   --machine_type= # optionally specify the type of machine to run on
 ```
-* (recommended) configure [a GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+* (recommended) configure [a GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
 
 ```bash
 zenml service-connector register  --type gcp --auth-method=service-account --project_id= --service_account_json=@ --resource-type gcp-generic

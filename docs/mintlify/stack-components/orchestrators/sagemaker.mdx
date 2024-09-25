@@ -55,8 +55,8 @@ zenml integration install aws s3
 ```
 
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack (configured with an `authentication_secret` attribute).
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack (configured with an `authentication_secret` attribute).
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
 * An IAM role or user with [an AmazonSageMakerFullAccess managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when available) which will set up the necessary permissions for you.
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
@@ -64,7 +64,7 @@ There are three ways you can authenticate your orchestrator and link it to the I
 
 <Tabs>
     <Tab title="Authentication via Service Connector">
-The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector) and connecting it to your SageMaker orchestrator:
+The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector) and connecting it to your SageMaker orchestrator:
 
 ```bash
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -123,7 +123,7 @@ Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run wi
 ```
 
 <Note>
-    If it is taking more than 15 minutes for your run to show up, it might be that a setup error occurred in SageMaker before the pipeline could be started. Checkout the [Debugging SageMaker Pipelines](/versions/0.66.0/stack-components/orchestrators/sagemaker#debugging-sagemaker-pipelines) section for more information on how to debug this.
+    If it is taking more than 15 minutes for your run to show up, it might be that a setup error occurred in SageMaker before the pipeline could be started. Checkout the [Debugging SageMaker Pipelines](/stack-components/orchestrators/sagemaker#debugging-sagemaker-pipelines) section for more information on how to debug this.
 </Note>
 
 ### Sagemaker UI
@@ -143,9 +143,9 @@ Once the Studio UI has launched, click on the 'Pipeline' button on the left side
 
 ### Debugging SageMaker Pipelines
 
-If your SageMaker pipeline encounters an error before the first ZenML step starts, the ZenML run will not appear in the ZenML dashboard. In such cases, use the [SageMaker UI](/versions/0.66.0/stack-components/orchestrators/sagemaker#sagemaker-ui) to review the error message and logs. Here's how:
+If your SageMaker pipeline encounters an error before the first ZenML step starts, the ZenML run will not appear in the ZenML dashboard. In such cases, use the [SageMaker UI](/stack-components/orchestrators/sagemaker#sagemaker-ui) to review the error message and logs. Here's how:
 
-* Open the corresponding pipeline in the SageMaker UI as shown in the [SageMaker UI Section](/versions/0.66.0/stack-components/orchestrators/sagemaker#sagemaker-ui),
+* Open the corresponding pipeline in the SageMaker UI as shown in the [SageMaker UI Section](/stack-components/orchestrators/sagemaker#sagemaker-ui),
 * Open the execution,
 * Click on the failed step in the pipeline graph,
 * Go to the 'Output' tab to see the error message or to 'Logs' to see the logs.

@@ -19,7 +19,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](/versions/0.66.0/stack-components/orchestrators) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](/stack-components/orchestrators) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](/stack-components/orchestrators/skypilot-vm)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```py
 from zenml import step
@@ -40,7 +40,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 <Info>
-    If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](/versions/0.66.0/stack-components/step-operators) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+    If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](/stack-components/step-operators) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 </Info>
 
 ### Ensure your container is CUDA-enabled

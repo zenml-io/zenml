@@ -4,7 +4,7 @@ description: "How to keep your data quality in check and guard against data and 
 icon: clipboard-check
 ---
 
-The Evidently [Data Validator](/versions/0.66.0/stack-components/data-validators) flavor provided with the ZenML integration uses [Evidently](https://evidentlyai.com/) to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Evidently [Data Validator](/stack-components/data-validators) flavor provided with the ZenML integration uses [Evidently](https://evidentlyai.com/) to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -19,7 +19,7 @@ You should use the Evidently Data Validator when you need the following data and
 * [Target Drift](https://docs.evidentlyai.com/presets/target-drift) reports and tests: helps detect and explore changes in the target function and/or model predictions by comparing two datasets where the target and/or prediction columns are available.
 * [Regression Performance](https://docs.evidentlyai.com/presets/reg-performance) or [Classification Performance](https://docs.evidentlyai.com/presets/class-performance) reports and tests: evaluate the performance of a model by analyzing a single dataset where both the target and prediction columns are available. It can also compare it to the past performance of the same model, or the performance of an alternative model by providing a second dataset.
 
-You should consider one of the other [Data Validator flavors](/versions/0.66.0/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -50,10 +50,10 @@ One of Evidently's notable characteristics is that it only requires datasets as 
 There are three ways you can use Evidently to generate data reports in your ZenML pipelines that allow different levels of flexibility:
 
 * instantiate, configure and insert the standard Evidently report step shipped with ZenML into your pipelines. This is the easiest way and the recommended approach.
-* call the data validation methods provided by [the Evidently Data Validator](/versions/0.66.0/stack-components/data-validators/evidently#the-evidently-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step.
-* [use the Evidently library directly](/versions/0.66.0/stack-components/data-validators/evidently#call-evidently-directly) in your custom step implementation. This gives you complete freedom in how you are using Evidently's features.
+* call the data validation methods provided by [the Evidently Data Validator](/stack-components/data-validators/evidently#the-evidently-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step.
+* [use the Evidently library directly](/stack-components/data-validators/evidently#call-evidently-directly) in your custom step implementation. This gives you complete freedom in how you are using Evidently's features.
 
-You can [visualize Evidently reports](/versions/0.66.0/stack-components/data-validators/evidently#visualizing-evidently-reports) in Jupyter notebooks or view them directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
+You can [visualize Evidently reports](/stack-components/data-validators/evidently#visualizing-evidently-reports) in Jupyter notebooks or view them directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
 **The Evidently Report step**
 
@@ -233,13 +233,13 @@ Aside from data profiling, Evidently can also be used to configure and run autom
 
 Similar to using Evidently through ZenML to run data profiling, there are three ways you can use Evidently to run data validation tests in your ZenML pipelines that allow different levels of flexibility:
 
-* instantiate, configure and insert [the standard Evidently test step](/versions/0.66.0/stack-components/data-validators/evidently) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach.
-* call the data validation methods provided by [the Evidently Data Validator](/versions/0.66.0/stack-components/data-validators/evidently#the-evidently-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step.
-* [use the Evidently library directly](/versions/0.66.0/stack-components/data-validators/evidently#call-evidently-directly) in your custom step implementation. This gives you complete freedom in how you are using Evidently's features.
+* instantiate, configure and insert [the standard Evidently test step](/stack-components/data-validators/evidently) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach.
+* call the data validation methods provided by [the Evidently Data Validator](/stack-components/data-validators/evidently#the-evidently-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step.
+* [use the Evidently library directly](/stack-components/data-validators/evidently#call-evidently-directly) in your custom step implementation. This gives you complete freedom in how you are using Evidently's features.
 
 You can visualize Evidently reports in Jupyter notebooks or view them directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
-You can [visualize Evidently reports](/versions/0.66.0/stack-components/data-validators/evidently#visualizing-evidently-reports) in Jupyter notebooks or view them directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
+You can [visualize Evidently reports](/stack-components/data-validators/evidently#visualizing-evidently-reports) in Jupyter notebooks or view them directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
 ZenML wraps the Evidently data validation functionality in the form of a standard Evidently test pipeline step that you can simply instantiate and insert in your pipeline. Here you can see how instantiating and configuring the standard Evidently test step can be done using our included `evidently_test_step` utility function:
 

@@ -4,7 +4,7 @@ description: "Managing MLFlow logged models and artifacts"
 icon: leaf
 ---
 
-[MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular tool that helps you track experiments, manage models and even deploy them to different environments. ZenML already provides a [MLflow Experiment Tracker](/versions/0.66.0/stack-components/experiment-trackers/mlflow) that you can use to track your experiments, and an [MLflow Model Deployer](/versions/0.66.0/stack-components/model-deployers/mlflow) that you can use to deploy your models locally.
+[MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular tool that helps you track experiments, manage models and even deploy them to different environments. ZenML already provides a [MLflow Experiment Tracker](/stack-components/experiment-trackers/mlflow) that you can use to track your experiments, and an [MLflow Model Deployer](/stack-components/model-deployers/mlflow) that you can use to deploy your models locally.
 
 The MLflow model registry uses [the MLflow model registry service](https://mlflow.org/docs/latest/model-registry.html) to manage and track ML models and their artifacts and provides a user interface to browse them:
 
@@ -27,7 +27,7 @@ This is particularly useful in the following scenarios:
 
 ## How do you deploy it?
 
-The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, so you need to install it on your local machine to be able to register an MLflow model registry component. Note that the MLFlow model registry requires [MLFlow Experiment Tracker](/versions/0.66.0/stack-components/experiment-trackers/mlflow) to be present in the stack.
+The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, so you need to install it on your local machine to be able to register an MLflow model registry component. Note that the MLFlow model registry requires [MLFlow Experiment Tracker](/stack-components/experiment-trackers/mlflow) to be present in the stack.
 
 ```bash
 zenml integration install mlflow -y
@@ -71,7 +71,7 @@ def mlflow_registry_training_pipeline():
     )
 ```
 <Note>
-    The `mlflow_register_model_step` expects that the `model` it receives has already been logged to MLflow in a previous step. E.g., for a scikit-learn model, you would need to have used `mlflow.sklearn.autolog()` or `mlflow.sklearn.log_model(model)` in a previous step. See the [MLflow experiment tracker documentation](/versions/0.66.0/stack-components/experiment-trackers/mlflow) for more information on how to log models to MLflow from your ZenML steps.
+    The `mlflow_register_model_step` expects that the `model` it receives has already been logged to MLflow in a previous step. E.g., for a scikit-learn model, you would need to have used `mlflow.sklearn.autolog()` or `mlflow.sklearn.log_model(model)` in a previous step. See the [MLflow experiment tracker documentation](/stack-components/experiment-trackers/mlflow) for more information on how to log models to MLflow from your ZenML steps.
 
 </Note>
 #### List of available parameters
@@ -113,7 +113,7 @@ zenml model-registry models register-version Tensorflow-model \
 
 ### Deploy a registered model
 
-After you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](/versions/0.66.0/stack-components/model-deployers/mlflow#deploy-from-model-registry) for more information on how to do that.
+After you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](/stack-components/model-deployers/mlflow#deploy-from-model-registry) for more information on how to do that.
 
 ### Interact with registered models
 

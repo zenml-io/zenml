@@ -22,12 +22,12 @@ Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](/versions/0.66.0/stack-components/artifact-stores). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](/stack-components/artifact-stores). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 <Tabs>
   <Tab title="AWS">
 You will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the S3 Artifact Store.
 
-The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](/versions/0.66.0/stack-components/artifact-stores/s3), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
+The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](/stack-components/artifact-stores/s3), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
 
 ```Bash
 zenml integration install s3 -y
@@ -45,12 +45,12 @@ With the URI to your S3 bucket known, registering an S3 Artifact Store can be do
 # Register the S3 artifact-store
 zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name
 ```
-For more information, read the [dedicated S3 artifact store flavor guide](/versions/0.66.0/stack-components/artifact-stores/s3).
+For more information, read the [dedicated S3 artifact store flavor guide](/stack-components/artifact-stores/s3).
   </Tab>
   <Tab title="CGP">
 You will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
 
-The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](/versions/0.66.0/stack-components/artifact-stores/gcp), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
+The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](/stack-components/artifact-stores/gcp), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
 ```Bash
 zenml integration install gcp -y
@@ -68,12 +68,12 @@ With the URI to your GCS bucket known, registering a GCS Artifact Store can be d
 # Register the GCS artifact store
 zenml artifact-store register cloud_artifact_store -f gcp --path=gs://bucket-name
 ```
-For more information, read the [dedicated GCS artifact store flavor guide](/versions/0.66.0/stack-components/artifact-stores/gcp).
+For more information, read the [dedicated GCS artifact store flavor guide](/stack-components/artifact-stores/gcp).
   </Tab>
   <Tab title="Azure">
 You will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure documentation](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Artifact Store.
 
-The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](/versions/0.66.0/stack-components/artifact-stores/azure), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
+The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](/stack-components/artifact-stores/azure), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
 
 ```Bash
 zenml integration install azure -y
@@ -92,10 +92,10 @@ With the URI to your Azure Blob Storage container known, registering an Azure Ar
 zenml artifact-store register cloud_artifact_store -f azure --path=az://container-name
 ```
 
-For more information, read the [dedicated Azure artifact store flavor guide](/versions/0.66.0/stack-components/artifact-stores/azure).
+For more information, read the [dedicated Azure artifact store flavor guide](/stack-components/artifact-stores/azure).
   </Tab>
 <Tab title="Other">
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](/versions/0.66.0/stack-components/artifact-stores).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](/stack-components/artifact-stores).
 
 It is also relatively simple to create a [custom stack component flavor](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component) for your use case.
 
@@ -108,7 +108,7 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 ## Configuring permissions with your first service connector
 
-While you can go ahead and [run your pipeline on your stack](/versions/0.66.0/user-guide/production-guide/remote-storage#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](/versions/0.66.0/how-to/auth-management) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](/versions/0.66.0/how-to/auth-management) on them) - but we're going to be starting with a very basic approach.
+While you can go ahead and [run your pipeline on your stack](/user-guide/guides/production-guide/remote-storage#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](/versions/0.66.0/how-to/auth-management) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](/versions/0.66.0/how-to/auth-management) on them) - but we're going to be starting with a very basic approach.
 
 First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form of a [secret](/versions/0.66.0/how-to/interact-with-secrets), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
 <Frame caption="Service Connectors abstract away complexity and implement security best practices
@@ -117,21 +117,21 @@ First, let's understand what a service connector does. In simple words, a servic
 </Frame>
 <Tabs>
   <Tab title="AWS">
-There are [many ways to create an AWS service connector](/versions/0.66.0/how-to/auth-management/aws-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role).
+There are [many ways to create an AWS service connector](/usage/resource-data-management/auth-management/aws-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role).
 
 ```Bash
 AWS_PROFILE= zenml service-connector register cloud_connector --type aws --auto-configure
 ```
   </Tab>
   <Tab title=" GCP">
-There are [many ways to create a GCP service connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-service-account).
+There are [many ways to create a GCP service connector](/usage/resource-data-management/auth-management/gcp-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-service-account).
 
 ```Bash
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@ --project_id= --generate_temporary_tokens=False
 ```
   </Tab>
   <Tab title=" Azure">
-There are [many ways to create an Azure service connector](/versions/0.66.0/how-to/auth-management/azure-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-service-principal).
+There are [many ways to create an Azure service connector](/usage/resource-data-management/auth-management/azure-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](/usage/resource-data-management/auth-management/azure-service-connector#azure-service-principal).
 
 ```Bash
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id= --client_id= --client_secret=
@@ -150,7 +150,7 @@ Now, every time you (or anyone else with access) uses the `cloud_artifact_store`
 
 ## Running a pipeline on a cloud stack
 
-Now that we have our remote artifact store registered, we can [register a new stack](/versions/0.66.0/user-guide/production-guide/understand-stacks#registering-a-stack) with it, just like we did in the previous chapter:
+Now that we have our remote artifact store registered, we can [register a new stack](/user-guide/guides/production-guide/understand-stacks#registering-a-stack) with it, just like we did in the previous chapter:
 <Tabs>
   <Tab title="CLI">
 ```bash
@@ -165,7 +165,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 </Tabs>
 
 
-Now, using the [code from the previous chapter](/versions/0.66.0/user-guide/production-guide/understand-stacks#run-a-pipeline-on-the-new-local-stack), we run a training pipeline:
+Now, using the [code from the previous chapter](/user-guide/guides/production-guide/understand-stacks#run-a-pipeline-on-the-new-local-stack), we run a training pipeline:
 
 Set our `local_with_remote_storage` stack active:
 
@@ -179,7 +179,7 @@ Let us continue with the example from the previous page and run the training pip
 python run.py --training-pipeline
 ```
 
-When you run that pipeline, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members. You can ask your colleagues to connect to the same [ZenML server](/versions/0.66.0/user-guide/production-guide/deploying-zenml), and you will notice that if they run the same pipeline, the pipeline would be partially cached, **even if they have not run the pipeline themselves before**.
+When you run that pipeline, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members. You can ask your colleagues to connect to the same [ZenML server](/user-guide/guides/production-guide/deploying-zenml), and you will notice that if they run the same pipeline, the pipeline would be partially cached, **even if they have not run the pipeline themselves before**.
 
 You can list your artifact versions as follows:
 <Tabs>
@@ -191,7 +191,7 @@ zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
   </Tab>
   <Tab title="Cloud Dashboard">
-[ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](/versions/0.66.0/user-guide/starter-guide/manage-artifacts) to visualize artifact versions:
+[ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](/user-guide/guides/starter-guide/manage-artifacts) to visualize artifact versions:
 <Frame caption="See artifact versions in the cloud.">
   <img src="/_assets/user-guide/production-guide/Fdcp_artifacts_versions_list.png" />
 </Frame>

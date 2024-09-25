@@ -175,7 +175,7 @@ You should use the Spark step operator:
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
 * **Remote ZenML server:** See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
-* **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](/versions/0.66.0/stack-components/step-operators/spark-kubernetes#spark-eks-setup-guide) below.
+* **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](/stack-components/step-operators/spark-kubernetes#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
 
@@ -285,9 +285,9 @@ To use the `KubernetesSparkStepOperator`, you need:
 zenml integration install spark
 ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
-* A Kubernetes cluster [deployed](/versions/0.66.0/stack-components/step-operators/spark-kubernetes#how-to-deploy-it).
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
+* A Kubernetes cluster [deployed](/stack-components/step-operators/spark-kubernetes#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:
 

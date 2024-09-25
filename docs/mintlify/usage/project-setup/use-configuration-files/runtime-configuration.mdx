@@ -37,7 +37,7 @@ Settings are categorized into two types:
 
 For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue`, etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [MLflow Experiment Tracker](/versions/0.66.0/stack-components/experiment-trackers/mlflow), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [MLflow Experiment Tracker](/stack-components/experiment-trackers/mlflow), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
@@ -47,7 +47,7 @@ This means that all pipelines that run using this experiment tracker use nested 
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. If you specify just the category (e.g. `step_operator` or `orchestrator`), ZenML will try to apply those settings to whatever flavor of component is in your stack when running a pipeline. If your settings don't apply to this flavor, they will be ignored.
 
-For example, the [SagemakerStepOperator](/versions/0.66.0/stack-components/step-operators/sagemaker) supports passing in [estimator\_args](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker%5Fstep%5Foperator%5Fflavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
+For example, the [SagemakerStepOperator](/stack-components/step-operators/sagemaker) supports passing in [estimator\_args](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker%5Fstep%5Foperator%5Fflavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
 
 
 ```py

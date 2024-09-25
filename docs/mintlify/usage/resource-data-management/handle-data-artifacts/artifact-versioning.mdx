@@ -12,7 +12,7 @@ Each time a ZenML pipeline runs, the system first checks if there have been any 
 <Frame caption="Artifact Stores Under the Hood">
   <img src="/_assets/how-to/stack-48.png"/>
 </Frame>
-Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](/versions/0.66.0/stack-components/artifact-stores) with a unique ID and stores the data using the appropriate materializers in this directory.
+Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](/stack-components/artifact-stores) with a unique ID and stores the data using the appropriate materializers in this directory.
 
 
 <Frame caption="Artifact Stores Under the Hood
@@ -20,17 +20,17 @@ Suppose a step is new or has been modified. In that case, ZenML creates a new di
   <img src="/_assets/how-to/stack-49.png"/>
 </Frame>
 
-On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](/versions/0.66.0/user-guide/starter-guide/cache-previous-executions), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
+On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](/user-guide/guides/starter-guide/cache-previous-executions), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
 
 With ZenML, you can easily trace an artifact back to its origins and understand the exact sequence of executions that led to its creation, such as a trained model. This feature enables you to gain insights into the entire lineage of your artifacts, providing a clear understanding of how your data has been processed and transformed throughout your machine-learning pipelines. With ZenML, you can ensure the reproducibility of your results, and identify potential issues or bottlenecks in your pipelines. This level of transparency and traceability is essential for maintaining the reliability and trustworthiness of machine learning projects, especially when working in a team or across different environments.
 
-For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](/versions/0.66.0/user-guide/starter-guide/manage-artifacts).
+For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](/user-guide/guides/starter-guide/manage-artifacts).
 
 By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
 
 ## Saving and Loading Artifacts with Materializers
 
-[Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](/versions/0.66.0/stack-components/artifact-stores). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
+[Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](/stack-components/artifact-stores). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 <Frame caption="Visualizing artifacts">
   <img src="/_assets/how-to/stack-50.png"/>
 </Frame>

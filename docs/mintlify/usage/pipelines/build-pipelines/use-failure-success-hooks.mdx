@@ -70,7 +70,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 >
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](/versions/0.66.0/how-to/setting-up-a-project-repository/using-project-templates)_._
 
-In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/versions/0.66.0/stack-components/alerters) from the active stack.
+In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/stack-components/alerters) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
@@ -121,7 +121,7 @@ def my_step(some_parameter: int = 1)
 >
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](/versions/0.66.0/how-to/setting-up-a-project-repository/using-project-templates)_._
 
-In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/versions/0.66.0/stack-components/alerters) from the active stack.
+In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/stack-components/alerters) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
@@ -160,7 +160,7 @@ def notify_on_success() -> None:
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](/versions/0.66.0/stack-components/alerters) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](/stack-components/alerters) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```py
 
@@ -222,7 +222,7 @@ def notify_on_failure() -> None:
 
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](/versions/0.66.0/how-to/setting-up-a-project-repository/using-project-templates)_._
 
-In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/versions/0.66.0/stack-components/alerters) from the active stack.
+In [steps/alerts/notify\_on.py](https://github.com/zenml-io/zenml/blob/release/0.66.0/examples/e2e/steps/alerts/notify%5Fon.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](/stack-components/alerters) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 

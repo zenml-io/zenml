@@ -35,7 +35,7 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 
 ## Configuring a model in a pipeline
 
-The easiest way to use a ZenML model is to pass a `Model` object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a [YAML config](/versions/0.66.0/user-guide/production-guide/configure-pipeline).
+The easiest way to use a ZenML model is to pass a `Model` object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a [YAML config](/user-guide/guides/production-guide/configure-pipeline).
 
 Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically **linked** to the specified model. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
 
@@ -144,7 +144,7 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Logging metadata to the `Model` object
 
-[Just as one can associate metadata with artifacts](/versions/0.66.0/user-guide/starter-guide/manage-artifacts#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_model_metadata` method:
+[Just as one can associate metadata with artifacts](/user-guide/guides/starter-guide/manage-artifacts#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_model_metadata` method:
 
 ```py
 from zenml import get_step_context, step, log_model_metadata
@@ -196,7 +196,7 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 </Tab>
 </Tabs>
 
-Choosing [log metadata with artifacts](/versions/0.66.0/user-guide/starter-guide/manage-artifacts#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.
+Choosing [log metadata with artifacts](/user-guide/guides/starter-guide/manage-artifacts#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.
 
 Once metadata has been logged to a model, we can retrieve it easily with the client:
 

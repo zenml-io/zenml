@@ -6,12 +6,12 @@ description: "Executing individual steps in specialized environments."
 The step operator enables the execution of individual pipeline steps in specialized runtime environments that are optimized for certain workloads. These specialized environments can give your steps access to resources like GPUs or distributed processing frameworks like [Spark](https://spark.apache.org/).
 
 <Info>
-    **Comparison to orchestrators:** The [orchestrator](/versions/0.66.0/stack-components/orchestrators) is a mandatory stack component that is responsible for executing all steps of a pipeline in the correct order and providing additional features such as scheduling pipeline runs. The step operator on the other hand is used to only execute individual steps of the pipeline in a separate environment in case the environment provided by the orchestrator is not feasible.
+    **Comparison to orchestrators:** The [orchestrator](/stack-components/orchestrators) is a mandatory stack component that is responsible for executing all steps of a pipeline in the correct order and providing additional features such as scheduling pipeline runs. The step operator on the other hand is used to only execute individual steps of the pipeline in a separate environment in case the environment provided by the orchestrator is not feasible.
 </Info>
 
 ### When to use it
 
-A step operator should be used if one or more steps of a pipeline require resources that are not available in the runtime environments provided by the [orchestrator](/versions/0.66.0/stack-components/orchestrators). An example would be a step that trains a computer vision model and requires a GPU to run in a reasonable time, combined with a [Kubeflow orchestrator](/versions/0.66.0/stack-components/orchestrators/kubeflow) running on a Kubernetes cluster that does not contain any GPU nodes. In that case, it makes sense to include a step operator like [SageMaker](/versions/0.66.0/stack-components/step-operators/sagemaker), [Vertex](/versions/0.66.0/stack-components/step-operators/vertex), or [AzureML](/versions/0.66.0/stack-components/step-operators/azureml) to execute the training step with a GPU.
+A step operator should be used if one or more steps of a pipeline require resources that are not available in the runtime environments provided by the [orchestrator](/stack-components/orchestrators). An example would be a step that trains a computer vision model and requires a GPU to run in a reasonable time, combined with a [Kubeflow orchestrator](/stack-components/orchestrators/kubeflow) running on a Kubernetes cluster that does not contain any GPU nodes. In that case, it makes sense to include a step operator like [SageMaker](/stack-components/step-operators/sagemaker), [Vertex](/stack-components/step-operators/vertex), or [AzureML](/stack-components/step-operators/azureml) to execute the training step with a GPU.
 
 ### Step Operator Flavors
 
@@ -19,12 +19,12 @@ Step operators to execute steps on one of the big cloud providers are provided b
 
 | Step Operator                                                    | Flavor     | Integration                                                              | Notes                                                             |
 | ---------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| [SageMaker](/versions/0.66.0/stack-components/step-operators/sagemaker)          | sagemaker  | aws                                                                      | Uses SageMaker to execute steps                                   |
-| [Vertex](/versions/0.66.0/stack-components/step-operators/vertex)                | vertex     | gcp                                                                      | Uses Vertex AI to execute steps                                   |
-| [AzureML](/versions/0.66.0/stack-components/step-operators/azureml)              | azureml    | azure                                                                    | Uses AzureML to execute steps                                     |
-| [Kubernetes](/versions/0.66.0/stack-components/step-operators/kubernetes)        | kubernetes | kubernetes                                                               | Uses Kubernetes Pods to execute steps                             |
-| [Spark](/versions/0.66.0/stack-components/step-operators/spark-kubernetes)       | spark      | spark                                                                    | Uses Spark on Kubernetes to execute steps in a distributed manner |
-| [Custom Implementation](/versions/0.66.0/stack-components/step-operators/custom) | _custom_   | Extend the step operator abstraction and provide your own implementation |                                                                   |
+| [SageMaker](/stack-components/step-operators/sagemaker)          | sagemaker  | aws                                                                      | Uses SageMaker to execute steps                                   |
+| [Vertex](/stack-components/step-operators/vertex)                | vertex     | gcp                                                                      | Uses Vertex AI to execute steps                                   |
+| [AzureML](/stack-components/step-operators/azureml)              | azureml    | azure                                                                    | Uses AzureML to execute steps                                     |
+| [Kubernetes](/stack-components/step-operators/kubernetes)        | kubernetes | kubernetes                                                               | Uses Kubernetes Pods to execute steps                             |
+| [Spark](/stack-components/step-operators/spark-kubernetes)       | spark      | spark                                                                    | Uses Spark on Kubernetes to execute steps in a distributed manner |
+| [Custom Implementation](/stack-components/step-operators/custom) | _custom_   | Extend the step operator abstraction and provide your own implementation |                                                                   |
 
 If you would like to see the available flavors of step operators, you can use the command:
 
@@ -34,7 +34,7 @@ zenml step-operator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](/versions/0.66.0/user-guide/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
+You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](/user-guide/guides/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
 
 ```bash
 from zenml import step

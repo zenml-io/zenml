@@ -32,7 +32,7 @@ There are many options to use a deployed Airflow server:
 If you're not using `mlstacks` to deploy Airflow, there are some additional Python packages that you'll need to install in the Python environment of your Airflow server:
 
 * `pydantic~=2.7.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate configuration files.
-* `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](/versions/0.66.0/stack-components/orchestrators/airflow#using-different-airflow-operators) for more information on supported operators.
+* `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](/stack-components/orchestrators/airflow#using-different-airflow-operators) for more information on supported operators.
 
 ### How to use it
 
@@ -121,9 +121,9 @@ python file_that_runs_a_zenml_pipeline.py
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
 * A remote ZenML server deployed to the cloud. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
-* A deployed Airflow server. See the [deployment section](/versions/0.66.0/stack-components/orchestrators/airflow#how-to-deploy-it) for more information.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
+* A deployed Airflow server. See the [deployment section](/stack-components/orchestrators/airflow#how-to-deploy-it) for more information.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
 
 In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators. Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run the pipeline, but instead will create a `.zip` file containing an Airflow representation of your ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the [DAGs directory](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
     </Tab>

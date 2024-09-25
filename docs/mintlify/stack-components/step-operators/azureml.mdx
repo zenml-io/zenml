@@ -10,7 +10,7 @@ description: "Executing individual steps in AzureML."
 You should use the AzureML step operator if:
 
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are not provided by your orchestrator.
-* you have access to AzureML. If you're using a different cloud provider, take a look at the [SageMaker](/versions/0.66.0/stack-components/step-operators/sagemaker) or [Vertex](/versions/0.66.0/stack-components/step-operators/vertex) step operators.
+* you have access to AzureML. If you're using a different cloud provider, take a look at the [SageMaker](/stack-components/step-operators/sagemaker) or [Vertex](/stack-components/step-operators/vertex) step operators.
 
 ### How to deploy it
 
@@ -32,14 +32,14 @@ To use the AzureML step operator, we need:
 zenml integration install azure
 ```
 * [Docker](https://www.docker.com) installed and running.
-* An [Azure container registry](/versions/0.66.0/stack-components/container-registries/azure) as part of your stack. Take a look [here](/versions/0.66.0/stack-components/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
-* An [Azure artifact store](/versions/0.66.0/stack-components/artifact-stores/azure) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](/versions/0.66.0/stack-components/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
-* An AzureML workspace and an optional compute cluster. Note that the AzureML workspace can share the Azure container registry and Azure storage account that are required above. See the [deployment section](/versions/0.66.0/stack-components/step-operators/azureml#how-to-deploy-it) for detailed instructions.
+* An [Azure container registry](/stack-components/container-registries/azure) as part of your stack. Take a look [here](/stack-components/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An [Azure artifact store](/stack-components/artifact-stores/azure) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](/stack-components/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An AzureML workspace and an optional compute cluster. Note that the AzureML workspace can share the Azure container registry and Azure storage account that are required above. See the [deployment section](/stack-components/step-operators/azureml#how-to-deploy-it) for detailed instructions.
 
 There are two ways you can authenticate your step operator to be able to run steps on Azure:
 <Tabs>
     <Tab title="Authentication via Service Connector">
-        The recommended way to authenticate your AzureML step operator is by registering or using an existing [Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector) and connecting it to your AzureML step operator. The credentials configured for the connector must have permissions to create and manage AzureML jobs (e.g. [the AzureML Data Scientist and AzureML Compute Operator managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)). The AzureML step operator uses the `azure-generic` resource type, so make sure to configure the connector accordingly:
+        The recommended way to authenticate your AzureML step operator is by registering or using an existing [Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector) and connecting it to your AzureML step operator. The credentials configured for the connector must have permissions to create and manage AzureML jobs (e.g. [the AzureML Data Scientist and AzureML Compute Operator managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)). The AzureML step operator uses the `azure-generic` resource type, so make sure to configure the connector accordingly:
 
         ```bash
         zenml service-connector register <CONNECTOR_NAME> --type azure -i
@@ -58,7 +58,7 @@ There are two ways you can authenticate your step operator to be able to run ste
 
 If you don't connect your step operator to a service connector:
 
-* If using a [local orchestrator](/versions/0.66.0/stack-components/orchestrators/local): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI has permissions to create and manage AzureML jobs (e.g. [the AzureML Data Scientist and AzureML Compute Operator managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)).
+* If using a [local orchestrator](/stack-components/orchestrators/local): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI has permissions to create and manage AzureML jobs (e.g. [the AzureML Data Scientist and AzureML Compute Operator managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)).
 * If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to Azure and have permissions to create and manage AzureML jobs. This is only possible if the orchestrator is also running in Azure and uses a form of implicit workload authentication like a service role. If this is not the case, you will need to use a service connector.
 
 ```bash

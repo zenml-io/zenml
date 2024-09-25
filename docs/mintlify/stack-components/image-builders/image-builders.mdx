@@ -8,7 +8,7 @@ The image builder is an essential part of most remote MLOps stacks. It is used t
 
 ### When to use it
 
-The image builder is needed whenever other components of your stack need to build container images. Currently, this is the case for most of ZenML's remote [orchestrators](/versions/0.66.0/stack-components/orchestrators) , [step operators](/versions/0.66.0/stack-components/step-operators), and some [model deployers](/versions/0.66.0/stack-components/model-deployers). These containerize your pipeline code and therefore require an image builder to build [Docker](https://www.docker.com/) images.
+The image builder is needed whenever other components of your stack need to build container images. Currently, this is the case for most of ZenML's remote [orchestrators](/stack-components/orchestrators) , [step operators](/stack-components/step-operators), and some [model deployers](/stack-components/model-deployers). These containerize your pipeline code and therefore require an image builder to build [Docker](https://www.docker.com/) images.
 
 ### Image Builder Flavors
 
@@ -16,10 +16,10 @@ Out of the box, ZenML comes with a `local` image builder that builds Docker imag
 
 | Image Builder                                                    | Flavor   | Integration                                                              | Notes                                                 |
 | ---------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ | ----------------------------------------------------- |
-| [LocalImageBuilder](/versions/0.66.0/stack-components/image-builders/local)      | local    | _built-in_                                                               | Builds your Docker images locally.                    |
-| [KanikoImageBuilder](/versions/0.66.0/stack-components/image-builders/kaniko)    | kaniko   | kaniko                                                                   | Builds your Docker images in Kubernetes using Kaniko. |
-| [GCPImageBuilder](/versions/0.66.0/stack-components/image-builders/gcp)          | gcp      | gcp                                                                      | Builds your Docker images using Google Cloud Build.   |
-| [Custom Implementation](/versions/0.66.0/stack-components/image-builders/custom) | _custom_ | Extend the image builder abstraction and provide your own implementation |                                                       |
+| [LocalImageBuilder](/stack-components/image-builders/local)      | local    | _built-in_                                                               | Builds your Docker images locally.                    |
+| [KanikoImageBuilder](/stack-components/image-builders/kaniko)    | kaniko   | kaniko                                                                   | Builds your Docker images in Kubernetes using Kaniko. |
+| [GCPImageBuilder](/stack-components/image-builders/gcp)          | gcp      | gcp                                                                      | Builds your Docker images using Google Cloud Build.   |
+| [Custom Implementation](/stack-components/image-builders/custom) | _custom_ | Extend the image builder abstraction and provide your own implementation |                                                       |
 
 If you would like to see the available flavors of image builders, you can use the command:
 
@@ -29,4 +29,4 @@ zenml image-builder flavor list
 
 ### How to use it
 
-You don't need to directly interact with any image builder in your code. As long as the image builder that you want to use is part of your active [ZenML stack](/versions/0.66.0/user-guide/production-guide/understand-stacks), it will be used automatically by any component that needs to build container images.
+You don't need to directly interact with any image builder in your code. As long as the image builder that you want to use is part of your active [ZenML stack](/user-guide/guides/production-guide/understand-stacks), it will be used automatically by any component that needs to build container images.

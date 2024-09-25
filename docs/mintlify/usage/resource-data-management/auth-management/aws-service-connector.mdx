@@ -6,7 +6,7 @@ icon: aws
 
 The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR container repositories, and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS secret keys, IAM roles, short-lived STS tokens, and implicit authentication.
 
-To ensure heightened security measures, this connector also enables [the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for accessing the intended resource. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the AWS CLI](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration).
+To ensure heightened security measures, this connector also enables [the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for accessing the intended resource. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the AWS CLI](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration).
 
 This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
@@ -84,7 +84,7 @@ The configured credentials must have at least the following [AWS IAM permissions
 * `s3:ListAllMyBuckets`
 
 <Info>
-    If you are using the [AWS IAM role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+    If you are using the [AWS IAM role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 </Info>
 
 If set, the resource name must identify an S3 bucket using one of the following formats:
@@ -103,10 +103,10 @@ The configured credentials must have at least the following [AWS IAM permissions
 * `eks:DescribeCluster`
 
 <Info>
-    If you are using the [AWS IAM role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token) or [Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+    If you are using the [AWS IAM role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token) or [Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 </Info>
 
-In addition to the above permissions, if the credentials are not associated with the same IAM user or role that created the EKS cluster, the IAM principal must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the Kubernetes client will not be allowed to access the cluster's resources. This makes it more challenging to use [the AWS Implicit](/versions/0.66.0/how-to/auth-management/aws-service-connector#implicit-authentication) and [AWS Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication methods for this resource. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
+In addition to the above permissions, if the credentials are not associated with the same IAM user or role that created the EKS cluster, the IAM principal must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the Kubernetes client will not be allowed to access the cluster's resources. This makes it more challenging to use [the AWS Implicit](/usage/resource-data-management/auth-management/aws-service-connector#implicit-authentication) and [AWS Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication methods for this resource. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
 If set, the resource name must identify an EKS cluster using one of the following formats:
 
@@ -135,7 +135,7 @@ The configured credentials must have at least the following [AWS IAM permissions
 * `ecr:GetAuthorizationToken`
 
 <Info>
-    If you are using the [AWS IAM role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+    If you are using the [AWS IAM role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 </Info>
 
 This resource type is not scoped to a single ECR repository. Instead, a connector configured with this resource type will grant access to all the ECR repositories that the credentials are allowed to access under the configured AWS region (i.e. all repositories under the Docker registry URL `https://{account-id}.dkr.ecr.{region}.amazonaws.com`).
@@ -156,7 +156,7 @@ ECR repository names are region scoped. The connector can only be used to access
 
 ### Implicit authentication
 
-[Implicit authentication](/versions/0.66.0/how-to/auth-management/best-security-practices#implicit-authentication) to AWS services using environment variables, local configuration files or IAM roles.
+[Implicit authentication](/usage/resource-data-management/auth-management/best-security-practices#implicit-authentication) to AWS services using environment variables, local configuration files or IAM roles.
 
 <Note>
     This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
@@ -173,14 +173,14 @@ This is the quickest and easiest way to authenticate to AWS services. However, t
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are the same as those used by the AWS CLI or extracted from local environment variables
 * when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allow listing and accessing/describing the AWS resources that the connector is configured to access.
 
-An IAM role may optionally be specified to be assumed by the connector on top of the implicit credentials. This is only possible when the implicit credentials have permissions to assume the target IAM role. Configuring an IAM role has all the advantages of the [AWS IAM Role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role) authentication method plus the added benefit of not requiring any explicit credentials to be configured and stored:
+An IAM role may optionally be specified to be assumed by the connector on top of the implicit credentials. This is only possible when the implicit credentials have permissions to assume the target IAM role. Configuring an IAM role has all the advantages of the [AWS IAM Role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role) authentication method plus the added benefit of not requiring any explicit credentials to be configured and stored:
 
-* the connector will [generate temporary STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fassumerole).
-* allows implementing [a two layer authentication scheme](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing IAM role instead.
-* one or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+* the connector will [generate temporary STS tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fassumerole).
+* allows implementing [a two layer authentication scheme](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing IAM role instead.
+* one or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 * the default expiration period for generated STS tokens is 1 hour with a minimum of 15 minutes up to the maximum session duration setting configured for the IAM role (default is 1 hour). If you need longer-lived tokens, you can configure the IAM role to use a higher maximum expiration value (up to 12 hours) or use the AWS Federation Token or AWS Session Token authentication methods.
 
-Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables, or remote AWS IAM role. Depending on the extent of those permissions, this authentication instead method might not be recommended for production use, as it can lead to accidental privilege escalation. It is recommended to also configure an IAM role when using the implicit authentication method, or to use the [AWS IAM Role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [AWS Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token), or [AWS Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication methods instead to limit the validity and/or permissions of the credentials being issued to connector clients.
+Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables, or remote AWS IAM role. Depending on the extent of those permissions, this authentication instead method might not be recommended for production use, as it can lead to accidental privilege escalation. It is recommended to also configure an IAM role when using the implicit authentication method, or to use the [AWS IAM Role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [AWS Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token), or [AWS Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication methods instead to limit the validity and/or permissions of the credentials being issued to connector clients.
 
 <Info>
     If you need to access an EKS Kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the implicit IAM user or role picked up by the Service Connector. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
@@ -590,9 +590,9 @@ Service connector 'aws-implicit (s3-bucket | s3://sagemaker-studio-d8a14tvjsmb c
 
 ### AWS Secret Key
 
-[Long-lived AWS credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consisting of an AWS access key ID and secret access key associated with an AWS IAM user or AWS account root user (not recommended).
+[Long-lived AWS credentials](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consisting of an AWS access key ID and secret access key associated with an AWS IAM user or AWS account root user (not recommended).
 
-This method is preferred during development and testing due to its simplicity and ease of use. It is not recommended as a direct authentication method for production use cases because the clients have direct access to long-lived credentials and are granted the full set of permissions of the IAM user or AWS account root user associated with the credentials. For production, it is recommended to use [the AWS IAM Role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [AWS Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token), or [AWS Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) authentication method instead.
+This method is preferred during development and testing due to its simplicity and ease of use. It is not recommended as a direct authentication method for production use cases because the clients have direct access to long-lived credentials and are granted the full set of permissions of the IAM user or AWS account root user associated with the credentials. For production, it is recommended to use [the AWS IAM Role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [AWS Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token), or [AWS Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) authentication method instead.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
@@ -601,7 +601,7 @@ If you already have the local AWS CLI set up with these credentials, they will b
     title="Example auto-configuration"
 >
 
-The following assumes the local AWS CLI has a `connectors` AWS CLI profile configured with an AWS Secret Key. We need to force the ZenML CLI to use the Secret Key authentication by passing the `--auth-method secret-key` option, otherwise it would automatically use [the AWS Session Token authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token) as an extra precaution:
+The following assumes the local AWS CLI has a `connectors` AWS CLI profile configured with an AWS Secret Key. We need to force the ZenML CLI to use the Secret Key authentication by passing the `--auth-method secret-key` option, otherwise it would automatically use [the AWS Session Token authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token) as an extra precaution:
 
 
 
@@ -745,17 +745,17 @@ Service connector 'aws-secret-key' of type 'aws' with id 'a1b07c5a-13af-4571-8e6
 
 ### AWS STS Token
 
-Uses [temporary STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
+Uses [temporary STS tokens](/usage/resource-data-management/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as STS tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
-Using other authentication methods like [IAM role](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [Session Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-federation-token) will automatically generate and refresh STS tokens for clients upon request.
+Using other authentication methods like [IAM role](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [Session Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token), or [Federation Token](/usage/resource-data-management/auth-management/aws-service-connector#aws-federation-token) will automatically generate and refresh STS tokens for clients upon request.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 <Accordion
     title="Example auto-configuration"
 >
-Fetching STS tokens from the local AWS CLI is possible if the AWS CLI is already configured with valid credentials. In our example, the `connectors` AWS CLI profile is configured with an IAM user Secret Key. We need to force the ZenML CLI to use the STS token authentication by passing the `--auth-method sts-token` option, otherwise it would automatically use [the session token authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-session-token):
+Fetching STS tokens from the local AWS CLI is possible if the AWS CLI is already configured with valid credentials. In our example, the `connectors` AWS CLI profile is configured with an IAM user Secret Key. We need to force the ZenML CLI to use the STS token authentication by passing the `--auth-method sts-token` option, otherwise it would automatically use [the session token authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-session-token):
 
 
 
@@ -932,17 +932,17 @@ Example Command Output
 
 ### AWS IAM Role
 
-Generates [temporary STS credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
+Generates [temporary STS credentials](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
 
-This authentication method still requires credentials to be explicitly configured. If your ZenML server is running in AWS and you're looking for an alternative that uses implicit credentials while at the same time benefits from all the security advantages of assuming an IAM role, you should [use the implicit authentication method with a configured IAM role](/versions/0.66.0/how-to/auth-management/aws-service-connector#implicit-authentication) instead.
+This authentication method still requires credentials to be explicitly configured. If your ZenML server is running in AWS and you're looking for an alternative that uses implicit credentials while at the same time benefits from all the security advantages of assuming an IAM role, you should [use the implicit authentication method with a configured IAM role](/usage/resource-data-management/auth-management/aws-service-connector#implicit-authentication) instead.
 
-The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permission to assume the target IAM role. The connector will [generate temporary STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fassumerole).
+The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permission to assume the target IAM role. The connector will [generate temporary STS tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fassumerole).
 
-[The best practice implemented with this authentication scheme](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege-bearing IAM role instead.
+[The best practice implemented with this authentication scheme](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege-bearing IAM role instead.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
-One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 
 The default expiration period for generated STS tokens is 1 hour with a minimum of 15 minutes up to the maximum session duration setting configured for the IAM role (default is 1 hour). If you need longer-lived tokens, you can configure the IAM role to use a higher maximum expiration value (up to 12 hours) or use the AWS Federation Token or AWS Session Token authentication methods.
 
@@ -1202,19 +1202,19 @@ Service connector 'aws-iam-role (s3-bucket | s3://zenfiles client)' of type 'aws
 
 ### AWS Session Token
 
-Generates [temporary session STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for IAM users.
+Generates [temporary session STS tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for IAM users.
 
-The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The connector will [generate temporary STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by calling [the GetSessionToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fgetsessiontoken).
+The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The connector will [generate temporary STS tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) upon request by calling [the GetSessionToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fgetsessiontoken).
 
-The STS tokens have an expiration period longer than those issued through the [AWS IAM Role authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
+The STS tokens have an expiration period longer than those issued through the [AWS IAM Role authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
 The default expiration period for generated STS tokens is 12 hours with a minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained by using the AWS account root user credentials (not recommended) have a maximum duration of 1 hour.
 
-As a precaution, when long-lived credentials (i.e. AWS Secret Keys) are detected on your environment by the Service Connector during auto-configuration, this authentication method is automatically chosen instead of the AWS [Secret Key authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-secret-key) alternative.
+As a precaution, when long-lived credentials (i.e. AWS Secret Keys) are detected on your environment by the Service Connector during auto-configuration, this authentication method is automatically chosen instead of the AWS [Secret Key authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-secret-key) alternative.
 
-Generated STS tokens inherit the full set of permissions of the IAM user or AWS account root user that is calling the GetSessionToken API. Depending on your security needs, this may not be suitable for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the AWS Federation Token or [AWS IAM Role authentication](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role) methods to restrict the permissions of the generated STS tokens.
+Generated STS tokens inherit the full set of permissions of the IAM user or AWS account root user that is calling the GetSessionToken API. Depending on your security needs, this may not be suitable for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the AWS Federation Token or [AWS IAM Role authentication](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role) methods to restrict the permissions of the generated STS tokens.
 
 For more information on session tokens and the GetSessionToken AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fgetsessiontoken).
 <Accordion
@@ -1466,18 +1466,18 @@ Service connector 'aws-session-token (s3-bucket | s3://zenfiles client)' of type
 
 ### AWS Federation Token
 
-Generates [temporary STS tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for federated users by [impersonating another user](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles).
+Generates [temporary STS tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) for federated users by [impersonating another user](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles).
 
 The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The IAM user must have permission to call [the GetFederationToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fgetfederationtoken) (i.e. allow the `sts:GetFederationToken` action on the `*` IAM resource). The connector will generate temporary STS tokens upon request by calling the GetFederationToken STS API.
 
-These STS tokens have an expiration period longer than those issued through [the AWS IAM Role authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
+These STS tokens have an expiration period longer than those issued through [the AWS IAM Role authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
-One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access%5Fpolicies.html#policies%5Fsession) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 
 <Note>
-    If this authentication method is used with [the generic AWS resource type](/versions/0.66.0/how-to/auth-management/aws-service-connector#generic-aws-resource), a session policy MUST be explicitly specified, otherwise, the generated STS tokens will not have any permissions.
+    If this authentication method is used with [the generic AWS resource type](/usage/resource-data-management/auth-management/aws-service-connector#generic-aws-resource), a session policy MUST be explicitly specified, otherwise, the generated STS tokens will not have any permissions.
 </Note>
 
 The default expiration period for generated STS tokens is 12 hours with a minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained by using the AWS account root user credentials (not recommended) have a maximum duration of 1 hour.
@@ -1488,7 +1488,7 @@ The default expiration period for generated STS tokens is 12 hours with a minimu
 
 For more information on user federation tokens, session policies, and the GetFederationToken AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id%5Fcredentials%5Ftemp%5Frequest.html#api%5Fgetfederationtoken).
 
-For more information about the difference between this method and [the AWS IAM Role authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role), [consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).
+For more information about the difference between this method and [the AWS IAM Role authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role), [consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).
 <Accordion
     title="Example auto-configuration"
 >
@@ -1739,12 +1739,12 @@ Service connector 'aws-federation-token (s3-bucket | s3://zenfiles client)' of t
 
 ## Auto-configuration
 
-The AWS Service Connector allows [auto-discovering and fetching credentials](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration) and configuration set up [by the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) during registration. The default AWS CLI profile is used unless the AWS\_PROFILE environment points to a different profile.
+The AWS Service Connector allows [auto-discovering and fetching credentials](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration) and configuration set up [by the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) during registration. The default AWS CLI profile is used unless the AWS\_PROFILE environment points to a different profile.
 <Accordion
     title="Auto-configuration example"
 >
 
-The following is an example of lifting AWS credentials granting access to the same set of AWS resources and services that the local AWS CLI is allowed to access. In this case, [the IAM role authentication method](/versions/0.66.0/how-to/auth-management/aws-service-connector#aws-iam-role) was automatically detected:
+The following is an example of lifting AWS credentials granting access to the same set of AWS resources and services that the local AWS CLI is allowed to access. In this case, [the IAM role authentication method](/usage/resource-data-management/auth-management/aws-service-connector#aws-iam-role) was automatically detected:
 
 
 
@@ -1894,7 +1894,7 @@ Service connector 'aws-auto' of type 'aws' with id '9f3139fd-4726-421a-bc07-312d
 
 ## Local client provisioning
 
-The local AWS CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the Kubernetes and Docker credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
+The local AWS CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the Kubernetes and Docker credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
 
 <Info>
     Configuring the local AWS CLI with credentials issued by the AWS Service Connector results in a local AWS CLI configuration profile being created with the name inferred from the first digits of the Service Connector UUID in the form -\<uuid\[:8\]>. For example, a Service Connector with UUID `9f3139fd-4726-421a-bc07-312d83f0c89e` will result in a local AWS CLI configuration profile named `zenml-9f3139fd`.
@@ -2124,7 +2124,7 @@ aws --profile zenml-c0f8e857 s3 ls
 
 ## Stack Components use
 
-The [S3 Artifact Store Stack Component](/versions/0.66.0/stack-components/artifact-stores/s3) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
+The [S3 Artifact Store Stack Component](/stack-components/artifact-stores/s3) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
 
 The AWS Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows EKS Kubernetes container workloads to be managed without the need to configure and maintain explicit AWS or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
@@ -2137,10 +2137,10 @@ Similarly, Container Registry Stack Components can be connected to an ECR Contai
 
 This is an example of an end-to-end workflow involving Service Connectors that use a single multi-type AWS Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes) connected to an EKS Kubernetes cluster
-* an [S3 Artifact Store](/versions/0.66.0/stack-components/artifact-stores/s3) connected to an S3 bucket
-* an [ECR Container Registry](/versions/0.66.0/stack-components/container-registries/aws) stack component connected to an ECR container registry
-* a local [Image Builder](/versions/0.66.0/stack-components/image-builders/local)
+* a [Kubernetes Orchestrator](/stack-components/orchestrators/kubernetes) connected to an EKS Kubernetes cluster
+* an [S3 Artifact Store](/stack-components/artifact-stores/s3) connected to an S3 bucket
+* an [ECR Container Registry](/stack-components/container-registries/aws) stack component connected to an ECR container registry
+* a local [Image Builder](/stack-components/image-builders/local)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 

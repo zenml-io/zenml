@@ -23,7 +23,7 @@ Much like ZenML, `pydantic` is an important dependency in many other Python pack
 
 ### Airflow
 
-As mentioned above upgrading our `pydantic` dependency meant we had to upgrade our `sqlmodel` dependency. Upgrading our `sqlmodel` dependency meant we had to upgrade our `sqlalchemy` dependency as well. Unfortunately, `apache-airflow` is still using `sqlalchemy` v1 and is incompatible with pydantic v2\. As a solution, we have removed the dependencies of the `airflow` integration. Now, you can use ZenML to create your Airflow pipelines and use a separate environment to run them with Airflow. You can check the updated docs [right here](https://docs.zenml.io/versions/0.66.0/stack-components/orchestrators/airflow).
+As mentioned above upgrading our `pydantic` dependency meant we had to upgrade our `sqlmodel` dependency. Upgrading our `sqlmodel` dependency meant we had to upgrade our `sqlalchemy` dependency as well. Unfortunately, `apache-airflow` is still using `sqlalchemy` v1 and is incompatible with pydantic v2\. As a solution, we have removed the dependencies of the `airflow` integration. Now, you can use ZenML to create your Airflow pipelines and use a separate environment to run them with Airflow. You can check the updated docs [right here](https://docs.zenml.io/stack-components/orchestrators/airflow).
 
 ### AWS
 

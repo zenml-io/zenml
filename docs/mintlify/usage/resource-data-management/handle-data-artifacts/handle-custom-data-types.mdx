@@ -4,7 +4,7 @@ description: "Using materializers to pass custom data types through steps."
 icon: database
 ---
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](/versions/0.66.0/stack-components/artifact-stores). This is where **materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](/stack-components/artifact-stores). This is where **materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
@@ -31,7 +31,7 @@ Moreover, using the `CloudpickleMaterializer` could allow users to upload of any
 
 ## Integration Materializers
 
-In addition to the built-in materializers, ZenML also provides several integration-specific materializers that can be activated by installing the respective [integration](/versions/0.66.0/stack-components/component-guide):
+In addition to the built-in materializers, ZenML also provides several integration-specific materializers that can be activated by installing the respective [integration](/stack-components/component-guide):
 
 | Integration         | Materializer                                                                                                                                                                                                                        | Handled Data Types                                                         | Storage Format    |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------- |
@@ -61,7 +61,7 @@ In addition to the built-in materializers, ZenML also provides several integrati
 | xgboost             | [XgboostDMatrixMaterializer](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-xgboost/#zenml.integrations.xgboost.materializers.xgboost%5Fdmatrix%5Fmaterializer.XgboostDMatrixMaterializer)                  | xgb.DMatrix                                                                | .binary           |
 
 <Note>
-    If you are running pipelines with a Docker-based [orchestrator](/versions/0.66.0/stack-components/orchestrators), you need to specify the corresponding integration as `required_integrations` in the `DockerSettings` of your pipeline in order to have the integration materializer available inside your Docker container. See the [pipeline configuration documentation](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information.
+    If you are running pipelines with a Docker-based [orchestrator](/stack-components/orchestrators), you need to specify the corresponding integration as `required_integrations` in the `DockerSettings` of your pipeline in order to have the integration materializer available inside your Docker container. See the [pipeline configuration documentation](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information.
 </Note>
 
 ## Custom materializers
@@ -143,7 +143,7 @@ steps:
         materializer_source: run.MyMaterializer
 ```
 
-Check out [this page](/versions/0.66.0/user-guide/starter-guide/manage-artifacts) for information on your step output names and how to customize them.
+Check out [this page](/user-guide/guides/starter-guide/manage-artifacts) for information on your step output names and how to customize them.
 
 #### Defining a materializer globally
 

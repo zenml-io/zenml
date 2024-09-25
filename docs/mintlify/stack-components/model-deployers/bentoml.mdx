@@ -7,7 +7,7 @@ icon: laptop-code
 BentoML is an open-source framework for machine learning model serving. it can be used to deploy models locally, in a cloud environment, or in a Kubernetes environment.
 
 <Info>
-    The BentoML Model Deployer is one of the available flavors of the [Model Deployer](/versions/0.66.0/stack-components/model-deployers) stack component. Provided with the BentoML integration it can be used to deploy and manage [BentoML models](https://docs.bentoml.org/en/latest/concepts/model.html) or [Bento](https://docs.bentoml.org/en/latest/concepts/bento.html) on a local running HTTP server.
+    The BentoML Model Deployer is one of the available flavors of the [Model Deployer](/stack-components/model-deployers) stack component. Provided with the BentoML integration it can be used to deploy and manage [BentoML models](https://docs.bentoml.org/en/latest/concepts/model.html) or [Bento](https://docs.bentoml.org/en/latest/concepts/bento.html) on a local running HTTP server.
 </Info>
 The BentoML Model Deployer can be used to deploy models for local development and production use cases. While the integration mainly works in a local environment where pipelines are run, the used [Bento](https://docs.bentoml.org/en/latest/concepts/bento.html) can be exported and containerized, and deployed in a remote environment. Within the BentoML ecosystem, [Yatai](https://github.com/bentoml/Yatai) and [bentoctl](https://github.com/bentoml/bentoctl) are the tools responsible for deploying the Bentos into the Kubernetes cluster and Cloud Platforms. Full support for these advanced tools is in progress and will be available soon.
 
@@ -18,9 +18,9 @@ You should use the BentoML Model Deployer to:
 * Standardize the way you deploy your models to production within your organization.
 * if you are looking to deploy your models in a simple way, while you are still able to transform your model into a production-ready solution when that time comes.
 
-If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the other [Model Deployer Flavors](/versions/0.66.0/stack-components/model-deployers#model-deployers-flavors) available in ZenML.
+If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the other [Model Deployer Flavors](/stack-components/model-deployers#model-deployers-flavors) available in ZenML.
 
-BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with bentoctl section](/versions/0.66.0/stack-components/model-deployers/bentoml#from-local-to-cloud-with-bentoctl).
+BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with bentoctl section](/stack-components/model-deployers/bentoml#from-local-to-cloud-with-bentoctl).
 
 <Info>
     The `bentoctl` integration implementation is still in progress and will be available soon. The integration will allow you to deploy your models to a specific cloud provider with just a few lines of code using ZenML built-in steps.
@@ -44,7 +44,7 @@ The ZenML integration will provision a local HTTP deployment server as a daemon 
 
 ## How do you use it?
 
-The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](/versions/0.66.0/stack-components/model-deployers/bentoml#bentoml-service-and-runner), then [use the bento\_builder\_step](/versions/0.66.0/stack-components/model-deployers/bentoml#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the bentoml\_model\_deployer\_step](/versions/0.66.0/stack-components/model-deployers/bentoml#zenml-bentoml-deployer-step).
+The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](/stack-components/model-deployers/bentoml#bentoml-service-and-runner), then [use the bento\_builder\_step](/stack-components/model-deployers/bentoml#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the bentoml\_model\_deployer\_step](/stack-components/model-deployers/bentoml#zenml-bentoml-deployer-step).
 
 ### BentoML Service and Runner
 

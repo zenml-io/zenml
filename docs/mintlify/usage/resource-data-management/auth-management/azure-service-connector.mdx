@@ -6,7 +6,7 @@ icon: book
 
 The ZenML Azure Service Connector facilitates the authentication and access to managed Azure services and resources. These encompass a range of resources, including blob storage containers, ACR repositories, and AKS clusters.
 
-This connector also supports [automatic configuration and detection of credentials](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration) locally configured through the Azure CLI.
+This connector also supports [automatic configuration and detection of credentials](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration) locally configured through the Azure CLI.
 
 This connector serves as a general means of accessing any Azure service by issuing credentials to clients. Additionally, the connector can handle specialized authentication for Azure blob storage, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
@@ -108,7 +108,7 @@ If an authentication method other than the Azure service principal is used for a
 
 ### Implicit authentication
 
-[Implicit authentication](/versions/0.66.0/how-to/auth-management/best-security-practices#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
+[Implicit authentication](/usage/resource-data-management/auth-management/best-security-practices#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
 
 <Note>
     This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
@@ -388,14 +388,14 @@ Example Command Output
 
 ### Azure Access Token
 
-Uses [temporary Azure access tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
+Uses [temporary Azure access tokens](/usage/resource-data-management/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as API tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
 This is the authentication method used during auto-configuration, if you have [the local Azure CLI set up with credentials](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli). The connector will generate an access token from the Azure CLI credentials and store it in the connector configuration.
 
 <Note>
-    Given that Azure access tokens are scoped to a particular Azure resource and the access token generated during auto-configuration is scoped to the Azure Management API, this method does not work with Azure blob storage resources. You should use [the Azure service principal authentication method](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-service-principal) for blob storage resources instead.
+    Given that Azure access tokens are scoped to a particular Azure resource and the access token generated during auto-configuration is scoped to the Azure Management API, this method does not work with Azure blob storage resources. You should use [the Azure service principal authentication method](/usage/resource-data-management/auth-management/azure-service-connector#azure-service-principal) for blob storage resources instead.
 </Note>
 <Accordion
     title="Example auto-configuration">
@@ -563,23 +563,23 @@ Could not import GCP service connector: No module named 'google.api_core'.
 
 ## Auto-configuration
 
-The Azure Service Connector allows [auto-discovering and fetching credentials](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
+The Azure Service Connector allows [auto-discovering and fetching credentials](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
 
 <Note>
     The Azure service connector auto-configuration comes with two limitations:
 
 1. it can only pick up temporary Azure access tokens and therefore cannot be used for long-term authentication scenarios
-2. it doesn't support authenticating to the Azure blob storage service. [The Azure service principal authentication method](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-service-principal) can be used instead.
+2. it doesn't support authenticating to the Azure blob storage service. [The Azure service principal authentication method](/usage/resource-data-management/auth-management/azure-service-connector#azure-service-principal) can be used instead.
 
 </Note>
-For an auto-configuration example, please refer to the [section about Azure access tokens](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-access-token).
+For an auto-configuration example, please refer to the [section about Azure access tokens](/usage/resource-data-management/auth-management/azure-service-connector#azure-access-token).
 
 ## Local client provisioning
 
-The local Azure CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#configure-local-clients).
+The local Azure CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#configure-local-clients).
 
 <Note>
-    Note that the Azure local CLI can only be configured with credentials issued by the Azure Service Connector if the connector is configured with the [service principal authentication method](/versions/0.66.0/how-to/auth-management/azure-service-connector#azure-service-principal).
+    Note that the Azure local CLI can only be configured with credentials issued by the Azure Service Connector if the connector is configured with the [service principal authentication method](/usage/resource-data-management/auth-management/azure-service-connector#azure-service-principal).
 </Note>
 
 <Accordion
@@ -797,7 +797,7 @@ The 'azure-service-principal' Azure Service Connector connector was used to succ
 
 ## Stack Components use
 
-The [Azure Artifact Store Stack Component](/versions/0.66.0/stack-components/artifact-stores/azure) can be connected to a remote Azure blob storage container through an Azure Service Connector.
+The [Azure Artifact Store Stack Component](/stack-components/artifact-stores/azure) can be connected to a remote Azure blob storage container through an Azure Service Connector.
 
 The Azure Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows AKS Kubernetes container workloads to be managed without the need to configure and maintain explicit Azure or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
@@ -809,10 +809,10 @@ Similarly, Container Registry Stack Components can be connected to a ACR Contain
 >
 This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type Azure Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes) connected to an AKS Kubernetes cluster
-* a [Azure Blob Storage Artifact Store](/versions/0.66.0/stack-components/artifact-stores/azure) connected to an Azure blob storage container
-* an [Azure Container Registry](/versions/0.66.0/stack-components/container-registries/azure) connected to an ACR container registry
-* a local [Image Builder](/versions/0.66.0/stack-components/image-builders/local)
+* a [Kubernetes Orchestrator](/stack-components/orchestrators/kubernetes) connected to an AKS Kubernetes cluster
+* a [Azure Blob Storage Artifact Store](/stack-components/artifact-stores/azure) connected to an Azure blob storage container
+* an [Azure Container Registry](/stack-components/container-registries/azure) connected to an ACR container registry
+* a local [Image Builder](/stack-components/image-builders/local)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 

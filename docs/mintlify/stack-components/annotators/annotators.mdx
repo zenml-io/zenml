@@ -40,11 +40,11 @@ For production use cases, some more flavors can be found in specific `integratio
 
 | Annotator                                                         | Flavor        | Integration                                                          | Notes                                                                               |
 | ----------------------------------------------------------------- | ------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [ArgillaAnnotator](/versions/0.66.0/stack-components/annotators/argilla)          | argilla       | argilla                                                              | Connect ZenML with Argilla                                                          |
-| [LabelStudioAnnotator](/versions/0.66.0/stack-components/annotators/label-studio) | label\_studio | label\_studio                                                        | Connect ZenML with Label Studio                                                     |
-| [PigeonAnnotator](/versions/0.66.0/stack-components/annotators/pigeon)            | pigeon        | pigeon                                                               | Connect ZenML with Pigeon. Notebook only & for image and text classification tasks. |
-| [ProdigyAnnotator](/versions/0.66.0/stack-components/annotators/prodigy)          | prodigy       | prodigy                                                              | Connect ZenML with [Prodigy](https://prodi.gy/)                                     |
-| [Custom Implementation](/versions/0.66.0/stack-components/annotators/custom)      | _custom_      | Extend the annotator abstraction and provide your own implementation |                                                                                     |
+| [ArgillaAnnotator](/stack-components/annotators/argilla)          | argilla       | argilla                                                              | Connect ZenML with Argilla                                                          |
+| [LabelStudioAnnotator](/stack-components/annotators/label-studio) | label\_studio | label\_studio                                                        | Connect ZenML with Label Studio                                                     |
+| [PigeonAnnotator](/stack-components/annotators/pigeon)            | pigeon        | pigeon                                                               | Connect ZenML with Pigeon. Notebook only & for image and text classification tasks. |
+| [ProdigyAnnotator](/stack-components/annotators/prodigy)          | prodigy       | prodigy                                                              | Connect ZenML with [Prodigy](https://prodi.gy/)                                     |
+| [Custom Implementation](/stack-components/annotators/custom)      | _custom_      | Extend the annotator abstraction and provide your own implementation |                                                                                     |
 
 If you would like to see the available flavors for annotators, you can use the command:
 
@@ -54,7 +54,7 @@ zenml annotator flavor list
 
 ### How to use it
 
-The available implementation of the annotator is built on top of the Label Studio integration, which means that using an annotator currently is no different from what's described on the [Label Studio page: How to use it?](/versions/0.66.0/stack-components/annotators/label-studio#how-do-you-use-it). ([Pigeon](/versions/0.66.0/stack-components/annotators/pigeon) is also supported, but has a very limited functionality and only works within Jupyter notebooks.)
+The available implementation of the annotator is built on top of the Label Studio integration, which means that using an annotator currently is no different from what's described on the [Label Studio page: How to use it?](/stack-components/annotators/label-studio#how-do-you-use-it). ([Pigeon](/stack-components/annotators/pigeon) is also supported, but has a very limited functionality and only works within Jupyter notebooks.)
 
 ### A note on names
 

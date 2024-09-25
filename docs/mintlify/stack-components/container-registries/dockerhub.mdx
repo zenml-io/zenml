@@ -4,20 +4,20 @@ description: "Storing container images in DockerHub."
 icon: docker
 ---
 
-The DockerHub container registry is a [container registry](/versions/0.66.0/stack-components/container-registries) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+The DockerHub container registry is a [container registry](/stack-components/container-registries) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
 
 ### When to use it
 
 You should use the DockerHub container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](/versions/0.66.0/stack-components/container-registries#container-registry-flavors).
+* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](/stack-components/container-registries#container-registry-flavors).
 
 ### How to deploy it
 
 To use the DockerHub container registry, all you need to do is create a [DockerHub](https://hub.docker.com/) account.
 
-When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](/versions/0.66.0/stack-components/orchestrators) or [step operator](/versions/0.66.0/stack-components/step-operators) that you're using in your stack.
+When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](/stack-components/orchestrators) or [step operator](/stack-components/step-operators) that you're using in your stack.
 
 ### How to find the registry URI
 
@@ -45,7 +45,7 @@ To figure out the URI for your registry:
 To use the Azure container registry, we need:
 
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](/versions/0.66.0/stack-components/container-registries/dockerhub#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
+* The registry URI. Check out the [previous section](/stack-components/container-registries/dockerhub#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
 

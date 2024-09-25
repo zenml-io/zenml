@@ -10,7 +10,7 @@ description: "Executing individual steps in SageMaker."
 You should use the SageMaker step operator if:
 
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are not provided by your orchestrator.
-* you have access to SageMaker. If you're using a different cloud provider, take a look at the [Vertex](/versions/0.66.0/stack-components/step-operators/vertex) or [AzureML](/versions/0.66.0/stack-components/step-operators/azureml) step operators.
+* you have access to SageMaker. If you're using a different cloud provider, take a look at the [Vertex](/stack-components/step-operators/vertex) or [AzureML](/stack-components/step-operators/azureml) step operators.
 
 ### How to deploy it
 
@@ -36,16 +36,16 @@ Copy
 zenml integration install aws
 ```
 * [Docker](https://www.docker.com) installed and running.
-* An IAM role with the correct permissions. See the [deployment section](/versions/0.66.0/stack-components/step-operators/sagemaker#how-to-deploy-it) for detailed instructions.
-* An [AWS container registry](/versions/0.66.0/stack-components/container-registries/aws) as part of our stack. Take a look [here](/versions/0.66.0/stack-components/container-registries/aws#how-to-deploy-it) for a guide on how to set that up.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and SageMaker can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* An IAM role with the correct permissions. See the [deployment section](/stack-components/step-operators/sagemaker#how-to-deploy-it) for detailed instructions.
+* An [AWS container registry](/stack-components/container-registries/aws) as part of our stack. Take a look [here](/stack-components/container-registries/aws#how-to-deploy-it) for a guide on how to set that up.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and SageMaker can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 * An instance type that we want to execute our steps on. See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html) for a list of available instance types.
 * (Optional) An experiment that is used to group SageMaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
 
 There are two ways you can authenticate your orchestrator to AWS to be able to run steps on SageMaker:
 <Tabs>
     <Tab title="Authentication via Service Connector">
-        The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector) and connecting it to your SageMaker step operator. The credentials configured for the connector must have permissions to create and manage SageMaker runs (e.g. [the AmazonSageMakerFullAccess managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
+        The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector) and connecting it to your SageMaker step operator. The credentials configured for the connector must have permissions to create and manage SageMaker runs (e.g. [the AmazonSageMakerFullAccess managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
 
 ```bash
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -62,7 +62,7 @@ zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
     <Tab title="Implicit Authentication">
 If you don't connect your step operator to a service connector:
 
-* If using a [local orchestrator](/versions/0.66.0/stack-components/orchestrators/local): ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). Make sure this profile has permissions to create and manage SageMaker runs (e.g. [the AmazonSageMakerFullAccess managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions).
+* If using a [local orchestrator](/stack-components/orchestrators/local): ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). Make sure this profile has permissions to create and manage SageMaker runs (e.g. [the AmazonSageMakerFullAccess managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions).
 * If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to AWS and assume the IAM role specified when registering the SageMaker step operator. This is only possible if the orchestrator is also running in AWS and uses a form of implicit workload authentication like the IAM role of an EC2 instance. If this is not the case, you will need to use a service connector.
 
 ```bash

@@ -20,14 +20,14 @@ You should use the SkyPilot VM Orchestrator if:
 * you want to maximize cost savings by leveraging spot VMs and auto-picking the cheapest VM/zone/region/cloud.
 * you want to ensure high GPU availability by provisioning VMs in all zones/regions/clouds you have access to.
 * you don't need a built-in UI of the orchestrator. (You can still use ZenML's Dashboard to view and monitor your pipelines/artifacts.)
-* you're not willing to maintain Kubernetes-based solutions or pay for managed solutions like [Sagemaker](/versions/0.66.0/stack-components/orchestrators/sagemaker).
+* you're not willing to maintain Kubernetes-based solutions or pay for managed solutions like [Sagemaker](/stack-components/orchestrators/sagemaker).
 
 ## How it works
 
 The orchestrator leverages the SkyPilot framework to handle the provisioning and scaling of VMs. It automatically manages the process of launching VMs for your pipelines, with support for both on-demand and managed spot VMs. While you can select the VM type you want to use, the orchestrator also includes an optimizer that automatically selects the cheapest VM/zone/region/cloud for your workloads. Finally, the orchestrator includes an autostop feature that cleans up idle clusters, preventing unnecessary cloud costs.
 
 <Info>
-    You can configure the SkyPilot VM Orchestrator to use a specific VM type, and resources for each step of your pipeline can be configured individually. Read more about how to configure step-specific resources [here](/versions/0.66.0/stack-components/orchestrators/skypilot-vm#configuring-step-specific-resources).
+    You can configure the SkyPilot VM Orchestrator to use a specific VM type, and resources for each step of your pipeline can be configured individually. Read more about how to configure step-specific resources [here](/stack-components/orchestrators/skypilot-vm#configuring-step-specific-resources).
 </Info>
 
 <Note>
@@ -40,7 +40,7 @@ The orchestrator leverages the SkyPilot framework to handle the provisioning and
 
 ## How to deploy it
 
-You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](/versions/0.66.0/how-to/auth-management/service-connectors-guide) feature.
+You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](/usage/resource-data-management/auth-management/service-connectors-guide) feature.
 
 <Info>
     The SkyPilot VM Orchestrator currently only supports the AWS, GCP, and Azure cloud platforms.
@@ -66,11 +66,11 @@ To use the SkyPilot VM Orchestrator, you need:
   zenml integration install azure skypilot_azure # for Azure
 ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
 * A [remote ZenML deployment](/versions/0.66.0/getting-started/deploying-zenml).
 * The appropriate permissions to provision VMs on your cloud provider of choice.
-* A [service connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
+* A [service connector](/usage/resource-data-management/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
 
 <Tabs>
     <Tab title="AWS">
@@ -82,7 +82,7 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
   zenml integration install aws skypilot_aws
 ```
 
-To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
+To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
 
 First, check that the AWS service connector type is available using the following command:
 
@@ -139,7 +139,7 @@ We need first to install the SkyPilot integration for GCP and the GCP extra for 
   zenml integration install gcp skypilot_gcp
 ```
 
-To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector)
+To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector)
 
 To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
@@ -202,7 +202,7 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
   zenml integration install azure skypilot_azure
 ```
 
-To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector)
+To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector)
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
@@ -260,7 +260,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 <Info>
-    The Lambda Labs orchestrator does not support some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](/versions/0.66.0/stack-components/orchestrators/skypilot-vm#configuring-step-specific-resources).
+    The Lambda Labs orchestrator does not support some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](/stack-components/orchestrators/skypilot-vm#configuring-step-specific-resources).
 </Info>
 <Note>
     While testing the orchestrator, we noticed that the Lambda Labs orchestrator does not support the `down` flag. This means the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.

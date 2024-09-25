@@ -128,7 +128,7 @@ The design behind this interaction lets us separate the configuration of the fla
    * Loop over all steps of the pipeline and configure your orchestration tool to run the correct command and arguments in the correct Docker image
    * Make sure the passed environment variables are set when the container is run
    * Make sure the containers are running in the correct order
-Check out the [code sample](/versions/0.66.0/stack-components/orchestrators/custom#code-sample) below for more details on how to fetch the Docker image, command, arguments and step order.
+Check out the [code sample](/stack-components/orchestrators/custom#code-sample) below for more details on how to fetch the Docker image, command, arguments and step order.
 3. **Implement the** `**get_orchestrator_run_id()**` **method:** This must return a ID that is different for each pipeline run, but identical if called from within Docker containers running different steps of the same pipeline run. If your orchestrator is based on an external tool like Kubeflow or Airflow, it is usually best to use an unique ID provided by this tool.
 
 <Info>

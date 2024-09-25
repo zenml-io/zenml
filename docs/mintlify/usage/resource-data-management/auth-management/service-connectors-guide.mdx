@@ -6,12 +6,12 @@ icon: gear
 
 This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to use the following guide to navigate it:
 
-* if you're only getting started with Service Connectors, we suggest starting by familiarizing yourself with the [terminology](/versions/0.66.0/how-to/auth-management/service-connectors-guide#terminology).
-* check out the section on [Service Connector Types](/versions/0.66.0/how-to/auth-management/service-connectors-guide#cloud-provider-service-connector-types) to understand the different Service Connector implementations that are available and when to use them.
-* jumping straight to the sections on [Registering Service Connectors](/versions/0.66.0/how-to/auth-management/service-connectors-guide#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.
-* if all you need to do is connect a ZenML Stack Component to an external resource or service like a Kubernetes cluster, a Docker container registry, or an object storage bucket, and you already have some Service Connectors available, the section on [connecting Stack Components to resources](/versions/0.66.0/how-to/auth-management/service-connectors-guide#connect-stack-components-to-resources) is all you need.
+* if you're only getting started with Service Connectors, we suggest starting by familiarizing yourself with the [terminology](/usage/resource-data-management/auth-management/service-connectors-guide#terminology).
+* check out the section on [Service Connector Types](/usage/resource-data-management/auth-management/service-connectors-guide#cloud-provider-service-connector-types) to understand the different Service Connector implementations that are available and when to use them.
+* jumping straight to the sections on [Registering Service Connectors](/usage/resource-data-management/auth-management/service-connectors-guide#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.
+* if all you need to do is connect a ZenML Stack Component to an external resource or service like a Kubernetes cluster, a Docker container registry, or an object storage bucket, and you already have some Service Connectors available, the section on [connecting Stack Components to resources](/usage/resource-data-management/auth-management/service-connectors-guide#connect-stack-components-to-resources) is all you need.
 
-In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](/versions/0.66.0/how-to/auth-management/best-security-practices) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge of infrastructure, but it should be accessible to larger audiences.
+In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](/usage/resource-data-management/auth-management/best-security-practices) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge of infrastructure, but it should be accessible to larger audiences.
 
 ## Terminology
 
@@ -1050,7 +1050,7 @@ Attributes:
 
 ### Basic Service Connector Types
 
-Service Connector Types like the [Kubernetes Service Connector](/versions/0.66.0/how-to/auth-management/kubernetes-service-connector) and [Docker Service Connector](/versions/0.66.0/how-to/auth-management/docker-service-connector) can only handle one resource at a time: a Kubernetes cluster and a Docker container registry respectively. These basic Service Connector Types are the easiest to instantiate and manage, as each Service Connector instance is tied exactly to one resource (i.e. they are _single-instance_ connectors).
+Service Connector Types like the [Kubernetes Service Connector](/usage/resource-data-management/auth-management/kubernetes-service-connector) and [Docker Service Connector](/usage/resource-data-management/auth-management/docker-service-connector) can only handle one resource at a time: a Kubernetes cluster and a Docker container registry respectively. These basic Service Connector Types are the easiest to instantiate and manage, as each Service Connector instance is tied exactly to one resource (i.e. they are _single-instance_ connectors).
 
 The following output shows two Service Connector instances configured from basic Service Connector Types:
 
@@ -1082,7 +1082,7 @@ Cloud service providers like AWS, GCP and Azure implement one or more authentica
 
 * they support multiple types of resources (e.g. Kubernetes clusters, Docker registries, a form of object storage)
 * they usually include some form of "generic" Resource Type that can be used by clients to access types of resources that are not yet part of the supported set. When this generic Resource Type is used, clients and Stack Components that access the connector are provided some form of generic session, credentials or client that can be used to access any of the cloud provider resources. For example, in the AWS case, clients accessing the `aws-generic` Resource Type are issued a pre-authenticated `boto3` Session object that can be used to access any AWS service.
-* they support multiple authentication methods. Some of these allow clients direct access to long-lived, broad-access credentials and are only recommended for local development use. Others support distributing temporary API tokens automatically generated from long-lived credentials, which are safer for production use-cases, but may be more difficult to set up. A few authentication methods even support down-scoping the permissions of temporary API tokens so that they only allow access to the target resource and restrict access to everything else. This is covered at length [in the section on best practices for authentication methods](/versions/0.66.0/how-to/auth-management/service-connectors-guide).
+* they support multiple authentication methods. Some of these allow clients direct access to long-lived, broad-access credentials and are only recommended for local development use. Others support distributing temporary API tokens automatically generated from long-lived credentials, which are safer for production use-cases, but may be more difficult to set up. A few authentication methods even support down-scoping the permissions of temporary API tokens so that they only allow access to the target resource and restrict access to everything else. This is covered at length [in the section on best practices for authentication methods](/usage/resource-data-management/auth-management/service-connectors-guide).
 * there is flexibility regarding the range of resources that a single cloud provider Service Connector instance configured with a single set of credentials can be scoped to access:
    * a _multi-type Service Connector_ instance can access any type of resources from the range of supported Resource Types
    * a _multi-instance Service Connector_ instance can access multiple resources of the same type
@@ -1158,7 +1158,7 @@ One interesting and useful byproduct of the way cloud provider Service Connector
 
 ## Register Service Connectors
 
-When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](/versions/0.66.0/how-to/auth-management/service-connectors-guide#explore-service-connector-types), and you probably carefully weighed your [choices of authentication methods and best security practices](/versions/0.66.0/how-to/auth-management/best-security-practices). Either that or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](/versions/0.66.0/how-to/auth-management/service-connectors-guide#connect-stack-components-to-resources).
+When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](/usage/resource-data-management/auth-management/service-connectors-guide#explore-service-connector-types), and you probably carefully weighed your [choices of authentication methods and best security practices](/usage/resource-data-management/auth-management/best-security-practices). Either that or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](/usage/resource-data-management/auth-management/service-connectors-guide#connect-stack-components-to-resources).
 
 If you are looking for a quick, assisted tour, we recommend using the interactive CLI mode to configure Service Connectors, especially if this is your first time doing it:
 
@@ -1674,7 +1674,7 @@ Successfully registered service connector `gcp-auto` with access to the followin
 
 ### Scopes: multi-type, multi-instance, and single-instance
 
-These terms are briefly explained in the [Terminology](/versions/0.66.0/how-to/auth-management/service-connectors-guide#terminology) section: you can register a Service Connector that grants access to multiple types of resources, to multiple instances of the same Resource Type, or to a single resource.
+These terms are briefly explained in the [Terminology](/usage/resource-data-management/auth-management/service-connectors-guide#terminology) section: you can register a Service Connector that grants access to multiple types of resources, to multiple instances of the same Resource Type, or to a single resource.
 
 Service Connectors created from basic Service Connector Types like Kubernetes and Docker are single-resource by default, while Service Connectors used to connect to managed cloud resources like AWS and GCP can take all three forms.
 <Accordion
@@ -1984,7 +1984,7 @@ Service connector 'aws-s3-zenfiles' is correctly configured with valid credentia
 
 ## Configure local clients
 
-Yet another neat feature built into some Service Container Types that is the opposite of [Service Connector auto-configuration](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration) is the ability to configure local CLI and SDK utilities installed on your host, like the Docker or Kubernetes CLI (`kubectl`) with credentials issued by a compatible Service Connector.
+Yet another neat feature built into some Service Container Types that is the opposite of [Service Connector auto-configuration](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration) is the ability to configure local CLI and SDK utilities installed on your host, like the Docker or Kubernetes CLI (`kubectl`) with credentials issued by a compatible Service Connector.
 
 You may need to exercise this feature to get direct CLI access to a remote service in order to manually manage some configurations or resources, to debug some workloads or to simply verify that the Service Connector credentials are actually working.
 
@@ -2359,7 +2359,7 @@ zenml orchestrator connect  -i
 zenml container-registry connect  -i
 ```
 
-To connect a Stack Component to an external resource or service, you first need to [register one or more Service Connectors](/versions/0.66.0/how-to/auth-management/service-connectors-guide#register-service-connectors), or have someone else in your team with more infrastructure knowledge do it for you. If you already have that covered, you might want to ask ZenML "which resources/services am I even authorized to access with the available Service Connectors?". [The resource discovery feature](/versions/0.66.0/how-to/auth-management/service-connectors-guide#end-to-end-examples) is designed exactly for this purpose. This last check is already included in the interactive ZenML CLI command used to connect a Stack Component to a remote resource.
+To connect a Stack Component to an external resource or service, you first need to [register one or more Service Connectors](/usage/resource-data-management/auth-management/service-connectors-guide#register-service-connectors), or have someone else in your team with more infrastructure knowledge do it for you. If you already have that covered, you might want to ask ZenML "which resources/services am I even authorized to access with the available Service Connectors?". [The resource discovery feature](/usage/resource-data-management/auth-management/service-connectors-guide#end-to-end-examples) is designed exactly for this purpose. This last check is already included in the interactive ZenML CLI command used to connect a Stack Component to a remote resource.
 
 <Info>
   Not all Stack Components support being connected to an external resource or service via a Service Connector. Whether a Stack Component can use a Service Connector to connect to a remote resource or service or not is shown in the Stack Component flavor details:
@@ -2497,7 +2497,7 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 
 To get an idea of what a complete end-to-end journey looks like, from registering Service Connector all the way to configuring Stacks and Stack Components and running pipelines that access remote resources through Service Connectors, take a look at the following full-fledged examples:
 
-* [the AWS Service Connector end-to-end examples](/versions/0.66.0/how-to/auth-management/aws-service-connector)
-* [the GCP Service Connector end-to-end examples](/versions/0.66.0/how-to/auth-management/gcp-service-connector)
-* [the Azure Service Connector end-to-end examples](/versions/0.66.0/how-to/auth-management/azure-service-connector)
+* [the AWS Service Connector end-to-end examples](/usage/resource-data-management/auth-management/aws-service-connector)
+* [the GCP Service Connector end-to-end examples](/usage/resource-data-management/auth-management/gcp-service-connector)
+* [the Azure Service Connector end-to-end examples](/usage/resource-data-management/auth-management/azure-service-connector)
 

@@ -25,17 +25,17 @@ To use the Kubernetes step operator, we need:
 ```bash
 zenml integration install kubernetes
 ```
-* A Kubernetes cluster [deployed](/versions/0.66.0/stack-components/step-operators/kubernetes#how-to-deploy-it)
-* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](/versions/0.66.0/stack-components/image-builders) in your stack.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A Kubernetes cluster [deployed](/stack-components/step-operators/kubernetes#how-to-deploy-it)
+* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](/stack-components/image-builders) in your stack.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 <Info>
-    It is recommended that you set up [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.
+    It is recommended that you set up [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.
 </Info>
 
 We can then register the step operator and use it in our stacks. This can be done in two ways:
 
-1. Using a Service Connector configured to access the remote Kubernetes cluster. Depending on your cloud provider, this should be either an [AWS](/versions/0.66.0/how-to/auth-management/aws-service-connector), [Azure](/versions/0.66.0/how-to/auth-management/azure-service-connector) or [GCP](/versions/0.66.0/how-to/auth-management/gcp-service-connector) service connector. If you're using a Kubernetes cluster that is not provided by any of these, you can use the generic [Kubernetes](/versions/0.66.0/how-to/auth-management/kubernetes-service-connector) service connector. You can then [connect the stack component to the Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#connect-stack-components-to-resources):
+1. Using a Service Connector configured to access the remote Kubernetes cluster. Depending on your cloud provider, this should be either an [AWS](/usage/resource-data-management/auth-management/aws-service-connector), [Azure](/usage/resource-data-management/auth-management/azure-service-connector) or [GCP](/usage/resource-data-management/auth-management/gcp-service-connector) service connector. If you're using a Kubernetes cluster that is not provided by any of these, you can use the generic [Kubernetes](/usage/resource-data-management/auth-management/kubernetes-service-connector) service connector. You can then [connect the stack component to the Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#connect-stack-components-to-resources):
 
 ```bash
 $ zenml step-operator register <NAME> --flavor kubernetes

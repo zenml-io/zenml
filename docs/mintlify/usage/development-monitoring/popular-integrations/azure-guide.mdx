@@ -46,7 +46,7 @@ Next, go to your service principal and click on the `Certificates & secrets` in 
 
 ## 2. Create a service connector
 
-Once you have created the service principal and the client secret, you can go ahead and create [a ZenML Azure Service Connector](/versions/0.66.0/how-to/auth-management/azure-service-connector).
+Once you have created the service principal and the client secret, you can go ahead and create [a ZenML Azure Service Connector](/usage/resource-data-management/auth-management/azure-service-connector).
 
 ```bash
 zenml service-connector register azure_connector --type azure \
@@ -99,7 +99,7 @@ zenml artifact-store register azure_artifact_store -f azure \
   --connector azure_connector
 ```
 
-For more information regarding Azure Blob Storage artifact stores, feel free to [check the docs](/versions/0.66.0/stack-components/artifact-stores/azure).
+For more information regarding Azure Blob Storage artifact stores, feel free to [check the docs](/stack-components/artifact-stores/azure).
 
 ### Orchestrator (AzureML)
 
@@ -113,7 +113,7 @@ zenml orchestrator register azure_orchestrator -f azureml \
     --connector azure_connector
 ```
 
-For more information regarding AzureML orchestrator, feel free to [check the docs](/versions/0.66.0/stack-components/orchestrators/azureml).
+For more information regarding AzureML orchestrator, feel free to [check the docs](/stack-components/orchestrators/azureml).
 
 ### Container Registry (Azure Container Registry)
 
@@ -126,7 +126,7 @@ zenml container-registry register azure_container_registry -f azure \
   --connector azure_connector
 ```
 
-For more information regarding Azure container registries, feel free to [check the docs](/versions/0.66.0/stack-components/container-registries/azure).
+For more information regarding Azure container registries, feel free to [check the docs](/stack-components/container-registries/azure).
 
 ## 5\. Create a Stack
 
@@ -171,5 +171,5 @@ python run.py
 Now that you have a functional Azure stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
 * Dive deeper into ZenML's [production guide](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/user-guide/production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
-* Explore ZenML's [integrations](/versions/0.66.0/stack-components/component-guide) with other popular tools and frameworks in the machine learning ecosystem.
+* Explore ZenML's [integrations](/stack-components/component-guide) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.

@@ -4,7 +4,7 @@ description: "How to collect and visualize statistics to track changes in your p
 icon: clipboard-question
 ---
 
-The whylogs/WhyLabs [Data Validator](/versions/0.66.0/stack-components/data-validators) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
+The whylogs/WhyLabs [Data Validator](/stack-components/data-validators) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the whylogs/WhyLabs Data Validator when you need the following da
 * Data Drift: detect data drift in model input features
 * Model Drift: Detect training-serving skew, concept drift, and model performance degradation
 
-You should consider one of the other [Data Validator flavors](/versions/0.66.0/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -94,11 +94,11 @@ Whylogs's profiling functions take in a `pandas.DataFrame` dataset generate a `D
 
 There are three ways you can use whylogs in your ZenML pipelines that allow different levels of flexibility:
 
-* instantiate, configure and insert [the standard WhylogsProfilerStep](/versions/0.66.0/stack-components/data-validators/whylogs#the-whylogs-standard-step) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach, but can only be customized through the supported step configuration parameters.
-* call the data validation methods provided by [the whylogs Data Validator](/versions/0.66.0/stack-components/data-validators/whylogs#the-whylogs-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step, but you are still limited to the functionality implemented in the Data Validator.
-* [use the whylogs library directly](/versions/0.66.0/stack-components/data-validators/whylogs#call-whylogs-directly) in your custom step implementation. This gives you complete freedom in how you are using whylogs's features.
+* instantiate, configure and insert [the standard WhylogsProfilerStep](/stack-components/data-validators/whylogs#the-whylogs-standard-step) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach, but can only be customized through the supported step configuration parameters.
+* call the data validation methods provided by [the whylogs Data Validator](/stack-components/data-validators/whylogs#the-whylogs-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step, but you are still limited to the functionality implemented in the Data Validator.
+* [use the whylogs library directly](/stack-components/data-validators/whylogs#call-whylogs-directly) in your custom step implementation. This gives you complete freedom in how you are using whylogs's features.
 
-You can [visualize whylogs profiles](/versions/0.66.0/stack-components/data-validators/whylogs#visualizing-whylogs-profiles) in Jupyter notebooks or view them directly in the ZenML dashboard.
+You can [visualize whylogs profiles](/stack-components/data-validators/whylogs#visualizing-whylogs-profiles) in Jupyter notebooks or view them directly in the ZenML dashboard.
 
 #### The whylogs standard step
 

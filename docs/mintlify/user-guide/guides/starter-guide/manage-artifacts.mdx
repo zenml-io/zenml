@@ -88,7 +88,7 @@ def training_data_loader() -> (
 The next execution of this step will then create an artifact with the name `iris_dataset` and version `raw_2023`. This is primarily useful if you are making a particularly important pipeline run (such as a release) whose artifacts you want to distinguish at a glance later.
 
 <Note>
-Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](/versions/0.66.0/user-guide/production-guide/configure-pipeline) for artifact versioning.
+Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](/user-guide/guides/production-guide/configure-pipeline) for artifact versioning.
 </Note>
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
