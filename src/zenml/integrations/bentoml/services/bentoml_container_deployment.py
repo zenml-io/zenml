@@ -277,6 +277,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             sys.path.insert(0, self.config.working_dir)
 
         svc = load(bento_identifier=".", working_dir=self.config.working_dir)
+        print("Trying to run server")
         if isinstance(svc, Service):
             # bentoml<1.2
             from bentoml.serving import serve_http_production
@@ -288,6 +289,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                 )
+                print("Server started old")
             except Exception as e:
                 logger.error(f"Error starting BentoML container deployment service: {e}")
                 raise e
@@ -304,6 +306,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                 )
+                print("Server started new")
             except Exception as e:
                 logger.error(f"Error starting BentoML container deployment service: {e}")
                 raise e
