@@ -135,76 +135,78 @@
       ]
     },
     {
-      "group": "🛠️ Using ZenML",
+      "group": "🛠️ Pipelines",
+      "icon": "timeline-arrow",
+      "iconType": "solid",
       "pages": [
         {
-          "group": " Pipelines",
-          "icon": "timeline-arrow",
+          "group": " Build a pipeline",
+          "icon": "link",
           "iconType": "solid",
           "pages": [
-            {
-              "group": " Build a pipeline",
-              "icon": "link",
-              "iconType": "solid",
-              "pages": [
-                "usage/build-pipelines/build-pipelines",
-                "usage/build-pipelines/use-pipeline-step-parameters",
-                "usage/build-pipelines/configuring-a-pipeline-at-runtime",
-                "usage/build-pipelines/step-output-typing-and-annotation",
-                "usage/build-pipelines/control-caching-behavior",
-                "usage/build-pipelines/schedule-a-pipeline",
-                "usage/build-pipelines/compose-pipelines",
-                "usage/build-pipelines/run-pipelines-asynchronously",
-                "usage/build-pipelines/run-an-individual-step"
-              ]
-            },
-            {
-              "group": " Pipeline lifecycle",
-              "icon": "life-ring",
-              "iconType": "solid",
-              "pages": [
-                "usage/build-pipelines/delete-a-pipeline",
-                "usage/build-pipelines/fetching-pipelines",
-                "usage/build-pipelines/get-past-pipeline-step-runs",
-                "usage/build-pipelines/use-failure-success-hooks"
-              ]
-            },
-            {
-              "group": " Advanced pipeline features",
-              "icon": "gear",
-              "iconType": "solid",
-              "pages": [
-                "usage/build-pipelines/access-secrets-in-a-step",
-                "usage/build-pipelines/control-execution-order-of-steps",
-                "usage/build-pipelines/hyper-parameter-tuning",
-                "usage/build-pipelines/retry-steps",
-                "usage/build-pipelines/using-a-custom-step-invocation-id",
-                "usage/build-pipelines/name-your-pipeline-and-runs"
-              ]
-            },
-            {
-              "group": " Trigger a pipeline",
-              "icon": "bullhorn",
-              "iconType": "solid",
-              "pages": [
-                "usage/trigger-pipelines/trigger-pipelines",
-                "usage/trigger-pipelines/trigger-a-pipeline-from-client",
-                "usage/trigger-pipelines/trigger-a-pipeline-from-another",
-                "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
-              ]
-            },
-            {
-              "group": " Create and run templates",
-              "icon": "circle-play",
-              "iconType": "solid",
-              "pages": [
-                "usage/create-and-run-templates/create-and-run-templates",
-                "usage/create-and-run-templates/create-a-run-template",
-                "usage/create-and-run-templates/run-a-template"
-              ]
-            }
+            "usage/build-pipelines/build-pipelines",
+            "usage/build-pipelines/use-pipeline-step-parameters",
+            "usage/build-pipelines/configuring-a-pipeline-at-runtime",
+            "usage/build-pipelines/step-output-typing-and-annotation",
+            "usage/build-pipelines/control-caching-behavior",
+            "usage/build-pipelines/schedule-a-pipeline",
+            "usage/build-pipelines/compose-pipelines",
+            "usage/build-pipelines/run-pipelines-asynchronously",
+            "usage/build-pipelines/run-an-individual-step"
           ]
         },
+        {
+          "group": " Pipeline lifecycle",
+          "icon": "life-ring",
+          "iconType": "solid",
+          "pages": [
+            "usage/build-pipelines/delete-a-pipeline",
+            "usage/build-pipelines/fetching-pipelines",
+            "usage/build-pipelines/get-past-pipeline-step-runs",
+            "usage/build-pipelines/use-failure-success-hooks"
+          ]
+        },
+        {
+          "group": " Advanced pipeline features",
+          "icon": "gear",
+          "iconType": "solid",
+          "pages": [
+            "usage/build-pipelines/access-secrets-in-a-step",
+            "usage/build-pipelines/control-execution-order-of-steps",
+            "usage/build-pipelines/hyper-parameter-tuning",
+            "usage/build-pipelines/retry-steps",
+            "usage/build-pipelines/using-a-custom-step-invocation-id",
+            "usage/build-pipelines/name-your-pipeline-and-runs"
+          ]
+        },
+        {
+          "group": " Trigger a pipeline",
+          "icon": "bullhorn",
+          "iconType": "solid",
+          "pages": [
+            "usage/trigger-pipelines/trigger-pipelines",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-client",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-another",
+            "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
+          ]
+        },
+        {
+          "group": " Create and run templates",
+          "icon": "circle-play",
+          "iconType": "solid",
+          "pages": [
+            "usage/create-and-run-templates/create-and-run-templates",
+            "usage/create-and-run-templates/create-a-run-template",
+            "usage/create-and-run-templates/run-a-template"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "🧰 Project Setup & Config",
+      "icon": "folder-open",
+      "iconType": "solid",
+      "pages": [
         {
           "group": " Set up a project repository",
           "icon": "cat",
@@ -231,6 +233,27 @@
           ]
         },
         {
+          "group": " Configure Python environments",
+          "icon": "python",
+          "iconType": "solid",
+          "pages": [
+            "usage/configure-python-environments/configure-python-environments",
+            "usage/configure-python-environments/handling-dependencies",
+            "usage/configure-python-environments/configure-the-server-environment"
+          ]
+        },
+        "usage/global-settings",
+        {
+          "group": " Use secrets",
+          "icon": "lock",
+          "iconType": "solid",
+          "pages": [
+            "usage/use-secrets/interact-with-secrets",
+            "usage/use-secrets/reference-secrets-in-stack-configuration",
+            "usage/use-secrets/secret-management"
+          ]
+        },
+        {
           "group": " Customize Docker builds",
           "icon": "docker",
           "iconType": "solid",
@@ -244,17 +267,14 @@
             "usage/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
             "usage/customize-docker-builds/define-where-an-image-is-built"
           ]
-        },
-        {
-          "group": " Run remote pipelines from notebooks",
-          "icon": "book",
-          "iconType": "solid",
-          "pages": [
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
-          ]
-        },
+        }
+      ]
+    },
+    {
+      "group": " Resource & Data Management",
+      "icon": "database",
+      "iconType": "solid",
+      "pages": [
         {
           "group": " Train with GPUs",
           "icon": "car",
@@ -265,16 +285,29 @@
           ]
         },
         {
-          "group": " Control logging",
-          "icon": "tree",
+          "group": " Connect to a server",
+          "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "usage/control-logging/control-logging",
-            "usage/control-logging/view-logs-on-the-dasbhoard",
-            "usage/control-logging/enable-or-disable-logs-storing",
-            "usage/control-logging/set-logging-verbosity",
-            "usage/control-logging/disable-rich-traceback",
-            "usage/control-logging/disable-colorful-logging"
+            "usage/connecting-to-zenml/connecting-to-zenml",
+            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "usage/connecting-to-zenml/connect-with-a-service-account"
+          ]
+        },
+        {
+          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "usage/auth-management/auth-management",
+            "usage/auth-management/service-connectors-guide",
+            "usage/auth-management/best-security-practices",
+            "usage/auth-management/docker-service-connector",
+            "usage/auth-management/kubernetes-service-connector",
+            "usage/auth-management/aws-service-connector",
+            "usage/auth-management/gcp-service-connector",
+            "usage/auth-management/azure-service-connector",
+            "usage/auth-management/hyperai-service-connector"
           ]
         },
         {
@@ -307,6 +340,52 @@
           ]
         },
         {
+          "group": " Track metrics and metadata",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "usage/track-metrics-metadata/track-metrics-metadata",
+            "usage/track-metrics-metadata/attach-metadata-to-a-model",
+            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "usage/track-metrics-metadata/attach-metadata-to-steps",
+            "usage/track-metrics-metadata/grouping-metadata",
+            "usage/track-metrics-metadata/logging-metadata",
+            "usage/track-metrics-metadata/fetch-metadata-within-steps",
+            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
+          ]
+        }
+      ]
+    },
+    {
+      "group": " Development & Monitoring",
+      "icon": "chart-line",
+      "iconType": "solid",
+      "pages": [
+        {
+          "group": " Run remote pipelines from notebooks",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+          ]
+        },
+        "usage/debug-and-solve-issues",
+        {
+          "group": " Control logging",
+          "icon": "tree",
+          "iconType": "solid",
+          "pages": [
+            "usage/control-logging/control-logging",
+            "usage/control-logging/view-logs-on-the-dasbhoard",
+            "usage/control-logging/enable-or-disable-logs-storing",
+            "usage/control-logging/set-logging-verbosity",
+            "usage/control-logging/disable-rich-traceback",
+            "usage/control-logging/disable-colorful-logging"
+          ]
+        },
+        {
           "group": " Use the Model Control Plane",
           "icon": "plane",
           "iconType": "solid",
@@ -324,21 +403,6 @@
           ]
         },
         {
-          "group": " Track metrics and metadata",
-          "icon": "chart-line",
-          "iconType": "solid",
-          "pages": [
-            "usage/track-metrics-metadata/track-metrics-metadata",
-            "usage/track-metrics-metadata/attach-metadata-to-a-model",
-            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
-            "usage/track-metrics-metadata/attach-metadata-to-steps",
-            "usage/track-metrics-metadata/grouping-metadata",
-            "usage/track-metrics-metadata/logging-metadata",
-            "usage/track-metrics-metadata/fetch-metadata-within-steps",
-            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
-          ]
-        },
-        {
           "group": " Popular integrations",
           "icon": "link-slash",
           "iconType": "solid",
@@ -352,55 +416,7 @@
             "usage/popular-integrations/mlflow",
             "usage/popular-integrations/skypilot"
           ]
-        },
-        {
-          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
-          "icon": "bolt",
-          "iconType": "solid",
-          "pages": [
-            "usage/auth-management/auth-management",
-            "usage/auth-management/service-connectors-guide",
-            "usage/auth-management/best-security-practices",
-            "usage/auth-management/docker-service-connector",
-            "usage/auth-management/kubernetes-service-connector",
-            "usage/auth-management/aws-service-connector",
-            "usage/auth-management/gcp-service-connector",
-            "usage/auth-management/azure-service-connector",
-            "usage/auth-management/hyperai-service-connector"
-          ]
-        },
-        {
-          "group": " Configure Python environments",
-          "icon": "python",
-          "iconType": "solid",
-          "pages": [
-            "usage/configure-python-environments/configure-python-environments",
-            "usage/configure-python-environments/handling-dependencies",
-            "usage/configure-python-environments/configure-the-server-environment"
-          ]
-        },
-        {
-          "group": " Connect to a server",
-          "icon": "bolt",
-          "iconType": "solid",
-          "pages": [
-            "usage/connecting-to-zenml/connecting-to-zenml",
-            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
-            "usage/connecting-to-zenml/connect-with-a-service-account"
-          ]
-        },
-        {
-          "group": " Use secrets",
-          "icon": "lock",
-          "iconType": "solid",
-          "pages": [
-            "usage/use-secrets/interact-with-secrets",
-            "usage/use-secrets/reference-secrets-in-stack-configuration",
-            "usage/use-secrets/secret-management"
-          ]
-        },
-        "usage/global-settings",
-        "usage/debug-and-solve-issues"
+        }
       ]
     },
     {
@@ -773,7 +789,6 @@
             {
               "group": "v1",
               "pages": [
-                "sdk/core-sdk/v1/zenml",
                 "sdk/core-sdk/v1/core-hooks",
                 "sdk/core-sdk/v1/core-annotators",
                 "sdk/core-sdk/v1/core-zen_stores",
