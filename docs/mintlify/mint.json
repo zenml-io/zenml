@@ -5,7 +5,7 @@
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
-  "favicon": "/favicon.png",
+  "favicon": "/_assets/favicon.png",
   "colors": {
     "primary": "#7a3ef4",
     "light": "#7a3ef4",
@@ -50,7 +50,7 @@
     {
       "name": "API",
       "url": "api",
-      "openapi": "/openapi.json"
+      "openapi": "/api/openapi.json"
     }
   ],
   "anchors": [
