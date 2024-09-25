@@ -2,8 +2,8 @@
   "$schema": "https://mintlify.com/schema.json",
   "name": "ZenML",
   "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
+    "dark": "/_assets/logo/dark.svg",
+    "light": "/_assets/logo/light.svg"
   },
   "favicon": "/_assets/favicon.png",
   "colors": {
@@ -382,7 +382,6 @@
       "icon": "hammer",
       "iconType": "solid",
       "pages": [
-        "stack-components/stack-deployment/stack-deployment",
         "stack-components/stack-deployment/deploy-a-cloud-stack",
         "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
         "stack-components/stack-deployment/register-a-cloud-stack",
@@ -396,6 +395,7 @@
       "group": "🧩 Stacks",
       "pages": [
         "stack-components/component-guide",
+        "stack-components/deploying-stacks",
         {
           "group": " Orchestrators",
               "icon": "battery-full",
