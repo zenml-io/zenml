@@ -33,26 +33,24 @@
 
 ## Documentation Updates
 
-Updated documentation for various integrations including:
-
-Lightning AI orchestrator
-Kubeflow
-Comet experiment tracker
-Neptune
-Hugging Face deployer
-Weights & Biases (wandb)
-
-Added documentation for run templates.
-Fixed incorrect method name in Pigeon docs.
-Various small documentation fixes and improvements.
+- Updated documentation for various integrations including:
+  - Lightning AI orchestrator
+  - Kubeflow
+  - Comet experiment tracker
+  - Neptune
+  - Hugging Face deployer
+  - Weights & Biases (wandb)
+- Added documentation for run templates.
+- Fixed incorrect method name in Pigeon docs.
+- Various small documentation fixes and improvements.
 
 ## Bug Fixes
 
-Fixed YAML formatting issues.
-Resolved RBAC issues for subpages in response models.
-Fixed step output annotation in Discord test.
-Addressed MLFlow integration requirements duplication.
-Fixed Lightning orchestrator functionality.
+- Fixed YAML formatting issues.
+- Resolved RBAC issues for subpages in response models.
+- Fixed step output annotation in Discord test.
+- Addressed MLFlow integration requirements duplication.
+- Fixed Lightning orchestrator functionality.
 
 ## What's Changed
 * Error message for stack components of uninstalled integrations by @bcdurak in https://github.com/zenml-io/zenml/pull/2996
