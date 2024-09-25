@@ -70,6 +70,7 @@
       "url": "https://mintlify.com/blog"
     }
   ],
+  "versions": ["0.66.0", "0.65.0"],
   "navigation": [
     {
       "group": "🚀 Getting Started",
@@ -101,7 +102,6 @@
             "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
           ]
         },
-        "getting-started/deploying-zenml/secret-management",
         "getting-started/deploying-zenml/common-questions-answered"
       ]
     },
@@ -109,7 +109,7 @@
       "group": "ZenML Pro",
       "icon": "cloud",
       "iconType": "solid",
-      "pages":[
+      "pages": [
         "getting-started/deploying-zenml/zenml-pro/zenml-pro",
         "getting-started/deploying-zenml/zenml-pro/system-architectures",
         "getting-started/deploying-zenml/zenml-pro/zenml-saas",
@@ -118,7 +118,7 @@
     },
     {
       "group": "Reference",
-      "pages":[
+      "pages": [
         {
           "group": "Migration Guide",
           "icon": "arrows-spin",
@@ -135,19 +135,10 @@
       ]
     },
     {
-      "group": "🛠️ Using ZenML",
+      "group": "🛠️ Pipelines",
+      "icon": "timeline-arrow",
+      "iconType": "solid",
       "pages": [
-        {
-          "group": " Set up a project repository",
-          "icon": "cat",
-          "iconType": "solid",
-          "pages": [
-            "usage/setting-up-a-project-repository/setting-up-a-project-repository",
-            "usage/setting-up-a-project-repository/connect-your-git-repository",
-            "usage/setting-up-a-project-repository/using-project-templates",
-            "usage/setting-up-a-project-repository/best-practices"
-          ]
-        },
         {
           "group": " Build a pipeline",
           "icon": "link",
@@ -159,19 +150,33 @@
             "usage/build-pipelines/step-output-typing-and-annotation",
             "usage/build-pipelines/control-caching-behavior",
             "usage/build-pipelines/schedule-a-pipeline",
-            "usage/build-pipelines/delete-a-pipeline",
             "usage/build-pipelines/compose-pipelines",
-            "usage/build-pipelines/retry-steps",
             "usage/build-pipelines/run-pipelines-asynchronously",
-            "usage/build-pipelines/control-execution-order-of-steps",
-            "usage/build-pipelines/using-a-custom-step-invocation-id",
-            "usage/build-pipelines/name-your-pipeline-and-runs",
-            "usage/build-pipelines/use-failure-success-hooks",
-            "usage/build-pipelines/hyper-parameter-tuning",
-            "usage/build-pipelines/access-secrets-in-a-step",
-            "usage/build-pipelines/run-an-individual-step",
+            "usage/build-pipelines/run-an-individual-step"
+          ]
+        },
+        {
+          "group": " Pipeline lifecycle",
+          "icon": "life-ring",
+          "iconType": "solid",
+          "pages": [
+            "usage/build-pipelines/delete-a-pipeline",
             "usage/build-pipelines/fetching-pipelines",
-            "usage/build-pipelines/get-past-pipeline-step-runs"
+            "usage/build-pipelines/get-past-pipeline-step-runs",
+            "usage/build-pipelines/use-failure-success-hooks"
+          ]
+        },
+        {
+          "group": " Advanced pipeline features",
+          "icon": "gear",
+          "iconType": "solid",
+          "pages": [
+            "usage/build-pipelines/access-secrets-in-a-step",
+            "usage/build-pipelines/control-execution-order-of-steps",
+            "usage/build-pipelines/hyper-parameter-tuning",
+            "usage/build-pipelines/retry-steps",
+            "usage/build-pipelines/using-a-custom-step-invocation-id",
+            "usage/build-pipelines/name-your-pipeline-and-runs"
           ]
         },
         {
@@ -194,6 +199,24 @@
             "usage/create-and-run-templates/create-a-run-template",
             "usage/create-and-run-templates/run-a-template"
           ]
+        }
+      ]
+    },
+    {
+      "group": "🧰 Project Setup & Config",
+      "icon": "folder-open",
+      "iconType": "solid",
+      "pages": [
+        {
+          "group": " Set up a project repository",
+          "icon": "cat",
+          "iconType": "solid",
+          "pages": [
+            "usage/setting-up-a-project-repository/setting-up-a-project-repository",
+            "usage/setting-up-a-project-repository/connect-your-git-repository",
+            "usage/setting-up-a-project-repository/using-project-templates",
+            "usage/setting-up-a-project-repository/best-practices"
+          ]
         },
         {
           "group": " Use configuration files",
@@ -210,6 +233,27 @@
           ]
         },
         {
+          "group": " Configure Python environments",
+          "icon": "python",
+          "iconType": "solid",
+          "pages": [
+            "usage/configure-python-environments/configure-python-environments",
+            "usage/configure-python-environments/handling-dependencies",
+            "usage/configure-python-environments/configure-the-server-environment"
+          ]
+        },
+        "usage/global-settings",
+        {
+          "group": " Use secrets",
+          "icon": "lock",
+          "iconType": "solid",
+          "pages": [
+            "usage/use-secrets/interact-with-secrets",
+            "usage/use-secrets/reference-secrets-in-stack-configuration",
+            "usage/use-secrets/secret-management"
+          ]
+        },
+        {
           "group": " Customize Docker builds",
           "icon": "docker",
           "iconType": "solid",
@@ -223,17 +267,14 @@
             "usage/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times",
             "usage/customize-docker-builds/define-where-an-image-is-built"
           ]
-        },
-        {
-          "group": " Run remote pipelines from notebooks",
-          "icon": "book",
-          "iconType": "solid",
-          "pages": [
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
-            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
-          ]
-        },
+        }
+      ]
+    },
+    {
+      "group": " Resource & Data Management",
+      "icon": "database",
+      "iconType": "solid",
+      "pages": [
         {
           "group": " Train with GPUs",
           "icon": "car",
@@ -244,16 +285,29 @@
           ]
         },
         {
-          "group": " Control logging",
-          "icon": "tree",
+          "group": " Connect to a server",
+          "icon": "bolt",
           "iconType": "solid",
           "pages": [
-            "usage/control-logging/control-logging",
-            "usage/control-logging/view-logs-on-the-dasbhoard",
-            "usage/control-logging/enable-or-disable-logs-storing",
-            "usage/control-logging/set-logging-verbosity",
-            "usage/control-logging/disable-rich-traceback",
-            "usage/control-logging/disable-colorful-logging"
+            "usage/connecting-to-zenml/connecting-to-zenml",
+            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
+            "usage/connecting-to-zenml/connect-with-a-service-account"
+          ]
+        },
+        {
+          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
+          "icon": "bolt",
+          "iconType": "solid",
+          "pages": [
+            "usage/auth-management/auth-management",
+            "usage/auth-management/service-connectors-guide",
+            "usage/auth-management/best-security-practices",
+            "usage/auth-management/docker-service-connector",
+            "usage/auth-management/kubernetes-service-connector",
+            "usage/auth-management/aws-service-connector",
+            "usage/auth-management/gcp-service-connector",
+            "usage/auth-management/azure-service-connector",
+            "usage/auth-management/hyperai-service-connector"
           ]
         },
         {
@@ -286,6 +340,52 @@
           ]
         },
         {
+          "group": " Track metrics and metadata",
+          "icon": "chart-line",
+          "iconType": "solid",
+          "pages": [
+            "usage/track-metrics-metadata/track-metrics-metadata",
+            "usage/track-metrics-metadata/attach-metadata-to-a-model",
+            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
+            "usage/track-metrics-metadata/attach-metadata-to-steps",
+            "usage/track-metrics-metadata/grouping-metadata",
+            "usage/track-metrics-metadata/logging-metadata",
+            "usage/track-metrics-metadata/fetch-metadata-within-steps",
+            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
+          ]
+        }
+      ]
+    },
+    {
+      "group": " Development & Monitoring",
+      "icon": "chart-line",
+      "iconType": "solid",
+      "pages": [
+        {
+          "group": " Run remote pipelines from notebooks",
+          "icon": "book",
+          "iconType": "solid",
+          "pages": [
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-remote-steps-and-pipelines-from-notebooks",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells",
+            "usage/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook"
+          ]
+        },
+        "usage/debug-and-solve-issues",
+        {
+          "group": " Control logging",
+          "icon": "tree",
+          "iconType": "solid",
+          "pages": [
+            "usage/control-logging/control-logging",
+            "usage/control-logging/view-logs-on-the-dasbhoard",
+            "usage/control-logging/enable-or-disable-logs-storing",
+            "usage/control-logging/set-logging-verbosity",
+            "usage/control-logging/disable-rich-traceback",
+            "usage/control-logging/disable-colorful-logging"
+          ]
+        },
+        {
           "group": " Use the Model Control Plane",
           "icon": "plane",
           "iconType": "solid",
@@ -303,21 +403,6 @@
           ]
         },
         {
-          "group": " Track metrics and metadata",
-          "icon": "chart-line",
-          "iconType": "solid",
-          "pages": [
-            "usage/track-metrics-metadata/track-metrics-metadata",
-            "usage/track-metrics-metadata/attach-metadata-to-a-model",
-            "usage/track-metrics-metadata/attach-metadata-to-an-artifact",
-            "usage/track-metrics-metadata/attach-metadata-to-steps",
-            "usage/track-metrics-metadata/grouping-metadata",
-            "usage/track-metrics-metadata/logging-metadata",
-            "usage/track-metrics-metadata/fetch-metadata-within-steps",
-            "usage/track-metrics-metadata/fetch-metadata-within-pipeline"
-          ]
-        },
-        {
           "group": " Popular integrations",
           "icon": "link-slash",
           "iconType": "solid",
@@ -331,60 +416,7 @@
             "usage/popular-integrations/mlflow",
             "usage/popular-integrations/skypilot"
           ]
-        },
-        {
-          "group": " Connect services (AWS, GCP, Azure, K8s etc)",
-          "icon": "bolt",
-          "iconType": "solid",
-          "pages": [
-            "usage/auth-management/auth-management",
-            "usage/auth-management/service-connectors-guide",
-            "usage/auth-management/best-security-practices",
-            "usage/auth-management/docker-service-connector",
-            "usage/auth-management/kubernetes-service-connector",
-            "usage/auth-management/aws-service-connector",
-            "usage/auth-management/gcp-service-connector",
-            "usage/auth-management/azure-service-connector",
-            "usage/auth-management/hyperai-service-connector"
-          ]
-        },
-        {
-          "group": " Configure Python environments",
-          "icon": "python",
-          "iconType": "solid",
-          "pages": [
-            "usage/configure-python-environments/configure-python-environments",
-            "usage/configure-python-environments/handling-dependencies",
-            "usage/configure-python-environments/configure-the-server-environment"
-          ]
-        },
-        {
-          "group": " Connect to a server",
-          "icon": "bolt",
-          "iconType": "solid",
-          "pages": [
-            "usage/connecting-to-zenml/connecting-to-zenml",
-            "usage/connecting-to-zenml/connect-in-with-your-user-interactive",
-            "usage/connecting-to-zenml/connect-with-a-service-account"
-          ]
-        },
-        "usage/interact-with-secrets",
-        "usage/global-settings",
-        "usage/debug-and-solve-issues"
-      ]
-    },
-    {
-      "group": " Manage stacks & components",
-      "icon": "hammer",
-      "iconType": "solid",
-      "pages": [
-        "stack-components/stack-deployment/deploy-a-cloud-stack",
-        "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
-        "stack-components/stack-deployment/register-a-cloud-stack",
-        "stack-components/stack-deployment/deploy-a-stack-using-mlstacks",
-        "stack-components/stack-deployment/reference-secrets-in-stack-configuration",
-        "stack-components/stack-deployment/implement-a-custom-stack-component",
-        "stack-components/stack-deployment/implement-a-custom-integration"
+        }
       ]
     },
     {
@@ -394,8 +426,8 @@
         "stack-components/deploying-stacks",
         {
           "group": " Orchestrators",
-              "icon": "battery-full",
-              "iconType": "solid",
+          "icon": "battery-full",
+          "iconType": "solid",
           "pages": [
             "stack-components/orchestrators/orchestrators",
             "stack-components/orchestrators/local",
@@ -555,6 +587,26 @@
       ]
     },
     {
+      "group": " Manage stacks & components",
+      "icon": "hammer",
+      "iconType": "solid",
+      "pages": [
+        "stack-components/stack-deployment/deploy-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
+        "stack-components/stack-deployment/register-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-stack-using-mlstacks"
+      ]
+    },
+    {
+      "group": "🛠️ Custom stack components",
+      "icon": "hammer",
+      "iconType": "solid",
+      "pages": [
+        "stack-components/implement-a-custom-stack-component",
+        "stack-components/implement-a-custom-integration"
+      ]
+    },
+    {
       "group": "📚 User Guides",
       "pages": [
         {
@@ -631,7 +683,7 @@
             },
             {
               "group": "Improve retrieval by finetuning embeddings",
-               "icon": "bullseye-arrow",
+              "icon": "bullseye-arrow",
               "iconType": "solid",
               "pages": [
                 "user-guide/guides/llmops-guide/finetuning-embeddings",
@@ -641,9 +693,9 @@
               ]
             },
             "user-guide/guides/llmops-guide/finetuning-llms"
-           ]
-          }
-        ]
+          ]
+        }
+      ]
     },
     {
       "group": "🧑‍💻 Examples",
@@ -737,7 +789,6 @@
             {
               "group": "v1",
               "pages": [
-                "sdk/core-sdk/v1/zenml",
                 "sdk/core-sdk/v1/core-hooks",
                 "sdk/core-sdk/v1/core-annotators",
                 "sdk/core-sdk/v1/core-zen_stores",
@@ -799,9 +850,7 @@
     },
     {
       "group": "📘 API Documentation",
-      "pages": [
-        "api/api-reference"
-      ]
+      "pages": ["api/api-reference"]
     }
   ],
   "footerSocials": {
