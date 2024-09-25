@@ -15,7 +15,7 @@ The challenge comes from _setting up and implementing proper authentication and 
 The hard-to-swallow truth is there is no single standard that unifies all authentication and authorization-related matters or a single, well-defined set of security best practices that you can follow. However, with ZenML you get the next best thing, an abstraction that keeps the complexity of authentication and authorization away from your code and makes it easier to tackle them: _the ZenML Service Connectors_.
 
 <Frame caption="Authentication without Service Connectors">
-  <img src="/images/how-to/stack-78.webp"/>
+  <img src="/_assets/how-to/stack-78.webp"/>
 </Frame>
 
 Service Connectors abstract away complexity and implement security best practices
@@ -66,13 +66,13 @@ These drawbacks are addressed by Service Connectors.
 Without Service Connectors, credentials are stored directly in the Stack Component configuration or ZenML Secret and are directly used in the runtime environment. The Stack Component implementation is directly responsible for validating credentials, authenticating and connecting to the infrastructure service. This is illustrated in the following diagram:
 
 <Frame caption="Authentication without Service Connectors">
-  <img src="/images/how-to/stack-79.webp"/>
+  <img src="/_assets/how-to/stack-79.webp"/>
 </Frame>
 
 When Service Connectors are involved in the authentication and authorization process, they can act as brokers. The credentials validation and authentication process takes place on the ZenML server. In most cases, the main credentials never have to leave the ZenML server as the Service Connector automatically converts them into short-lived credentials with a reduced set of privileges and issues these credentials to clients. Furthermore, multiple Stack Components of different flavors can use the same Service Connector to access different types or resources with the same credentials:
 
 <Frame caption="Authentication with Service Connectors">
-  <img src="/images/how-to/stack-80.webp"/>
+  <img src="/_assets/how-to/stack-80.webp"/>
 </Frame>
 
 In working with Service Connectors, the first step is usually _finding out what types of resources you can connect ZenML to_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find out whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
@@ -189,7 +189,7 @@ setup that includes using the auto-configuration Service Connector features.
 Dashboard equivalent:
 
 <Frame >
-  <img src="/images/how-to/stack-81.avif"/>
+  <img src="/_assets/how-to/stack-81.avif"/>
 </Frame>
 
 Fetching details about the S3 bucket resource type:

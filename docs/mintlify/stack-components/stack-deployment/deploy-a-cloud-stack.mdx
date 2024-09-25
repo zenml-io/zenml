@@ -24,59 +24,59 @@ Once you are connected to your deployed ZenML instance, you can use the 1-click 
 In order to create a remote stack over the dashboard go to the stacks page on the dashboard and click "+ New Stack".
 
 <Frame caption="The new stacks page">
-   <img src="/images/how-to/stack-1.avif"/>
+   <img src="/_assets/how-to/stack-1.avif"/>
 </Frame>
 
 Since we will be deploying it from scratch, select "New Infrastructure" on the next page:
 
 <Frame caption="Options for registering a stack">
-   <img src="/images/how-to/stack-2.avif"/>
+   <img src="/_assets/how-to/stack-2.avif"/>
 </Frame>
 
 <Frame caption="Choosing a cloud provider
 ">
-   <img src="/images/how-to/stack-3.avif"/>
+   <img src="/_assets/how-to/stack-3.avif"/>
 </Frame>
 
 #### AWS
 
 If you choose `aws` as your provider, you will see a page where you will have to select a region and a name for your new stack:
 <Frame caption="Configuring the new stack">
-   <img src="/images/how-to/stack-4.avif"/>
+   <img src="/_assets/how-to/stack-4.avif"/>
 </Frame>
 
 Once the configuration is finished, you will see a deployment page:
 <Frame caption="Deploying the new stack
 ">
-   <img src="/images/how-to/stack-5.avif"/>
+   <img src="/_assets/how-to/stack-5.avif"/>
 </Frame>
 
 
 Clicking on the "Deploy in AWS" button will redirect you to a Cloud Formation page on AWS Console.
 <Frame caption="Cloudformation page">
-   <img src="/images/how-to/stack-6.avif"/>
+   <img src="/_assets/how-to/stack-6.avif"/>
 </Frame>
 
 
 You will have to log in to your AWS account, review and confirm the pre-filled configuration and create the stack.
 <Frame caption="Finalizing the new stack">
-   <img src="/images/how-to/stack-7.avif"/>
+   <img src="/_assets/how-to/stack-7.avif"/>
 </Frame>
 
 #### GCP
 
 If you choose `gcp` as your provider, you will see a page where you will have to select a region and a name for your new stack:
 <Frame caption="Deploy GCP Stack - Step 1">
-   <img src="/images/how-to/stack-8.avif"/>
+   <img src="/_assets/how-to/stack-8.avif"/>
 </Frame>
 
 <Frame caption="Deploy GCP Stack - Step 2 continued">
-   <img src="/images/how-to/stack-8-1.avif"/>
+   <img src="/_assets/how-to/stack-8-1.avif"/>
 </Frame>
 
 Once the configuration is finished, you will see a deployment page:
 <Frame caption="Deploy GCP Stack - Step 2">
-   <img src="/images/how-to/stack-9.avif"/>
+   <img src="/_assets/how-to/stack-9.avif"/>
 </Frame>
 
 
@@ -85,51 +85,51 @@ Make note of the configuration values provided to you in the ZenML dashboard. Yo
 Clicking on the "Deploy in GCP" button will redirect you to a Cloud Shell session on GCP.
 
 <Frame caption="GCP Cloud Shell start page">
-   <img src="/images/how-to/stack-10.png"/>
+   <img src="/_assets/how-to/stack-10.png"/>
 </Frame>
 
 <Note>
    The Cloud Shell session will warn you that the ZenML GitHub repository is untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp) and then check the `Trust repo` checkbox to proceed with the deployment, otherwise the Cloud Shell session will not be authenticated to access your GCP projects. You will also get a chance to review the scripts that will be executed in the Cloud Shell session before proceeding.
 </Note>
 <Frame caption="GCP Cloud Shell intro">
-   <img src="/images/how-to/stack-11.avif"/>
+   <img src="/_assets/how-to/stack-11.avif"/>
 </Frame>
 
 After the Cloud Shell session starts, you will be guided through the process of authenticating with GCP, configuring your deployment, and finally provisioning the resources for your new GCP stack using Deployment Manager.
 
 First, you will be asked to create or choose an existing GCP project with billing enabled and to configure your terminal with the selected project:
 <Frame caption="GCP Cloud Shell tutorial step 1">
-   <img src="/images/how-to/stack-12.avif"/>
+   <img src="/_assets/how-to/stack-12.avif"/>
 </Frame>
 
 Next, you will be asked to configure your deployment by pasting the configuration values that were provided to you earlier in the ZenML dashboard. You may need to switch back to the ZenML dashboard to copy these values if you did not do so earlier:
 <Frame caption="GCP Cloud Shell tutorial step 2">
-   <img src="/images/how-to/stack-13.avif"/>
+   <img src="/_assets/how-to/stack-13.avif"/>
 </Frame>
 
 
 <Frame caption="Deploy GCP Stack pending">
-   <img src="/images/how-to/stack-14.avif"/>
+   <img src="/_assets/how-to/stack-14.avif"/>
 </Frame>
 
 
 You can take this opportunity to review the script that will be executed at the next step. You will notice that this script starts by enabling some necessary GCP service APIs and configuring some basic permissions for the service accounts involved in the stack deployment, and then deploys the stack using a GCP Deployment Manager template. You can proceed with the deployment by running the script in your terminal:
 <Frame caption="GCP Cloud Shell tutorial step 3">
-   <img src="/images/how-to/stack-15.avif"/>
+   <img src="/_assets/how-to/stack-15.avif"/>
 </Frame>
 
 The script will deploy a GCP Deployment Manager template that provisions the necessary resources for your new GCP stack and automatically registers the stack with your ZenML server. You can monitor the progress of the deployment in your GCP console:
 <Frame caption="GCP Deployment Manager progress">
-   <img src="/images/how-to/stack-16.avif"/>
+   <img src="/_assets/how-to/stack-16.avif"/>
 </Frame>
 
 Once the deployment is complete, you may close the Cloud Shell session and return to the ZenML dashboard to view the newly created stack:
 <Frame caption="GCP Cloud Shell tutorial step 4">
-   <img src="/images/how-to/stack-17.avif"/>
+   <img src="/_assets/how-to/stack-17.avif"/>
 </Frame>
 
 <Frame caption="GCP Stack dashboard output">
-   <img src="/images/how-to/stack-18.avif"/>
+   <img src="/_assets/how-to/stack-18.avif"/>
 </Frame>
 
 #### Azure
@@ -149,52 +149,52 @@ zenml stack deploy -p {aws|gcp|azure}
 
 If you choose `aws` as your provider, the command will walk you through deploying a Cloud Formation stack on AWS. It will start by showing some information about the stack that will be created:
 <Frame caption="CLI AWS stack deploy">
-   <img src="/images/how-to/stack-19.avif"/>
+   <img src="/_assets/how-to/stack-19.avif"/>
 </Frame>
 
 Upon confirmation, the command will redirect you to a Cloud Formation page on AWS Console where you will have to deploy the stack:
 <Frame caption="Cloudformation page">
-   <img src="/images/how-to/stack-20.avif"/>
+   <img src="/_assets/how-to/stack-20.avif"/>
 </Frame>
 
 You will have to log in to your AWS account, have permission to deploy an AWS Cloud Formation stack, review and confirm the pre-filled configuration and create the stack.
 <Frame caption="Finalizing the new stack">
-   <img src="/images/how-to/stack-21.avif"/>
+   <img src="/_assets/how-to/stack-21.avif"/>
 </Frame>
 
 The Cloud Formation stack will provision the necessary resources for your new AWS stack and automatically register the stack with your ZenML server. You can monitor the progress of the stack in your AWS console:
 <Frame caption="AWS Cloud Formation progress">
-   <img src="/images/how-to/stack-22.avif"/>
+   <img src="/_assets/how-to/stack-22.avif"/>
 </Frame>
 
 Once the provisioning is complete, you may close the AWS Cloud Formation page and return to the ZenML CLI to view the newly created stack:
 <Frame caption="AWS Stack CLI output">
-   <img src="/images/how-to/stack-23.avif"/>
+   <img src="/_assets/how-to/stack-23.avif"/>
 </Frame>
 
 #### GCP
 
 If you choose `gcp` as your provider, the command will walk you through deploying a Deployment Manager template on GCP. It will start by showing some information about the stack that will be created:
 <Frame caption="CLI GCP stack deploy">
-   <img src="/images/how-to/stack-24.avif"/>
+   <img src="/_assets/how-to/stack-24.avif"/>
 </Frame>
 
 
 Upon confirmation, the command will redirect you to a Cloud Shell session on GCP.
 <Frame caption="GCP Cloud Shell start page">
-   <img src="/images/how-to/stack-25.png"/>
+   <img src="/_assets/how-to/stack-25.png"/>
 </Frame>
 
 The Cloud Shell session will warn you that the ZenML GitHub repository is untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp) and then check the `Trust repo` checkbox to proceed with the deployment, otherwise the Cloud Shell session will not be authenticated to access your GCP projects. You will also get a chance to review the scripts that will be executed in the Cloud Shell session before proceeding.
 <Frame caption="GCP Cloud Shell intro">
-   <img src="/images/how-to/stack-26.avif"/>
+   <img src="/_assets/how-to/stack-26.avif"/>
 </Frame>
 
 After the Cloud Shell session starts, you will be guided through the process of authenticating with GCP, configuring your deployment, and finally provisioning the resources for your new GCP stack using Deployment Manager.
 
 First, you will be asked to create or choose an existing GCP project with billing enabled and to configure your terminal with the selected project:
 <Frame caption="GCP Cloud Shell tutorial step 1">
-   <img src="/images/how-to/stack-27.avif"/>
+   <img src="/_assets/how-to/stack-27.avif"/>
 </Frame>
 
 
@@ -202,67 +202,67 @@ First, you will be asked to create or choose an existing GCP project with billin
 Next, you will be asked to configure your deployment by pasting the configuration values that were provided to you in the ZenML CLI. You may need to switch back to the ZenML CLI to copy these values if you did not do so earlier:
 <Frame caption="
 GCP Cloud Shell tutorial step 2">
-   <img src="/images/how-to/stack-28.avif"/>
+   <img src="/_assets/how-to/stack-28.avif"/>
 </Frame>
 
 You can take this opportunity to review the script that will be executed at the next step. You will notice that this script starts by enabling some necessary GCP service APIs and configuring some basic permissions for the service accounts involved in the stack deployment and then deploys the stack using a GCP Deployment Manager template. You can proceed with the deployment by running the script in your terminal:
 <Frame caption="GCP Cloud Shell tutorial step 3
 ">
-   <img src="/images/how-to/stack-29.avif"/>
+   <img src="/_assets/how-to/stack-29.avif"/>
 </Frame>
 The script will deploy a GCP Deployment Manager template that provisions the necessary resources for your new GCP stack and automatically registers the stack with your ZenML server. You can monitor the progress of the deployment in your GCP console:
 <Frame caption="GCP Deployment Manager progress">
-   <img src="/images/how-to/stack-30.avif"/>
+   <img src="/_assets/how-to/stack-30.avif"/>
 </Frame>
 
 Once the deployment is complete, you may close the Cloud Shell session and return to the ZenML CLI to view the newly created stack:
 <Frame caption="GCP Cloud Shell tutorial step 4">
-   <img src="/images/how-to/stack-31.avif"/>
+   <img src="/_assets/how-to/stack-31.avif"/>
 </Frame>
 
 <Frame caption="GCP Stack CLI output">
-   <img src="/images/how-to/stack-32.avif"/>
+   <img src="/_assets/how-to/stack-32.avif"/>
 </Frame>
 
 #### Azure
 
 If you choose `azure` as your provider, the command will walk you through deploying [the ZenML Azure Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure). It will start by showing some information about the stack that will be created:
 <Frame caption="CLI Azure stack deploy">
-   <img src="/images/how-to/stack-33.avif"/>
+   <img src="/_assets/how-to/stack-33.avif"/>
 </Frame>
 
 
 Upon confirmation, the command will redirect you to a Cloud Shell session on Azure.
 <Frame caption="Azure Cloud Shell page">
-   <img src="/images/how-to/stack-34.avif"/>
+   <img src="/_assets/how-to/stack-34.avif"/>
 </Frame>
 
 After the Cloud Shell session starts, you will have to use Terraform to deploy the stack, as instructed by the CLI.
 
 First, you will have to open a file named `main.tf` in the Cloud Shell session using the editor of your choice (e.g. `vim`, `nano`) and paste in the Terraform configuration provided by the CLI. You may need to switch back to the ZenML CLI to copy these values if you did not do so earlier:
 <Frame caption="Azure Cloud Shell Terraform Configuration File">
-   <img src="/images/how-to/stack-35.avif"/>
+   <img src="/_assets/how-to/stack-35.avif"/>
 </Frame>
 
 The Terraform file is a simple configuration that uses [the ZenML Azure Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure) to deploy the necessary resources for your Azure stack and then automatically register the stack with your ZenML server. You can read more about the module and its configuration options in the module's documentation.
 
 You can proceed with the deployment by running the `terraform init` and `terraform apply` Terraform commands in your terminal:
 <Frame caption="Azure Cloud Shell Terraform Init">
-   <img src="/images/how-to/stack-36.avif"/>
+   <img src="/_assets/how-to/stack-36.avif"/>
 </Frame>
 
 <Frame caption="Azure Cloud Shell Terraform Apply">
-   <img src="/images/how-to/stack-37.avif"/>
+   <img src="/_assets/how-to/stack-37.avif"/>
 </Frame>
 
 Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML CLI to view the newly created stack:
 <Frame caption="Azure Cloud Shell Terraform Outputs">
-   <img src="/images/how-to/stack-38.avif"/>
+   <img src="/_assets/how-to/stack-38.avif"/>
 </Frame>
 
 
 <Frame caption="Azure Stack CLI output">
-   <img src="/images/how-to/stack-39.avif"/>
+   <img src="/_assets/how-to/stack-39.avif"/>
 </Frame>
 
    </Tab>

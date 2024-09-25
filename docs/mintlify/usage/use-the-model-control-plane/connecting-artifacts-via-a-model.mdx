@@ -26,7 +26,7 @@ No matter how you design these pipelines, one thing stays consistent: you will o
 Let's say we have a feature engineering pipeline and a training pipeline. The feature engineering pipeline is like a factory, pumping out many different datasets. Only a few of these datasets should be selected to be sent to the training pipeline to train an actual model.
 <Frame caption="A simple artifact exchange between two pipelines
 ">
-  <img src="/images/how-to/stack-66.avif"/>
+  <img src="/_assets/how-to/stack-66.avif"/>
 </Frame>
 
 
@@ -67,7 +67,7 @@ For example, let's say we have a training pipeline called `train_and_promote` an
 
 On the other side, the `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. It need not know of the IDs or names of any of the artifacts produced by the training pipeline's many runs. This way these two pipelines can independently be run, but can rely on each other's output.
 <Frame caption="A simple artifact exchange between pipelines through the Model Control Plane.">
-  <img src="/images/how-to/stack-67.avif"/>
+  <img src="/_assets/how-to/stack-67.avif"/>
 </Frame>
 
 In code, this is very simple. Once the [pipelines are configured to use a particular model](/versions/0.66.0/user-guide/starter-guide/track-ml-models#configuring-a-model-in-a-pipeline), we can use `get_step_context` to fetch the configured model within a step directly. Assuming there is a `predict` step in the `do_predictions` pipeline, we can fetch the `production` model like so:

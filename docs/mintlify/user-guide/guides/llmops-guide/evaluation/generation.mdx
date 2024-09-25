@@ -12,7 +12,7 @@ As with the [retrieval evaluation](/versions/0.66.0/user-guide/llmops-guide/eval
 
 As in the retrieval evaluation, we can start by putting together a set of examples where we know that our generated output should or shouldn't include certain terms. For example, if we're generating answers to questions about which orchestrators ZenML supports, we can check that the generated answers include terms like "Airflow" and "Kubeflow" (since we do support them) and exclude terms like "Flyte" or "Prefect" (since we don't (yet!) support them). These handcrafted tests should be driven by mistakes that you've already seen in the RAG output. The negative example of "Flyte" and "Prefect" showing up in the list of supported orchestrators, for example, shows up sometimes when you use GPT 3.5 as the LLM.
 <Frame>
-  <img src="/images/user-guide/ev-m-5.png"/>
+  <img src="/_assets/user-guide/ev-m-5.png"/>
 </Frame>
 
 As another example, when you make a query asking 'what is the default orchestrator in ZenML?' you would expect that the answer would include the word 'local', so we can make a test case to confirm that.
@@ -136,7 +136,7 @@ As you become more familiar with the kinds of outputs your LLM generates, you ca
 Another way to evaluate the generation component is to use another LLM to grade the output of the LLM you're evaluating. This is a more sophisticated approach and requires a bit more setup. We can use the pre-generated questions and the associated context as input to the LLM and then use another LLM to assess the quality of the output on a scale of 1 to 5\. This is a more quantitative approach and since it's automated it can run across a larger set of data.
 
 <Frame>
-  <img src="/images/user-guide/ev-m-6.png"/>
+  <img src="/_assets/user-guide/ev-m-6.png"/>
 </Frame>
 
 <Note>

@@ -8,7 +8,7 @@ Until now, we have been executing ZenML pipelines locally. While this is a good 
 
 This allows data scientists to experiment with data processing and model training locally and then have code changes automatically tested and validated through the standard pull request/merge request peer review process. Changes that pass the CI and code review are then deployed automatically to production. Here is how this could look like:
 <Frame caption="Pipeline being run on staging/production stack through ci/cd">
-  <img src="/images/user-guide/production-guide/ci-cid.avif" />
+  <img src="/_assets/user-guide/production-guide/ci-cid.avif" />
 </Frame>
 
 ## Breaking it down
@@ -43,7 +43,7 @@ To configure a ZenML client to use this API key, run:
 
 For our Github Actions we will need to set up some secrets [for our repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository). Specifically, you should use github secrets to store the `ZENML_API_KEY` that you created above.
 <Frame caption="create_gh_secret.png">
-  <img src="/images/user-guide/production-guide/ci-cid-1.avif" />
+  <img src="/_assets/user-guide/production-guide/ci-cid-1.avif" />
 </Frame>
 
 The other values that are loaded from secrets into the environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline%5Frun.yaml#L14-L23) can also be set explicitly or as variables.
@@ -119,7 +119,7 @@ When you push to a branch now, that is within a Pull Request, this action will r
 
 Finally you can configure your github action workflow to leave a report based on the pipeline that was run. Check out the template for this \[here\](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline\_run.yaml#L87-L99.
 <Frame caption="Comment left on Pull Request">
-  <img src="/images/user-guide/production-guide/ci-cid-2.avif" />
+  <img src="/_assets/user-guide/production-guide/ci-cid-2.avif" />
 </Frame>
 
 

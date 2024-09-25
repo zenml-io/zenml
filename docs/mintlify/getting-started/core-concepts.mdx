@@ -56,7 +56,7 @@ def step_2(input_one: str, input_two: str) -> str:
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
 <Frame caption="Representation of a pipeline dag.">
-  <img src="/images/F01_pipeline.png"/>
+  <img src="/_assets/F01_pipeline.png"/>
 </Frame>
 
 
@@ -120,7 +120,7 @@ When you want to execute a pipeline run with ZenML, **Stacks** come into play. A
 
 For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
 <Frame caption="ZenML running code on the Local Stack.">
-  <img src="/images/F02_pipeline_local_stack.png"/>
+  <img src="/_assets/F02_pipeline_local_stack.png"/>
 </Frame>
 
 
@@ -158,7 +158,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](/versions/0.66.0/user-guide/production-guide/deploying-zenml) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models, etc.
 <Frame caption="Visualization of the relationship between code and infrastructure.">
-  <img src="/images/F04_architecture.png"/>
+  <img src="/_assets/F04_architecture.png"/>
 </Frame>
 
 #### Server Deployment

@@ -6,7 +6,7 @@ icon: server
 
 The process of generating the embeddings doesn't take too long, especially if the machine on which the step is running has a GPU, but it's still not something we want to do every time we need to retrieve a document. Instead, we can store the embeddings in a vector database, which allows us to quickly retrieve the most relevant chunks based on their similarity to the query.
 <Frame>
-  <img src="/images/user-guide/data-int-5.avif"/>
+  <img src="/_assets/user-guide/data-int-5.avif"/>
 </Frame>
 
 For the purposes of this guide, we'll use PostgreSQL as our vector database. This is a popular choice for storing embeddings, as it provides a scalable and efficient way to store and retrieve high-dimensional vectors. However, you can use any vector database that supports high-dimensional vectors. If you want to explore a list of possible options, [this is a good website](https://superlinked.com/vector-db-comparison/) to compare different options.
@@ -112,7 +112,7 @@ We use some utility functions, but what we do here is:
 
 Note that we're inserting the documents into the embeddings table as well as the embeddings themselves. This is so that we can retrieve the documents based on their embeddings later on. It also helps with debugging from within the Supabase interface or wherever else we're examining the contents of the database.
 <Frame caption="The Supabase editor interface">
-  <img src="/images/user-guide/data-int-6.avif"/>
+  <img src="/_assets/user-guide/data-int-6.avif"/>
 </Frame>
 Deciding when to update your embeddings is a separate discussion and depends on the specific use case. If your data is frequently changing, and the changes are significant, you might want to fully reset the embeddings with each update. In other cases, you might just want to add new documents and embeddings into the database because the changes are minor or infrequent. In the code above, we choose to only add new embeddings if they don't already exist in the database.
 
