@@ -7,7 +7,7 @@ icon: bomb
 [Tekton](https://tekton.dev/) is a powerful and flexible open-source framework for creating CI/CD systems, allowing developers to build, test, and deploy across cloud providers and on-premise systems.
 
 <Note>
-    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
+    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
 </Note>
 ### When to use it
 
@@ -23,7 +23,7 @@ You should use the Tekton orchestrator if:
 You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 <Tabs>
     <Tab title="AWS">
-* A remote ZenML server. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
+* A remote ZenML server. See the [deployment guide](/getting-started/deploying-zenml) for more information.
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command:
@@ -34,7 +34,7 @@ aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
 * [Install](https://tekton.dev/docs/pipelines/install/) Tekton Pipelines onto your cluster.
 </Tab>
     <Tab title="GCP">
-* A remote ZenML server. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
+* A remote ZenML server. See the [deployment guide](/getting-started/deploying-zenml) for more information.
 * Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
 * Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/versions/0.66.0/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command:
@@ -45,7 +45,7 @@ gcloud container clusters get-credentials CLUSTER_NAME
 * [Install](https://tekton.dev/docs/pipelines/install/) Tekton Pipelines onto your cluster.
 </Tab>
     <Tab title="Azure">
-* A remote ZenML server. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
+* A remote ZenML server. See the [deployment guide](/getting-started/deploying-zenml) for more information.
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [az CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the following command:
@@ -235,4 +235,4 @@ For more information and a full list of configurable attributes of the Tekton or
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/versions/0.66.0/how-to/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/usage/resource-data-management/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.

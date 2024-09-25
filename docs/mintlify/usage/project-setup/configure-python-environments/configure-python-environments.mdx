@@ -33,9 +33,9 @@ Please note that the `@pipeline` function in your code is **only ever called** i
 
 ## ZenML Server Environment
 
-The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](/versions/0.66.0/getting-started/deploying-zenml). To manage dependencies, install them during [ZenML deployment](/versions/0.66.0/getting-started/deploying-zenml), but only if you have custom integrations, as most are built-in.
+The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](/getting-started/deploying-zenml). To manage dependencies, install them during [ZenML deployment](/getting-started/deploying-zenml), but only if you have custom integrations, as most are built-in.
 
-See also [here](/versions/0.66.0/how-to/configure-python-environments/configure-the-server-environment) for more on [configuring the server environment](/versions/0.66.0/how-to/configure-python-environments/configure-the-server-environment).
+See also [here](/usage/project-setup/configure-python-environments/configure-the-server-environment) for more on [configuring the server environment](/usage/project-setup/configure-python-environments/configure-the-server-environment).
 
 ## Execution Environments
 
@@ -45,6 +45,6 @@ ZenML handles the Docker image configuration, creation, and pushing, starting wi
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](/versions/0.66.0/how-to/configure-python-environments#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](/stack-components/image-builders), a special [stack component](/stack-components/component-guide), allowing users to build and push Docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](/usage/project-setup/configure-python-environments#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](/stack-components/image-builders), a special [stack component](/stack-components/component-guide), allowing users to build and push Docker images in a different specialized _image builder environment_.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](/stack-components/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.

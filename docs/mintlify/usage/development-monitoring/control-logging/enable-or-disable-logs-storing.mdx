@@ -37,7 +37,7 @@ def my_step() -> None:
 def my_pipeline():
     ...
 ```
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](/versions/0.66.0/how-to/configure-python-environments#execution-environments), i.e., on the orchestrator level:
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](/usage/project-setup/configure-python-environments#execution-environments), i.e., on the orchestrator level:
 
 ```py
 docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})

@@ -7,7 +7,7 @@ icon: cloud-showers-water
 The Kubeflow orchestrator is an [orchestrator](/stack-components/orchestrators) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
 
 <Note>
-    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
+    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
 </Note>
 
 ### When to use it
@@ -97,7 +97,7 @@ You can pass other configurations specific to the stack components as key-value 
 To use the Kubeflow orchestrator, we need:
 
 * A Kubernetes cluster with Kubeflow pipelines installed. See the [deployment section](/stack-components/orchestrators/kubeflow#how-to-deploy-it) for more information.
-* A ZenML server deployed remotely where it can be accessed from the Kubernetes cluster. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
+* A ZenML server deployed remotely where it can be accessed from the Kubernetes cluster. See the [deployment guide](/getting-started/deploying-zenml) for more information.
 * The ZenML `kubeflow` integration installed. If you haven't done so, run
 
 ```bash
@@ -256,7 +256,7 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdo
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/versions/0.66.0/how-to/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/usage/resource-data-management/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Important Note for Multi-Tenancy Deployments
 

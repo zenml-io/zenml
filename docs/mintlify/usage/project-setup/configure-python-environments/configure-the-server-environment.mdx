@@ -37,7 +37,7 @@ export ZENML_REPOSITORY_PATH=/path/to/somewhere
 
 ## Analytics
 
-Please see [our full page](versions/0.66.0/reference/global-settings#usage-analytics) on what analytics are tracked and how you can opt out, but the quick summary is that you can set this to `false` if you want to opt out of analytics.
+Please see [our full page](usage/project-setup/global-settings#usage-analytics) on what analytics are tracked and how you can opt out, but the quick summary is that you can set this to `false` if you want to opt out of analytics.
 
 
 ```shell
@@ -88,7 +88,7 @@ If you wish to disable colorful logging, set the following environment variable:
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](/versions/0.66.0/how-to/configure-python-environments#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
+Note that setting this on the [client environment](/usage/project-setup/configure-python-environments#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
 
 ```py
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})
@@ -121,7 +121,7 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 
 ## Server configuration
 
-For more information on server configuration, see the [ZenML Server documentation](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-docker#zenml-server-configuration-options) for more, especially the section entitled "ZenML server configuration options".
+For more information on server configuration, see the [ZenML Server documentation](/getting-started/deploying-zenml/deploy-with-docker#zenml-server-configuration-options) for more, especially the section entitled "ZenML server configuration options".
 
 ## Client configuration
 

@@ -53,7 +53,7 @@ A GCS Artifact Store can be deployed directly from the ZenML CLI:
 zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](/versions/0.66.0/how-to/stack-deployment).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](/stack-components/stack-deployment).
 
 #### Authentication Methods
 
@@ -184,7 +184,7 @@ zenml stack register  -a  ... --set
 ```
     </Tab>
     <Tab title="GCP Credentials">
-When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](/versions/0.66.0/getting-started/deploying-zenml/secret-management) and then reference it in the Artifact Store configuration.
+When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](/usage/project-setup/use-secrets/secret-management) and then reference it in the Artifact Store configuration.
 
 This method has some advantages over the implicit authentication method:
 

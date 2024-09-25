@@ -7,7 +7,7 @@ icon: plane
 ZenML pipelines can be executed natively as [Airflow](https://airflow.apache.org/) DAGs. This brings together the power of the Airflow orchestration with the ML-specific benefits of ZenML pipelines. Each ZenML step runs in a separate Docker container which is scheduled and started using Airflow.
 
 <Note>
-    If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](/versions/0.66.0/getting-started/deploying-zenml).
+    If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](/getting-started/deploying-zenml).
 </Note>
 
 ### When to use it
@@ -120,7 +120,7 @@ python file_that_runs_a_zenml_pipeline.py
     <Tab title="Remote">
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](/getting-started/deploying-zenml) for more information.
 * A deployed Airflow server. See the [deployment section](/stack-components/orchestrators/airflow#how-to-deploy-it) for more information.
 * A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
 * A [remote container registry](/stack-components/container-registries) as part of your stack.
@@ -167,7 +167,7 @@ For additional configuration of the Airflow orchestrator, you can pass `AirflowO
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/versions/0.66.0/how-to/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/usage/resource-data-management/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 #### Using different Airflow operators
 

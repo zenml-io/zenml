@@ -41,7 +41,7 @@ You need to configure the following credentials for authentication to the Comet 
 * `workspace`: Optional. The name of the workspace where your project is located. If not specified, the default workspace associated with your API key will be used.
 <Tabs>
     <Tab title="ZenML Secret (Recommended)">
-        This method requires you to [configure a ZenML secret](/versions/0.66.0/getting-started/deploying-zenml/secret-management) to store the Comet tracking service credentials securely.
+        This method requires you to [configure a ZenML secret](/usage/project-setup/use-secrets/secret-management) to store the Comet tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -70,7 +70,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
 
 <Info>
-    Read more about [ZenML Secrets](/versions/0.66.0/getting-started/deploying-zenml/secret-management) in the ZenML documentation.
+    Read more about [ZenML Secrets](/usage/project-setup/use-secrets/secret-management) in the ZenML documentation.
 </Info>
     </Tab>
     <Tab title="Basic Authentication">
@@ -129,7 +129,7 @@ def my_step():
 ```
 
 <Info>
-    Instead of hardcoding an experiment tracker name, you can also use the [Client](versions/0.66.0/reference/python-client) to dynamically use the experiment tracker of your active stack, as shown in the example above.
+    Instead of hardcoding an experiment tracker name, you can also use the [Client](sdk/python-client) to dynamically use the experiment tracker of your active stack, as shown in the example above.
 </Info>
 
 ### Comet UI

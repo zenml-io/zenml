@@ -37,7 +37,7 @@ There are quicker alternatives to using a Service Connector to link an S3 Artifa
 ```bash
 zenml artifact-store register s3 --flavor s3 --path=s3://BUCKET_NAME --key=AWS_ACCESS_KEY --secret=AWS_SECRET_KEY
 ```
-2. [a ZenML secret](/versions/0.66.0/getting-started/deploying-zenml/secret-management) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
+2. [a ZenML secret](/usage/project-setup/use-secrets/secret-management) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
 
 ```bash
 zenml secret create aws --aws_access_key_id=AWS_ACCESS_KEY --aws_secret_access_key=AWS_SECRET_KEY
@@ -526,7 +526,7 @@ Service connector 'aws-s3' of type 'aws' with id '96a92154-4ec7-4722-bc18-21eeea
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
 
-The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](/versions/0.66.0/getting-started/deploying-zenml/secret-management).
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](/usage/project-setup/use-secrets/secret-management).
 
 Moreover, the following security best practice is automatically enforced by the AWS connector: the AWS Secret Key will be kept hidden on the ZenML Server and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
 

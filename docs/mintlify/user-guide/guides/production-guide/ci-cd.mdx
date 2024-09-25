@@ -21,7 +21,7 @@ To illustrate this, let's walk through how this process could be set up with a G
 </Info>
 ### Configure an API Key in ZenML
 
-In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those [here](https://docs.zenml.io/versions/0.66.0/how-to/connecting-to-zenml/connect-with-a-service-account).
+In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those [here](https://docs.zenml.io/usage/resource-data-management/connecting-to-zenml/connect-with-a-service-account).
 
 ```Bash
 zenml service-account create github_action_api_key
@@ -52,7 +52,7 @@ The other values that are loaded from secrets into the environment [here](https:
 
 You might not necessarily want to use the same stack with the same resources for your staging and production use.
 
-This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources for the respective environments. You can also use different [configuration files](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/how-to/configuring-zenml/configuring-zenml.md) for the different environments to configure the [Model](/usage/development-monitoring/use-the-model-control-plane), the [DockerSettings](/usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline), the [ResourceSettings like accelerators](/versions/0.66.0/how-to/training-with-gpus) differently for the different environments.
+This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources for the respective environments. You can also use different [configuration files](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/how-to/configuring-zenml/configuring-zenml.md) for the different environments to configure the [Model](/usage/development-monitoring/use-the-model-control-plane), the [DockerSettings](/usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline), the [ResourceSettings like accelerators](/usage/resource-data-management/training-with-gpus) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 
