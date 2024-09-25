@@ -121,6 +121,8 @@ def bentoml_model_deployer_step(
             apis=service_apis(str(bento.tag)),
             host=host,
             port=port,
+            pipeline_name=pipeline_name,
+            pipeline_step_name=step_name,
             image=image,
             image_tag=image_tag,
             platform=platform,
