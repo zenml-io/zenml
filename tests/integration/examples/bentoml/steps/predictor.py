@@ -11,19 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 from rich import print as rich_print
 
 from zenml import step
-from zenml.integrations.bentoml.services import BentoMLDeploymentService
+from zenml.integrations.bentoml.services import BentoMLLocalDeploymentService
+from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentService
 
 
 @step
 def predictor(
     inference_data: Dict[str, List],
-    service: BentoMLDeploymentService,
+    service: Union[BentoMLLocalDeploymentService, BentoMLContainerDeploymentService],
 ) -> None:
     """Run an inference request against the BentoML prediction service.
 
@@ -31,7 +32,8 @@ def predictor(
         service: The BentoML service.
         data: The data to predict.
     """
-    service.start(timeout=10)  # should be a NOP if already started
+    if not service.is_running:
+        service.start(timeout=10)  # should be a NOP if already started
     for img, data in inference_data.items():
         grayscale_image = np.dot(
             np.array(data)[..., :3], [0.2989, 0.5870, 0.1140]
