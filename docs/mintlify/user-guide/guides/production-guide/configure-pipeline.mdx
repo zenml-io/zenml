@@ -151,7 +151,7 @@ Here we are configuring the entire pipeline with a certain amount of memory, whi
 
 
 <Info>
-Read more about settings in ZenML [here](/usage/project-setup/use-configuration-files/runtime-configuration) and [here](/versions/0.66.0/how-to/training-with-gpus)
+Read more about settings in ZenML [here](/usage/project-setup/use-configuration-files/runtime-configuration) and [here](/usage/resource-data-management/training-with-gpus)
 </Info>
 Now let's run the pipeline again:
 
@@ -161,4 +161,4 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [ResourceSettings here](/usage/project-setup/use-configuration-files/runtime-configuration), including the ability to [attach a GPU](/versions/0.66.0/how-to/training-with-gpus#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [ResourceSettings here](/usage/project-setup/use-configuration-files/runtime-configuration), including the ability to [attach a GPU](/usage/resource-data-management/training-with-gpus#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).

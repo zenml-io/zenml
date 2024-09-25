@@ -5,7 +5,7 @@ icon: circle-chevron-right
 ---
 
 <Note>
-  Migrating to `0.30.0` performs non-reversible database changes so downgrading to `<=0.23.0` is not possible afterwards. If you are running on an older ZenML version, please follow the [0.20.0 Migration Guide](versions/0.66.0/reference/migration-guide/migration-zero-twenty) first to prevent unexpected database migration failures.
+  Migrating to `0.30.0` performs non-reversible database changes so downgrading to `<=0.23.0` is not possible afterwards. If you are running on an older ZenML version, please follow the [0.20.0 Migration Guide](getting-started/migration-guide/migration-zero-twenty) first to prevent unexpected database migration failures.
 </Note>
 The ZenML 0.30.0 release removed the `ml-pipelines-sdk` dependency in favor of natively storing pipeline runs and artifacts in the ZenML database. The corresponding database migration will happen automatically as soon as you run any `zenml ...` CLI command after installing the new ZenML version, e.g.:
 

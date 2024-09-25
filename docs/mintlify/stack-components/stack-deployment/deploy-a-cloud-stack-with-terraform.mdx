@@ -18,9 +18,9 @@ If you have the required infrastructure pieces already deployed on your cloud, y
 
 ## Pre-requisites
 
-To use this feature, you need a deployed ZenML server instance that is reachable from the cloud provider where you wish to have the stack provisioned (this can't be a local server started via `zenml up`). If you do not already have one set up, you [can register for a free ZenML Pro account](https://cloud.zenml.io/signup) or you can learn about self-hosting a ZenML server [here](/versions/0.66.0/getting-started/deploying-zenml).
+To use this feature, you need a deployed ZenML server instance that is reachable from the cloud provider where you wish to have the stack provisioned (this can't be a local server started via `zenml up`). If you do not already have one set up, you [can register for a free ZenML Pro account](https://cloud.zenml.io/signup) or you can learn about self-hosting a ZenML server [here](/getting-started/deploying-zenml).
 
-Once you are connected to your deployed ZenML server, you need to create a service account and an API key for it. You will use the API key to give the Terraform module programmatic access to your ZenML server. You can find more about service accounts and API keys [here](/versions/0.66.0/how-to/connecting-to-zenml/connect-with-a-service-account). but the process is as simple as running the following CLI command while connected to your ZenML server:
+Once you are connected to your deployed ZenML server, you need to create a service account and an API key for it. You will use the API key to give the Terraform module programmatic access to your ZenML server. You can find more about service accounts and API keys [here](/usage/resource-data-management/connecting-to-zenml/connect-with-a-service-account). but the process is as simple as running the following CLI command while connected to your ZenML server:
 
 ```Bash
 zenml service-account create

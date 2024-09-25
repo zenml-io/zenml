@@ -39,8 +39,8 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 
 Currently, there are two main options to access a deployed ZenML server:
 
-1. **SaaS:** With [ZenML Pro](/versions/0.66.0/getting-started/zenml-pro/zenml-pro) offering you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-zenml-cli), [Docker](/stack-components/model-registries), [Helm](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm), or [HuggingFace Spaces](/versions/0.66.0/getting-started/deploying-zenml/deploy-using-huggingface-spaces). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
+1. **SaaS:** With [ZenML Pro](/getting-started/deploying-zenml/zenml-pro/zenml-pro) offering you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
+2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](/getting-started/deploying-zenml/deploy-with-zenml-cli), [Docker](/stack-components/model-registries), [Helm](/getting-started/deploying-zenml/deploy-with-helm), or [HuggingFace Spaces](/getting-started/deploying-zenml/deploy-using-huggingface-spaces). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
 
 Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version which supports stack registration from the dashboard simply set the following environment variable in the deployment environment: `export ZEN_SERVER_USE_LEGACY_DASHBOARD=True`.
 
@@ -54,7 +54,7 @@ Documentation for the various deployment strategies can be found in the followin
   <Card
     title="Deploy with ZenML CLI"
     icon="terminal"
-    href="https://docs.zenml.io/versions/0.66.0/getting-started/deploying-zenml/deploy-with-zenml-cli"
+    href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-zenml-cli"
     horizontal
   >
     Deploying ZenML on cloud using the ZenML CLI.
@@ -62,7 +62,7 @@ Documentation for the various deployment strategies can be found in the followin
   <Card
     title="Deploy with Docker"
     icon="docker"
-    href="https://docs.zenml.io/versions/0.66.0/getting-started/deploying-zenml/deploy-with-docker"
+    href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker"
     horizontal
   >
     Deploying ZenML in a Docker container.
@@ -70,7 +70,7 @@ Documentation for the various deployment strategies can be found in the followin
   <Card
     title="Deploy with Helm"
     icon="face-smile"
-    href="https://docs.zenml.io/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm"
+    href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm"
     horizontal
   >
     Deploying ZenML in a Kubernetes cluster with Helm.
@@ -78,7 +78,7 @@ Documentation for the various deployment strategies can be found in the followin
   <Card
     title="Deploy with HuggingFace Spaces"
     icon="face-grin-tongue-squint"
-    href="https://docs.zenml.io/versions/0.66.0/getting-started/deploying-zenml/deploy-using-huggingface-spaces"
+    href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-using-huggingface-spaces"
     horizontal
   >
     Deploying ZenML to Hugging Face Spaces.

@@ -22,9 +22,9 @@ You'll need the following:
 
 You can start by taking a look at the [values.yaml file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML deployment.
 
-In addition to tools and infrastructure, you will also need to collect and [prepare information related to your database](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm#collect-information-from-your-sql-database-service) and [information related to your external secrets management service](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm#collect-information-from-your-secrets-management-service) to be used for the Helm chart configuration and you may also want to install additional [optional services in your cluster](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm#optional-cluster-services).
+In addition to tools and infrastructure, you will also need to collect and [prepare information related to your database](/getting-started/deploying-zenml/deploy-with-helm#collect-information-from-your-sql-database-service) and [information related to your external secrets management service](/getting-started/deploying-zenml/deploy-with-helm#collect-information-from-your-secrets-management-service) to be used for the Helm chart configuration and you may also want to install additional [optional services in your cluster](/getting-started/deploying-zenml/deploy-with-helm#optional-cluster-services).
 
-When you are ready, you can proceed to the [installation](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-helm#zenml-helm-installation) section.
+When you are ready, you can proceed to the [installation](/getting-started/deploying-zenml/deploy-with-helm#zenml-helm-installation) section.
 
 ### Collect information from your SQL database service
 
@@ -293,9 +293,9 @@ This method requires you to configure a DNS service like AWS Route 53 or Google 
 
 ### Secret Store configuration
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](/versions/0.66.0/getting-started/deploying-zenml/secret-management) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](/usage/project-setup/use-secrets/secret-management) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
 
-> **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](/versions/0.66.0/getting-started/deploying-zenml/secret-management#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
+> **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](/usage/project-setup/use-secrets/secret-management#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 <Tabs>
   <Tab title="AWS">
@@ -569,7 +569,7 @@ To use the HashiCorp Vault service as a Secrets Store back-end, it must be confi
   <Tab title="Custom">
 **Using a custom secrets store backend implementation**
 
-You have the option of using [a custom implementation of the secrets store API](/versions/0.66.0/getting-started/deploying-zenml/secret-management) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
+You have the option of using [a custom implementation of the secrets store API](/usage/project-setup/use-secrets/secret-management) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
 ```Bash
 
  zenml:
@@ -611,7 +611,7 @@ You have the option of using [a custom implementation of the secrets store API](
 
 #### Backup secrets store
 
-[A backup secrets store](/versions/0.66.0/getting-started/deploying-zenml/secret-management#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](/versions/0.66.0/getting-started/deploying-zenml/secret-management#secrets-migration-strategy).
+[A backup secrets store](/usage/project-setup/use-secrets/secret-management#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](/usage/project-setup/use-secrets/secret-management#secrets-migration-strategy).
 
 To configure a backup secrets store in the Helm chart, use the same approach and instructions documented for the primary secrets store, but using the `backupSecretsStore` configuration section instead of `secretsStore`, e.g.:
 

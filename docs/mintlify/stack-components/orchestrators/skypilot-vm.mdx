@@ -7,7 +7,7 @@ icon: plane-up
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution, We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
 
 <Note>
-    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
+    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
 </Note>
 <Note>
     SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
@@ -68,7 +68,7 @@ To use the SkyPilot VM Orchestrator, you need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
 * A [remote container registry](/stack-components/container-registries) as part of your stack.
-* A [remote ZenML deployment](/versions/0.66.0/getting-started/deploying-zenml).
+* A [remote ZenML deployment](/getting-started/deploying-zenml).
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 * A [service connector](/usage/resource-data-management/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
 

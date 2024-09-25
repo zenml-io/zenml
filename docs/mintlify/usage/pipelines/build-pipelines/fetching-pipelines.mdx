@@ -35,7 +35,7 @@ from zenml.client import Client
 pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
-Check out the [ZenML Client Documentation](versions/0.66.0/reference/python-client) for more information on the `Client` class and its purpose.
+Check out the [ZenML Client Documentation](sdk/python-client) for more information on the `Client` class and its purpose.
 
 ### Discover and list all pipelines
 
@@ -75,7 +75,7 @@ runs = pipeline_model.runs
 The result will be a list of the most recent runs of this pipeline, ordered from newest to oldest.
 
 <Info>
-    Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](versions/0.66.0/reference/python-client#list-of-resources) for more information.
+    Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](sdk/python-client#list-of-resources) for more information.
 </Info>
 
 ### Get the last run of a pipeline
@@ -260,7 +260,7 @@ output.visualize()
     <img src="/_assets/how-to/setting-up-a-project-repository/pipelines-1.avif"/>
 </Frame>
 <Info>
-    If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](/versions/0.66.0/how-to/visualize-artifacts) to learn more about how to build and view artifact visualizations in ZenML!
+    If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](/usage/resource-data-management/visualize-artifacts) to learn more about how to build and view artifact visualizations in ZenML!
 </Info>
 
 ## Fetching information during run execution

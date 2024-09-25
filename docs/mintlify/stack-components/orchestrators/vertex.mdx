@@ -7,7 +7,7 @@ icon: tornado
 [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a serverless ML workflow tool running on the Google Cloud Platform. It is an easy way to quickly run your code in a production-ready, repeatable cloud orchestrator that requires minimal setup without provisioning and paying for standby compute.
 
 <Note>
-    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
+    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
 </Note>
 
 ## When to use it
@@ -26,7 +26,7 @@ You should use the Vertex orchestrator if:
     Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Vertex AI orchestrator? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](/versions/0.66.0/getting-started/deploying-zenml). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](/getting-started/deploying-zenml). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
 
@@ -294,4 +294,4 @@ For more information and a full list of configurable attributes of the Vertex or
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/versions/0.66.0/how-to/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/usage/resource-data-management/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.

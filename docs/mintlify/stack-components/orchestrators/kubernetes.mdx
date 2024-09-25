@@ -15,7 +15,7 @@ Compared to Kubeflow, this means that the Kubernetes-native orchestrator is fast
 However, since Kubeflow is much more mature, you should, in most cases, aim to move your pipelines to Kubeflow in the long run. A smooth way to production-grade orchestration could be to set up a Kubernetes cluster first and get started with the Kubernetes-native orchestrator. If needed, you can then install and set up Kubeflow later and simply switch out the orchestrator of your stack as soon as your full setup is ready.
 
 <Note>
-    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
+    This component is only meant to be used within the context of a [remote ZenML deployment scenario](/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
 </Note>
 
 ### When to use it
@@ -30,7 +30,7 @@ You should use the Kubernetes orchestrator if:
 
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our cloud guide
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](/versions/0.66.0/getting-started/deploying-zenml).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](/getting-started/deploying-zenml).
 
 #### Infrastructure Deployment
 
@@ -269,5 +269,5 @@ For more information and a full list of configurable attributes of the Kubernete
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/versions/0.66.0/how-to/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](/usage/resource-data-management/training-with-gpus) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 

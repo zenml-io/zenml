@@ -10,7 +10,7 @@ icon: play
 
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](/versions/0.66.0/how-to/training-with-gpus#specify-resource-requirements-for-steps) required for a step
+* The [resources](/usage/resource-data-management/training-with-gpus#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](/usage/project-setup/customize-docker-builds) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
@@ -22,7 +22,7 @@ Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
    * [DockerSettings](/usage/project-setup/customize-docker-builds) to specify Docker settings.
-   * [ResourceSettings](/versions/0.66.0/how-to/training-with-gpus) to specify resource settings.
+   * [ResourceSettings](/usage/resource-data-management/training-with-gpus) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (the key should be `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`). Settings for components not in the active stack will be ignored. Examples of these are:
    * [SkypilotAWSOrchestratorSettings](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-skypilot%5Faws/#zenml.integrations.skypilot%5Faws.flavors.skypilot%5Forchestrator%5Faws%5Fvm%5Fflavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
    * [KubeflowOrchestratorSettings](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow%5Forchestrator%5Fflavor.KubeflowOrchestratorSettings) to specify Kubeflow settings.

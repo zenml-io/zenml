@@ -6,7 +6,7 @@ icon: face-grin-tongue-squint
 
 A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https://huggingface.co/spaces). HuggingFace Spaces is a platform for hosting and sharing ML projects and workflows, and it also works to deploy ZenML. You can be up and running in minutes (for free) with a hosted ZenML server, so it's a good option if you want to try out ZenML without any infrastructure overhead.
 
-If you are planning to use HuggingFace Spaces for production use, make sure you have [persistent storage turned on](https://huggingface.co/docs/hub/en/spaces-storage) so as to prevent loss of data. See our [other deployment options](/versions/0.66.0/getting-started/deploying-zenml) if you want alternative options.
+If you are planning to use HuggingFace Spaces for production use, make sure you have [persistent storage turned on](https://huggingface.co/docs/hub/en/spaces-storage) so as to prevent loss of data. See our [other deployment options](/getting-started/deploying-zenml) if you want alternative options.
 <Frame caption="ZenML on HuggingFace Spaces -- default deployment">
   <img src="/_assets/deploy-4.avif"/>
 </Frame>
@@ -54,13 +54,13 @@ You can also use the Direct URL in your browser to use the ZenML dashboard as a 
 
 ## Extra configuration options
 
-By default, the ZenML application will be configured to use an SQLite non-persistent database. If you want to use a persistent database, you can configure this by amending the `Dockerfile` to your Space's root directory. For full details on the various parameters you can change, see [our reference documentation](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-docker#advanced-server-configuration-options) on configuring ZenML when deployed with Docker.
+By default, the ZenML application will be configured to use an SQLite non-persistent database. If you want to use a persistent database, you can configure this by amending the `Dockerfile` to your Space's root directory. For full details on the various parameters you can change, see [our reference documentation](/getting-started/deploying-zenml/deploy-with-docker#advanced-server-configuration-options) on configuring ZenML when deployed with Docker.
 
 <Info>
   If you are using the space just for testing and experimentation, you don't need to make any changes to the configuration. Everything will work out of the box.
 </Info>
 
-You can also use an external secrets backend together with your HuggingFace Spaces as described in [our documentation](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-docker#advanced-server-configuration-options). You should be sure to use HuggingFace's inbuilt ' Repository secrets' functionality to configure any secrets you need to use in your`Dockerfile` configuration. [See the documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management) for more details on how to set this up.
+You can also use an external secrets backend together with your HuggingFace Spaces as described in [our documentation](/getting-started/deploying-zenml/deploy-with-docker#advanced-server-configuration-options). You should be sure to use HuggingFace's inbuilt ' Repository secrets' functionality to configure any secrets you need to use in your`Dockerfile` configuration. [See the documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management) for more details on how to set this up.
 
 <Note>
   If you wish to use a cloud secrets backend together with ZenML for secrets management, **you must update your password** on your ZenML Server on the Dashboard. This is because the default user created by the HuggingFace Spaces deployment process has no password assigned to it and as the Space is publicly accessible (since the Space is public) _potentially anyone could access your secrets without this extra step_. To change your password navigate to the Settings page by clicking the button in the upper right-hand corner of the Dashboard and then click 'Update Password'.

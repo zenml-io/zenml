@@ -4,9 +4,9 @@ description: "Deploying ZenML on cloud using the ZenML CLI."
 icon: terminal
 ---
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](/versions/0.66.0/getting-started/deploying-zenml#deploying-a-zenml-server) to learn about other options that you have.
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](/getting-started/deploying-zenml#deploying-a-zenml-server) to learn about other options that you have.
 
-Before we begin, it will help to understand the [architecture](/versions/0.66.0/getting-started/deploying-zenml) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
+Before we begin, it will help to understand the [architecture](/getting-started/deploying-zenml) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
 
 ## Option 1: Starting from scratch
 
@@ -40,7 +40,7 @@ If you already have an existing cluster without an ingress controller, you can j
 
 #### Having an existing NGINX Ingress Controller
 
-The `deploy` command, by default, tries to create an NGINX ingress controller on your cluster. If you already have an existing controller, you can tell ZenML to not re-deploy it through the use of a config file. This file can be found in the [Configuration File Templates](/versions/0.66.0/getting-started/deploying-zenml/deploy-with-zenml-cli#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases.
+The `deploy` command, by default, tries to create an NGINX ingress controller on your cluster. If you already have an existing controller, you can tell ZenML to not re-deploy it through the use of a config file. This file can be found in the [Configuration File Templates](/getting-started/deploying-zenml/deploy-with-zenml-cli#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases.
 
 * Check if an ingress controller is running on your cluster by running the following command. You should see an entry in the output with the hostname populated.
 
