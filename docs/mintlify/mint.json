@@ -271,7 +271,7 @@
       ]
     },
     {
-      "group": " Resource & Data Management",
+      "group": "🗂️ Resource & Data Management",
       "icon": "database",
       "iconType": "solid",
       "pages": [
@@ -357,7 +357,7 @@
       ]
     },
     {
-      "group": " Development & Monitoring",
+      "group": "🔎 Development & Monitoring",
       "icon": "chart-line",
       "iconType": "solid",
       "pages": [
