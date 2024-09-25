@@ -6,7 +6,7 @@ icon: database
 
 The first step in setting up a RAG pipeline is to ingest the data that will be used to train and evaluate the retriever and generator models. This data can include a large corpus of documents, as well as any relevant metadata or annotations that can be used to train the retriever and generator.
 <Frame>
-  <img src="/images/user-guide/data-int.avif"/>
+  <img src="/_assets/user-guide/data-int.avif"/>
 </Frame>
 
 In the interests of keeping things simple, we'll implement the bulk of what we need ourselves. However, it's worth noting that there are a number of tools and frameworks that can help you manage the data ingestion process, including downloading, preprocessing, and indexing large corpora of documents. ZenML integrates with a number of these tools and frameworks, making it easy to set up and manage RAG pipelines.
@@ -43,7 +43,7 @@ The `get_all_pages` function simply crawls our documentation website and retriev
 
 We also log the count of those URLs as metadata for the step output. This will be visible in the dashboard for extra visibility around the data that's being ingested. Of course, you can also add more complex logic to this step, such as filtering out certain URLs or adding more metadata.
 <Frame caption="Partial screenshot from the dashboard showing the metadata from the step">
-  <img src="/images/user-guide/data-int-1.png"/>
+  <img src="/_assets/user-guide/data-int-1.png"/>
 </Frame>
 
 Once we have our list of URLs, we use [the unstructured library](https://github.com/Unstructured-IO/unstructured) to load and parse the pages. This will allow us to use the text without having to worry about the details of the HTML structure and/or markup. This specifically helps us keep the text content as small as possible since we are operating in a constrained environment with LLMs.

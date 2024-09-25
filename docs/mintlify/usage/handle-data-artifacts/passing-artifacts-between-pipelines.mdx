@@ -19,7 +19,7 @@ No matter how you design these pipelines, one thing stays consistent: you will o
 
 Let's say we have a feature engineering pipeline and a training pipeline. The feature engineering pipeline is like a factory, pumping out many different datasets. Only a few of these datasets should be selected to be sent to the training pipeline to train an actual model.
 <Frame caption="A simple artifact exchange between two pipelines">
-  <img src="/images/how-to/stack-53.avif"/>
+  <img src="/_assets/how-to/stack-53.avif"/>
 </Frame>
 
 In this scenario, the [ZenML Client](versions/0.66.0/reference/python-client#client-methods) can be used to facilitate such an exchange:
@@ -61,7 +61,7 @@ On the other side, the `do_predictions` pipeline simply picks up the latest prom
 
 <Frame caption="A simple artifact exchange between pipelines through the Model Control Plane.
 ">
-  <img src="/images/how-to/stack-54.avif"/>
+  <img src="/_assets/how-to/stack-54.avif"/>
 </Frame>
 
 

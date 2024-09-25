@@ -10,14 +10,14 @@ ZenML seamlessly integrates data versioning and lineage into its core functional
 
 Each time a ZenML pipeline runs, the system first checks if there have been any changes in the inputs, outputs, parameters, or configuration of the pipeline steps. Each step in a run gets a new directory in the artifact store:
 <Frame caption="Artifact Stores Under the Hood">
-  <img src="/images/how-to/stack-48.png"/>
+  <img src="/_assets/how-to/stack-48.png"/>
 </Frame>
 Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](/versions/0.66.0/stack-components/artifact-stores) with a unique ID and stores the data using the appropriate materializers in this directory.
 
 
 <Frame caption="Artifact Stores Under the Hood
 ">
-  <img src="/images/how-to/stack-49.png"/>
+  <img src="/_assets/how-to/stack-49.png"/>
 </Frame>
 
 On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](/versions/0.66.0/user-guide/starter-guide/cache-previous-executions), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
@@ -32,7 +32,7 @@ By tracking the lineage of artifacts across environments and stacks, ZenML enabl
 
 [Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](/versions/0.66.0/stack-components/artifact-stores). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 <Frame caption="Visualizing artifacts">
-  <img src="/images/how-to/stack-50.png"/>
+  <img src="/_assets/how-to/stack-50.png"/>
 </Frame>
 
 Materializers are designed to be extensible and customizable, allowing you to define your own serialization and deserialization logic for specific data types or storage systems. By default, ZenML provides built-in materializers for common data types and uses `cloudpickle` to pickle objects where there is no default materializer. If you want direct control over how objects are serialized, you can easily create custom materializers by extending the `BaseMaterializer` class and implementing the required methods for your specific use case. Read more about materializers [here](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types).

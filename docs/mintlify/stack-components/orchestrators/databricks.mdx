@@ -34,7 +34,7 @@ You will need to do the following to start using the Databricks orchestrator:
 ## How it works
 
 <Frame caption="Databricks How It works Diagram">
-  <img src="/images/stack-components/stack-components-9.avif"/>
+  <img src="/_assets/stack-components/stack-components-9.avif"/>
 </Frame>
 
 The Databricks orchestrator in ZenML leverages the concept of Wheel Packages. When you run a pipeline with the Databricks orchestrator, ZenML creates a Python wheel package from your project. This wheel package contains all the necessary code and dependencies for your pipeline.
@@ -71,7 +71,7 @@ We recommend creating a Databricks service account with the necessary permission
 
 
 <Frame>
-  <img src="/images/stack-components/stack-components-9.avif"/>
+  <img src="/_assets/stack-components/stack-components-9.avif"/>
 </Frame>
 
 ```bash
@@ -90,7 +90,7 @@ python run.py
 Databricks comes with its own UI that you can use to find further details about your pipeline runs, such as the logs of your steps.
 
 <Frame caption="Databricks UI">
-  <img src="/images/stack-components/stack-components-10.avif"/>
+  <img src="/_assets/stack-components/stack-components-10.avif"/>
 </Frame>
 
 For any runs executed on Databricks, you can get the URL to the Databricks UI in Python using the following code snippet:
@@ -103,7 +103,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 <Frame caption="Databricks Run UI">
-  <img src="/images/stack-components/stack-components-11.avif"/>
+  <img src="/_assets/stack-components/stack-components-11.avif"/>
 </Frame>
 
 ### Run pipelines on a schedule

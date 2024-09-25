@@ -28,11 +28,11 @@ You can start by [creating a service principal by creating an app registration](
 3. Give it a name and click register.
 
 <Frame caption="Azure App Registrations">
-<img src="/images/how-to/stack-71.avif"/>
+<img src="/_assets/how-to/stack-71.avif"/>
 </Frame>
 
 <Frame caption="Azure App Registrations">
-<img src="/images/how-to/stack-72.avif"/>
+<img src="/_assets/how-to/stack-72.avif"/>
 </Frame>
 
 
@@ -41,7 +41,7 @@ Once you create the service principal, you will get an Application ID and Tenant
 Next, go to your service principal and click on the `Certificates & secrets` in the `Manage` menu. Here, you have to create a client secret. Note down the secret value as it will be needed later.
 
 <Frame caption="Azure App Registrations">
-<img src="/images/how-to/stack-73.avif"/>
+<img src="/_assets/how-to/stack-73.avif"/>
 </Frame>
 
 ## 2. Create a service connector
@@ -63,19 +63,19 @@ You will use this service connector later on to connect your components with pro
 Now, you have to [create a resource group on Azure](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal). To do this, go to the Azure portal and go to the `Resource Groups` page and click `+ Create`.
 
 <Frame caption="Azure Resource Groups">
-<img src="/images/how-to/stack-74.avif"/>
+<img src="/_assets/how-to/stack-74.avif"/>
 </Frame>
 
 Once the resource group is created, go to the overview page of your new resource group and click `+ Create`. This will open up the marketplace where you can select a variety of resource to create. Look for `Azure Machine Learning`.
 
 <Frame caption="Azure Marketplace">
-<img src="/images/how-to/stack-75.avif"/>
+<img src="/_assets/how-to/stack-75.avif"/>
 </Frame>
 
 Select it, and you will start the process of creating an AzureML workspace. As you can see from the `Workspace details`, AzureML workspaces come equipped with a storage account, key vault, and application insights. It is highly recommended that you create a container registry as well.
 
 <Frame caption="AzureML Workspace Details">
-<img src="/images/how-to/stack-76.avif"/>
+<img src="/_assets/how-to/stack-76.avif"/>
 </Frame>
 
 ## 4\. Create Stack Components
@@ -87,7 +87,7 @@ In order to run any workflows on Azure using ZenML, you need an artifact store, 
 For the artifact store, we will be using the storage account attached to our AzureML workspace. But before registering the component itself, you have to create a container for blob storage. To do this, go to the corresponding storage account in your workspace and create a new container:
 
 <Frame caption="Azure Blob Storage">
-<img src="/images/how-to/stack-77.avif"/>
+<img src="/_assets/how-to/stack-77.avif"/>
 </Frame>
 
 Once you create the container, you can go ahead, register your artifact store using its path and connect it to your service connector:

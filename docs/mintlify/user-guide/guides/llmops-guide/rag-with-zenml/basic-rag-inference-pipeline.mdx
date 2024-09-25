@@ -6,7 +6,7 @@ icon: diagram-project
 
 Now that we have our index store, we can use it to make queries based on the documents in the index store. We use some utility functions to make this happen but no external libraries are needed beyond an interface to the index store as well as the LLM itself.
 <Frame caption="The Supabase editor interface">
-  <img src="/images/user-guide/data-int-7.avif"/>
+  <img src="/_assets/user-guide/data-int-7.avif"/>
 </Frame>
 
 If you've been following along with the guide, you should have some documents ingested already and you can pass a query in as a flag to the Python command used to run the pipeline:
@@ -16,7 +16,7 @@ python run.py --rag-query "how do I use a custom materializer inside my own zenm
 steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 <Frame caption="The Supabase editor interface">
-  <img src="/images/user-guide/data-int-8.png"/>
+  <img src="/_assets/user-guide/data-int-8.png"/>
 </Frame>
 
 This inference query itself is not a ZenML pipeline, but rather a function call which uses the outputs and components of our pipeline to generate the response. For a more complex inference setup, there might be even more going on here, but for the purposes of this initial guide we will keep it simple.

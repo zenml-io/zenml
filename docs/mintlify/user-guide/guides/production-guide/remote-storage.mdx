@@ -11,7 +11,7 @@ Remote storage allows us to store our artifacts in the cloud, which means they'r
 When using a stack with remote storage, nothing changes except the fact that the artifacts get materialized in a central and remote storage location. This diagram explains the flow:
 <Frame caption="Sequence of events that happen when running a pipeline on a remote artifact store.
 ">
-  <img src="/images/user-guide/production-guide/production-1.avif" />
+  <img src="/_assets/user-guide/production-guide/production-1.avif" />
 </Frame>
 
 <Info>
@@ -113,7 +113,7 @@ While you can go ahead and [run your pipeline on your stack](/versions/0.66.0/us
 First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form of a [secret](/versions/0.66.0/how-to/interact-with-secrets), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
 <Frame caption="Service Connectors abstract away complexity and implement security best practices
 ">
-  <img src="/images/user-guide/production-guide/production-2.avif" />
+  <img src="/_assets/user-guide/production-guide/production-2.avif" />
 </Frame>
 <Tabs>
   <Tab title="AWS">
@@ -159,7 +159,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
   </Tab>
   <Tab title=" Dashboard">
 <Frame caption="Register a new stack.">
-  <img src="/images/user-guide/production-guide/FCreateStack.png" />
+  <img src="/_assets/user-guide/production-guide/FCreateStack.png" />
 </Frame>
   </Tab>
 </Tabs>
@@ -193,7 +193,7 @@ zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
   <Tab title="Cloud Dashboard">
 [ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](/versions/0.66.0/user-guide/starter-guide/manage-artifacts) to visualize artifact versions:
 <Frame caption="See artifact versions in the cloud.">
-  <img src="/images/user-guide/production-guide/Fdcp_artifacts_versions_list.png" />
+  <img src="/_assets/user-guide/production-guide/Fdcp_artifacts_versions_list.png" />
 </Frame>
 
   </Tab>

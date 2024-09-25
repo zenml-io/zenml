@@ -7,7 +7,7 @@ icon: meteor
 The Comet Experiment Tracker is an [Experiment Tracker](/versions/0.66.0/stack-components/experiment-trackers) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
 <Frame caption="A pipeline with a Comet experiment tracker url as metadata">
-  <img src="/images/stack-components/stack-components-22.avif"/>
+  <img src="/_assets/stack-components/stack-components-22.avif"/>
 </Frame>
 
 ### When would you want to use it?
@@ -94,7 +94,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 </Tabs>
 
 <Frame caption="A stack with the Comet experiment tracker">
-  <img src="/images/stack-components/stack-components-23.avif"/>
+  <img src="/_assets/stack-components/stack-components-23.avif"/>
 </Frame>
 
 For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs for our Comet integration](https://sdkdocs.zenml.io/0.66.0/integration%5Fcode%5Fdocs/integrations-comet/#zenml.integrations.comet.flavors.comet%5Fexperiment%5Ftracker%5Fflavor.CometExperimentTrackerConfig).
@@ -139,12 +139,12 @@ Comet comes with a web-based UI that you can use to find further details about y
 Every ZenML step that uses Comet should create a separate experiment which you can inspect in the Comet UI.
 
 <Frame caption="A confusion matrix logged in the Comet UI">
-  <img src="/images/stack-components/stack-components-24.avif"/>
+  <img src="/_assets/stack-components/stack-components-24.avif"/>
 </Frame>
 
 
 <Frame caption="A model tracked in the Comet UI">
-  <img src="/images/stack-components/stack-components-25.avif"/>
+  <img src="/_assets/stack-components/stack-components-25.avif"/>
 </Frame>
 
 You can find the URL of the Comet experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:
@@ -159,7 +159,7 @@ print(tracking_url)
 ```
 
 <Frame caption="A pipeline with a Comet experiment tracker url as metadata">
-  <img src="/images/stack-components/stack-components-26.avif"/>
+  <img src="/_assets/stack-components/stack-components-26.avif"/>
 </Frame>
 
 

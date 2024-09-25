@@ -12,7 +12,7 @@ Our retrieval component takes the incoming query and converts it into a vector o
 
 The most naive and simple way to check this would be to handcraft some queries where we know the specific documents needed to answer it. We can then check if the retrieval component is able to retrieve these documents. This is a manual evaluation process and can be time-consuming, but it's a good way to get a sense of how well the retrieval component is working. It can also be useful to target known edge cases or difficult queries to see how the retrieval component handles those known scenarios.
 <Frame>
-  <img src="/images/user-guide/ev-m-2.avif"/>
+  <img src="/_assets/user-guide/ev-m-2.avif"/>
 </Frame>
 
 Implementing this is pretty simple - you just need to create some queries and check the retrieved documents. Having tested the basic inference of our RAG setup quite a bit, there were some clear areas where the retrieval component could be improved. I looked in our documentation to find some examples where the information could only be found in a single page and then wrote some queries that would require the retrieval component to find that page. For example, the query "How do I get going with the Label Studio integration? What are the first steps?" would require the retrieval component to find [the Label Studio integration page](https://docs.zenml.io/stacks-and-components/component-guide/annotators/label-studio). Some of the other examples used are:
@@ -92,7 +92,7 @@ We can maybe take a look at those documents to see why they were retrieved and n
 For a broader evaluation we can examine a larger number of queries to check the retrieval component's performance. We do this by using an LLM to generate synthetic data. In our case we take the text of each document chunk and pass it to an LLM, telling it to generate a question.
 
 <Frame>
-  <img src="/images/user-guide/ev-m-3.avif"/>
+  <img src="/_assets/user-guide/ev-m-3.avif"/>
 </Frame>
 
 For example, given the text:
@@ -179,7 +179,7 @@ For some tasks you'll want to use the best model your budget can afford, but for
 To give you an indication of how long this process takes, generating 1800+ questions from an equivalent number of documentation chunks took a little over 45 minutes using the local model on a GPU-enabled machine with Ollama.
 
 <Frame>
-  <img src="/images/user-guide/ev-m-4.avif"/>
+  <img src="/_assets/user-guide/ev-m-4.avif"/>
 </Frame>
 You can [view the generated dataset](https://huggingface.co/datasets/zenml/rag%5Fqa%5Fembedding%5Fquestions) on the Hugging Face Hub [here](https://huggingface.co/datasets/zenml/rag%5Fqa%5Fembedding%5Fquestions). This dataset contains the original document chunks, the generated questions, and the URL reference for the original document.
 

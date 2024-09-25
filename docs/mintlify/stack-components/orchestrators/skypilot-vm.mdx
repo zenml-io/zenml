@@ -281,7 +281,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `job_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption. Read more about the available strategies [here](https://skypilot.readthedocs.io/en/latestversions/0.66.0/reference/api.html?highlight=instance%5Ftype#resources)
 * `region`: The cloud region to use.
 * `zone`: The cloud zone to use within the region.
-* `image_id`: The image ID to use. If a string, must be a string of the image id from the cloud, such as AWS: `'ami-1234567890abcdef0'`, GCP: `'projects/my-project-id/global/images/my-image-name'`; Or, a image tag provided by SkyPilot, such as AWS: `'skypilot:gpu-ubuntu-2004'`. If a dict, must be a dict mapping from region to image ID.
+* `image_id`: The image ID to use. If a string, must be a string of the image id from the cloud, such as AWS: `'ami-1234567890abcdef0'`, GCP: `'projects/my-project-id/global/_assets/my-image-name'`; Or, a image tag provided by SkyPilot, such as AWS: `'skypilot:gpu-ubuntu-2004'`. If a dict, must be a dict mapping from region to image ID.
 * `disk_size`: The size of the OS disk in GiB.
 * `disk_tier`: The disk performance tier to use. If None, defaults to `'medium'`.
 * `cluster_name`: Name of the cluster to create/reuse. If None, auto-generate a name. SkyPilot uses term `cluster` to refer to a group or a single VM that are provisioned to execute the task. The cluster name is used to identify the cluster and to determine whether to reuse an existing cluster or create a new one.

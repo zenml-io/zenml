@@ -21,7 +21,7 @@ The above four interact with other MLOps stack components, secrets, and data in 
 
 ## Scenario 1: Full SaaS
 <Frame caption="Scenario 1: Full SaaS deployment">
-  <img src="/images/sys-a-1.avif"/>
+  <img src="/_assets/sys-a-1.avif"/>
 </Frame>
 
 In this scenario, all services are hosted on infrastructure hosted by the ZenML Team, except the MLOps stack components. Customer secrets and credentials required to access customer infrastructure are stored and managed by the ZenML Pro Control Plane.
@@ -35,7 +35,7 @@ This scenario is meant for customers who want to quickly get started with ZenML 
 ## Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML
 
 <Frame caption="Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML">
-  <img src="/images/sys-a-2.avif"/>
+  <img src="/_assets/sys-a-2.avif"/>
 </Frame>
 
 This scenario is a version of Scenario 1\. modified to store all sensitive information on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](/versions/0.66.0/how-to/auth-management/service-connectors-guide) and the [secrets API](/versions/0.66.0/how-to/interact-with-secrets) to authenticate ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure while ensuring that credentials are always stored on the customer side.
@@ -47,7 +47,7 @@ All access to customer secrets is, of course, regulated through authentication a
 ## Scenario 3: Fully On-prem
 
 <Frame caption="Scenario 3: Fully on-premises deployment">
-  <img src="/images/sys-a-3.avif"/>
+  <img src="/_assets/sys-a-3.avif"/>
 </Frame>
 
 In this scenario, all services, data, and secrets are deployed on the customer cloud. This is the opposite of Scenario 1, and is meant for customers who require completely airgapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
