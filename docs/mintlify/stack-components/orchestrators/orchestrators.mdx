@@ -7,7 +7,7 @@ icon: battery-full
 The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment that is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
 
 <Info>
-  Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](/versions/0.66.0/how-to/customize-docker-builds).
+  Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](/usage/project-setup/customize-docker-builds).
 </Info>
 
 ### When to use it
@@ -20,20 +20,20 @@ Out of the box, ZenML comes with a `local` orchestrator already part of the defa
 
 | Orchestrator                                                             | Flavor        | Integration                                                             | Notes                                           |
 | ------------------------------------------------------------------------ | ------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
-| [LocalOrchestrator](/versions/0.66.0/stack-components/orchestrators/local)               | local         | _built-in_                                                              | Runs your pipelines locally.                    |
-| [LocalDockerOrchestrator](/versions/0.66.0/stack-components/orchestrators/local-docker)  | local\_docker | _built-in_                                                              | Runs your pipelines locally using Docker.       |
-| [KubernetesOrchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes)     | kubernetes    | kubernetes                                                              | Runs your pipelines in Kubernetes clusters.     |
-| [KubeflowOrchestrator](/versions/0.66.0/stack-components/orchestrators/kubeflow)         | kubeflow      | kubeflow                                                                | Runs your pipelines using Kubeflow.             |
-| [VertexOrchestrator](/versions/0.66.0/stack-components/orchestrators/vertex)             | vertex        | gcp                                                                     | Runs your pipelines in Vertex AI.               |
-| [SagemakerOrchestrator](/versions/0.66.0/stack-components/orchestrators/sagemaker)       | sagemaker     | aws                                                                     | Runs your pipelines in Sagemaker.               |
-| [AzureMLOrchestrator](/versions/0.66.0/stack-components/orchestrators/azureml)           | azureml       | azure                                                                   | Runs your pipelines in AzureML.                 |
-| [TektonOrchestrator](/versions/0.66.0/stack-components/orchestrators/tekton)             | tekton        | tekton                                                                  | Runs your pipelines using Tekton.               |
-| [AirflowOrchestrator](/versions/0.66.0/stack-components/orchestrators/airflow)           | airflow       | airflow                                                                 | Runs your pipelines using Airflow.              |
-| [SkypilotAWSOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)   | vm\_aws       | skypilot\[aws\]                                                         | Runs your pipelines in AWS VMs using SkyPilot   |
-| [SkypilotGCPOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm)   | vm\_gcp       | skypilot\[gcp\]                                                         | Runs your pipelines in GCP VMs using SkyPilot   |
-| [SkypilotAzureOrchestrator](/versions/0.66.0/stack-components/orchestrators/skypilot-vm) | vm\_azure     | skypilot\[azure\]                                                       | Runs your pipelines in Azure VMs using SkyPilot |
-| [HyperAIOrchestrator](/versions/0.66.0/stack-components/orchestrators/hyperai)           | hyperai       | hyperai                                                                 | Runs your pipeline in HyperAI.ai instances.     |
-| [Custom Implementation](/versions/0.66.0/stack-components/orchestrators/custom)          | _custom_      | Extend the orchestrator abstraction and provide your own implementation |                                                 |
+| [LocalOrchestrator](/stack-components/orchestrators/local)               | local         | _built-in_                                                              | Runs your pipelines locally.                    |
+| [LocalDockerOrchestrator](/stack-components/orchestrators/local-docker)  | local\_docker | _built-in_                                                              | Runs your pipelines locally using Docker.       |
+| [KubernetesOrchestrator](/stack-components/orchestrators/kubernetes)     | kubernetes    | kubernetes                                                              | Runs your pipelines in Kubernetes clusters.     |
+| [KubeflowOrchestrator](/stack-components/orchestrators/kubeflow)         | kubeflow      | kubeflow                                                                | Runs your pipelines using Kubeflow.             |
+| [VertexOrchestrator](/stack-components/orchestrators/vertex)             | vertex        | gcp                                                                     | Runs your pipelines in Vertex AI.               |
+| [SagemakerOrchestrator](/stack-components/orchestrators/sagemaker)       | sagemaker     | aws                                                                     | Runs your pipelines in Sagemaker.               |
+| [AzureMLOrchestrator](/stack-components/orchestrators/azureml)           | azureml       | azure                                                                   | Runs your pipelines in AzureML.                 |
+| [TektonOrchestrator](/stack-components/orchestrators/tekton)             | tekton        | tekton                                                                  | Runs your pipelines using Tekton.               |
+| [AirflowOrchestrator](/stack-components/orchestrators/airflow)           | airflow       | airflow                                                                 | Runs your pipelines using Airflow.              |
+| [SkypilotAWSOrchestrator](/stack-components/orchestrators/skypilot-vm)   | vm\_aws       | skypilot\[aws\]                                                         | Runs your pipelines in AWS VMs using SkyPilot   |
+| [SkypilotGCPOrchestrator](/stack-components/orchestrators/skypilot-vm)   | vm\_gcp       | skypilot\[gcp\]                                                         | Runs your pipelines in GCP VMs using SkyPilot   |
+| [SkypilotAzureOrchestrator](/stack-components/orchestrators/skypilot-vm) | vm\_azure     | skypilot\[azure\]                                                       | Runs your pipelines in Azure VMs using SkyPilot |
+| [HyperAIOrchestrator](/stack-components/orchestrators/hyperai)           | hyperai       | hyperai                                                                 | Runs your pipeline in HyperAI.ai instances.     |
+| [Custom Implementation](/stack-components/orchestrators/custom)          | _custom_      | Extend the orchestrator abstraction and provide your own implementation |                                                 |
 
 If you would like to see the available flavors of orchestrators, you can use the command:
 
@@ -43,7 +43,7 @@ zenml orchestrator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](/versions/0.66.0/user-guide/production-guide/understand-stacks), using the orchestrator is as simple as executing a Python file that [runs a ZenML pipeline](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/user-guide/starter-guide/starter-guide.md):
+You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](/user-guide/guides/production-guide/understand-stacks), using the orchestrator is as simple as executing a Python file that [runs a ZenML pipeline](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/user-guide/starter-guide/starter-guide.md):
 
 ```bash
 python file_that_runs_a_zenml_pipeline.py
@@ -63,7 +63,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 
 #### Specifying per-step resources
 
-If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration).
+If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](/usage/project-setup/use-configuration-files/runtime-configuration).
 
-If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](/versions/0.66.0/stack-components/step-operators).
+If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](/stack-components/step-operators).
 

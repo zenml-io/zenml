@@ -21,7 +21,7 @@ def example_pipeline():
 If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by passing the invocation IDs of steps that should run before your step like this: `my_step(after="other_step")`. If you want to define multiple upstream steps, you can also pass a list for the `after` argument when calling your step: `my_step(after=["other_step", "other_step_2"])`.
 
 <Info>
-    Check out the [documentation here](/versions/0.66.0/how-to/build-pipelines/using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a custom one for your steps.
+    Check out the [documentation here](/usage/pipelines/build-pipelines/using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a custom one for your steps.
 </Info>
 
 ```py

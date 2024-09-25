@@ -13,9 +13,9 @@ It is simple to associate a custom visualization with an artifact in ZenML, if t
 
 There are three ways how you can add custom visualizations to the dashboard:
 
-* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](/versions/0.66.0/how-to/visualize-artifacts/creating-custom-visualizations#visualization-via-special-return-types) inside your step.
-* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](/versions/0.66.0/how-to/visualize-artifacts/creating-custom-visualizations#visualization-via-materializers).
-* If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](/versions/0.66.0/how-to/visualize-artifacts/creating-custom-visualizations#how-to-think-about-creating-a-custom-visualization) and build and return this custom return type from one of your steps.
+* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](/usage/resource-data-management/visualize-artifacts/creating-custom-visualizations#visualization-via-special-return-types) inside your step.
+* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](/usage/resource-data-management/visualize-artifacts/creating-custom-visualizations#visualization-via-materializers).
+* If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](/usage/resource-data-management/visualize-artifacts/creating-custom-visualizations#how-to-think-about-creating-a-custom-visualization) and build and return this custom return type from one of your steps.
 
 ## Visualization via Special Return Types
 
@@ -44,7 +44,7 @@ This would create the following visualization in the dashboard:
 
 ## Visualization via Materializers
 
-If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
+If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
 
 Or, see a code example on [GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/materializers/huggingface%5Fdatasets%5Fmaterializer.py) where we visualize Hugging Face datasets by embedding their preview viewer.
 
@@ -53,7 +53,7 @@ Or, see a code example on [GitHub](https://github.com/zenml-io/zenml/blob/main/s
 By combining the ideas behind the above two visualization approaches, you can visualize virtually anything you want inside your ZenML dashboard in three simple steps:
 
 1. Create a **custom class** that will hold the data that you want to visualize.
-2. [Build a custom **materializer**](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types#custom-materializers) for this custom class with the visualization logic implemented in the `save_visualizations()` method.
+2. [Build a custom **materializer**](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) for this custom class with the visualization logic implemented in the `save_visualizations()` method.
 3. Return your custom class from any of your ZenML steps.
 
 ### Example: Facets Data Skew Visualization

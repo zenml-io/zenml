@@ -88,7 +88,7 @@ def training_data_loader() -> (
 The next execution of this step will then create an artifact with the name `iris_dataset` and version `raw_2023`. This is primarily useful if you are making a particularly important pipeline run (such as a release) whose artifacts you want to distinguish at a glance later.
 
 <Note>
-Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](/versions/0.66.0/user-guide/production-guide/configure-pipeline) for artifact versioning.
+Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](/user-guide/guides/production-guide/configure-pipeline) for artifact versioning.
 </Note>
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-artifacts/#zenml.artifacts.external%5Fartifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-artifacts/#zenml.artifacts.external%5Fartifact.ExternalArtifact) for all available options.
 
 <Info>
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
@@ -199,7 +199,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](/versions/0.66.0/how-to/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](/usage/pipelines/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```py
 from uuid import UUID
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 ```
 
 <Info>
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](/versions/0.66.0/how-to/handle-data-artifacts/load-artifacts-into-memory) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](/usage/resource-data-management/handle-data-artifacts/load-artifacts-into-memory) behind the scenes.
 </Info>
 
 If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
@@ -302,7 +302,7 @@ It is also possible to use these functions inside your ZenML steps. However, it 
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](/versions/0.66.0/how-to/build-pipelines/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](/usage/pipelines/build-pipelines/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
@@ -367,9 +367,9 @@ def model_finetuner_step(
     return model
 ```
 
-For further depth, there is an [advanced metadata logging guide](/versions/0.66.0/how-to/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](/usage/resource-data-management/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](/versions/0.66.0/how-to/handle-data-artifacts) for more information.
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](/usage/resource-data-management/handle-data-artifacts) for more information.
 
 ## Code example
 

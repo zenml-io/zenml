@@ -20,7 +20,7 @@ def my_step() -> None:
 These logs are stored within the respective artifact store of your stack. This means that you can only view these logs in the dashboard _if the deployed ZenML server has direct access to the underlying artifact store_. There are two cases in which this will be true:
 
 * In case of a local ZenML server (via `zenml up`), both local and remote artifact stores may be accessible, depending on configuration of the client.
-* In case of a deployed ZenML server, logs for runs on a [local artifact store](/versions/0.66.0/stack-components/artifact-stores/local) will not be accessible. Logs for runs using a [remote artifact store](/versions/0.66.0/user-guide/production-guide/remote-storage) **may be** accessible, if the artifact store has been configured with a [service connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide). Please read [this chapter](/versions/0.66.0/user-guide/production-guide/remote-storage) of the production guide to learn how to configure a remote artifact store with a service connector.
+* In case of a deployed ZenML server, logs for runs on a [local artifact store](/stack-components/artifact-stores/local) will not be accessible. Logs for runs using a [remote artifact store](/user-guide/guides/production-guide/remote-storage) **may be** accessible, if the artifact store has been configured with a [service connector](/usage/resource-data-management/auth-management/service-connectors-guide). Please read [this chapter](/user-guide/guides/production-guide/remote-storage) of the production guide to learn how to configure a remote artifact store with a service connector.
 
 If configured correctly, the logs are displayed in the dashboard as follows:
 <Frame caption="Displaying step logs on the dashboard">
@@ -28,5 +28,5 @@ If configured correctly, the logs are displayed in the dashboard as follows:
 </Frame>
 
 <Note>
-    If you do not want to store the logs for your pipeline (for example due to performance reduction or storage limits), you can follow [these instructions](/versions/0.66.0/how-to/control-logging/enable-or-disable-logs-storing).
+    If you do not want to store the logs for your pipeline (for example due to performance reduction or storage limits), you can follow [these instructions](/usage/development-monitoring/control-logging/enable-or-disable-logs-storing).
 </Note>

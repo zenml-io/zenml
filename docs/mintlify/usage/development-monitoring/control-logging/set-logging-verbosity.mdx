@@ -14,7 +14,7 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`. This will set the logs
 
 Note that setting this on the [client environment](/versions/0.66.0/how-to/configure-python-environments#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically set the same logging verbosity for remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
 
-If you wish to control for [remote pipeline runs](/versions/0.66.0/user-guide/production-guide/cloud-orchestration), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
+If you wish to control for [remote pipeline runs](/user-guide/guides/production-guide/cloud-orchestration), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
 
 ```py
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_VERBOSITY": "DEBUG"})

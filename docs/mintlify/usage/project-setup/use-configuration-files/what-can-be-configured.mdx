@@ -4,7 +4,7 @@ description: Here is an example of a sample YAML file, with the most important c
 icon: clipboard-question
 ---
 
-For brevity, we have removed all possible keys. To view a sample file with all possible keys, refer to [this page](/versions/0.66.0/how-to/use-configuration-files/autogenerate-a-template-yaml-file).
+For brevity, we have removed all possible keys. To view a sample file with all possible keys, refer to [this page](/usage/project-setup/use-configuration-files/autogenerate-a-template-yaml-file).
 
 ```yaml
 # Build ID (i.e. which Docker image to use)
@@ -109,10 +109,10 @@ steps:
 
 These are boolean flags for various configurations:
 
-* `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types#optional-which-metadata-to-extract-for-the-artifact).
+* `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types#optional-which-metadata-to-extract-for-the-artifact).
 * `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](/versions/0.66.0/how-to/visualize-artifacts).
-* `enable_cache`: Utilize [caching](/versions/0.66.0/how-to/build-pipelines/control-caching-behavior) or not.
-* `enable_step_logs`: Enable tracking [step logs](/versions/0.66.0/how-to/control-logging/enable-or-disable-logs-storing).
+* `enable_cache`: Utilize [caching](/usage/pipelines/build-pipelines/control-caching-behavior) or not.
+* `enable_step_logs`: Enable tracking [step logs](/usage/development-monitoring/control-logging/enable-or-disable-logs-storing).
 
 ```yaml
 enable_artifact_metadata: True
@@ -123,7 +123,7 @@ enable_step_logs: True
 
 ### `build` ID
 
-The UUID of the [build](/versions/0.66.0/how-to/customize-docker-builds) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
+The UUID of the [build](/usage/project-setup/customize-docker-builds) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ```yaml
 build:  <INSERT-BUILD-ID-HERE>
@@ -131,7 +131,7 @@ build:  <INSERT-BUILD-ID-HERE>
 
 ### Configuring the `model`
 
-Specifies the ZenML [Model](/versions/0.66.0/user-guide/starter-guide/track-ml-models) to use for this pipeline.
+Specifies the ZenML [Model](/user-guide/guides/starter-guide/track-ml-models) to use for this pipeline.
 
 ```yaml
 model:
@@ -143,7 +143,7 @@ model:
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](/versions/0.66.0/how-to/build-pipelines/use-pipeline-step-parameters) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](/usage/pipelines/build-pipelines/use-pipeline-step-parameters) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:
@@ -173,12 +173,12 @@ def my_pipeline(gamma: float):
     trainer(gamma=gamma)
 ```
 
-Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](/versions/0.66.0/how-to/use-configuration-files/configuration-hierarchy).
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](/usage/project-setup/use-configuration-files/configuration-hierarchy).
 
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 <Info>
-  Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) handle their persistence in the [artifact store](/versions/0.66.0/stack-components/artifact-stores)).
+  Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) handle their persistence in the [artifact store](/stack-components/artifact-stores)).
 </Info>
 
 ### Setting the `run_name`
@@ -195,7 +195,7 @@ run_name: <INSERT_RUN_NAME_HERE>
 
 ### Stack Component Runtime settings
 
-Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration). In short, they define a bunch of execution configuration such as Docker building and resource settings.
+Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](/usage/project-setup/use-configuration-files/runtime-configuration). In short, they define a bunch of execution configuration such as Docker building and resource settings.
 
 ### Docker Settings
 
@@ -210,7 +210,7 @@ settings:
 ```
 
 <Info>
-  Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.docker%5Fsettings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](/versions/0.66.0/how-to/customize-docker-builds).
+  Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-config/#zenml.config.docker%5Fsettings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](/usage/project-setup/customize-docker-builds).
 </Info>
 
 ### Resource Settings
@@ -228,13 +228,13 @@ Note that this may not work for all types of stack components. To learn which co
 
 ### `failure_hook_source` and `success_hook_source`
 
-The `source` of the [failure and success hooks](/versions/0.66.0/how-to/build-pipelines/use-failure-success-hooks) can be specified.
+The `source` of the [failure and success hooks](/usage/pipelines/build-pipelines/use-failure-success-hooks) can be specified.
 
 ### Step-specific configuration
 
 A lot of pipeline-level configuration can also be applied at a step level (as we have already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
-* `experiment_tracker`: Name of the [experiment\_tracker](/versions/0.66.0/stack-components/experiment-trackers) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
-* `step_operator`: Name of the [step\_operator](/versions/0.66.0/stack-components/step-operators) to enable for this step. This step\_operator should be defined in the active stack with the same name.
-* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named output](/versions/0.66.0/how-to/handle-data-artifacts/return-multiple-outputs-from-a-step)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types).
+* `experiment_tracker`: Name of the [experiment\_tracker](/stack-components/experiment-trackers) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
+* `step_operator`: Name of the [step\_operator](/stack-components/step-operators) to enable for this step. This step\_operator should be defined in the active stack with the same name.
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named output](/usage/resource-data-management/handle-data-artifacts/return-multiple-outputs-from-a-step)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types).
 

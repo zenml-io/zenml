@@ -4,11 +4,11 @@ description: "Storing artifacts in an AWS S3 bucket."
 icon: amazon
 ---
 
-The S3 Artifact Store is an [Artifact Store](/versions/0.66.0/stack-components/artifact-stores) flavor provided with the S3 ZenML integration that uses [the AWS S3 managed object storage service](https://aws.amazon.com/s3/) or one of the self-hosted S3 alternatives, such as [MinIO](https://min.io/) or [Ceph RGW](https://ceph.io/en/discover/technology/#object), to store artifacts in an S3 compatible object storage backend.
+The S3 Artifact Store is an [Artifact Store](/stack-components/artifact-stores) flavor provided with the S3 ZenML integration that uses [the AWS S3 managed object storage service](https://aws.amazon.com/s3/) or one of the self-hosted S3 alternatives, such as [MinIO](https://min.io/) or [Ceph RGW](https://ceph.io/en/discover/technology/#object), to store artifacts in an S3 compatible object storage backend.
 
 ### When would you want to use it?
 
-Running ZenML pipelines with [the local Artifact Store](/versions/0.66.0/stack-components/artifact-stores/local) is usually sufficient if you just want to evaluate ZenML or get started quickly without incurring the trouble and the cost of employing cloud storage services in your stack. However, the local Artifact Store becomes insufficient or unsuitable if you have more elaborate needs for your project:
+Running ZenML pipelines with [the local Artifact Store](/stack-components/artifact-stores/local) is usually sufficient if you just want to evaluate ZenML or get started quickly without incurring the trouble and the cost of employing cloud storage services in your stack. However, the local Artifact Store becomes insufficient or unsuitable if you have more elaborate needs for your project:
 
 * if you want to share your pipeline run results with other team members or stakeholders inside or outside your organization
 * if you have other components in your stack that are running remotely (e.g. a Kubeflow or Kubernetes Orchestrator running in a public cloud).
@@ -17,12 +17,12 @@ Running ZenML pipelines with [the local Artifact Store](/versions/0.66.0/stack-c
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
-You should use the S3 Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the AWS S3 managed service or one of the S3 compatible alternatives (e.g. Minio, Ceph RGW). You should consider one of the other [Artifact Store flavors](/versions/0.66.0/stack-components/artifact-stores#artifact-store-flavors) if you don't have access to an S3-compatible service.
+You should use the S3 Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the AWS S3 managed service or one of the S3 compatible alternatives (e.g. Minio, Ceph RGW). You should consider one of the other [Artifact Store flavors](/stack-components/artifact-stores#artifact-store-flavors) if you don't have access to an S3-compatible service.
 
 ### How do you deploy it?
 <Info>
 
-Would you like to skip ahead and deploy a full ZenML cloud stack already, including an S3 Artifact Store? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML AWS Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+Would you like to skip ahead and deploy a full ZenML cloud stack already, including an S3 Artifact Store? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML AWS Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 
 </Info>
 The S3 Artifact Store flavor is provided by the S3 ZenML integration, you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
@@ -44,7 +44,7 @@ zenml artifact-store register s3_store -f s3 --path=s3://bucket-name
 zenml stack register custom_stack -a s3_store ... --set
 ```
 
-Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](/versions/0.66.0/stack-components/artifact-stores/s3#authentication-methods) or [pass advanced configuration parameters](/versions/0.66.0/stack-components/artifact-stores/s3#advanced-configuration) to match your S3-compatible service or deployment scenario.
+Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](/stack-components/artifact-stores/s3#authentication-methods) or [pass advanced configuration parameters](/stack-components/artifact-stores/s3#advanced-configuration) to match your S3-compatible service or deployment scenario.
 
 #### Infrastructure Deployment
 
@@ -58,7 +58,7 @@ You can pass other configurations specific to the stack components as key-value 
 
 #### Authentication Methods
 
-Integrating and using an S3-compatible Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the AWS cloud platform is through [an AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the S3 Artifact Store with other remote stack components also running in AWS.
+Integrating and using an S3-compatible Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the AWS cloud platform is through [an AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the S3 Artifact Store with other remote stack components also running in AWS.
 <Tabs>
     <Tab title="Implicit Authentication">
 This method uses the implicit AWS authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an S3 Artifact Store. You don't need to supply credentials explicitly when you register the S3 Artifact Store, as it leverages the local credentials and configuration that the AWS CLI stores on your local machine. However, you will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the S3 Artifact Store.
@@ -67,14 +67,14 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to work. If these components are not running on your machine, they do not have access to the local AWS CLI configuration and will encounter authentication failures while trying to access the S3 Artifact Store:
 
-* [Orchestrators](/versions/0.66.0/stack-components/orchestrators) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](/versions/0.66.0/stack-components/step-operators) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](/versions/0.66.0/stack-components/model-deployers) need to access the Artifact Store to load served models
+* [Orchestrators](/stack-components/orchestrators) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](/stack-components/step-operators) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](/stack-components/model-deployers) need to access the Artifact Store to load served models
 
-To enable these use-cases, it is recommended to use [an AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector) to link your S3 Artifact Store to the remote S3 bucket.
+To enable these use-cases, it is recommended to use [an AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector) to link your S3 Artifact Store to the remote S3 bucket.
     </Tab>
     <Tab title="AWS Service Connector (recommended)">
-    To set up the S3 Artifact Store to authenticate to AWS and access an S3 bucket, it is recommended to leverage the many features provided by [the AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+    To set up the S3 Artifact Store to authenticate to AWS and access an S3 bucket, it is recommended to leverage the many features provided by [the AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
 If you don't already have an AWS Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an AWS Service Connector that can be used to access more than one S3 bucket or even more than one type of AWS resource:
 
@@ -107,7 +107,7 @@ Successfully registered service connector `s3-zenfiles` with access to the follo
 ┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
-> **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to your S3 bucket as well as to list accessible S3 buckets. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [AWS Service Connector S3 bucket resource type documentation](/versions/0.66.0/how-to/auth-management/aws-service-connector#s3-bucket) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](/versions/0.66.0/how-to/auth-management/aws-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+> **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to your S3 bucket as well as to list accessible S3 buckets. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [AWS Service Connector S3 bucket resource type documentation](/usage/resource-data-management/auth-management/aws-service-connector#s3-bucket) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](/usage/resource-data-management/auth-management/aws-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more AWS Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the S3 bucket you want to use for your S3 Artifact Store by running e.g.:
 
@@ -226,5 +226,5 @@ For more, up-to-date information on the S3 Artifact Store implementation and its
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored in an S3 compatible backend, using the S3 Artifact Store is no different than [using any other flavor of Artifact Store](/versions/0.66.0/stack-components/artifact-stores#how-to-use-it).
+Aside from the fact that the artifacts are stored in an S3 compatible backend, using the S3 Artifact Store is no different than [using any other flavor of Artifact Store](/stack-components/artifact-stores#how-to-use-it).
 

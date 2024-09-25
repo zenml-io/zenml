@@ -4,7 +4,7 @@ description: "How to test the data and models used in your pipelines with Deepch
 icon: microscope
 ---
 
-The Deepchecks [Data Validator](/versions/0.66.0/stack-components/data-validators) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Deepchecks [Data Validator](/stack-components/data-validators) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -18,7 +18,7 @@ You should use the Deepchecks Data Validator when you need the following data an
 * Data Drift Checks [for tabular](https://docs.deepchecks.com/en/stable/checks%5Fgallery/tabular.html#train-test-validation) or [computer vision](https://docs.deepchecks.com/en/stable/checks%5Fgallery/vision.html#train-test-validation) data: detect data skew and data drift problems by comparing a target dataset against a reference dataset (e.g. feature drift, label drift, new labels etc.).
 * Model Performance Checks [for tabular](https://docs.deepchecks.com/en/stable/checks%5Fgallery/tabular.html#model-evaluation) or [computer vision](https://docs.deepchecks.com/en/stable/checks%5Fgallery/vision.html#model-evaluation) data: evaluate a model and detect problems with its performance (e.g. confusion matrix, boosting overfit, model error analysis)
 
-You should consider one of the other [Data Validator flavors](/versions/0.66.0/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](/stack-components/data-validators#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -49,21 +49,21 @@ The ZenML integration restructures the way Deepchecks validation checks are orga
 * **model validation checks** require a single dataset and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks%5Fgallery/tabular.html#model-evaluation) and [for computer vision](https://docs.deepchecks.com/stable/checks%5Fgallery/vision.html#model-evaluation) that expect a single dataset as input.
 * **model drift checks** require two datasets and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks%5Fgallery/tabular.html#model-evaluation) and [for computer vision](https://docs.deepchecks.com/stable/checks%5Fgallery/vision.html#model-evaluation) that expect two datasets as input: target and reference.
 
-This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-deepchecks/#zenml.integrations.deepchecks.validation%5Fchecks) . [The Deepchecks Data Validator API](/versions/0.66.0/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) is also modeled to reflect this same structure.
+This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-deepchecks/#zenml.integrations.deepchecks.validation%5Fchecks) . [The Deepchecks Data Validator API](/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) is also modeled to reflect this same structure.
 
 A notable characteristic of Deepchecks is that you don't need to customize the set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks provide sane defaults that will run all available Deepchecks tests in a given category with their default conditions if a custom list of tests and conditions are not provided.
 
 There are three ways you can use Deepchecks in your ZenML pipelines that allow different levels of flexibility:
 
-* instantiate, configure and insert one or more of [the standard Deepchecks steps](/versions/0.66.0/stack-components/data-validators/deepchecks#the-deepchecks-standard-steps) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach, but can only be customized through the supported step configuration parameters.
-* call the data validation methods provided by [the Deepchecks Data Validator](/versions/0.66.0/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step, but you are still limited to the functionality implemented in the Data Validator.
-* [use the Deepchecks library directly](/versions/0.66.0/stack-components/data-validators/deepchecks#call-deepchecks-directly) in your custom step implementation. This gives you complete freedom in how you are using Deepchecks' features.
+* instantiate, configure and insert one or more of [the standard Deepchecks steps](/stack-components/data-validators/deepchecks#the-deepchecks-standard-steps) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach, but can only be customized through the supported step configuration parameters.
+* call the data validation methods provided by [the Deepchecks Data Validator](/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step, but you are still limited to the functionality implemented in the Data Validator.
+* [use the Deepchecks library directly](/stack-components/data-validators/deepchecks#call-deepchecks-directly) in your custom step implementation. This gives you complete freedom in how you are using Deepchecks' features.
 
 You can visualize Deepchecks results in Jupyter notebooks or view them directly in the ZenML dashboard.
 
 ### Warning! Usage in remote orchestrators
 
-The current ZenML version has a limitation in its base Docker image that requires a workaround for _all_ pipelines using Deepchecks with a remote orchestrator (e.g. [Kubeflow](/versions/0.66.0/stack-components/orchestrators/kubeflow) , [Vertex](/versions/0.66.0/stack-components/orchestrators/vertex)). The limitation being that the base Docker image needs to be extended to include binaries that are required by `opencv2`, which is a package that Deepchecks requires.
+The current ZenML version has a limitation in its base Docker image that requires a workaround for _all_ pipelines using Deepchecks with a remote orchestrator (e.g. [Kubeflow](/stack-components/orchestrators/kubeflow) , [Vertex](/stack-components/orchestrators/vertex)). The limitation being that the base Docker image needs to be extended to include binaries that are required by `opencv2`, which is a package that Deepchecks requires.
 
 While these binaries might be available on most operating systems out of the box (and therefore not a problem with the default local orchestrator), we need to tell ZenML to add them to the containerization step when running in remote settings. Here is how:
 
@@ -77,7 +77,7 @@ RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 ```
 
-Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](/versions/0.66.0/how-to/customize-docker-builds) for more details:
+Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](/usage/project-setup/customize-docker-builds) for more details:
 
 ```py
 import zenml
@@ -112,7 +112,7 @@ ZenML wraps the Deepchecks functionality for tabular data in the form of four st
 * [DeepchecksModelValidationCheckStep](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks%5Fmodel%5Fvalidation.DeepchecksModelValidationCheckStep): class DeepchecksModelDriftCheckStep(BaseStep): use it in your pipelines to run model performance tests using a single dataset and a mandatory model artifact as input
 * [DeepchecksModelDriftCheckStep](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks%5Fmodel%5Fdrift.DeepchecksModelDriftCheckStep): use it in your pipelines to run model comparison/drift tests using a mandatory model artifact and two datasets as input: target and reference.
 
-The integration doesn't yet include standard steps for computer vision, but you can still write your own custom steps that call [the Deepchecks Data Validator API](/versions/0.66.0/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) or even [call the Deepchecks library directly](/versions/0.66.0/stack-components/data-validators/deepchecks#call-deepchecks-directly).
+The integration doesn't yet include standard steps for computer vision, but you can still write your own custom steps that call [the Deepchecks Data Validator API](/stack-components/data-validators/deepchecks#the-deepchecks-data-validator) or even [call the Deepchecks library directly](/stack-components/data-validators/deepchecks#call-deepchecks-directly).
 
 All four standard steps behave similarly regarding the configuration parameters and returned artifacts, with the following differences:
 
@@ -334,7 +334,7 @@ def data_integrity_check(
     return suite
 ```
 
-The arguments that the Deepchecks Data Validator methods can take in are the same as those used for [the Deepchecks standard steps](/versions/0.66.0/stack-components/data-validators/deepchecks#the-deepchecks-standard-steps).
+The arguments that the Deepchecks Data Validator methods can take in are the same as those used for [the Deepchecks standard steps](/stack-components/data-validators/deepchecks#the-deepchecks-standard-steps).
 
 Have a look at [the complete list of methods and parameters available in the DeepchecksDataValidator API](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-deepchecks/#zenml.integrations.deepchecks.data%5Fvalidators.deepchecks%5Fdata%5Fvalidator.DeepchecksDataValidator) in the SDK docs.
 

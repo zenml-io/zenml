@@ -4,13 +4,13 @@ description: "Seamlessly register a cloud stack by using existing infrastructure
 icon: cloud
 ---
 
-In ZenML, the [stack](/versions/0.66.0/user-guide/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
+In ZenML, the [stack](/user-guide/guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
 
 Especially in a remote setting, this process can be challenging and time-consuming, and it may create multi-faceted problems. This is why we implemented a feature called the stack wizard, that allows you to **browse through your existing infrastructure and use it to register a ZenML cloud stack**.
 
-If you do not have the required infrastructure pieces already deployed on your cloud, you can also use [the 1-click deployment tool to build your cloud stack](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack).
+If you do not have the required infrastructure pieces already deployed on your cloud, you can also use [the 1-click deployment tool to build your cloud stack](/stack-components/stack-deployment/deploy-a-cloud-stack).
 
-Alternatively, if you prefer to have more control over where and how resources are provisioned in your cloud, you can [use one of our Terraform modules](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) to manage your infrastructure as code yourself.
+Alternatively, if you prefer to have more control over where and how resources are provisioned in your cloud, you can [use one of our Terraform modules](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) to manage your infrastructure as code yourself.
 
 ## How to use the Stack Wizard?
 
@@ -62,7 +62,7 @@ From this step forward, ZenML will show you different selections of resources th
 zenml stack register  -p {aws|gcp|azure}
 ```
 
-To register the cloud stack, the first thing that the wizard needs is a [service connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide). You can either use an existing connector by providing its ID or name `-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only) or the wizard will create one for you.
+To register the cloud stack, the first thing that the wizard needs is a [service connector](/usage/resource-data-management/auth-management/service-connectors-guide). You can either use an existing connector by providing its ID or name `-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only) or the wizard will create one for you.
 
 <Info>
     Similar to the service connector, if you use the CLI, you can also use existing stack components. However, this is only possible if these components are already configured with the same service connector that you provided through the parameter described above.

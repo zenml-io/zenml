@@ -4,7 +4,7 @@ description: "Building container images with Google Cloud Build"
 icon: cloud
 ---
 
-The Google Cloud image builder is an [image builder](/versions/0.66.0/stack-components/image-builders) flavor provided by the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
+The Google Cloud image builder is an [image builder](/stack-components/image-builders) flavor provided by the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
 
 ### When to use it
 
@@ -12,12 +12,12 @@ You should use the Google Cloud image builder if:
 
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using GCP.
-* your stack is mainly composed of other Google Cloud components such as the [GCS Artifact Store](/versions/0.66.0/stack-components/artifact-stores/gcp) or the [Vertex Orchestrator](/versions/0.66.0/stack-components/orchestrators/vertex).
+* your stack is mainly composed of other Google Cloud components such as the [GCS Artifact Store](/stack-components/artifact-stores/gcp) or the [Vertex Orchestrator](/stack-components/orchestrators/vertex).
 
 ### How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including the Google Cloud image builder? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including the Google Cloud image builder? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 In order to use the ZenML Google Cloud image builder you need to enable Google Cloud Build relevant APIs on the Google Cloud project.
@@ -30,8 +30,8 @@ To use the Google Cloud image builder, we need:
 ```bash
 zenml integration install gcp
 ```
-* A [GCP Artifact Store](/versions/0.66.0/stack-components/artifact-stores/gcp) where the build context will be uploaded, so Google Cloud Build can access it.
-* A [GCP container registry](/versions/0.66.0/stack-components/container-registries/gcp) where the built image will be pushed.
+* A [GCP Artifact Store](/stack-components/artifact-stores/gcp) where the build context will be uploaded, so Google Cloud Build can access it.
+* A [GCP container registry](/stack-components/container-registries/gcp) where the built image will be pushed.
 * Optionally, the GCP project ID in which you want to run the build and a service account with the needed permissions to run the build. If not provided, then the project ID and credentials will be inferred from the environment.
 * Optionally, you can change:
    * the Docker image used by Google Cloud Build to execute the steps to build and push the Docker image. By default, the builder image will be `'gcr.io/cloud-builders/docker'`.
@@ -51,21 +51,21 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
 zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 ```
 
-You also need to set up [authentication](/versions/0.66.0/stack-components/image-builders/gcp#authentication-methods) required to access the Cloud Build GCP services.
+You also need to set up [authentication](/stack-components/image-builders/gcp#authentication-methods) required to access the Cloud Build GCP services.
 
 #### Authentication Methods
 
-Integrating and using a GCP Image Builder in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the GCP cloud platform is through [a GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the GCP Image Builder with other remote stack components also running in GCP.
+Integrating and using a GCP Image Builder in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the GCP cloud platform is through [a GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the GCP Image Builder with other remote stack components also running in GCP.
 <Tabs>
     <Tab title="Implicit Authentication">
     This method uses the implicit GCP authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCP Image Builder. You don't need to supply credentials explicitly when you register the GCP Image Builder, as it leverages the local credentials and configuration that the Google Cloud CLI stores on your local machine. However, you will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCP Image Builder.
 
 <Note>
-    Stacks using the GCP Image Builder set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector) to authenticate your GCP Image Builder to the GCP cloud platform.
+    Stacks using the GCP Image Builder set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector) to authenticate your GCP Image Builder to the GCP cloud platform.
 </Note>
     </Tab>
 <Tab title="GCP Service Connector (recommended)">
-To set up the GCP Image Builder to authenticate to GCP and access the GCP Cloud Build services, it is recommended to leverage the many features provided by [the GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the GCP Image Builder to authenticate to GCP and access the GCP Cloud Build services, it is recommended to leverage the many features provided by [the GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have a GCP Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You also have the option to configure a GCP Service Connector that can be used to access more than just the GCP Cloud Build service:
 
@@ -90,7 +90,7 @@ Successfully registered service connector `gcp-generic` with access to the follo
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined%5Froles)). The GCP Service Connector supports [many different authentication methods](/versions/0.66.0/how-to/auth-management/gcp-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined%5Froles)). The GCP Service Connector supports [many different authentication methods](/usage/resource-data-management/auth-management/gcp-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic GCP resources like the GCP Image Builder required for your GCP Image Builder by running e.g.:
 
@@ -177,7 +177,7 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 As described in this [Google Cloud Build documentation page](https://cloud.google.com/build/docs/build-config-file-schema#network), Google Cloud Build uses containers to execute the build steps which are automatically attached to a network called `cloudbuild` that provides some Application Default Credentials (ADC), that allow the container to be authenticated and therefore use other GCP services.
 
-By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use a [custom base parent image](/versions/0.66.0/how-to/customize-docker-builds/docker-settings-on-a-pipeline) with the [keyrings.google-artifactregistry-auth](https://pypi.org/project/keyrings.google-artifactregistry-auth/) installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
+By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use a [custom base parent image](/usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline) with the [keyrings.google-artifactregistry-auth](https://pypi.org/project/keyrings.google-artifactregistry-auth/) installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
 
 ```bash
 FROM zenmldocker/zenml:latest

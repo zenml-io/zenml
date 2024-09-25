@@ -6,7 +6,7 @@ icon: file-code
 
 The ZenML GCP Service Connector facilitates the authentication and access to managed GCP services and resources. These encompass a range of resources, including GCS buckets, GAR and GCR container repositories, and GKE clusters. The connector provides support for various authentication methods, including GCP user accounts, service accounts, short-lived OAuth 2.0 tokens, and implicit authentication.
 
-To ensure heightened security measures, this connector always issues [short-lived OAuth 2.0 tokens to clients instead of long-lived credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) unless explicitly configured to do otherwise. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the GCP CLI](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration).
+To ensure heightened security measures, this connector always issues [short-lived OAuth 2.0 tokens to clients instead of long-lived credentials](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) unless explicitly configured to do otherwise. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the GCP CLI](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration).
 
 This connector serves as a general means of accessing any GCP service by issuing OAuth 2.0 credential objects to clients. Additionally, the connector can handle specialized authentication for GCS, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
@@ -62,7 +62,7 @@ zenml service-connector register -i --type gcp
 
 This resource type allows Stack Components to use the GCP Service Connector to connect to any GCP service or resource. When used by Stack Components, they are provided a Python google-auth credentials object populated with a GCP OAuth 2.0 token. This credentials object can then be used to create GCP Python clients for any particular GCP service.
 
-This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters, or Docker registries. For example, it can be used with [the Google Cloud Image Builder](/versions/0.66.0/stack-components/image-builders/gcp) stack component, or [the Vertex AI Orchestrator](/versions/0.66.0/stack-components/orchestrators/vertex) and [Step Operator](/versions/0.66.0/stack-components/step-operators/vertex). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
+This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters, or Docker registries. For example, it can be used with [the Google Cloud Image Builder](/stack-components/image-builders/gcp) stack component, or [the Vertex AI Orchestrator](/stack-components/orchestrators/vertex) and [Step Operator](/stack-components/step-operators/vertex). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
 
 The resource name represents the GCP project that the connector is authorized to access.
 
@@ -156,7 +156,7 @@ The connector can only be used to access GAR and GCR registries in the GCP proje
 
 ### Implicit authentication
 
-[Implicit authentication](/versions/0.66.0/how-to/auth-management/best-security-practices#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
+[Implicit authentication](/usage/resource-data-management/auth-management/best-security-practices#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
 
 <Note>
     This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
@@ -173,7 +173,7 @@ This is the quickest and easiest way to authenticate to GCP services. However, t
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are those set up on your machine (i.e. by running `gcloud auth application-default login` or setting the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a service account key JSON file).
 * when connected to a ZenML server, this method only works if the ZenML server is deployed in GCP and will use the service account attached to the GCP resource where the ZenML server is running (e.g. a GKE cluster). The service account permissions may need to be adjusted to allow listing and accessing/describing the GCP resources that the connector is configured to access.
 
-Note that the discovered credentials inherit the full set of permissions of the local GCP CLI credentials or service account attached to the ZenML server GCP workload. Depending on the extent of those permissions, this authentication method might not be suitable for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use [the Service Account Key](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-service-account) or [Service Account Impersonation](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-service-account-impersonation) authentication methods to restrict the permissions that are granted to the connector clients.
+Note that the discovered credentials inherit the full set of permissions of the local GCP CLI credentials or service account attached to the ZenML server GCP workload. Depending on the extent of those permissions, this authentication method might not be suitable for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use [the Service Account Key](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-service-account) or [Service Account Impersonation](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-service-account-impersonation) authentication methods to restrict the permissions that are granted to the connector clients.
 
 To find out more about Application Default Credentials, [see the GCP ADC documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc).
 
@@ -339,11 +339,11 @@ Service connector 'gcp-implicit' of type 'gcp' with id '0c49a7fe-5e87-41b9-adbe-
 
 ### GCP User Account
 
-[Long-lived GCP credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consist of a GCP user account and its credentials.
+[Long-lived GCP credentials](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consist of a GCP user account and its credentials.
 
 This method requires GCP user account credentials like those generated by the `gcloud auth application-default login` command.
 
-By default, the GCP connector [generates temporary OAuth 2.0 tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from the user account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the user account credentials JSON to clients instead (not recommended).
+By default, the GCP connector [generates temporary OAuth 2.0 tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from the user account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the user account credentials JSON to clients instead (not recommended).
 
 This method is preferred during development and testing due to its simplicity and ease of use. It is not recommended as a direct authentication method for production use cases because the clients are granted the full set of permissions of the GCP user account. For production, it is recommended to use the GCP Service Account or GCP Service Account Impersonation authentication methods.
 
@@ -517,11 +517,11 @@ Service connector 'gcp-user-account' of type 'gcp' with id 'ddbce93f-df14-4861-a
 
 ### GCP Service Account
 
-[Long-lived GCP credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consisting of a GCP service account and its credentials.
+[Long-lived GCP credentials](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) consisting of a GCP service account and its credentials.
 
 This method requires [a GCP service account](https://cloud.google.com/iam/docs/service-account-overview) and [a service account key JSON](https://cloud.google.com/iam/docs/service-account-creds#key-types) created for it.
 
-By default, the GCP connector [generates temporary OAuth 2.0 tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from the service account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the service account credentials JSON to clients instead (not recommended).
+By default, the GCP connector [generates temporary OAuth 2.0 tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from the service account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the service account credentials JSON to clients instead (not recommended).
 
 A GCP project is required and the connector may only be used to access GCP resources in the specified project.
 
@@ -529,7 +529,7 @@ If you already have the `GOOGLE_APPLICATION_CREDENTIALS` environment variable co
 <Accordion
     title="Example configuration"
 >
-The following assumes a GCP service account was created, [granted permissions to access GCS buckets](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcs-bucket) in the target project and a service account key JSON was generated and saved locally in the `connectors-devel@zenml-core.json` file:
+The following assumes a GCP service account was created, [granted permissions to access GCS buckets](/usage/resource-data-management/auth-management/gcp-service-connector#gcs-bucket) in the target project and a service account key JSON was generated and saved locally in the `connectors-devel@zenml-core.json` file:
 
 
 
@@ -664,11 +664,11 @@ Service connector 'gcp-service-account' of type 'gcp' with id '4b3d41c9-6a6f-46d
 
 ### GCP Service Account impersonation
 
-Generates [temporary STS credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) by [impersonating another GCP service account](https://cloud.google.com/iam/docs/create-short-lived-credentials-direct#sa-impersonation).
+Generates [temporary STS credentials](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) by [impersonating another GCP service account](https://cloud.google.com/iam/docs/create-short-lived-credentials-direct#sa-impersonation).
 
 The connector needs to be configured with the email address of the target GCP service account to be impersonated, accompanied by a GCP service account key JSON for the primary service account. The primary service account must have permission to generate tokens for the target service account (i.e. [the Service Account Token Creator role](https://cloud.google.com/iam/docs/service-account-permissions#directly-impersonate)). The connector will generate temporary OAuth 2.0 tokens upon request by using [GCP direct service account impersonation](https://cloud.google.com/iam/docs/create-short-lived-credentials-direct#sa-impersonation). The tokens have a configurable limited lifetime of up to 1 hour.
 
-[The best practice implemented with this authentication scheme](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary service account down to the bare minimum and grant permissions to the privilege-bearing service account instead.
+[The best practice implemented with this authentication scheme](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary service account down to the bare minimum and grant permissions to the privilege-bearing service account instead.
 
 A GCP project is required and the connector may only be used to access GCP resources in the specified project.
 
@@ -831,7 +831,7 @@ Successfully registered service connector `gcp-impersonate-sa` with access to th
 
 Use [GCP workload identity federation](https://cloud.google.com/iam/docs/workload-identity-federation) to authenticate to GCP services using AWS IAM credentials, Azure Active Directory credentials or generic OIDC tokens.
 
-This authentication method only requires a GCP workload identity external account JSON file that only contains the configuration for the external account without any sensitive credentials. It allows implementing [a two layer authentication scheme](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing GCP service account instead.
+This authentication method only requires a GCP workload identity external account JSON file that only contains the configuration for the external account without any sensitive credentials. It allows implementing [a two layer authentication scheme](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing GCP service account instead.
 
 This authentication method can be used to authenticate to GCP services using credentials from other cloud providers or identity providers. When used with workloads running on AWS or Azure, it involves automatically picking up credentials from the AWS IAM or Azure AD identity associated with the workload and using them to authenticate to GCP services. This means that the result depends on the environment where the ZenML server is deployed and is thus not fully reproducible.
 
@@ -1063,7 +1063,7 @@ owned by user 'default'.
 
 ### GCP OAuth 2.0 token
 
-Uses [temporary OAuth 2.0 tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user.
+Uses [temporary OAuth 2.0 tokens](/usage/resource-data-management/auth-management/best-security-practices#short-lived-credentials) explicitly configured by the user.
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as OAuth 2.0 tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
@@ -1264,12 +1264,12 @@ Example Command Output
 
 ## Auto-configuration
 
-The GCP Service Connector allows [auto-discovering and fetching credentials](/versions/0.66.0/how-to/auth-management/service-connectors-guide#auto-configuration) and configuration [set up by the GCP CLI](https://cloud.google.com/sdk/gcloud) on your local host.
+The GCP Service Connector allows [auto-discovering and fetching credentials](/usage/resource-data-management/auth-management/service-connectors-guide#auto-configuration) and configuration [set up by the GCP CLI](https://cloud.google.com/sdk/gcloud) on your local host.
 <Accordion
     title="Auto-configuration example"
 >
 
-The following is an example of lifting GCP user credentials granting access to the same set of GCP resources and services that the local GCP CLI is allowed to access. The GCP CLI should already be configured with valid credentials (i.e. by running `gcloud auth application-default login`). In this case, the [GCP user account authentication method](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-user-account) is automatically detected:
+The following is an example of lifting GCP user credentials granting access to the same set of GCP resources and services that the local GCP CLI is allowed to access. The GCP CLI should already be configured with valid credentials (i.e. by running `gcloud auth application-default login`). In this case, the [GCP user account authentication method](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-user-account) is automatically detected:
 
 
 
@@ -1429,10 +1429,10 @@ Service connector 'gcp-auto' of type 'gcp' with id 'fe16f141-7406-437e-a579-aceb
 
 ## Local client provisioning
 
-The local `gcloud` CLI, the Kubernetes `kubectl` CLI and the Docker CLI can be[ configured with credentials extracted from or generated by a compatible GCP Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#configure-local-clients). Please note that unlike the configuration made possible through the GCP CLI, the Kubernetes and Docker credentials issued by the GCP Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
+The local `gcloud` CLI, the Kubernetes `kubectl` CLI and the Docker CLI can be[ configured with credentials extracted from or generated by a compatible GCP Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#configure-local-clients). Please note that unlike the configuration made possible through the GCP CLI, the Kubernetes and Docker credentials issued by the GCP Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
 
 <Info>
-    Note that the `gcloud` local client can only be configured with credentials issued by the GCP Service Connector if the connector is configured with the [GCP user account authentication method](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-user-account) or the [GCP service account authentication method](/versions/0.66.0/how-to/auth-management/gcp-service-connector#gcp-service-account) and if the `generate_temporary_tokens` option is set to true in the Service Connector configuration.
+    Note that the `gcloud` local client can only be configured with credentials issued by the GCP Service Connector if the connector is configured with the [GCP user account authentication method](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-user-account) or the [GCP service account authentication method](/usage/resource-data-management/auth-management/gcp-service-connector#gcp-service-account) and if the `generate_temporary_tokens` option is set to true in the Service Connector configuration.
 
 </Info>
 Only the `gcloud` local [application default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) configuration will be updated by the GCP Service Connector configuration. This makes it possible to use libraries and SDKs that use the application default credentials to access GCP resources.
@@ -1653,9 +1653,9 @@ The 'gcp-user-account' GCP Service Connector connector was used to successfully 
 
 ## Stack Components use
 
-The[ GCS Artifact Store Stack Component](/versions/0.66.0/stack-components/artifact-stores/gcp) can be connected to a remote GCS bucket through a GCP Service Connector.
+The[ GCS Artifact Store Stack Component](/stack-components/artifact-stores/gcp) can be connected to a remote GCS bucket through a GCP Service Connector.
 
-The [Google Cloud Image Builder Stack Component](/versions/0.66.0/stack-components/image-builders/gcp), [VertexAI Orchestrator](/versions/0.66.0/stack-components/orchestrators/vertex), and [VertexAI Step Operator](/versions/0.66.0/stack-components/step-operators/vertex) can be connected and use the resources of a target GCP project through a GCP Service Connector.
+The [Google Cloud Image Builder Stack Component](/stack-components/image-builders/gcp), [VertexAI Orchestrator](/stack-components/orchestrators/vertex), and [VertexAI Step Operator](/stack-components/step-operators/vertex) can be connected and use the resources of a target GCP project through a GCP Service Connector.
 
 The GCP Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
@@ -1666,10 +1666,10 @@ Similarly, Container Registry Stack Components can be connected to a Google Arti
     This is an example of an end-to-end workflow involving Service
 Connectors that use a single multi-type GCP Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes) connected to a GKE Kubernetes cluster
-* a [GCS Artifact Store](/versions/0.66.0/stack-components/artifact-stores/gcp) connected to a GCS bucket
-* a [GCP Container Registry](/versions/0.66.0/stack-components/container-registries/gcp) connected to a Docker Google Artifact Registry
-* a local [Image Builder](/versions/0.66.0/stack-components/image-builders/local)
+* a [Kubernetes Orchestrator](/stack-components/orchestrators/kubernetes) connected to a GKE Kubernetes cluster
+* a [GCS Artifact Store](/stack-components/artifact-stores/gcp) connected to a GCS bucket
+* a [GCP Container Registry](/stack-components/container-registries/gcp) connected to a Docker Google Artifact Registry
+* a local [Image Builder](/stack-components/image-builders/local)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 
@@ -2237,10 +2237,10 @@ Dashboard URL: http://34.148.132.191/default/pipelines/cec118d1-d90a-44ec-8bd7-d
 
 This is an example of an end-to-end workflow involving Service Connectors that use multiple single-instance GCP Service Connectors, each giving access to a resource for a Stack Component. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through its individual Service Connector:
 
-* a [VertexAI Orchestrator](/versions/0.66.0/stack-components/orchestrators/vertex) connected to the GCP project
-* a [GCS Artifact Store](/versions/0.66.0/stack-components/artifact-stores/gcp) connected to a GCS bucket
-* a [GCP Container Registry](/versions/0.66.0/stack-components/container-registries/gcp) connected to a GCR container registry
-* a [Google Cloud Image Builder](/versions/0.66.0/stack-components/image-builders/gcp) connected to the GCP project
+* a [VertexAI Orchestrator](/stack-components/orchestrators/vertex) connected to the GCP project
+* a [GCS Artifact Store](/stack-components/artifact-stores/gcp) connected to a GCS bucket
+* a [GCP Container Registry](/stack-components/container-registries/gcp) connected to a GCR container registry
+* a [Google Cloud Image Builder](/stack-components/image-builders/gcp) connected to the GCP project
 
 As a last step, a simple pipeline is run on the resulting Stack.
 
@@ -2607,7 +2607,7 @@ Successfully connected image builder `gcp-zenml-core` to the following resources
 ```
 
 1. register and connect a Vertex AI Orchestrator Stack Component to the target GCP project
-**NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. You must grant this account the Vertex AI Service Agent role, otherwise the pipelines will fail. More information on other configurations possible for the Vertex AI Orchestrator can be found [here](/versions/0.66.0/stack-components/orchestrators/vertex#how-to-use-it).
+**NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. You must grant this account the Vertex AI Service Agent role, otherwise the pipelines will fail. More information on other configurations possible for the Vertex AI Orchestrator can be found [here](/stack-components/orchestrators/vertex#how-to-use-it).
 
 ```
 zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --synchronous=true

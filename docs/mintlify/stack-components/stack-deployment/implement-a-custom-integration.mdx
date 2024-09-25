@@ -15,22 +15,22 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 ### Step 1: Plan out your integration
 
-In [the previous page](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](/versions/0.66.0/stack-components/component-guide) as well.
+In [the previous page](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](/stack-components/component-guide) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](/versions/0.66.0/stack-components/container-registries), [artifact stores](/versions/0.66.0/stack-components/artifact-stores) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](/stack-components/container-registries), [artifact stores](/stack-components/artifact-stores) etc.
 
 ### Step 2: Create individual stack component flavors
 
-Each category selected above would correspond to a [stack component type](/versions/0.66.0/stack-components/component-guide). You can now start developing individual stack component flavors for this type by following the detailed instructions on the respective pages.
+Each category selected above would correspond to a [stack component type](/stack-components/component-guide). You can now start developing individual stack component flavors for this type by following the detailed instructions on the respective pages.
 
-Before you package your new components into an integration, you may want to use/test them as a regular custom flavor. For instance, if you are [developing a custom orchestrator](/versions/0.66.0/stack-components/orchestrators/custom) and your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`, you can register it by using:
+Before you package your new components into an integration, you may want to use/test them as a regular custom flavor. For instance, if you are [developing a custom orchestrator](/stack-components/orchestrators/custom) and your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`, you can register it by using:
 
 ```bash
 zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 <Note>
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](/versions/0.66.0/how-to/setting-up-a-project-repository/best-practices) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](/usage/project-setup/setting-up-a-project-repository/best-practices) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 </Note>
@@ -41,7 +41,7 @@ Afterward, you should see the new flavor in the list of available flavors:
 zenml orchestrator flavor list
 ```
 
-See the docs on extensibility of the different components [here](/versions/0.66.0/stack-components/component-guide) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](/versions/0.66.0/stack-components/experiment-trackers/mlflow).
+See the docs on extensibility of the different components [here](/stack-components/component-guide) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](/stack-components/experiment-trackers/mlflow).
 
 ### Step 3: Create an integration class
 

@@ -22,7 +22,7 @@ Ultimately, if you have no choice, be cognizant of the third parties you share y
 
 This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to log in with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
 
-In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys).
+In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys).
 
 Even when passwords are mentioned as credentials, some services (e.g. DockerHub) also allow using an API access key in place of the user account password.
 
@@ -49,7 +49,7 @@ Most cloud providers and their associated Service Connector Types include some f
 
 There are a few caveats that you should be aware of when choosing an implicit authentication method. It may seem like the easiest way out, but it carries with it some implications that may impact portability and usability later down the road:
 
-* when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with zenml up](/versions/0.66.0/user-guide/production-guide), the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local K3D Kubernetes clusters and local Docker containers.
+* when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with zenml up](/user-guide/guides/production-guide), the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local K3D Kubernetes clusters and local Docker containers.
 * when used with a remote ZenML server, the implicit authentication method only works if your ZenML server is deployed in the same cloud as the one supported by the Service Connector Type that you are using. For instance, if you're using the AWS Service Connector Type, then the ZenML server must also be deployed in AWS (e.g. in an EKS Kubernetes cluster). You may also need to manually adjust the cloud configuration of the remote cloud workload where the ZenML server is running to allow access to resources (e.g. add permissions to the AWS IAM role attached to the EC2 or EKS node, add roles to the GCP service account attached to the GKE cluster nodes).
 <Accordion title="GCP implicit authentication method example">
 
@@ -106,7 +106,7 @@ The following is an example of using the GCP Service Connector's implicit authen
 ### Long-lived credentials (API keys, account keys)
 
 <Check>
-   This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
+   This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
 </Check>
 
 As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
@@ -134,12 +134,12 @@ ZenML cloud provider Service Connectors can use both classes of credentials, but
 
 Using long-lived credentials on their own still isn't ideal, because if leaked, they pose a security risk, even when they have limited permissions attached. The good news is that ZenML Service Connectors include additional mechanisms that, when used in combination with long-lived credentials, make it even safer to share long-lived credentials with other ZenML users and automated workloads:
 
-* automatically [generating temporary credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
-* implementing [authentication schemes that impersonate accounts and assume roles](/versions/0.66.0/how-to/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles)
+* automatically [generating temporary credentials](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
+* implementing [authentication schemes that impersonate accounts and assume roles](/usage/resource-data-management/auth-management/best-security-practices#impersonating-accounts-and-assuming-roles)
 
 ### Generating temporary and down-scoped credentials
 
-Most [authentication methods that utilize long-lived credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) also implement additional mechanisms that help reduce the accidental credentials exposure and risk of security incidents even further, making them ideal for production.
+Most [authentication methods that utilize long-lived credentials](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) also implement additional mechanisms that help reduce the accidental credentials exposure and risk of security incidents even further, making them ideal for production.
 
 _**Issuing temporary credentials**_: this authentication strategy keeps long-lived credentials safely stored on the ZenML server and away from the eyes of actual API clients and people that need to authenticate to the remote resources. Instead, clients are issued API tokens that have a limited lifetime and expire after a given amount of time. The Service Connector is able to generate these API tokens from long-lived credentials on a need-to-have basis. For example, the AWS Service Connector's "Session Token", "Federation Token" and "IAM Role" authentication methods and basically all authentication methods supported by the GCP Service Connector support this feature.
 <Accordion
@@ -556,7 +556,7 @@ ClientError: An error occurred (403) when calling the HeadBucket operation: Forb
    These types of authentication methods require more work to set up because multiple permission-bearing accounts and roles need to be provisioned in advance depending on the target audience. On the other hand, they also provide the most flexibility and control. Despite their operational cost, if you are a platform engineer and have the infrastructure know-how necessary to understand and set up the authentication resources, this is for you.
 </Check>
 
-These authentication methods deliver another way of [configuring long-lived credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) in your Service Connectors without exposing them to clients. They are especially useful as an alternative to cloud provider Service Connectors authentication methods that do not support [automatically downscoping the permissions of issued temporary tokens](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials).
+These authentication methods deliver another way of [configuring long-lived credentials](/usage/resource-data-management/auth-management/best-security-practices#long-lived-credentials-api-keys-account-keys) in your Service Connectors without exposing them to clients. They are especially useful as an alternative to cloud provider Service Connectors authentication methods that do not support [automatically downscoping the permissions of issued temporary tokens](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials).
 
 The processes of account impersonation and role assumption are very similar and can be summarized as follows:
 
@@ -667,7 +667,7 @@ Successfully registered service connector `gcp-impersonate-sa` with access to th
 
 On the other hand, this authentication method is ideal if you're looking to grant someone else in your team temporary access to some resources without exposing your long-lived credentials.
 
-A previous section described how [temporary credentials can be automatically generated from other, long-lived credentials](/versions/0.66.0/how-to/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) by most cloud provider Service Connectors. It only stands to reason that temporary credentials can also be generated manually by external means such as cloud provider CLIs and used directly to configure Service Connectors, or automatically generated during Service Connector auto-configuration.
+A previous section described how [temporary credentials can be automatically generated from other, long-lived credentials](/usage/resource-data-management/auth-management/best-security-practices#generating-temporary-and-down-scoped-credentials) by most cloud provider Service Connectors. It only stands to reason that temporary credentials can also be generated manually by external means such as cloud provider CLIs and used directly to configure Service Connectors, or automatically generated during Service Connector auto-configuration.
 
 This may be used as a way to grant an external party temporary access to some resources and have the Service Connector automatically become unusable (i.e. expire) after some time. Your long-lived credentials are kept safe, while the Service Connector only stores a short-lived credential.
 <Accordion

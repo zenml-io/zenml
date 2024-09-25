@@ -22,7 +22,7 @@ The ZenML AzureML orchestrator implementation uses [the Python SDK v2 of AzureML
 ## How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including an AzureML orchestrator? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including an AzureML orchestrator? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 In order to use an AzureML orchestrator, you need to first deploy [ZenML to the cloud](/versions/0.66.0/getting-started/deploying-zenml). It would be recommended to deploy ZenML in the same region as you plan on using for AzureML, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](/versions/0.66.0/how-to/connecting-to-zenml/connect-in-with-your-user-interactive) before using this stack component.
@@ -38,14 +38,14 @@ zenml integration install azure
 ```
 
 * [Docker](https://www.docker.com) installed and running or a remote image builder in your stack.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
 * An [Azure resource group equipped with an AzureML workspace](https://learn.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources?view=azureml-api-2) to run your pipeline on.
 
 There are two ways of authenticating your orchestrator with AzureML:
 
 1. **Default Authentication** simplifies the authentication process while developing your workflows that deploy to Azure by combining credentials used in Azure hosting environments and credentials used in local development.
-2. **Service Principal Authentication (recommended)** is using the concept of service principals on Azure to allow you to connect your cloud components with proper authentication. For this method, you will need to [create a service principal on Azure](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal), assign it the correct permissions and use it to [register a ZenML Azure Service Connector](https://docs.zenml.io/versions/0.66.0/how-to/auth-management/azure-service-connector).
+2. **Service Principal Authentication (recommended)** is using the concept of service principals on Azure to allow you to connect your cloud components with proper authentication. For this method, you will need to [create a service principal on Azure](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal), assign it the correct permissions and use it to [register a ZenML Azure Service Connector](https://docs.zenml.io/usage/resource-data-management/auth-management/azure-service-connector).
 
 ```bash
 zenml service-connector register  --type azure -i
@@ -54,7 +54,7 @@ zenml orchestrator connect  -c
 
 ## Docker
 
-For each pipeline run, ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in AzureML. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+For each pipeline run, ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in AzureML. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 
 ## AzureML UI
 

@@ -4,7 +4,7 @@ description: "Learning how to switch the infrastructure backend of your code."
 icon: layer-group
 ---
 
-Now that we have ZenML deployed, we can take the next steps in making sure that our machine learning workflows are production-ready. As you were running [your first pipelines](/versions/0.66.0/user-guide/starter-guide/create-an-ml-pipeline), you might have already noticed the term `stack` in the logs and on the dashboard.
+Now that we have ZenML deployed, we can take the next steps in making sure that our machine learning workflows are production-ready. As you were running [your first pipelines](/user-guide/guides/starter-guide/create-an-ml-pipeline), you might have already noticed the term `stack` in the logs and on the dashboard.
 
 A `stack` is the configuration of tools and infrastructure that your pipelines can run on. When you run ZenML code without configuring a stack, the pipeline will run on the so-called `default` stack.
 <Frame caption="ZenML is the translation layer that allows your code to run on any of your stacks">
@@ -95,9 +95,9 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 
 ### Other stack components
 
-There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](/versions/0.66.0/stack-components/component-guide)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](/stack-components/component-guide)
 
-Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](/versions/0.66.0/stack-components/container-registries). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
+Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](/stack-components/container-registries). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
 
 ## Registering a stack
 
@@ -194,7 +194,7 @@ If you are using [our VS Code extension](https://marketplace.visualstudio.com/it
 
 ### Run a pipeline on the new local stack
 
-Let's use the pipeline in our starter project from the [previous guide](/versions/0.66.0/user-guide/starter-guide/starter-project) to see it in action.
+Let's use the pipeline in our starter project from the [previous guide](/user-guide/guides/starter-guide/starter-project) to see it in action.
 
 If you have not already, clone the starter template:
 

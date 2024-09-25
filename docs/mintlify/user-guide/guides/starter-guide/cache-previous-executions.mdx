@@ -23,7 +23,7 @@ Step svc_trainer has finished in 0.932s.
   <img src="/_assets/user-guide/starter-guide/FCachedDag.png" />
 </Frame>
 
-ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](/versions/0.66.0/stack-components/artifact-stores)). This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](/stack-components/artifact-stores)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
@@ -76,7 +76,7 @@ first_pipeline = first_pipeline.with_options(enable_cache=False)
 
 The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
-The `with_options` function allows you to configure all sorts of things this way. We will learn more about it in the [coming chapters](/versions/0.66.0/user-guide/production-guide/configure-pipeline)!
+The `with_options` function allows you to configure all sorts of things this way. We will learn more about it in the [coming chapters](/user-guide/guides/production-guide/configure-pipeline)!
 
 ### Caching at a step-level
 

@@ -4,9 +4,9 @@ description: "Skip materialization of artifacts."
 icon: recycle
 ---
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](/versions/0.66.0/stack-components/artifact-stores). This is where **materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](/stack-components/artifact-stores). This is where **materializers** come into play.
 
-A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step. Read more about this [here](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types).
+A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step. Read more about this [here](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types).
 
 However, there are instances where you might **not** want to materialize an artifact in a step, but rather use a reference to it instead. This is where skipping materialization comes in.
 
@@ -89,5 +89,5 @@ def example_pipeline():
 example_pipeline()
 ```
 
-You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](/versions/0.66.0/how-to/trigger-pipelines/trigger-a-pipeline-from-another).
+You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](/usage/pipelines/trigger-pipelines/trigger-a-pipeline-from-another).
 

@@ -7,7 +7,7 @@ icon: terminal
 The ZenML Kubernetes Orchestrator allows you to run your ML pipelines on a Kubernetes cluster without writing Kubernetes code. It's a lightweight alternative to more complex orchestrators like Airflow or Kubeflow.
 
 <Info>
-If you only want to run individual steps of your pipeline in Kubernetes, check out our [Kubernetes Step Operator](/versions/0.66.0/stack-components/step-operators/kubernetes).
+If you only want to run individual steps of your pipeline in Kubernetes, check out our [Kubernetes Step Operator](/stack-components/step-operators/kubernetes).
 </Info>
 
 ## Prerequisites
@@ -33,7 +33,7 @@ zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes --provider=
 
 There are two ways to configure the orchestrator:
 
-1. Using a [Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) to connect to the remote cluster. This is the recommended approach, especially for cloud-managed clusters. No local `kubectl` context is needed.
+1. Using a [Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) to connect to the remote cluster. This is the recommended approach, especially for cloud-managed clusters. No local `kubectl` context is needed.
 
 ```bash
 zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
@@ -62,4 +62,4 @@ python your_pipeline.py
 
 This will create a Kubernetes pod for each step in your pipeline. You can interact with the pods using `kubectl` commands.
 
-For more advanced configuration options and additional details, refer to the [full Kubernetes Orchestrator documentation](/versions/0.66.0/stack-components/orchestrators/kubernetes).
+For more advanced configuration options and additional details, refer to the [full Kubernetes Orchestrator documentation](/stack-components/orchestrators/kubernetes).

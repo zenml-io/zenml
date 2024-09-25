@@ -4,7 +4,7 @@ description: "Orchestrating your pipelines to run on Kubeflow."
 icon: cloud-showers-water
 ---
 
-The Kubeflow orchestrator is an [orchestrator](/versions/0.66.0/stack-components/orchestrators) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
+The Kubeflow orchestrator is an [orchestrator](/stack-components/orchestrators) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
 
 <Note>
     This component is only meant to be used within the context of a [remote ZenML deployment scenario](/versions/0.66.0/getting-started/deploying-zenml). Usage with a local ZenML deployment may lead to unexpected behavior!
@@ -32,7 +32,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
 aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
 ```
 * [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up an AWS Service Connector](/versions/0.66.0/how-to/auth-management/aws-service-connector) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
+* ( optional) [set up an AWS Service Connector](/usage/resource-data-management/auth-management/aws-service-connector) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
 
 </Tab>
     <Tab title="GCP">
@@ -44,7 +44,7 @@ aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
 gcloud container clusters get-credentials CLUSTER_NAME
 ```
 * [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up a GCP Service Connector](/versions/0.66.0/how-to/auth-management/gcp-service-connector) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
+* ( optional) [set up a GCP Service Connector](/usage/resource-data-management/auth-management/gcp-service-connector) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
 </Tab>
     <Tab title="Azure">
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
@@ -70,7 +70,7 @@ kubectl edit configmap CONFIGMAP_NAME -n kubeflow
 * Have an existing Kubernetes cluster set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your Kubernetes cluster.
 * [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up a Kubernetes Service Connector](/versions/0.66.0/how-to/auth-management/kubernetes-service-connector) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
+* ( optional) [set up a Kubernetes Service Connector](/usage/resource-data-management/auth-management/kubernetes-service-connector) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
 
 </Tab>
 </Tabs>
@@ -96,27 +96,27 @@ You can pass other configurations specific to the stack components as key-value 
 
 To use the Kubeflow orchestrator, we need:
 
-* A Kubernetes cluster with Kubeflow pipelines installed. See the [deployment section](/versions/0.66.0/stack-components/orchestrators/kubeflow#how-to-deploy-it) for more information.
+* A Kubernetes cluster with Kubeflow pipelines installed. See the [deployment section](/stack-components/orchestrators/kubeflow#how-to-deploy-it) for more information.
 * A ZenML server deployed remotely where it can be accessed from the Kubernetes cluster. See the [deployment guide](/versions/0.66.0/getting-started/deploying-zenml) for more information.
 * The ZenML `kubeflow` integration installed. If you haven't done so, run
 
 ```bash
 zenml integration install kubeflow
 ```
-* [Docker](https://www.docker.com) installed and running (unless you are using a remote [Image Builder](/versions/0.66.0/stack-components/image-builders) in your ZenML stack).
+* [Docker](https://www.docker.com) installed and running (unless you are using a remote [Image Builder](/stack-components/image-builders) in your ZenML stack).
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed (optional, see below)
 
 <Info>
-    If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+    If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 
 </Info>
-* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
+* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1. If you have [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
+1. If you have [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
 
 ```bash
 # List all available Kubernetes clusters that can be accessed by service connectors
@@ -167,7 +167,7 @@ No labels are set for this stack.
 Stack 'aws-kubeflow' with id 'dab28f94-36ab-467a-863e-8718bbc1f060' is owned by user user.
 Active global stack set to:'aws-kubeflow'
 ```
-2. if you don't have a Service Connector on hand and you don't want to [register one](/versions/0.66.0/how-to/auth-management/service-connectors-guide#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
+2. if you don't have a Service Connector on hand and you don't want to [register one](/usage/resource-data-management/auth-management/service-connectors-guide#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
 
 ```bash
 zenml orchestrator register  \
@@ -178,7 +178,7 @@ zenml stack register  -o  -a  -c  ... # Add other stack components as needed
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
 
@@ -252,7 +252,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow%5Forchestrator%5Fflavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow%5Forchestrator%5Fflavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
@@ -345,6 +345,6 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using ZenML secrets [here](/versions/0.66.0/how-to/interact-with-secrets).
+See full documentation of using ZenML secrets [here](/usage/project-setup/use-secrets/interact-with-secrets).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow%5Forchestrator.KubeflowOrchestrator) .

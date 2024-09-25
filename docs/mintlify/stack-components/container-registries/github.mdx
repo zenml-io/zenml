@@ -4,14 +4,14 @@ description: "Storing container images in GitHub."
 icon: github
 ---
 
-The GitHub container registry is a [container registry](/versions/0.66.0/stack-components/container-registries) flavor that comes built-in with ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) to store container images.
+The GitHub container registry is a [container registry](/stack-components/container-registries) flavor that comes built-in with ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) to store container images.
 
 ### When to use it
 
 You should use the GitHub container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you're using GitHub for your projects. If you're not using GitHub, take a look at the other [container registry flavors](/versions/0.66.0/stack-components/container-registries#container-registry-flavors).
+* you're using GitHub for your projects. If you're not using GitHub, take a look at the other [container registry flavors](/stack-components/container-registries#container-registry-flavors).
 
 ### How to deploy it
 
@@ -40,7 +40,7 @@ To figure our the URI for your registry:
 To use the GitHub container registry, we need:
 
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](/versions/0.66.0/stack-components/container-registries/github#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
+* The registry URI. Check out the [previous section](/stack-components/container-registries/github#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
 * Our Docker client configured, so it can pull and push images. Follow [this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) to create a personal access token and login to the container registry.
 
 We can then register the container registry and use it in our active stack:

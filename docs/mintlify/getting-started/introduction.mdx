@@ -51,10 +51,10 @@ python run.py  # Now your ML workflow runs in AWS
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
 <CardGroup cols={3}>
- <Card title="Switch to production" icon="building" href="/versions/0.66.0/user-guide/production-guide/cloud-orchestration">
+ <Card title="Switch to production" icon="building" href="/user-guide/production-guide/cloud-orchestration">
   Set up and manage production-ready infrastructure with ZenML.
 </Card>
-<Card title="Component guide" icon="list-check" href="/versions/0.66.0/stack-components/component-guide">
+<Card title="Component guide" icon="list-check" href="/stack-components/component-guide">
  Explore the existing infrastructure and tooling integrations of ZenML.
 </Card>
 <Card title="FAQ" icon="person-circle-question" href="/versions/0.66.0/reference/faq">
@@ -91,18 +91,18 @@ my_pipeline()
 ```
 * **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](/versions/0.66.0/stack-components/experiment-trackers/wandb), [MLflow](/versions/0.66.0/stack-components/experiment-trackers/mlflow), or [Neptune](/versions/0.66.0/stack-components/experiment-trackers/neptune) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](/stack-components/experiment-trackers/wandb), [MLflow](/stack-components/experiment-trackers/mlflow), or [Neptune](/stack-components/experiment-trackers/neptune) for even better reproducibility.
 
 <Icon icon="rocket"/> **Learn More**
 
 Ready to develop production-ready code with ZenML? Here is a collection of pages you can take a look at next:
 <CardGroup cols={3}>
 
-<Card title="Core Concepts" icon="trowel-bricks" href="/versions/0.66.0/getting-started/core-concepts">
+<Card title="Core Concepts" icon="trowel-bricks" href="/getting-started/core-concepts">
 Understand the core concepts behind ZenML.
 </Card>
 
-<Card title="Starter Guide" icon="egg" href="/versions/0.66.0/user-guide/starter-guide">
+<Card title="Starter Guide" icon="egg" href="/user-guide/starter-guide">
 Get started with ZenML and learn how to build your first pipeline and stack.
 </Card>
 
@@ -115,7 +115,7 @@ Build your first ZenML pipeline and deploy it in the cloud.
   <Tab title="For ML Engineers">
 ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-end. Adopting ZenML means fewer handover points and more visibility on what is happening in your organization.
 
-* **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you define your ML workflows as [Pipelines](/versions/0.66.0/getting-started/core-concepts#1-development) and your development, staging, and production infrastructures as [Stacks](/versions/0.66.0/getting-started/core-concepts#2-execution), you can move entire ML workflows to different environments in seconds.
+* **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you define your ML workflows as [Pipelines](/getting-started/core-concepts#1-development) and your development, staging, and production infrastructures as [Stacks](/getting-started/core-concepts#2-execution), you can move entire ML workflows to different environments in seconds.
 ```Bash
 zenml stack set staging
 python run.py  # test your workflows on staging infrastructure
@@ -128,7 +128,7 @@ python run.py  # run your workflows in production
   <img src="/_assets/FDashboard.png"/>
 </Frame>
 
-* **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](/versions/0.66.0/stack-components/model-deployers/seldon).
+* **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](/stack-components/model-deployers/seldon).
 
 ```Bash
 from zenml.integrations.seldon.steps import seldon_model_deployer_step
@@ -146,11 +146,11 @@ Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection o
 
 <CardGroup cols={3}>
 
-<Card title="Starter Guide" icon="egg" href="/versions/0.66.0/user-guide/starter-guide">
+<Card title="Starter Guide" icon="egg" href="/user-guide/starter-guide">
 Get started with ZenML and learn how to build your first pipeline and stack.
 </Card>
 
-<Card title="How To" icon="earlybirds" href="/versions/0.66.0/how-to/build-pipelines">
+<Card title="How To" icon="earlybirds" href="/usage/pipeline/build-pipelines">
 Discover advanced ZenML features like config management and containerization.
 </Card>
 

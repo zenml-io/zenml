@@ -8,7 +8,7 @@ The container registry is an essential part of most remote MLOps stacks. It is u
 
 ### When to use it
 
-The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](/versions/0.66.0/stack-components/orchestrators) , [step operators](/versions/0.66.0/stack-components/step-operators), and some [model deployers](/versions/0.66.0/stack-components/model-deployers). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
+The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](/stack-components/orchestrators) , [step operators](/stack-components/step-operators), and some [model deployers](/stack-components/model-deployers). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
 
 ### Container Registry Flavors
 
@@ -23,12 +23,12 @@ ZenML comes with a few container registry flavors that you can use:
 
 | Container Registry                                                             | Flavor    | Integration | URI example                               |
 | ------------------------------------------------------------------------------ | --------- | ----------- | ----------------------------------------- |
-| [DefaultContainerRegistry](/versions/0.66.0/stack-components/container-registries/default)     | default   | _built-in_  | \-                                        |
-| [DockerHubContainerRegistry](/versions/0.66.0/stack-components/container-registries/dockerhub) | dockerhub | _built-in_  | docker.io/zenml                           |
-| [GCPContainerRegistry](/versions/0.66.0/stack-components/container-registries/gcp)             | gcp       | _built-in_  | gcr.io/zenml                              |
-| [AzureContainerRegistry](/versions/0.66.0/stack-components/container-registries/azure)         | azure     | _built-in_  | zenml.azurecr.io                          |
-| [GitHubContainerRegistry](/versions/0.66.0/stack-components/container-registries/github)       | github    | _built-in_  | ghcr.io/zenml                             |
-| [AWSContainerRegistry](/versions/0.66.0/stack-components/container-registries/aws)             | aws       | aws         | 123456789.dkr.ecr.us-east-1.amazonaws.com |
+| [DefaultContainerRegistry](/stack-components/container-registries/default)     | default   | _built-in_  | \-                                        |
+| [DockerHubContainerRegistry](/stack-components/container-registries/dockerhub) | dockerhub | _built-in_  | docker.io/zenml                           |
+| [GCPContainerRegistry](/stack-components/container-registries/gcp)             | gcp       | _built-in_  | gcr.io/zenml                              |
+| [AzureContainerRegistry](/stack-components/container-registries/azure)         | azure     | _built-in_  | zenml.azurecr.io                          |
+| [GitHubContainerRegistry](/stack-components/container-registries/github)       | github    | _built-in_  | ghcr.io/zenml                             |
+| [AWSContainerRegistry](/stack-components/container-registries/aws)             | aws       | aws         | 123456789.dkr.ecr.us-east-1.amazonaws.com |
 
 If you would like to see the available flavors of container registries, you can use the command:
 

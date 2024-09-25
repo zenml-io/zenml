@@ -4,7 +4,7 @@ description: "Storing artifacts on your local filesystem."
 icon: file
 ---
 
-The local Artifact Store is a built-in ZenML [Artifact Store](/versions/0.66.0/stack-components/artifact-stores) flavor that uses a folder on your local filesystem to store artifacts.
+The local Artifact Store is a built-in ZenML [Artifact Store](/stack-components/artifact-stores) flavor that uses a folder on your local filesystem to store artifacts.
 
 ### When would you want to use it?
 
@@ -17,9 +17,9 @@ Furthermore, the local Artifact Store doesn't cover services like high-availabil
 
 The fact that it stores artifacts on your local filesystem also means that not all stack components can be used in the same stack as a local Artifact Store:
 
-* only [Orchestrators](/versions/0.66.0/stack-components/orchestrators) running on the local machine, such as the [local Orchestrator](/versions/0.66.0/stack-components/orchestrators/local), a [local Kubeflow Orchestrator](/versions/0.66.0/stack-components/orchestrators/kubeflow), or a [local Kubernetes Orchestrator](/versions/0.66.0/stack-components/orchestrators/kubernetes) can be combined with a local Artifact Store
-* only [Model Deployers](/versions/0.66.0/stack-components/model-deployers) that are running locally, such as the [MLflow Model Deployer](/versions/0.66.0/stack-components/model-deployers/mlflow), can be used in combination with a local Artifact Store
-* [Step Operators](/versions/0.66.0/stack-components/step-operators): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
+* only [Orchestrators](/stack-components/orchestrators) running on the local machine, such as the [local Orchestrator](/stack-components/orchestrators/local), a [local Kubeflow Orchestrator](/stack-components/orchestrators/kubeflow), or a [local Kubernetes Orchestrator](/stack-components/orchestrators/kubernetes) can be combined with a local Artifact Store
+* only [Model Deployers](/stack-components/model-deployers) that are running locally, such as the [MLflow Model Deployer](/stack-components/model-deployers/mlflow), can be used in combination with a local Artifact Store
+* [Step Operators](/stack-components/step-operators): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
 
 As you transition to a team setting or a production setting, you can replace the local Artifact Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
 </Note>
@@ -78,5 +78,5 @@ For more, up-to-date information on the local Artifact Store implementation and 
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored locally, using the local Artifact Store is no different from [using any other flavor of Artifact Store](/versions/0.66.0/stack-components/artifact-stores#how-to-use-it).
+Aside from the fact that the artifacts are stored locally, using the local Artifact Store is no different from [using any other flavor of Artifact Store](/stack-components/artifact-stores#how-to-use-it).
 

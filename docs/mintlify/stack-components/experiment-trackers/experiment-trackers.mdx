@@ -8,12 +8,12 @@ Experiment trackers let you track your ML experiments by logging extended inform
 
 Related concepts:
 
-* the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](/versions/0.66.0/user-guide/production-guide/understand-stacks).
-* ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in the [Artifact Store](/versions/0.66.0/stack-components/artifact-stores).
+* the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](/user-guide/guides/production-guide/understand-stacks).
+* ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in the [Artifact Store](/stack-components/artifact-stores).
 
 ### When to use it
 
-ZenML already records information about the artifacts circulated through your pipelines by means of the mandatory [Artifact Store](/versions/0.66.0/stack-components/artifact-stores).
+ZenML already records information about the artifacts circulated through your pipelines by means of the mandatory [Artifact Store](/stack-components/artifact-stores).
 
 However, these ZenML mechanisms are meant to be used programmatically and can be more difficult to work with without a visual interface.
 
@@ -35,11 +35,11 @@ Experiment Trackers are optional stack components provided by integrations:
 
 | Experiment Tracker                                                    | Flavor   | Integration | Notes                                                                                           |
 | --------------------------------------------------------------------- | -------- | ----------- | ----------------------------------------------------------------------------------------------- |
-| [Comet](/versions/0.66.0/stack-components/experiment-trackers/comet)                  | comet    | comet       | Add Comet experiment tracking and visualization capabilities to your ZenML pipelines            |
-| [MLflow](/versions/0.66.0/stack-components/experiment-trackers/mlflow)                | mlflow   | mlflow      | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
-| [Neptune](/versions/0.66.0/stack-components/experiment-trackers/neptune)              | neptune  | neptune     | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |
-| [Weights & Biases](/versions/0.66.0/stack-components/experiment-trackers/wandb)       | wandb    | wandb       | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
-| [Custom Implementation](/versions/0.66.0/stack-components/experiment-trackers/custom) | _custom_ | _custom_    |                                                                                                 |
+| [Comet](/stack-components/experiment-trackers/comet)                  | comet    | comet       | Add Comet experiment tracking and visualization capabilities to your ZenML pipelines            |
+| [MLflow](/stack-components/experiment-trackers/mlflow)                | mlflow   | mlflow      | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
+| [Neptune](/stack-components/experiment-trackers/neptune)              | neptune  | neptune     | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |
+| [Weights & Biases](/stack-components/experiment-trackers/wandb)       | wandb    | wandb       | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
+| [Custom Implementation](/stack-components/experiment-trackers/custom) | _custom_ | _custom_    |                                                                                                 |
 
 If you would like to see the available flavors of Experiment Tracker, you can use the command:
 
@@ -69,4 +69,4 @@ experiment_tracker_url = step.run_metadata["experiment_tracker_url"].value
   Experiment trackers will automatically declare runs as failed if the corresponding ZenML pipeline step fails.
 </Info>
 
-Consult the documentation for the particular [Experiment Tracker flavor](/versions/0.66.0/stack-components/experiment-trackers#experiment-tracker-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
+Consult the documentation for the particular [Experiment Tracker flavor](/stack-components/experiment-trackers#experiment-tracker-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.

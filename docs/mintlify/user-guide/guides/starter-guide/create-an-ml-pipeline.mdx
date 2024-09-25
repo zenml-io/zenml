@@ -13,7 +13,7 @@ Leveraging ZenML, you can create and manage robust, scalable machine learning (M
 </Frame>
 
 <Info>
-Before starting this guide, make sure you have [installed ZenML](/versions/0.66.0/getting-started/installation):
+Before starting this guide, make sure you have [installed ZenML](/getting-started/installation):
 
 ```Bash
 pip install "zenml[server]"
@@ -146,7 +146,7 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 ### Define a data loader with multiple outputs
 
-A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](/versions/0.66.0/user-guide/starter-guide/manage-artifacts#giving-names-to-your-artifacts). Here we load an open-source dataset and split it into a train and a test dataset.
+A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](/user-guide/guides/starter-guide/manage-artifacts#giving-names-to-your-artifacts). Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```py
 import logging
@@ -282,7 +282,7 @@ If you are unsure how to format this config file, you can generate a template co
 training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this section](/versions/0.66.0/how-to/use-configuration-files) for advanced configuration options.
+Check out [this section](/usage/project-setup/use-configuration-files) for advanced configuration options.
 
 ## Full Code Example
 

@@ -6,9 +6,9 @@ icon: pied-piper
 
 When a [pipeline is run with a remote orchestrator](/versions/0.66.0/how-to/configure-python-environments) a [Dockerfile](https://docs.docker.com/engineversions/0.66.0/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](/versions/0.66.0/how-to/configure-python-environments#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
-* **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](/versions/0.66.0/how-to/customize-docker-builds/docker-settings-on-a-pipeline#using-a-custom-parent-image).
-* **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](/versions/0.66.0/how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages).
-* **Optionally copies your source files**. Your source files need to be available inside the Docker container so ZenML can execute your step code. Check out [this section](/versions/0.66.0/how-to/customize-docker-builds/which-files-are-built-into-the-image) for more information on how you can customize how ZenML handles your source files in Docker images.
+* **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](/usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline#using-a-custom-parent-image).
+* **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](/usage/project-setup/customize-docker-builds/specify-pip-dependencies-and-apt-packages).
+* **Optionally copies your source files**. Your source files need to be available inside the Docker container so ZenML can execute your step code. Check out [this section](/usage/project-setup/customize-docker-builds/which-files-are-built-into-the-image) for more information on how you can customize how ZenML handles your source files in Docker images.
 * **Sets user-defined environment variables.**
 
 The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
@@ -61,7 +61,7 @@ my_step = my_step.with_options(
 )
 ```
 
-* Using a YAML configuration file as described [here](/versions/0.66.0/how-to/use-configuration-files):
+* Using a YAML configuration file as described [here](/usage/project-setup/use-configuration-files):
 
 ```yaml
 settings:
@@ -75,7 +75,7 @@ steps:
             ...
 ```
 
-Check out [this page](/versions/0.66.0/how-to/use-configuration-files/configuration-hierarchy) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
+Check out [this page](/usage/project-setup/use-configuration-files/configuration-hierarchy) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
 ### Specifying Docker build options
 

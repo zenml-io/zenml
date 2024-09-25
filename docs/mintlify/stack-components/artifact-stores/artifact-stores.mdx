@@ -9,17 +9,17 @@ The Artifact Store is a central component in any MLOps stack. As the name sugges
 ZenML automatically serializes and saves the data circulated through your pipelines in the Artifact Store: datasets, models, data profiles, data and model validation reports, and generally any object that is returned by a pipeline step. This is coupled with tracking in ZenML to provide extremely useful features such as caching and provenance/lineage tracking and pipeline reproducibility.
 
 <Info>
-Not all objects returned by pipeline steps are physically stored in the Artifact Store, nor do they have to be. How artifacts are serialized and deserialized and where their contents are stored are determined by the particular implementation of the [Materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) associated with the artifact data type. The majority of Materializers shipped with ZenML use the Artifact Store which is part of the active Stack as the location where artifacts are kept.
+Not all objects returned by pipeline steps are physically stored in the Artifact Store, nor do they have to be. How artifacts are serialized and deserialized and where their contents are stored are determined by the particular implementation of the [Materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) associated with the artifact data type. The majority of Materializers shipped with ZenML use the Artifact Store which is part of the active Stack as the location where artifacts are kept.
 
-If you need to store _a particular type of pipeline artifact_ in a different medium (e.g. use an external model registry to store model artifacts, or an external data lake or data warehouse to store dataset artifacts), you can write your own [Materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) to implement the custom logic required for it. In contrast, if you need to use an entirely different storage backend to store artifacts, one that isn't already covered by one of the ZenML integrations, you can [extend the Artifact Store abstraction](/versions/0.66.0/stack-components/artifact-stores/custom) to provide your own Artifact Store implementation.
+If you need to store _a particular type of pipeline artifact_ in a different medium (e.g. use an external model registry to store model artifacts, or an external data lake or data warehouse to store dataset artifacts), you can write your own [Materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) to implement the custom logic required for it. In contrast, if you need to use an entirely different storage backend to store artifacts, one that isn't already covered by one of the ZenML integrations, you can [extend the Artifact Store abstraction](/stack-components/artifact-stores/custom) to provide your own Artifact Store implementation.
 
 </Info>
-In addition to pipeline artifacts, the Artifact Store may also be used as storage backed by other specialized stack components that need to store their data in the form of persistent object storage. The [Great Expectations Data Validator](/versions/0.66.0/stack-components/data-validators/great-expectations) is such an example.
+In addition to pipeline artifacts, the Artifact Store may also be used as storage backed by other specialized stack components that need to store their data in the form of persistent object storage. The [Great Expectations Data Validator](/stack-components/data-validators/great-expectations) is such an example.
 
 Related concepts:
 
-* the Artifact Store is a type of Stack Component that needs to be registered as part of your ZenML [Stack](/versions/0.66.0/user-guide/production-guide/understand-stacks).
-* the objects circulated through your pipelines are serialized and stored in the Artifact Store using [Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types). Materializers implement the logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents to/from the Artifact Store.
+* the Artifact Store is a type of Stack Component that needs to be registered as part of your ZenML [Stack](/user-guide/guides/production-guide/understand-stacks).
+* the objects circulated through your pipelines are serialized and stored in the Artifact Store using [Materializers](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types). Materializers implement the logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents to/from the Artifact Store.
 
 ### When to use it
 
@@ -31,11 +31,11 @@ Out of the box, ZenML comes with a `local` artifact store already part of the de
 
 | Artifact Store                                                    | Flavor   | Integration | URI Schema(s)                                                             | Notes                                                                                                                            |
 | ----------------------------------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [Local](/versions/0.66.0/stack-components/artifact-stores/local)                  | local    | _built-in_  | None                                                                      | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
-| [Amazon S3](/versions/0.66.0/stack-components/artifact-stores/s3)                 | s3       | s3          | s3://                                                                     | Uses AWS S3 as an object store backend                                                                                           |
-| [Google Cloud Storage](/versions/0.66.0/stack-components/artifact-stores/gcp)     | gcp      | gcp         | gs://                                                                     | Uses Google Cloud Storage as an object store backend                                                                             |
-| [Azure](/versions/0.66.0/stack-components/artifact-stores/azure)                  | azure    | azure       | abfs://, az://                                                            | Uses Azure Blob Storage as an object store backend                                                                               |
-| [Custom Implementation](/versions/0.66.0/stack-components/artifact-stores/custom) | _custom_ | _custom_    | Extend the Artifact Store abstraction and provide your own implementation |                                                                                                                                  |
+| [Local](/stack-components/artifact-stores/local)                  | local    | _built-in_  | None                                                                      | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
+| [Amazon S3](/stack-components/artifact-stores/s3)                 | s3       | s3          | s3://                                                                     | Uses AWS S3 as an object store backend                                                                                           |
+| [Google Cloud Storage](/stack-components/artifact-stores/gcp)     | gcp      | gcp         | gs://                                                                     | Uses Google Cloud Storage as an object store backend                                                                             |
+| [Azure](/stack-components/artifact-stores/azure)                  | azure    | azure       | abfs://, az://                                                            | Uses Azure Blob Storage as an object store backend                                                                               |
+| [Custom Implementation](/stack-components/artifact-stores/custom) | _custom_ | _custom_    | Extend the Artifact Store abstraction and provide your own implementation |                                                                                                                                  |
 
 If you would like to see the available flavors of Artifact Stores, you can use the command:
 
@@ -56,16 +56,16 @@ zenml artifact-store register s3_store -f s3 --path s3://my_bucket
 The Artifact Store provides low-level object storage services for other ZenML mechanisms. When you develop ZenML pipelines, you normally don't even have to be aware of its existence or interact with it directly. ZenML provides higher-level APIs that can be used as an alternative to store and access artifacts:
 
 * return one or more objects from your pipeline steps to have them automatically saved in the active Artifact Store as pipeline artifacts.
-* [retrieve pipeline artifacts](/versions/0.66.0/how-to/handle-data-artifacts/load-artifacts-into-memory) from the active Artifact Store after a pipeline run is complete.
+* [retrieve pipeline artifacts](/usage/resource-data-management/handle-data-artifacts/load-artifacts-into-memory) from the active Artifact Store after a pipeline run is complete.
 
-You will probably need to interact with the [low-level Artifact Store API](/versions/0.66.0/stack-components/artifact-stores#the-artifact-store-api) directly:
+You will probably need to interact with the [low-level Artifact Store API](/stack-components/artifact-stores#the-artifact-store-api) directly:
 
-* if you implement custom [Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) for your artifact data types
+* if you implement custom [Materializers](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) for your artifact data types
 * if you want to store custom objects in the Artifact Store
 
 #### The Artifact Store API
 
-All ZenML Artifact Stores implement [the same IO API](/versions/0.66.0/stack-components/artifact-stores/custom) that resembles a standard file system. This allows you to access and manipulate the objects stored in the Artifact Store in the same manner you would normally handle files on your computer and independently of the particular type of Artifact Store that is configured in your ZenML stack.
+All ZenML Artifact Stores implement [the same IO API](/stack-components/artifact-stores/custom) that resembles a standard file system. This allows you to access and manipulate the objects stored in the Artifact Store in the same manner you would normally handle files on your computer and independently of the particular type of Artifact Store that is configured in your ZenML stack.
 
 Accessing the low-level Artifact Store API can be done through the following Python modules:
 
@@ -90,7 +90,7 @@ with fileio.open(artifact_uri, "w") as f:
     f.write(artifact_contents)
 ```
 
-When using the Artifact Store API to write custom Materializers, the base artifact URI path is already provided. See the documentation on [Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) for an example.
+When using the Artifact Store API to write custom Materializers, the base artifact URI path is already provided. See the documentation on [Materializers](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) for an example.
 </Info>
 
 The following are some code examples showing how to use the Artifact Store API for various operations:

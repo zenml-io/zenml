@@ -23,8 +23,8 @@ However, since Kubeflow is much more mature, you should, in most cases, aim to m
 You should use the Kubernetes orchestrator if:
 
 * you're looking for a lightweight way of running your pipelines on Kubernetes.
-* you're not willing to maintain [Kubeflow Pipelines](/versions/0.66.0/stack-components/orchestrators/kubeflow) on your Kubernetes cluster.
-* you're not interested in paying for managed solutions like [Vertex](/versions/0.66.0/stack-components/orchestrators/vertex).
+* you're not willing to maintain [Kubeflow Pipelines](/stack-components/orchestrators/kubeflow) on your Kubernetes cluster.
+* you're not interested in paying for managed solutions like [Vertex](/stack-components/orchestrators/vertex).
 
 ### How to deploy it
 
@@ -53,18 +53,18 @@ zenml integration install kubernetes
 ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](/versions/0.66.0/stack-components/artifact-stores) as part of your stack.
-* A [remote container registry](/versions/0.66.0/stack-components/container-registries) as part of your stack.
-* A Kubernetes cluster [deployed](/versions/0.66.0/stack-components/orchestrators/kubernetes#how-to-deploy-it)
+* A [remote artifact store](/stack-components/artifact-stores) as part of your stack.
+* A [remote container registry](/stack-components/container-registries) as part of your stack.
+* A Kubernetes cluster [deployed](/stack-components/orchestrators/kubernetes#how-to-deploy-it)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 
 <Info>
-    It is recommended that you set up [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+    It is recommended that you set up [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 </Info>
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1. If you have [a Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](/versions/0.66.0/how-to/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
+1. If you have [a Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](/usage/resource-data-management/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
 
 ```bash
 $ zenml orchestrator register  --flavor kubernetes
@@ -93,7 +93,7 @@ Successfully connected orchestrator `` to the following resources:
 # Register and activate a stack with the new orchestrator
 $ zenml stack register  -o  ... --set
 ```
-2. if you don't have a Service Connector on hand and you don't want to [register one](/versions/0.66.0/how-to/auth-management/service-connectors-guide#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2. if you don't have a Service Connector on hand and you don't want to [register one](/usage/resource-data-management/auth-management/service-connectors-guide#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
 ```bash
 zenml orchestrator register  \
@@ -104,7 +104,7 @@ zenml stack register  -o  ... --set
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 
 You can now run any ZenML pipeline using the Kubernetes orchestrator:
@@ -263,7 +263,7 @@ def my_kubernetes_pipeline():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes%5Forchestrator%5Fflavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes%5Forchestrator%5Fflavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes%5Forchestrator.KubernetesOrchestrator) .
 
