@@ -15,6 +15,7 @@ from zenml.services.container.container_service_endpoint import ContainerService
 from zenml.services.service import BaseDeploymentService
 from zenml.services.service_endpoint import ServiceEndpointProtocol
 from zenml.services.service_monitor import HTTPEndpointHealthMonitor, HTTPEndpointHealthMonitorConfig
+from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 
@@ -118,6 +119,21 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             )
             attrs["endpoint"] = endpoint
         super().__init__(config=config, **attrs)
+
+    # override the is_running property to check if the bentoml container is running
+    @property
+    def is_running(self) -> bool:
+        """Check if the service is currently running.
+
+        This method will actively poll the external service to get its status
+        and will return the result.
+
+        Returns:
+            True if the service is running and active (i.e. the endpoints are
+            responsive, if any are configured), otherwise False.
+        """
+        self.update_status()
+        return self.status.state == ServiceState.ACTIVE
 
     # override the container start method to use the root user
     def _start_container(self) -> None:
