@@ -6,13 +6,13 @@ icon: github
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](/versions/0.66.0/how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](/usage/project-setup/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](/versions/0.66.0/how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times).
+Learn more about how code repositories benefit development [here](/usage/project-setup/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times).
 
 ## Registering a code repository
 
-If you are planning to use one of the [available implementations of code repositories](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#available-implementations), first, you need to install the corresponding ZenML integration:
+If you are planning to use one of the [available implementations of code repositories](/usage/project-setup/setting-up-a-project-repository/connect-your-git-repository#available-implementations), first, you need to install the corresponding ZenML integration:
 
 ```Bash
 zenml integration install
@@ -24,11 +24,11 @@ Afterward, code repositories can be registered using the CLI:
 zenml code-repository register  --type= [--CODE_REPOSITORY_OPTIONS]
 ```
 
-For concrete options, check out the section on the [GitHubCodeRepository](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#github), the [GitLabCodeRepository](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#gitlab) or how to develop and register a [custom code repository implementation](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
+For concrete options, check out the section on the [GitHubCodeRepository](/usage/project-setup/setting-up-a-project-repository/connect-your-git-repository#github), the [GitLabCodeRepository](/usage/project-setup/setting-up-a-project-repository/connect-your-git-repository#gitlab) or how to develop and register a [custom code repository implementation](/usage/project-setup/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
 
 ## Available implementations
 
-ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](/versions/0.66.0/how-to/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
+ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](/usage/project-setup/setting-up-a-project-repository/connect-your-git-repository#developing-a-custom-code-repository).
 
 ### GitHub
 

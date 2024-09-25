@@ -6,7 +6,7 @@ icon: file-lines
 
 If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your toolchain in a more precise manner.
 
-ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](/user-guide/guides/production-guide/understand-stacks). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), or use one of the many built-in [integrations](/stack-components/component-guide) that implement these abstractions for you.
+ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](/user-guide/guides/production-guide/understand-stacks). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](/stack-components/stack-deployment/implement-a-custom-stack-component), or use one of the many built-in [integrations](/stack-components/component-guide) that implement these abstractions for you.
 
 Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
 
@@ -50,7 +50,7 @@ Each pipeline run that you execute with ZenML will require a **stack** and each 
 
 ## Writing custom component flavors
 
-You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](/versions/0.66.0/how-to/stack-deployment/implement-a-custom-stack-component), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](/stack-components/orchestrators/custom)).
+You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](/stack-components/stack-deployment/implement-a-custom-stack-component), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](/stack-components/orchestrators/custom)).
 
 ## Integrations
 

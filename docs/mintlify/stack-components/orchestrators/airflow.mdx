@@ -130,11 +130,11 @@ In the remote case, the Airflow orchestrator works differently than other ZenML 
 </Tabs>
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 #### Scheduling
 
-You can [schedule pipeline runs](/versions/0.66.0/how-to/build-pipelines/schedule-a-pipeline) on Airflow similarly to other orchestrators. However, note that **Airflow schedules always need to be set in the past**, e.g.,:
+You can [schedule pipeline runs](/usage/pipelines/build-pipelines/schedule-a-pipeline) on Airflow similarly to other orchestrators. However, note that **Airflow schedules always need to be set in the past**, e.g.,:
 
 ```py
 from datetime import datetime, timedelta
@@ -163,7 +163,7 @@ The username will always be `admin`.
 
 #### Additional configuration
 
-For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow%5Forchestrator%5Fflavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files) for more information on how to specify settings.
+For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow%5Forchestrator%5Fflavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
@@ -217,6 +217,6 @@ To run a pipeline in Airflow, ZenML creates a Zip archive that contains two file
 
 If you need more control over how the Airflow DAG is generated, you can provide a custom DAG generator file using the setting `custom_dag_generator`. This setting will need to reference a Python module that can be imported into your active Python environment. It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`) and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag%5Fgenerator.py) . For this reason, we suggest starting by ing the original and modifying it according to your needs.
 
-Check out our docs on how to apply settings to your pipelines [here](/versions/0.66.0/how-to/use-configuration-files).
+Check out our docs on how to apply settings to your pipelines [here](/usage/project-setup/use-configuration-files).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow%5Forchestrator.AirflowOrchestrator) .

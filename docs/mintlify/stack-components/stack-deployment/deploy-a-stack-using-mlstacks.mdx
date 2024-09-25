@@ -15,7 +15,7 @@ Check out [the full documentation for the mlstacks package](https://mlstacks.zen
 ## When should I deploy something using mlstacks?
 
 <Info>
-  **MLStacks deploys resources using a Kubernetes cluster, which may be expensive and not for every user. In order to use stacks which are more basic and cheaper on the cloud, read** [**how to easily register a cloud stack**](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack) **if you have existing infrastructure, or read** [**how to deploy a cloud stack in one click**](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack) **or** [**how to deploy a cloud stack with Terraform**](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform/README.md)**.**
+  **MLStacks deploys resources using a Kubernetes cluster, which may be expensive and not for every user. In order to use stacks which are more basic and cheaper on the cloud, read** [**how to easily register a cloud stack**](/stack-components/stack-deployment/register-a-cloud-stack) **if you have existing infrastructure, or read** [**how to deploy a cloud stack in one click**](/stack-components/stack-deployment/deploy-a-cloud-stack) **or** [**how to deploy a cloud stack with Terraform**](https://github.com/zenml-io/zenml/blob/release/0.66.0/docs/book/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform/README.md)**.**
 
 Or simply try running one of:
 
@@ -61,7 +61,7 @@ MLStacks also uses Helm to deploy Kubernetes resources. You will need to have He
 
 ## Deploying a stack
 
-Deploying an end-to-end stack through the ZenML CLI is only possible with the [deployment wizard which does not use mlstacks](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack). However, you can use `mlstacks` directly to deploy various types of stacks and [import them into ZenML](https://mlstacks.zenml.ioversions/0.66.0/reference/zenml).
+Deploying an end-to-end stack through the ZenML CLI is only possible with the [deployment wizard which does not use mlstacks](/stack-components/stack-deployment/deploy-a-cloud-stack). However, you can use `mlstacks` directly to deploy various types of stacks and [import them into ZenML](https://mlstacks.zenml.ioversions/0.66.0/reference/zenml).
 
 ```Bash
 zenml stack import -f
@@ -207,7 +207,7 @@ For container registries, you can pass the repository name using `repo_name`:
 zenml container-registry deploy aws_registry --flavor=aws -p aws -r YOUR_REGION -x repo_name=my_repo
 ```
 
-This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the DockerSettings object](/versions/0.66.0/how-to/customize-docker-builds).
+This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the DockerSettings object](/usage/project-setup/customize-docker-builds).
 
 #### Other configuration
 

@@ -23,7 +23,7 @@ You should use the Vertex orchestrator if:
 ## How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Vertex AI orchestrator? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Vertex AI orchestrator? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](/versions/0.66.0/getting-started/deploying-zenml). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
@@ -160,7 +160,7 @@ zenml stack register  -o  ... --set
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 You can now run any ZenML pipeline using the Vertex orchestrator:
 
@@ -288,7 +288,7 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex%5Forchestrator%5Fflavor.VertexOrchestratorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex%5Forchestrator%5Fflavor.VertexOrchestratorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex%5Forchestrator.VertexOrchestrator) .
 

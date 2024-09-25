@@ -41,7 +41,7 @@ See also [here](/versions/0.66.0/how-to/configure-python-environments/configure-
 
 When running locally, there is no real concept of an `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](/stack-components/orchestrators). In order to achieve this, ZenML builds Docker images known as `execution environments`.
 
-ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](/versions/0.66.0/how-to/customize-docker-builds) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
+ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](/usage/project-setup/customize-docker-builds) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
 ## Image Builder Environment
 

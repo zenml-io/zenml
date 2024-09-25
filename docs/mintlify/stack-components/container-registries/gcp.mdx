@@ -20,7 +20,7 @@ You should use the GCP container registry if:
 ### How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Google Artifact Registry? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Google Artifact Registry? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 When using the Google Artifact Registry, you need to:
@@ -37,7 +37,7 @@ A GCP Container Registry can be deployed directly from the ZenML CLI:
 zenml container-registry deploy gcp_container_registry --flavor=gcp --provider=gcp ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](/versions/0.66.0/how-to/stack-deployment/deploy-a-stack-using-mlstacks).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](/stack-components/stack-deployment/deploy-a-stack-using-mlstacks).
 
 ## How to find the registry URI
 

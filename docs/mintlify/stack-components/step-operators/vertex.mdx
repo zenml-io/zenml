@@ -87,7 +87,7 @@ def trainer(...) -> ...:
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 
 #### Additional configuration
@@ -127,7 +127,7 @@ def trainer(...) -> ...:
     # This step will be executed in Vertex.
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex%5Fstep%5Foperator%5Fflavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex%5Fstep%5Foperator%5Fflavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Vertex step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-gcp/#zenml.integrations.gcp.step%5Foperators.vertex%5Fstep%5Foperator.VertexStepOperator) .
 

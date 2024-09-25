@@ -8,7 +8,7 @@ icon: plane-departure
   <img src="/_assets/user-guide/starter-guide/Fmcp_walkthrough.gif" />
 </Frame>
 
-As discussed in the [Core Concepts](/versions/0.66.0/getting-started/core-concepts), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
+As discussed in the [Core Concepts](/getting-started/core-concepts), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
 
@@ -109,7 +109,7 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 
 ## Fetching the model in a pipeline
 
-When configured at the pipeline or step level, the model will be available through the [StepContext](/versions/0.66.0/how-to/track-metrics-metadata/fetch-metadata-within-pipeline) or [PipelineContext](/versions/0.66.0/how-to/track-metrics-metadata/fetch-metadata-within-pipeline).
+When configured at the pipeline or step level, the model will be available through the [StepContext](/usage/resource-data-management/track-metrics-metadata/fetch-metadata-within-pipeline) or [PipelineContext](/usage/resource-data-management/track-metrics-metadata/fetch-metadata-within-pipeline).
 
 ```py
 from zenml import get_step_context, get_pipeline_context, step, pipeline
@@ -207,7 +207,7 @@ model = client.get_model_version("my_model", "my_version")
 print(model.run_metadata["metadata_key"].value)
 ```
 
-For further depth, there is an [advanced metadata logging guide](/versions/0.66.0/how-to/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](/usage/resource-data-management/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model
 
@@ -265,4 +265,4 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 
 ZenML Pro Transition Model Stages
 
-ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](/versions/0.66.0/how-to/use-the-model-control-plane) guide.
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](/usage/development-monitoring/use-the-model-control-plane) guide.

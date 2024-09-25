@@ -36,7 +36,7 @@ If configured for it, the HyperAI orchestrator will connect the HyperAI instance
 
 ### Scheduled pipelines
 
-[Scheduled pipelines](/versions/0.66.0/how-to/build-pipelines/schedule-a-pipeline) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
+[Scheduled pipelines](/usage/pipelines/build-pipelines/schedule-a-pipeline) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
 
 * Cron expressions via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry on the HyperAI instance. Use this when you want pipelines to run in intervals. Using cron expressions assumes that `crontab` is available on your instance and that its daemon is running.
 * Scheduled runs via `run_once_start_time`. When pipeline runs are scheduled this way, they are added as an `at` entry on the HyperAI instance. Use this when you want pipelines to run just once and at a specified time. This assumes that `at` is available on your instance.

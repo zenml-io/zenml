@@ -423,7 +423,7 @@
       "group": "🧩 Stacks",
       "pages": [
         "stack-components/component-guide",
-        "stack-components/deploying-stacks",
+        "stack-components/stack-deployment/deploying-stacks",
         {
           "group": " Orchestrators",
           "icon": "battery-full",
@@ -602,8 +602,8 @@
       "icon": "hammer",
       "iconType": "solid",
       "pages": [
-        "stack-components/implement-a-custom-stack-component",
-        "stack-components/implement-a-custom-integration"
+        "stack-components/stack-deployment/implement-a-custom-stack-component",
+        "stack-components/stack-deployment/implement-a-custom-integration"
       ]
     },
     {

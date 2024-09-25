@@ -6,13 +6,13 @@ icon: wand-magic-sparkles
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 <CardGroup cols={3}>
-<Card title="1. Development" icon="code" href="/versions/0.66.0/getting-started/core-concepts#1-development">
+<Card title="1. Development" icon="code" href="/getting-started/core-concepts#1-development">
  As a developer, how do I design my machine learning workflows?
  </Card>
-<Card title="2. Execution" icon="play" href="/versions/0.66.0/getting-started/core-concepts#2-execution">
+<Card title="2. Execution" icon="play" href="/getting-started/core-concepts#2-execution">
    While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?
 </Card>
-<Card title="3. Management" icon="list-check" href="/versions/0.66.0/getting-started/core-concepts#3-management">
+<Card title="3. Management" icon="list-check" href="/getting-started/core-concepts#3-management">
 How do I establish and maintain a production-grade and efficient solution?
 </Card>
  </CardGroup>
@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
 Artifacts represent the data that goes through your steps as inputs and outputs and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed they are written to storage, and when a new step gets executed they are loaded from storage.
 
-The serialization and deserialization logic of artifacts is defined by [Materializers](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types).
+The serialization and deserialization logic of artifacts is defined by [Materializers](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types).
 
 #### Models
 
@@ -100,7 +100,7 @@ Models are used to represent the outputs of a training process along with all me
 
 Materializers define how artifacts live in between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
 
-All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types) to ensure that your data can be passed from step to step.
+All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types) to ensure that your data can be passed from step to step.
 
 #### Parameters & Settings
 

@@ -54,7 +54,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 ```
     </Tab>
     <Tab title="ZenML Secret (Recommended)">
-        This method requires you to [configure a ZenML secret](/versions/0.66.0/how-to/interact-with-secrets) to store the Weights & Biases tracking service credentials securely.
+        This method requires you to [configure a ZenML secret](/usage/project-setup/use-secrets/interact-with-secrets) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 ```bash
@@ -77,7 +77,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 <Info>
-    Read more about [ZenML Secrets](/versions/0.66.0/how-to/interact-with-secrets) in the ZenML documentation.
+    Read more about [ZenML Secrets](/usage/project-setup/use-secrets/interact-with-secrets) in the ZenML documentation.
 </Info>
     </Tab>
 </Tabs>
@@ -194,4 +194,4 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb%5Fexperiment%5Ftracker%5Fflavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb%5Fexperiment%5Ftracker%5Fflavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.

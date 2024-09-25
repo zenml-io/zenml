@@ -80,7 +80,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 </Tab>
 <Tab title="ZenML Secret (Recommended)">
-This method requires you to [configure a ZenML secret](/versions/0.66.0/how-to/interact-with-secrets) to store the MLflow tracking service credentials securely.
+This method requires you to [configure a ZenML secret](/usage/project-setup/use-secrets/interact-with-secrets) to store the MLflow tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -104,7 +104,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 <Info>
-    Read more about [ZenML Secrets](/versions/0.66.0/how-to/interact-with-secrets) in the ZenML documentation.
+    Read more about [ZenML Secrets](/usage/project-setup/use-secrets/interact-with-secrets) in the ZenML documentation.
 </Info>
 </Tab>
 </Tabs>
@@ -209,5 +209,5 @@ def step_one(
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow%5Fexperiment%5Ftracker%5Fflavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow%5Fexperiment%5Ftracker%5Fflavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 

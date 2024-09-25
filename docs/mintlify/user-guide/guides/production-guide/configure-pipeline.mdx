@@ -101,7 +101,7 @@ def training_pipeline(model_type: str):
 ...
 ```
 
-So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](/versions/0.66.0/how-to/use-configuration-files/what-can-be-configured), but for now, we can move on to scaling our pipeline.
+So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](/usage/project-setup/use-configuration-files/what-can-be-configured), but for now, we can move on to scaling our pipeline.
 
 ## Scaling compute on the cloud
 
@@ -151,7 +151,7 @@ Here we are configuring the entire pipeline with a certain amount of memory, whi
 
 
 <Info>
-Read more about settings in ZenML [here](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) and [here](/versions/0.66.0/how-to/training-with-gpus)
+Read more about settings in ZenML [here](/usage/project-setup/use-configuration-files/runtime-configuration) and [here](/versions/0.66.0/how-to/training-with-gpus)
 </Info>
 Now let's run the pipeline again:
 
@@ -161,4 +161,4 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [ResourceSettings here](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration), including the ability to [attach a GPU](/versions/0.66.0/how-to/training-with-gpus#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [ResourceSettings here](/usage/project-setup/use-configuration-files/runtime-configuration), including the ability to [attach a GPU](/versions/0.66.0/how-to/training-with-gpus#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).

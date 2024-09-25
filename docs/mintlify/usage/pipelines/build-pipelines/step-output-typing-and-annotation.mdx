@@ -9,10 +9,10 @@ icon: tag
 Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
 
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
-* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](/versions/0.66.0/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types).
+* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types).
 
 <Note>
-    ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-materializers/#zenml.materializers.cloudpickle%5Fmaterializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
+    ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core%5Fcode%5Fdocs/core-materializers/#zenml.materializers.cloudpickle%5Fmaterializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
 </Note>
 
 Moreover, using the `CloudpickleMaterializer` could allow users to upload of any kind of object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
@@ -83,7 +83,7 @@ def my_step() -> Tuple[int, ...]:
 
 ## Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](/versions/0.66.0/how-to/build-pipelines/fetching-pipelines).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](/usage/pipelines/build-pipelines/fetching-pipelines).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -113,6 +113,6 @@ def divide(a: int, b: int) -> Tuple[
 ### See Also:
 
 <CardGroup cols={2}>
-<Card title="Learn more about output annotation" icon="tag" href="/versions/0.66.0/how-to/handle-data-artifacts/return-multiple-outputs-from-a-step" horizontal />
-<Card title="Handle custom data types" icon="cube" href="/versions/0.66.0/how-to/handle-data-artifacts/handle-custom-data-types" horizontal /> </CardGroup>
+<Card title="Learn more about output annotation" icon="tag" href="/usage/resource-data-management/handle-data-artifacts/return-multiple-outputs-from-a-step" horizontal />
+<Card title="Handle custom data types" icon="cube" href="/usage/resource-data-management/handle-data-artifacts/handle-custom-data-types" horizontal /> </CardGroup>
 

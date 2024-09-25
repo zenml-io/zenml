@@ -7,7 +7,7 @@ icon: link
 Now that we've learned about managing [artifacts](/user-guide/guides/starter-guide/manage-artifacts) and [models](/user-guide/guides/starter-guide/track-ml-models), we can shift our attention again to the thing that brings them together: [Pipelines](/user-guide/guides/starter-guide/create-an-ml-pipeline). This trifecta together will then inform how we structure our project.
 
 <Info>
-    In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](/versions/0.66.0/how-to/setting-up-a-project-repository/best-practices) section.
+    In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](/usage/project-setup/setting-up-a-project-repository/best-practices) section.
 </Info>
 
 An MLOps project can often be broken down into many different pipelines. For example:
@@ -56,7 +56,7 @@ def training_pipeline():
 ```
 
 <Info>
-    Please note, that in the above example, the `train_data` and `test_data` artifacts are not [materialized](/versions/0.66.0/how-to/handle-data-artifacts/artifact-versioning) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
+    Please note, that in the above example, the `train_data` and `test_data` artifacts are not [materialized](/usage/resource-data-management/handle-data-artifacts/artifact-versioning) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
 </Info>
 
 ## Pattern 2: Artifact exchange between pipelines through a `Model`

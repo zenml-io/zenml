@@ -15,7 +15,7 @@ You should use the AzureML step operator if:
 ### How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including an AzureML step operator? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including an AzureML step operator? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 * Create a `Machine learning` [workspace on Azure](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources). This should include an Azure container registry and an Azure storage account that will be used as part of your stack.
@@ -88,7 +88,7 @@ def trainer(...) -> ...:
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 #### Additional configuration
 
@@ -131,7 +131,7 @@ def my_azureml_step():
     ...
 ```
 
-You can check out the [AzureMLStepOperatorSettings SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-azure/#zenml.integrations.azure.flavors.azureml%5Fstep%5Foperator%5Fflavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+You can check out the [AzureMLStepOperatorSettings SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-azure/#zenml.integrations.azure.flavors.azureml%5Fstep%5Foperator%5Fflavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 

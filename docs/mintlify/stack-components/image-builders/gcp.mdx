@@ -17,7 +17,7 @@ You should use the Google Cloud image builder if:
 ### How to deploy it
 
 <Info>
-    Would you like to skip ahead and deploy a full ZenML cloud stack already, including the Google Cloud image builder? Check out the [in-browser stack deployment wizard](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/versions/0.66.0/how-to/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/versions/0.66.0/how-to/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
+    Would you like to skip ahead and deploy a full ZenML cloud stack already, including the Google Cloud image builder? Check out the [in-browser stack deployment wizard](/stack-components/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](/stack-components/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](/stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 </Info>
 
 In order to use the ZenML Google Cloud image builder you need to enable Google Cloud Build relevant APIs on the Google Cloud project.
@@ -177,7 +177,7 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 As described in this [Google Cloud Build documentation page](https://cloud.google.com/build/docs/build-config-file-schema#network), Google Cloud Build uses containers to execute the build steps which are automatically attached to a network called `cloudbuild` that provides some Application Default Credentials (ADC), that allow the container to be authenticated and therefore use other GCP services.
 
-By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use a [custom base parent image](/versions/0.66.0/how-to/customize-docker-builds/docker-settings-on-a-pipeline) with the [keyrings.google-artifactregistry-auth](https://pypi.org/project/keyrings.google-artifactregistry-auth/) installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
+By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use a [custom base parent image](/usage/project-setup/customize-docker-builds/docker-settings-on-a-pipeline) with the [keyrings.google-artifactregistry-auth](https://pypi.org/project/keyrings.google-artifactregistry-auth/) installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
 
 ```bash
 FROM zenmldocker/zenml:latest

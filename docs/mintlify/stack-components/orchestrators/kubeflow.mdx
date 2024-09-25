@@ -178,7 +178,7 @@ zenml stack register  -o  -a  -c  ... # Add other stack components as needed
 ```
 
 <Info>
-    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](/versions/0.66.0/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
+    ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](/usage/project-setup/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 </Info>
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
 
@@ -252,7 +252,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow%5Forchestrator%5Fflavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](/versions/0.66.0/how-to/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow%5Forchestrator%5Fflavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](/usage/project-setup/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
@@ -345,6 +345,6 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using ZenML secrets [here](/versions/0.66.0/how-to/interact-with-secrets).
+See full documentation of using ZenML secrets [here](/usage/project-setup/use-secrets/interact-with-secrets).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration%5Fcode%5Fdocs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow%5Forchestrator.KubeflowOrchestrator) .

@@ -52,7 +52,7 @@ def evaluate_base_model(
     return results
 ```
 
-We log the results for our core Matryoshka dimensions as model metadata to ZenML within our evaluation step. This will allow us to inspect these results from within [the Model Control Plane](https://docs.zenml.io/versions/0.66.0/how-to/use-the-model-control-plane) (see below for more details). Our results come in the form of a dictionary of string keys and float values which will, like all step inputs and outputs, be versioned, tracked and saved in your artifact store.
+We log the results for our core Matryoshka dimensions as model metadata to ZenML within our evaluation step. This will allow us to inspect these results from within [the Model Control Plane](https://docs.zenml.io/usage/development-monitoring/use-the-model-control-plane) (see below for more details). Our results come in the form of a dictionary of string keys and float values which will, like all step inputs and outputs, be versioned, tracked and saved in your artifact store.
 
 ### Visualizing results
 
@@ -82,7 +82,7 @@ The interface is split into sections that correspond to:
 
 We can easily see which are the latest artifact or technical model versions, as well as compare the actual values of our evals or inspect the hardware or hyperparameters used for training.
 
-This one-stop-shop interface is available on ZenML Pro and you can learn more about it in the [Model Control Plane documentation](https://docs.zenml.io/versions/0.66.0/how-to/use-the-model-control-plane).
+This one-stop-shop interface is available on ZenML Pro and you can learn more about it in the [Model Control Plane documentation](https://docs.zenml.io/usage/development-monitoring/use-the-model-control-plane).
 
 ### Next Steps
 
