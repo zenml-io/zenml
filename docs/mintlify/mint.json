@@ -70,10 +70,7 @@
       "url": "https://mintlify.com/blog"
     }
   ],
-  "versions": [
-    "0.66.0",
-    "0.65.0"
-  ],
+  "versions": ["0.66.0", "0.65.0"],
   "navigation": [
     {
       "group": "🚀 Getting Started",
@@ -105,7 +102,6 @@
             "getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores"
           ]
         },
-        "getting-started/deploying-zenml/secret-management",
         "getting-started/deploying-zenml/common-questions-answered"
       ]
     },
@@ -113,7 +109,7 @@
       "group": "ZenML Pro",
       "icon": "cloud",
       "iconType": "solid",
-      "pages":[
+      "pages": [
         "getting-started/deploying-zenml/zenml-pro/zenml-pro",
         "getting-started/deploying-zenml/zenml-pro/system-architectures",
         "getting-started/deploying-zenml/zenml-pro/zenml-saas",
@@ -122,7 +118,7 @@
     },
     {
       "group": "Reference",
-      "pages":[
+      "pages": [
         {
           "group": "Migration Guide",
           "icon": "arrows-spin",
@@ -142,6 +138,74 @@
       "group": "🛠️ Using ZenML",
       "pages": [
         {
+          "group": " Pipelines",
+          "icon": "timeline-arrow",
+          "iconType": "solid",
+          "pages": [
+            {
+              "group": " Build a pipeline",
+              "icon": "link",
+              "iconType": "solid",
+              "pages": [
+                "usage/build-pipelines/build-pipelines",
+                "usage/build-pipelines/use-pipeline-step-parameters",
+                "usage/build-pipelines/configuring-a-pipeline-at-runtime",
+                "usage/build-pipelines/step-output-typing-and-annotation",
+                "usage/build-pipelines/control-caching-behavior",
+                "usage/build-pipelines/schedule-a-pipeline",
+                "usage/build-pipelines/compose-pipelines",
+                "usage/build-pipelines/run-pipelines-asynchronously",
+                "usage/build-pipelines/run-an-individual-step"
+              ]
+            },
+            {
+              "group": " Pipeline lifecycle",
+              "icon": "life-ring",
+              "iconType": "solid",
+              "pages": [
+                "usage/build-pipelines/delete-a-pipeline",
+                "usage/build-pipelines/fetching-pipelines",
+                "usage/build-pipelines/get-past-pipeline-step-runs",
+                "usage/build-pipelines/use-failure-success-hooks"
+              ]
+            },
+            {
+              "group": " Advanced pipeline features",
+              "icon": "gear",
+              "iconType": "solid",
+              "pages": [
+                "usage/build-pipelines/access-secrets-in-a-step",
+                "usage/build-pipelines/control-execution-order-of-steps",
+                "usage/build-pipelines/hyper-parameter-tuning",
+                "usage/build-pipelines/retry-steps",
+                "usage/build-pipelines/using-a-custom-step-invocation-id",
+                "usage/build-pipelines/name-your-pipeline-and-runs"
+              ]
+            },
+            {
+              "group": " Trigger a pipeline",
+              "icon": "bullhorn",
+              "iconType": "solid",
+              "pages": [
+                "usage/trigger-pipelines/trigger-pipelines",
+                "usage/trigger-pipelines/trigger-a-pipeline-from-client",
+                "usage/trigger-pipelines/trigger-a-pipeline-from-another",
+                "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
+              ]
+            },
+            {
+              "group": " Create and run templates",
+              "icon": "circle-play",
+              "iconType": "solid",
+              "pages": [
+                "usage/create-and-run-templates/create-and-run-templates",
+                "usage/create-and-run-templates/create-a-run-template",
+                "usage/create-and-run-templates/run-a-template"
+              ]
+            }
+          ]
+        },
+        {
           "group": " Set up a project repository",
           "icon": "cat",
           "iconType": "solid",
@@ -150,53 +214,6 @@
             "usage/setting-up-a-project-repository/connect-your-git-repository",
             "usage/setting-up-a-project-repository/using-project-templates",
             "usage/setting-up-a-project-repository/best-practices"
-          ]
-        },
-        {
-          "group": " Build a pipeline",
-          "icon": "link",
-          "iconType": "solid",
-          "pages": [
-            "usage/build-pipelines/build-pipelines",
-            "usage/build-pipelines/use-pipeline-step-parameters",
-            "usage/build-pipelines/configuring-a-pipeline-at-runtime",
-            "usage/build-pipelines/step-output-typing-and-annotation",
-            "usage/build-pipelines/control-caching-behavior",
-            "usage/build-pipelines/schedule-a-pipeline",
-            "usage/build-pipelines/delete-a-pipeline",
-            "usage/build-pipelines/compose-pipelines",
-            "usage/build-pipelines/retry-steps",
-            "usage/build-pipelines/run-pipelines-asynchronously",
-            "usage/build-pipelines/control-execution-order-of-steps",
-            "usage/build-pipelines/using-a-custom-step-invocation-id",
-            "usage/build-pipelines/name-your-pipeline-and-runs",
-            "usage/build-pipelines/use-failure-success-hooks",
-            "usage/build-pipelines/hyper-parameter-tuning",
-            "usage/build-pipelines/access-secrets-in-a-step",
-            "usage/build-pipelines/run-an-individual-step",
-            "usage/build-pipelines/fetching-pipelines",
-            "usage/build-pipelines/get-past-pipeline-step-runs"
-          ]
-        },
-        {
-          "group": " Trigger a pipeline",
-          "icon": "bullhorn",
-          "iconType": "solid",
-          "pages": [
-            "usage/trigger-pipelines/trigger-pipelines",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-client",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-another",
-            "usage/trigger-pipelines/trigger-a-pipeline-from-rest-api"
-          ]
-        },
-        {
-          "group": " Create and run templates",
-          "icon": "circle-play",
-          "iconType": "solid",
-          "pages": [
-            "usage/create-and-run-templates/create-and-run-templates",
-            "usage/create-and-run-templates/create-a-run-template",
-            "usage/create-and-run-templates/run-a-template"
           ]
         },
         {
@@ -372,23 +389,18 @@
             "usage/connecting-to-zenml/connect-with-a-service-account"
           ]
         },
-        "usage/interact-with-secrets",
+        {
+          "group": " Use secrets",
+          "icon": "lock",
+          "iconType": "solid",
+          "pages": [
+            "usage/use-secrets/interact-with-secrets",
+            "usage/use-secrets/reference-secrets-in-stack-configuration",
+            "usage/use-secrets/secret-management"
+          ]
+        },
         "usage/global-settings",
         "usage/debug-and-solve-issues"
-      ]
-    },
-    {
-      "group": " Manage stacks & components",
-      "icon": "hammer",
-      "iconType": "solid",
-      "pages": [
-        "stack-components/stack-deployment/deploy-a-cloud-stack",
-        "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
-        "stack-components/stack-deployment/register-a-cloud-stack",
-        "stack-components/stack-deployment/deploy-a-stack-using-mlstacks",
-        "stack-components/stack-deployment/reference-secrets-in-stack-configuration",
-        "stack-components/stack-deployment/implement-a-custom-stack-component",
-        "stack-components/stack-deployment/implement-a-custom-integration"
       ]
     },
     {
@@ -398,8 +410,8 @@
         "stack-components/deploying-stacks",
         {
           "group": " Orchestrators",
-              "icon": "battery-full",
-              "iconType": "solid",
+          "icon": "battery-full",
+          "iconType": "solid",
           "pages": [
             "stack-components/orchestrators/orchestrators",
             "stack-components/orchestrators/local",
@@ -559,6 +571,26 @@
       ]
     },
     {
+      "group": " Manage stacks & components",
+      "icon": "hammer",
+      "iconType": "solid",
+      "pages": [
+        "stack-components/stack-deployment/deploy-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-cloud-stack-with-terraform",
+        "stack-components/stack-deployment/register-a-cloud-stack",
+        "stack-components/stack-deployment/deploy-a-stack-using-mlstacks"
+      ]
+    },
+    {
+      "group": "🛠️ Custom stack components",
+      "icon": "hammer",
+      "iconType": "solid",
+      "pages": [
+        "stack-components/implement-a-custom-stack-component",
+        "stack-components/implement-a-custom-integration"
+      ]
+    },
+    {
       "group": "📚 User Guides",
       "pages": [
         {
@@ -635,7 +667,7 @@
             },
             {
               "group": "Improve retrieval by finetuning embeddings",
-               "icon": "bullseye-arrow",
+              "icon": "bullseye-arrow",
               "iconType": "solid",
               "pages": [
                 "user-guide/guides/llmops-guide/finetuning-embeddings",
@@ -645,9 +677,9 @@
               ]
             },
             "user-guide/guides/llmops-guide/finetuning-llms"
-           ]
-          }
-        ]
+          ]
+        }
+      ]
     },
     {
       "group": "🧑‍💻 Examples",
@@ -803,9 +835,7 @@
     },
     {
       "group": "📘 API Documentation",
-      "pages": [
-        "api/api-reference"
-      ]
+      "pages": ["api/api-reference"]
     }
   ],
   "footerSocials": {
