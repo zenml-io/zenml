@@ -27,7 +27,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import Field
-from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -341,6 +340,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         custom_filters = super().get_custom_filters()
         if self.tag:
-            custom_filters.append(col(TagSchema.name) == self.tag)
+            custom_filters.append(
+                self.generate_custom_query_conditions_for_column(
+                    value=self.tag, table=TagSchema, column="name"
+                )
+            )
 
         return custom_filters
