@@ -867,5 +867,13 @@
   },
   "feedback": {
     "thumbsRating": true
+  },
+  "analytics": {
+    "plausible": {
+        "domain": "docs.zenml.io"
+    },
+    "segment": {
+        "key": "LT9Xrs7GFvD1LiOHyyXsSi2shoTtKMCH"
+    }
   }
 }
