@@ -50,7 +50,7 @@
     {
       "name": "API",
       "openapi": "/openapi.json",
-      "url": "api"
+      "url": "api-reference"
     }
   ],
   "anchors": [
@@ -851,7 +851,7 @@
     {
       "group": "📘 API Documentation",
       "pages": [
-        "api/api-reference"
+        "api-reference/api-reference"
       ]
     }
   ],
