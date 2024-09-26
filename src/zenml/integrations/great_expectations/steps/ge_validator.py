@@ -59,7 +59,6 @@ def great_expectations_validator_step(
             expectation suite.
         expectations_list: A list of expectations to run.
         result_format: The format of the validation results.
-        **kwargs: Additional arguments to pass to the Great Expectations
             validator.
 
     Returns:
