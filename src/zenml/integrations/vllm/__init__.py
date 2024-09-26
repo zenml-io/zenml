@@ -28,7 +28,7 @@ class VLLMIntegration(Integration):
 
     NAME = VLLM
 
-    REQUIREMENTS = ["vllm", "openai"]
+    REQUIREMENTS = ["vllm >= 0.6.0", "openai >= 1.0.0"]
 
     @classmethod
     def activate(cls) -> None:
