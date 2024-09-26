@@ -113,7 +113,7 @@ You can visualize Great Expectations Suites and Results in Jupyter notebooks or 
 
 The standard Great Expectations data validator step validates an input `pandas.DataFrame` dataset by running an existing Expectation Suite or a list of Expectations on it. The validation results are saved in the Great Expectations Validation Store, but also returned as an `CheckpointResult` artifact that is versioned and saved in the ZenML Artifact Store. The step automatically rebuilds the Data Docs.
 
-At a minimum, the step configuration expects the name of the Expectation Suite or a list of Expectations to be used for the validation. In the example below we use a list of Expectations, with each expectation defined as a `GreatExpectationExpectationConfig` object, with the name of the expectation in snake case and the arguments of the expectation as a dictionary:
+At a minimum, the step configuration expects the name of the Expectation Suite or a list of Expectations to be used for the validation. In the example below, we use a list of Expectations. Each expectation is defined as a `GreatExpectationExpectationConfig` object with the name of the expectation written in snake case and the arguments of the expectation defined as a dictionary:
 
 ```python
 from zenml.integrations.great_expectations.steps import (
