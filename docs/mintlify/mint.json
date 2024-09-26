@@ -49,8 +49,7 @@
     },
     {
       "name": "API",
-      "url": "api",
-      "openapi": "/api/openapi.json"
+      "url": "api"
     }
   ],
   "anchors": [
@@ -850,7 +849,371 @@
     },
     {
       "group": "📘 API Documentation",
-      "pages": ["api/api-reference"]
+      "pages": [
+        "api/api-reference",
+        {
+          "group": "API Reference",
+          "pages": [
+            "api/health"
+          ]
+        },
+        {
+          "group": "actions",
+          "pages": [
+            "api/actions/list-actions",
+            "api/actions/create-action",
+            "api/actions/get-action",
+            "api/actions/update-action",
+            "api/actions/delete-action"
+          ]
+        },
+        {
+          "group": "artifacts",
+          "pages": [
+            "api/artifacts/list-artifacts",
+            "api/artifacts/create-artifact",
+            "api/artifacts/get-artifact",
+            "api/artifacts/update-artifact",
+            "api/artifacts/delete-artifact"
+          ]
+        },
+        {
+          "group": "artifact_versions",
+          "pages": [
+            "api/artifact_versions/list-artifact-versions",
+            "api/artifact_versions/create-artifact-version",
+            "api/artifact_versions/get-artifact-version",
+            "api/artifact_versions/update-artifact-version",
+            "api/artifact_versions/delete-artifact-version",
+            "api/artifact_versions/prune-artifact-versions",
+            "api/artifact_versions/get-artifact-visualization"
+          ]
+        },
+        {
+          "group": "auth",
+          "pages": [
+            "api/auth/token",
+            "api/auth/logout",
+            "api/auth/device-authorization",
+            "api/auth/api-token"
+          ]
+        },
+        {
+          "group": "authorized_devices",
+          "pages": [
+            "api/authorized_devices/list-authorized-devices",
+            "api/authorized_devices/get-authorization-device",
+            "api/authorized_devices/update-authorized-device",
+            "api/authorized_devices/delete-authorized-device",
+            "api/authorized_devices/verify-authorized-device"
+          ]
+        },
+        {
+          "group": "code_repositories",
+          "pages": [
+            "api/code_repositories/list-code-repositories",
+            "api/code_repositories/get-code-repository",
+            "api/code_repositories/update-code-repository",
+            "api/code_repositories/delete-code-repository"
+          ]
+        },
+        {
+          "group": "plugins",
+          "pages": [
+            "api/plugins/list-flavors",
+            "api/plugins/get-flavor"
+          ]
+        },
+        {
+          "group": "event-sources",
+          "pages": [
+            "api/event-sources/list-event-sources",
+            "api/event-sources/create-event-source",
+            "api/event-sources/get-event-source",
+            "api/event-sources/update-event-source",
+            "api/event-sources/delete-event-source"
+          ]
+        },
+        {
+          "group": "flavors",
+          "pages": [
+            "api/flavors/list-flavors",
+            "api/flavors/create-flavor",
+            "api/flavors/get-flavor",
+            "api/flavors/update-flavor",
+            "api/flavors/delete-flavor",
+            "api/flavors/sync-flavors"
+          ]
+        },
+        {
+          "group": "models",
+          "pages": [
+            "api/models/list-models",
+            "api/models/get-model",
+            "api/models/delete-model",
+            "api/models/update-model",
+            "api/models/list-model-versions"
+          ]
+        },
+        {
+          "group": "model_versions",
+          "pages": [
+            "api/model_versions/list-model-versions",
+            "api/model_versions/get-model-version",
+            "api/model_versions/update-model-version",
+            "api/model_versions/delete-model-version",
+            "api/model_versions/delete-model-version-artifact-link",
+            "api/model_versions/delete-all-model-version-artifact-links",
+            "api/model_versions/delete-model-version-pipeline-run-link"
+          ]
+        },
+        {
+          "group": "model_version_artifacts",
+          "pages": [
+            "api/model_version_artifacts/list-model-version-artifact-links"
+          ]
+        },
+        {
+          "group": "model_version_pipeline_runs",
+          "pages": [
+            "api/model_version_pipeline_runs/list-model-version-pipeline-run-links"
+          ]
+        },
+        {
+          "group": "pipelines",
+          "pages": [
+            "api/pipelines/list-pipelines",
+            "api/pipelines/get-pipeline",
+            "api/pipelines/update-pipeline",
+            "api/pipelines/delete-pipeline",
+            "api/pipelines/list-pipeline-runs"
+          ]
+        },
+        {
+          "group": "builds",
+          "pages": [
+            "api/builds/list-builds",
+            "api/builds/get-build",
+            "api/builds/delete-build"
+          ]
+        },
+        {
+          "group": "deployments",
+          "pages": [
+            "api/deployments/list-deployments",
+            "api/deployments/get-deployment",
+            "api/deployments/delete-deployment",
+            "api/deployments/deployment-logs"
+          ]
+        },
+        {
+          "group": "runs",
+          "pages": [
+            "api/runs/list-runs",
+            "api/runs/get-run",
+            "api/runs/update-run",
+            "api/runs/delete-run",
+            "api/runs/get-run-dag",
+            "api/runs/get-run-steps",
+            "api/runs/get-pipeline-configuration",
+            "api/runs/get-run-status"
+          ]
+        },
+        {
+          "group": "run_metadata",
+          "pages": [
+            "api/run_metadata/list-run-metadata",
+            "api/run_metadata/get-run-metadata"
+          ]
+        },
+        {
+          "group": "run_templates",
+          "pages": [
+            "api/run_templates/list-run-templates",
+            "api/run_templates/get-run-template",
+            "api/run_templates/update-run-template",
+            "api/run_templates/delete-run-template",
+            "api/run_templates/create-template-run"
+          ]
+        },
+        {
+          "group": "schedules",
+          "pages": [
+            "api/schedules/list-schedules",
+            "api/schedules/get-schedule",
+            "api/schedules/update-schedule",
+            "api/schedules/delete-schedule"
+          ]
+        },
+        {
+          "group": "secrets",
+          "pages": [
+            "api/secrets/list-secrets",
+            "api/secrets/get-secret",
+            "api/secrets/update-secret",
+            "api/secrets/delete-secret",
+            "api/secrets/backup-secrets",
+            "api/secrets/restore-secrets"
+          ]
+        },
+        {
+          "group": "server",
+          "pages": [
+            "api/server/version",
+            "api/server/server-info",
+            "api/server/get-onboarding-state"
+          ]
+        },
+        {
+          "group": "service_accounts",
+          "pages": [
+            "api/service_accounts/list-service-accounts",
+            "api/service_accounts/create-service-account",
+            "api/service_accounts/get-service-account",
+            "api/service_accounts/update-service-account",
+            "api/service_accounts/delete-service-account",
+            "api/service_accounts/list-api-keys",
+            "api/service_accounts/create-api-key",
+            "api/service_accounts/get-api-key",
+            "api/service_accounts/update-api-key",
+            "api/service_accounts/delete-api-key",
+            "api/service_accounts/rotate-api-key"
+          ]
+        },
+        {
+          "group": "service_connectors",
+          "pages": [
+            "api/service_connectors/list-service-connectors",
+            "api/service_connectors/get-service-connector",
+            "api/service_connectors/update-service-connector",
+            "api/service_connectors/delete-service-connector",
+            "api/service_connectors/validate-and-verify-service-connector-config",
+            "api/service_connectors/validate-and-verify-service-connector",
+            "api/service_connectors/get-service-connector-client",
+            "api/service_connectors/get-resources-based-on-service-connector-info",
+            "api/service_connectors/list-service-connector-types",
+            "api/service_connectors/get-service-connector-type"
+          ]
+        },
+        {
+          "group": "services",
+          "pages": [
+            "api/services/list-services",
+            "api/services/create-service",
+            "api/services/get-service",
+            "api/services/update-service",
+            "api/services/delete-service"
+          ]
+        },
+        {
+          "group": "stacks",
+          "pages": [
+            "api/stacks/get-stack-deployment-info",
+            "api/stacks/get-stack-deployment-config",
+            "api/stacks/get-deployed-stack",
+            "api/stacks/list-stacks",
+            "api/stacks/get-stack",
+            "api/stacks/update-stack",
+            "api/stacks/delete-stack"
+          ]
+        },
+        {
+          "group": "stack_components",
+          "pages": [
+            "api/stack_components/list-stack-components",
+            "api/stack_components/get-stack-component",
+            "api/stack_components/update-stack-component",
+            "api/stack_components/deregister-stack-component",
+            "api/stack_components/get-stack-component-types"
+          ]
+        },
+        {
+          "group": "steps",
+          "pages": [
+            "api/steps/list-run-steps",
+            "api/steps/create-run-step",
+            "api/steps/get-step",
+            "api/steps/update-step",
+            "api/steps/get-step-configuration",
+            "api/steps/get-step-status",
+            "api/steps/get-step-logs"
+          ]
+        },
+        {
+          "group": "tags",
+          "pages": [
+            "api/tags/list-tags",
+            "api/tags/create-tag",
+            "api/tags/get-tag",
+            "api/tags/delete-tag",
+            "api/tags/update-tag"
+          ]
+        },
+        {
+          "group": "triggers",
+          "pages": [
+            "api/triggers/list-triggers",
+            "api/triggers/create-trigger",
+            "api/triggers/get-trigger",
+            "api/triggers/update-trigger",
+            "api/triggers/delete-trigger"
+          ]
+        },
+        {
+          "group": "users",
+          "pages": [
+            "api/users/list-users",
+            "api/users/get-user",
+            "api/users/update-user-resource-membership",
+            "api/users/get-current-user"
+          ]
+        },
+        {
+          "group": "webhook",
+          "pages": [
+            "api/webhook/webhook"
+          ]
+        },
+        {
+          "group": "workspaces",
+          "pages": [
+            "api/workspaces/list-workspaces",
+            "api/workspaces/create-workspace",
+            "api/workspaces/get-workspace",
+            "api/workspaces/update-workspace",
+            "api/workspaces/delete-workspace",
+            "api/workspaces/list-workspace-stacks",
+            "api/workspaces/create-stack",
+            "api/workspaces/list-workspace-stack-components",
+            "api/workspaces/create-stack-component",
+            "api/workspaces/list-workspace-pipelines",
+            "api/workspaces/create-pipeline",
+            "api/workspaces/list-workspace-builds",
+            "api/workspaces/create-build",
+            "api/workspaces/list-workspace-deployments",
+            "api/workspaces/create-deployment",
+            "api/workspaces/list-workspace-run-templates",
+            "api/workspaces/create-run-template",
+            "api/workspaces/list-runs",
+            "api/workspaces/create-pipeline-run",
+            "api/workspaces/create-schedule",
+            "api/workspaces/get-or-create-pipeline-run",
+            "api/workspaces/create-run-metadata",
+            "api/workspaces/create-secret",
+            "api/workspaces/list-workspace-code-repositories",
+            "api/workspaces/create-code-repository",
+            "api/workspaces/get-workspace-statistics",
+            "api/workspaces/list-workspace-service-connectors",
+            "api/workspaces/create-service-connector",
+            "api/workspaces/list-service-connector-resources",
+            "api/workspaces/create-model",
+            "api/workspaces/create-model-version",
+            "api/workspaces/create-model-version-artifact-link",
+            "api/workspaces/create-model-version-pipeline-run-link",
+            "api/workspaces/create-service"
+          ]
+        }
+      ]
     }
   ],
   "footerSocials": {
