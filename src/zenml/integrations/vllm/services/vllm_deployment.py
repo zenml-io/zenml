@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the vLLM Inference Server Service."""
 
-from typing import Any, Optional
+from typing import Any, List, Optional, Union
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -31,7 +31,18 @@ class VLLMServiceConfig(LocalDaemonServiceConfig):
 
     blocking: bool = True
     model: Optional[str] = None
+    # If unspecified, model name or path will be used.
     tokenizer: Optional[str] = None
+    served_model_name: Optional[Union[str, List[str]]] = None
+    # Trust remote code from huggingface.
+    trust_remote_code: Optional[bool] = False
+    # ['auto', 'slow', 'mistral']
+    tokenizer_mode: Optional[str] = "auto"
+    # ['auto', 'half', 'float16', 'bfloat16', 'float', 'float32']
+    dtype: Optional[str] = "auto"
+    # The specific model version to use. It can be a branch name, a tag name, or a commit id.
+    # If unspecified, will use the default version.
+    revision: Optional[str] = None
 
 
 class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
