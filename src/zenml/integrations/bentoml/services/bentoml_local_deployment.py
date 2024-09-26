@@ -17,7 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from bentoml import Tag
-from bentoml.client import Client
+from bentoml import SyncHTTPClient, AsyncHTTPClient
 from pydantic import BaseModel, Field
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
@@ -281,12 +281,13 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
             ]
         return None
 
-    def predict(self, api_endpoint: str, data: "Any") -> "Any":
+    def predict(self, api_endpoint: str, data: "Any", sync: bool = True) -> "Any":
         """Make a prediction using the service.
 
         Args:
             data: data to make a prediction on
             api_endpoint: the api endpoint to make the prediction on
+            sync: if set to False, the prediction will be made asynchronously
 
         Returns:
             The prediction result.
@@ -300,11 +301,11 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
                 "BentoML prediction service is not running. "
                 "Please start the service before making predictions."
             )
-        if self.endpoint.prediction_url is not None:
-            client = Client.from_url(
-                self.endpoint.prediction_url.replace("http://", "").rstrip("/")
-            )
-            result = client.call(api_endpoint, data)
-        else:
+        if self.endpoint.prediction_url is None:
             raise ValueError("No endpoint known for prediction.")
+        if sync:
+            client = SyncHTTPClient(self.endpoint.prediction_url)
+        else:
+            client = AsyncHTTPClient(self.endpoint.prediction_url)
+        result = client.call(api_endpoint, data)
         return result
