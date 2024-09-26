@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Definition of the Deepchecks validation check types."""
+"""Definition of the Great Expectations expectation configuration."""
 
 from typing import Any, Dict, Type
 
@@ -56,6 +56,9 @@ class GreatExpectationExpectationConfig(BaseModel):
     @staticmethod
     def get_expectation_class(expectation_name: str) -> Type[Expectation]:
         """Get the Great Expectation expectation class associated with this config.
+
+        Args:
+            expectation_name: The name of the Great Expectation expectation in snake case.
 
         Returns:
             The Great Expectation expectation class associated with this config.

@@ -335,25 +335,29 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 be performed. Not supported by the Great Expectations data
                 validator.
             expectations_list: A list of Great Expectations expectations to
-                use to validate the dataset. A value must be provided.
+                use to validate the dataset. Either this or expectation_suite_name
+                must be provided, but not both.
             expectation_parameters: Optional parameters to pass to the
                 expectations if you have defined any parameters in the
                 expectations.
             expectation_suite_name: The name of the expectation suite to use to
-                validate the dataset. A value must be provided.
+                validate the dataset. Either this or expectations_list must be
+                provided, but not both.
             data_asset_name: The name of the data asset to use to identify the
                 dataset in the Great Expectations docs.
             action_list: A list of additional Great Expectations actions to run after
                 the validation check.
-            result_format: The format of the validation results.
+            result_format: The format in which to return the results of the validation definitions. Default is "SUMMARY".
+                Other options are: "BOOLEAN_ONLY", "BASIC", "COMPLETE". Details in the docs:
+                https://docs.greatexpectations.io/docs/core/trigger_actions_based_on_results/choose_a_result_format/#define-a-result-format-configuration
             kwargs: Additional keyword arguments.
 
         Returns:
             The Great Expectations validation (checkpoint) result.
 
         Raises:
-            ValueError: if the expectation suite name and expectations list are both provided
-                or if neither are provided
+            ValueError: If both expectation_suite_name and expectations_list are provided,
+                or if neither are provided.
         """
         if comparison_dataset is not None:
             logger.warning(
@@ -391,23 +395,21 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         else:  # when the expectation_suite_name is provided
             expectation_suite = context.suites.get(name=expectation_suite_name)
 
-        # TODO need to create a batch definition
         batch_definition, batch_parameters, datasource_name = create_batch_definition(context, dataset, data_asset_name)                
         
         # create a validation definition
-        validation_defintion = ge.ValidationDefinition(
+        validation_definition = ge.ValidationDefinition(
             data=batch_definition, suite=expectation_suite,
             name=f"{run_name}_{step_name}"
         )
-        validation_defintion = context.validation_definitions.add(validation_defintion)
+        validation_definition = context.validation_definitions.add(validation_definition)
 
         # create a checkpoint
         checkpoint_name = f"{run_name}_{step_name}"
         checkpoint = ge.Checkpoint(
             name=checkpoint_name,
-            validation_definitions=[validation_defintion],
+            validation_definitions=[validation_definition],
             actions=action_list or [],
-            # get it from the kwargs
             result_format={"result_format": result_format},
         )
 

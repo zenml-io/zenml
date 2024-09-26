@@ -182,6 +182,9 @@ class GreatExpectationsMaterializer(BaseMaterializer):
 
         Returns:
             A string representation of the identifier.
+
+        Raises:
+            ValueError: If the identifier type is not supported.
         """
         if isinstance(identifier, ExpectationSuiteIdentifier):
             return f"ExpectationSuiteIdentifier:{identifier.expectation_suite_name}"
