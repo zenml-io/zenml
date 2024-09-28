@@ -300,30 +300,7 @@ The `bentoctl` CLI provides a list of operators which are plugins that interact 
 * [Azure Container Instances](https://github.com/bentoml/azure-container-instances-deploy)
 * [Heroku](https://github.com/bentoml/heroku-deploy)
 
-To deploy your BentoML bundle to the cloud, you need to install the `bentoctl` CLI and the operator plugin for the cloud service you want to deploy to.
-
-```bash
-# Install bentoctl CLI
-pip install bentoctl
-# Install a choose operator
-bentoctl operator install $OPERATOR # example: aws-lambda
-```
-
-Once you have the `bentoctl` CLI and the operator plugin installed, you can use the `bentoctl` CLI to deploy your BentoML bundle to the cloud.
-
-```bash
-# Let's get the name of the BentoML bundle we want to deploy
-bentoml list
-
-# Generate deployment configuration file
-bentoctl init
-
-# Build and push the Docker image to the cloud
-bentoctl build -b $BENTO_TAG -f deployment_config.yaml
-
-# Deploy to the cloud
-bentoctl apply -f deployment_config.yaml
-```
+You can find more information about the `bentoctl` tool [on the official GitHub repository](https://github.com/bentoml/bentoctl).
 
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml/#zenml.integrations.bentoml.model_deployers.bentoml_model_deployer) .
 
