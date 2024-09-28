@@ -111,11 +111,16 @@ class BentoMLModelDeployer(BaseModelDeployer):
 
         Returns:
             A dictionary containing the model server information.
+
+        Raises:
+            ValueError: If the service type is not supported.
         """
         if service_instance.SERVICE_TYPE.name == "bentoml-container-deployment":
             service_instance = cast(BentoMLContainerDeploymentService, service_instance)
-        else:
+        elif service_instance.SERVICE_TYPE.name == "bentoml-local-deployment":
             service_instance = cast(BentoMLLocalDeploymentService, service_instance)
+        else:
+            raise ValueError(f"Unsupported service type: {service_instance.SERVICE_TYPE.name}")
 
         predictions_apis_urls = ""
         if service_instance.prediction_apis_urls is not None:
