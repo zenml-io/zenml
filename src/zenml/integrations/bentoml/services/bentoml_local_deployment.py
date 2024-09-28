@@ -125,7 +125,7 @@ class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
     bento_uri: Optional[str] = None
     apis: List[str] = []
     workers: int = 1
-    port: int
+    port: Optional[int] = None
     backlog: int = 2048
     production: bool = False
     working_dir: str
@@ -177,7 +177,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
             endpoint = BentoMLDeploymentEndpoint(
                 config=BentoMLDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
-                    port=config.port or BENTOML_DEFAULT_PORT,
+                    port=config.port if config.port is not None else BENTOML_DEFAULT_PORT,
                     ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                     prediction_url_path=BENTOML_PREDICTION_URL_PATH,
                 ),
