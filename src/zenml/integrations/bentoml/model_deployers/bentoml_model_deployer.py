@@ -213,8 +213,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
     # of workers etc.the step implementation will create a new config using
     # all values from the user and add values like pipeline name, model_uri
     def _create_new_service(
-        self, id: UUID, timeout: int, config: Union[BentoMLLocalDeploymentConfig, BentoMLContainerDeploymentConfig]
-    ) -> Union[BentoMLLocalDeploymentService, BentoMLContainerDeploymentService]:
+        self, id: UUID, timeout: int, config: ServiceConfig
+    ) -> BaseService:
         """Creates a new BentoMLDeploymentService.
 
         Args:
@@ -235,8 +235,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
         # BentoMLContainerDeploymentService
         if isinstance(config, BentoMLLocalDeploymentConfig):
             service = BentoMLLocalDeploymentService(uuid=id, config=config)
-        else:
+        elif isinstance(config, BentoMLContainerDeploymentConfig):
             service = BentoMLContainerDeploymentService(uuid=id, config=config)
+        else:
+            raise ValueError(f"Unsupported service type: {type(config)}")
         service.start(timeout=timeout)
 
         return service
