@@ -111,52 +111,45 @@ def bentoml_model_deployer_step(
         apis_paths = list(apis.keys())
         return apis_paths
 
-    if deployment_type == "container":
-        # create a config for the new model service
-        predictor_cfg = BentoMLContainerDeploymentConfig(
-            model_name=model_name,
-            bento_tag=str(bento.tag),
-            model_uri=bento.info.labels.get("model_uri"),
-            bento_uri=bento.info.labels.get("bento_uri"),
-            apis=service_apis(str(bento.tag)),
-            host=host,
-            port=port,
-            pipeline_name=pipeline_name,
-            pipeline_step_name=step_name,
-            image=image,
-            image_tag=image_tag,
-            platform=platform,
-            workers=workers,
-            backlog=backlog,
-        )
-        service_type = BentoMLContainerDeploymentService.SERVICE_TYPE
-    else:
-        predictor_cfg = BentoMLLocalDeploymentConfig(
-            model_name=model_name,
-            bento_tag=str(bento.tag),
-            model_uri=bento.info.labels.get("model_uri"),
-            bento_uri=bento.info.labels.get("bento_uri"),
-            apis=service_apis(str(bento.tag)),
-            workers=workers,
-            host=host,
-            backlog=backlog,
-            working_dir=working_dir or source_utils.get_source_root(),
-            port=port,
-            pipeline_name=pipeline_name,
-            pipeline_step_name=step_name,
-            ssl_parameters=SSLBentoMLParametersConfig(
-                ssl_certfile=ssl_certfile,
-                ssl_keyfile=ssl_keyfile,
-                ssl_keyfile_password=ssl_keyfile_password,
-                ssl_version=ssl_version,
-                ssl_cert_reqs=ssl_cert_reqs,
-                ssl_ca_certs=ssl_ca_certs,
-                ssl_ciphers=ssl_ciphers,
-            ),
-            production=production,
-        )
-        service_type = BentoMLLocalDeploymentService.SERVICE_TYPE
-    
+    def create_deployment_config(deployment_type):
+        common_config = {
+            "model_name": model_name,
+            "bento_tag": str(bento.tag),
+            "model_uri": bento.info.labels.get("model_uri"),
+            "bento_uri": bento.info.labels.get("bento_uri"),
+            "apis": service_apis(str(bento.tag)),
+            "host": host,
+            "port": port,
+            "pipeline_name": pipeline_name,
+            "pipeline_step_name": step_name,
+            "workers": workers,
+            "backlog": backlog,
+        }
+
+        if deployment_type == "container":
+            return BentoMLContainerDeploymentConfig(
+                **common_config,
+                image=image,
+                image_tag=image_tag,
+                platform=platform,
+            ), BentoMLContainerDeploymentService.SERVICE_TYPE
+        else:
+            return BentoMLLocalDeploymentConfig(
+                **common_config,
+                working_dir=working_dir or source_utils.get_source_root(),
+                ssl_parameters=SSLBentoMLParametersConfig(
+                    ssl_certfile=ssl_certfile,
+                    ssl_keyfile=ssl_keyfile,
+                    ssl_keyfile_password=ssl_keyfile_password,
+                    ssl_version=ssl_version,
+                    ssl_cert_reqs=ssl_cert_reqs,
+                    ssl_ca_certs=ssl_ca_certs,
+                    ssl_ciphers=ssl_ciphers,
+                ),
+                production=production,
+            ), BentoMLLocalDeploymentService.SERVICE_TYPE
+
+    predictor_cfg, service_type = create_deployment_config(deployment_type)
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
         config=predictor_cfg.model_dump(),
