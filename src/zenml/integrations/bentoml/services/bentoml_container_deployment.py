@@ -276,9 +276,19 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         if sys.path[0] != self.config.working_dir:
             sys.path.insert(0, self.config.working_dir)
 
-        svc = load(bento_identifier=".", working_dir=self.config.working_dir)
+        _ = load(bento_identifier=".", working_dir=self.config.working_dir)
         # run bentoml serve command inside the container
-        os.system("bentoml serve")
+        # Use subprocess for better control and error handling
+        import subprocess
+
+        try:
+            subprocess.run(["bentoml", "serve"], check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to start BentoML service: {e}")
+            raise
+        except FileNotFoundError:
+            logger.error("BentoML command not found. Make sure it's installed and in the PATH.")
+            raise
 
     @property
     def prediction_url(self) -> Optional[str]:
