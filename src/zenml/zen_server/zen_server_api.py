@@ -32,8 +32,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse
+from starlette.requests import Request
+from starlette.responses import FileResponse, Response
+from starlette.types import ASGIApp
 
 import zenml
 from zenml.analytics import source_context
@@ -143,12 +146,29 @@ def validation_exception_handler(
     return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
+class RequestBodyLimit(BaseHTTPMiddleware):
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        super().__init__(app)
+        self.max_bytes = max_bytes
+
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get("content-length"):
+            content_length = int(request.headers.get("content-length"))
+            if content_length > self.max_bytes:
+                return Response(status_code=413)  # Request Entity Too Large
+        return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=server_config().cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
 )
 
 
