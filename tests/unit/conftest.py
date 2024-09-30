@@ -447,6 +447,7 @@ def sample_pipeline_run(
         metadata=PipelineRunResponseMetadata(
             workspace=sample_workspace_model,
             config=PipelineConfiguration(name="aria_pipeline"),
+            is_templatable=False,
         ),
     )
 

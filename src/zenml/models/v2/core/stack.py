@@ -318,12 +318,11 @@ class StackFilter(WorkspaceScopedFilter):
     scoping.
     """
 
-    # `component_id` refers to a relationship through a link-table
-    #  rather than a field in the db, hence it needs to be handled
-    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "component_id",  # This is a relationship, not a field
+        "component_id",
+        "user",
+        "component",
     ]
 
     name: Optional[str] = Field(
@@ -348,6 +347,13 @@ class StackFilter(WorkspaceScopedFilter):
         description="Component in the stack",
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the stack.",
+    )
+    component: Optional[Union[UUID, str]] = Field(
+        default=None, description="Name/ID of a component in the stack."
+    )
 
     def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
@@ -357,9 +363,11 @@ class StackFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from zenml.zen_stores.schemas.stack_schemas import (
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
+            UserSchema,
         )
 
         if self.component_id:
@@ -368,5 +376,25 @@ class StackFilter(WorkspaceScopedFilter):
                 StackCompositionSchema.component_id == self.component_id,
             )
             custom_filters.append(component_id_filter)
+
+        if self.user:
+            user_filter = and_(
+                StackSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        if self.component:
+            component_filter = and_(
+                StackCompositionSchema.stack_id == StackSchema.id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.component,
+                    table=StackComponentSchema,
+                ),
+            )
+            custom_filters.append(component_filter)
 
         return custom_filters

@@ -84,6 +84,7 @@ from zenml.utils import (
     code_utils,
     dashboard_utils,
     dict_utils,
+    env_utils,
     pydantic_utils,
     settings_utils,
     source_utils,
@@ -1030,12 +1031,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
+        run_config = env_utils.substitute_env_variable_placeholders(run_config)
 
         deployment = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
+        deployment = env_utils.substitute_env_variable_placeholders(deployment)
 
         return deployment, run_config.schedule, run_config.build
 
@@ -1252,6 +1255,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if config_path:
             with open(config_path, "r") as f:
                 _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
+
             _from_config_file = dict_utils.remove_none_values(
                 {k: v for k, v in _from_config_file.items() if k in matcher}
             )

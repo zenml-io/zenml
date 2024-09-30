@@ -494,8 +494,12 @@ def get_subresources_for_model(
     # We previously used `dict(model)` here, but that lead to issues with
     # models overwriting `__getattr__`, this `model.__iter__()` has the same
     # results though.
-    for _, value in model.__iter__():
-        resources.update(_get_subresources_for_value(value))
+    if isinstance(model, Page):
+        for item in model:
+            resources.update(_get_subresources_for_value(item))
+    else:
+        for _, value in model.__iter__():
+            resources.update(_get_subresources_for_value(value))
 
     return resources
 

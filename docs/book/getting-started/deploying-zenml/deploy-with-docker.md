@@ -291,7 +291,7 @@ If your browser did not open automatically, please open the following URL into y
 http://localhost:8080/devices/verify?device_id=f7a7333a-3ef0-4f39-85a9-f190279456d3&user_code=9375f5cdfdaf36772ce981fe3ee6172c
 
 Successfully logged in.
-Creating default stack for user 'default' in workspace default...
+Creating default stack for user 'default'...
 Updated the global store configuration.
 ```
 

@@ -122,7 +122,6 @@ This will be the output that you can expect from the command above.
 
 ```bash
 Using the default local database.
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered artifact_store `my_artifact_store`.bash
 ```
@@ -155,7 +154,6 @@ The output for the command should look something like this:
 
 ```bash
 Using the default local database.
-Running with active workspace: 'default' (repository)
 Stack 'a_new_local_stack' successfully registered!
 ```
 

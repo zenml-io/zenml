@@ -2,12 +2,10 @@ enable_cache: True
 
 # Environment configuration
 settings:
-  resources:
-    memory: 64GB
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.65.0-py3.11-aws"
-    skip_build: False
-# Uncomment the following two lines to specify the accelerator for your aws orchestrator
+    parent_image: "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-0.67.0-py3.11-aws"
+    skip_build: True  # If you switch this to False remove the parent_image
+    requirements: requirements.txt
   orchestrator.sagemaker:
     instance_type: ml.m5.4xlarge
 
@@ -19,6 +17,7 @@ model:
 
 # Configure the pipeline
 parameters:
+  data_url: 'https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt'
   # model_type: "t5-small"  # Choose between t5-small and t5-large
   num_train_epochs: 2
   per_device_train_batch_size: 4
@@ -35,6 +34,3 @@ steps:
       test_size: 0.1
       eval_size: 0.2
       random_state: 42
-  load_data:
-    parameters:
-      data_url: 'https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt'

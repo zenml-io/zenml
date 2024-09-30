@@ -28,9 +28,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]"
-    # TODO: Remove and add the extra back in
-    uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-python-3.12
+    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
 }
 
 install_integrations() {
@@ -61,7 +59,7 @@ install_integrations() {
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
     echo "pyopenssl" >> integration-requirements.txt
     echo "typing-extensions" >> integration-requirements.txt
-    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]" >> integration-requirements.txt
+    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # TODO: remove after torch 2.3.0+ is released
     # https://github.com/pytorch/pytorch/issues/124897
