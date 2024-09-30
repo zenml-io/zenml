@@ -249,8 +249,8 @@ class StepLauncher:
                         if prep_logs_to_show:
                             logger.info(prep_logs_to_show)
 
-                logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
+                    logger.info(f"Step `{self._step_name}` has started.")
                     retries = 0
                     last_retry = True
                     max_retries = (
@@ -295,9 +295,6 @@ class StepLauncher:
                                 last_retry=last_retry,
                                 force_write_logs=force_write_logs,
                             )
-                            logger.info(
-                                f"Step `{self._step_name}` completed successfully."
-                            )
                             break
                         except BaseException as e:  # noqa: E722
                             retries += 1
@@ -321,6 +318,9 @@ class StepLauncher:
                                 )
                                 raise
                 else:
+                    logger.info(
+                        f"Using cached version of `{self._step_name}`."
+                    )
                     orchestrator_utils._link_cached_artifacts_to_model(
                         model_from_context=model,
                         step_run=step_run,
@@ -441,7 +441,6 @@ class StepLauncher:
                 cache_key=cache_key
             )
             if cached_step_run:
-                logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
                 cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
