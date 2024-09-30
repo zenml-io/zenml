@@ -2,6 +2,11 @@
 description: Use Annotated to return multiple outputs from a step and name them for easy retrieval and dashboard display.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Return multiple outputs from a step
 
 You can use the `Annotated` type to return multiple outputs from a step and give each output a name. Naming your step outputs will help you retrieve the specific artifact later and also improves the readability of your pipeline's dashboard.
