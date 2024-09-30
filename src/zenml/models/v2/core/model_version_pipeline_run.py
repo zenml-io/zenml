@@ -123,10 +123,10 @@ class ModelVersionPipelineRunResponse(
 class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
-    # Pipeline run name is not a DB field and needs to be handled separately
     FILTER_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_name",
+        "user",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -167,6 +167,10 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the pipeline run",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the pipeline run.",
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -186,11 +190,10 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas.model_schemas import (
+        from zenml.zen_stores.schemas import (
             ModelVersionPipelineRunSchema,
-        )
-        from zenml.zen_stores.schemas.pipeline_run_schemas import (
             PipelineRunSchema,
+            UserSchema,
         )
 
         if self.pipeline_run_name:
@@ -208,5 +211,16 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
                 filter_.generate_query_conditions(PipelineRunSchema),
             )
             custom_filters.append(pipeline_run_name_filter)
+
+        if self.user:
+            user_filter = and_(
+                ModelVersionPipelineRunSchema.pipeline_run_id
+                == PipelineRunSchema.id,
+                PipelineRunSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
 
         return custom_filters

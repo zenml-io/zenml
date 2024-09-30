@@ -28,7 +28,7 @@ class LightningIntegration(Integration):
     """Definition of Lightning Integration for ZenML."""
 
     NAME = LIGHTNING
-    REQUIREMENTS = ["lightning-sdk"]
+    REQUIREMENTS = ["lightning-sdk>=0.1.17"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
