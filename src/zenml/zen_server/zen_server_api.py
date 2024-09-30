@@ -35,7 +35,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.types import ASGIApp
 
 import zenml
@@ -159,6 +159,29 @@ class RequestBodyLimit(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: FastAPI, allowed_paths: set[str]):
+        super().__init__(app)
+        self.allowed_paths = allowed_paths
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "POST":
+            content_type = request.headers.get("content-type", "")
+            if (
+                "multipart/form-data" in content_type
+                and request.url.path not in self.allowed_paths
+            ):
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "detail": "File uploads are not allowed on this endpoint."
+                    },
+                )
+        return await call_next(request)
+
+
+ALLOWED_FOR_FILE_UPLOAD = set()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=server_config().cors_allow_origins,
@@ -169,6 +192,9 @@ app.add_middleware(
 
 app.add_middleware(
     RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
+)
+app.add_middleware(
+    RestrictFileUploadsMiddleware, allowed_paths=ALLOWED_FOR_FILE_UPLOAD
 )
 
 
