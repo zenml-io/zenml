@@ -7953,7 +7953,14 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            if step_run.status != ExecutionStatus.RUNNING:
+            if (
+                step_run.status != ExecutionStatus.RUNNING
+                # If the pipeline run is a placeholder run, we do not update
+                # it's status here. This is to keep it a placeholder run when
+                # creating cached steps that are pre-computed before the actual
+                # pipeline execution
+                and not run.is_placeholder_run()
+            ):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
