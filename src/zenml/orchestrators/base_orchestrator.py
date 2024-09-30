@@ -185,6 +185,15 @@ class BaseOrchestrator(StackComponent, ABC):
 
         environment = get_config_environment_vars(deployment=deployment)
 
+        from zenml.orchestrators.input_utils import do_something
+
+        if placeholder_run:
+            do_something(
+                deployment=deployment,
+                pipeline_run=placeholder_run,
+                stack=stack,
+            )
+
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(
                 deployment=deployment,
