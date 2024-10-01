@@ -101,7 +101,7 @@ zenml service-connector list-resources --connector-type docker --resource-id <RE
 {% code title="Example Command Output" %}
 ```
 $ zenml service-connector list-resources --connector-type docker --resource-id docker.io
-The  resource with name 'docker.io' can be accessed by 'docker' service connectors configured in your workspace:
+The  resource with name 'docker.io' can be accessed by 'docker' service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼────────────────┨

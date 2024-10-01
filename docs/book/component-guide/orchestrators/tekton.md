@@ -105,12 +105,11 @@ We can then register the orchestrator and use it in our active stack. This can b
 
     ```
     $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor tekton
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered orchestrator `<ORCHESTRATOR_NAME>`.
 
     $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
     ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
     ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
@@ -123,7 +122,6 @@ We can then register the orchestrator and use it in our active stack. This can b
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
 
     $ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-iam-multi-us
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resources:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓

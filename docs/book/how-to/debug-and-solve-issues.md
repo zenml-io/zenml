@@ -54,7 +54,6 @@ ZENML_ACTIVE_REPOSITORY_ROOT: /Users/my_username/coding/zenml/repos/zenml
 PYTHON_VERSION: 3.9.13
 ENVIRONMENT: native
 SYSTEM_INFO: {'os': 'mac', 'mac_version': '13.2'}
-ACTIVE_WORKSPACE: default
 ACTIVE_STACK: default
 ACTIVE_USER: some_user
 TELEMETRY_STATUS: disabled

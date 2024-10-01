@@ -48,7 +48,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         temp_dir = tempfile.mkdtemp()
         io_utils.copy_dir(self.uri, temp_dir)
         path = os.path.join(temp_dir, DEFAULT_FILENAME)
-        dataset = tf.data.experimental.load(path)
+        dataset = tf.data.Dataset.load(path)
         # Don't delete the temporary directory here as the dataset is lazily
         # loaded and needs to read it when the object gets used
         return dataset
@@ -62,7 +62,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         try:
-            tf.data.experimental.save(
+            tf.data.Dataset.save(
                 dataset, path, compression=None, shard_func=None
             )
             io_utils.copy_dir(temp_dir.name, self.uri)

@@ -235,7 +235,7 @@ documentation.
 ### Authentication
 
 To authenticate with GCP, you need to have [the `gcloud` CLI](https://cloud.google.com/sdk/gcloud)
-installed on your machine and you need to have run `gcloud init` or `gcloud auth login`
+installed on your machine, and you need to have run `gcloud init` or `gcloud auth application-default login`
 to set up your credentials.
 
 ### Example Terraform Configuration

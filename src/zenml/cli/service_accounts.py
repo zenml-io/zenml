@@ -35,6 +35,7 @@ def _create_api_key(
     name: str,
     description: Optional[str],
     set_key: bool = False,
+    output_file: Optional[str] = None,
 ) -> None:
     """Create an API key.
 
@@ -44,6 +45,7 @@ def _create_api_key(
         name: Name of the API key
         description: The API key description.
         set_key: Configure the local client with the generated key.
+        output_file: Output file to write the API key to.
     """
     client = Client()
     zen_store = client.zen_store
@@ -74,13 +76,19 @@ def _create_api_key(
             )
             return
 
-    cli_utils.declare(
-        f"The API key value is: '{api_key.key}'\nPlease store it safely as "
-        "it will not be shown again.\nTo configure a ZenML client to use "
-        "this API key, run:\n\n"
-        f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-        f"    '{api_key.key}'\n"
-    )
+    if output_file and api_key.key:
+        with open(output_file, "w") as f:
+            f.write(api_key.key)
+
+        cli_utils.declare(f"Wrote API key value to {output_file}")
+    else:
+        cli_utils.declare(
+            f"The API key value is: '{api_key.key}'\nPlease store it safely as "
+            "it will not be shown again.\nTo configure a ZenML client to use "
+            "this API key, run:\n\n"
+            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+            f"    '{api_key.key}'\n"
+        )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -111,11 +119,18 @@ def service_account() -> None:
     help=("Configure the local client to use the generated API key."),
     is_flag=True,
 )
+@click.option(
+    "--output-file",
+    type=str,
+    required=False,
+    help="File to write the API key to.",
+)
 def create_service_account(
     service_account_name: str,
     description: str = "",
     create_api_key: bool = True,
     set_api_key: bool = False,
+    output_file: Optional[str] = None,
 ) -> None:
     """Create a new service account.
 
@@ -124,6 +139,7 @@ def create_service_account(
         description: The API key description.
         create_api_key: Create an API key for the service account.
         set_api_key: Configure the local client to use the generated API key.
+        output_file: Output file to write the API key to.
     """
     client = Client()
     try:
@@ -142,6 +158,7 @@ def create_service_account(
             name="default",
             description="Default API key.",
             set_key=set_api_key,
+            output_file=output_file,
         )
 
 
@@ -302,12 +319,19 @@ def api_key(
     is_flag=True,
     help="Configure the local client with the generated key.",
 )
+@click.option(
+    "--output-file",
+    type=str,
+    required=False,
+    help="File to write the API key to.",
+)
 @click.pass_obj
 def create_api_key(
     service_account_name_or_id: str,
     name: str,
     description: Optional[str],
     set_key: bool = False,
+    output_file: Optional[str] = None,
 ) -> None:
     """Create an API key.
 
@@ -317,12 +341,14 @@ def create_api_key(
         name: Name of the API key
         description: The API key description.
         set_key: Configure the local client with the generated key.
+        output_file: Output file to write the API key to.
     """
     _create_api_key(
         service_account_name_or_id=service_account_name_or_id,
         name=name,
         description=description,
         set_key=set_key,
+        output_file=output_file,
     )
 
 
@@ -450,12 +476,19 @@ def update_api_key(
     is_flag=True,
     help="Configure the local client with the generated key.",
 )
+@click.option(
+    "--output-file",
+    type=str,
+    required=False,
+    help="File to write the API key to.",
+)
 @click.pass_obj
 def rotate_api_key(
     service_account_name_or_id: str,
     name_or_id: str,
     retain: int = 0,
     set_key: bool = False,
+    output_file: Optional[str] = None,
 ) -> None:
     """Rotate an API key.
 
@@ -466,6 +499,7 @@ def rotate_api_key(
         retain: Number of minutes for which the previous key is still valid
             after it has been rotated.
         set_key: Configure the local client with the newly generated key.
+        output_file: Output file to write the API key to.
     """
     client = Client()
     zen_store = client.zen_store
@@ -499,13 +533,19 @@ def rotate_api_key(
             )
             return
 
-    cli_utils.declare(
-        f"The new API key value is: '{api_key.key}'\nPlease store it "
-        "safely as it will not be shown again.\nTo configure a ZenML "
-        "client to use this API key, run:\n\n"
-        f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-        f"    '{api_key.key}'\n"
-    )
+    if output_file and api_key.key:
+        with open(output_file, "w") as f:
+            f.write(api_key.key)
+
+        cli_utils.declare(f"Wrote API key value to {output_file}")
+    else:
+        cli_utils.declare(
+            f"The new API key value is: '{api_key.key}'\nPlease store it "
+            "safely as it will not be shown again.\nTo configure a ZenML "
+            "client to use this API key, run:\n\n"
+            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+            f"    '{api_key.key}'\n"
+        )
 
 
 @api_key.command("delete")

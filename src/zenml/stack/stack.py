@@ -62,7 +62,11 @@ if TYPE_CHECKING:
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
-    from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
+    from zenml.models import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
@@ -751,21 +755,6 @@ class Stack:
                 updated=datetime.utcnow(),
             )
 
-            logger.warning(
-                "The stack `%s` contains components that require building "
-                "Docker images. Older versions of ZenML always built these "
-                "images locally, but since version 0.32.0 this behavior can be "
-                "configured using the `image_builder` stack component. This "
-                "stack will temporarily default to a local image builder that "
-                "mirrors the previous behavior, but this will be removed in "
-                "future versions of ZenML. Please add an image builder to this "
-                "stack:\n"
-                "`zenml image-builder register <NAME> ...\n"
-                "zenml stack update %s -i <NAME>`",
-                self.name,
-                self.id,
-            )
-
             self._image_builder = image_builder
 
     def prepare_pipeline_deployment(
@@ -841,16 +830,21 @@ class Stack:
     def deploy_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
             deployment: The pipeline deployment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        return self.orchestrator.run(deployment=deployment, stack=self)
+        return self.orchestrator.run(
+            deployment=deployment, stack=self, placeholder_run=placeholder_run
+        )
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"
