@@ -53,7 +53,7 @@ from pydantic import (
     model_validator,
 )
 from sqlalchemy import asc, case, desc, func
-from sqlalchemy.engine import URL, Engine, make_url
+from sqlalchemy.engine import URL, Engine, Row, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
@@ -973,7 +973,6 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
-        query = query.distinct()
         query = filter_model.apply_filter(query=query, table=table)
         query = query.distinct()
 
@@ -4141,13 +4140,23 @@ class SqlZenStore(BaseZenStore):
                     sort_clause = asc
 
                 query = (
-                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    # We need to include the subquery in the select here to
+                    # make this query work with the distinct statement. This
+                    # result will be removed in the custom conversion function
+                    # applied later
+                    select(PipelineSchema, max_date_subquery.c.run_or_created)
+                    .where(PipelineSchema.id == max_date_subquery.c.id)
                     .order_by(sort_clause(max_date_subquery.c.run_or_created))
                     # We always add the `id` column as a tiebreaker to ensure a
                     # stable, repeatable order of items, otherwise subsequent
                     # pages might contain the same items.
                     .order_by(col(PipelineSchema.id))
                 )
+
+        def _custom_conversion(row: Row) -> PipelineResponse:
+            return row[0].to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
         with Session(self.engine) as session:
             return self.filter_and_paginate(
@@ -4156,6 +4165,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
