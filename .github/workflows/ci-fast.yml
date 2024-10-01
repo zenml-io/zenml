@@ -49,7 +49,7 @@ jobs:
           python-version: '3.9'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
+  spelling-and-links-check:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
@@ -60,6 +60,12 @@ jobs:
         with:
           files: .
           config: ./.typos.toml
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.12'
+      - name: Test for relative links in docs
+        run: python scripts/ensure_absolute_links.py docs/book
   api-docs-test:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest

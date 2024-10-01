@@ -193,6 +193,8 @@ jobs:
           bash scripts/check-alembic-branches.sh
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
+      - name: Test for relative links in docs
+        run: python scripts/ensure_absolute_links.py docs/book
   custom-ubuntu-unit-test:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
