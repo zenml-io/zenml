@@ -185,14 +185,34 @@ class BaseOrchestrator(StackComponent, ABC):
 
         environment = get_config_environment_vars(deployment=deployment)
 
-        from zenml.orchestrators.input_utils import do_something
+        if placeholder_run and not deployment.schedule:
+            # A solution for getting a similar behavior when running with
+            # orchestrator-native scheduled pipelines: We add an additional
+            # "setup" step that runs before all actual steps of the pipeline,
+            # which runs this code to compute all the pre-cached steps. Probably
+            # not necessary though as this will be supported out of the box for
+            # pipelines scheduled via ZenML's native scheduling
+            from zenml.orchestrators import publish_utils, step_run_utils
 
-        if placeholder_run:
-            do_something(
+            cached_invocations = step_run_utils.create_cached_steps(
                 deployment=deployment,
                 pipeline_run=placeholder_run,
                 stack=stack,
             )
+
+            for invocation_id in cached_invocations:
+                # Remove the cached step invocations from the deployment so
+                # the orchestrator does not try to run it
+                deployment.step_configurations.pop(invocation_id)
+
+            if len(deployment.step_configurations) == 0:
+                # All steps were cached, we update the pipeline run status and
+                # don't actually use the orchestrator to run the pipeline
+                publish_utils.publish_succesful_pipeline_run(
+                    placeholder_run.id
+                )
+                self._cleanup_run()
+                return
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(
