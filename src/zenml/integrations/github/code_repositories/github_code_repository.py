@@ -164,8 +164,8 @@ class GitHubCodeRepository(BaseCodeRepository):
                 symlink_content = self.github_repo.get_contents(
                     content.path, ref=commit
                 )
-                symlink_target = symlink_content.raw_data["target"]
-                tmp_symlinks.append((local_path, symlink_target))
+                symlink_src = symlink_content.raw_data["target"]
+                tmp_symlinks.append((local_path, symlink_src))
                 # As it cannot be assumed at this point that the targets of the
                 # symlink already exist, the symlinks are first collected here and processed later.
             else:
@@ -175,9 +175,9 @@ class GitHubCodeRepository(BaseCodeRepository):
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
         for symlink in tmp_symlinks:
-            symlink_source, symlink_target = symlink
+            symlink_dst, symlink_src = symlink
             create_symlink_in_local_repo_copy(
-                symlink_source=symlink_source, symlink_target=symlink_target
+                symlink_dst=symlink_dst, symlink_src=symlink_src
             )
 
     def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
@@ -218,20 +218,20 @@ class GitHubCodeRepository(BaseCodeRepository):
 
 
 def create_symlink_in_local_repo_copy(
-    symlink_source: str, symlink_target: str
+    symlink_dst: str, symlink_src: str
 ) -> None:
-    """This function attempts to create a symbolic link at `local_path` that points to `symlink_target`.
+    """This function attempts to create a symbolic link at `symlink_dst` that points to `symlink_src`.
 
-    If a file or directory already exists at `local_path`, it will
+    If a file or directory already exists at `symlink_dst`, it will
     be removed before the symbolic link is created.
 
     Args:
-        symlink_source: The path where the symbolic link should be created.
-        symlink_target: The path that the symbolic link should point to.
+        symlink_dst: The path where the symbolic link should be created.
+        symlink_src: The path that the symbolic link should point to.
 
     Raises:
         FileNotFoundError: Informs that the target directory specified by
-            `symlink_target` does not exist.
+            `symlink_dst` does not exist.
         PermissionError: Informs that there are insufficient permissions to
             create the symbolic link.
         NotImplementedError: Informs that symbolic links are not supported on
@@ -239,31 +239,27 @@ def create_symlink_in_local_repo_copy(
         OSError: Any other OS-related errors that occur.
     """
     try:
-        if os.path.exists(symlink_source):
-            if os.path.isdir(symlink_source):
-                os.rmdir(symlink_source)
-            else:
-                os.remove(
-                    symlink_source,
-                )
-        os.symlink(symlink_target, symlink_source)
+        os.symlink(src=symlink_src, dst=symlink_dst)
+
+    except FileExistsError as e:
+        logger.debug("The symbolic link already exists. %s",e)
     except FileNotFoundError:
         logger.warning(
             "The target directory of the symbolic link '%s' does not exist. "
             "The creation of the symbolic link is skipped.",
-            symlink_target,
+            symlink_src,
         )
     except PermissionError:
         logger.warning(
             "You do not have the necessary permissions to create the symbolic link. "
             "The creation of the symbolic link '%s' is skipped.",
-            symlink_source,
+            symlink_dst,
         )
     except NotImplementedError:
         logger.warning(
             "Symbolic links are not supported on this operating system. "
             "The creation of the symbolic link '%s' is skipped.",
-            symlink_source,
+            symlink_dst,
         )
     except OSError as e:
         logger.warning("An OS error occurred: %s", e)

@@ -17,31 +17,31 @@ def tmp_dir() -> str:
 
 @pytest.mark.parametrize("initial_state", ["file", "directory"])
 def test_create_symlink_in_local_repo_copy(tmp_dir, initial_state: str):
-    local_path = os.path.join(tmp_dir, "test_symlink")
-    symlink_target = os.path.join(tmp_dir, "target_folder")
+    symlink_dst = os.path.join(tmp_dir, "test_symlink")
+    symlink_src = os.path.join(tmp_dir, "target_folder")
 
     if initial_state == "file":
-        with open(local_path) as file:
+        with open(symlink_dst) as file:
             file.write("content")
     elif initial_state == "directory":
-        os.mkdir(local_path)
-    os.mkdir(symlink_target)
+        os.mkdir(symlink_dst)
+    os.mkdir(symlink_src)
 
     create_symlink_in_local_repo_copy(
-        symlink_source=local_path, symlink_target=symlink_target
+        symlink_dst=symlink_dst, symlink_src=symlink_src
     )
-    assert os.path.islink(local_path)
-    assert os.readlink(local_path) == str(symlink_target)
+    assert os.path.islink(symlink_dst)
+    assert os.readlink(symlink_dst) == str(symlink_src)
 
 
 def test_create_symlink_in_local_repo_copy_target_nonexistent(tmp_dir, caplog):
-    local_path = os.path.join(tmp_dir, "test_symlink")
-    symlink_target = os.path.join(tmp_dir, "target_folder")
+    symlink_dst = os.path.join(tmp_dir, "test_symlink")
+    symlink_src = os.path.join(tmp_dir, "target_folder")
 
     with caplog.at_level(logging.WARNING):
         create_symlink_in_local_repo_copy(
-            symlink_source=local_path, symlink_target=symlink_target
+            symlink_dst=symlink_dst, symlink_src=symlink_src
         )
 
-    assert not os.path.exists(local_path)
+    assert not os.path.exists(symlink_dst)
     assert "The target directory of the symbolic link" in caplog.text
