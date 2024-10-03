@@ -3,9 +3,9 @@ name: Sync Bleeding Edge Docs
 on:
   push:
     branches:
-      - doc/mintlify-workflows
-    # paths:
-    #   - 'docs/fern/**'
+      - develop
+    paths:
+      - 'docs/fern/**'
 
 jobs:
   prepare-docs:
