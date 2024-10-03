@@ -123,92 +123,12 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             obj: A Great Expectations object.
         """
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
-        artifact_dict = self.serialize_ge_object(obj)
+        artifact_dict = json.loads(obj.json())
         artifact_type = type(obj)
         artifact_dict["data_type"] = (
             f"{artifact_type.__module__}.{artifact_type.__name__}"
         )
         yaml_utils.write_json(filepath, artifact_dict)
-
-    def serialize_ge_object(self, obj: Any) -> Any:
-        """Serialize a Great Expectations object to a JSON-serializable structure.
-
-        Args:
-            obj: A Great Expectations object.
-
-        Returns:
-            A JSON-serializable representation of the object.
-        """
-        if isinstance(obj, dict):
-            return {self.serialize_key(k): self.serialize_ge_object(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self.serialize_ge_object(v) for v in obj]
-        elif isinstance(obj, (ExpectationSuiteIdentifier, ValidationResultIdentifier)):
-            return self.serialize_identifier(obj)
-        elif isinstance(obj, Checkpoint):
-            return self.serialize_checkpoint(obj)
-        elif isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, uuid.UUID):
-            return str(obj)
-        elif hasattr(obj, "to_json_dict"):
-            return self.serialize_ge_object(obj.to_json_dict())
-        elif hasattr(obj, "__dict__"):
-            return self.serialize_ge_object(obj.__dict__)
-        else:
-            return obj
-
-    def serialize_key(self, key: Any) -> str:
-        """Serialize a dictionary key to a string.
-
-        Args:
-            key: The key to serialize.
-
-        Returns:
-            A string representation of the key.
-        """
-        if isinstance(key, (str, int, float, bool)) or key is None:
-            return str(key)
-        elif isinstance(key, (ExpectationSuiteIdentifier, ValidationResultIdentifier)):
-            return self.serialize_identifier(key)
-        else:
-            return str(key)
-
-    def serialize_identifier(self, identifier: Union[ExpectationSuiteIdentifier, ValidationResultIdentifier]) -> str:
-        """Serialize ExpectationSuiteIdentifier or ValidationResultIdentifier to a string.
-
-        Args:
-            identifier: The identifier to serialize.
-
-        Returns:
-            A string representation of the identifier.
-
-        Raises:
-            ValueError: If the identifier type is not supported.
-        """
-        if isinstance(identifier, ExpectationSuiteIdentifier):
-            return f"ExpectationSuiteIdentifier:{identifier.expectation_suite_name}"
-        elif isinstance(identifier, ValidationResultIdentifier):
-            return f"ValidationResultIdentifier:{identifier.expectation_suite_identifier}:{identifier.run_id}:{identifier.batch_identifier}"
-        else:
-            raise ValueError(f"Unsupported identifier type: {type(identifier)}")
-
-    def serialize_checkpoint(self, checkpoint: Checkpoint) -> Dict[str, Any]:
-        """Serialize a Checkpoint object.
-
-        Args:
-            checkpoint: The Checkpoint object to serialize.
-
-        Returns:
-            A dictionary representation of the Checkpoint.
-        """
-        return {
-            "name": checkpoint.name,
-            "validation_definitions": [self.serialize_ge_object(vd) for vd in checkpoint.validation_definitions],
-            "actions": checkpoint.actions,
-            "result_format": checkpoint.result_format,
-            "id": str(checkpoint.id) if checkpoint.id else None,
-        }
 
     def save_visualizations(
         self, data: Union[ExpectationSuite, CheckpointResult]

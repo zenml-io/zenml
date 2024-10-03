@@ -20,6 +20,7 @@ from great_expectations.core.batch_definition import BatchDefinition
 from great_expectations.data_context.data_context.abstract_data_context import (
     AbstractDataContext,
 )
+from great_expectations.datasource.fluent.interfaces import Datasource
 
 from zenml import get_step_context
 from zenml.logger import get_logger
@@ -32,7 +33,7 @@ def create_batch_definition(
     context: AbstractDataContext,
     dataset: pd.DataFrame,
     data_asset_name: Optional[str],
-) -> Tuple[BatchDefinition, Dict[str, Any], str]:
+) -> Tuple[BatchDefinition, Dict[str, Any], Datasource]:
     """Create a temporary runtime GE batch request from a dataset step artifact.
 
     Args:
@@ -70,4 +71,4 @@ def create_batch_definition(
 
     batch_parameters = {"dataframe": dataset}
 
-    return batch_definition, batch_parameters, datasource_name
+    return batch_definition, batch_parameters, data_source

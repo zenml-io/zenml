@@ -395,21 +395,50 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         else:  # when the expectation_suite_name is provided
             expectation_suite = context.suites.get(name=expectation_suite_name)
 
-        batch_definition, batch_parameters, datasource_name = create_batch_definition(context, dataset, data_asset_name)                
-        
-        # create a validation definition
-        validation_definition = ge.ValidationDefinition(
+        batch_definition, batch_parameters, data_source = create_batch_definition(context, dataset, data_asset_name)                
+
+        validation_definition = {
+            "name": f"{run_name}_{step_name}",
+            "data": {
+                "datasource": {
+                    "name": data_source.name,
+                    "id": data_source.id
+                },
+                "asset": {
+                    "name": data_source.assets[0].name,
+                    "id": data_source.assets[0].id
+                },
+                "batch_definition": {
+                    "name": batch_definition.name,
+                    "id": batch_definition.id
+                }
+            },
+            "suite": {
+                "name": expectation_suite.name,
+                "id": expectation_suite.id
+            },
+        }
+
+        validation_definition_obj = ge.ValidationDefinition(
             data=batch_definition, suite=expectation_suite,
             name=f"{run_name}_{step_name}"
         )
-        validation_definition = context.validation_definitions.add(validation_definition)
+        # create a validation definition
+        _ = context.validation_definitions.add(validation_definition_obj)
+
+        # add an action to update all data docs sites
+        # not specifying site_names, so this will update all data docs sites
+        action_update_data_docs = {
+            "name": "update_data_docs",
+            "type": "update_data_docs"
+        }
 
         # create a checkpoint
         checkpoint_name = f"{run_name}_{step_name}"
         checkpoint = ge.Checkpoint(
             name=checkpoint_name,
             validation_definitions=[validation_definition],
-            actions=action_list or [],
+            actions=action_list or [action_update_data_docs],
             result_format={"result_format": result_format},
         )
 
@@ -422,6 +451,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 expectation_parameters=expectation_parameters
             )
         finally:
-            context.delete_datasource(datasource_name)
+            context.delete_datasource(data_source.name)
 
         return results

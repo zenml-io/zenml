@@ -40,6 +40,7 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
     """Config for the Great Expectations data validator.
 
     Attributes:
+        project_root_dir: location of the root directory of the Great Expectations project.
         context_root_dir: location of an already initialized Great Expectations
             data context. If configured, the data validator will only be usable
             with local orchestrators.
@@ -54,6 +55,7 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
             Expectations docs are generated and can be visualized locally.
     """
 
+    project_root_dir: Optional[str] = None
     context_root_dir: Optional[str] = None
     context_config: Optional[Dict[str, Any]] = None
     configure_zenml_stores: bool = False
