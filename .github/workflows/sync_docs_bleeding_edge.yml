@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - doc/mintlify-workflows
-    paths:
-      - 'docs/fern/**'
+    # paths:
+    #   - 'docs/fern/**'
 
 jobs:
   prepare-docs:
