@@ -3,9 +3,9 @@ name: Sync Bleeding Edge Docs
 on:
   push:
     branches:
-      - develop
+      - doc/mintlify-workflows
     paths:
-      - 'docs/mintlify/**'
+      - 'docs/fern/**'
 
 jobs:
   prepare-docs:
@@ -27,13 +27,13 @@ jobs:
       - name: Prepare docs update
         run: |
           python .github/scripts/prepare_docs_update.py \
-            --source docs/mintlify
+            --source docs/fern
 
       - name: Upload docs data
         uses: actions/upload-artifact@v3
         with:
           name: docs-data
-          path: docs_data.json
+          path: docs_data.zip
 
       - name: Trigger ZenML-docs update
         env:
@@ -43,4 +43,4 @@ jobs:
             -H "Authorization: token $DOCS_REPO_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/zenml-io/zenml-docs/dispatches \
-            -d '{"event_type": "update_docs", "client_payload": {"version": "nightly"}}'
+            -d '{"event_type": "update_docs", "client_payload": {"version": "develop"}}'
