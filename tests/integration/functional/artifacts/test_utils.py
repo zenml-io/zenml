@@ -3,7 +3,9 @@
 import multiprocessing
 import os
 import shutil
+import tempfile
 import zipfile
+from pathlib import Path
 from typing import Optional, Tuple
 from unittest.mock import patch
 
@@ -17,6 +19,7 @@ from zenml import (
     save_artifact,
     step,
 )
+from zenml.artifacts.utils import link_folder_as_artifact
 from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
@@ -369,3 +372,82 @@ def test_parallel_artifact_creation(clean_client: Client):
     assert {av.version for av in avs} == {
         str(i) for i in range(1, process_count + 1)
     }
+
+
+def test_link_folder_as_artifact(clean_client: Client):
+    """Tests that a folder can be linked as an artifact in local setting."""
+
+    uri_prefix = os.path.join(
+        clean_client.active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    with open(os.path.join(uri_prefix, "test.txt"), "w") as f:
+        f.write("test")
+
+    link_folder_as_artifact(folder_uri=uri_prefix, name="test_folder")
+
+    artifact = clean_client.get_artifact_version(
+        name_id_or_prefix="test_folder", version=1
+    )
+    assert artifact
+    assert artifact.uri == uri_prefix
+
+    loaded_dir = artifact.load()
+    assert isinstance(loaded_dir, Path)
+
+    with open(loaded_dir / "test.txt", "r") as f:
+        assert f.read() == "test"
+
+
+def test_link_folder_as_artifact_out_of_bounds(clean_client: Client):
+    """Tests that a folder cannot be linked as an artifact if out of bounds."""
+
+    uri_prefix = tempfile.mkdtemp()
+    try:
+        with pytest.raises(FileNotFoundError):
+            link_folder_as_artifact(folder_uri=uri_prefix, name="test_folder")
+    finally:
+        os.rmdir(uri_prefix)
+
+
+@step(enable_cache=False)
+def link_folder_as_artifact_step_1() -> None:
+    # find out where to save some data
+    uri_prefix = os.path.join(
+        Client().active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    # generate dat to validate in link_folder_as_artifact_step_2
+    with open(os.path.join(uri_prefix, "test.txt"), "w") as f:
+        f.write("test")
+
+    link_folder_as_artifact(folder_uri=uri_prefix, name="test_folder")
+
+
+@step(enable_cache=False)
+def link_folder_as_artifact_step_2(inp: Path) -> None:
+    # step should receive a path pointing to the folder
+    # from link_folder_as_artifact_step_1
+    with open(inp / "test.txt", "r") as f:
+        assert f.read() == "test"
+    # at the same time the input artifact is no longer inside the
+    # artifact store, but in the temporary folder of local file system
+    assert not str(inp.absolute()).startswith(
+        Client().active_stack.artifact_store.path
+    )
+
+
+def test_link_folder_as_artifact_between_steps(clean_client: Client):
+    """Tests that a folder can be linked as an artifact and used in pipelines."""
+
+    @pipeline(enable_cache=False)
+    def link_folder_as_artifact_pipeline():
+        link_folder_as_artifact_step_1()
+        link_folder_as_artifact_step_2(
+            clean_client.get_artifact_version(
+                name_id_or_prefix="test_folder", version=1
+            ),
+            after=["link_folder_as_artifact_step_1"],
+        )
+
+    link_folder_as_artifact_pipeline()
