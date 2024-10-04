@@ -310,34 +310,48 @@ Sometimes, data is produced completely outside of ZenML and can be conveniently 
 # to fit model and store the checkpoints on remote
 # location.
 
-# The important assumption is that active artifact
-# store is s3://my_bucket, otherwise the linking
-# going to fail with an error.
-
+import os
 from zenml.client import Client
 from zenml import link_folder_as_artifact
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from uuid import uuid4
+
+# Define where the model data should be saved
+# use active ArtifactStore
+prefix = Client().active_stack.artifact_store.path
+# keep data separable for future runs with uuid4 folder
+default_root_dir = os.path.join(prefix, uuid4().hex)
 
 # Define the model and fit it
 model = ...
-trainer = Trainer(default_root_dir="s3://my_bucket/my_model_data/")
+trainer = Trainer(
+    default_root_dir=default_root_dir,
+    callbacks=[
+        ModelCheckpoint(
+            every_n_epochs=1, save_top_k=-1, filename="checkpoint-{epoch:02d}"
+        )
+    ],
+)
 try:
     trainer.fit(model)
 finally:
     # We now link those checkpoints in ZenML as an artifact
     # This will create a new artifact version
-    link_folder_as_artifact(folder_uri="s3://my_bucket/my_model_data/ckpts", name="my_model_ckpts")
+    link_folder_as_artifact(default_root_dir, name="all_my_model_checkpoints")
 ```
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
 {% hint style="info" %}
-It is also possible to use these functions inside your ZenML steps. Below you can find a sophisticated example of a simple pipeline doing a Pytorch Lightning training with the artifacts linkage for checkpoint artifacts.
+To make checkpoints (or other intermediate artifacts) linkage better versioned you can extend the `ModelCheckpoint` callback to your needs. 
+Below you can find a sophisticated example of a pipeline doing a Pytorch Lightning training with the artifacts linkage for checkpoint artifacts implemented as an extended Callback.
 {% endhint %}
 
 {% code title="Example Command Output" %}
 
 ```python
+from pathlib import Path
 from zenml.client import Client
 from zenml import link_folder_as_artifact
 from zenml import step, pipeline, get_step_context, Model
@@ -349,10 +363,13 @@ from torch.utils.data import DataLoader
 from torch.nn import ReLU, Linear, Sequential
 from torch.nn.functional import mse_loss
 from torch.optim import Adam
+from torch import rand, Tensor
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer, LightningModule
+
+from zenml.new.pipelines.pipeline_context import get_pipeline_context
 
 logger = get_logger(__name__)
 
@@ -453,11 +470,14 @@ def get_model() -> LightningModule:
 
 @step
 def train_model(
-    model: LightningModule, train_loader: DataLoader, epochs: int = 1
-) -> LightningModule:
+    model: LightningModule,
+    train_loader: DataLoader,
+    epochs: int = 1,
+    artifact_name: str = "my_model_ckpts",
+) -> None:
     """Run the training loop."""
     # configure checkpointing
-    chkpt_cb = ZenMLModelCheckpoint(artifact_name="my_model_ckpts")
+    chkpt_cb = ZenMLModelCheckpoint(artifact_name=artifact_name)
 
     trainer = Trainer(
         # pass default_root_dir from ZenML checkpoint to
@@ -469,14 +489,37 @@ def train_model(
         callbacks=[chkpt_cb],
     )
     trainer.fit(model, train_loader)
-    return model
+
+
+@step
+def predict(checkpoint_dir: Path) -> Tensor:
+    # get the checkpoint file path
+    checkpoint = checkpoint_dir / f"{get_step_context().model.name}.ckpt"
+
+    # load the model from the checkpoint
+    encoder = Sequential(Linear(28 * 28, 64), ReLU(), Linear(64, 3))
+    decoder = Sequential(Linear(3, 64), ReLU(), Linear(64, 28 * 28))
+    autoencoder = LitAutoEncoder.load_from_checkpoint(
+        checkpoint, encoder=encoder, decoder=decoder
+    )
+    encoder = autoencoder.encoder
+    encoder.eval()
+
+    # predict on fake batch
+    fake_image_batch = rand(4, 28 * 28, device=autoencoder.device)
+    embeddings = encoder(fake_image_batch)
+    return embeddings
 
 
 @pipeline(model=Model(name="LightningDemo"))
-def train_pipeline():
+def train_pipeline(artifact_name: str = "my_model_ckpts"):
     train_loader = get_data()
     model = get_model()
-    train_model(model, train_loader, 10)
+    train_model(model, train_loader, 10, artifact_name)
+    # pass in the latest checkpoint for predictions
+    predict(
+        get_pipeline_context().model.get_artifact(artifact_name), after=["train_model"]
+    )
 
 
 if __name__ == "__main__":
