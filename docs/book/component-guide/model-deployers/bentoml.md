@@ -119,6 +119,52 @@ def bento_builder_pipeline():
 
 The Bento Builder step can be used in any orchestration pipeline that you create with ZenML. The step will build the bento bundle and save it to the used artifact store. Which can be used to serve the model in a local or containerized setting using the BentoML Model Deployer Step, or in a remote setting using the `bentoctl` or Yatai. This gives you the flexibility to package your model in a way that is ready for different deployment scenarios.
 
+🏗️ **Build your own bento**
+The `bento_builder_step` only exists to make your life easier; you can always build the bento yourself and use it in the deployer step in the next section. A peek into how this step is implemented will give you ideas on how to build such a function yourself. This allows you to have more customization over the bento build process if needed.
+
+```python
+# 1. use the step context to get the output artifact uri
+context = get_step_context()
+
+# 2. you can save the model and bento uri as part of the bento labels
+labels = labels or {}
+labels["model_uri"] = model.uri
+labels["bento_uri"] = os.path.join(
+    context.get_output_artifact_uri(), DEFAULT_BENTO_FILENAME
+)
+
+# 3. Load the model from the model artifact
+model = load_artifact_from_response(model)
+
+# 4. Save the model to a BentoML model based on the model type
+try:
+    module = importlib.import_module(f".{model_type}", "bentoml")
+    module.save_model(model_name, model, labels=labels)
+except importlib.metadata.PackageNotFoundError:
+    bentoml.picklable_model.save_model(
+        model_name,
+        model,
+    )
+
+# 5. Build the BentoML bundle. You can use any of the parameters supported by the bentos.build function.
+bento = bentos.build(
+    service=service,
+    models=[model_name],
+    version=version,
+    labels=labels,
+    description=description,
+    include=include,
+    exclude=exclude,
+    python=python,
+    docker=docker,
+    build_ctx=working_dir or source_utils.get_source_root(),
+)
+
+return bento
+
+```
+You can now use this bento in any way you see fit.
+
 ### ZenML BentoML Deployer step
 
 We have now built our bento bundle, and we can use the built-in `bentoml_model_deployer_step` to deploy the bento bundle to our local HTTP server or to a containerized service running in your local machine. 
