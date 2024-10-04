@@ -80,7 +80,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             return value
 
         artifact_dict["checkpoint_config"] = Checkpoint(
-            **artifact_dict["checkpoint_config"]
+            **json.loads(artifact_dict["checkpoint_config"])
         )
         validation_dict = {}
         for result_ident, results in artifact_dict["run_results"].items():
