@@ -301,6 +301,40 @@ Even if an artifact is created externally, it can be treated like any other arti
 It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use External Artifacts to load them instead.
 {% endhint %}
 
+## Linking data **not** produced by ZenML pipelines as a ZenML artifact
+
+Sometimes, data is produced completely outside of ZenML and can be conveniently store on a given storage. A good example of this is the checkpoint files produced as a side-effect of the Deep Learning model training. We know that the intermediate data of the deep learning frameworks is quite big and there is no good reason to move it around again and again, if it can be produced directly in the artifact store boundaries and later just linked to become an artifact of ZenML.
+
+```python
+# Here we explore the Pytorch Lightning example
+# to fit model and store the checkpoints on remote
+# location.
+
+# The important assumption is that active artifact
+# store is s3://my_bucket, otherwise the linking
+# going to fail with an error.
+
+from zenml.client import Client
+from zenml import link_folder_as_artifact
+from pytorch_lightning import Trainer
+
+# Define the model and fit it
+model = ...
+trainer = Trainer(default_root_dir="s3://my_bucket/my_model_data/")
+try:
+    trainer.fit(model)
+finally:
+    # We now link those checkpoints in ZenML as an artifact
+    # This will create a new artifact version
+    link_folder_as_artifact(folder_uri="s3://my_bucket/my_model_data/ckpts", name="my_model_ckpts")
+```
+
+Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
+
+{% hint style="info" %}
+It is also possible to use these functions inside your ZenML steps.
+{% endhint %}
+
 ## Logging metadata for an artifact
 
 One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
