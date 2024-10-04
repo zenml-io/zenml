@@ -348,7 +348,9 @@ To make checkpoints (or other intermediate artifacts) linkage better versioned y
 Below you can find a sophisticated example of a pipeline doing a Pytorch Lightning training with the artifacts linkage for checkpoint artifacts implemented as an extended Callback.
 {% endhint %}
 
-{% code title="Example Command Output" %}
+<details>
+
+<summary>Pytorch Lightning training with the checkpoints linkage example</summary>
 
 ```python
 from pathlib import Path
@@ -526,7 +528,7 @@ if __name__ == "__main__":
     train_pipeline()
 ```
 
-{% endcode %}
+</details>
 
 ## Logging metadata for an artifact
 
