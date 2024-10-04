@@ -211,7 +211,7 @@ class StepLauncher:
                 )
                 try:
                     execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                        step_run=step_run, pipeline_run=pipeline_run
                     )
                 except:
                     logger.exception(
@@ -393,11 +393,13 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
+        pipeline_run: "PipelineRunResponse",
     ) -> Tuple[bool, StepRunRequest]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
+            pipeline_run: The pipeline run.
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
@@ -405,7 +407,7 @@ class StepLauncher:
         """
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
-            run_id=step_run.pipeline_run_id,
+            pipeline_run=pipeline_run,
         )
         input_artifact_ids = {
             input_name: artifact.id

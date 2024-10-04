@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel
 
-from zenml.model.model import Model
+if TYPE_CHECKING:
+    from zenml.models import ModelVersionResponse, PipelineRunResponse
 
 
 class ModelVersionDataLazyLoader(BaseModel):
@@ -28,7 +29,23 @@ class ModelVersionDataLazyLoader(BaseModel):
     model version during runtime time of the step.
     """
 
-    model: Model
+    model_name: str
+    model_version: Optional[str] = None
     artifact_name: Optional[str] = None
     artifact_version: Optional[str] = None
     metadata_name: Optional[str] = None
+
+    def _get_model_response(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> Optional["ModelVersionResponse"]:
+        # if the version/number is None -> return the model in context
+        if self.model_version is None:
+            return pipeline_run.model_version
+        # else return the model version by version
+        else:
+            from zenml.client import Client
+
+            return Client().get_model_version(
+                model_name_or_id=self.model_name,
+                model_version_name_or_number_or_id=self.model_version,
+            )

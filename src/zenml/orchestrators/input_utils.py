@@ -22,18 +22,18 @@ from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactVersionResponse
+    from zenml.models import ArtifactVersionResponse, PipelineRunResponse
 
 
 def resolve_step_inputs(
     step: "Step",
-    run_id: UUID,
+    pipeline_run: "PipelineRunResponse",
 ) -> Tuple[Dict[str, "ArtifactVersionResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
-        run_id: The ID of the current pipeline run.
+        pipeline_run: The current pipeline run.
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -50,7 +50,7 @@ def resolve_step_inputs(
     current_run_steps = {
         run_step.name: run_step
         for run_step in pagination_utils.depaginate(
-            Client().list_run_steps, pipeline_run_id=run_id
+            Client().list_run_steps, pipeline_run_id=pipeline_run.id
         )
     }
 
@@ -85,21 +85,30 @@ def resolve_step_inputs(
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         issue_found = False
         try:
-            if config_.metadata_name is None and config_.artifact_name:
-                if artifact_ := config_.model.get_artifact(
+            context_model = config_._get_model_response(
+                pipeline_run=pipeline_run
+            )
+            if context_model is None:
+                issue_found = True
+            elif config_.metadata_name is None and config_.artifact_name:
+                if artifact_ := context_model.get_artifact(
                     config_.artifact_name, config_.artifact_version
                 ):
                     input_artifacts[name] = artifact_
                 else:
                     issue_found = True
-            elif config_.artifact_name is None and config_.metadata_name:
+            elif (
+                config_.artifact_name is None
+                and config_.metadata_name
+                and context_model.run_metadata is not None
+            ):
                 # metadata values should go directly in parameters, as primitive types
-                step.config.parameters[name] = config_.model.run_metadata[
+                step.config.parameters[name] = context_model.run_metadata[
                     config_.metadata_name
                 ].value
             elif config_.metadata_name and config_.artifact_name:
                 # metadata values should go directly in parameters, as primitive types
-                if artifact_ := config_.model.get_artifact(
+                if artifact_ := context_model.get_artifact(
                     config_.artifact_name, config_.artifact_version
                 ):
                     step.config.parameters[name] = artifact_.run_metadata[
@@ -115,8 +124,8 @@ def resolve_step_inputs(
         if issue_found:
             raise ValueError(
                 "Cannot fetch requested information from model "
-                f"`{config_.model.name}` version "
-                f"`{config_.model.version}` given artifact "
+                f"`{config_.model_name}` version "
+                f"`{config_.model_version}` given artifact "
                 f"`{config_.artifact_name}`, artifact version "
                 f"`{config_.artifact_version}`, and metadata "
                 f"key `{config_.metadata_name}` passed into "

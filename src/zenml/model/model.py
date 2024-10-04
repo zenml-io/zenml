@@ -87,7 +87,7 @@ class Model(BaseModel):
     was_created_in_this_run: bool = False
 
     _model_id: UUID = PrivateAttr(None)
-    _number: int = PrivateAttr(None)
+    _number: Optional[int] = PrivateAttr(None)
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -145,15 +145,20 @@ class Model(BaseModel):
                 doesn't exist and can only be read given current
                 config (you used stage name or number as
                 a version name).
+
+        Raises:
+            RuntimeError: if model version doesn't exist and
+                cannot be fetched from the Model Control Plane.
         """
         if self._number is None:
             try:
-                self._get_or_create_model_version()
-            except RuntimeError:
-                logger.info(
+                mv = self._get_or_create_model_version()
+                self._number = mv.number
+            except RuntimeError as e:
+                raise RuntimeError(
                     f"Version `{self.version}` of `{self.name}` model doesn't "
                     "exist and cannot be fetched from the Model Control Plane."
-                )
+                ) from e
         return self._number
 
     @property
@@ -362,9 +367,8 @@ class Model(BaseModel):
             get_pipeline_context()
             # avoid exposing too much of internal details by keeping the return type
             return RunMetadataLazyGetter(  # type: ignore[return-value]
-                self,
-                None,
-                None,
+                self.name,
+                self._lazy_version,
             )
         except RuntimeError:
             pass
@@ -471,9 +475,8 @@ class Model(BaseModel):
             return LazyArtifactVersionResponse(
                 lazy_load_name=name,
                 lazy_load_version=version,
-                lazy_load_model=Model(
-                    name=self.name, version=self.version or self.number
-                ),
+                lazy_load_model_name=self.name,
+                lazy_load_model_version=self._lazy_version,
             )
         except RuntimeError:
             pass
@@ -908,3 +911,21 @@ class Model(BaseModel):
                     )
         self.model_version_id = self_copy.model_version_id
         return logs
+
+    @property
+    def _lazy_version(self) -> Optional[str]:
+        """Get version name for lazy loader.
+
+        This getter ensures that new model version
+        creation is never triggered here.
+
+        Returns:
+            Version name or None if it was not set
+        """
+        if self._number is not None:
+            return str(self._number)
+        elif self.version is not None:
+            if isinstance(self.version, ModelStages):
+                return self.version.value
+            return str(self.version)
+        return None
