@@ -450,7 +450,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 batch_parameters=batch_parameters,
                 expectation_parameters=expectation_parameters
             )
-        finally:
-            context.delete_datasource(data_source.name)
+        except Exception as e:
+            raise e
 
         return results

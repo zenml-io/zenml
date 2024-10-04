@@ -123,12 +123,79 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             obj: A Great Expectations object.
         """
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
-        artifact_dict = json.loads(obj.json())
+        artifact_dict = self.serialize_ge_object(obj)
         artifact_type = type(obj)
         artifact_dict["data_type"] = (
             f"{artifact_type.__module__}.{artifact_type.__name__}"
         )
         yaml_utils.write_json(filepath, artifact_dict)
+
+    def serialize_ge_object(self, obj: Any) -> Any:
+        """Serialize a Great Expectations object to a JSON-serializable structure.
+
+        Args:
+            obj: A Great Expectations object.
+
+        Returns:
+            A JSON-serializable representation of the object.
+        """
+        if isinstance(obj, CheckpointResult):
+            return {
+                "name": obj.name,
+                "run_id": self.serialize_ge_object(obj.run_id),
+                "run_results": self.serialize_ge_object(obj.run_results),
+                "checkpoint_config": self.serialize_ge_object(obj.checkpoint_config),
+                "success": obj.success,
+            }
+        elif isinstance(obj, dict):
+            return {self.serialize_key(k): self.serialize_ge_object(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self.serialize_ge_object(v) for v in obj]
+        elif hasattr(obj, 'to_json_dict'):
+            return obj.to_json_dict()   
+        elif hasattr(obj, 'to_tuple'):
+            return obj.to_tuple()
+        elif hasattr(obj, 'json'):
+            return obj.json()
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, uuid.UUID):
+            return str(obj)
+        else:
+            return obj
+
+    def serialize_key(self, key: Any) -> str:
+        """Serialize a dictionary key to a string.
+
+        Args:
+            key: The key to serialize.
+
+        Returns:
+            A string representation of the key.
+        """
+        if isinstance(key, (str, int, float, bool)) or key is None:
+            return str(key)
+        elif isinstance(key, (ExpectationSuiteIdentifier, ValidationResultIdentifier)):
+            return self.serialize_identifier(key)
+        else:
+            return str(key)
+
+    def serialize_identifier(self, identifier: Union[ExpectationSuiteIdentifier, ValidationResultIdentifier]) -> str:
+        """Serialize ExpectationSuiteIdentifier or ValidationResultIdentifier to a string.
+
+        Args:
+            identifier: The identifier to serialize.
+
+        Returns:
+            A string representation of the identifier.
+
+        Raises:
+            ValueError: If the identifier type is not supported.
+        """
+        if isinstance(identifier, ExpectationSuiteIdentifier):
+            return f"ExpectationSuiteIdentifier:{identifier.expectation_suite_name}"
+        elif isinstance(identifier, ValidationResultIdentifier):
+            return f"ValidationResultIdentifier:{identifier.expectation_suite_identifier}:{identifier.run_id}:{identifier.batch_identifier}"
 
     def save_visualizations(
         self, data: Union[ExpectationSuite, CheckpointResult]
