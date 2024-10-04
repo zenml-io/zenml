@@ -525,6 +525,7 @@ def train_pipeline(artifact_name: str = "my_model_ckpts"):
 if __name__ == "__main__":
     train_pipeline()
 ```
+
 {% endcode %}
 
 ## Logging metadata for an artifact
