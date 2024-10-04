@@ -18,13 +18,17 @@ from rich import print as rich_print
 
 from zenml import step
 from zenml.integrations.bentoml.services import BentoMLLocalDeploymentService
-from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentService
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BentoMLContainerDeploymentService,
+)
 
 
 @step
 def predictor(
     inference_data: Dict[str, List],
-    service: Union[BentoMLLocalDeploymentService, BentoMLContainerDeploymentService],
+    service: Union[
+        BentoMLLocalDeploymentService, BentoMLContainerDeploymentService
+    ],
 ) -> None:
     """Run an inference request against the BentoML prediction service.
 

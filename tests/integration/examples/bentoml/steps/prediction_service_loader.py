@@ -17,7 +17,9 @@ from zenml import step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
-from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentService
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BentoMLContainerDeploymentService,
+)
 from zenml.integrations.bentoml.services.bentoml_local_deployment import (
     BentoMLLocalDeploymentService,
 )

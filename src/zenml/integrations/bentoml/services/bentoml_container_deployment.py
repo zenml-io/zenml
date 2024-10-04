@@ -1,28 +1,57 @@
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation for the BentoML container deployment service."""
+
 import os
 import sys
 from typing import Any, Dict, List, Optional, Union
 
 import bentoml
-from bentoml import Tag
-from bentoml.client import Client
 import docker.errors as docker_errors
-from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from bentoml.client import Client
+
 from zenml.client import Client as ZenMLClient
-from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT, BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.integrations.bentoml.constants import (
+    BENTOML_DEFAULT_PORT,
+    BENTOML_HEALTHCHECK_URL_PATH,
+    BENTOML_PREDICTION_URL_PATH,
+)
 from zenml.logger import get_logger
-from zenml.services.container.container_service import SERVICE_CONTAINER_PATH, ContainerService, ContainerServiceConfig
-from zenml.services.container.container_service_endpoint import ContainerServiceEndpoint, ContainerServiceEndpointConfig
+from zenml.services.container.container_service import (
+    ContainerService,
+    ContainerServiceConfig,
+)
+from zenml.services.container.container_service_endpoint import (
+    ContainerServiceEndpoint,
+    ContainerServiceEndpointConfig,
+)
 from zenml.services.service import BaseDeploymentService
 from zenml.services.service_endpoint import ServiceEndpointProtocol
-from zenml.services.service_monitor import HTTPEndpointHealthMonitor, HTTPEndpointHealthMonitorConfig
+from zenml.services.service_monitor import (
+    HTTPEndpointHealthMonitor,
+    HTTPEndpointHealthMonitorConfig,
+)
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
-
 logger = get_logger(__name__)
+
 
 class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     """BentoML container deployment configuration."""
+
     model_name: str
     model_uri: str
     bento_tag: str
@@ -72,7 +101,9 @@ class BentoMLContainerDeploymentEndpoint(ContainerServiceEndpoint):
         return os.path.join(uri, self.config.prediction_url_path)
 
 
-class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService):
+class BentoMLContainerDeploymentService(
+    ContainerService, BaseDeploymentService
+):
     """BentoML container deployment service."""
 
     SERVICE_TYPE = ServiceType(
@@ -221,7 +252,9 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             # if container registry is present in the stack, name the image
             # with the container registry uri, else name the image with the bento tag
             if container_registry:
-                image_name = f"{container_registry.config.uri}/{self.config.bento_tag}"
+                image_name = (
+                    f"{container_registry.config.uri}/{self.config.bento_tag}"
+                )
                 image_tag = (image_name,)
                 self.config.image = image_name
             else:
@@ -241,27 +274,29 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         except Exception as e:
             logger.error(f"Error containerizing the bento: {e}")
             raise e
-        
+
         if container_registry:
-            logger.info(f"Pushing bento to container registry {container_registry.config.uri}")
+            logger.info(
+                f"Pushing bento to container registry {container_registry.config.uri}"
+            )
             # push the bento to the image registry
             container_registry.push_image(self.config.image)
         else:
-            logger.warning("No container registry found in the active stack. "
-                           "Please add a container registry to your stack to push "
-                           "the bento to an image registry.")
-        
+            logger.warning(
+                "No container registry found in the active stack. "
+                "Please add a container registry to your stack to push "
+                "the bento to an image registry."
+            )
 
     def provision(self) -> None:
         """Provision the service."""
         # containerize the bento
         self._containerize_and_push_bento()
         # run the container
-        super().provision() 
+        super().provision()
 
     def run(self) -> None:
         """Start the service."""
-        from bentoml import Service
         from bentoml._internal.service.loader import load
 
         logger.info("Starting BentoML container deployment service...")
@@ -270,7 +305,9 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
 
         if self.config.working_dir is None:
             if os.path.isdir(os.path.expanduser(self.config.bento_tag)):
-                self.config.working_dir = os.path.expanduser(self.config.bento_tag)
+                self.config.working_dir = os.path.expanduser(
+                    self.config.bento_tag
+                )
             else:
                 self.config.working_dir = "."
         if sys.path[0] != self.config.working_dir:
@@ -287,7 +324,9 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
             logger.error(f"Failed to start BentoML service: {e}")
             raise
         except FileNotFoundError:
-            logger.error("BentoML command not found. Make sure it's installed and in the PATH.")
+            logger.error(
+                "BentoML command not found. Make sure it's installed and in the PATH."
+            )
             raise
 
     @property
@@ -301,7 +340,7 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         if not self.is_running:
             return None
         return self.endpoint.prediction_url
-    
+
     @property
     def prediction_apis_urls(self) -> Optional[List[str]]:
         """Get the URI where the prediction api services is answering requests.
@@ -319,7 +358,6 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
                 for api in self.config.apis
             ]
         return None
-    
 
     def predict(self, api_endpoint: str, data: Any) -> Any:
         """Make a prediction using the service.
@@ -348,4 +386,3 @@ class BentoMLContainerDeploymentService(ContainerService, BaseDeploymentService)
         else:
             raise ValueError("No endpoint known for prediction.")
         return result
-        

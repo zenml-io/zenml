@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import typing as t
-from typing import TYPE_CHECKING, Annotated, cast
+from typing import Annotated
 
 import bentoml
-from bentoml.validators import DType, Shape
 import numpy as np
 import torch
-from bentoml.io import Image, NumpyNdarray
+from bentoml.validators import DType, Shape
 from constants import MODEL_NAME, SERVICE_NAME
 from PIL.Image import Image as PILImage
-
-
 
 
 def to_numpy(tensor):
@@ -29,8 +25,7 @@ class MNISTService:
 
     @bentoml.api()
     def predict_ndarray(
-        self, 
-        inp: Annotated[np.ndarray, DType("float32"), Shape((28, 28))]
+        self, inp: Annotated[np.ndarray, DType("float32"), Shape((28, 28))]
     ) -> np.ndarray:
         # We are using greyscale image and our PyTorch model expect one
         # extra channel dimension. Then we will also add one batch

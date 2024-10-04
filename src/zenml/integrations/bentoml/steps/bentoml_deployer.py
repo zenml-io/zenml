@@ -22,7 +22,10 @@ from zenml import get_step_context, step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
-from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentConfig, BentoMLContainerDeploymentService
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BentoMLContainerDeploymentConfig,
+    BentoMLContainerDeploymentService,
+)
 from zenml.integrations.bentoml.services.bentoml_local_deployment import (
     BentoMLLocalDeploymentConfig,
     BentoMLLocalDeploymentService,
@@ -67,6 +70,7 @@ def bentoml_model_deployer_step(
         bento: the bento artifact to deploy
         model_name: the name of the model to deploy.
         port: the port to use for the prediction service.
+        deployment_type: the type of deployment to use. Either "local" or "container".
         deploy_decision: whether to deploy the model or not
         workers: number of workers to use for the prediction service
         backlog: the number of requests to queue up before rejecting requests.
@@ -159,7 +163,9 @@ def bentoml_model_deployer_step(
     # Creating a new service with inactive state and status by default
     if existing_services:
         if deployment_type == "container":
-            service = cast(BentoMLContainerDeploymentService, existing_services[0])
+            service = cast(
+                BentoMLContainerDeploymentService, existing_services[0]
+            )
         else:
             service = cast(BentoMLLocalDeploymentService, existing_services[0])
 

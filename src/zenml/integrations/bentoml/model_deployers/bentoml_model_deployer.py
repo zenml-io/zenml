@@ -15,7 +15,7 @@
 
 import os
 import shutil
-from typing import ClassVar, Dict, Optional, Type, Union, cast
+from typing import ClassVar, Dict, Optional, Type, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -24,7 +24,10 @@ from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
     BentoMLModelDeployerFlavor,
 )
-from zenml.integrations.bentoml.services.bentoml_container_deployment import BentoMLContainerDeploymentConfig, BentoMLContainerDeploymentService
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BentoMLContainerDeploymentConfig,
+    BentoMLContainerDeploymentService,
+)
 from zenml.integrations.bentoml.services.bentoml_local_deployment import (
     BentoMLLocalDeploymentConfig,
     BentoMLLocalDeploymentService,
@@ -115,12 +118,21 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Raises:
             ValueError: If the service type is not supported.
         """
-        if service_instance.SERVICE_TYPE.name == "bentoml-container-deployment":
-            service_instance = cast(BentoMLContainerDeploymentService, service_instance)
+        if (
+            service_instance.SERVICE_TYPE.name
+            == "bentoml-container-deployment"
+        ):
+            service_instance = cast(
+                BentoMLContainerDeploymentService, service_instance
+            )
         elif service_instance.SERVICE_TYPE.name == "bentoml-local-deployment":
-            service_instance = cast(BentoMLLocalDeploymentService, service_instance)
+            service_instance = cast(
+                BentoMLLocalDeploymentService, service_instance
+            )
         else:
-            raise ValueError(f"Unsupported service type: {service_instance.SERVICE_TYPE.name}")
+            raise ValueError(
+                f"Unsupported service type: {service_instance.SERVICE_TYPE.name}"
+            )
 
         predictions_apis_urls = ""
         if service_instance.prediction_apis_urls is not None:
@@ -140,7 +152,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "MODEL_URI": service_instance.config.model_uri,
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
-            "DAEMON_PID": str(service_instance.status.pid) if hasattr(service_instance.status, "pid") else None,
+            "DAEMON_PID": str(service_instance.status.pid)
+            if hasattr(service_instance.status, "pid")
+            else None,
             "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
