@@ -332,8 +332,157 @@ finally:
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
 {% hint style="info" %}
-It is also possible to use these functions inside your ZenML steps.
+It is also possible to use these functions inside your ZenML steps. Below you can find a sophisticated example of a simple pipeline doing a Pytorch Lightning training with the artifacts linkage for checkpoint artifacts.
 {% endhint %}
+
+{% code title="Example Command Output" %}
+
+```python
+from zenml.client import Client
+from zenml import link_folder_as_artifact
+from zenml import step, pipeline, get_step_context, Model
+from zenml.exceptions import StepContextError
+from zenml.logger import get_logger
+
+import os
+from torch.utils.data import DataLoader
+from torch.nn import ReLU, Linear, Sequential
+from torch.nn.functional import mse_loss
+from torch.optim import Adam
+from torchvision.datasets import MNIST
+from torchvision.transforms import ToTensor
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning import Trainer, LightningModule
+
+logger = get_logger(__name__)
+
+
+class ZenMLModelCheckpoint(ModelCheckpoint):
+    """A ModelCheckpoint that can be used with ZenML.
+
+    Used to store model checkpoints in ZenML as artifacts.
+    Supports `default_root_dir` to pass into `Trainer`.
+    """
+
+    def __init__(
+        self,
+        artifact_name: str,
+        every_n_epochs: int = 1,
+        save_top_k: int = -1,
+        *args,
+        **kwargs,
+    ):
+        # get all needed info for the ZenML logic
+        try:
+            zenml_model = get_step_context().model
+        except StepContextError:
+            raise RuntimeError(
+                "`ZenMLModelCheckpoint` can only be called from within a step."
+            )
+        model_name = zenml_model.name
+        filename = "{epoch:02d}/" + model_name
+        self.artifact_name = artifact_name
+
+        prefix = Client().active_stack.artifact_store.path
+        self.default_root_dir = os.path.join(prefix, str(zenml_model.version))
+        logger.info(f"Model data will be stored in {self.default_root_dir}")
+
+        super().__init__(
+            every_n_epochs=every_n_epochs,
+            save_top_k=save_top_k,
+            filename=filename,
+            *args,
+            **kwargs,
+        )
+
+    def on_train_epoch_end(
+        self, trainer: "Trainer", pl_module: "LightningModule"
+    ) -> None:
+        super().on_train_epoch_end(trainer, pl_module)
+
+        # We now link those checkpoints in ZenML as an artifact
+        # This will create a new artifact version
+        link_folder_as_artifact(
+            os.path.join(self.dirpath, f"epoch={trainer.current_epoch:02d}"),
+            self.artifact_name,
+            is_model_artifact=True,
+        )
+
+
+# define the LightningModule toy model
+class LitAutoEncoder(LightningModule):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def training_step(self, batch, batch_idx):
+        # training_step defines the train loop.
+        # it is independent of forward
+        x, _ = batch
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        x_hat = self.decoder(z)
+        loss = mse_loss(x_hat, x)
+        # Logging to TensorBoard (if installed) by default
+        self.log("train_loss", loss)
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = Adam(self.parameters(), lr=1e-3)
+        return optimizer
+
+
+@step
+def get_data() -> DataLoader:
+    """Get the training data."""
+    dataset = MNIST(os.getcwd(), download=True, transform=ToTensor())
+    train_loader = DataLoader(dataset)
+
+    return train_loader
+
+
+@step
+def get_model() -> LightningModule:
+    """Get the model to train."""
+    encoder = Sequential(Linear(28 * 28, 64), ReLU(), Linear(64, 3))
+    decoder = Sequential(Linear(3, 64), ReLU(), Linear(64, 28 * 28))
+    model = LitAutoEncoder(encoder, decoder)
+    return model
+
+
+@step
+def train_model(
+    model: LightningModule, train_loader: DataLoader, epochs: int = 1
+) -> LightningModule:
+    """Run the training loop."""
+    # configure checkpointing
+    chkpt_cb = ZenMLModelCheckpoint(artifact_name="my_model_ckpts")
+
+    trainer = Trainer(
+        # pass default_root_dir from ZenML checkpoint to
+        # ensure that the data is accessible for the artifact
+        # store
+        default_root_dir=chkpt_cb.default_root_dir,
+        limit_train_batches=100,
+        max_epochs=epochs,
+        callbacks=[chkpt_cb],
+    )
+    trainer.fit(model, train_loader)
+    return model
+
+
+@pipeline(model=Model(name="LightningDemo"))
+def train_pipeline():
+    train_loader = get_data()
+    model = get_model()
+    train_model(model, train_loader, 10)
+
+
+if __name__ == "__main__":
+    train_pipeline()
+```
+{% endcode %}
 
 ## Logging metadata for an artifact
 
