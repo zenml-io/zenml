@@ -630,8 +630,7 @@ def _check_if_artifact_with_given_uri_already_registered(
     uri: str,
     name: str,
 ) -> None:
-    """Check if the given artifact store already contains an artifact with the
-    given URI.
+    """Check if the given artifact store already contains an artifact with the given URI.
 
     Args:
         artifact_store: The artifact store to check.
@@ -668,7 +667,6 @@ def _get_or_create_artifact(
     Returns:
         The artifact.
     """
-
     client = Client()
     # Get or create the artifact
     try:
