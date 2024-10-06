@@ -14,6 +14,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  trigger-cluster-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cluster Start
+        run: |
+          curl -X POST ${{ secrets.CI_CLUSTER_WEBHOOK }}
   docstring-check:
     if: github.event.pull_request.draft == false
     runs-on: arc-runner-set
