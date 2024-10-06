@@ -14,6 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 import json
 
@@ -79,14 +80,33 @@ class GreatExpectationsMaterializer(BaseMaterializer):
                 return ExpectationSuiteValidationResult(**value)
             return value
 
-        artifact_dict["checkpoint_config"] = Checkpoint(
-            **json.loads(artifact_dict["checkpoint_config"])
-        )
+        # artifact_dict["checkpoint_config"] = Checkpoint(
+        #     **json.loads(artifact_dict["checkpoint_config"])
+        # )
+        artifact_dict["checkpoint_config"] = Checkpoint(name="test", validation_definitions=[])
         validation_dict = {}
         for result_ident, results in artifact_dict["run_results"].items():
+            after_double_colon = result_ident.split('::', 1)[1]
+
+            # Use a regular expression to extract the JSON part
+            json_match = re.search(r'\{.*?\}', after_double_colon, re.DOTALL)
+            if json_match:
+                run_id_json_str = json_match.group(0)
+                # Parse the JSON string to extract run_name and run_time
+                run_id_data = json.loads(run_id_json_str)
+
+                # Extract run_name and run_time
+                run_name = run_id_data.get("run_name")
+                run_time = run_id_data.get("run_time")
+
+            # Now split the remaining part by colons to get the components
+            components = after_double_colon.split(':')
+            expectation_suite_identifier = components[0]
+            batch_identifier = components[-1]
+            validation_ident_tuple = (expectation_suite_identifier, run_name, run_time, batch_identifier)
             validation_ident = (
                 ValidationResultIdentifier.from_fixed_length_tuple(  # type: ignore[no-untyped-call]
-                    result_ident.split("::")[1].split("/")
+                    validation_ident_tuple
                 )
             )
             validation_results = {
@@ -109,7 +129,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = source_utils.load(artifact_dict.pop("data_type"))
         # load active data context
-        context = GreatExpectationsDataValidator.get_data_context()
+        _ = GreatExpectationsDataValidator.get_data_context()
 
         if data_type is CheckpointResult:
             self.preprocess_checkpoint_result_dict(artifact_dict)
