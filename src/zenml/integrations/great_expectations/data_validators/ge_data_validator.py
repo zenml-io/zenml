@@ -199,6 +199,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             expectations_store_name = "zenml_expectations_store"
             validation_results_store_name = "zenml_validation_results_store"
             checkpoint_store_name = "zenml_checkpoint_store"
+            validation_definition_store_name = "validation_definition_store"
 
             # Define default configuration options that plug the GX stores
             # in the active ZenML artifact store
@@ -213,6 +214,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     checkpoint_store_name: self.get_store_config(
                         "CheckpointStore", "checkpoints"
                     ),
+                    validation_definition_store_name: self.get_store_config(
+                        "ValidationDefinitionStore", "validation_definitions"
+                    )
                 },
                 expectations_store_name=expectations_store_name,
                 validation_results_store_name=validation_results_store_name,
