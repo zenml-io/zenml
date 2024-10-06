@@ -24,6 +24,9 @@ from great_expectations.checkpoint.checkpoint import (  # type: ignore[import-un
 from great_expectations.core import (  # type: ignore[import-untyped]
     ExpectationSuite,
 )
+from great_expectations.data_context.data_context import (
+    project_manager
+)
 from great_expectations.data_context.data_context.abstract_data_context import (
     AbstractDataContext,
 )
@@ -290,6 +293,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                         self.get_data_docs_config("data_docs", local=True)
                     )
 
+        project_manager.set_project(self._context)
         return self._context
 
     @property
