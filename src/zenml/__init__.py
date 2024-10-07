@@ -37,8 +37,10 @@ from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
     load_artifact,
-    link_folder_as_artifact
+    link_existing_data_as_artifact,
+    
 )
+from zenml.artifacts.load_directory_materializer import PreexistingArtifactPath
 from zenml.model.utils import (
     log_model_metadata,
     link_artifact_to_model,
@@ -58,6 +60,7 @@ from zenml.entrypoints import entrypoint
 __all__ = [
     "ArtifactConfig",
     "ExternalArtifact",
+    "PreexistingArtifactPath",
     "get_pipeline_context",
     "get_step_context",
     "load_artifact",
@@ -70,7 +73,7 @@ __all__ = [
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",
-    "link_folder_as_artifact",
+    "link_existing_data_as_artifact",
     "show",
     "step",
     "entrypoint",

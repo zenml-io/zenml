@@ -306,13 +306,59 @@ It is also possible to use these functions inside your ZenML steps. However, it 
 Sometimes, data is produced completely outside of ZenML and can be conveniently store on a given storage. A good example of this is the checkpoint files produced as a side-effect of the Deep Learning model training. We know that the intermediate data of the deep learning frameworks is quite big and there is no good reason to move it around again and again, if it can be produced directly in the artifact store boundaries and later just linked to become an artifact of ZenML.
 
 ```python
-# Here we explore the Pytorch Lightning example
-# to fit model and store the checkpoints on remote
-# location.
+import os
+from uuid import uuid4
 
+from zenml.client import Client
+from zenml import link_existing_data_as_artifact, PreexistingArtifactPath
+
+prefix = Client().active_stack.artifact_store.path
+test_file_name = "test_file.txt"
+preexisting_folder = os.path.join(prefix,f"my_test_folder_{uuid4()}")
+preexisting_file = os.path.join(preexisting_folder,test_file_name)
+
+# produce a folder with a file inside artifact store boundaries
+os.mkdir(preexisting_folder)
+with open(preexisting_file,"w") as f:
+    f.write("test")
+
+# create artifact from the preexisting folder
+link_existing_data_as_artifact(
+    folder_or_file_uri=preexisting_folder,
+    name="my_folder_artifact"
+)
+
+# consume artifact as a folder
+temp_artifact_folder_path = Client().get_artifact_version(name_id_or_prefix="my_folder_artifact").load()
+assert isinstance(temp_artifact_folder_path, PreexistingArtifactPath)
+assert os.path.isdir(temp_artifact_folder_path)
+with open(os.path.join(temp_artifact_folder_path,test_file_name),"r") as f:
+    assert f.read() == "test"
+
+# create artifact from the preexisting file
+link_existing_data_as_artifact(
+    folder_or_file_uri=preexisting_file,
+    name="my_file_artifact"
+)
+
+# consume artifact as a file
+temp_artifact_file_path = Client().get_artifact_version(name_id_or_prefix="my_file_artifact").load()
+assert isinstance(temp_artifact_file_path, PreexistingArtifactPath)
+assert not os.path.isdir(temp_artifact_file_path)
+with open(temp_artifact_file_path,"r") as f:
+    assert f.read() == "test"
+```
+
+{% hint style="info" %}
+The artifact produced from the preexisting data will have special type `PreexistingArtifactPath`, but can be treated as regular `pathlib.Path` object while using it.
+{% endhint %}
+
+Now let's explore the Pytorch Lightning example to fit model and store the checkpoints on remote location.
+
+```python
 import os
 from zenml.client import Client
-from zenml import link_folder_as_artifact
+from zenml import link_existing_data_as_artifact
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from uuid import uuid4
@@ -338,7 +384,7 @@ try:
 finally:
     # We now link those checkpoints in ZenML as an artifact
     # This will create a new artifact version
-    link_folder_as_artifact(default_root_dir, name="all_my_model_checkpoints")
+    link_existing_data_as_artifact(default_root_dir, name="all_my_model_checkpoints")
 ```
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
@@ -353,9 +399,11 @@ Below you can find a sophisticated example of a pipeline doing a Pytorch Lightni
 <summary>Pytorch Lightning training with the checkpoints linkage example</summary>
 
 ```python
-from pathlib import Path
+from typing import Annotated
+
+import numpy as np
 from zenml.client import Client
-from zenml import link_folder_as_artifact
+from zenml import link_existing_data_as_artifact, PreexistingArtifactPath
 from zenml import step, pipeline, get_step_context, Model
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
@@ -365,7 +413,7 @@ from torch.utils.data import DataLoader
 from torch.nn import ReLU, Linear, Sequential
 from torch.nn.functional import mse_loss
 from torch.optim import Adam
-from torch import rand, Tensor
+from torch import rand
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -399,7 +447,8 @@ class ZenMLModelCheckpoint(ModelCheckpoint):
                 "`ZenMLModelCheckpoint` can only be called from within a step."
             )
         model_name = zenml_model.name
-        filename = "{epoch:02d}/" + model_name
+        filename = model_name + "_{epoch:02d}"
+        self.filename_format = model_name + "_epoch={epoch:02d}.ckpt"
         self.artifact_name = artifact_name
 
         prefix = Client().active_stack.artifact_store.path
@@ -421,8 +470,10 @@ class ZenMLModelCheckpoint(ModelCheckpoint):
 
         # We now link those checkpoints in ZenML as an artifact
         # This will create a new artifact version
-        link_folder_as_artifact(
-            os.path.join(self.dirpath, f"epoch={trainer.current_epoch:02d}"),
+        link_existing_data_as_artifact(
+            os.path.join(
+                self.dirpath, self.filename_format.format(epoch=trainer.current_epoch)
+            ),
             self.artifact_name,
             is_model_artifact=True,
         )
@@ -494,15 +545,14 @@ def train_model(
 
 
 @step
-def predict(checkpoint_dir: Path) -> Tensor:
-    # get the checkpoint file path
-    checkpoint = checkpoint_dir / f"{get_step_context().model.name}.ckpt"
-
+def predict(
+    checkpoint_file: PreexistingArtifactPath,
+) -> Annotated[np.ndarray, "predictions"]:
     # load the model from the checkpoint
     encoder = Sequential(Linear(28 * 28, 64), ReLU(), Linear(64, 3))
     decoder = Sequential(Linear(3, 64), ReLU(), Linear(64, 28 * 28))
     autoencoder = LitAutoEncoder.load_from_checkpoint(
-        checkpoint, encoder=encoder, decoder=decoder
+        checkpoint_file, encoder=encoder, decoder=decoder
     )
     encoder = autoencoder.encoder
     encoder.eval()
@@ -510,7 +560,10 @@ def predict(checkpoint_dir: Path) -> Tensor:
     # predict on fake batch
     fake_image_batch = rand(4, 28 * 28, device=autoencoder.device)
     embeddings = encoder(fake_image_batch)
-    return embeddings
+    if embeddings.device.type == "cpu":
+        return embeddings.detach().numpy()
+    else:
+        return embeddings.detach().cpu().numpy()
 
 
 @pipeline(model=Model(name="LightningDemo"))

@@ -33,7 +33,7 @@ from typing import (
 from uuid import UUID, uuid4
 
 from zenml.artifacts.load_directory_materializer import (
-    LoaderDirectoryMaterializer,
+    PreexistingDataMaterializer,
 )
 from zenml.client import Client
 from zenml.constants import (
@@ -255,19 +255,20 @@ def save_artifact(
     return response
 
 
-def link_folder_as_artifact(
-    folder_uri: str,
+def link_existing_data_as_artifact(
+    folder_or_file_uri: str,
     name: str,
     version: Optional[Union[int, str]] = None,
     tags: Optional[List[str]] = None,
     has_custom_name: bool = True,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
+    artifact_metadata: Dict[str, "MetadataType"] = {},
 ) -> "ArtifactVersionResponse":
-    """Link existing folder stored in the artifact store as an artifact.
+    """Link existing data stored in the artifact store as an artifact.
 
     Args:
-        folder_uri: The full URI within the artifact store to folder.
+        folder_or_file_uri: The full URI within the artifact store to folder or a file.
         name: The name of the artifact.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
@@ -276,6 +277,7 @@ def link_folder_as_artifact(
             the dashboard "Artifacts" tab.
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
+        artifact_metadata: Metadata dictionary to attach to the artifact version.
 
     Returns:
         The saved artifact response.
@@ -289,15 +291,15 @@ def link_folder_as_artifact(
     # Get the current artifact store
     artifact_store = client.active_stack.artifact_store
 
-    if not folder_uri.startswith(artifact_store.path):
+    if not folder_or_file_uri.startswith(artifact_store.path):
         raise FileNotFoundError(
-            f"Folder `{folder_uri}` is outside of "
+            f"Folder `{folder_or_file_uri}` is outside of "
             f"artifact store bounds `{artifact_store.path}`"
         )
 
     _check_if_artifact_with_given_uri_already_registered(
         artifact_store=artifact_store,
-        uri=folder_uri,
+        uri=folder_or_file_uri,
         name=name,
     )
 
@@ -316,8 +318,8 @@ def link_folder_as_artifact(
             version=version,
             tags=tags,
             type=ArtifactType.DATA,
-            uri=folder_uri,
-            materializer=source_utils.resolve(LoaderDirectoryMaterializer),
+            uri=folder_or_file_uri,
+            materializer=source_utils.resolve(PreexistingDataMaterializer),
             data_type=source_utils.resolve(Path),
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
@@ -336,6 +338,13 @@ def link_folder_as_artifact(
         version=version,
         create_version_fn=_create_version,
     )
+
+    if artifact_metadata:
+        client.create_run_metadata(
+            metadata=artifact_metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+        )
 
     _link_artifact_version_to_model_version_in_context(
         name=name,
