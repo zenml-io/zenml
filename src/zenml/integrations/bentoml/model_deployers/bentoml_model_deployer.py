@@ -34,6 +34,8 @@ from zenml.integrations.bentoml.services.bentoml_local_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
+from zenml.services.container.container_service import ContainerServiceStatus
+from zenml.services.local.local_service import LocalDaemonServiceStatus
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
@@ -104,7 +106,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         return self._service_path
 
     @staticmethod
-    def get_model_server_info(  # type: ignore[override]
+    def get_model_server_info(
         service_instance: BaseService,
     ) -> Dict[str, Optional[str]]:
         """Return implementation specific information on the model server.
@@ -135,25 +137,36 @@ class BentoMLModelDeployer(BaseModelDeployer):
             )
 
         predictions_apis_urls = ""
-        if service_instance.prediction_apis_urls is not None:
+        if service_instance.prediction_apis_urls is not None:  # type: ignore
             predictions_apis_urls = ", ".join(
                 [
                     api
-                    for api in service_instance.prediction_apis_urls
+                    for api in service_instance.prediction_apis_urls  # type: ignore
                     if api is not None
                 ]
             )
 
+        service_config = service_instance.config
+        assert isinstance(
+            service_config,
+            (BentoMLLocalDeploymentConfig, BentoMLContainerDeploymentConfig),
+        )
+
+        service_status = service_instance.status
+        assert isinstance(
+            service_status, (ContainerServiceStatus, LocalDaemonServiceStatus)
+        )
+
         return {
             "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
             "PREDICTION_URL": service_instance.get_prediction_url(),
-            "BENTO_TAG": service_instance.config.bento_tag,
-            "MODEL_NAME": service_instance.config.model_name,
-            "MODEL_URI": service_instance.config.model_uri,
-            "BENTO_URI": service_instance.config.bento_uri,
-            "SERVICE_PATH": service_instance.status.runtime_path,
-            "DAEMON_PID": str(service_instance.status.pid)
-            if hasattr(service_instance.status, "pid")
+            "BENTO_TAG": service_config.bento_tag,
+            "MODEL_NAME": service_config.model_name,
+            "MODEL_URI": service_config.model_uri,
+            "BENTO_URI": service_config.bento_uri,
+            "SERVICE_PATH": service_status.runtime_path,
+            "DAEMON_PID": str(service_status.pid)
+            if hasattr(service_status, "pid")
             else None,
             "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
@@ -219,6 +232,15 @@ class BentoMLModelDeployer(BaseModelDeployer):
         # stop the older service
         existing_service.stop(timeout=timeout, force=force)
 
+        # assert that the service is either a BentoMLLocalDeploymentService or a BentoMLContainerDeploymentService
+        if not isinstance(
+            existing_service,
+            (BentoMLLocalDeploymentService, BentoMLContainerDeploymentService),
+        ):
+            raise ValueError(
+                f"Unsupported service type: {type(existing_service)}"
+            )
+
         # delete the old configuration file
         if existing_service.status.runtime_path:
             shutil.rmtree(existing_service.status.runtime_path)
@@ -244,12 +266,17 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Raises:
             ValueError: If the service type is not supported.
         """
+        assert isinstance(
+            config,
+            (BentoMLLocalDeploymentConfig, BentoMLContainerDeploymentConfig),
+        )
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path
         # create a new service for the new model
         # if the config is of type BentoMLLocalDeploymentConfig, create a
         # BentoMLLocalDeploymentService, otherwise create a
         # BentoMLContainerDeploymentService
+        service: BaseService
         if isinstance(config, BentoMLLocalDeploymentConfig):
             service = BentoMLLocalDeploymentService(uuid=id, config=config)
         elif isinstance(config, BentoMLContainerDeploymentConfig):

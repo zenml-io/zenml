@@ -234,7 +234,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
                 logger.info("Stopping BentoML prediction service...")
         else:
             # bentoml>=1.2
-            from _bentoml_impl.server import serve_http
+            from _bentoml_impl.server import serve_http  # type: ignore
 
             svc.inject_config()
             try:

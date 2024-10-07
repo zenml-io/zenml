@@ -57,7 +57,7 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     bento_tag: str
     bento_uri: Optional[str] = None
     platform: Optional[str] = None
-    image: Optional[str] = None
+    image: str = ""
     image_tag: Optional[str] = None
     features: Optional[List[str]] = None
     file: Optional[str] = None
@@ -243,7 +243,7 @@ class BentoMLContainerDeploymentService(
 
     def _containerize_and_push_bento(self) -> None:
         """Containerize the bento and push it to the container registry.
-        
+
         Raises:
             Exception: If the bento containerization fails.
         """
@@ -259,11 +259,11 @@ class BentoMLContainerDeploymentService(
                 image_name = (
                     f"{container_registry.config.uri}/{self.config.bento_tag}"
                 )
-                image_tag = (image_name,)
+                image_tag = (image_name,)  # type: ignore
                 self.config.image = image_name
             else:
                 # bentoml will use the bento tag as the name of the image
-                image_tag = (self.config.bento_tag,)
+                image_tag = (self.config.bento_tag,)  # type: ignore
                 self.config.image = self.config.bento_tag
         try:
             bentoml.container.build(
@@ -301,7 +301,7 @@ class BentoMLContainerDeploymentService(
 
     def run(self) -> None:
         """Start the service.
-        
+
         Raises:
             FileNotFoundError: If the bento file is not found.
             subprocess.CalledProcessError: If the bentoml serve command fails.

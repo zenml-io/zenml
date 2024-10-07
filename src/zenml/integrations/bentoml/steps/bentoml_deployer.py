@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
 
-from typing import List, Literal, Optional, cast
+from typing import List, Literal, Optional, Tuple, cast
 
 import bentoml
 from bentoml._internal.bento import bento
@@ -32,7 +32,8 @@ from zenml.integrations.bentoml.services.bentoml_local_deployment import (
     SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
-from zenml.services.service import BaseService
+from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service_type import ServiceType
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -115,7 +116,9 @@ def bentoml_model_deployer_step(
         apis_paths = list(apis.keys())
         return apis_paths
 
-    def create_deployment_config(deployment_type):
+    def create_deployment_config(
+        deployment_type: Literal["local", "container"],
+    ) -> Tuple[ServiceConfig, ServiceType]:
         common_config = {
             "model_name": model_name,
             "bento_tag": str(bento.tag),
@@ -161,6 +164,7 @@ def bentoml_model_deployer_step(
     )
 
     # Creating a new service with inactive state and status by default
+    service: Optional[BaseService] = None
     if existing_services:
         if deployment_type == "container":
             service = cast(
@@ -176,11 +180,13 @@ def bentoml_model_deployer_step(
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{model_name}'..."
         )
+        assert service is not None
         if not service.is_running:
             service.start(timeout=timeout)
         return service
 
     # create a new model deployment and replace an old one if it exists
+    new_service: BaseService
     if deployment_type == "container":
         new_service = cast(
             BentoMLContainerDeploymentService,
