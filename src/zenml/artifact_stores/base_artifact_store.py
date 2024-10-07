@@ -475,8 +475,8 @@ class BaseArtifactStore(StackComponent):
 
         default_filesystem_registry.register(filesystem_class)
 
-    def _keep_only_latest_file_version(self, path: PathType) -> None:
-        """Keep only the latest file version in the given path.
+    def _remove_previous_file_versions(self, path: PathType) -> None:
+        """Remove all file versions but the latest in the given path.
 
         Method is useful for logs stored in versioned file systems
         like AWS S3.

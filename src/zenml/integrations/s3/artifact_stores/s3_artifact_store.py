@@ -35,8 +35,11 @@ from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
 from zenml.io.fileio import convert_to_str
+from zenml.logger import get_logger
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+
+logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
 
@@ -112,6 +115,32 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
     _filesystem: Optional[ZenMLS3Filesystem] = None
+
+    is_versioned: bool = False
+
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initializes the artifact store.
+
+        Args:
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+
+        # determine bucket versioning status
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(self.config.bucket)
+        versioning = bucket.Versioning()
+        if versioning.status == "Enabled":
+            self.is_versioned = True
+            logger.warning(
+                f"The artifact store bucket `{self.config.bucket}` is versioned, "
+                "this may slow down logging process significantly."
+            )
 
     @property
     def config(self) -> S3ArtifactStoreConfig:
@@ -425,7 +454,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
 
-    def _keep_only_latest_file_version(self, path: PathType) -> None:
+    def _remove_previous_file_versions(self, path: PathType) -> None:
         """Keep only the latest file version in the given path.
 
         Method is useful for logs stored in versioned file systems
@@ -434,10 +463,10 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Args:
             path: The path to the file.
         """
-        if self.config.is_versioned:
+        if self.is_versioned:
             if isinstance(path, bytes):
                 path = path.decode()
-            prefix = os.path.join(*os.path.normpath(path).split(os.sep)[2:])
+            prefix = os.path.join(*os.path.normpath(path).split("/")[2:])
             s3 = boto3.resource("s3")
             bucket = s3.Bucket(self.config.bucket)
             for version in bucket.object_versions.filter(Prefix=prefix):

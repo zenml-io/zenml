@@ -330,7 +330,7 @@ class StepLogsStorage:
                                 file.write(
                                     f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )
-                        self.artifact_store._keep_only_latest_file_version(
+                        self.artifact_store._remove_previous_file_versions(
                             self.logs_uri
                         )
 
