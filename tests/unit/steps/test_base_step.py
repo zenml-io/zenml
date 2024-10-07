@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Annotated, Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
+from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.exceptions import StepInterfaceError

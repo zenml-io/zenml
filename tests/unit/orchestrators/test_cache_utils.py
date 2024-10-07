@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Annotated, Tuple
+from typing import Tuple
 from unittest import mock
 from unittest.mock import ANY
 from uuid import uuid4
 
 import pytest
+from typing_extensions import Annotated
 
 from zenml.config.compiler import Compiler
 from zenml.config.source import Source
