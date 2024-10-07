@@ -667,7 +667,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(BaseException):
         one_step_pipeline(
-            exception_step.configure(on_failure=on_failure_with_exception)
+            exception_step.with_options(on_failure=on_failure_with_exception)
         ).with_options(unlisted=True)()
     assert is_hook_called
 
@@ -675,7 +675,9 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
-            exception_step.configure(on_failure=on_failure_with_wrong_params)
+            exception_step.with_options(
+                on_failure=on_failure_with_wrong_params
+            )
         ).with_options(unlisted=True)()
     assert not is_hook_called
 
@@ -683,7 +685,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
-            exception_step.configure(
+            exception_step.with_options(
                 on_failure=on_failure_with_not_annotated_params
             )
         ).with_options(unlisted=True)()
@@ -693,7 +695,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(BaseException):
         one_step_pipeline(
-            exception_step.configure(on_failure=on_failure_with_no_params)
+            exception_step.with_options(on_failure=on_failure_with_no_params)
         ).with_options(unlisted=True)()
     assert is_hook_called
 
@@ -732,7 +734,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
-            passing_step.configure(on_success=on_success_with_wrong_params)
+            passing_step.with_options(on_success=on_success_with_wrong_params)
         ).with_options(unlisted=True)()
     assert not is_hook_called
 
@@ -740,7 +742,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
-            passing_step.configure(
+            passing_step.with_options(
                 on_success=on_success_with_not_annotated_params
             )
         ).with_options(unlisted=True)()
@@ -749,7 +751,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
     # Test 3
     is_hook_called = False
     one_step_pipeline(
-        passing_step.configure(on_success=on_success_with_no_params)
+        passing_step.with_options(on_success=on_success_with_no_params)
     ).with_options(unlisted=True)()
     assert is_hook_called
 

@@ -539,7 +539,7 @@ def test_stack_component_shortcut_keys(
     class StubSettings(BaseSettings):
         value: str = ""
 
-    step_instance = empty_step()
+    step_instance = empty_step
     pipeline_instance = one_step_pipeline(step_instance)
 
     full_key_settings = StubSettings(value="full_key")
