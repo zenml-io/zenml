@@ -138,7 +138,10 @@ def deploy_pipeline(
     previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     try:
-        stack.deploy_pipeline(deployment=deployment)
+        stack.deploy_pipeline(
+            deployment=deployment,
+            placeholder_run=placeholder_run,
+        )
     except Exception as e:
         if (
             placeholder_run

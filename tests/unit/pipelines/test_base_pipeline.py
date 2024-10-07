@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 from contextlib import ExitStack as does_not_raise
+from typing import Optional
 from unittest.mock import ANY, patch
 from uuid import uuid4
 
@@ -26,7 +28,12 @@ from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     StackValidationError,
 )
-from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
+from zenml.models import (
+    Page,
+    PipelineBuildBase,
+    PipelineDeploymentBase,
+    PipelineRunResponse,
+)
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import step
 
@@ -303,13 +310,17 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 ):
     """Test that `pipeline.with_options(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(deployment: PipelineDeploymentBase):
+    def assert_cache_enabled(
+        deployment: PipelineDeploymentBase,
+        placeholder_run: Optional[PipelineRunResponse] = None,
+    ):
         assert deployment.pipeline_configuration.enable_cache is True
         for step_ in deployment.step_configurations.values():
             assert step_.config.enable_cache is True
 
     def assert_cache_disabled(
         deployment: PipelineDeploymentBase,
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ):
         assert deployment.pipeline_configuration.enable_cache is False
         for step_ in deployment.step_configurations.values():
@@ -656,3 +667,12 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     mock_create_run.assert_called_once()
     run_request = mock_create_run.call_args[0][0]  # First arg
     assert not is_placeholder_request(run_request)
+
+
+def test_env_var_substitution(clean_client, empty_pipeline):  # noqa: F811
+    """Test env var substitution in pipeline config."""
+    with patch.dict(os.environ, {"A": "1"}):
+        empty_pipeline.configure(extra={"key": "${A}_suffix"})
+        run = empty_pipeline()
+
+        assert run.config.extra["key"] == "1_suffix"

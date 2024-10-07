@@ -177,7 +177,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     Active global stack set to:'aws-kubeflow'
     ```
 
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
 
     ```shell
     zenml orchestrator register <ORCHESTRATOR_NAME> \

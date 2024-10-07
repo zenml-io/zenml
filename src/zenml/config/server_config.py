@@ -29,6 +29,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
@@ -231,6 +232,8 @@ class ServerConfiguration(BaseModel):
         auto_activate: Whether to automatically activate the server and create a
             default admin user account with an empty password during the initial
             deployment.
+        max_request_body_size_in_bytes: The maximum size of the request body in
+            bytes. If not specified, the default value of 256 Kb will be used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -318,6 +321,10 @@ class ServerConfiguration(BaseModel):
     auto_activate: bool = False
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+
+    max_request_body_size_in_bytes: int = (
+        DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
+    )
 
     _deployment_id: Optional[UUID] = None
 

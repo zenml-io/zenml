@@ -103,20 +103,29 @@ class LightningOrchestrator(WheeledOrchestrator):
 
         Args:
             deployment: The pipeline deployment to prepare or run.
+
+        Raises:
+            ValueError: If the user id and api key or username and organization
         """
         settings = cast(
             LightningOrchestratorSettings, self.get_settings(deployment)
         )
-        if settings.user_id:
-            os.environ["LIGHTNING_USER_ID"] = settings.user_id
-        if settings.api_key:
-            os.environ["LIGHTNING_API_KEY"] = settings.api_key
+        if not settings.user_id or not settings.api_key:
+            raise ValueError(
+                "Lightning orchestrator requires `user_id` and `api_key` both to be set in the settings."
+            )
+        os.environ["LIGHTNING_USER_ID"] = settings.user_id
+        os.environ["LIGHTNING_API_KEY"] = settings.api_key
         if settings.username:
             os.environ["LIGHTNING_USERNAME"] = settings.username
+        elif settings.organization:
+            os.environ["LIGHTNING_ORG"] = settings.organization
+        else:
+            raise ValueError(
+                "Lightning orchestrator requires either `username` or `organization` to be set in the settings."
+            )
         if settings.teamspace:
             os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
-        if settings.organization:
-            os.environ["LIGHTNING_ORG"] = settings.organization
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -267,9 +276,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         ) as code_file:
             code_archive.write_archive(code_file)
             code_path = code_file.name
-
         filename = f"{orchestrator_run_name}.tar.gz"
-
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
         orchestrator_run_id = str(uuid4())
@@ -392,9 +399,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 f"Installing requirements: {pipeline_requirements_to_string}"
             )
             studio.run(f"uv pip install {pipeline_requirements_to_string}")
-            studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-            )
+            studio.run("pip install zenml")
 
             for custom_command in settings.custom_commands or []:
                 studio.run(
@@ -488,9 +493,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             )
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
-            studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-            )
+            studio.run("pip install zenml")
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
                 output = studio.run(
@@ -563,9 +566,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         studio.run("pip install uv")
         studio.run(f"uv pip install {details['requirements']}")
-        studio.run(
-            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-        )
+        studio.run("pip install zenml")
         # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
         for command in custom_commands or []:
             output = studio.run(
