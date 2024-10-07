@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon S3 artifact store flavor."""
 
+import os
 import re
 from typing import (
     TYPE_CHECKING,
@@ -31,6 +32,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 from zenml.utils.networking_utils import (
@@ -40,6 +42,8 @@ from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
+
+logger = get_logger(__name__)
 
 
 class S3ArtifactStoreConfig(
@@ -69,6 +73,8 @@ class S3ArtifactStoreConfig(
     client_kwargs: Optional[Dict[str, Any]] = None
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
+
+    _is_versioned: Optional[bool] = None
 
     @field_validator("client_kwargs")
     @classmethod
@@ -105,6 +111,38 @@ class S3ArtifactStoreConfig(
                 url
             )
         return value
+
+    @property
+    def bucket(self) -> str:
+        """The bucket name of the artifact store.
+
+        Returns:
+            The bucket name of the artifact store.
+        """
+        return os.path.normpath(self.path).split(os.sep)[1]
+
+    @property
+    def is_versioned(self) -> bool:
+        """Whether the artifact store is versioned or not.
+
+        Returns:
+            Whether the artifact store is versioned or not.
+        """
+        if self._is_versioned is None:
+            import boto3
+
+            c = boto3.client("s3")
+            if (
+                c.get_bucket_versioning(Bucket=self.bucket).get("Status")
+                == "Enabled"
+            ):
+                self._is_versioned = True
+                logger.warning(
+                    "The artifact store is versioned, this may slow down logging process significantly."
+                )
+            else:
+                self._is_versioned = False
+        return self._is_versioned
 
 
 class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):

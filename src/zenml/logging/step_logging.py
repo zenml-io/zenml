@@ -330,6 +330,9 @@ class StepLogsStorage:
                                 file.write(
                                     f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )
+                        self.artifact_store._keep_only_latest_file_version(
+                            self.logs_uri
+                        )
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the

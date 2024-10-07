@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
+import os
 from typing import (
     Any,
     Callable,
@@ -25,6 +26,7 @@ from typing import (
     cast,
 )
 
+import boto3
 import s3fs
 from fsspec.asyn import FSTimeoutError, sync, sync_wrapper
 
@@ -422,3 +424,24 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         # TODO [ENG-153]: Additional params
         for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
+
+    def _keep_only_latest_file_version(self, path: PathType) -> None:
+        """Keep only the latest file version in the given path.
+
+        Method is useful for logs stored in versioned file systems
+        like AWS S3.
+
+        Args:
+            path: The path to the file.
+        """
+        if self.config.is_versioned:
+            if isinstance(path, bytes):
+                path = path.decode()
+            prefix = os.path.join(*os.path.normpath(path).split(os.sep)[2:])
+            s3 = boto3.resource("s3")
+            bucket = s3.Bucket(self.config.bucket)
+            for version in bucket.object_versions.filter(Prefix=prefix):
+                if not version.is_latest:
+                    version.delete()
+
+        return

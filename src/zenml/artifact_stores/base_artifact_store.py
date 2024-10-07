@@ -475,6 +475,17 @@ class BaseArtifactStore(StackComponent):
 
         default_filesystem_registry.register(filesystem_class)
 
+    def _keep_only_latest_file_version(self, path: PathType) -> None:
+        """Keep only the latest file version in the given path.
+
+        Method is useful for logs stored in versioned file systems
+        like AWS S3.
+
+        Args:
+            path: The path to the file.
+        """
+        return
+
 
 class BaseArtifactStoreFlavor(Flavor):
     """Base class for artifact store flavors."""
