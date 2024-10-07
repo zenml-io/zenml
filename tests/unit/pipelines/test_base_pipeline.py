@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
-from typing import Optional
 from unittest.mock import ANY, patch
 from uuid import uuid4
 
 import pytest
-from pytest_mock import MockFixture
 
 from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.client import Client
@@ -31,8 +29,6 @@ from zenml.exceptions import (
 from zenml.models import (
     Page,
     PipelineBuildBase,
-    PipelineDeploymentBase,
-    PipelineRunResponse,
 )
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import step
