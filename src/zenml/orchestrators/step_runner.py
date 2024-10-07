@@ -176,8 +176,6 @@ class StepRunner:
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
             )
-            # Prepare Model Context
-            self._prepare_model_context_for_step()
 
             # Parse the inputs for the entrypoint function.
             function_params = self._parse_inputs(

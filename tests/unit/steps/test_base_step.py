@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Annotated, Dict, List, Tuple, Union, Any
+from typing import Annotated, Any, Dict, List, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
