@@ -23,6 +23,7 @@ from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import ArtifactVersionResponse
+from zenml.steps import BaseStep
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -1013,6 +1014,24 @@ def test_calling_steps_within_steps_works():
     @pipeline
     def test_pipeline():
         step_that_calls_another_step()
+
+    with does_not_raise():
+        test_pipeline()
+
+
+class ClassBasedStep(BaseStep):
+    def entrypoint(self, a: int) -> None:
+        pass
+
+
+def test_class_based_steps():
+    """Tests that the class based interface to define steps works."""
+
+    step_instance = ClassBasedStep()
+
+    @pipeline
+    def test_pipeline():
+        step_instance(a=2)
 
     with does_not_raise():
         test_pipeline()
