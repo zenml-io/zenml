@@ -297,12 +297,16 @@ jobs:
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.11'
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.11'
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: '3.12'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
