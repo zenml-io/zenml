@@ -193,37 +193,20 @@ class StepRunner:
                 return_values = step_instance.call_entrypoint(
                     **function_params
                 )
-
-                # Parse the inputs for the entrypoint function.
-                function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
-                    input_artifacts=input_artifacts,
-                )
-
-                _link_pipeline_run_to_model_from_context(
-                    pipeline_run_id=pipeline_run.id
-                )
-
-                step_failed = False
-                try:
-                    return_values = step_instance.call_entrypoint(
-                        **function_params
-                    )
-                except BaseException as step_exception:  # noqa: E722
-                    step_failed = True
-                    if not handle_bool_env_var(
-                        ENV_ZENML_IGNORE_FAILURE_HOOK, False
+            except BaseException as step_exception:  # noqa: E722
+                step_failed = True
+                if not handle_bool_env_var(
+                    ENV_ZENML_IGNORE_FAILURE_HOOK, False
+                ):
+                    if (
+                        failure_hook_source
+                        := self.configuration.failure_hook_source
                     ):
-                        if (
-                            failure_hook_source
-                            := self.configuration.failure_hook_source
-                        ):
-                            logger.info("Detected failure hook. Running...")
-                            self.load_and_run_hook(
-                                failure_hook_source,
-                                step_exception=step_exception,
-                            )
+                        logger.info("Detected failure hook. Running...")
+                        self.load_and_run_hook(
+                            failure_hook_source,
+                            step_exception=step_exception,
+                        )
                 raise
             finally:
                 step_run_metadata = self._stack.get_step_run_metadata(
