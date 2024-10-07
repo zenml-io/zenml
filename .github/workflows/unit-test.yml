@@ -104,7 +104,6 @@ jobs:
         env:
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
-
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
