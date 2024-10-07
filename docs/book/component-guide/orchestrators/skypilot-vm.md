@@ -10,10 +10,6 @@ The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
-{% hint style="warning" %}
-SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
-{% endhint %}
-
 ## When to use it
 
 You should use the SkyPilot VM Orchestrator if:
