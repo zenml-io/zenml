@@ -240,6 +240,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Returns:
             The BentoMLDeploymentService object that can be used to interact
             with the BentoML model server.
+
+        Raises:
+            ValueError: If the service type is not supported.
         """
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path

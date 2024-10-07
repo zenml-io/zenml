@@ -242,7 +242,11 @@ class BentoMLContainerDeploymentService(
             )
 
     def _containerize_and_push_bento(self) -> None:
-        """Containerize the bento and push it to the container registry."""
+        """Containerize the bento and push it to the container registry.
+        
+        Raises:
+            Exception: If the bento containerization fails.
+        """
         zenml_client = ZenMLClient()
         container_registry = zenml_client.active_stack.container_registry
         # a tuple of config image and image tag
@@ -296,7 +300,12 @@ class BentoMLContainerDeploymentService(
         super().provision()
 
     def run(self) -> None:
-        """Start the service."""
+        """Start the service.
+        
+        Raises:
+            FileNotFoundError: If the bento file is not found.
+            subprocess.CalledProcessError: If the bentoml serve command fails.
+        """
         from bentoml._internal.service.loader import load
 
         logger.info("Starting BentoML container deployment service...")
