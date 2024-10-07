@@ -181,7 +181,9 @@ def test_pipeline_config_from_file_appended_by_code(
         assert_extra_step()
 
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
         p.configure(model=Model(name="foo"))
         warning.assert_not_called()
 
