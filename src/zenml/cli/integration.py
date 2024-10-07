@@ -282,6 +282,15 @@ def install(
     else:
         integration_set = set(integrations)
 
+    # TODO: remove once python 3.8 is deprecated
+    if sys.version_info.minor == 8 and "tensorflow" in integration_set:
+        warning(
+            "Python 3.8 with TensorFlow is not fully compatible with "
+            "Pydantic 2 requirements. Consider upgrading to a "
+            "higher Python version if you would like to use the "
+            "Tensorflow integration."
+        )
+
     if sys.version_info.minor == 12 and "tensorflow" in integration_set:
         warning(
             "The TensorFlow integration is not yet compatible with Python "

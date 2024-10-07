@@ -56,6 +56,9 @@ def cleanup_folder(path: str) -> None:
                 "Skipping deletion of temp dir at teardown, due to "
                 "Windows Permission error"
             )
+            # TODO[HIGH]: Implement fixture cleanup for Windows where
+            #  shutil.rmtree fails on files that are in use on python 3.7 and
+            #  3.8
     else:
         shutil.rmtree(path)
 

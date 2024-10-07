@@ -1114,16 +1114,15 @@ def test_list_secrets_filter():
     aria_secret_name = sample_name("arias-whiskers")
     axl_secret_name = sample_name("axls-whiskers")
 
-    with (
-        SecretContext(secret_name=aria_secret_name) as secret_one,
-        SecretContext(
-            secret_name=aria_secret_name, scope=SecretScope.USER
-        ) as secret_two,
-        SecretContext(secret_name=axl_secret_name) as secret_three,
-        SecretContext(
-            secret_name=axl_secret_name, scope=SecretScope.USER
-        ) as secret_four,
-    ):
+    with SecretContext(
+        secret_name=aria_secret_name
+    ) as secret_one, SecretContext(
+        secret_name=aria_secret_name, scope=SecretScope.USER
+    ) as secret_two, SecretContext(
+        secret_name=axl_secret_name
+    ) as secret_three, SecretContext(
+        secret_name=axl_secret_name, scope=SecretScope.USER
+    ) as secret_four:
         all_secrets = store.list_secrets(SecretFilter()).items
         assert len(all_secrets) >= 4
         assert set(
@@ -1264,20 +1263,17 @@ def test_list_secrets_pagination_and_sorting():
 
     suffix = sample_name("")
 
-    with (
-        SecretContext(secret_name=f"arias-whiskers-{suffix}") as secret_one,
-        SecretContext(
-            secret_name=f"arias-spots-{suffix}",
-            scope=SecretScope.USER,
-        ) as secret_two,
-        SecretContext(
-            secret_name=f"axls-whiskers-{suffix}",
-        ) as secret_three,
-        SecretContext(
-            secret_name=f"axls-spots-{suffix}",
-            scope=SecretScope.USER,
-        ) as secret_four,
-    ):
+    with SecretContext(
+        secret_name=f"arias-whiskers-{suffix}"
+    ) as secret_one, SecretContext(
+        secret_name=f"arias-spots-{suffix}",
+        scope=SecretScope.USER,
+    ) as secret_two, SecretContext(
+        secret_name=f"axls-whiskers-{suffix}",
+    ) as secret_three, SecretContext(
+        secret_name=f"axls-spots-{suffix}",
+        scope=SecretScope.USER,
+    ) as secret_four:
         secrets = store.list_secrets(
             SecretFilter(
                 name=f"endswith:{suffix}",

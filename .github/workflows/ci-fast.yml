@@ -79,7 +79,7 @@ jobs:
       == false
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
-      python-version: '3.11'
+      python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
   custom-ubuntu-setup-and-unit-test:

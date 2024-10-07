@@ -8,7 +8,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       os: arc-runner-set
-      python-version: '3.11'
+      python-version: '3.8'
     secrets: inherit
   mlstacks-compatibility-check:
     needs: setup-and-test
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: '3.11'
+          python-version: '3.8'
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh

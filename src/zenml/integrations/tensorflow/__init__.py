@@ -40,6 +40,15 @@ class TensorflowIntegration(Integration):
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
+        if sys.version_info.minor == 8:
+            logger.warning(
+                "Python 3.8 with TensorFlow is not fully "
+                "compatible with Pydantic 2 requirements. "
+                "Consider upgrading to a higher Python "
+                "version if you would like to use the "
+                "Tensorflow integration."
+            )
+
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
         """Defines platform specific requirements for the integration.
