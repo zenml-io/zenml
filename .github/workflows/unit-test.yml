@@ -37,9 +37,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.8'
+        default: '3.11'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -105,10 +105,6 @@ jobs:
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
 
-      # - name: Upload coverage
-      #  # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'arc-runner-set' && inputs.python-version == '3.8' }}
-      #   uses: codecov/codecov-action@v2
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
