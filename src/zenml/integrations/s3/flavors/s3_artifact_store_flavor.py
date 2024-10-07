@@ -75,6 +75,7 @@ class S3ArtifactStoreConfig(
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
 
     _is_versioned: Optional[bool] = None
+    _bucket: Optional[str] = None
 
     @field_validator("client_kwargs")
     @classmethod
@@ -119,7 +120,9 @@ class S3ArtifactStoreConfig(
         Returns:
             The bucket name of the artifact store.
         """
-        return os.path.normpath(self.path).split(os.sep)[1]
+        if self._bucket is None:
+            self._bucket = os.path.normpath(self.path).split(os.sep)[1]
+        return self._bucket
 
     @property
     def is_versioned(self) -> bool:
