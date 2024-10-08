@@ -213,7 +213,6 @@ class TestEnvironment:
             RuntimeError: If the environment is disabled or if a mandatory
                 component cannot be provisioned.
         """
-        from zenml.stack.stack_component import StackComponent
 
         if self.is_disabled:
             raise RuntimeError(
@@ -288,34 +287,12 @@ class TestEnvironment:
             if build_base_image:
                 BaseTestDeployment.build_base_image()
 
-            for component_model in components:
-                component = StackComponent.from_model(
-                    component_model=component_model
-                )
-
-                if not component.is_running:
-                    logging.info(
-                        f"Provisioning {component_model.type.value} stack "
-                        f"component '{component.name}'"
-                    )
-                    if not component.is_provisioned:
-                        try:
-                            component.provision()
-                        except NotImplementedError:
-                            pass
-                    if not component.is_running:
-                        try:
-                            component.resume()
-                        except NotImplementedError:
-                            pass
-
     def deprovision(self) -> None:
         """Deprovision all stack components for this environment.
 
         Raises:
             RuntimeError: If the environment is disabled.
         """
-        from zenml.stack.stack_component import StackComponent
 
         if self.is_disabled:
             raise RuntimeError(
@@ -361,26 +338,6 @@ class TestEnvironment:
                     components.append(component_model)
                     if external:
                         external_components.append(component_model.id)
-
-            for component_model in components:
-                component = StackComponent.from_model(
-                    component_model=component_model
-                )
-                logging.info(
-                    f"Deprovisioning {component_model.type.value} stack "
-                    f"component '{component.name}'"
-                )
-
-                if not component.is_suspended:
-                    try:
-                        component.suspend()
-                    except NotImplementedError:
-                        pass
-                if component.is_provisioned:
-                    try:
-                        component.deprovision()
-                    except NotImplementedError:
-                        pass
 
             for component_model in components:
                 if component_model.id not in external_components:

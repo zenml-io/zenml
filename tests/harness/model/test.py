@@ -194,16 +194,7 @@ class TestConfig(BaseTestConfigModel):
         current_active_stack = client.active_stack_model.id
         client.activate_stack(stack.id)
 
-        # Provision the stack
         active_stack = client.active_stack
-        try:
-            active_stack.provision()
-            active_stack.resume()
-        except Exception:
-            if cleanup:
-                client.zen_store.delete_stack(stack.id)
-            raise
-
         logging.info(f"Using active stack '{stack.name}'")
 
         # Yield the stack

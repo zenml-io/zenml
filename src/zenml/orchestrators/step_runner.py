@@ -150,10 +150,6 @@ class StepRunner:
                 inspect.unwrap(step_instance.entrypoint)
             )
 
-            cache_enabled = is_setting_enabled(
-                is_enabled_on_step=step_run_info.config.enable_cache,
-                is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
-            )
             output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint
             )
@@ -167,8 +163,6 @@ class StepRunner:
                 step_run=step_run,
                 output_materializers=output_materializers,
                 output_artifact_uris=output_artifact_uris,
-                step_run_info=step_run_info,
-                cache_enabled=cache_enabled,
                 output_artifact_configs={
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
