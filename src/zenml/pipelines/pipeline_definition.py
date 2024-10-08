@@ -67,8 +67,8 @@ from zenml.models import (
     PipelineRunResponse,
     ScheduleRequest,
 )
-from zenml.new.pipelines import build_utils
-from zenml.new.pipelines.run_utils import (
+from zenml.pipelines import build_utils
+from zenml.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
     upload_notebook_cell_code_if_necessary,
@@ -897,19 +897,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         steps = {}
         for step_name, invocation in self.invocations.items():
             step = invocation.step
-            parameters = (
-                pydantic_utils.TemplateGenerator(
-                    step.entrypoint_definition.legacy_params.annotation
-                ).run()
-                if step.entrypoint_definition.legacy_params
-                else {}
-            )
             outputs = {
                 name: PartialArtifactConfiguration()
                 for name in step.entrypoint_definition.outputs
             }
             step_template = StepConfigurationUpdate(
-                parameters=parameters,
+                parameters={},
                 settings=step_settings,
                 outputs=outputs,
             )

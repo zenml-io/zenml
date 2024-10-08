@@ -27,7 +27,7 @@ from zenml.models import (
     ModelVersionArtifactRequest,
     ServiceUpdate,
 )
-from zenml.new.steps.step_context import get_step_context
+from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
 
