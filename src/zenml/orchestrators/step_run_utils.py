@@ -17,6 +17,7 @@ from typing import List, Optional, Set, Tuple
 from zenml import Model
 from zenml.client import Client
 from zenml.config.source import Source
+from zenml.config.step_configurations import Step
 from zenml.constants import (
     STEP_SOURCE_PARAMETER_NAME,
     TEXT_FIELD_MAX_LENGTH,
@@ -74,7 +75,7 @@ class StepRunRequestFactory:
         (
             docstring,
             source_code,
-        ) = self._get_step_docstring_and_source_code()
+        ) = self._get_step_docstring_and_source_code(step=step)
         code_hash = step.config.caching_parameters.get(
             STEP_SOURCE_PARAMETER_NAME
         )
@@ -104,6 +105,11 @@ class StepRunRequestFactory:
             if cached_step_run := cache_utils.get_cached_step_run(
                 cache_key=cache_key
             ):
+                # TODO: if the step is cached, do we also want to include
+                # all the inputs of the original step? This would only make
+                # a difference if the original step did some dynamic loading
+                # of artifacts using `load_artifact`, which would then not be
+                # included for the new one
                 step_run_request.original_step_run_id = cached_step_run.id
                 step_run_request.outputs = {
                     output_name: artifact.id
@@ -115,7 +121,9 @@ class StepRunRequestFactory:
 
         return step_run_request
 
-    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
+    def _get_step_docstring_and_source_code(
+        self, step: "Step"
+    ) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
 
         Returns:
@@ -123,7 +131,7 @@ class StepRunRequestFactory:
         """
         from zenml.steps.base_step import BaseStep
 
-        step_instance = BaseStep.load_from_source(self._step.spec.source)
+        step_instance = BaseStep.load_from_source(step.spec.source)
 
         docstring = step_instance.docstring
         if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
