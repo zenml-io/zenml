@@ -511,6 +511,9 @@ class Model(BaseModel):
 
         Returns:
             Dict of validated values.
+
+        Raises:
+            ValueError: If the model version id, but call is not internal.
         """
         suppress_class_validation_warnings = data.get(
             "suppress_class_validation_warnings",
