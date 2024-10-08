@@ -53,9 +53,135 @@ fill in the required fields.
 
 <summary>AWS: Authentication methods</summary>
 
-There are several different methods to authenticate with AWS:
+If you select `aws` as your cloud provider, and you haven't selected a connector
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
 
-![Wizard Example](../../.gitbook/assets/stack-wizard-aws-auth.png)
+{% code title="Available authentication methods for AWS" %}
+```
+                  Available authentication methods for AWS                   
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice  ┃ Name                           ┃ Required                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]     │ AWS Secret Key                 │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [1]     │ AWS STS Token                  │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ aws_session_token  (AWS        │
+│         │                                │ Session Token)                 │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [2]     │ AWS IAM Role                   │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │ role_arn  (AWS IAM Role ARN)   │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [3]     │ AWS Session Token              │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [4]     │ AWS Federation Token           │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+└─────────┴────────────────────────────────┴────────────────────────────────┘
+```
+{% endcode %}
+</details>
+
+<details>
+<summary>GCP: Authentication methods</summary>
+
+
+
+If you select `gcp` as your cloud provider, and you haven't selected a connector
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
+
+{% code title="Available authentication methods for GCP" %}
+```
+                  Available authentication methods for GCP                   
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice  ┃ Name                           ┃ Required                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]     │ GCP User Account               │ user_account_json  (GCP User   │
+│         │                                │ Account Credentials JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [1]     │ GCP Service Account            │ service_account_json  (GCP     │
+│         │                                │ Service Account Key JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [2]     │ GCP External Account           │ external_account_json  (GCP    │
+│         │                                │ External Account JSON          │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [3]     │ GCP Oauth 2.0 Token            │ token  (GCP OAuth 2.0 Token)   │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [4]     │ GCP Service Account            │ service_account_json  (GCP     │
+│         │ Impersonation                  │ Service Account Key JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ target_principal  (GCP Service │
+│         │                                │ Account Email to impersonate)  │
+│         │                                │                                │
+└─────────┴────────────────────────────────┴────────────────────────────────┘
+```
+{% endcode %}
+</details>
+
+<details>
+<summary>Azure: Authentication methods</summary>
+
+If you select `azure` as your cloud provider, and you haven't selected a 
+connector or declined auto-configuration, you will be prompted to select an 
+authentication method for your cloud connector.
+
+{% code title="Available authentication methods for Azure" %}
+```
+    Available authentication methods for AZURE                         
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice ┃ Name                    ┃ Required                           ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]    │ Azure Service Principal │ client_secret  (Service principal  │
+│        │                         │ client secret)                     │
+│        │                         │ tenant_id  (Azure Tenant ID)       │
+│        │                         │ client_id  (Azure Client ID)       │
+│        │                         │                                    │
+├────────┼─────────────────────────┼────────────────────────────────────┤
+│ [1]    │ Azure Access Token      │ token  (Azure Access Token)        │
+│        │                         │                                    │
+└────────┴─────────────────────────┴────────────────────────────────────┘
+```
+{% endcode %}
 
 </details>
 
