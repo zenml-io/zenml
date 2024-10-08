@@ -401,12 +401,6 @@ strict = true
 namespace_packages = true
 show_error_codes = true
 
-[[tool.mypy.overrides]]
-module = ["airflow.*"]
-follow_imports = "skip"
-
-# end of fix
-
 # import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
 module = [
@@ -419,6 +413,7 @@ follow_imports = "skip"
 
 [[tool.mypy.overrides]]
 module = [
+    "airflow.*",
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
