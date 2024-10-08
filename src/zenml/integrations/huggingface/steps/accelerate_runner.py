@@ -25,8 +25,13 @@ from accelerate.commands.launch import (
     launch_command_parser,
 )
 
-from zenml import get_pipeline_context
+from zenml.constants import (
+    STEP_DECO_DECORATOR_FUNCTION,
+    STEP_DECO_DECORATOR_KWARGS,
+    STEP_DECO_ORIGINAL_ENTRYPOINT,
+)
 from zenml.logger import get_logger
+from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.steps import BaseStep
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
 
@@ -41,12 +46,28 @@ def run_with_accelerate(
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
-    Example:
+    Example (functional):
         ```python
         from zenml import step, pipeline
         from zenml.integrations.hugginface.steps import run_with_accelerate
 
         @run_with_accelerate(num_processes=4, multi_gpu=True)
+        @step
+        def training_step(some_param: int, ...):
+            # your training code is below
+            ...
+
+        @pipeline
+        def training_pipeline(some_param: int, ...):
+            training_step(some_param, ...)
+        ```
+
+    Example (decoration):
+        ```python
+        from zenml import step, pipeline
+        from zenml.integrations.hugginface.steps import run_with_accelerate
+
+        @run_with_accelerate(num_processes=4)
         @step
         def training_step(some_param: int, ...):
             # your training code is below
@@ -133,23 +154,23 @@ def run_with_accelerate(
         except RuntimeError:
             pass
         else:
-            raise RuntimeError(
-                f"`{run_with_accelerate.__name__}` decorator cannot be used "
-                "in a functional way with steps, please apply decoration "
-                "directly to a step instead. This behavior will be also "
-                "allowed in future, but now it faces technical limitations.\n"
-                "Example (allowed):\n"
-                f"@{run_with_accelerate.__name__}(...)\n"
-                f"def {step_function.name}(...):\n"
-                "    ...\n"
-                "Example (not allowed):\n"
-                "def my_pipeline(...):\n"
-                f"    run_with_accelerate({step_function.name},...)(...)\n"
+            setattr(
+                step_function,
+                STEP_DECO_DECORATOR_FUNCTION,
+                run_with_accelerate,
+            )
+            setattr(
+                step_function,
+                STEP_DECO_DECORATOR_KWARGS,
+                accelerate_launch_kwargs,
             )
 
         setattr(
-            step_function, "unwrapped_entrypoint", step_function.entrypoint
+            step_function,
+            STEP_DECO_ORIGINAL_ENTRYPOINT,
+            step_function.entrypoint,
         )
+
         setattr(
             step_function,
             "entrypoint",

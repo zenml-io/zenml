@@ -69,6 +69,11 @@ class Source(BaseModel):
     attribute: Optional[str] = None
     type: SourceType
 
+    dynamic_decorator_module: Optional[str] = None
+    dynamic_decorator_attribute: Optional[str] = None
+    dynamic_decorator_type: Optional[SourceType] = None
+    dynamic_decorator_kwargs: Optional[Dict[str, Any]] = {}
+
     @classmethod
     def from_import_path(
         cls, import_path: str, is_module_path: bool = False
@@ -161,6 +166,21 @@ class Source(BaseModel):
             The source as a JSON string.
         """
         return super().model_dump_json(serialize_as_any=True, **kwargs)
+
+    @property
+    def dynamic_decorator(self) -> Optional["Source"]:
+        """The dynamic decorator of the source.
+
+        Returns:
+            The dynamic decorator of the source.
+        """
+        if not self.dynamic_decorator_module:
+            return None
+        return Source(
+            module=self.dynamic_decorator_module,
+            attribute=self.dynamic_decorator_attribute,
+            type=self.dynamic_decorator_type,
+        )
 
 
 class DistributionPackageSource(Source):

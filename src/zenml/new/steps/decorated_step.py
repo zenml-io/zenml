@@ -16,6 +16,10 @@
 from typing import Any
 
 from zenml.config.source import Source
+from zenml.constants import (
+    STEP_DECO_DECORATOR_FUNCTION,
+    STEP_DECO_DECORATOR_KWARGS,
+)
 from zenml.steps import BaseStep
 
 
@@ -39,4 +43,25 @@ class _DecoratedStep(BaseStep):
         """
         from zenml.utils import source_utils
 
-        return source_utils.resolve(self.entrypoint, skip_validation=True)
+        source = source_utils.resolve(self.entrypoint, skip_validation=True)
+
+        if dynamic_decorator := getattr(
+            self, STEP_DECO_DECORATOR_FUNCTION, None
+        ):
+            dynamic_decorator_source = source_utils.resolve(
+                dynamic_decorator, skip_validation=True
+            )
+            (
+                source.dynamic_decorator_module,
+                source.dynamic_decorator_attribute,
+                source.dynamic_decorator_type,
+            ) = (
+                dynamic_decorator_source.module,
+                dynamic_decorator_source.attribute,
+                dynamic_decorator_source.type,
+            )
+            source.dynamic_decorator_kwargs = getattr(
+                self, STEP_DECO_DECORATOR_KWARGS, {}
+            )
+
+        return source
