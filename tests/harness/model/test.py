@@ -129,7 +129,6 @@ class TestConfig(BaseTestConfigModel):
         Raises:
             RuntimeError: If the stack requirements are not met or if multiple
                 stack components of the same type are specified as requirements.
-            Exception: The exception raised while provisioning the stack.
         """
         from zenml.enums import StackComponentType
         from zenml.utils.string_utils import random_str

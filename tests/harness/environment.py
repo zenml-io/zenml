@@ -213,7 +213,6 @@ class TestEnvironment:
             RuntimeError: If the environment is disabled or if a mandatory
                 component cannot be provisioned.
         """
-
         if self.is_disabled:
             raise RuntimeError(
                 "Cannot provision a disabled environment. Please enable "
@@ -293,7 +292,6 @@ class TestEnvironment:
         Raises:
             RuntimeError: If the environment is disabled.
         """
-
         if self.is_disabled:
             raise RuntimeError(
                 "Cannot deprovision a disabled environment. Please enable "
