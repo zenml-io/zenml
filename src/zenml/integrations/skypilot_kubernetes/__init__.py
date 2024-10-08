@@ -11,38 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Lightning integration for ZenML."""
+"""Initialization of the Skypilot Kubernetes integration for ZenML.
 
+The Skypilot integration sub-module powers an alternative to the local
+orchestrator for a remote orchestration of ZenML pipelines on VMs.
+"""
 from typing import List, Type
 
 from zenml.integrations.constants import (
-    LIGHTNING,
+    SKYPILOT_KUBERNETES,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-LIGHTNING_ORCHESTRATOR_FLAVOR = "lightning"
+SKYPILOT_KUBERNETES_ORCHESTRATOR_FLAVOR = "vm_kubernetes"
 
 
-class LightningIntegration(Integration):
-    """Definition of Lightning Integration for ZenML."""
+class SkypilotKubernetesIntegration(Integration):
+    """Definition of Skypilot Kubernetes Integration for ZenML."""
 
-    NAME = LIGHTNING
-    REQUIREMENTS = ["lightning-sdk>=0.1.17"]
+    NAME = SKYPILOT_KUBERNETES
+    # all 0.6.x versions of skypilot[kubernetes] are compatible
+    REQUIREMENTS = ["skypilot[kubernetes]~=0.6.1"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Lightning integration.
+        """Declare the stack component flavors for the Skypilot Kubernetes integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.lightning.flavors import (
-            LightningOrchestratorFlavor,
+        from zenml.integrations.skypilot_kubernetes.flavors import (
+            SkypilotKubernetesOrchestratorFlavor,
         )
 
-        return [
-            LightningOrchestratorFlavor,
-        ]
+        return [SkypilotKubernetesOrchestratorFlavor]
 
-LightningIntegration.check_installation()
+
+SkypilotKubernetesIntegration.check_installation()

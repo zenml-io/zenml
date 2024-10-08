@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
+from typing import Optional
 from unittest.mock import ANY, patch
 from uuid import uuid4
 
@@ -28,7 +29,12 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
+from zenml.models import (
+    Page,
+    PipelineBuildBase,
+    PipelineDeploymentBase,
+    PipelineRunResponse,
+)
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseParameters, step
 
@@ -488,13 +494,17 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 ):
     """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(deployment: PipelineDeploymentBase):
+    def assert_cache_enabled(
+        deployment: PipelineDeploymentBase,
+        placeholder_run: Optional[PipelineRunResponse] = None,
+    ):
         assert deployment.pipeline_configuration.enable_cache is True
         for step_ in deployment.step_configurations.values():
             assert step_.config.enable_cache is True
 
     def assert_cache_disabled(
         deployment: PipelineDeploymentBase,
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ):
         assert deployment.pipeline_configuration.enable_cache is False
         for step_ in deployment.step_configurations.values():
