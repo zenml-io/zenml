@@ -135,7 +135,8 @@ class StepRunner:
         if step_logging_enabled and not redirected.get():
             if step_run.logs:
                 logs_context = StepLogsStorageContext(  # type: ignore[assignment]
-                    logs_uri=step_run.logs.uri
+                    logs_uri=step_run.logs.uri,
+                    artifact_store=self._stack.artifact_store,
                 )
             else:
                 logger.debug(
