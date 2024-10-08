@@ -46,7 +46,6 @@ from zenml.model.utils import (
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model import Model
-from zenml.model.model_version import ModelVersion # TODO: deprecate me
 from zenml.pipelines import get_pipeline_context
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -65,7 +64,6 @@ __all__ = [
     "log_model_version_metadata",
     "log_step_metadata",
     "Model",
-    "ModelVersion", # TODO: deprecate me
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",

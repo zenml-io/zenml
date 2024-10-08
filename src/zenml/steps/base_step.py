@@ -570,7 +570,6 @@ class BaseStep:
 
     def configure(
         self: T,
-        name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -602,7 +601,6 @@ class BaseStep:
             step.configuration.extra # {"key2": 2}
 
         Args:
-            name: DEPRECATED: The name of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -637,9 +635,6 @@ class BaseStep:
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
-
-        if name:
-            logger.warning("Configuring the name of a step is deprecated.")
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]],

@@ -203,19 +203,6 @@ class StepContext(metaclass=SingletonMetaClass):
 
         return model
 
-    # TODO: deprecate me
-    @property
-    def model_version(self) -> "Model":
-        """DEPRECATED, use `model` instead.
-
-        Returns:
-            The `Model` object associated with the current step.
-        """
-        logger.warning(
-            "Step context `model_version` is deprecated. Please use `model` instead."
-        )
-        return self.model
-
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
         """Returns the input artifacts of the current step.
