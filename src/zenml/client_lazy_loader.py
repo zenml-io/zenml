@@ -172,10 +172,10 @@ def evaluate_all_lazy_load_args_in_client_methods(
     """
     import inspect
 
-    def _evaluate_args(func: Callable[..., Any]) -> Any:
+    def _evaluate_args(
+        func: Callable[..., Any], is_instance_method: bool
+    ) -> Any:
         def _inner(*args: Any, **kwargs: Any) -> Any:
-            is_instance_method = "self" in inspect.getfullargspec(func).args
-
             args_ = list(args)
             if not is_instance_method:
                 from zenml.client import Client
@@ -201,7 +201,11 @@ def evaluate_all_lazy_load_args_in_client_methods(
 
     def _decorate() -> Type["Client"]:
         for name, fn in inspect.getmembers(cls, inspect.isfunction):
-            setattr(cls, name, _evaluate_args(fn))
+            setattr(
+                cls,
+                name,
+                _evaluate_args(fn, "self" in inspect.getfullargspec(fn).args),
+            )
         return cls
 
     return _decorate()
