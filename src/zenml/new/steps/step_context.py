@@ -189,10 +189,14 @@ class StepContext(metaclass=SingletonMetaClass):
             self.step_run.config.model is not None
             and self.step_run.model_version is not None
         ):
-            model = self.step_run.model_version.to_model_class()
+            model = self.step_run.model_version.to_model_class(
+                suppress_class_validation_warnings=True
+            )
         elif self.pipeline_run.config.model is not None:
             if self.pipeline_run.model_version:
-                model = self.pipeline_run.model_version.to_model_class()
+                model = self.pipeline_run.model_version.to_model_class(
+                    suppress_class_validation_warnings=True
+                )
             else:
                 model = self.pipeline_run.config.model
         else:

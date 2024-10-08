@@ -64,8 +64,6 @@ class Model(BaseModel):
         to a specific version/stage. If skipped new version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    model_version_id: The ID of a specific Model Version, if given - it will override
-        `name` and `version` settings. Used mostly internally.
     """
 
     name: str
@@ -81,11 +79,11 @@ class Model(BaseModel):
         default=None, union_mode="smart"
     )
     save_models_to_registry: bool = True
-    model_version_id: Optional[UUID] = None
 
+    # technical attributes
+    model_version_id: Optional[UUID] = None
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
-
     _model_id: UUID = PrivateAttr(None)
     _number: Optional[int] = PrivateAttr(None)
 
@@ -514,13 +512,17 @@ class Model(BaseModel):
         Returns:
             Dict of validated values.
         """
-        suppress_class_validation_warnings = (
-            data.get(
-                "suppress_class_validation_warnings",
-                False,
-            )
-            or data.get("model_version_id", None) is not None
+        suppress_class_validation_warnings = data.get(
+            "suppress_class_validation_warnings",
+            False,
         )
+        if not suppress_class_validation_warnings and data.get(
+            "model_version_id", None
+        ):
+            raise ValueError(
+                "`model_version_id` field is for internal use only"
+            )
+
         version = data.get("version", None)
 
         if (
