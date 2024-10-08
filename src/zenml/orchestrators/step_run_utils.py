@@ -51,6 +51,23 @@ class StepRunRequestFactory:
     def create_request(self, invocation_id: str) -> StepRunRequest:
         step = self.deployment.step_configurations[invocation_id]
 
+        code_hash = step.config.caching_parameters.get(
+            STEP_SOURCE_PARAMETER_NAME
+        )
+        return StepRunRequest(
+            name=invocation_id,
+            pipeline_run_id=self.pipeline_run.id,
+            deployment=self.deployment.id,
+            status=ExecutionStatus.RUNNING,
+            code_hash=code_hash,
+            start_time=datetime.utcnow(),
+            user=Client().active_user.id,
+            workspace=Client().active_workspace.id,
+        )
+
+    def populate_request(self, request: StepRunRequest) -> None:
+        step = self.deployment.step_configurations[request.name]
+
         # How do we ensure this uses the same model version that we also
         # link later, when using a model lazy loader. This only applies
         # after we fixed the issue that the model lazy loader always
@@ -64,6 +81,8 @@ class StepRunRequestFactory:
             input_name: artifact.id
             for input_name, artifact in input_artifacts.items()
         }
+        request.inputs = input_artifact_ids
+        request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(
             step=step,
@@ -71,30 +90,15 @@ class StepRunRequestFactory:
             artifact_store=self.stack.artifact_store,
             workspace_id=Client().active_workspace.id,
         )
+        request.cache_key = cache_key
 
         (
             docstring,
             source_code,
         ) = self._get_step_docstring_and_source_code(step=step)
-        code_hash = step.config.caching_parameters.get(
-            STEP_SOURCE_PARAMETER_NAME
-        )
-        step_run_request = StepRunRequest(
-            name=invocation_id,
-            pipeline_run_id=self.pipeline_run.id,
-            deployment=self.deployment.id,
-            status=ExecutionStatus.RUNNING,
-            cache_key=cache_key,
-            docstring=docstring,
-            source_code=source_code,
-            code_hash=code_hash,
-            start_time=datetime.utcnow(),
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
-            logs=None,
-            inputs=input_artifact_ids,
-            parent_step_ids=parent_step_ids,
-        )
+
+        request.docstring = docstring
+        request.source_code = source_code
 
         cache_enabled = utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
@@ -110,16 +114,14 @@ class StepRunRequestFactory:
                 # a difference if the original step did some dynamic loading
                 # of artifacts using `load_artifact`, which would then not be
                 # included for the new one
-                step_run_request.original_step_run_id = cached_step_run.id
-                step_run_request.outputs = {
+                request.original_step_run_id = cached_step_run.id
+                request.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_step_run.outputs.items()
                 }
 
-                step_run_request.status = ExecutionStatus.CACHED
-                step_run_request.end_time = step_run_request.start_time
-
-        return step_run_request
+                request.status = ExecutionStatus.CACHED
+                request.end_time = request.start_time
 
     def _get_step_docstring_and_source_code(
         self, step: "Step"
@@ -193,6 +195,7 @@ def create_cached_steps(
                 step_run_request = request_factory.create_request(
                     invocation_id
                 )
+                request_factory.populate_request(step_run_request)
             except Exception:
                 # We failed to create the step run. This might be due to some
                 # input resolution error, or an error importing the step source

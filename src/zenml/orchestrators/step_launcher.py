@@ -185,12 +185,13 @@ class StepLauncher:
                     pipeline_run=pipeline_run,
                     stack=self._stack,
                 )
+                step_run_request = request_factory.create_request(
+                    invocation_id=self._step_name
+                )
+                step_run_request.logs = logs_model
 
                 try:
-                    step_run_request = request_factory.create_request(
-                        self._step_name
-                    )
-                    step_run_request.logs = logs_model
+                    request_factory.populate_request(request=step_run_request)
                     execution_needed = (
                         step_run_request.status != ExecutionStatus.CACHED
                     )
