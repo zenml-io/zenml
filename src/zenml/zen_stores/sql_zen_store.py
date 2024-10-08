@@ -53,7 +53,7 @@ from pydantic import (
     model_validator,
 )
 from sqlalchemy import asc, case, desc, func
-from sqlalchemy.engine import URL, Engine, Row, make_url
+from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
@@ -4107,7 +4107,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
-        query = select(PipelineSchema)
+        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
+        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
 
         column, operand = pipeline_filter_model.sorting_params
         if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
@@ -4153,10 +4154,13 @@ class SqlZenStore(BaseZenStore):
                     .order_by(col(PipelineSchema.id))
                 )
 
-        def _custom_conversion(row: Row) -> PipelineResponse:
-            return row[0].to_model(
-                include_metadata=hydrate, include_resources=True
-            )
+            def _custom_conversion(row: Any) -> PipelineResponse:
+                return cast(
+                    PipelineResponse,
+                    row[0].to_model(
+                        include_metadata=hydrate, include_resources=True
+                    ),
+                )
 
         with Session(self.engine) as session:
             return self.filter_and_paginate(
