@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Amazon S3 artifact store flavor."""
 
-import os
 import re
 from typing import (
     TYPE_CHECKING,
@@ -32,6 +31,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.s3.utils import split_s3_path
 from zenml.models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 from zenml.utils.networking_utils import (
@@ -117,7 +117,7 @@ class S3ArtifactStoreConfig(
             The bucket name of the artifact store.
         """
         if self._bucket is None:
-            self._bucket = os.path.normpath(self.path).split("/")[1]
+            self._bucket, _ = split_s3_path(self.path)
         return self._bucket
 
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
-import os
 from typing import (
     Any,
     Callable,
@@ -34,6 +33,7 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
+from zenml.integrations.s3.utils import split_s3_path
 from zenml.io.fileio import convert_to_str
 from zenml.logger import get_logger
 from zenml.secret.schemas import AWSSecretSchema
@@ -466,7 +466,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self.is_versioned:
             if isinstance(path, bytes):
                 path = path.decode()
-            prefix = os.path.join(*os.path.normpath(path).split("/")[2:])
+            _, prefix = split_s3_path(path)
             s3 = boto3.resource("s3")
             bucket = s3.Bucket(self.config.bucket)
             for version in bucket.object_versions.filter(Prefix=prefix):
