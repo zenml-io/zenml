@@ -167,7 +167,7 @@ class StepLauncher:
             )
 
             logs_context = step_logging.StepLogsStorageContext(
-                logs_uri=logs_uri
+                logs_uri=logs_uri, artifact_store=self._stack.artifact_store
             )  # type: ignore[assignment]
 
             logs_model = LogsRequest(

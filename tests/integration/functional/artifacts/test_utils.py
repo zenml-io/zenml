@@ -266,7 +266,7 @@ def test_download_artifact_files_from_response(
 ):
     """Test that we can download artifact files from an artifact version."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)
@@ -293,7 +293,7 @@ def test_download_artifact_files_from_response_fails_if_exists(
 
     Failure when the file already exists and `overwrite` is False."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)

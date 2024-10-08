@@ -16,7 +16,7 @@
 from hashlib import md5
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import neptune  # type: ignore[import-untyped]
+import neptune
 
 import zenml
 from zenml.client import Client
@@ -38,7 +38,7 @@ class RunProvider(metaclass=SingletonMetaClass):
 
     def __init__(self) -> None:
         """Initialize RunProvider. Called with no arguments."""
-        self._active_run = None
+        self._active_run: Optional["Run"] = None
         self._project: Optional[str]
         self._run_name: Optional[str]
         self._token: Optional[str]
