@@ -185,12 +185,6 @@ authentication method for your cloud connector.
 
 </details>
 
-{% hint style="warning" %}
-On the dashboard, the stack wizard only works with AWS. We are working on 
-bringing support to GCP and Azure as well. If you would like to use these 
-providers, you can still use the CLI or stay tuned for further updates.
-{% endhint %}
-
 From this step forward, ZenML will show you different selections of resources 
 that you can use from your existing infrastructure so that you can create the 
 required stack components such as an artifact store, an orchestrator, 
