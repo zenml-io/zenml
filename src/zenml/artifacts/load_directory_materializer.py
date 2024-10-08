@@ -71,7 +71,12 @@ class PreexistingDataMaterializer(BaseMaterializer):
         Raises:
             NotImplementedError: Always
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "`PreexistingDataMaterializer` can only be used in the "
+            "context of `link_existing_data_as_artifact` function, "
+            "which expects the data to be already properly saved in "
+            "the Artifact Store, thus `save` logic makes no sense here."
+        )
 
     @staticmethod
     def _copy_directory(src: str, dst: str) -> None:
