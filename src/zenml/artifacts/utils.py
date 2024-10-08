@@ -33,6 +33,7 @@ from typing import (
 from uuid import UUID, uuid4
 
 from zenml.artifacts.load_directory_materializer import (
+    PreexistingArtifactPath,
     PreexistingDataMaterializer,
 )
 from zenml.client import Client
@@ -320,7 +321,7 @@ def link_existing_data_as_artifact(
             type=ArtifactType.DATA,
             uri=folder_or_file_uri,
             materializer=source_utils.resolve(PreexistingDataMaterializer),
-            data_type=source_utils.resolve(Path),
+            data_type=source_utils.resolve(PreexistingArtifactPath),
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
             artifact_store_id=artifact_store.id,
