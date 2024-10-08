@@ -50,7 +50,9 @@ next page:
 
 ![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
 
-### AWS
+<details>
+
+<summary>AWS</summary>
 
 If you choose `aws` as your provider, you will see a page where you will have 
 to select a region and a name for your new stack:
@@ -70,7 +72,11 @@ pre-filled configuration and create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
-### GCP
+</details>
+
+<details>
+
+<summary>GCP</summary>
 
 If you choose `gcp` as your provider, you will see a page where you will have 
 to select a region and a name for your new stack:
@@ -139,7 +145,11 @@ to the ZenML dashboard to view the newly created stack:
 
 ![GCP Stack dashboard output](../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png)
 
-### Azure
+</details>
+
+<details>
+
+<summary>Azure</summary>
 
 If you choose `azure` as your provider, you will see a page where you will have to select a location and a name for your new stack:
 
@@ -167,7 +177,7 @@ Once the Terraform deployment is complete, you may close the Cloud Shell session
 
 ![Azure Stack Dashboard output](../../.gitbook/assets/deploy_stack_azure_dashboard_output.png)
 
-
+</details>
 {% endtab %}
 {% tab title="CLI" %}
 
