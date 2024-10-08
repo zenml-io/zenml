@@ -317,6 +317,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
 DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
+DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES = 256 * 1024 * 1024
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
