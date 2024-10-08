@@ -36,7 +36,7 @@ class PreexistingDataMaterializer(BaseMaterializer):
     logic at all. The save of the data to some URI inside the artifact store
     shall happen outside and is in user's responsibility.
 
-    This materializer solely supports the `link_existing_data_as_artifact` function.
+    This materializer solely supports the `register_artifact` function.
     """
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
@@ -73,7 +73,7 @@ class PreexistingDataMaterializer(BaseMaterializer):
         """
         raise NotImplementedError(
             "`PreexistingDataMaterializer` can only be used in the "
-            "context of `link_existing_data_as_artifact` function, "
+            "context of `register_artifact` function, "
             "which expects the data to be already properly saved in "
             "the Artifact Store, thus `save` logic makes no sense here."
         )

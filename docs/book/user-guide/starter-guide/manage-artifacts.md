@@ -310,7 +310,7 @@ import os
 from uuid import uuid4
 
 from zenml.client import Client
-from zenml import link_existing_data_as_artifact, PreexistingArtifactPath
+from zenml import register_artifact, PreexistingArtifactPath
 
 prefix = Client().active_stack.artifact_store.path
 test_file_name = "test_file.txt"
@@ -323,7 +323,7 @@ with open(preexisting_file,"w") as f:
     f.write("test")
 
 # create artifact from the preexisting folder
-link_existing_data_as_artifact(
+register_artifact(
     folder_or_file_uri=preexisting_folder,
     name="my_folder_artifact"
 )
@@ -336,7 +336,7 @@ with open(os.path.join(temp_artifact_folder_path,test_file_name),"r") as f:
     assert f.read() == "test"
 
 # create artifact from the preexisting file
-link_existing_data_as_artifact(
+register_artifact(
     folder_or_file_uri=preexisting_file,
     name="my_file_artifact"
 )
@@ -358,7 +358,7 @@ Now let's explore the Pytorch Lightning example to fit model and store the check
 ```python
 import os
 from zenml.client import Client
-from zenml import link_existing_data_as_artifact
+from zenml import register_artifact
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from uuid import uuid4
@@ -384,7 +384,7 @@ try:
 finally:
     # We now link those checkpoints in ZenML as an artifact
     # This will create a new artifact version
-    link_existing_data_as_artifact(default_root_dir, name="all_my_model_checkpoints")
+    register_artifact(default_root_dir, name="all_my_model_checkpoints")
 ```
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
@@ -403,7 +403,7 @@ from typing import Annotated
 
 import numpy as np
 from zenml.client import Client
-from zenml import link_existing_data_as_artifact, PreexistingArtifactPath
+from zenml import register_artifact, PreexistingArtifactPath
 from zenml import step, pipeline, get_step_context, Model
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
@@ -470,7 +470,7 @@ class ZenMLModelCheckpoint(ModelCheckpoint):
 
         # We now link those checkpoints in ZenML as an artifact
         # This will create a new artifact version
-        link_existing_data_as_artifact(
+        register_artifact(
             os.path.join(
                 self.dirpath, self.filename_format.format(epoch=trainer.current_epoch)
             ),

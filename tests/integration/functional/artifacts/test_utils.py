@@ -20,7 +20,7 @@ from zenml import (
     step,
 )
 from zenml.artifacts.load_directory_materializer import PreexistingArtifactPath
-from zenml.artifacts.utils import link_existing_data_as_artifact
+from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
@@ -375,7 +375,7 @@ def test_parallel_artifact_creation(clean_client: Client):
     }
 
 
-def test_link_existing_data_as_artifact(clean_client: Client):
+def test_register_artifact(clean_client: Client):
     """Tests that a folder can be linked as an artifact in local setting."""
 
     uri_prefix = os.path.join(
@@ -385,9 +385,7 @@ def test_link_existing_data_as_artifact(clean_client: Client):
     with open(os.path.join(uri_prefix, "test.txt"), "w") as f:
         f.write("test")
 
-    link_existing_data_as_artifact(
-        folder_or_file_uri=uri_prefix, name="test_folder"
-    )
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
 
     artifact = clean_client.get_artifact_version(
         name_id_or_prefix="test_folder", version=1
@@ -402,13 +400,13 @@ def test_link_existing_data_as_artifact(clean_client: Client):
         assert f.read() == "test"
 
 
-def test_link_existing_data_as_artifact_out_of_bounds(clean_client: Client):
+def test_register_artifact_out_of_bounds(clean_client: Client):
     """Tests that a folder cannot be linked as an artifact if out of bounds."""
 
     uri_prefix = tempfile.mkdtemp()
     try:
         with pytest.raises(FileNotFoundError):
-            link_existing_data_as_artifact(
+            register_artifact(
                 folder_or_file_uri=uri_prefix, name="test_folder"
             )
     finally:
@@ -416,32 +414,28 @@ def test_link_existing_data_as_artifact_out_of_bounds(clean_client: Client):
 
 
 @step(enable_cache=False)
-def link_existing_data_as_artifact_step_1() -> None:
+def register_artifact_step_1() -> None:
     # find out where to save some data
     uri_prefix = os.path.join(
         Client().active_stack.artifact_store.path, "test_folder"
     )
     os.makedirs(uri_prefix, exist_ok=True)
-    # generate dat to validate in link_existing_data_as_artifact_step_2
+    # generate dat to validate in register_artifact_step_2
     test_file = os.path.join(uri_prefix, "test.txt")
     with open(test_file, "w") as f:
         f.write("test")
 
-    link_existing_data_as_artifact(
-        folder_or_file_uri=uri_prefix, name="test_folder"
-    )
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
 
-    link_existing_data_as_artifact(
-        folder_or_file_uri=test_file, name="test_file"
-    )
+    register_artifact(folder_or_file_uri=test_file, name="test_file")
 
 
 @step(enable_cache=False)
-def link_existing_data_as_artifact_step_2(
+def register_artifact_step_2(
     inp_folder: PreexistingArtifactPath,
 ) -> None:
     # step should receive a path pointing to the folder
-    # from link_existing_data_as_artifact_step_1
+    # from register_artifact_step_1
     with open(inp_folder / "test.txt", "r") as f:
         assert f.read() == "test"
     # at the same time the input artifact is no longer inside the
@@ -456,17 +450,17 @@ def link_existing_data_as_artifact_step_2(
         assert f.read() == "test"
 
 
-def test_link_existing_data_as_artifact_between_steps(clean_client: Client):
+def test_register_artifact_between_steps(clean_client: Client):
     """Tests that a folder can be linked as an artifact and used in pipelines."""
 
     @pipeline(enable_cache=False)
-    def link_existing_data_as_artifact_pipeline():
-        link_existing_data_as_artifact_step_1()
-        link_existing_data_as_artifact_step_2(
+    def register_artifact_pipeline():
+        register_artifact_step_1()
+        register_artifact_step_2(
             clean_client.get_artifact_version(
                 name_id_or_prefix="test_folder", version=1
             ),
-            after=["link_existing_data_as_artifact_step_1"],
+            after=["register_artifact_step_1"],
         )
 
-    link_existing_data_as_artifact_pipeline()
+    register_artifact_pipeline()

@@ -37,7 +37,7 @@ from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
     load_artifact,
-    link_existing_data_as_artifact,
+    register_artifact,
     
 )
 from zenml.artifacts.load_directory_materializer import PreexistingArtifactPath
@@ -73,7 +73,7 @@ __all__ = [
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",
-    "link_existing_data_as_artifact",
+    "register_artifact",
     "show",
     "step",
     "entrypoint",

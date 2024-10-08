@@ -256,7 +256,7 @@ def save_artifact(
     return response
 
 
-def link_existing_data_as_artifact(
+def register_artifact(
     folder_or_file_uri: str,
     name: str,
     version: Optional[Union[int, str]] = None,
@@ -266,10 +266,11 @@ def link_existing_data_as_artifact(
     is_deployment_artifact: bool = False,
     artifact_metadata: Dict[str, "MetadataType"] = {},
 ) -> "ArtifactVersionResponse":
-    """Link existing data stored in the artifact store as an artifact.
+    """Register existing data stored in the artifact store as a ZenML Artifact.
 
     Args:
-        folder_or_file_uri: The full URI within the artifact store to folder or a file.
+        folder_or_file_uri: The full URI within the artifact store to the folder
+            or to the file.
         name: The name of the artifact.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
