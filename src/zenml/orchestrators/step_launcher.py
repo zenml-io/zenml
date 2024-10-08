@@ -209,6 +209,18 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
+                # warm-up and register the pipeline model version
+                model = self._deployment.pipeline_configuration.model
+                if model and pipeline_run.model_version is None:
+                    prep_logs_to_show, pipeline_run, _ = (
+                        model._prepare_model_version_before_step_launch(
+                            pipeline_run=pipeline_run,
+                            step_run=None,
+                            return_logs=True,
+                        )
+                    )
+                    if prep_logs_to_show:
+                        logger.info(prep_logs_to_show)
                 try:
                     execution_needed, step_run = self._prepare(
                         step_run=step_run, pipeline_run=pipeline_run
@@ -225,27 +237,20 @@ class StepLauncher:
                         step_run
                     )
 
-                    # warm-up and register model version
-                    _step_run = None
-                    model = (
-                        self._deployment.step_configurations[
-                            step_run.name
-                        ].config.model
-                        or self._deployment.pipeline_configuration.model
-                    )
-                    if self._deployment.step_configurations[
+                    # warm-up and register the step model version
+                    model = self._deployment.step_configurations[
                         step_run.name
-                    ].config.model:
-                        _step_run = step_run_response
-
+                    ].config.model
                     if model:
-                        prep_logs_to_show = (
+                        prep_logs_to_show, _, step_run_response_update = (
                             model._prepare_model_version_before_step_launch(
                                 pipeline_run=pipeline_run,
-                                step_run=_step_run,
+                                step_run=step_run_response,
                                 return_logs=True,
                             )
                         )
+                        if step_run_response_update:
+                            step_run_response = step_run_response_update
                         if prep_logs_to_show:
                             logger.info(prep_logs_to_show)
 

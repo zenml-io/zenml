@@ -21,6 +21,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 from uuid import UUID
@@ -844,7 +845,7 @@ class Model(BaseModel):
         pipeline_run: "PipelineRunResponse",
         step_run: Optional["StepRunResponse"],
         return_logs: bool,
-    ) -> str:
+    ) -> Tuple[str, "PipelineRunResponse", Optional["StepRunResponse"]]:
         """Prepares model version inside pipeline run.
 
         Args:
@@ -886,21 +887,24 @@ class Model(BaseModel):
         if self_copy.model_version_id is None:
             model_version_response = self_copy._get_or_create_model_version()
 
+            client = Client()
             # update the configured model version id in runs accordingly
             if step_run:
-                Client().zen_store.update_run_step(
+                client.zen_store.update_run_step(
                     step_run_id=step_run.id,
                     step_run_update=StepRunUpdate(
                         model_version_id=model_version_response.id
                     ),
                 )
+                step_run = client.zen_store.get_run_step(step_run.id)
             else:
-                Client().zen_store.update_run(
+                client.zen_store.update_run(
                     run_id=pipeline_run.id,
                     run_update=PipelineRunUpdate(
                         model_version_id=model_version_response.id
                     ),
                 )
+                pipeline_run = client.zen_store.get_run(pipeline_run.id)
 
             if return_logs:
                 from zenml.utils.cloud_utils import try_get_model_version_url
@@ -915,7 +919,7 @@ class Model(BaseModel):
                         "for a free trial at https://www.zenml.io/pro/"
                     )
         self.model_version_id = self_copy.model_version_id
-        return logs
+        return logs, pipeline_run, step_run
 
     @property
     def _lazy_version(self) -> Optional[str]:

@@ -90,45 +90,49 @@ def resolve_step_inputs(
             )
         except RuntimeError as e:
             err_msg = str(e)
-
-        if (
-            config_.artifact_name is None
-            and config_.metadata_name
-            and context_model_version.run_metadata is not None
-        ):
-            # metadata values should go directly in parameters, as primitive types
-            step.config.parameters[name] = context_model_version.run_metadata[
-                config_.metadata_name
-            ].value
-        elif config_.artifact_name is None:
-            err_msg = (
-                "Cannot load artifact from model version, "
-                "no artifact name specified."
-            )
         else:
-            if artifact_ := context_model_version.get_artifact(
-                config_.artifact_name, config_.artifact_version
+            if (
+                config_.artifact_name is None
+                and config_.metadata_name
+                and context_model_version.run_metadata is not None
             ):
-                if config_.metadata_name is None:
-                    input_artifacts[name] = artifact_
-                elif config_.metadata_name:
-                    # metadata values should go directly in parameters, as primitive types
-                    try:
-                        step.config.parameters[name] = artifact_.run_metadata[
-                            config_.metadata_name
-                        ].value
-                    except KeyError:
-                        err_msg = (
-                            f"Artifact run metadata `{config_.metadata_name}` "
-                            "could not be found in artifact "
-                            f"`{config_.artifact_name}::{config_.artifact_version}`."
-                        )
-            else:
-                err_msg = (
-                    f"Artifact `{config_.artifact_name}::{config_.artifact_version}` "
-                    f"not found in model `{context_model_version.model.name}` "
-                    f"version `{context_model_version.name}`."
+                # metadata values should go directly in parameters, as primitive types
+                step.config.parameters[name] = (
+                    context_model_version.run_metadata[
+                        config_.metadata_name
+                    ].value
                 )
+            elif config_.artifact_name is None:
+                err_msg = (
+                    "Cannot load artifact from model version, "
+                    "no artifact name specified."
+                )
+            else:
+                if artifact_ := context_model_version.get_artifact(
+                    config_.artifact_name, config_.artifact_version
+                ):
+                    if config_.metadata_name is None:
+                        input_artifacts[name] = artifact_
+                    elif config_.metadata_name:
+                        # metadata values should go directly in parameters, as primitive types
+                        try:
+                            step.config.parameters[name] = (
+                                artifact_.run_metadata[
+                                    config_.metadata_name
+                                ].value
+                            )
+                        except KeyError:
+                            err_msg = (
+                                f"Artifact run metadata `{config_.metadata_name}` "
+                                "could not be found in artifact "
+                                f"`{config_.artifact_name}::{config_.artifact_version}`."
+                            )
+                else:
+                    err_msg = (
+                        f"Artifact `{config_.artifact_name}::{config_.artifact_version}` "
+                        f"not found in model `{context_model_version.model.name}` "
+                        f"version `{context_model_version.name}`."
+                    )
         if err_msg:
             raise ValueError(
                 f"Failed to lazy load model version data in step `{step.config.name}`: "
