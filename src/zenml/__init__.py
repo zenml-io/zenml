@@ -41,7 +41,6 @@ from zenml.artifacts.utils import (
 from zenml.model.utils import (
     log_model_metadata,
     link_artifact_to_model,
-    log_model_version_metadata,
 )
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
