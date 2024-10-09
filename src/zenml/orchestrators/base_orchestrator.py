@@ -18,6 +18,10 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
 
 from pydantic import model_validator
 
+from zenml.constants import (
+    ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
+    handle_bool_env_var,
+)
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -185,7 +189,15 @@ class BaseOrchestrator(StackComponent, ABC):
 
         environment = get_config_environment_vars(deployment=deployment)
 
-        if placeholder_run and not deployment.schedule:
+        prevent_client_side_caching = handle_bool_env_var(
+            ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
+        )
+
+        if (
+            placeholder_run
+            and not deployment.schedule
+            and not prevent_client_side_caching
+        ):
             from zenml.orchestrators import publish_utils, step_run_utils
 
             cached_invocations = step_run_utils.create_cached_step_runs(
