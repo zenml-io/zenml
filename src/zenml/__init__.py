@@ -37,7 +37,6 @@ from zenml.artifacts.utils import (
     save_artifact,
     load_artifact,
     register_artifact,
-    
 )
 from zenml.model.utils import (
     log_model_metadata,
