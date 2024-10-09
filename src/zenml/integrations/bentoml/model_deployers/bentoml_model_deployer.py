@@ -40,7 +40,6 @@ from zenml.services.container.container_service import ContainerServiceStatus
 from zenml.services.local.local_service import LocalDaemonServiceStatus
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
-from zenml.integrations.bentoml.services.deployment_type import BentoMLDeploymentType
 
 logger = get_logger(__name__)
 

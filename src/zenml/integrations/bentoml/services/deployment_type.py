@@ -15,6 +15,7 @@
 
 from enum import Enum
 
+
 class BentoMLDeploymentType(Enum):
     """BentoML Service Deployment Types."""
 

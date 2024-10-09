@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
 
-from typing import List, Literal, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 import bentoml
 from bentoml._internal.bento import bento
@@ -31,12 +31,13 @@ from zenml.integrations.bentoml.services.bentoml_local_deployment import (
     BentoMLLocalDeploymentService,
     SSLBentoMLParametersConfig,
 )
+from zenml.integrations.bentoml.services.deployment_type import (
+    BentoMLDeploymentType,
+)
 from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_type import ServiceType
 from zenml.utils import source_utils
-
-from zenml.integrations.bentoml.services.deployment_type import BentoMLDeploymentType
 
 logger = get_logger(__name__)
 

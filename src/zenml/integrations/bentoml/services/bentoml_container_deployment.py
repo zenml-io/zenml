@@ -50,6 +50,7 @@ logger = get_logger(__name__)
 
 BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME = "bentoml-container-deployment"
 
+
 class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     """BentoML container deployment configuration."""
 
