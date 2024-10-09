@@ -27,6 +27,7 @@ jobs:
           files: |
             tests/harness/**.py
             src/zenml/**/**.py
+          files_separator: ' '
       - name: Set up Python
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5.0.0
@@ -48,7 +49,7 @@ jobs:
   #   env:
   #     ZENML_ANALYTICS_OPT_IN: false
   #     ZENML_DEBUG: true
-  #   # if team member commented, not a draft, on a PR, using /fulltest
+  #  # if team member commented, not a draft, on a PR, using /fulltest
   #   if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
   #   steps:
   #     - name: Checkout code
@@ -85,8 +86,8 @@ jobs:
   #     - name: Test API docs buildable
   #       run: bash scripts/generate-docs.sh -v DUMMY -c
   # update-templates-to-examples:
-  #   # this doesn't work on forked repositories (i.e. outside contributors)
-  #   # so we disable template updates for those PRs / branches
+  #  # this doesn't work on forked repositories (i.e. outside contributors)
+  #  # so we disable template updates for those PRs / branches
   #   if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
   #     == false
   #   uses: ./.github/workflows/update-templates-to-examples.yml
