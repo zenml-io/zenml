@@ -20,15 +20,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
-        with:
-          fetch-depth: 0
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v45
         with:
           files: |
             tests/harness/**.py
-            src/zenml/**.py
+            src/zenml/**/**.py
       - name: Set up Python
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5.0.0
