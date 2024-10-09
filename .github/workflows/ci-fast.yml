@@ -30,6 +30,7 @@ jobs:
             tests/harness/**.py
             src/zenml/**/**.py
           files_separator: ' '
+          fetch_depth: 0
       - name: Debug
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_and_modified_files }}
