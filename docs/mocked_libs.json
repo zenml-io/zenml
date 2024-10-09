@@ -44,6 +44,7 @@
     "deepchecks.tabular",
     "deepchecks.tabular.checks",
     "deepchecks.tabular.checks.data_integrity",
+    "deepchecks.tabular.checks.model_evaluation",
     "deepchecks.tabular.suites",
     "deepchecks.vision",
     "deepchecks.vision.checks",
