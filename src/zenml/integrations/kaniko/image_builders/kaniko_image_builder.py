@@ -25,6 +25,7 @@ from zenml.image_builders import BaseImageBuilder
 from zenml.integrations.kaniko.flavors import KanikoImageBuilderConfig
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
+from zenml.utils.archivable import ArchiveType
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
@@ -295,7 +296,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         logger.debug("Writing build context to process stdin.")
         assert process.stdin
         with process.stdin as _, tempfile.TemporaryFile(mode="w+b") as f:
-            build_context.write_archive(f, use_gzip=True)
+            build_context.write_archive(f, archive_type=ArchiveType.TAR_GZ)
             while True:
                 data = f.read(1024)
                 if not data:
