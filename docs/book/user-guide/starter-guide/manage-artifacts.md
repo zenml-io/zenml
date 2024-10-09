@@ -350,7 +350,7 @@ with open(temp_artifact_file_path,"r") as f:
 ```
 
 {% hint style="info" %}
-The artifact produced from the preexisting data will have special type `PreexistingArtifactPath`, but can be treated as regular `pathlib.Path` object while using it.
+The artifact produced from the preexisting data will have special type a `PreexistingArtifactPath`, but can be treated as a regular `pathlib.Path` object while using it.
 {% endhint %}
 
 Now let's explore the Pytorch Lightning example to fit model and store the checkpoints on remote location.
