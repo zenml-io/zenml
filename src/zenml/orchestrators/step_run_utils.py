@@ -18,10 +18,7 @@ from zenml import Model
 from zenml.client import Client
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
-from zenml.constants import (
-    STEP_SOURCE_PARAMETER_NAME,
-    TEXT_FIELD_MAX_LENGTH,
-)
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
@@ -38,37 +35,59 @@ logger = get_logger(__name__)
 
 
 class StepRunRequestFactory:
+    """Helper class to create step run requests."""
+
     def __init__(
         self,
         deployment: "PipelineDeploymentResponse",
         pipeline_run: "PipelineRunResponse",
         stack: "Stack",
     ) -> None:
+        """Initialize the object.
+
+        Args:
+            deployment: The deployment for which to create step run requests.
+            pipeline_run: The pipeline run for which to create step run
+                requests.
+            stack: The stack on which the pipeline run is happening.
+        """
         self.deployment = deployment
         self.pipeline_run = pipeline_run
         self.stack = stack
 
     def create_request(self, invocation_id: str) -> StepRunRequest:
-        step = self.deployment.step_configurations[invocation_id]
+        """Create a step run request.
 
-        code_hash = step.config.caching_parameters.get(
-            STEP_SOURCE_PARAMETER_NAME
-        )
+        This will only create a request with basic information and will not yet
+        compute information like the cache key and inputs. This is separated
+        into a different method `populate_request(...)` that might raise
+        exceptions while trying to compute this information.
+
+        Args:
+            invocation_id: The invocation ID for which to create the request.
+
+        Returns:
+            The step run request.
+        """
         return StepRunRequest(
             name=invocation_id,
             pipeline_run_id=self.pipeline_run.id,
             deployment=self.deployment.id,
             status=ExecutionStatus.RUNNING,
-            code_hash=code_hash,
             start_time=datetime.utcnow(),
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )
 
     def populate_request(self, request: StepRunRequest) -> None:
+        """Populate a step run request with additional information.
+
+        Args:
+            request: The request to populate.
+        """
         step = self.deployment.step_configurations[request.name]
 
-        # How do we ensure this uses the same model version that we also
+        # TODO: How do we ensure this uses the same model version that we also
         # link later, when using a model lazy loader. This only applies
         # after we fixed the issue that the model lazy loader always
         # creates the model version client side and stores in ID in the
@@ -92,10 +111,12 @@ class StepRunRequestFactory:
         )
         request.cache_key = cache_key
 
+        # TODO: doing this here means this will always fail when running a
+        # template, as the step dependencies are not installed in that case
         (
             docstring,
             source_code,
-        ) = self._get_step_docstring_and_source_code(step=step)
+        ) = self._get_docstring_and_source_code(step=step)
 
         request.docstring = docstring
         request.source_code = source_code
@@ -123,13 +144,14 @@ class StepRunRequestFactory:
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
 
-    def _get_step_docstring_and_source_code(
-        self, step: "Step"
+    @staticmethod
+    def _get_docstring_and_source_code(
+        step: "Step",
     ) -> Tuple[Optional[str], str]:
-        """Gets the docstring and source code of the step.
+        """Gets the docstring and source code of a step.
 
         Returns:
-            The docstring and source code of the step.
+            The docstring and source code of a step.
         """
         from zenml.steps.base_step import BaseStep
 
@@ -149,11 +171,19 @@ class StepRunRequestFactory:
 def find_cacheable_invocation_candidates(
     deployment: "PipelineDeploymentResponse",
     finished_invocations: Set[str],
-    visited_invocations: Set[str],
-) -> List[str]:
-    invocations = []
+) -> Set[str]:
+    """Find invocations that can potentially be cached.
+
+    Args:
+        deployment: The pipeline deployment containing the invocations.
+        finished_invocations: A set of invocations that are already finished.
+
+    Returns:
+        The set of invocations that can potentially be cached.
+    """
+    invocations = set()
     for invocation_id, step in deployment.step_configurations.items():
-        if invocation_id in visited_invocations:
+        if invocation_id in finished_invocations:
             continue
 
         cache_enabled = utils.is_setting_enabled(
@@ -167,26 +197,38 @@ def find_cacheable_invocation_candidates(
         if set(step.spec.upstream_steps) - finished_invocations:
             continue
 
-        invocations.append(invocation_id)
+        invocations.add(invocation_id)
 
     return invocations
 
 
-def create_cached_steps(
+def create_cached_step_runs(
     deployment: "PipelineDeploymentResponse",
     pipeline_run: PipelineRunResponse,
     stack: "Stack",
 ) -> Set[str]:
-    cached_invocations = set()
-    visited_invocations = set()
+    """Create all cached step runs for a pipeline run.
+
+    Args:
+        deployment: The deployment of the pipeline run.
+        pipeline_run: The pipeline run for which to create the step runs.
+        stack: The stack on which the pipeline run is happening.
+
+    Returns:
+        The invocation IDs of the created step runs.
+    """
+    cached_invocations: Set[str] = set()
+    visited_invocations: Set[str] = set()
     request_factory = StepRunRequestFactory(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
 
-    while cache_candidates := find_cacheable_invocation_candidates(
-        deployment=deployment,
-        finished_invocations=cached_invocations,
-        visited_invocations=visited_invocations,
+    while (
+        cache_candidates := find_cacheable_invocation_candidates(
+            deployment=deployment,
+            finished_invocations=cached_invocations,
+        )
+        - visited_invocations
     ):
         for invocation_id in cache_candidates:
             visited_invocations.add(invocation_id)
@@ -199,65 +241,62 @@ def create_cached_steps(
             except Exception:
                 # We failed to create the step run. This might be due to some
                 # input resolution error, or an error importing the step source
-                # (there might not be all the requirements installed?). We can
-                # either handle these now or just treat the step as not cached
-                # and let the orchestrator try again in a potentially different
-                # environment.
-                pass
-            else:
-                if step_run_request.status != ExecutionStatus.CACHED:
-                    # If we're not able to cache the step run, the orchestrator
-                    # will run the step later which will create the step in the
-                    # server -> We don't need to do anything here
-                    continue
+                # (there might be some missing dependencies). We just treat the
+                # step as not cached and let the orchestrator try again in a
+                # potentially different environment.
+                continue
 
-                step_run = Client().zen_store.create_run_step(step_run_request)
-                model = get_and_link_model(
-                    deployment=deployment,
-                    invocation_id=invocation_id,
-                    pipeline_run=pipeline_run,
-                    step_run=step_run,
-                )
+            if step_run_request.status != ExecutionStatus.CACHED:
+                # If we're not able to cache the step run, the orchestrator
+                # will run the step later which will create the step run
+                # -> We don't need to do anything here
+                continue
 
-                utils._link_cached_artifacts_to_model(
-                    model_from_context=model,
-                    step_run=step_run_request,
-                    step_source=step_run.spec.source,
-                )
-                if model:
-                    # TODO: this does not respect models in the artifact config?
-                    utils._link_pipeline_run_to_model_from_context(
-                        pipeline_run_id=pipeline_run.id, model=model
-                    )
-                # Alternative to the above
-                link_models_to_pipeline_run(
-                    step_run=step_run, step_run_model=model
-                )
+            step_run = Client().zen_store.create_run_step(step_run_request)
+            model = get_and_link_model(
+                deployment=deployment,
+                pipeline_run=pipeline_run,
+                step_run=step_run,
+            )
 
-                logger.info(
-                    "Using cached version of step `%s`.", invocation_id
+            utils._link_cached_artifacts_to_model(
+                model_from_context=model,
+                step_run=step_run_request,
+                step_source=step_run.spec.source,
+            )
+            if model:
+                # TODO: this does not respect models in the artifact config?
+                utils._link_pipeline_run_to_model_from_context(
+                    pipeline_run_id=pipeline_run.id, model=model
                 )
-                cached_invocations.add(invocation_id)
+            # Alternative to the above
+            # link_models_to_pipeline_run(
+            #     step_run=step_run, step_run_model=model
+            # )
+
+            logger.info("Using cached version of step `%s`.", invocation_id)
+            cached_invocations.add(invocation_id)
 
     return cached_invocations
 
 
 def get_and_link_model(
     deployment: PipelineDeploymentResponse,
-    invocation_id: str,
     pipeline_run: PipelineRunResponse,
     step_run: StepRunResponse,
 ) -> Optional["Model"]:
-    step = deployment.step_configurations[invocation_id]
-    model = step.config.model or deployment.pipeline_configuration.model
+    model = step_run.config.model or deployment.pipeline_configuration.model
 
     if model:
-        pass_step_run = step.config.model is not None
-        model._prepare_model_version_before_step_launch(
+        pass_step_run = step_run.config.model is not None
+        preparation_logs = model._prepare_model_version_before_step_launch(
             pipeline_run=pipeline_run,
             step_run=step_run if pass_step_run else None,
-            return_logs=False,
+            return_logs=True,
         )
+
+        if preparation_logs:
+            logger.info(preparation_logs)
 
     return model
 

@@ -192,9 +192,6 @@ class StepLauncher:
 
                 try:
                     request_factory.populate_request(request=step_run_request)
-                    execution_needed = (
-                        step_run_request.status != ExecutionStatus.CACHED
-                    )
                 except:
                     logger.exception(
                         f"Failed preparing run step `{self._step_name}`."
@@ -203,36 +200,17 @@ class StepLauncher:
                     step_run_request.end_time = datetime.utcnow()
                     raise
                 finally:
-                    # TODO: if the try fails, we don't have the request here yet
                     step_run_response = Client().zen_store.create_run_step(
                         step_run_request
                     )
 
-                    # warm-up and register model version
-                    _step_run = None
-                    model = (
-                        self._deployment.step_configurations[
-                            step_run_request.name
-                        ].config.model
-                        or self._deployment.pipeline_configuration.model
+                    model = step_run_utils.get_and_link_model(
+                        deployment=self._deployment,
+                        pipeline_run=pipeline_run,
+                        step_run=step_run_response,
                     )
-                    if self._deployment.step_configurations[
-                        step_run_request.name
-                    ].config.model:
-                        _step_run = step_run_response
 
-                    if model:
-                        prep_logs_to_show = (
-                            model._prepare_model_version_before_step_launch(
-                                pipeline_run=pipeline_run,
-                                step_run=_step_run,
-                                return_logs=True,
-                            )
-                        )
-                        if prep_logs_to_show:
-                            logger.info(prep_logs_to_show)
-
-                if execution_needed:
+                if not step_run_request.status.is_finished:
                     logger.info(f"Step `{self._step_name}` has started.")
                     retries = 0
                     last_retry = True

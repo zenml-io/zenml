@@ -186,7 +186,6 @@ class StepRunSchema(NamedSchema, table=True):
             deployment_id=request.deployment,
             docstring=request.docstring,
             cache_key=request.cache_key,
-            code_hash=request.code_hash,
             source_code=request.source_code,
             model_version_id=request.model_version_id,
         )

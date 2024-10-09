@@ -67,11 +67,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    code_hash: Optional[str] = Field(
-        title="The code hash of the step run.",
-        default=None,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     docstring: Optional[str] = Field(
         title="The docstring of the step function or class.",
         default=None,
