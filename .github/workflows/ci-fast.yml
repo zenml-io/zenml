@@ -27,8 +27,8 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: |
-            - tests/harness/**
-            - src/zenml/**
+            tests/harness/**.py
+            src/zenml/**.py
       - name: Set up Python
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5.0.0
