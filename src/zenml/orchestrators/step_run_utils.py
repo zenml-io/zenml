@@ -135,6 +135,12 @@ class StepRunRequestFactory:
                 # a difference if the original step did some dynamic loading
                 # of artifacts using `load_artifact`, which would then not be
                 # included for the new one
+                
+                # request.inputs = {
+                #     input_name: artifact.id
+                #     for input_name, artifact in cached_step_run.inputs.items()
+                # }
+
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
                     output_name: artifact.id
@@ -349,3 +355,49 @@ def get_all_models_from_step_outputs(step_source: Source) -> List[Model]:
             models.append(model)
 
     return models
+
+
+def fetch_or_create_model(
+    model: Model, pipeline_run: PipelineRunResponse
+) -> Model:
+    if model.model_version_id:
+        return (
+            Client()
+            .get_model_version(
+                model_name_or_id=model.name,
+                model_version_name_or_number_or_id=model.model_version_id,
+            )
+            .to_model_class()
+        )
+
+    if model.version:
+        return (
+            Client()
+            .get_model_version(
+                model_name_or_id=model.name,
+                model_version_name_or_number_or_id=model.version,
+            )
+            .to_model_class()
+        )
+
+    # The model version should be created as part of this run
+    # -> We first check if it was already created as part of this run, and if
+    # not we do create it. If this is running in two parallel steps, we might
+    # run into issues that this will create two versions
+    if pipeline_run.config.model and pipeline_run.model_version:
+        if (
+            pipeline_run.config.model.name == model.name
+            and pipeline_run.config.model.version is None
+        ):
+            return pipeline_run.model_version.to_model_class()
+
+    for _, step_run in pipeline_run.steps.items():
+        if step_run.config.model and step_run.model_version:
+            if (
+                step_run.config.model.name == model.name
+                and step_run.config.model.version is None
+            ):
+                return step_run.model_version.to_model_class()
+
+    # We did not find any existing model that matches -> Create one
+    return model._get_or_create_model_version().to_model_class()
