@@ -159,11 +159,11 @@ def test_artifact_prune(clean_client_with_run):
     assert len(existing_artifact_versions) == 2
 
     # After deleting the run, the artifacts should still exist
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
     clean_client_with_run.delete_pipeline_run(run_name)
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 0
     existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2

@@ -400,18 +400,6 @@ class ArtifactVersionResponse(
             overwrite=overwrite,
         )
 
-    def read(self) -> Any:
-        """(Deprecated) Materializes (loads) the data stored in this artifact.
-
-        Returns:
-            The materialized data.
-        """
-        logger.warning(
-            "`artifact.read()` is deprecated and will be removed in a future "
-            "release. Please use `artifact.load()` instead."
-        )
-        return self.load()
-
     def visualize(self, title: Optional[str] = None) -> None:
         """Visualize the artifact in notebook environments.
 

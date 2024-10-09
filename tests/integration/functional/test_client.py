@@ -478,7 +478,7 @@ def test_listing_pipelines(clean_client):
 
 def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     """Test creating run metadata linked only to a pipeline run."""
-    pipeline_run = clean_client_with_run.list_runs()[0]
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
     existing_metadata = clean_client_with_run.list_run_metadata(
         resource_id=pipeline_run.id,
         resource_type=MetadataResourceTypes.PIPELINE_RUN,
@@ -511,7 +511,7 @@ def test_create_run_metadata_for_pipeline_run_and_component(
     clean_client_with_run: Client,
 ):
     """Test creating metadata linked to a pipeline run and a stack component"""
-    pipeline_run = clean_client_with_run.list_runs()[0]
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
     orchestrator_id = clean_client_with_run.active_stack_model.components[
         "orchestrator"
     ][0].id
