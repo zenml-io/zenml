@@ -301,7 +301,7 @@ Even if an artifact is created externally, it can be treated like any other arti
 It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use External Artifacts to load them instead.
 {% endhint %}
 
-## Linking data **not** produced by ZenML pipelines as a ZenML artifact
+### Linking existing data as a ZenML artifact
 
 Sometimes, data is produced completely outside of ZenML and can be conveniently stored on a given storage. A good example of this is the checkpoint files created as a side-effect of the Deep Learning model training. We know that the intermediate data of the deep learning frameworks is quite big and there is no good reason to move it around again and again, if it can be produced directly in the artifact store boundaries and later just linked to become an artifact of ZenML.
 Let's explore the Pytorch Lightning example to fit the model and store the checkpoints in a remote location.
