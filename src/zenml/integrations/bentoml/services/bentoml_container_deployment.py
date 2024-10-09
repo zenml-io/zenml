@@ -48,6 +48,7 @@ from zenml.services.service_type import ServiceType
 
 logger = get_logger(__name__)
 
+BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME = "bentoml-container-deployment"
 
 class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     """BentoML container deployment configuration."""
@@ -107,7 +108,7 @@ class BentoMLContainerDeploymentService(
     """BentoML container deployment service."""
 
     SERVICE_TYPE = ServiceType(
-        name="bentoml-container-deployment",
+        name=BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME,
         type="model-serving",
         flavor="bentoml",
         description="BentoML container prediction service",

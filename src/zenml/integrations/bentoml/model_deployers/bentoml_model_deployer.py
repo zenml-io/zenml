@@ -25,10 +25,12 @@ from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerFlavor,
 )
 from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME,
     BentoMLContainerDeploymentConfig,
     BentoMLContainerDeploymentService,
 )
 from zenml.integrations.bentoml.services.bentoml_local_deployment import (
+    BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME,
     BentoMLLocalDeploymentConfig,
     BentoMLLocalDeploymentService,
 )
@@ -123,12 +125,15 @@ class BentoMLModelDeployer(BaseModelDeployer):
         """
         if (
             service_instance.SERVICE_TYPE.name
-            == "bentoml-container-deployment"
+            == BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME
         ):
             service_instance = cast(
                 BentoMLContainerDeploymentService, service_instance
             )
-        elif service_instance.SERVICE_TYPE.name == "bentoml-local-deployment":
+        elif (
+            service_instance.SERVICE_TYPE.name
+            == BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME
+        ):
             service_instance = cast(
                 BentoMLLocalDeploymentService, service_instance
             )

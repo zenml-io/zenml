@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME = "bentoml-local-deployment"
 
 class BentoMLDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
     """BentoML deployment service configuration.
@@ -145,7 +146,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="bentoml-local-deployment",
+        name=BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME,
         type="model-serving",
         flavor="bentoml",
         description="BentoML local prediction service",
