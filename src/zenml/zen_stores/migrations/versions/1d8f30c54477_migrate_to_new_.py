@@ -33,7 +33,7 @@ def upgrade() -> None:
     bind = op.get_bind()
     session = sqlmodel.Session(bind=bind)
     # update pipeline_deployment
-    rows_pd = session.exec(
+    rows_pd = session.execute(
         sa.text(
             """
              SELECT id, step_configurations 
@@ -72,10 +72,10 @@ def upgrade() -> None:
                             has_changes = True
         if has_changes:
             data = json.dumps(data_dict)
-            session.exec(update_query_pd, params=(dict(data=data, id_=id_)))
+            session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
 
     # update step_run
-    rows_sr = session.exec(
+    rows_sr = session.execute(
         sa.text(
             """
              SELECT id, step_configuration 
@@ -111,7 +111,7 @@ def upgrade() -> None:
                         has_changes = True
         if has_changes:
             data = json.dumps(data_dict)
-            session.exec(update_query_sr, params=(dict(data=data, id_=id_)))
+            session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
     session.commit()
 
 
