@@ -130,9 +130,37 @@ bento = bentos.build(
     docker=docker,
     build_ctx=working_dir or source_utils.get_source_root(),
 )
+```
 
-return bento
+The `model_name` here should be the name with which your model is saved to BentoML, typically through one of the following commands. More information about the BentoML model store and how to save models there can be found here on the [BentoML docs](https://docs.bentoml.org/en/latest/guides/model-store.html#save-a-model).
 
+```python
+bentoml.MODEL_TYPE.save_model(model_name, model, labels=labels)
+# or
+bentoml.picklable_model.save_model(
+    model_name,
+    model,
+)
+```
+
+Now, your custom step could look something like this:
+```python
+from zenml import step
+
+@step
+def my_bento_builder(model) -> bento.Bento:
+	...
+    # Load the model from the model artifact
+	model = load_artifact_from_response(model)
+	# save to bentoml
+	bentoml.pytorch.save_model(model_name, model)
+	
+	# Build the BentoML bundle. You can use any of the parameters supported by the bentos.build function.
+	bento = bentos.build(
+	    ...
+	)
+	
+	return bento
 ```
 You can now use this bento in any way you see fit.
 
