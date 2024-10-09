@@ -2494,7 +2494,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Model of the pipeline run.
         """
-        from zenml.new.pipelines.run_utils import (
+        from zenml.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,
@@ -3861,21 +3861,6 @@ class Client(metaclass=ClientMetaClass):
             runs_filter_model=runs_filter_model,
             hydrate=hydrate,
         )
-
-    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
-        """(Deprecated) List all pipeline runs.
-
-        Args:
-            **kwargs: The filter arguments passed to `list_pipeline_runs`.
-
-        Returns:
-            A page with Pipeline Runs fitting the filter description
-        """
-        logger.warning(
-            "`Client.list_runs()` is deprecated and will be removed in a "
-            "future release. Please use `Client.list_pipeline_runs()` instead."
-        )
-        return self.list_pipeline_runs(**kwargs)
 
     def delete_pipeline_run(
         self,
