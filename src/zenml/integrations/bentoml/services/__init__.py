@@ -21,10 +21,12 @@ from zenml.integrations.bentoml.services.bentoml_container_deployment import (  
     BentoMLContainerDeploymentConfig,
     BentoMLContainerDeploymentService,
 )
+from zenml.integrations.bentoml.services.deployment_type import BentoMLDeploymentType
 
 __all__ = [
     "BentoMLLocalDeploymentConfig",
     "BentoMLLocalDeploymentService",
     "BentoMLContainerDeploymentConfig",
     "BentoMLContainerDeploymentService",
+    "BentoMLDeploymentType",
 ]
