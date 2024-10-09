@@ -3862,21 +3862,6 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
-    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
-        """(Deprecated) List all pipeline runs.
-
-        Args:
-            **kwargs: The filter arguments passed to `list_pipeline_runs`.
-
-        Returns:
-            A page with Pipeline Runs fitting the filter description
-        """
-        logger.warning(
-            "`Client.list_runs()` is deprecated and will be removed in a "
-            "future release. Please use `Client.list_pipeline_runs()` instead."
-        )
-        return self.list_pipeline_runs(**kwargs)
-
     def delete_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],

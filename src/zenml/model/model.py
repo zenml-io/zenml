@@ -376,20 +376,6 @@ class Model(BaseModel):
             )
         return response.run_metadata
 
-    # TODO: deprecate me
-    @property
-    def metadata(self) -> Dict[str, "MetadataType"]:
-        """DEPRECATED, use `run_metadata` instead.
-
-        Returns:
-            The model version run metadata.
-        """
-        logger.warning(
-            "Model `metadata` property is deprecated. Please use "
-            "`run_metadata` instead."
-        )
-        return {k: v.value for k, v in self.run_metadata.items()}
-
     def delete_artifact(
         self,
         name: str,

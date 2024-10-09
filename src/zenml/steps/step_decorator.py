@@ -73,7 +73,6 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -94,7 +93,6 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -126,7 +124,6 @@ def step(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
-        model_version: DEPRECATED, please use `model` instead.
 
     Returns:
         The step instance.
@@ -134,12 +131,6 @@ def step(
 
     def inner_decorator(func: "F") -> "BaseStep":
         from zenml.steps.decorated_step import _DecoratedStep
-
-        # TODO: deprecate me
-        if model_version:
-            logger.warning(
-                "Step decorator argument `model_version` is deprecated. Please use `model` instead."
-            )
 
         class_: Type["BaseStep"] = type(
             func.__name__,
@@ -164,7 +155,7 @@ def step(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model=model or model_version,
+            model=model,
             retry=retry,
         )
 
