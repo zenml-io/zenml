@@ -23,12 +23,6 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class PreexistingArtifactPath(type(Path())):  # type: ignore[misc]
-    """Simple wrapper to protect from misuse."""
-
-    pass
-
-
 class PreexistingDataMaterializer(BaseMaterializer):
     """Materializer to load directories from the artifact store.
 
@@ -39,10 +33,9 @@ class PreexistingDataMaterializer(BaseMaterializer):
     This materializer solely supports the `register_artifact` function.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
-        PreexistingArtifactPath,
-    )
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Path,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    SKIP_REGISTRATION: ClassVar[bool] = True
 
     def load(self, data_type: Type[Any]) -> Any:
         """Copy the artifact file(s) to a local temp directory.
@@ -56,11 +49,11 @@ class PreexistingDataMaterializer(BaseMaterializer):
         directory = tempfile.mkdtemp(prefix="zenml-artifact")
         if fileio.isdir(self.uri):
             self._copy_directory(src=self.uri, dst=directory)
-            return PreexistingArtifactPath(directory)
+            return Path(directory)
         else:
             dst = os.path.join(directory, os.path.split(self.uri)[-1])
             fileio.copy(src=self.uri, dst=dst)
-            return PreexistingArtifactPath(dst)
+            return Path(dst)
 
     def save(self, data: Any) -> None:
         """Store the directory in the artifact store.

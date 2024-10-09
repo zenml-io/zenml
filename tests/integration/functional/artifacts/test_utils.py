@@ -19,7 +19,6 @@ from zenml import (
     save_artifact,
     step,
 )
-from zenml.artifacts import PreexistingArtifactPath
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
@@ -432,7 +431,7 @@ def register_artifact_step_1() -> None:
 
 @step(enable_cache=False)
 def register_artifact_step_2(
-    inp_folder: PreexistingArtifactPath,
+    inp_folder: Path,
 ) -> None:
     # step should receive a path pointing to the folder
     # from register_artifact_step_1

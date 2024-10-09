@@ -308,10 +308,10 @@ Sometimes, data is produced completely outside of ZenML and can be conveniently 
 ```python
 import os
 from uuid import uuid4
+from pathlib import Path
 
 from zenml.client import Client
 from zenml import register_artifact
-from zenml.artifacts import PreexistingArtifactPath
 
 prefix = Client().active_stack.artifact_store.path
 test_file_name = "test_file.txt"
@@ -331,7 +331,7 @@ register_artifact(
 
 # consume artifact as a folder
 temp_artifact_folder_path = Client().get_artifact_version(name_id_or_prefix="my_folder_artifact").load()
-assert isinstance(temp_artifact_folder_path, PreexistingArtifactPath)
+assert isinstance(temp_artifact_folder_path, Path)
 assert os.path.isdir(temp_artifact_folder_path)
 with open(os.path.join(temp_artifact_folder_path,test_file_name),"r") as f:
     assert f.read() == "test"
@@ -344,14 +344,14 @@ register_artifact(
 
 # consume artifact as a file
 temp_artifact_file_path = Client().get_artifact_version(name_id_or_prefix="my_file_artifact").load()
-assert isinstance(temp_artifact_file_path, PreexistingArtifactPath)
+assert isinstance(temp_artifact_file_path, Path)
 assert not os.path.isdir(temp_artifact_file_path)
 with open(temp_artifact_file_path,"r") as f:
     assert f.read() == "test"
 ```
 
 {% hint style="info" %}
-The artifact produced from the preexisting data will have special type a `PreexistingArtifactPath`, but can be treated as a regular `pathlib.Path` object while using it.
+The artifact produced from the preexisting data will have a `pathlib.Path` type, once loaded or passed as input to another step.
 {% endhint %}
 
 Now let's explore the Pytorch Lightning example to fit the model and store the checkpoints in a remote location.
@@ -400,17 +400,17 @@ Below you can find a sophisticated example of a pipeline doing a Pytorch Lightni
 <summary>Pytorch Lightning training with the checkpoints linkage example</summary>
 
 ```python
+import os
 from typing import Annotated
+from pathlib import Path
 
 import numpy as np
 from zenml.client import Client
 from zenml import register_artifact
-from zenml.artifacts import PreexistingArtifactPath
 from zenml import step, pipeline, get_step_context, Model
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 
-import os
 from torch.utils.data import DataLoader
 from torch.nn import ReLU, Linear, Sequential
 from torch.nn.functional import mse_loss
@@ -548,7 +548,7 @@ def train_model(
 
 @step
 def predict(
-    checkpoint_file: PreexistingArtifactPath,
+    checkpoint_file: Path,
 ) -> Annotated[np.ndarray, "predictions"]:
     # load the model from the checkpoint
     encoder = Sequential(Linear(28 * 28, 64), ReLU(), Linear(64, 3))
