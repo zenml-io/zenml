@@ -40,6 +40,10 @@ class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator.
 
     Attributes:
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`.
         instance_type: The instance type to use for the processing job.
         execution_role: The IAM role to use for the step execution.
         processor_role: DEPRECATED: use `execution_role` instead.
@@ -95,6 +99,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
                     specific parts of the data are stored locally for S3 upload.
                     Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
+
+    synchronous: bool = True
 
     instance_type: Optional[str] = None
     execution_role: Optional[str] = None
@@ -174,10 +180,6 @@ class SagemakerOrchestratorConfig(
         loaded from the default AWS config.
 
     Attributes:
-        synchronous: If `True`, the client running a pipeline using this
-            orchestrator waits until all steps finish running. If `False`,
-            the client returns immediately and the pipeline is executed
-            asynchronously. Defaults to `True`.
         execution_role: The IAM role ARN to use for the pipeline.
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
@@ -197,7 +199,6 @@ class SagemakerOrchestratorConfig(
             "sagemaker-{region}-{aws-account-id}".
     """
 
-    synchronous: bool = True
     execution_role: str
     aws_access_key_id: Optional[str] = SecretField(default=None)
     aws_secret_access_key: Optional[str] = SecretField(default=None)

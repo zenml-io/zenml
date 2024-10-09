@@ -354,7 +354,7 @@ class Model(BaseModel):
             RuntimeError: If the model version run metadata cannot be fetched.
         """
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
-        from zenml.new.pipelines.pipeline_context import (
+        from zenml.pipelines.pipeline_context import (
             get_pipeline_context,
         )
 
@@ -375,20 +375,6 @@ class Model(BaseModel):
                 "Failed to fetch metadata of this model version."
             )
         return response.run_metadata
-
-    # TODO: deprecate me
-    @property
-    def metadata(self) -> Dict[str, "MetadataType"]:
-        """DEPRECATED, use `run_metadata` instead.
-
-        Returns:
-            The model version run metadata.
-        """
-        logger.warning(
-            "Model `metadata` property is deprecated. Please use "
-            "`run_metadata` instead."
-        )
-        return {k: v.value for k, v in self.run_metadata.items()}
 
     def delete_artifact(
         self,

@@ -65,8 +65,8 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
-from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
+from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
