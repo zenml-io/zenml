@@ -310,7 +310,8 @@ import os
 from uuid import uuid4
 
 from zenml.client import Client
-from zenml import register_artifact, PreexistingArtifactPath
+from zenml import register_artifact
+from zenml.artifacts import PreexistingArtifactPath
 
 prefix = Client().active_stack.artifact_store.path
 test_file_name = "test_file.txt"
@@ -403,7 +404,8 @@ from typing import Annotated
 
 import numpy as np
 from zenml.client import Client
-from zenml import register_artifact, PreexistingArtifactPath
+from zenml import register_artifact
+from zenml.artifacts import PreexistingArtifactPath
 from zenml import step, pipeline, get_step_context, Model
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger

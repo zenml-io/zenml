@@ -19,7 +19,7 @@ from zenml import (
     save_artifact,
     step,
 )
-from zenml.artifacts.load_directory_materializer import PreexistingArtifactPath
+from zenml.artifacts import PreexistingArtifactPath
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
