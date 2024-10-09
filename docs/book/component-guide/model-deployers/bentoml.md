@@ -21,7 +21,7 @@ You should use the BentoML Model Deployer to:
 
 If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the other [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) available in ZenML.
 
-BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with `bentoctl` section](bentoml.md#from-local-to-cloud-with-bentoctl).
+BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with `bentoctl` section](#from-local-to-cloud-with-bentoctl).
 
 {% hint style="info" %}
 The `bentoctl` integration implementation is still in progress and will be available soon. The integration will allow you to deploy your models to a specific cloud provider with just a few lines of code using ZenML built-in steps.
@@ -45,7 +45,7 @@ The ZenML integration will provision a local HTTP deployment server as a daemon 
 
 ## How do you use it?
 
-The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](bentoml.md#create-a-bentoml-service), then [use the `bento_builder_step`](bentoml.md#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the `bentoml_model_deployer_step`](bentoml.md#zenml-bentoml-deployer-step).
+The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](#create-a-bentoml-service), then either build a [bento yourself](#build-your-own-bento) or [use the `bento_builder_step`](#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the `bentoml_model_deployer_step`](#zenml-bentoml-deployer-step).
 
 ### Create a BentoML Service
 
@@ -89,37 +89,8 @@ class MNISTService:
 
 ```
 
-### ZenML Bento Builder step
+### 🏗️ Build your own bento
 
-Once you have your bento service defined, we can use the built-in bento builder step to build the bento bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step within a ZenML pipeline. Make sure you have the bento service file in your repository and then use the correct class name in the `service` parameter.
-
-```python
-from zenml import pipeline, step
-from zenml.integrations.bentoml.steps import bento_builder_step
-
-@pipeline
-def bento_builder_pipeline():
-    model = ...
-    bento = bento_builder_step(
-        model=model,
-        model_name="pytorch_mnist",  # Name of the model
-        model_type="pytorch",  # Type of the model (pytorch, tensorflow, sklearn, xgboost..)
-        service="service.py:CLASS_NAME",  # Path to the service file within zenml repo
-        labels={  # Labels to be added to the bento bundle
-            "framework": "pytorch",
-            "dataset": "mnist",
-            "zenml_version": "0.21.1",
-        },
-        exclude=["data"],  # Exclude files from the bento bundle
-        python={
-            "packages": ["zenml", "torch", "torchvision"],
-        },  # Python package requirements of the model
-    )
-```
-
-The Bento Builder step can be used in any orchestration pipeline that you create with ZenML. The step will build the bento bundle and save it to the used artifact store. Which can be used to serve the model in a local or containerized setting using the BentoML Model Deployer Step, or in a remote setting using the `bentoctl` or Yatai. This gives you the flexibility to package your model in a way that is ready for different deployment scenarios.
-
-🏗️ **Build your own bento**
 The `bento_builder_step` only exists to make your life easier; you can always build the bento yourself and use it in the deployer step in the next section. A peek into how this step is implemented will give you ideas on how to build such a function yourself. This allows you to have more customization over the bento build process if needed.
 
 ```python
@@ -164,6 +135,36 @@ return bento
 
 ```
 You can now use this bento in any way you see fit.
+
+### ZenML Bento Builder step
+
+Once you have your bento service defined, we can use the built-in bento builder step to build the bento bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step within a ZenML pipeline. Make sure you have the bento service file in your repository and then use the correct class name in the `service` parameter.
+
+```python
+from zenml import pipeline, step
+from zenml.integrations.bentoml.steps import bento_builder_step
+
+@pipeline
+def bento_builder_pipeline():
+    model = ...
+    bento = bento_builder_step(
+        model=model,
+        model_name="pytorch_mnist",  # Name of the model
+        model_type="pytorch",  # Type of the model (pytorch, tensorflow, sklearn, xgboost..)
+        service="service.py:CLASS_NAME",  # Path to the service file within zenml repo
+        labels={  # Labels to be added to the bento bundle
+            "framework": "pytorch",
+            "dataset": "mnist",
+            "zenml_version": "0.21.1",
+        },
+        exclude=["data"],  # Exclude files from the bento bundle
+        python={
+            "packages": ["zenml", "torch", "torchvision"],
+        },  # Python package requirements of the model
+    )
+```
+
+The Bento Builder step can be used in any orchestration pipeline that you create with ZenML. The step will build the bento bundle and save it to the used artifact store. Which can be used to serve the model in a local or containerized setting using the BentoML Model Deployer Step, or in a remote setting using the `bentoctl` or Yatai. This gives you the flexibility to package your model in a way that is ready for different deployment scenarios.
 
 ### ZenML BentoML Deployer step
 
