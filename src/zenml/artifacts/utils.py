@@ -90,6 +90,7 @@ def save_artifact(
 
     Args:
         name: The name of the artifact.
+        data: The artifact data.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
         tags: Tags to associate with the artifact.

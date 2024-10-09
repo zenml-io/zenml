@@ -33,7 +33,6 @@ class UnmaterializedArtifact(ArtifactVersionResponse):
     def my_step(input_artifact: UnmaterializedArtifact):
         print(input_artifact.uri)
     ```
-
     """
 
 
