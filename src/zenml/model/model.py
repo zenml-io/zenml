@@ -147,7 +147,7 @@ class Model(BaseModel):
                 a version name).
 
         Raises:
-            RuntimeError: if model version doesn't exist and
+            KeyError: if model version doesn't exist and
                 cannot be fetched from the Model Control Plane.
         """
         if self._number is None:
@@ -155,7 +155,7 @@ class Model(BaseModel):
                 mv = self._get_or_create_model_version()
                 self._number = mv.number
             except RuntimeError as e:
-                raise RuntimeError(
+                raise KeyError(
                     f"Version `{self.version}` of `{self.name}` model doesn't "
                     "exist and cannot be fetched from the Model Control Plane."
                 ) from e
