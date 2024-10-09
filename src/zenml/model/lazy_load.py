@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+
+from zenml.pipelines.pipeline_context import get_pipeline_context
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.models import ModelVersionResponse, PipelineRunResponse
@@ -42,6 +45,39 @@ class ModelVersionDataLazyLoader(BaseModel):
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate all in one.
+
+        Args:
+            data: Dict of values.
+
+        Returns:
+            Dict of validated values.
+
+        Raises:
+            ValueError: If the model version id, but call is not internal.
+        """
+        if data.get("model_version", None) is None:
+            try:
+                context = get_pipeline_context()
+                if (
+                    not context.model
+                    or context.model.name != data["model_name"]
+                ):
+                    raise ValueError(
+                        "`version` must be set if you use the `Model` class "
+                        "directly in the pipeline body, otherwise, you can use "
+                        "`get_pipeline_context().model` to lazy load the current "
+                        "Model Version from the pipeline context."
+                    )
+            except RuntimeError:
+                pass
+        data["suppress_class_validation_warnings"] = True
+        return data
 
     def _get_model_response(
         self, pipeline_run: "PipelineRunResponse"

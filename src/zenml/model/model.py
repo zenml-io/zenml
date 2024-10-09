@@ -525,17 +525,6 @@ class Model(BaseModel):
                 f"`version` `{version}` is numeric and will be fetched "
                 "using version number."
             )
-        if version is None:
-            try:
-                get_pipeline_context()
-                raise ValueError(
-                    "`version` must be set if you use the `Model` class "
-                    "directly in the pipeline body, otherwise, you can use "
-                    "`get_pipeline_context().model` to lazy load the current "
-                    "Model Version from the pipeline context."
-                )
-            except RuntimeError:
-                pass
         data["suppress_class_validation_warnings"] = True
         return data
 
