@@ -206,6 +206,7 @@ class BaseOrchestrator(StackComponent, ABC):
                     placeholder_run.id
                 )
                 self._cleanup_run()
+                logger.info("All steps of the pipeline run were cached.")
                 return
 
         try:
