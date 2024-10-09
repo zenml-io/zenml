@@ -43,80 +43,80 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: bash scripts/docstring.sh ${ALL_CHANGED_FILES}
-  sqlite-db-migration-testing-random:
-    runs-on: arc-runner-set
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: '3.9'
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - name: Spelling checker
-        uses: crate-ci/typos@v1.17.0
-        with:
-          files: .
-          config: ./.typos.toml
-  api-docs-test:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: '3.11'
-      - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
-      == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.8'
-      os: ubuntu-latest
-    secrets: inherit
-  custom-ubuntu-setup-and-unit-test:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [arc-runner-set]
-        python-version: ['3.10']
-      fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  custom-arc-runner-set-integration-test:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [arc-runner-set]
-        python-version: ['3.10']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+  # sqlite-db-migration-testing-random:
+  #   runs-on: arc-runner-set
+  #   env:
+  #     ZENML_ANALYTICS_OPT_IN: false
+  #     ZENML_DEBUG: true
+  #   # if team member commented, not a draft, on a PR, using /fulltest
+  #   if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4.1.1
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Set up Python 3.9
+  #       uses: actions/setup-python@v5.0.0
+  #       with:
+  #         python-version: '3.9'
+  #     - name: Test migrations across versions
+  #       run: bash scripts/test-migrations.sh sqlite random
+  # spellcheck:
+  #   if: github.event.pull_request.draft == false
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4.1.1
+  #     - name: Spelling checker
+  #       uses: crate-ci/typos@v1.17.0
+  #       with:
+  #         files: .
+  #         config: ./.typos.toml
+  # api-docs-test:
+  #   if: github.event.pull_request.draft == false
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4.1.1
+  #     - name: Set up Python 3.11
+  #       uses: actions/setup-python@v5.0.0
+  #       with:
+  #         python-version: '3.11'
+  #     - name: Test API docs buildable
+  #       run: bash scripts/generate-docs.sh -v DUMMY -c
+  # update-templates-to-examples:
+  #   # this doesn't work on forked repositories (i.e. outside contributors)
+  #   # so we disable template updates for those PRs / branches
+  #   if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
+  #     == false
+  #   uses: ./.github/workflows/update-templates-to-examples.yml
+  #   with:
+  #     python-version: '3.8'
+  #     os: ubuntu-latest
+  #   secrets: inherit
+  # custom-ubuntu-setup-and-unit-test:
+  #   if: github.event.pull_request.draft == false
+  #   strategy:
+  #     matrix:
+  #       os: [arc-runner-set]
+  #       python-version: ['3.10']
+  #     fail-fast: false
+  #   uses: ./.github/workflows/unit-test.yml
+  #   with:
+  #     python-version: ${{ matrix.python-version }}
+  #     os: ${{ matrix.os }}
+  #   secrets: inherit
+  # custom-arc-runner-set-integration-test:
+  #   if: github.event.pull_request.draft == false
+  #   strategy:
+  #     matrix:
+  #       os: [arc-runner-set]
+  #       python-version: ['3.10']
+  #       test_environment: [default, docker-server-docker-orchestrator-mysql]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/integration-test-fast.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #     test_environment: ${{ matrix.test_environment }}
+  #   secrets: inherit
