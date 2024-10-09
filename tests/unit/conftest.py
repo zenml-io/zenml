@@ -23,7 +23,6 @@ from zenml.artifact_stores.local_artifact_store import (
 )
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration, StepSpec
-from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -290,33 +289,14 @@ def step_with_two_int_inputs():
 
 
 @pytest.fixture
-def sample_step_run_info(
-    sample_pipeline_run: PipelineRunResponse,
-    sample_step_run: StepRunResponse,
-) -> StepRunInfo:
-    return StepRunInfo(
-        step_run_id=sample_step_run.id,
-        run_id=sample_pipeline_run.id,
-        run_name=sample_pipeline_run.name,
-        pipeline_step_name=sample_step_run.name,
-        config=sample_step_run.config,
-        pipeline=sample_pipeline_run.config,
-        force_write_logs=lambda: None,
-    )
-
-
-@pytest.fixture
 def step_context_with_no_output(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers={},
         output_artifact_uris={},
         output_artifact_configs={},
@@ -327,7 +307,6 @@ def step_context_with_no_output(
 def step_context_with_single_output(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
@@ -336,8 +315,6 @@ def step_context_with_single_output(
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
         output_artifact_configs=artifact_configs,
@@ -348,7 +325,6 @@ def step_context_with_single_output(
 def step_context_with_two_outputs(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     materializers = {
         "output_1": (BaseMaterializer,),
@@ -364,8 +340,6 @@ def step_context_with_two_outputs(
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
         output_artifact_configs=artifact_configs,

@@ -80,7 +80,7 @@ def test_pipeline_run_list(clean_client_with_run):
 
 def test_pipeline_run_delete(clean_client_with_run):
     """Test that zenml pipeline runs delete works as expected."""
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
     runner = CliRunner()
@@ -91,7 +91,7 @@ def test_pipeline_run_delete(clean_client_with_run):
     assert result.exit_code == 0
     with pytest.raises(KeyError):
         clean_client_with_run.get_pipeline_run(run_name)
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 0
 
 
