@@ -36,6 +36,8 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_type import ServiceType
 from zenml.utils import source_utils
 
+from zenml.integrations.bentoml.services.deployment_type import BentoMLDeploymentType
+
 logger = get_logger(__name__)
 
 
@@ -44,7 +46,7 @@ def bentoml_model_deployer_step(
     bento: bento.Bento,
     model_name: str,
     port: int,
-    deployment_type: Literal["local", "container"] = "local",
+    deployment_type: BentoMLDeploymentType = BentoMLDeploymentType.LOCAL,
     deploy_decision: bool = True,
     workers: Optional[int] = 1,
     backlog: Optional[int] = 2048,
@@ -117,7 +119,7 @@ def bentoml_model_deployer_step(
         return apis_paths
 
     def create_deployment_config(
-        deployment_type: Literal["local", "container"],
+        deployment_type: BentoMLDeploymentType,
     ) -> Tuple[ServiceConfig, ServiceType]:
         common_config = {
             "model_name": model_name,
@@ -133,7 +135,7 @@ def bentoml_model_deployer_step(
             "backlog": backlog,
         }
 
-        if deployment_type == "container":
+        if deployment_type == BentoMLDeploymentType.CONTAINER:
             return BentoMLContainerDeploymentConfig(
                 **common_config,
                 image=image,
@@ -166,7 +168,7 @@ def bentoml_model_deployer_step(
     # Creating a new service with inactive state and status by default
     service: Optional[BaseService] = None
     if existing_services:
-        if deployment_type == "container":
+        if deployment_type == BentoMLDeploymentType.CONTAINER:
             service = cast(
                 BentoMLContainerDeploymentService, existing_services[0]
             )
@@ -187,7 +189,7 @@ def bentoml_model_deployer_step(
 
     # create a new model deployment and replace an old one if it exists
     new_service: BaseService
-    if deployment_type == "container":
+    if deployment_type == BentoMLDeploymentType.CONTAINER:
         new_service = cast(
             BentoMLContainerDeploymentService,
             model_deployer.deploy_model(
