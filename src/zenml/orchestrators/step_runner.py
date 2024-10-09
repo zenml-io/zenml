@@ -150,14 +150,6 @@ class StepRunner:
                 inspect.unwrap(step_instance.entrypoint)
             )
 
-            # (Deprecated) Wrap the execution of the step function in a step
-            # environment that the step function code can access to retrieve
-            # information about the pipeline runtime, such as the current step
-            # name and the current pipeline run ID
-            cache_enabled = is_setting_enabled(
-                is_enabled_on_step=step_run_info.config.enable_cache,
-                is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
-            )
             output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint
             )
@@ -171,8 +163,6 @@ class StepRunner:
                 step_run=step_run,
                 output_materializers=output_materializers,
                 output_artifact_uris=output_artifact_uris,
-                step_run_info=step_run_info,
-                cache_enabled=cache_enabled,
                 output_artifact_configs={
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
@@ -334,17 +324,7 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
-                step_name = self.configuration.name
-                logger.warning(
-                    "Passing a `StepContext` as an argument to a step function "
-                    "is deprecated and will be removed in a future release. "
-                    f"Please adjust your '{step_name}' step to instead import "
-                    "the `StepContext` inside your step, as shown here: "
-                    "https://docs.zenml.io/how-to/track-metrics-metadata/fetch-metadata-within-steps"
-                )
-                function_params[arg] = get_step_context()
-            elif arg in input_artifacts:
+            if arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
                 )
@@ -391,7 +371,7 @@ class StepRunner:
                 # It should not be of any other type
                 raise TypeError(
                     "Hook functions can only take arguments of type "
-                    f"`BaseParameters`, or `BaseException`, not {arg_type}"
+                    f"`BaseException`, not {arg_type}"
                 )
 
         return function_params

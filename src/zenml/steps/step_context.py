@@ -30,7 +30,6 @@ from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
     from zenml.artifacts.artifact_config import ArtifactConfig
-    from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.model import Model
@@ -95,8 +94,6 @@ class StepContext(metaclass=SingletonMetaClass):
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
-        step_run_info: "StepRunInfo",
-        cache_enabled: bool,
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -109,8 +106,6 @@ class StepContext(metaclass=SingletonMetaClass):
                 context is used in.
             output_artifact_configs: The outputs' ArtifactConfigs of the step that this
                 context is used in.
-            step_run_info: (Deprecated) info about the currently running step.
-            cache_enabled: (Deprecated) Whether caching is enabled for the step.
 
         Raises:
             StepContextError: If the keys of the output materializers and
@@ -128,8 +123,6 @@ class StepContext(metaclass=SingletonMetaClass):
         except KeyError:
             pass
         self.step_run = step_run
-        self._step_run_info = step_run_info
-        self._cache_enabled = cache_enabled
 
         # Get the stack that we are running in
         self._stack = Client().active_stack
@@ -206,19 +199,6 @@ class StepContext(metaclass=SingletonMetaClass):
             )
 
         return model
-
-    # TODO: deprecate me
-    @property
-    def model_version(self) -> "Model":
-        """DEPRECATED, use `model` instead.
-
-        Returns:
-            The `Model` object associated with the current step.
-        """
-        logger.warning(
-            "Step context `model_version` is deprecated. Please use `model` instead."
-        )
-        return self.model
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:

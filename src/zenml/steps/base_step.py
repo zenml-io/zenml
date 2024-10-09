@@ -26,7 +26,6 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -99,7 +98,6 @@ class BaseStep:
 
     def __init__(
         self,
-        *args: Any,
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
@@ -117,12 +115,10 @@ class BaseStep:
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
-        **kwargs: Any,
     ) -> None:
         """Initializes a step.
 
         Args:
-            *args: Positional arguments passed to the step.
             name: The name of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
@@ -147,11 +143,9 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
-            **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
-        self._upstream_steps: Set["BaseStep"] = set()
         self.entrypoint_definition = validate_entrypoint_function(
             self.entrypoint, reserved_arguments=["after", "id"]
         )
@@ -253,45 +247,6 @@ class BaseStep:
             The step source.
         """
         return source_utils.resolve(self.__class__)
-
-    @property
-    def upstream_steps(self) -> Set["BaseStep"]:
-        """Names of the upstream steps of this step.
-
-        This property will only contain the full set of upstream steps once
-        it's parent pipeline `connect(...)` method was called.
-
-        Returns:
-            Set of upstream step names.
-        """
-        return self._upstream_steps
-
-    def after(self, step: "BaseStep") -> None:
-        """Adds an upstream step to this step.
-
-        Calling this method makes sure this step only starts running once the
-        given step has successfully finished executing.
-
-        **Note**: This can only be called inside the pipeline connect function
-        which is decorated with the `@pipeline` decorator. Any calls outside
-        this function will be ignored.
-
-        Example:
-        The following pipeline will run its steps sequentially in the following
-        order: step_2 -> step_1 -> step_3
-
-        ```python
-        @pipeline
-        def example_pipeline(step_1, step_2, step_3):
-            step_1.after(step_2)
-            step_3(step_1(), step_2())
-        ```
-
-        Args:
-            step: A step which should finish executing before this step is
-                started.
-        """
-        self._upstream_steps.add(step)
 
     @property
     def source_object(self) -> Any:
@@ -617,7 +572,6 @@ class BaseStep:
 
     def configure(
         self: T,
-        name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -649,7 +603,6 @@ class BaseStep:
             step.configuration.extra # {"key2": 2}
 
         Args:
-            name: DEPRECATED: The name of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -684,9 +637,6 @@ class BaseStep:
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
-
-        if name:
-            logger.warning("Configuring the name of a step is deprecated.")
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]],

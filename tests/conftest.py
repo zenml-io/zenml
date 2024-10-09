@@ -17,6 +17,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Generator, Tuple
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -448,17 +449,18 @@ def s3_artifact_store():
         S3ArtifactStoreConfig,
     )
 
-    return S3ArtifactStore(
-        name="",
-        id=uuid4(),
-        config=S3ArtifactStoreConfig(path="s3://tmp"),
-        flavor="s3",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
+    with patch("boto3.resource", MagicMock()):
+        return S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(path="s3://tmp"),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            workspace=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
 
 @pytest.fixture

@@ -113,33 +113,6 @@ def link_artifact_config_to_model(
         client.zen_store.create_model_version_artifact_link(request)
 
 
-def log_model_version_metadata(
-    metadata: Dict[str, "MetadataType"],
-    model_name: Optional[str] = None,
-    model_version: Optional[Union[ModelStages, int, str]] = None,
-) -> None:
-    """Log model version metadata.
-
-    This function can be used to log metadata for existing model versions.
-
-    Args:
-        metadata: The metadata to log.
-        model_name: The name of the model to log metadata for. Can
-            be omitted when being called inside a step with configured
-            `model` in decorator.
-        model_version: The version of the model to log metadata for. Can
-            be omitted when being called inside a step with configured
-            `model` in decorator.
-    """
-    logger.warning(
-        "`log_model_version_metadata` is deprecated. Please use "
-        "`log_model_metadata` instead."
-    )
-    log_model_metadata(
-        metadata=metadata, model_name=model_name, model_version=model_version
-    )
-
-
 def log_model_metadata(
     metadata: Dict[str, "MetadataType"],
     model_name: Optional[str] = None,

@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Pipeline context class."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml import Model
     from zenml.config.pipeline_configurations import PipelineConfiguration
 
 logger = get_logger(__name__)
@@ -113,17 +112,3 @@ class PipelineContext:
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
         self.model = pipeline_configuration.model
-        self._model_version = pipeline_configuration.model
-
-    # TODO: deprecate me
-    @property
-    def model_version(self) -> Optional["Model"]:
-        """DEPRECATED, use `model` instead.
-
-        Returns:
-            The `Model` object associated with the current pipeline.
-        """
-        logger.warning(
-            "Pipeline context `model_version` is deprecated. Please use `model` instead."
-        )
-        return self.model
