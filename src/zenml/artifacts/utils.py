@@ -718,6 +718,15 @@ def _create_artifact_version_with_retries(
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
         create_version_fn: The function to create the artifact version.
+
+    Returns:
+        The created artifact version.
+
+    Raises:
+        EntityExistsError: If the artifact version could not be created
+            after MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION attempts due
+            to collisions.
+
     """
     response = None
     if not version:
