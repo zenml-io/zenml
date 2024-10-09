@@ -245,8 +245,7 @@ def save_artifact(
         )
 
     if manual_save:
-        _link_artifact_version_to_model_version_in_context(
-            name=name,
+        _link_artifact_version_to_the_step_and_model(
             response=response,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
@@ -347,8 +346,7 @@ def register_artifact(
             resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
-    _link_artifact_version_to_model_version_in_context(
-        name=name,
+    _link_artifact_version_to_the_step_and_model(
         response=response,
         is_model_artifact=is_model_artifact,
         is_deployment_artifact=is_deployment_artifact,
@@ -709,6 +707,18 @@ def _create_artifact_version_with_retries(
         Optional[ArtifactVersionResponse],
     ],
 ) -> ArtifactVersionResponse:
+    """Create an artifact version with some retries.
+
+    This function will retry the creation of an artifact version up to
+    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION times if it fails.
+    It can fail in high-concurrency environments.
+
+    Args:
+        name: The name of the artifact.
+        version: The version of the artifact. If not provided, a new
+            auto-incremented version will be used.
+        create_version_fn: The function to create the artifact version.
+    """
     response = None
     if not version:
         retries_made = 0
@@ -743,12 +753,22 @@ def _create_artifact_version_with_retries(
     return response
 
 
-def _link_artifact_version_to_model_version_in_context(
-    name: str,
+def _link_artifact_version_to_the_step_and_model(
     response: ArtifactVersionResponse,
     is_model_artifact: bool,
     is_deployment_artifact: bool,
 ) -> None:
+    """Link an artifact version to the step and its' context model.
+
+    This function links the AV to:
+        - the step run
+        - the MV from the step context
+
+    Args:
+        response: The artifact version to link.
+        is_model_artifact: Whether the artifact is a model artifact.
+        is_deployment_artifact: Whether the artifact is a deployment artifact.
+    """
     client = Client()
     try:
         error_message = "step run"
@@ -757,7 +777,7 @@ def _link_artifact_version_to_model_version_in_context(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={name: response.id}
+                saved_artifact_versions={response.artifact.name: response.id}
             ),
         )
         error_message = "model"
