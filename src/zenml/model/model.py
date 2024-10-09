@@ -32,6 +32,7 @@ from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.pipelines.pipeline_context import get_pipeline_context
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import format_name_template
 
@@ -358,9 +359,6 @@ class Model(BaseModel):
             RuntimeError: If the model version run metadata cannot be fetched.
         """
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
-        from zenml.pipelines.pipeline_context import (
-            get_pipeline_context,
-        )
 
         try:
             get_pipeline_context()
@@ -464,7 +462,6 @@ class Model(BaseModel):
         name: str,
         version: Optional[str] = None,
     ) -> Optional["ArtifactVersionResponse"]:
-        from zenml import get_pipeline_context
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,
         )
@@ -542,6 +539,17 @@ class Model(BaseModel):
                 f"`version` `{version}` is numeric and will be fetched "
                 "using version number."
             )
+        if version is None:
+            try:
+                get_pipeline_context()
+                raise ValueError(
+                    "`version` must be set if you use the `Model` class "
+                    "directly in the pipeline body, otherwise, you can use "
+                    "`get_pipeline_context().model` to lazy load the current "
+                    "Model Version from the pipeline context."
+                )
+            except RuntimeError:
+                pass
         data["suppress_class_validation_warnings"] = True
         return data
 
@@ -890,21 +898,19 @@ class Model(BaseModel):
             client = Client()
             # update the configured model version id in runs accordingly
             if step_run:
-                client.zen_store.update_run_step(
+                step_run = client.zen_store.update_run_step(
                     step_run_id=step_run.id,
                     step_run_update=StepRunUpdate(
                         model_version_id=model_version_response.id
                     ),
                 )
-                step_run = client.zen_store.get_run_step(step_run.id)
             else:
-                client.zen_store.update_run(
+                pipeline_run = client.zen_store.update_run(
                     run_id=pipeline_run.id,
                     run_update=PipelineRunUpdate(
                         model_version_id=model_version_response.id
                     ),
                 )
-                pipeline_run = client.zen_store.get_run(pipeline_run.id)
 
             if return_logs:
                 from zenml.utils.cloud_utils import try_get_model_version_url

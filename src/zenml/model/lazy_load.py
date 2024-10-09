@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from zenml.models import ModelVersionResponse, PipelineRunResponse
@@ -34,6 +34,14 @@ class ModelVersionDataLazyLoader(BaseModel):
     artifact_name: Optional[str] = None
     artifact_version: Optional[str] = None
     metadata_name: Optional[str] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def _get_model_response(
         self, pipeline_run: "PipelineRunResponse"
