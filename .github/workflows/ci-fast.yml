@@ -20,17 +20,31 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            - tests/harness/**.py
+            - src/zenml/**.py
       - name: Set up Python
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.10'
       - name: Install darglint using uv
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           source $HOME/.cargo/env
           uv pip install --system darglint
       - name: Check docstrings
-        run: bash scripts/docstring.sh
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: bash scripts/docstring.sh ${ALL_CHANGED_FILES}
   sqlite-db-migration-testing-random:
     runs-on: arc-runner-set
     env:
