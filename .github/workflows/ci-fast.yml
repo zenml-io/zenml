@@ -42,7 +42,7 @@ jobs:
       - name: Check docstrings
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_and_modified_files }}
         run: bash scripts/docstring.sh ${ALL_CHANGED_FILES}
   # sqlite-db-migration-testing-random:
   #   runs-on: arc-runner-set
