@@ -238,12 +238,15 @@ def create_cached_step_runs(
                     invocation_id
                 )
                 request_factory.populate_request(step_run_request)
-            except Exception:
+            except Exception as e:
                 # We failed to create the step run. This might be due to some
                 # input resolution error, or an error importing the step source
                 # (there might be some missing dependencies). We just treat the
                 # step as not cached and let the orchestrator try again in a
                 # potentially different environment.
+                logger.debug(
+                    "Failed preparing step run `%s`: %s", invocation_id, str(e)
+                )
                 continue
 
             if step_run_request.status != ExecutionStatus.CACHED:
