@@ -67,7 +67,6 @@ class StepRunSchema(NamedSchema, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    code_hash: Optional[str] = Field(nullable=True)
 
     step_configuration: str = Field(
         sa_column=Column(
@@ -274,7 +273,6 @@ class StepRunSchema(NamedSchema, table=True):
                 config=full_step_config.config,
                 spec=full_step_config.spec,
                 cache_key=self.cache_key,
-                code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
                 start_time=self.start_time,

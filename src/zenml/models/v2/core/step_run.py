@@ -180,11 +180,6 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    code_hash: Optional[str] = Field(
-        title="The code hash of the step run.",
-        default=None,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     docstring: Optional[str] = Field(
         title="The docstring of the step function or class.",
         default=None,
@@ -369,15 +364,6 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().cache_key
-
-    @property
-    def code_hash(self) -> Optional[str]:
-        """The `code_hash` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().code_hash
 
     @property
     def docstring(self) -> Optional[str]:
