@@ -6,6 +6,7 @@ on:
     branches: [misc/prepare-release-*]
 jobs:
   prepare-release:
+    if: contains(github.event.head_commit.message, '[run-ci]') # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
