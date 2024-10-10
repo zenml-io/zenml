@@ -210,10 +210,10 @@ class StepLauncher:
                     logs=logs_model,
                 )
                 # warm-up and register the pipeline model version
-                model = self._deployment.pipeline_configuration.model
-                if model and pipeline_run.model_version is None:
+                pipeline_model = self._deployment.pipeline_configuration.model
+                if pipeline_model and pipeline_run.model_version is None:
                     prep_logs_to_show, pipeline_run, _ = (
-                        model._prepare_model_version_before_step_launch(
+                        pipeline_model._prepare_model_version_before_step_launch(
                             pipeline_run=pipeline_run,
                             step_run=None,
                             return_logs=True,
@@ -238,12 +238,12 @@ class StepLauncher:
                     )
 
                     # warm-up and register the step model version
-                    model = self._deployment.step_configurations[
+                    step_model = self._deployment.step_configurations[
                         step_run.name
                     ].config.model
-                    if model:
+                    if step_model:
                         prep_logs_to_show, _, step_run_response_update = (
-                            model._prepare_model_version_before_step_launch(
+                            step_model._prepare_model_version_before_step_launch(
                                 pipeline_run=pipeline_run,
                                 step_run=step_run_response,
                                 return_logs=True,
@@ -326,6 +326,7 @@ class StepLauncher:
                                 )
                                 raise
                 else:
+                    model = step_model or pipeline_model
                     orchestrator_utils._link_cached_artifacts_to_model(
                         model_from_context=model,
                         step_run=step_run,
