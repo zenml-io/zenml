@@ -36,9 +36,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.8'
+        default: '3.9'
       test_environment:
         description: The test environment
         type: choice
@@ -162,7 +162,7 @@ jobs:
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
         run: brew install libomp
-      - name: Unbreak Python in GHA for 3.8-3.10
+      - name: Unbreak Python in GHA for 3.9-3.10
         if: runner.os=='macOS' && inputs.python-version != '3.11'
         # github actions overwrites brew's python. Force it to reassert itself, by
         # running in a separate step.

@@ -13,11 +13,15 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 
-from zenml.model.model import Model
+from zenml.pipelines.pipeline_context import get_pipeline_context
+from zenml.utils.pydantic_utils import before_validator_handler
+
+if TYPE_CHECKING:
+    from zenml.models import ModelVersionResponse, PipelineRunResponse
 
 
 class ModelVersionDataLazyLoader(BaseModel):
@@ -28,7 +32,84 @@ class ModelVersionDataLazyLoader(BaseModel):
     model version during runtime time of the step.
     """
 
-    model: Model
+    model_name: str
+    model_version: Optional[str] = None
     artifact_name: Optional[str] = None
     artifact_version: Optional[str] = None
     metadata_name: Optional[str] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate all in one.
+
+        Args:
+            data: Dict of values.
+
+        Returns:
+            Dict of validated values.
+
+        Raises:
+            ValueError: If the model version id, but call is not internal.
+        """
+        if data.get("model_version", None) is None:
+            try:
+                context = get_pipeline_context()
+                if (
+                    not context.model
+                    or context.model.name != data["model_name"]
+                ):
+                    raise ValueError(
+                        "`version` must be set if you use the `Model` class "
+                        "directly in the pipeline body, otherwise, you can use "
+                        "`get_pipeline_context().model` to lazy load the current "
+                        "Model Version from the pipeline context."
+                    )
+            except RuntimeError:
+                pass
+        data["suppress_class_validation_warnings"] = True
+        return data
+
+    def _get_model_response(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> "ModelVersionResponse":
+        # if the version/number is None -> return the model in context
+        if self.model_version is None:
+            if mv := pipeline_run.model_version:
+                if mv.model.name != self.model_name:
+                    raise RuntimeError(
+                        "Lazy loading of the model failed, since given name "
+                        f"`{self.model_name}` does not match the model name "
+                        f"in the pipeline context: `{mv.model.name}`."
+                    )
+                return mv
+            else:
+                raise RuntimeError(
+                    "Lazy loading of the model failed, since the model version "
+                    "is not set in the pipeline context."
+                )
+
+        # else return the model version by version
+        else:
+            from zenml.client import Client
+
+            try:
+                return Client().get_model_version(
+                    model_name_or_id=self.model_name,
+                    model_version_name_or_number_or_id=self.model_version,
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    "Lazy loading of the model version failed: "
+                    f"no model `{self.model_name}` with version "
+                    f"`{self.model_version}` could be found."
+                ) from e

@@ -282,6 +282,7 @@ class StepLauncher:
                     logger.info(
                         f"Using cached version of step `{self._step_name}`."
                     )
+                    model = step_model or pipeline_model
                     orchestrator_utils._link_cached_artifacts_to_model(
                         model_from_context=model,
                         step_run=step_run_request,

@@ -21,7 +21,6 @@ from pydantic import Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-from zenml.model.model import Model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -239,7 +238,8 @@ class LazyRunMetadataResponse(RunMetadataResponse):
     lazy_load_artifact_name: Optional[str] = None
     lazy_load_artifact_version: Optional[str] = None
     lazy_load_metadata_name: Optional[str] = None
-    lazy_load_model: Model
+    lazy_load_model_name: str
+    lazy_load_model_version: Optional[str] = None
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
