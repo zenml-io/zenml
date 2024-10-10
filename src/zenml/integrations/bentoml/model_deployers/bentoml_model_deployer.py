@@ -24,12 +24,20 @@ from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
     BentoMLModelDeployerFlavor,
 )
-from zenml.integrations.bentoml.services.bentoml_deployment import (
-    BentoMLDeploymentConfig,
-    BentoMLDeploymentService,
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME,
+    BentoMLContainerDeploymentConfig,
+    BentoMLContainerDeploymentService,
+)
+from zenml.integrations.bentoml.services.bentoml_local_deployment import (
+    BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME,
+    BentoMLLocalDeploymentConfig,
+    BentoMLLocalDeploymentService,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
+from zenml.services.container.container_service import ContainerServiceStatus
+from zenml.services.local.local_service import LocalDaemonServiceStatus
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
@@ -100,8 +108,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
         return self._service_path
 
     @staticmethod
-    def get_model_server_info(  # type: ignore[override]
-        service_instance: "BentoMLDeploymentService",
+    def get_model_server_info(
+        service_instance: BaseService,
     ) -> Dict[str, Optional[str]]:
         """Return implementation specific information on the model server.
 
@@ -110,26 +118,61 @@ class BentoMLModelDeployer(BaseModelDeployer):
 
         Returns:
             A dictionary containing the model server information.
+
+        Raises:
+            ValueError: If the service type is not supported.
         """
+        if (
+            service_instance.SERVICE_TYPE.name
+            == BENTOML_CONTAINER_DEPLOYMENT_SERVICE_NAME
+        ):
+            service_instance = cast(
+                BentoMLContainerDeploymentService, service_instance
+            )
+        elif (
+            service_instance.SERVICE_TYPE.name
+            == BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME
+        ):
+            service_instance = cast(
+                BentoMLLocalDeploymentService, service_instance
+            )
+        else:
+            raise ValueError(
+                f"Unsupported service type: {service_instance.SERVICE_TYPE.name}"
+            )
+
         predictions_apis_urls = ""
-        if service_instance.prediction_apis_urls is not None:
+        if service_instance.prediction_apis_urls is not None:  # type: ignore
             predictions_apis_urls = ", ".join(
                 [
                     api
-                    for api in service_instance.prediction_apis_urls
+                    for api in service_instance.prediction_apis_urls  # type: ignore
                     if api is not None
                 ]
             )
 
+        service_config = service_instance.config
+        assert isinstance(
+            service_config,
+            (BentoMLLocalDeploymentConfig, BentoMLContainerDeploymentConfig),
+        )
+
+        service_status = service_instance.status
+        assert isinstance(
+            service_status, (ContainerServiceStatus, LocalDaemonServiceStatus)
+        )
+
         return {
             "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
             "PREDICTION_URL": service_instance.get_prediction_url(),
-            "BENTO_TAG": service_instance.config.bento,
-            "MODEL_NAME": service_instance.config.model_name,
-            "MODEL_URI": service_instance.config.model_uri,
-            "BENTO_URI": service_instance.config.bento_uri,
-            "SERVICE_PATH": service_instance.status.runtime_path,
-            "DAEMON_PID": str(service_instance.status.pid),
+            "BENTO_TAG": service_config.bento_tag,
+            "MODEL_NAME": service_config.model_name,
+            "MODEL_URI": service_config.model_uri,
+            "BENTO_URI": service_config.bento_uri,
+            "SERVICE_PATH": service_status.runtime_path,
+            "DAEMON_PID": str(service_status.pid)
+            if hasattr(service_status, "pid")
+            else None,
             "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
@@ -179,7 +222,6 @@ class BentoMLModelDeployer(BaseModelDeployer):
             The ZenML BentoML deployment service object that can be used to
             interact with the BentoML model http server.
         """
-        config = cast(BentoMLDeploymentConfig, config)
         service = self._create_new_service(
             id=id, timeout=timeout, config=config
         )
@@ -190,10 +232,19 @@ class BentoMLModelDeployer(BaseModelDeployer):
         self,
         timeout: int,
         force: bool,
-        existing_service: BentoMLDeploymentService,
+        existing_service: BaseService,
     ) -> None:
         # stop the older service
         existing_service.stop(timeout=timeout, force=force)
+
+        # assert that the service is either a BentoMLLocalDeploymentService or a BentoMLContainerDeploymentService
+        if not isinstance(
+            existing_service,
+            (BentoMLLocalDeploymentService, BentoMLContainerDeploymentService),
+        ):
+            raise ValueError(
+                f"Unsupported service type: {type(existing_service)}"
+            )
 
         # delete the old configuration file
         if existing_service.status.runtime_path:
@@ -203,8 +254,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
     # of workers etc.the step implementation will create a new config using
     # all values from the user and add values like pipeline name, model_uri
     def _create_new_service(
-        self, id: UUID, timeout: int, config: BentoMLDeploymentConfig
-    ) -> BentoMLDeploymentService:
+        self, id: UUID, timeout: int, config: ServiceConfig
+    ) -> BaseService:
         """Creates a new BentoMLDeploymentService.
 
         Args:
@@ -216,11 +267,27 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Returns:
             The BentoMLDeploymentService object that can be used to interact
             with the BentoML model server.
+
+        Raises:
+            ValueError: If the service type is not supported.
         """
+        assert isinstance(
+            config,
+            (BentoMLLocalDeploymentConfig, BentoMLContainerDeploymentConfig),
+        )
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path
         # create a new service for the new model
-        service = BentoMLDeploymentService(uuid=id, config=config)
+        # if the config is of type BentoMLLocalDeploymentConfig, create a
+        # BentoMLLocalDeploymentService, otherwise create a
+        # BentoMLContainerDeploymentService
+        service: BaseService
+        if isinstance(config, BentoMLLocalDeploymentConfig):
+            service = BentoMLLocalDeploymentService(uuid=id, config=config)
+        elif isinstance(config, BentoMLContainerDeploymentConfig):
+            service = BentoMLContainerDeploymentService(uuid=id, config=config)
+        else:
+            raise ValueError(f"Unsupported service type: {type(config)}")
         service.start(timeout=timeout)
 
         return service
@@ -274,7 +341,6 @@ class BentoMLModelDeployer(BaseModelDeployer):
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
         """
-        service = cast(BentoMLDeploymentService, service)
         self._clean_up_existing_service(
             existing_service=service, timeout=timeout, force=force
         )

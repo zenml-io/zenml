@@ -11,16 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation for the BentoML inference service."""
+"""Implementation for the BentoML local deployment service."""
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from bentoml.client import Client
+from bentoml import AsyncHTTPClient, SyncHTTPClient
 from pydantic import BaseModel, Field
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
+    BENTOML_DEFAULT_PORT,
     BENTOML_HEALTHCHECK_URL_PATH,
     BENTOML_PREDICTION_URL_PATH,
 )
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
     )
 
 logger = get_logger(__name__)
+
+BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME = "bentoml-local-deployment"
 
 
 class BentoMLDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
@@ -100,14 +103,15 @@ class SSLBentoMLParametersConfig(BaseModel):
     ssl_ciphers: Optional[str] = None
 
 
-class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
+class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
     """BentoML model deployment configuration.
 
     Attributes:
         model_name: name of the model to deploy
         model_uri: URI of the model to deploy
         port: port to expose the service on
-        bento: Bento package to deploy
+        bento_tag: Bento package to deploy. A bento tag is a combination of the
+            name of the bento and its version.
         workers: number of workers to use
         backlog: number of requests to queue
         production: whether to run in production mode
@@ -118,11 +122,11 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
 
     model_name: str
     model_uri: str
-    bento: str
+    bento_tag: str
     bento_uri: Optional[str] = None
     apis: List[str] = []
     workers: int = 1
-    port: int
+    port: Optional[int] = None
     backlog: int = 2048
     production: bool = False
     working_dir: str
@@ -132,7 +136,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     )
 
 
-class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
+class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
     """BentoML deployment service used to start a local prediction server for BentoML models.
 
     Attributes:
@@ -143,19 +147,19 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="bentoml-deployment",
+        name=BENTOML_LOCAL_DEPLOYMENT_SERVICE_NAME,
         type="model-serving",
         flavor="bentoml",
-        description="BentoML prediction service",
+        description="BentoML local prediction service",
         logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png",
     )
 
-    config: BentoMLDeploymentConfig
+    config: BentoMLLocalDeploymentConfig
     endpoint: BentoMLDeploymentEndpoint
 
     def __init__(
         self,
-        config: Union[BentoMLDeploymentConfig, Dict[str, Any]],
+        config: Union[BentoMLLocalDeploymentConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
         """Initialize the BentoML deployment service.
@@ -168,13 +172,15 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         # TODO [ENG-700]: implement a service factory or builder for BentoML
         #   deployment services
         if (
-            isinstance(config, BentoMLDeploymentConfig)
+            isinstance(config, BentoMLLocalDeploymentConfig)
             and "endpoint" not in attrs
         ):
             endpoint = BentoMLDeploymentEndpoint(
                 config=BentoMLDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
-                    port=config.port,
+                    port=config.port
+                    if config.port is not None
+                    else BENTOML_DEFAULT_PORT,
                     ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                     prediction_url_path=BENTOML_PREDICTION_URL_PATH,
                 ),
@@ -189,6 +195,9 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
 
     def run(self) -> None:
         """Start the service."""
+        from bentoml import Service
+        from bentoml._internal.service.loader import load
+
         logger.info(
             "Starting BentoML prediction service as blocking "
             "process... press CTRL+C once to stop it."
@@ -198,26 +207,55 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         ssl_params = self.config.ssl_parameters or SSLBentoMLParametersConfig()
         # verify if to deploy in production mode or development mode
         logger.info("Running in production mode.")
-        from bentoml.serve import serve_http_production
+        svc = load(
+            bento_identifier=self.config.bento_tag,
+            working_dir=self.config.working_dir or ".",
+        )
 
-        try:
-            serve_http_production(
-                self.config.bento,
-                working_dir=self.config.working_dir,
-                port=self.config.port,
-                api_workers=self.config.workers,
-                host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-                backlog=self.config.backlog,
-                ssl_certfile=ssl_params.ssl_certfile,
-                ssl_keyfile=ssl_params.ssl_keyfile,
-                ssl_keyfile_password=ssl_params.ssl_keyfile_password,
-                ssl_version=ssl_params.ssl_version,
-                ssl_cert_reqs=ssl_params.ssl_cert_reqs,
-                ssl_ca_certs=ssl_params.ssl_ca_certs,
-                ssl_ciphers=ssl_params.ssl_ciphers,
-            )
-        except KeyboardInterrupt:
-            logger.info("Stopping BentoML prediction service...")
+        if isinstance(svc, Service):
+            # bentoml<1.2
+            from bentoml.serving import serve_http_production
+
+            try:
+                serve_http_production(
+                    self.config.bento_tag,
+                    working_dir=self.config.working_dir,
+                    port=self.config.port,
+                    api_workers=self.config.workers,
+                    host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    backlog=self.config.backlog,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
+                )
+            except KeyboardInterrupt:
+                logger.info("Stopping BentoML prediction service...")
+        else:
+            # bentoml>=1.2
+            from _bentoml_impl.server import serve_http  # type: ignore
+
+            svc.inject_config()
+            try:
+                serve_http(
+                    self.config.bento_tag,
+                    working_dir=self.config.working_dir or ".",
+                    host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    port=self.config.port,
+                    backlog=self.config.backlog,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
+                )
+            except KeyboardInterrupt:
+                logger.info("Stopping BentoML prediction service...")
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -249,12 +287,15 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
             ]
         return None
 
-    def predict(self, api_endpoint: str, data: "Any") -> "Any":
+    def predict(
+        self, api_endpoint: str, data: "Any", sync: bool = True
+    ) -> "Any":
         """Make a prediction using the service.
 
         Args:
             data: data to make a prediction on
             api_endpoint: the api endpoint to make the prediction on
+            sync: if set to False, the prediction will be made asynchronously
 
         Returns:
             The prediction result.
@@ -268,11 +309,11 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
                 "BentoML prediction service is not running. "
                 "Please start the service before making predictions."
             )
-        if self.endpoint.prediction_url is not None:
-            client = Client.from_url(
-                self.endpoint.prediction_url.replace("http://", "").rstrip("/")
-            )
-            result = client.call(api_endpoint, data)
-        else:
+        if self.endpoint.prediction_url is None:
             raise ValueError("No endpoint known for prediction.")
+        if sync:
+            client = SyncHTTPClient(self.endpoint.prediction_url)
+        else:
+            client = AsyncHTTPClient(self.endpoint.prediction_url)
+        result = client.call(api_endpoint, data)
         return result

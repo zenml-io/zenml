@@ -11,21 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import cast
+from typing import Union, cast
 
 from zenml import step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
-from zenml.integrations.bentoml.services.bentoml_deployment import (
-    BentoMLDeploymentService,
+from zenml.integrations.bentoml.services.bentoml_container_deployment import (
+    BentoMLContainerDeploymentService,
+)
+from zenml.integrations.bentoml.services.bentoml_local_deployment import (
+    BentoMLLocalDeploymentService,
 )
 
 
 @step(enable_cache=False)
 def bentoml_prediction_service_loader(
     pipeline_name: str, step_name: str, model_name: str
-) -> BentoMLDeploymentService:
+) -> Union[BentoMLLocalDeploymentService, BentoMLContainerDeploymentService]:
     """Get the BentoML prediction service started by the deployment pipeline.
 
     Args:
@@ -55,5 +58,9 @@ def bentoml_prediction_service_loader(
             f"pipeline for the '{model_name}' model is not currently "
             f"running."
         )
+    if services[0].SERVICE_TYPE.name == "bentoml-container-deployment":
+        service_instance = cast(BentoMLContainerDeploymentService, services[0])
+    else:
+        service_instance = cast(BentoMLLocalDeploymentService, services[0])
 
-    return cast(BentoMLDeploymentService, services[0])
+    return service_instance
