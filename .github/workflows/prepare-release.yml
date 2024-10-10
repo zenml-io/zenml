@@ -65,7 +65,7 @@ jobs:
           # git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
 
       # 5.5. Update the quickstart references
-      - name: Replace the references in the quickstart example
+      - name:  Replace the references in the quickstart example
         run: |
           find examples/quickstart -type f \( -name "*.txt" -o -name "*.yaml" -o -name "*.ipynb" \) -print0 | 
           while IFS= read -r -d '' file; do
@@ -76,18 +76,10 @@ jobs:
             else
               # For .txt and .yaml files, we can use sed
               sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
-          #          for file in examples/quickstart/*.{txt,yaml,ipynb}; do
-          #            if [[ -f "$file" ]]; then
-          #              if [[ $file == *.txt || $file == *.yaml ]]; then
-          #                sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
-          #              elif [[ $file == *.ipynb ]]; then
-          #                jq --arg old "$OLD_VERSION" --arg new ${{ env.VERSION }} \
-          #                'walk(if type == "string" then gsub($old; $new) else . end)' "$file" > tmp.$$.json && mv tmp.$$.json "$file"
-          #              fi
-          #            fi
-          #          done
+            fi
+          done
+          # git add examples/quickstart
 
-        # git add examples/quickstart
       # 6. Generate and append release notes
       - name: Generate release notes
         env:
