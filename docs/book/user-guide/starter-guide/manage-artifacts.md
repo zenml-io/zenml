@@ -301,6 +301,51 @@ Even if an artifact is created externally, it can be treated like any other arti
 It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use External Artifacts to load them instead.
 {% endhint %}
 
+### Linking existing data as a ZenML artifact
+
+Sometimes, data is produced completely outside of ZenML and can be conveniently stored on a given storage. A good example of this is the checkpoint files created as a side-effect of the Deep Learning model training. We know that the intermediate data of the deep learning frameworks is quite big and there is no good reason to move it around again and again, if it can be produced directly in the artifact store boundaries and later just linked to become an artifact of ZenML.
+Let's explore the Pytorch Lightning example to fit the model and store the checkpoints in a remote location.
+
+```python
+import os
+from zenml.client import Client
+from zenml import register_artifact
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from uuid import uuid4
+
+# Define where the model data should be saved
+# use active ArtifactStore
+prefix = Client().active_stack.artifact_store.path
+# keep data separable for future runs with uuid4 folder
+default_root_dir = os.path.join(prefix, uuid4().hex)
+
+# Define the model and fit it
+model = ...
+trainer = Trainer(
+    default_root_dir=default_root_dir,
+    callbacks=[
+        ModelCheckpoint(
+            every_n_epochs=1, save_top_k=-1, filename="checkpoint-{epoch:02d}"
+        )
+    ],
+)
+try:
+    trainer.fit(model)
+finally:
+    # We now link those checkpoints in ZenML as an artifact
+    # This will create a new artifact version
+    register_artifact(default_root_dir, name="all_my_model_checkpoints")
+```
+
+{% hint style="info" %}
+The artifact produced from the preexisting data will have a `pathlib.Path` type, once loaded or passed as input to another step.
+{% endhint %}
+
+Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
+
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/handle-data-artifacts/registring-existing-data.md).
+
 ## Logging metadata for an artifact
 
 One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
