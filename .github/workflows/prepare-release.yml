@@ -1,15 +1,12 @@
 ---
 name: prepare-release
-
 on:
-  pull_request:
-#    types:
-#      - opened
-    branches:
-      - 'misc/prepare-release-*'
-
+  # TODO: Change this back into pull_request
+  push:
+    branches: [misc/prepare-release-*]
 jobs:
-  prepare:
+  prepare-release:
+    if: contains(github.event.head_commit.message, '[run-ci]')  # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -22,7 +19,6 @@ jobs:
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           VERSION=${BRANCH_NAME#misc/prepare-release-}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       # 0. Set up python
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
@@ -35,7 +31,6 @@ jobs:
         run: |
           git config --global user.email "info@zenml.io"
           git config --global user.name "ZenML GmbH"
-
       # 0. Install ZenML
       - name: Install ZenML and dependencies
         shell: bash
@@ -43,13 +38,12 @@ jobs:
           scripts/install-zenml-dev.sh --system --integrations "no"
           uv pip list
           uv pip check || true
-
-#      # 1. Send a message to Discord to alert everyone
-#      - name: Send message to Discord
-#        run: |
-#          curl -H "Content-Type: application/json" \
-#            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
-#            ${{ secrets.DISCORD_WEBHOOK_URL }}
+      #  # 1. Send a message to Discord to alert everyone for the release
+      #      - name: Send message to Discord
+      #        run: |
+      #          curl -H "Content-Type: application/json" \
+      #            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
+      #            ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       # 4. Alembic merge
       - name: Run Alembic merge
@@ -58,7 +52,6 @@ jobs:
           alembic merge -m "Release" heads --rev-id ${{ env.VERSION }}
           scripts/format.sh
           git add src/zenml/zen_stores/migrations/versions
-
       # 5. Update the main files
       - name: Update main files
         run: |
@@ -66,10 +59,21 @@ jobs:
           echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
           sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
           git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
-
       # 5.5. Update the quickstart references
-      # TODO!
-
+      - name: Replace the references in the quickstart example
+        run: |
+          find examples/quickstart -type f \( -name "*.txt" -o -name "*.yaml" -o -name "*.ipynb" \) -print0 | 
+          while IFS= read -r -d '' file; do
+            if [[ "$file" == *.ipynb ]]; then
+              # For .ipynb files, we need to parse JSON
+              jq --arg OLD "$OLD_VERSION" --arg NEW ${{ env.VERSION }} \
+                '(.cells[] | select(.cell_type == "code") | .source) |= map(gsub($OLD; $NEW))' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+            else
+              # For .txt and .yaml files, we can use sed
+              sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
+            fi
+          done
+          git add examples/quickstart
       # 6. Generate and append release notes
       - name: Generate release notes
         env:
@@ -81,5 +85,7 @@ jobs:
 
       # Testing
       - name: Test if worked
-        run:
-          git diff
+        run: |-
+          git commit -m "Adding the new version to the necessary files."
+          # TODO: Change it to ${{ github.event.pull_request.head.ref }}  
+          git push origin HEAD:${{ github.ref }}
