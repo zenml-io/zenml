@@ -99,11 +99,16 @@ jobs:
     if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
     runs-on: [ubuntu-latest]
     steps:
-      # Check out the release-assistant branch
+      # Check out the prepare-release branch
       - name: Checkout code
         uses: actions/checkout@v4.1.1
-        with:
-          ref: feature/release-assistant
+
+      # Extract the version name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       # Configure Git
       - name: Configure git
@@ -116,8 +121,10 @@ jobs:
       - name: Rebase the release assistant
         run: |
           git fetch origin 
-          git rebase "origin/misc/prepare-release-$VERSION"
+          git checkout feature/release-assistant
+          git rebase origin/misc/prepare-release-${{ env.VERSION }}
           git push origin feature/release-assistant
+
 #      - name: Build base image
 #        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
 #
