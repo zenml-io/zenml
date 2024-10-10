@@ -344,7 +344,7 @@ The artifact produced from the preexisting data will have a `pathlib.Path` type,
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
-For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/handle-data-artifacts/registring-existing-data.md).
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/handle-data-artifacts/registering-existing-data.md).
 
 ## Logging metadata for an artifact
 
