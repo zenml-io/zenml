@@ -53,7 +53,7 @@ jobs:
         run: |
           alembic merge -m "Release" heads --rev-id ${{ env.VERSION }}
           scripts/format.sh
-          git add src/zenml/zen_stores/migrations/versions
+          # git add src/zenml/zen_stores/migrations/versions
 
       # 5. Update the main files
       - name: Update main files
@@ -61,7 +61,7 @@ jobs:
           OLD_VERSION=$(cat src/zenml/VERSION)
           echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
           sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
-          git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
+          # git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
 
       # 5.5. Update the quickstart references
       - name: Replace the references in the quickstart example
@@ -76,7 +76,7 @@ jobs:
               fi
             fi
           done
-          git add examples/quickstart
+          # git add examples/quickstart
 
       # 6. Generate and append release notes
       - name: Generate release notes
@@ -85,11 +85,12 @@ jobs:
         run: |
           RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ env.VERSION }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ env.OLD_VERSION }} | jq -r '.body')
           echo "$RELEASE_NOTES" >> RELEASE_NOTES.md
-          git add RELEASE_NOTES.md
+          # git add RELEASE_NOTES.md
 
       # Testing
       - name: Test if worked
         run: |
           git commit -m "Adding the new version to the necessary files."
           git diff
-          echo "Branch ref: ${{ github.event.pull_request.head.ref }}"
+          echo "Branch ref: ${{ github.ref }}
+          # echo "Branch ref: ${{ github.event.pull_request.head.ref }}"
