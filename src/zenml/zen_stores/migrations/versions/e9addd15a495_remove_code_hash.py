@@ -1,7 +1,7 @@
 """Remove code hash [e9addd15a495].
 
 Revision ID: e9addd15a495
-Revises: 0.67.0
+Revises: 1d8f30c54477
 Create Date: 2024-10-09 15:54:06.913113
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e9addd15a495"
-down_revision = "0.67.0"
+down_revision = "1d8f30c54477"
 branch_labels = None
 depends_on = None
 
