@@ -194,7 +194,7 @@ class StepLauncher:
                     request_factory.populate_request(request=step_run_request)
                 except:
                     logger.exception(
-                        f"Failed preparing run step `{self._step_name}`."
+                        f"Failed preparing step `{self._step_name}`."
                     )
                     step_run_request.status = ExecutionStatus.FAILED
                     step_run_request.end_time = datetime.utcnow()
@@ -280,7 +280,7 @@ class StepLauncher:
                                 raise
                 else:
                     logger.info(
-                        f"Using cached version of `{self._step_name}`."
+                        f"Using cached version of step `{self._step_name}`."
                     )
                     orchestrator_utils._link_cached_artifacts_to_model(
                         model_from_context=model,

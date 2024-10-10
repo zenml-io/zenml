@@ -23,13 +23,17 @@ from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
     ModelVersionPipelineRunRequest,
+    ModelVersionResponse,
     PipelineDeploymentResponse,
     PipelineRunResponse,
+    PipelineRunUpdate,
     StepRunRequest,
     StepRunResponse,
+    StepRunUpdate,
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
+from zenml.utils import string_utils
 
 logger = get_logger(__name__)
 
@@ -135,7 +139,7 @@ class StepRunRequestFactory:
                 # a difference if the original step did some dynamic loading
                 # of artifacts using `load_artifact`, which would then not be
                 # included for the new one
-                
+
                 # request.inputs = {
                 #     input_name: artifact.id
                 #     for input_name, artifact in cached_step_run.inputs.items()
@@ -229,6 +233,8 @@ def create_cached_step_runs(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
 
+    pipeline_model = prepare_pipeline_run_model(pipeline_run=pipeline_run)
+
     while (
         cache_candidates := find_cacheable_invocation_candidates(
             deployment=deployment,
@@ -262,11 +268,11 @@ def create_cached_step_runs(
                 continue
 
             step_run = Client().zen_store.create_run_step(step_run_request)
-            model = get_and_link_model(
-                deployment=deployment,
-                pipeline_run=pipeline_run,
-                step_run=step_run,
+            step_model = prepare_step_run_model(
+                step_run=step_run, pipeline_run=pipeline_run
             )
+
+            model = step_model or pipeline_model
 
             utils._link_cached_artifacts_to_model(
                 model_from_context=model,
@@ -357,47 +363,146 @@ def get_all_models_from_step_outputs(step_source: Source) -> List[Model]:
     return models
 
 
-def fetch_or_create_model(
+def get_or_create_model_version_for_pipeline_run(
     model: Model, pipeline_run: PipelineRunResponse
-) -> Model:
+) -> ModelVersionResponse:
+    """Get or create a model version as part of a pipeline run.
+
+    Args:
+        model: The model to get or create.
+        pipeline_run: The pipeline run for which the model should be created.
+
+    Returns:
+        The model version.
+    """
     if model.model_version_id:
-        return (
-            Client()
-            .get_model_version(
-                model_name_or_id=model.name,
-                model_version_name_or_number_or_id=model.model_version_id,
-            )
-            .to_model_class()
+        return model._get_model_version()
+    elif model.version:
+        start_time = pipeline_run.start_time or datetime.utcnow()
+        model.version = string_utils.format_name_template(
+            model.version,
+            date=start_time.strftime("%Y_%m_%d"),
+            time=start_time.strftime("%H_%M_%S_%f"),
         )
 
-    if model.version:
-        return (
-            Client()
-            .get_model_version(
-                model_name_or_id=model.name,
-                model_version_name_or_number_or_id=model.version,
-            )
-            .to_model_class()
-        )
+        return model._get_or_create_model_version()
 
     # The model version should be created as part of this run
     # -> We first check if it was already created as part of this run, and if
     # not we do create it. If this is running in two parallel steps, we might
     # run into issues that this will create two versions
+    if model_version := get_model_version_created_by_pipeline_run(
+        model_name=model.name, pipeline_run=pipeline_run
+    ):
+        return model_version
+    else:
+        return model._get_or_create_model_version()
+
+
+def get_model_version_created_by_pipeline_run(
+    model_name: str, pipeline_run: PipelineRunResponse
+) -> Optional[ModelVersionResponse]:
+    """Get a model version that was created by a specific pipeline run.
+
+    Args:
+        model_name: The model name for which to get the version.
+        pipeline_run: The pipeline run for which to get the version.
+
+    Returns:
+        A model version with the given name created by the run, or None if such
+        a model version does not exist.
+    """
+    # TODO: We should probably fetch the run here to get all latest steps
     if pipeline_run.config.model and pipeline_run.model_version:
         if (
-            pipeline_run.config.model.name == model.name
+            pipeline_run.config.model.name == model_name
             and pipeline_run.config.model.version is None
         ):
-            return pipeline_run.model_version.to_model_class()
+            return pipeline_run.model_version
 
-    for _, step_run in pipeline_run.steps.items():
+    for step_run in pipeline_run.steps.values():
         if step_run.config.model and step_run.model_version:
             if (
-                step_run.config.model.name == model.name
+                step_run.config.model.name == model_name
                 and step_run.config.model.version is None
             ):
-                return step_run.model_version.to_model_class()
+                return step_run.model_version
 
-    # We did not find any existing model that matches -> Create one
-    return model._get_or_create_model_version().to_model_class()
+    return None
+
+
+def prepare_pipeline_run_model(
+    pipeline_run: PipelineRunResponse,
+) -> Optional[Model]:
+    """Prepare the model for a pipeline run.
+
+    Args:
+        pipeline_run: The pipeline run for which to prepare the model.
+
+    Returns:
+        The prepared model.
+    """
+    if pipeline_run.model_version:
+        return pipeline_run.model_version.to_model_class()
+    elif model := pipeline_run.config.model:
+        model_version = get_or_create_model_version_for_pipeline_run(
+            model=model, pipeline_run=pipeline_run
+        )
+        pipeline_run = Client().zen_store.update_run(
+            run_id=pipeline_run.id,
+            run_update=PipelineRunUpdate(model_version_id=model_version.id),
+        )
+        log_model_version_dashboard_url(model_version)
+        return model_version.to_model_class()
+    else:
+        return None
+
+
+def prepare_step_run_model(
+    step_run: StepRunResponse, pipeline_run: PipelineRunResponse
+) -> Optional[Model]:
+    """Prepare the model for a step run.
+
+    Args:
+        step_run: The step run for which to prepare the model.
+        pipeline_run: The pipeline run of the step.
+
+    Returns:
+        The prepared model.
+    """
+    if step_run.model_version:
+        return step_run.model_version.to_model_class()
+    elif model := step_run.config.model:
+        model_version = get_or_create_model_version_for_pipeline_run(
+            model=model, pipeline_run=pipeline_run
+        )
+        step_run = Client().zen_store.update_run_step(
+            step_run_id=step_run.id,
+            step_run_update=StepRunUpdate(model_version_id=model_version.id),
+        )
+        log_model_version_dashboard_url(model_version)
+        return model_version.to_model_class()
+    else:
+        return None
+
+
+def log_model_version_dashboard_url(
+    model_version: ModelVersionResponse,
+) -> None:
+    """Log the dashboard URL for a model version.
+
+    If the current server is not a ZenML Pro tenant, a fallback message is
+    logged instead.
+
+    Args:
+        model_version: The model version for which to log the dashboard URL.
+    """
+    from zenml.utils.cloud_utils import try_get_model_version_url
+
+    if model_version_url_logs := try_get_model_version_url(model_version):
+        logger.info(model_version_url_logs)
+    else:
+        logger.info(
+            "Models can be viewed in the dashboard using ZenML Pro. Sign up "
+            "for a free trial at https://www.zenml.io/pro/"
+        )
