@@ -323,8 +323,8 @@ def get_or_create_model_version_for_pipeline_run(
         The model version and a boolean indicating whether it was newly created
         or not.
     """
-    # Copy the model here to not modify configurations in which the object is
-    # potentially referenced
+    # Copy the model before modifying it so we don't accidently modify
+    # configurations in which the model object is potentially referenced
     model = model.model_copy()
 
     if model.model_version_id:
@@ -431,6 +431,8 @@ def prepare_step_run_model(
     Returns:
         The prepared model and the updated step run.
     """
+    model_version = None
+
     if step_run.model_version:
         model_version = step_run.model_version
     elif config_model := step_run.config.model:
