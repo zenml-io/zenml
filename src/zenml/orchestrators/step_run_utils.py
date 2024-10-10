@@ -338,11 +338,9 @@ def get_or_create_model_version_for_pipeline_run(
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
 
-        # TODO: Don't misuse `was_created_in_this_run` here but refactor so
-        # we get this information correctly
         return (
             model._get_or_create_model_version(),
-            model.was_created_in_this_run,
+            model._created_model_version,
         )
 
     # The model version should be created as part of this run

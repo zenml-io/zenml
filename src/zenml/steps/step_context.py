@@ -190,9 +190,7 @@ class StepContext(metaclass=SingletonMetaClass):
                 "the step or pipeline."
             )
 
-        return model_version.to_model_class(
-            suppress_class_validation_warnings=True
-        )
+        return model_version.to_model_class()
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
