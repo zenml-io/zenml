@@ -163,3 +163,33 @@ jobs:
             --build-arg ZENML_BRANCH="${{ github.ref }}" \
             -f docker/zenml-quickstart-dev.Dockerfile \
             -t dockerhub/prepare-release:release-quickstart-azure
+
+  test-release:
+    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      - name: Redeploy the tenant
+        run: echo "redeploy" # TODO: Implement
+
+      - name: Connect to the tenant
+        run: | # TODO: Implement
+          echo "connect" 
+          cd examples/quickstart
+
+      - name: Run on AWS
+        run: |
+          zenml stack set aws
+          python run.py --model_type=t5-small
+
+      - name: Run on GCP
+        run: |
+          zenml stack set gcp
+          python run.py --model_type=t5-small
+
+      - name: Run on Azure
+        run: |
+          zenml stack set azure
+          python run.py --model_type=t5-small
