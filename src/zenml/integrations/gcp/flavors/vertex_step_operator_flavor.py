@@ -13,9 +13,14 @@
 #  permissions and limitations under the License.
 """Vertex step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, Union
 
-from zenml.config.base_settings import BaseSettings
+from pydantic import Field, NonNegativeInt
+
+from zenml.config.stack_component_resource_settings import (
+    StackComponentResourceSettings,
+)
+from zenml.enums import AcceleratorType
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_STEP_OPERATOR_FLAVOR,
@@ -28,16 +33,17 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
 
-class VertexStepOperatorSettings(BaseSettings):
-    """Settings for the Vertex step operator.
+class VertexStepOperatorResourceSettings(StackComponentResourceSettings):
+    """Allowed resource settings for the Vertex step operator.
 
     Attributes:
-        accelerator_type: Defines which accelerator (GPU, TPU) is used for the
+        accelerator: Defines which accelerator (GPU, TPU) is used for the
             job. Check out out this table to see which accelerator
             type and count are compatible with your chosen machine type:
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
@@ -45,20 +51,67 @@ class VertexStepOperatorSettings(BaseSettings):
             job. Check out out this table to see which accelerator
             type and count are compatible with your chosen machine type:
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
-        machine_type: Machine type specified here
+        instance_type: Machine type specified here
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
         boot_disk_size_gb: Size of the boot disk in GB. (Default: 100)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
         boot_disk_type: Type of the boot disk. (Default: pd-ssd)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
-
     """
 
-    accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
+    accelerator: Optional[Union[AcceleratorType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+    accelerator_count: Optional[NonNegativeInt] = None
+    instance_type: Optional[str] = "n1-standard-4"
     boot_disk_size_gb: int = 100
     boot_disk_type: str = "pd-ssd"
+
+    def get_converted_accelerator(self) -> Optional[str]:
+        """Get the converted accelerator type.
+
+        Raises:
+            ValueError: If an unsupported accelerator type was provided.
+
+        Returns:
+            The converted accelerator type.
+        """
+        if not isinstance(self.accelerator, AcceleratorType):
+            return self.accelerator
+
+        accelerator_mapping = {
+            AcceleratorType.A100: "NVIDIA_TESLA_A100",
+            AcceleratorType.A100_80GB: "NVIDIA_A100_80GB",
+            AcceleratorType.H100_80GB: "NVIDIA_H100_80GB",
+            AcceleratorType.P4: "NVIDIA_TESLA_P4",
+            AcceleratorType.P100: "NVIDIA_TESLA_P100",
+            AcceleratorType.V100: "NVIDIA_TESLA_V100",
+            AcceleratorType.L4: "NVIDIA_L4",
+            AcceleratorType.T4: "NVIDIA_TESLA_T4",
+        }
+
+        if converted_value := accelerator_mapping.get(self.accelerator):
+            return converted_value
+        else:
+            raise ValueError(
+                "Unsupported accelerator type for Vertex step operator: "
+                f"{self.accelerator}. If you think this is a mistake and the "
+                "accelerator is supported, please contact the ZenML team. "
+                "To solve this issue in the meantime, you can always provide a "
+                "raw string value for the accelerator that gets directly "
+                "passed to Vertex."
+            )
+
+
+class VertexStepOperatorSettings(VertexStepOperatorResourceSettings):
+    """Settings for the Vertex step operator."""
+
+    _resource_depractions = deprecate_pydantic_attributes(
+        ("accelerator_type", "accelerator"),
+        ("machine_type", "instance_type"),
+    )
+    accelerator_type: Optional[str] = None
+    machine_type: Optional[str] = None
 
 
 class VertexStepOperatorConfig(

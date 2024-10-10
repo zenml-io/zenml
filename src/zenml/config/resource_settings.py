@@ -16,10 +16,11 @@
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import Field, NonNegativeInt, PositiveFloat
-from pydantic_settings import SettingsConfigDict
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
 
 from zenml.config.base_settings import BaseSettings
+from zenml.enums import AcceleratorType
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 
 class ByteUnit(Enum):
@@ -65,13 +66,26 @@ class ResourceSettings(BaseSettings):
 
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.
-        gpu_count: The amount of GPUs that should be configured.
         memory: The amount of memory that should be configured.
+        accelerator: The accelerator to use.
+        accelerator_count: The amount of accelerators that should be configured.
+        instance_type: The type of instance to use.
     """
 
     cpu_count: Optional[PositiveFloat] = None
-    gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+
+    accelerator: Optional[Union[AcceleratorType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+    accelerator_count: Optional[NonNegativeInt] = None
+    instance_type: Optional[str] = None
+
+    # DEPRECATED
+    gpu_count: Optional[NonNegativeInt] = None
+    _deprecation_validator = deprecate_pydantic_attributes(
+        ("gpu_count", "accelerator_count")
+    )
 
     @property
     def empty(self) -> bool:
@@ -115,9 +129,8 @@ class ResourceSettings(BaseSettings):
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
 
-    model_config = SettingsConfigDict(
+    model_config = ConfigDict(
         # public attributes are immutable
         frozen=True,
-        # prevent extra attributes during model initialization
-        extra="forbid",
+        extra="allow",
     )
