@@ -7,7 +7,7 @@ mode: wide
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 <Frame caption="ZenML Overview">
-  <img src="/.gitbook/assets/Fintro_zenml_overview.png"/>
+  <img src=".gitbook/assets/Fintro_zenml_overview.png"/>
 </Frame>
 <br/>
 <Tabs>
@@ -16,7 +16,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 * **ZenML Pro** **:** [ZenML Pro](/getting-started/deploying-zenml/zenml-pro/zenml-pro) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
 <Frame>
-  <img src="/.gitbook/assets/zenml-cloud-tenant-overview.png"/>
+  <img src=".gitbook/assets/zenml-cloud-tenant-overview.png"/>
 </Frame>
 * **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
 
@@ -125,7 +125,7 @@ python run.py  # run your workflows in production
 * **Reproducibility:** ZenML enables you to painlessly reproduce previous results by automatically tracking and versioning all stacks, pipelines, artifacts, and source code. In the ZenML dashboard, you can get an overview of everything that has happened and drill down into detailed lineage visualizations. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 
 <Frame>
-  <img src="/.gitbook/assets/FDashboard.png"/>
+  <img src=".gitbook/assets/FDashboard.png"/>
 </Frame>
 
 * **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](/stack-components/model-deployers/seldon).
