@@ -167,6 +167,57 @@ Explore ZenML through practical use-case examples.
 
 
 
+# Code Groups
 
 
+<CodeGroup>
+
+```javascript helloWorld.js
+console.log("Hello World");
+```
+
+```python hello_world.py
+print('Hello World!')
+```
+
+```java HelloWorld.java
+class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+```
+
+</CodeGroup>
+
+
+
+# Steps
+
+<Steps>
+  <Step title="First Step">
+    These are instructions or content that only pertain to the first step.
+  </Step>
+  <Step title="Second Step">
+    These are instructions or content that only pertain to the second step.
+  </Step>
+  <Step title="Third Step">
+    These are instructions or content that only pertain to the third step.
+  </Step>
+</Steps>
+
+
+# Tabs
+
+<Tabs>
+  <Tab title="First Tab">
+    ☝️ Welcome to the content that you can only see inside the first Tab.
+  </Tab>
+  <Tab title="Second Tab">
+    ✌️ Here's content that's only inside the second Tab.
+  </Tab>
+  <Tab title="Third Tab">
+    💪 Here's content that's only inside the third Tab.
+  </Tab>
+</Tabs>
 
