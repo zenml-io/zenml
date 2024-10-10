@@ -90,7 +90,7 @@ jobs:
       # Testing
       - name: Test if worked
         run: |-
-          git commit -m "Adding the new version to the necessary files."
+          # git commit -m "Adding the new version to the necessary files."
           git diff
           echo "Branch ref: ${{ github.ref }}
           # echo "Branch ref: ${{ github.event.pull_request.head.ref }}"
