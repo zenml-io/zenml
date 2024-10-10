@@ -89,4 +89,6 @@ jobs:
 
       # Testing
       - name: Test if worked
-        run: git status
+        run: |
+          git commit -m "Adding the new version to the necessary files."
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
