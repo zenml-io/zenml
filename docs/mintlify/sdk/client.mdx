@@ -1,0 +1,5493 @@
+{/* markdownlint-disable */}
+
+<a href="../../../src/zenml/client.py#L0"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+# <kbd>module</kbd> `client.py`
+Client implementation. 
+
+**Global Variables**
+---------------
+- **TYPE_CHECKING**
+- **ENV_ZENML_ACTIVE_STACK_ID**
+- **ENV_ZENML_ACTIVE_WORKSPACE_ID**
+- **ENV_ZENML_ENABLE_REPO_INIT_WARNINGS**
+- **ENV_ZENML_REPOSITORY_PATH**
+- **ENV_ZENML_SERVER**
+- **PAGE_SIZE_DEFAULT**
+- **PAGINATION_STARTING_PAGE**
+- **REPOSITORY_DIRECTORY_NAME**
+- **TEXT_FIELD_MAX_LENGTH**
+
+
+---
+
+## <kbd>class</kbd> `Client`
+ZenML client class. 
+
+The ZenML client manages configuration options for ZenML stacks as well as their components. 
+
+<a href="../../../src/zenml/client.py#L350"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(root: Optional[Path] = None) → None
+```
+
+Initializes the global client instance. 
+
+Client is a singleton class: only one instance can exist. Calling this constructor multiple times will always yield the same instance (see the exception below). 
+
+The `root` argument is only meant for internal use and testing purposes. User code must never pass them to the constructor. When a custom `root` value is passed, an anonymous Client instance is created and returned independently of the Client singleton and that will have no effect as far as the rest of the ZenML core code is concerned. 
+
+Instead of creating a new Client instance to reflect a different repository root, to change the active root in the global Client, call `Client().activate_root(<new-root>)`. 
+
+
+
+**Args:**
+ 
+ - <b>`root`</b>:  (internal use) custom root directory for the client. If  no path is given, the repository root is determined using the  environment variable `ZENML_REPOSITORY_PATH` (if set) and by  recursively searching in the parent directories of the  current working directory. Only used to initialize new  clients internally. 
+
+
+---
+
+#### <kbd>property</kbd> active_stack
+
+The active stack for this client. 
+
+
+
+**Returns:**
+  The active stack for this client. 
+
+---
+
+#### <kbd>property</kbd> active_stack_model
+
+The model of the active stack for this client. 
+
+If no active stack is configured locally for the client, the active stack in the global configuration is used instead. 
+
+
+
+**Returns:**
+  The model of the active stack for this client. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If the active stack is not set. 
+
+---
+
+#### <kbd>property</kbd> active_user
+
+Get the user that is currently in use. 
+
+
+
+**Returns:**
+  The active user. 
+
+---
+
+#### <kbd>property</kbd> active_workspace
+
+Get the currently active workspace of the local client. 
+
+If no active workspace is configured locally for the client, the active workspace in the global configuration is used instead. 
+
+
+
+**Returns:**
+  The active workspace. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If the active workspace is not set. 
+
+---
+
+#### <kbd>property</kbd> config_directory
+
+The configuration directory of this client. 
+
+
+
+**Returns:**
+  The configuration directory of this client, or None, if the  client doesn't have an active root. 
+
+---
+
+#### <kbd>property</kbd> root
+
+The root directory of this client. 
+
+
+
+**Returns:**
+  The root directory of this client, or None, if the client  has not been initialized. 
+
+---
+
+#### <kbd>property</kbd> uses_local_configuration
+
+Check if the client is using a local configuration. 
+
+
+
+**Returns:**
+  True if the client is using a local configuration,  False otherwise. 
+
+---
+
+#### <kbd>property</kbd> zen_store
+
+Shortcut to return the global zen store. 
+
+
+
+**Returns:**
+  The global zen store. 
+
+
+
+---
+
+<a href="../../../src/zenml/client.py#L666"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `activate_root`
+
+```python
+activate_root(root: Optional[Path] = None) → None
+```
+
+Set the active repository root directory. 
+
+
+
+**Args:**
+ 
+ - <b>`root`</b>:  The path to set as the active repository root. If not set,  the repository root is determined using the environment  variable `ZENML_REPOSITORY_PATH` (if set) and by recursively  searching in the parent directories of the current working  directory. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1496"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `activate_stack`
+
+```python
+activate_stack(stack_name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Sets the stack as active. 
+
+
+
+**Args:**
+ 
+ - <b>`stack_name_id_or_prefix`</b>:  Model of the stack to activate. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If the stack is not registered. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4935"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `backup_secrets`
+
+```python
+backup_secrets(ignore_errors: bool = True, delete_secrets: bool = False) → None
+```
+
+Backs up all secrets to the configured backup secrets store. 
+
+
+
+**Args:**
+ 
+ - <b>`ignore_errors`</b>:  Whether to ignore individual errors during the backup  process and attempt to backup all secrets. 
+ - <b>`delete_secrets`</b>:  Whether to delete the secrets that have been  successfully backed up from the primary secrets store. Setting  this flag effectively moves all secrets from the primary secrets  store to the backup secrets store. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2911"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_action`
+
+```python
+create_action(
+    name: str,
+    flavor: str,
+    action_type: PluginSubType,
+    configuration: Dict[str, Any],
+    service_account_id: UUID,
+    auth_window: Optional[int] = None,
+    description: str = ''
+) → ActionResponse
+```
+
+Create an action. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the action. 
+ - <b>`flavor`</b>:  The flavor of the action, 
+ - <b>`action_type`</b>:  The action subtype. 
+ - <b>`configuration`</b>:  The action configuration. 
+ - <b>`service_account_id`</b>:  The service account that is used to execute the  action. 
+ - <b>`auth_window`</b>:  The time window in minutes for which the service  account is authorized to execute the action. Set this to 0 to  authorize the service account indefinitely (not recommended). 
+ - <b>`description`</b>:  The description of the action. 
+
+
+
+**Returns:**
+ The created action 
+
+---
+
+<a href="../../../src/zenml/client.py#L7218"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_api_key`
+
+```python
+create_api_key(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    name: str,
+    description: str = '',
+    set_key: bool = False
+) → APIKeyResponse
+```
+
+Create a new API key and optionally set it as the active API key. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to create the API key for. 
+ - <b>`name`</b>:  Name of the API key. 
+ - <b>`description`</b>:  The description of the API key. 
+ - <b>`set_key`</b>:  Whether to set the created API key as the active API key. 
+
+
+
+**Returns:**
+ The created API key. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4975"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_code_repository`
+
+```python
+create_code_repository(
+    name: str,
+    config: Dict[str, Any],
+    source: Source,
+    description: Optional[str] = None,
+    logo_url: Optional[str] = None
+) → CodeRepositoryResponse
+```
+
+Create a new code repository. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  Name of the code repository. 
+ - <b>`config`</b>:  The configuration for the code repository. 
+ - <b>`source`</b>:  The code repository implementation source. 
+ - <b>`description`</b>:  The code repository description. 
+ - <b>`logo_url`</b>:  URL of a logo (png, jpg or svg) for the code repository. 
+
+
+
+**Returns:**
+ The created code repository. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If the provided config is invalid. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2723"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_event_source`
+
+```python
+create_event_source(
+    name: str,
+    configuration: Dict[str, Any],
+    flavor: str,
+    event_source_subtype: PluginSubType,
+    description: str = ''
+) → EventSourceResponse
+```
+
+Registers an event source. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the event source to create. 
+ - <b>`configuration`</b>:  Configuration for this event source. 
+ - <b>`flavor`</b>:  The flavor of event source. 
+ - <b>`event_source_subtype`</b>:  The event source subtype. 
+ - <b>`description`</b>:  The description of the event source. 
+
+
+
+**Returns:**
+ The model of the registered event source. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2156"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_flavor`
+
+```python
+create_flavor(source: str, component_type: StackComponentType) → FlavorResponse
+```
+
+Creates a new flavor. 
+
+
+
+**Args:**
+ 
+ - <b>`source`</b>:  The flavor to create. 
+ - <b>`component_type`</b>:  The type of the flavor. 
+
+
+
+**Returns:**
+ The created flavor (in model form). 
+
+
+
+**Raises:**
+ 
+ - <b>`ValueError`</b>:  in case the config_schema of the flavor is too large. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6019"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_model`
+
+```python
+create_model(
+    name: str,
+    license: Optional[str] = None,
+    description: Optional[str] = None,
+    audience: Optional[str] = None,
+    use_cases: Optional[str] = None,
+    limitations: Optional[str] = None,
+    trade_offs: Optional[str] = None,
+    ethics: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    save_models_to_registry: bool = True
+) → ModelResponse
+```
+
+Creates a new model in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the model. 
+ - <b>`license`</b>:  The license under which the model is created. 
+ - <b>`description`</b>:  The description of the model. 
+ - <b>`audience`</b>:  The target audience of the model. 
+ - <b>`use_cases`</b>:  The use cases of the model. 
+ - <b>`limitations`</b>:  The known limitations of the model. 
+ - <b>`trade_offs`</b>:  The tradeoffs of the model. 
+ - <b>`ethics`</b>:  The ethical implications of the model. 
+ - <b>`tags`</b>:  Tags associated with the model. 
+ - <b>`save_models_to_registry`</b>:  Whether to save the model to the  registry. 
+
+
+
+**Returns:**
+ The newly created model. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6204"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_model_version`
+
+```python
+create_model_version(
+    model_name_or_id: Union[str, UUID],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None
+) → ModelVersionResponse
+```
+
+Creates a new model version in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  the name or id of the model to create model  version in. 
+ - <b>`name`</b>:  the name of the Model Version to be created. 
+ - <b>`description`</b>:  the description of the Model Version to be created. 
+ - <b>`tags`</b>:  Tags associated with the model. 
+
+
+
+**Returns:**
+ The newly created model version. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4409"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_run_metadata`
+
+```python
+create_run_metadata(
+    metadata: Dict[str, ForwardRef('MetadataType')],
+    resource_id: UUID,
+    resource_type: MetadataResourceTypes,
+    stack_component_id: Optional[UUID] = None
+) → List[RunMetadataResponse]
+```
+
+Create run metadata. 
+
+
+
+**Args:**
+ 
+ - <b>`metadata`</b>:  The metadata to create as a dictionary of key-value pairs. 
+ - <b>`resource_id`</b>:  The ID of the resource for which the  metadata was produced. 
+ - <b>`resource_type`</b>:  The type of the resource for which the  metadata was produced. 
+ - <b>`stack_component_id`</b>:  The ID of the stack component that produced  the metadata. 
+
+
+
+**Returns:**
+ The created metadata, as string to model dictionary. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3418"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_run_template`
+
+```python
+create_run_template(
+    name: str,
+    deployment_id: UUID,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None
+) → RunTemplateResponse
+```
+
+Create a run template. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the run template. 
+ - <b>`deployment_id`</b>:  ID of the deployment which this template should be  based off of. 
+ - <b>`description`</b>:  The description of the run template. 
+ - <b>`tags`</b>:  Tags associated with the run template. 
+
+
+
+**Returns:**
+ The created run template. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4534"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_secret`
+
+```python
+create_secret(
+    name: str,
+    values: Dict[str, str],
+    scope: SecretScope = <SecretScope.WORKSPACE: 'workspace'>
+) → SecretResponse
+```
+
+Creates a new secret. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the secret. 
+ - <b>`values`</b>:  The values of the secret. 
+ - <b>`scope`</b>:  The scope of the secret. 
+
+
+
+**Returns:**
+ The created secret (in model form). 
+
+
+
+**Raises:**
+ 
+ - <b>`NotImplementedError`</b>:  If centralized secrets management is not  enabled. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1598"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_service`
+
+```python
+create_service(
+    config: ServiceConfig,
+    service_type: ServiceType,
+    model_version_id: Optional[UUID] = None
+) → ServiceResponse
+```
+
+Registers a service. 
+
+
+
+**Args:**
+ 
+ - <b>`config`</b>:  The configuration of the service. 
+ - <b>`service_type`</b>:  The type of the service. 
+ - <b>`model_version_id`</b>:  The ID of the model version to associate with the  service. 
+
+
+
+**Returns:**
+ The registered service. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7071"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_service_account`
+
+```python
+create_service_account(
+    name: str,
+    description: str = ''
+) → ServiceAccountResponse
+```
+
+Create a new service account. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the service account. 
+ - <b>`description`</b>:  The description of the service account. 
+
+
+
+**Returns:**
+ The created service account. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5147"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_service_connector`
+
+```python
+create_service_connector(
+    name: str,
+    connector_type: str,
+    resource_type: Optional[str] = None,
+    auth_method: Optional[str] = None,
+    configuration: Optional[Dict[str, str]] = None,
+    resource_id: Optional[str] = None,
+    description: str = '',
+    expiration_seconds: Optional[int] = None,
+    expires_at: Optional[datetime] = None,
+    expires_skew_tolerance: Optional[int] = None,
+    labels: Optional[Dict[str, str]] = None,
+    auto_configure: bool = False,
+    verify: bool = True,
+    list_resources: bool = True,
+    register: bool = True
+) → Tuple[Union[ServiceConnectorResponse, ServiceConnectorRequest, NoneType], Optional[ServiceConnectorResourcesModel]]
+```
+
+Create, validate and/or register a service connector. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the service connector. 
+ - <b>`connector_type`</b>:  The service connector type. 
+ - <b>`auth_method`</b>:  The authentication method of the service connector.  May be omitted if auto-configuration is used. 
+ - <b>`resource_type`</b>:  The resource type for the service connector. 
+ - <b>`configuration`</b>:  The configuration of the service connector. 
+ - <b>`resource_id`</b>:  The resource id of the service connector. 
+ - <b>`description`</b>:  The description of the service connector. 
+ - <b>`expiration_seconds`</b>:  The expiration time of the service connector. 
+ - <b>`expires_at`</b>:  The expiration time of the service connector. 
+ - <b>`expires_skew_tolerance`</b>:  The allowed expiration skew for the service  connector credentials. 
+ - <b>`labels`</b>:  The labels of the service connector. 
+ - <b>`auto_configure`</b>:  Whether to automatically configure the service  connector from the local environment. 
+ - <b>`verify`</b>:  Whether to verify that the service connector configuration  and credentials can be used to gain access to the resource. 
+ - <b>`list_resources`</b>:  Whether to also list the resources that the service  connector can give access to (if verify is True). 
+ - <b>`register`</b>:  Whether to register the service connector or not. 
+
+
+
+**Returns:**
+ The model of the registered service connector and the resources that the service connector can give access to (if verify is True). 
+
+
+
+**Raises:**
+ 
+ - <b>`ValueError`</b>:  If the arguments are invalid. 
+ - <b>`KeyError`</b>:  If the service connector type is not found. 
+ - <b>`NotImplementedError`</b>:  If auto-configuration is not supported or  not implemented for the service connector type. 
+ - <b>`AuthorizationException`</b>:  If the connector verification failed due  to authorization issues. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1150"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_stack`
+
+```python
+create_stack(
+    name: str,
+    components: Mapping[StackComponentType, Union[str, UUID]],
+    stack_spec_file: Optional[str] = None,
+    labels: Optional[Dict[str, Any]] = None
+) → StackResponse
+```
+
+Registers a stack and its components. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the stack to register. 
+ - <b>`components`</b>:  dictionary which maps component types to component names 
+ - <b>`stack_spec_file`</b>:  path to the stack spec file 
+ - <b>`labels`</b>:  The labels of the stack. 
+
+
+
+**Returns:**
+ The model of the registered stack. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1956"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_stack_component`
+
+```python
+create_stack_component(
+    name: str,
+    flavor: str,
+    component_type: StackComponentType,
+    configuration: Dict[str, str],
+    component_spec_path: Optional[str] = None,
+    labels: Optional[Dict[str, Any]] = None
+) → ComponentResponse
+```
+
+Registers a stack component. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the stack component. 
+ - <b>`flavor`</b>:  The flavor of the stack component. 
+ - <b>`component_spec_path`</b>:  The path to the stack spec file. 
+ - <b>`component_type`</b>:  The type of the stack component. 
+ - <b>`configuration`</b>:  The configuration of the stack component. 
+ - <b>`labels`</b>:  The labels of the stack component. 
+
+
+
+**Returns:**
+ The model of the registered component. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7495"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_tag`
+
+```python
+create_tag(tag: TagRequest) → TagResponse
+```
+
+Creates a new tag. 
+
+
+
+**Args:**
+ 
+ - <b>`tag`</b>:  the Tag to be created. 
+
+
+
+**Returns:**
+ The newly created tag. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3094"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_trigger`
+
+```python
+create_trigger(
+    name: str,
+    event_source_id: UUID,
+    event_filter: Dict[str, Any],
+    action_id: UUID,
+    description: str = ''
+) → TriggerResponse
+```
+
+Registers a trigger. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the trigger to create. 
+ - <b>`event_source_id`</b>:  The id of the event source id 
+ - <b>`event_filter`</b>:  The event filter 
+ - <b>`action_id`</b>:  The ID of the action that should be triggered. 
+ - <b>`description`</b>:  The description of the trigger 
+
+
+
+**Returns:**
+ The created trigger. 
+
+---
+
+<a href="../../../src/zenml/client.py#L754"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_user`
+
+```python
+create_user(
+    name: str,
+    password: Optional[str] = None,
+    is_admin: bool = False
+) → UserResponse
+```
+
+Create a new user. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the user. 
+ - <b>`password`</b>:  The password of the user. If not provided, the user will  be created with empty password. 
+ - <b>`is_admin`</b>:  Whether the user should be an admin. 
+
+
+
+**Returns:**
+ The model of the created user. 
+
+---
+
+<a href="../../../src/zenml/client.py#L969"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `create_workspace`
+
+```python
+create_workspace(name: str, description: str) → WorkspaceResponse
+```
+
+Create a new workspace. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  Name of the workspace. 
+ - <b>`description`</b>:  Description of the workspace. 
+
+
+
+**Returns:**
+ The created workspace. 
+
+---
+
+<a href="../../../src/zenml/client.py#L931"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `deactivate_user`
+
+```python
+deactivate_user(name_id_or_prefix: str) → UserResponse
+```
+
+Deactivate a user and generate an activation token. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the user to reset. 
+
+
+
+**Returns:**
+ The deactivated user. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3077"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_action`
+
+```python
+delete_action(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete an action. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix id of the action  to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6572"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_all_model_version_artifact_links`
+
+```python
+delete_all_model_version_artifact_links(
+    model_version_id: UUID,
+    only_links: bool
+) → None
+```
+
+Delete all model version to artifact links in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_version_id`</b>:  The id of the model version holding the link. 
+ - <b>`only_links`</b>:  If true, only delete the link to the artifact. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7466"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_api_key`
+
+```python
+delete_api_key(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    name_id_or_prefix: Union[str, UUID]
+) → None
+```
+
+Delete an API key. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to delete the API key for. 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the API key. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4106"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_artifact`
+
+```python
+delete_artifact(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete an artifact. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the artifact to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4307"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_artifact_version`
+
+```python
+delete_artifact_version(
+    name_id_or_prefix: Union[str, UUID],
+    version: Optional[str] = None,
+    delete_metadata: bool = True,
+    delete_from_artifact_store: bool = False
+) → None
+```
+
+Delete an artifact version. 
+
+By default, this will delete only the metadata of the artifact from the database, not the actual object stored in the artifact store. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The ID of artifact version or name or prefix of the artifact to  delete. 
+ - <b>`version`</b>:  The version of the artifact to delete. 
+ - <b>`delete_metadata`</b>:  If True, delete the metadata of the artifact  version from the database. 
+ - <b>`delete_from_artifact_store`</b>:  If True, delete the artifact object  itself from the artifact store. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6776"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_authorized_device`
+
+```python
+delete_authorized_device(id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete an authorized device. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The ID or ID prefix of the authorized device. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2712"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_build`
+
+```python
+delete_build(id_or_prefix: str) → None
+```
+
+Delete a build. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The id or id prefix of the build. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5131"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_code_repository`
+
+```python
+delete_code_repository(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete a code repository. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the code repository. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3407"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_deployment`
+
+```python
+delete_deployment(id_or_prefix: str) → None
+```
+
+Delete a deployment. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The id or id prefix of the deployment. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2894"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_event_source`
+
+```python
+delete_event_source(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Deletes an event_source. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix id of the event_source  to deregister. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2278"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_flavor`
+
+```python
+delete_flavor(name_id_or_prefix: str) → None
+```
+
+Deletes a flavor. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the id for the  flavor to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6067"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_model`
+
+```python
+delete_model(model_name_or_id: Union[str, UUID]) → None
+```
+
+Deletes a model from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  name or id of the model to be deleted. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6236"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_model_version`
+
+```python
+delete_model_version(model_version_id: UUID) → None
+```
+
+Deletes a model version from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_version_id`</b>:  Id of the model version to be deleted. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6540"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_model_version_artifact_link`
+
+```python
+delete_model_version_artifact_link(
+    model_version_id: UUID,
+    artifact_version_id: UUID
+) → None
+```
+
+Delete model version to artifact link in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_version_id`</b>:  The id of the model version holding the link. 
+ - <b>`artifact_version_id`</b>:  The id of the artifact version to be deleted. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If more than one artifact link is found for given filters. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2430"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_pipeline`
+
+```python
+delete_pipeline(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete a pipeline. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or ID prefix of the pipeline. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3884"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_pipeline_run`
+
+```python
+delete_pipeline_run(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Deletes a pipeline run. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name, ID, or prefix of the pipeline run. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3583"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_run_template`
+
+```python
+delete_run_template(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete a run template. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name/ID/ID prefix of the template to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3707"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_schedule`
+
+```python
+delete_schedule(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete a schedule. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix id of the schedule  to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4837"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_secret`
+
+```python
+delete_secret(
+    name_id_or_prefix: str,
+    scope: Optional[SecretScope] = None
+) → None
+```
+
+Deletes a secret. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the secret. 
+ - <b>`scope`</b>:  The scope of the secret to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1805"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_service`
+
+```python
+delete_service(name_id_or_prefix: UUID) → None
+```
+
+Delete a service. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the service to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7200"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_service_account`
+
+```python
+delete_service_account(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Delete a service account. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the service account to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5738"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_service_connector`
+
+```python
+delete_service_connector(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Deletes a registered service connector. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The ID or name of the service connector to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1376"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_stack`
+
+```python
+delete_stack(
+    name_id_or_prefix: Union[str, UUID],
+    recursive: bool = False
+) → None
+```
+
+Deregisters a stack. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix id of the stack  to deregister. 
+ - <b>`recursive`</b>:  If `True`, all components of the stack which are not  associated with any other stack will also be deleted. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValueError`</b>:  If the stack is the currently active stack for this  client. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2130"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_stack_component`
+
+```python
+delete_stack_component(
+    name_id_or_prefix: Union[str, UUID],
+    component_type: StackComponentType
+) → None
+```
+
+Deletes a registered stack component. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The model of the component to delete. 
+ - <b>`component_type`</b>:  The type of the component to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7506"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_tag`
+
+```python
+delete_tag(tag_name_or_id: Union[str, UUID]) → None
+```
+
+Deletes a tag. 
+
+
+
+**Args:**
+ 
+ - <b>`tag_name_or_id`</b>:  name or id of the tag to be deleted. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3274"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_trigger`
+
+```python
+delete_trigger(name_id_or_prefix: Union[str, UUID]) → None
+```
+
+Deletes an trigger. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix id of the trigger  to deregister. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6847"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_trigger_execution`
+
+```python
+delete_trigger_execution(trigger_execution_id: UUID) → None
+```
+
+Delete a trigger execution. 
+
+
+
+**Args:**
+ 
+ - <b>`trigger_execution_id`</b>:  The ID of the trigger execution to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L947"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_user`
+
+```python
+delete_user(name_id_or_prefix: str) → None
+```
+
+Delete a user. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the user to delete. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1082"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `delete_workspace`
+
+```python
+delete_workspace(name_id_or_prefix: str) → None
+```
+
+Delete a workspace. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the workspace to delete. 
+
+
+
+**Raises:**
+ 
+ - <b>`IllegalOperationError`</b>:  If the workspace to delete is the active  workspace. 
+
+---
+
+<a href="../../../src/zenml/client.py#L547"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `find_repository`
+
+```python
+find_repository(
+    path: Optional[Path] = None,
+    enable_warnings: bool = False
+) → Optional[Path]
+```
+
+Search for a ZenML repository directory. 
+
+
+
+**Args:**
+ 
+ - <b>`path`</b>:  Optional path to look for the repository. If no path is  given, this function tries to find the repository using the  environment variable `ZENML_REPOSITORY_PATH` (if set) and  recursively searching in the parent directories of the current  working directory. 
+ - <b>`enable_warnings`</b>:  If `True`, warnings are printed if the repository  root cannot be found. 
+
+
+
+**Returns:**
+ Absolute path to a ZenML repository directory or None if no repository directory was found. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2953"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_action`
+
+```python
+get_action(
+    name_id_or_prefix: Union[UUID, str],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → ActionResponse
+```
+
+Get an action by name, ID or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the action. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The action. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7340"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_api_key`
+
+```python
+get_api_key(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → APIKeyResponse
+```
+
+Get an API key by name, id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to get the API key for. 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or ID prefix of the API key. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The API key. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4003"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_artifact`
+
+```python
+get_artifact(
+    name_id_or_prefix: Union[str, UUID],
+    hydrate: bool = False
+) → ArtifactResponse
+```
+
+Get an artifact by name, id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the artifact to get. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The artifact. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4144"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_artifact_version`
+
+```python
+get_artifact_version(
+    name_id_or_prefix: Union[str, UUID],
+    version: Optional[str] = None,
+    hydrate: bool = True
+) → ArtifactVersionResponse
+```
+
+Get an artifact version by ID or artifact name. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Either the ID of the artifact version or the  name of the artifact. 
+ - <b>`version`</b>:  The version of the artifact to get. Only used if  `name_id_or_prefix` is the name of the artifact. If not  specified, the latest version is returned. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The artifact version. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6710"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_authorized_device`
+
+```python
+get_authorized_device(
+    id_or_prefix: Union[UUID, str],
+    allow_id_prefix_match: bool = True,
+    hydrate: bool = True
+) → OAuthDeviceResponse
+```
+
+Get an authorized device by id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The ID or ID prefix of the authorized device. 
+ - <b>`allow_id_prefix_match`</b>:  If True, allow matching by ID prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The requested authorized device. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no authorized device is found with the given ID or  prefix. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2587"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_build`
+
+```python
+get_build(
+    id_or_prefix: Union[str, UUID],
+    hydrate: bool = True
+) → PipelineBuildResponse
+```
+
+Get a build by id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The id or id prefix of the build. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The build. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no build was found for the given id or prefix. 
+ - <b>`ZenKeyError`</b>:  If multiple builds were found that match the given  id or prefix. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5026"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_code_repository`
+
+```python
+get_code_repository(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → CodeRepositoryResponse
+```
+
+Get a code repository by name, id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or ID prefix of the code repository. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The code repository. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3291"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_deployment`
+
+```python
+get_deployment(
+    id_or_prefix: Union[str, UUID],
+    hydrate: bool = True
+) → PipelineDeploymentResponse
+```
+
+Get a deployment by id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The id or id prefix of the deployment. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The deployment. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no deployment was found for the given id or prefix. 
+ - <b>`ZenKeyError`</b>:  If multiple deployments were found that match the given  id or prefix. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2757"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_event_source`
+
+```python
+get_event_source(
+    name_id_or_prefix: Union[UUID, str],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → EventSourceResponse
+```
+
+Get a event source by name, ID or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the stack. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The event_source. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2199"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_flavor`
+
+```python
+get_flavor(
+    name_id_or_prefix: str,
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → FlavorResponse
+```
+
+Get a stack component flavor. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix to the id of the flavor  to get. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The stack component flavor. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2309"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_flavor_by_name_and_type`
+
+```python
+get_flavor_by_name_and_type(
+    name: str,
+    component_type: 'StackComponentType'
+) → FlavorResponse
+```
+
+Fetches a registered flavor. 
+
+
+
+**Args:**
+ 
+ - <b>`component_type`</b>:  The type of the component to fetch. 
+ - <b>`name`</b>:  The name of the flavor to fetch. 
+
+
+
+**Returns:**
+ The registered flavor. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no flavor exists for the given type and name. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2292"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_flavors_by_type`
+
+```python
+get_flavors_by_type(component_type: 'StackComponentType') → Page[FlavorResponse]
+```
+
+Fetches the list of flavor for a stack component type. 
+
+
+
+**Args:**
+ 
+ - <b>`component_type`</b>:  The type of the component to fetch. 
+
+
+
+**Returns:**
+ The list of flavors. 
+
+---
+
+<a href="../../../src/zenml/client.py#L384"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>classmethod</kbd> `get_instance`
+
+```python
+get_instance() → Optional[ForwardRef('Client')]
+```
+
+Return the Client singleton instance. 
+
+
+
+**Returns:**
+  The Client singleton instance or None, if the Client hasn't  been initialized yet. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6129"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_model`
+
+```python
+get_model(
+    model_name_or_id: Union[str, UUID],
+    hydrate: bool = True
+) → ModelResponse
+```
+
+Get an existing model from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  name or id of the model to be retrieved. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The model of interest. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6249"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_model_version`
+
+```python
+get_model_version(
+    model_name_or_id: Optional[UUID, str] = None,
+    model_version_name_or_number_or_id: Optional[str, int, ModelStages, UUID] = None,
+    hydrate: bool = True
+) → ModelVersionResponse
+```
+
+Get an existing model version from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  name or id of the model containing the model  version. 
+ - <b>`model_version_name_or_number_or_id`</b>:  name, id, stage or number of  the model version to be retrieved. If skipped - latest version  is retrieved. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The model version of interest. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  In case method inputs don't adhere to restrictions. 
+ - <b>`KeyError`</b>:  In case no model version with the identifiers exists. 
+ - <b>`ValueError`</b>:  In case retrieval is attempted using non UUID model version  identifier and no model identifier provided. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2408"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_pipeline`
+
+```python
+get_pipeline(
+    name_id_or_prefix: Union[str, UUID],
+    hydrate: bool = True
+) → PipelineResponse
+```
+
+Get a pipeline by name, id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or ID prefix of the pipeline. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The pipeline. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3726"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_pipeline_run`
+
+```python
+get_pipeline_run(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → PipelineRunResponse
+```
+
+Gets a pipeline run by name, ID, or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name, ID, or prefix of the pipeline run. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The pipeline run. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3900"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_run_step`
+
+```python
+get_run_step(step_run_id: UUID, hydrate: bool = True) → StepRunResponse
+```
+
+Get a step run by ID. 
+
+
+
+**Args:**
+ 
+ - <b>`step_run_id`</b>:  The ID of the step run to get. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The step run. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3448"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_run_template`
+
+```python
+get_run_template(
+    name_id_or_prefix: Union[str, UUID],
+    hydrate: bool = True
+) → RunTemplateResponse
+```
+
+Get a run template. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name/ID/ID prefix of the template to get. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The run template. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3604"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_schedule`
+
+```python
+get_schedule(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → ScheduleResponse
+```
+
+Get a schedule by name, id or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the schedule. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The schedule. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4569"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_secret`
+
+```python
+get_secret(
+    name_id_or_prefix: Union[str, UUID],
+    scope: Optional[SecretScope] = None,
+    allow_partial_name_match: bool = True,
+    allow_partial_id_match: bool = True,
+    hydrate: bool = True
+) → SecretResponse
+```
+
+Get a secret. 
+
+Get a secret identified by a name, ID or prefix of the name or ID and optionally a scope. 
+
+If a scope is not provided, the secret will be searched for in all scopes starting with the innermost scope (user) to the outermost scope (workspace). When a name or prefix is used instead of a UUID value, each scope is first searched for an exact match, then for a ID prefix or name substring match before moving on to the next scope. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix to the id of the secret  to get. 
+ - <b>`scope`</b>:  The scope of the secret. If not set, all scopes will be  searched starting with the innermost scope (user) to the  outermost scope (global) until a secret is found. 
+ - <b>`allow_partial_name_match`</b>:  If True, allow partial name matches. 
+ - <b>`allow_partial_id_match`</b>:  If True, allow partial ID matches. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The secret. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no secret is found. 
+ - <b>`ZenKeyError`</b>:  If multiple secrets are found. 
+ - <b>`NotImplementedError`</b>:  If centralized secrets management is not  enabled. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4856"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_secret_by_name_and_scope`
+
+```python
+get_secret_by_name_and_scope(
+    name: str,
+    scope: Optional[SecretScope] = None,
+    hydrate: bool = True
+) → SecretResponse
+```
+
+Fetches a registered secret with a given name and optional scope. 
+
+This is a version of get_secret that restricts the search to a given name and an optional scope, without doing any prefix or UUID matching. 
+
+If no scope is provided, the search will be done first in the user scope, then in the workspace scope. 
+
+
+
+**Args:**
+ 
+ - <b>`name`</b>:  The name of the secret to get. 
+ - <b>`scope`</b>:  The scope of the secret to get. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The registered secret. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no secret exists for the given name in the given scope. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1626"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_service`
+
+```python
+get_service(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True,
+    type: Optional[str] = None
+) → ServiceResponse
+```
+
+Gets a service. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the service. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`type`</b>:  The type of the service. 
+
+
+
+**Returns:**
+ The Service 
+
+---
+
+<a href="../../../src/zenml/client.py#L7094"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_service_account`
+
+```python
+get_service_account(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → ServiceAccountResponse
+```
+
+Gets a service account. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the service account. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The ServiceAccount 
+
+---
+
+<a href="../../../src/zenml/client.py#L5370"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_service_connector`
+
+```python
+get_service_connector(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    load_secrets: bool = False,
+    hydrate: bool = True
+) → ServiceConnectorResponse
+```
+
+Fetches a registered service connector. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The id of the service connector to fetch. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`load_secrets`</b>:  If True, load the secrets for the service connector. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The registered service connector. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5874"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_service_connector_client`
+
+```python
+get_service_connector_client(
+    name_id_or_prefix: Union[UUID, str],
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    verify: bool = False
+) → ServiceConnector
+```
+
+Get the client side of a service connector instance to use with a local client. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the service connector  to use. 
+ - <b>`resource_type`</b>:  The type of the resource to connect to. If not  provided, the resource type from the service connector  configuration will be used. 
+ - <b>`resource_id`</b>:  The ID of a particular resource instance to configure  the local client to connect to. If the connector instance is  already configured with a resource ID that is not the same or  equivalent to the one requested, a `ValueError` exception is  raised. May be omitted for connectors and resource types that do  not support multiple resource instances. 
+ - <b>`verify`</b>:  Whether to verify that the service connector configuration  and credentials can be used to gain access to the resource. 
+
+
+
+**Returns:**
+ The client side of the indicated service connector instance that can be used to connect to the resource locally. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5999"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_service_connector_type`
+
+```python
+get_service_connector_type(connector_type: str) → ServiceConnectorTypeModel
+```
+
+Returns the requested service connector type. 
+
+
+
+**Args:**
+ 
+ - <b>`connector_type`</b>:  the service connector type identifier. 
+
+
+
+**Returns:**
+ The requested service connector type. 
+
+---
+
+<a href="../../../src/zenml/client.py#L705"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_settings`
+
+```python
+get_settings(hydrate: bool = True) → ServerSettingsResponse
+```
+
+Get the server settings. 
+
+
+
+**Args:**
+ 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The server settings. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1195"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_stack`
+
+```python
+get_stack(
+    name_id_or_prefix: Optional[UUID, str] = None,
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → StackResponse
+```
+
+Get a stack by name, ID or prefix. 
+
+If no name, ID or prefix is provided, the active stack is returned. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the stack. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The stack. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1819"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_stack_component`
+
+```python
+get_stack_component(
+    component_type: StackComponentType,
+    name_id_or_prefix: Optional[UUID, str] = None,
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → ComponentResponse
+```
+
+Fetches a registered stack component. 
+
+If the name_id_or_prefix is provided, it will try to fetch the component with the corresponding identifier. If not, it will try to fetch the active component of the given type. 
+
+
+
+**Args:**
+ 
+ - <b>`component_type`</b>:  The type of the component to fetch 
+ - <b>`name_id_or_prefix`</b>:  The id of the component to fetch. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The registered stack component. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If no name_id_or_prefix is provided and no such component  is part of the active stack. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7532"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_tag`
+
+```python
+get_tag(tag_name_or_id: Union[str, UUID], hydrate: bool = True) → TagResponse
+```
+
+Get an existing tag. 
+
+
+
+**Args:**
+ 
+ - <b>`tag_name_or_id`</b>:  name or id of the model to be retrieved. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The tag of interest. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3127"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_trigger`
+
+```python
+get_trigger(
+    name_id_or_prefix: Union[UUID, str],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → TriggerResponse
+```
+
+Get a trigger by name, ID or prefix. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the trigger. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The trigger. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6793"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_trigger_execution`
+
+```python
+get_trigger_execution(
+    trigger_execution_id: UUID,
+    hydrate: bool = True
+) → TriggerExecutionResponse
+```
+
+Get an trigger execution by ID. 
+
+
+
+**Args:**
+ 
+ - <b>`trigger_execution_id`</b>:  The ID of the trigger execution to get. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The trigger execution. 
+
+---
+
+<a href="../../../src/zenml/client.py#L781"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_user`
+
+```python
+get_user(
+    name_id_or_prefix: Union[str, UUID],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → UserResponse
+```
+
+Gets a user. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the user. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The User 
+
+---
+
+<a href="../../../src/zenml/client.py#L985"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `get_workspace`
+
+```python
+get_workspace(
+    name_id_or_prefix: Optional[UUID, str],
+    allow_name_prefix_match: bool = True,
+    hydrate: bool = True
+) → WorkspaceResponse
+```
+
+Gets a workspace. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the workspace. 
+ - <b>`allow_name_prefix_match`</b>:  If True, allow matching by name prefix. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The workspace 
+
+---
+
+<a href="../../../src/zenml/client.py#L497"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `initialize`
+
+```python
+initialize(root: Optional[Path] = None) → None
+```
+
+Initializes a new ZenML repository at the given path. 
+
+
+
+**Args:**
+ 
+ - <b>`root`</b>:  The root directory where the repository should be created.  If None, the current working directory is used. 
+
+
+
+**Raises:**
+ 
+ - <b>`InitializationException`</b>:  If the root directory already contains a  ZenML repository. 
+
+---
+
+<a href="../../../src/zenml/client.py#L622"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `is_inside_repository`
+
+```python
+is_inside_repository(file_path: str) → bool
+```
+
+Returns whether a file is inside the active ZenML repository. 
+
+
+
+**Args:**
+ 
+ - <b>`file_path`</b>:  A file path. 
+
+
+
+**Returns:**
+ True if the file is inside the active ZenML repository, False otherwise. 
+
+---
+
+<a href="../../../src/zenml/client.py#L533"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `is_repository_directory`
+
+```python
+is_repository_directory(path: Path) → bool
+```
+
+Checks whether a ZenML client exists at the given path. 
+
+
+
+**Args:**
+ 
+ - <b>`path`</b>:  The path to check. 
+
+
+
+**Returns:**
+ True if a ZenML client exists at the given path, False otherwise. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2979"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_actions`
+
+```python
+list_actions(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    flavor: Optional[str] = None,
+    action_type: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[ActionResponse]
+```
+
+List actions. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of the action to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`name`</b>:  The name of the action to filter by. 
+ - <b>`flavor`</b>:  The flavor of the action to filter by. 
+ - <b>`action_type`</b>:  The type of the action to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of actions. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7276"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_api_keys`
+
+```python
+list_api_keys(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    active: Optional[bool] = None,
+    last_login: Optional[datetime, str] = None,
+    last_rotated: Optional[datetime, str] = None,
+    hydrate: bool = False
+) → Page[APIKeyResponse]
+```
+
+List all API keys. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to list the API keys for. 
+ - <b>`sort_by`</b>:  The column to sort by. 
+ - <b>`page`</b>:  The page of items. 
+ - <b>`size`</b>:  The maximum size of all pages. 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or]. 
+ - <b>`id`</b>:  Use the id of the API key to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation. 
+ - <b>`updated`</b>:  Use the last updated date for filtering. 
+ - <b>`name`</b>:  The name of the API key to filter by. 
+ - <b>`description`</b>:  The description of the API key to filter by. 
+ - <b>`active`</b>:  Whether the API key is active or not. 
+ - <b>`last_login`</b>:  The last time the API key was used. 
+ - <b>`last_rotated`</b>:  The last time the API key was rotated. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of API keys matching the filter description. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4179"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_artifact_versions`
+
+```python
+list_artifact_versions(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    artifact_id: Optional[UUID, str] = None,
+    name: Optional[str] = None,
+    version: Optional[int, str] = None,
+    version_number: Optional[int] = None,
+    artifact_store_id: Optional[UUID, str] = None,
+    type: Optional[ArtifactType] = None,
+    data_type: Optional[str] = None,
+    uri: Optional[str] = None,
+    materializer: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    only_unused: Optional[bool] = False,
+    has_custom_name: Optional[bool] = None,
+    user: Optional[UUID, str] = None,
+    model: Optional[UUID, str] = None,
+    pipeline_run: Optional[UUID, str] = None,
+    tag: Optional[str] = None,
+    hydrate: bool = False
+) → Page[ArtifactVersionResponse]
+```
+
+Get a list of artifact versions. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of artifact version to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`artifact_id`</b>:  The id of the artifact to filter by. 
+ - <b>`name`</b>:  The name of the artifact to filter by. 
+ - <b>`version`</b>:  The version of the artifact to filter by. 
+ - <b>`version_number`</b>:  The version number of the artifact to filter by. 
+ - <b>`artifact_store_id`</b>:  The id of the artifact store to filter by. 
+ - <b>`type`</b>:  The type of the artifact to filter by. 
+ - <b>`data_type`</b>:  The data type of the artifact to filter by. 
+ - <b>`uri`</b>:  The uri of the artifact to filter by. 
+ - <b>`materializer`</b>:  The materializer of the artifact to filter by. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`only_unused`</b>:  Only return artifact versions that are not used in  any pipeline runs. 
+ - <b>`has_custom_name`</b>:  Filter artifacts with/without custom names. 
+ - <b>`tag`</b>:  A tag to filter by. 
+ - <b>`user`</b>:  Filter by user name or ID. 
+ - <b>`model`</b>:  Filter by model name or ID. 
+ - <b>`pipeline_run`</b>:  Filter by pipeline run name or ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A list of artifact versions. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4025"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_artifacts`
+
+```python
+list_artifacts(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    has_custom_name: Optional[bool] = None,
+    hydrate: bool = False,
+    tag: Optional[str] = None
+) → Page[ArtifactResponse]
+```
+
+Get a list of artifacts. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of artifact to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  The name of the artifact to filter by. 
+ - <b>`has_custom_name`</b>:  Filter artifacts with/without custom names. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`tag`</b>:  Filter artifacts by tag. 
+
+
+
+**Returns:**
+ A list of artifacts. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6651"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_authorized_devices`
+
+```python
+list_authorized_devices(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    expires: Optional[datetime, str] = None,
+    client_id: Optional[UUID, str] = None,
+    status: Optional[OAuthDeviceStatus, str] = None,
+    trusted_device: Optional[bool, str] = None,
+    failed_auth_attempts: Optional[int, str] = None,
+    last_login: Optional[datetime, str] = None,
+    hydrate: bool = False
+) → Page[OAuthDeviceResponse]
+```
+
+List all authorized devices. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by. 
+ - <b>`page`</b>:  The page of items. 
+ - <b>`size`</b>:  The maximum size of all pages. 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or]. 
+ - <b>`id`</b>:  Use the id of the code repository to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation. 
+ - <b>`updated`</b>:  Use the last updated date for filtering. 
+ - <b>`expires`</b>:  Use the expiration date for filtering. 
+ - <b>`client_id`</b>:  Use the client id for filtering. 
+ - <b>`status`</b>:  Use the status for filtering. 
+ - <b>`trusted_device`</b>:  Use the trusted device flag for filtering. 
+ - <b>`failed_auth_attempts`</b>:  Use the failed auth attempts for filtering. 
+ - <b>`last_login`</b>:  Use the last login date for filtering. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of authorized devices matching the filter. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2643"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_builds`
+
+```python
+list_builds(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    pipeline_id: Optional[UUID, str] = None,
+    stack_id: Optional[UUID, str] = None,
+    is_local: Optional[bool] = None,
+    contains_code: Optional[bool] = None,
+    zenml_version: Optional[str] = None,
+    python_version: Optional[str] = None,
+    checksum: Optional[str] = None,
+    hydrate: bool = False
+) → Page[PipelineBuildResponse]
+```
+
+List all builds. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of build to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`pipeline_id`</b>:  The id of the pipeline to filter by. 
+ - <b>`stack_id`</b>:  The id of the stack to filter by. 
+ - <b>`is_local`</b>:  Use to filter local builds. 
+ - <b>`contains_code`</b>:  Use to filter builds that contain code. 
+ - <b>`zenml_version`</b>:  The version of ZenML to filter by. 
+ - <b>`python_version`</b>:  The Python version to filter by. 
+ - <b>`checksum`</b>:  The build checksum to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page with builds fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L5051"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_code_repositories`
+
+```python
+list_code_repositories(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[CodeRepositoryResponse]
+```
+
+List all code repositories. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by. 
+ - <b>`page`</b>:  The page of items. 
+ - <b>`size`</b>:  The maximum size of all pages. 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or]. 
+ - <b>`id`</b>:  Use the id of the code repository to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation. 
+ - <b>`updated`</b>:  Use the last updated date for filtering. 
+ - <b>`name`</b>:  The name of the code repository to filter by. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of code repositories matching the filter description. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3347"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_deployments`
+
+```python
+list_deployments(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    pipeline_id: Optional[UUID, str] = None,
+    stack_id: Optional[UUID, str] = None,
+    build_id: Optional[UUID, str] = None,
+    template_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[PipelineDeploymentResponse]
+```
+
+List all deployments. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of build to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`pipeline_id`</b>:  The id of the pipeline to filter by. 
+ - <b>`stack_id`</b>:  The id of the stack to filter by. 
+ - <b>`build_id`</b>:  The id of the build to filter by. 
+ - <b>`template_id`</b>:  The ID of the template to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page with deployments fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L2783"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_event_sources`
+
+```python
+list_event_sources(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    flavor: Optional[str] = None,
+    event_source_type: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[EventSourceResponse]
+```
+
+Lists all event_sources. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of event_sources to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`name`</b>:  The name of the event_source to filter by. 
+ - <b>`flavor`</b>:  The flavor of the event_source to filter by. 
+ - <b>`event_source_type`</b>:  The subtype of the event_source to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of event_sources. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2225"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_flavors`
+
+```python
+list_flavors(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    type: Optional[str] = None,
+    integration: Optional[str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[FlavorResponse]
+```
+
+Fetches all the flavor models. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of flavors to filter by. 
+ - <b>`created`</b>:  Use to flavors by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`name`</b>:  The name of the flavor to filter by. 
+ - <b>`type`</b>:  The type of the flavor to filter by. 
+ - <b>`integration`</b>:  The integration of the flavor to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A list of all the flavor models. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6470"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_model_version_artifact_links`
+
+```python
+list_model_version_artifact_links(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    model_id: Optional[UUID, str] = None,
+    model_version_id: Optional[UUID, str] = None,
+    artifact_version_id: Optional[UUID, str] = None,
+    artifact_name: Optional[str] = None,
+    only_data_artifacts: Optional[bool] = None,
+    only_model_artifacts: Optional[bool] = None,
+    only_deployment_artifacts: Optional[bool] = None,
+    has_custom_name: Optional[bool] = None,
+    user: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[ModelVersionArtifactResponse]
+```
+
+Get model version to artifact links by filter in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  Use the workspace id for filtering 
+ - <b>`user_id`</b>:  Use the user id for filtering 
+ - <b>`model_id`</b>:  Use the model id for filtering 
+ - <b>`model_version_id`</b>:  Use the model version id for filtering 
+ - <b>`artifact_version_id`</b>:  Use the artifact id for filtering 
+ - <b>`artifact_name`</b>:  Use the artifact name for filtering 
+ - <b>`only_data_artifacts`</b>:  Use to filter by data artifacts 
+ - <b>`only_model_artifacts`</b>:  Use to filter by model artifacts 
+ - <b>`only_deployment_artifacts`</b>:  Use to filter by deployment artifacts 
+ - <b>`has_custom_name`</b>:  Filter artifacts with/without custom names. 
+ - <b>`user`</b>:  Filter by user name/ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of all model version to artifact links. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6591"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_model_version_pipeline_run_links`
+
+```python
+list_model_version_pipeline_run_links(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    model_id: Optional[UUID, str] = None,
+    model_version_id: Optional[UUID, str] = None,
+    pipeline_run_id: Optional[UUID, str] = None,
+    pipeline_run_name: Optional[str] = None,
+    user: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[ModelVersionPipelineRunResponse]
+```
+
+Get all model version to pipeline run links by filter. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  Use the workspace id for filtering 
+ - <b>`user_id`</b>:  Use the user id for filtering 
+ - <b>`model_id`</b>:  Use the model id for filtering 
+ - <b>`model_version_id`</b>:  Use the model version id for filtering 
+ - <b>`pipeline_run_id`</b>:  Use the pipeline run id for filtering 
+ - <b>`pipeline_run_name`</b>:  Use the pipeline run name for filtering 
+ - <b>`user`</b>:  Filter by user name or ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response 
+
+
+
+**Returns:**
+ A page of all model version to pipeline run links. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6361"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_model_versions`
+
+```python
+list_model_versions(
+    model_name_or_id: Optional[UUID, str] = None,
+    sort_by: str = 'number',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    number: Optional[int] = None,
+    stage: Optional[str, ModelStages] = None,
+    user: Optional[UUID, str] = None,
+    hydrate: bool = False,
+    tag: Optional[str] = None
+) → Page[ModelVersionResponse]
+```
+
+Get model versions by filter from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  name or id of the model containing the model  version. 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  name or id of the model version. 
+ - <b>`number`</b>:  number of the model version. 
+ - <b>`stage`</b>:  stage of the model version. 
+ - <b>`user`</b>:  Filter by user name/ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`tag`</b>:  The tag to filter by. 
+
+
+
+**Returns:**
+ A page object with all model versions. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6153"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_models`
+
+```python
+list_models(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    user: Optional[UUID, str] = None,
+    hydrate: bool = False,
+    tag: Optional[str] = None
+) → Page[ModelResponse]
+```
+
+Get models by filter from Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  The name of the model to filter by. 
+ - <b>`user`</b>:  Filter by user name/ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`tag`</b>:  The tag of the model to filter by. 
+
+
+
+**Returns:**
+ A page object with all models. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3751"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_pipeline_runs`
+
+```python
+list_pipeline_runs(
+    sort_by: str = 'desc:created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    pipeline_id: Optional[UUID, str] = None,
+    pipeline_name: Optional[str] = None,
+    user_id: Optional[UUID, str] = None,
+    stack_id: Optional[UUID, str] = None,
+    schedule_id: Optional[UUID, str] = None,
+    build_id: Optional[UUID, str] = None,
+    deployment_id: Optional[UUID, str] = None,
+    code_repository_id: Optional[UUID, str] = None,
+    template_id: Optional[UUID, str] = None,
+    model_version_id: Optional[UUID, str] = None,
+    orchestrator_run_id: Optional[str] = None,
+    status: Optional[str] = None,
+    start_time: Optional[datetime, str] = None,
+    end_time: Optional[datetime, str] = None,
+    num_steps: Optional[int, str] = None,
+    unlisted: Optional[bool] = None,
+    templatable: Optional[bool] = None,
+    tag: Optional[str] = None,
+    user: Optional[UUID, str] = None,
+    pipeline: Optional[UUID, str] = None,
+    code_repository: Optional[UUID, str] = None,
+    model: Optional[UUID, str] = None,
+    stack: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[PipelineRunResponse]
+```
+
+List all pipeline runs. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  The id of the runs to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`pipeline_id`</b>:  The id of the pipeline to filter by. 
+ - <b>`pipeline_name`</b>:  DEPRECATED. Use `pipeline` instead to filter by  pipeline name. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`stack_id`</b>:  The id of the stack to filter by. 
+ - <b>`schedule_id`</b>:  The id of the schedule to filter by. 
+ - <b>`build_id`</b>:  The id of the build to filter by. 
+ - <b>`deployment_id`</b>:  The id of the deployment to filter by. 
+ - <b>`code_repository_id`</b>:  The id of the code repository to filter by. 
+ - <b>`template_id`</b>:  The ID of the template to filter by. 
+ - <b>`model_version_id`</b>:  The ID of the model version to filter by. 
+ - <b>`orchestrator_run_id`</b>:  The run id of the orchestrator to filter by. 
+ - <b>`name`</b>:  The name of the run to filter by. 
+ - <b>`status`</b>:  The status of the pipeline run 
+ - <b>`start_time`</b>:  The start_time for the pipeline run 
+ - <b>`end_time`</b>:  The end_time for the pipeline run 
+ - <b>`num_steps`</b>:  The number of steps for the pipeline run 
+ - <b>`unlisted`</b>:  If the runs should be unlisted or not. 
+ - <b>`templatable`</b>:  If the runs should be templatable or not. 
+ - <b>`tag`</b>:  Tag to filter by. 
+ - <b>`user`</b>:  The name/ID of the user to filter by. 
+ - <b>`pipeline`</b>:  The name/ID of the pipeline to filter by. 
+ - <b>`code_repository`</b>:  Filter by code repository name/ID. 
+ - <b>`model`</b>:  Filter by model name/ID. 
+ - <b>`stack`</b>:  Filter by stack name/ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page with Pipeline Runs fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L2347"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_pipelines`
+
+```python
+list_pipelines(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    latest_run_status: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    user: Optional[UUID, str] = None,
+    tag: Optional[str] = None,
+    hydrate: bool = False
+) → Page[PipelineResponse]
+```
+
+List all pipelines. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of pipeline to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  The name of the pipeline to filter by. 
+ - <b>`latest_run_status`</b>:  Filter by the status of the latest run of a  pipeline. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`user`</b>:  The name/ID of the user to filter by. 
+ - <b>`tag`</b>:  Tag to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page with Pipeline fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L4465"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_run_metadata`
+
+```python
+list_run_metadata(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    workspace_id: Optional[UUID] = None,
+    user_id: Optional[UUID] = None,
+    resource_id: Optional[UUID] = None,
+    resource_type: Optional[MetadataResourceTypes] = None,
+    stack_component_id: Optional[UUID] = None,
+    key: Optional[str] = None,
+    value: Optional[ForwardRef('MetadataType')] = None,
+    type: Optional[str] = None,
+    hydrate: bool = False
+) → Page[RunMetadataResponse]
+```
+
+List run metadata. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The field to sort the results by. 
+ - <b>`page`</b>:  The page number to return. 
+ - <b>`size`</b>:  The number of results to return per page. 
+ - <b>`logical_operator`</b>:  The logical operator to use for filtering. 
+ - <b>`id`</b>:  The ID of the metadata. 
+ - <b>`created`</b>:  The creation time of the metadata. 
+ - <b>`updated`</b>:  The last update time of the metadata. 
+ - <b>`workspace_id`</b>:  The ID of the workspace the metadata belongs to. 
+ - <b>`user_id`</b>:  The ID of the user that created the metadata. 
+ - <b>`resource_id`</b>:  The ID of the resource the metadata belongs to. 
+ - <b>`resource_type`</b>:  The type of the resource the metadata belongs to. 
+ - <b>`stack_component_id`</b>:  The ID of the stack component that produced  the metadata. 
+ - <b>`key`</b>:  The key of the metadata. 
+ - <b>`value`</b>:  The value of the metadata. 
+ - <b>`type`</b>:  The type of the metadata. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The run metadata. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3920"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_run_steps`
+
+```python
+list_run_steps(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    entrypoint_name: Optional[str] = None,
+    code_hash: Optional[str] = None,
+    cache_key: Optional[str] = None,
+    status: Optional[str] = None,
+    start_time: Optional[datetime, str] = None,
+    end_time: Optional[datetime, str] = None,
+    pipeline_run_id: Optional[UUID, str] = None,
+    original_step_run_id: Optional[UUID, str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    model_version_id: Optional[UUID, str] = None,
+    num_outputs: Optional[int, str] = None,
+    hydrate: bool = False
+) → Page[StepRunResponse]
+```
+
+List all pipelines. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of runs to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`start_time`</b>:  Use to filter by the time when the step started running 
+ - <b>`end_time`</b>:  Use to filter by the time when the step finished running 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`pipeline_run_id`</b>:  The  id of the pipeline run to filter by. 
+ - <b>`original_step_run_id`</b>:  The  id of the pipeline run to filter by. 
+ - <b>`model_version_id`</b>:  The ID of the model version to filter by. 
+ - <b>`name`</b>:  The name of the run to filter by. 
+ - <b>`entrypoint_name`</b>:  The entrypoint_name of the run to filter by. 
+ - <b>`code_hash`</b>:  The code_hash of the run to filter by. 
+ - <b>`cache_key`</b>:  The cache_key of the run to filter by. 
+ - <b>`status`</b>:  The name of the run to filter by. 
+ - <b>`num_outputs`</b>:  The number of outputs for the step run 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page with Pipeline fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L3471"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_run_templates`
+
+```python
+list_run_templates(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    tag: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    pipeline_id: Optional[UUID, str] = None,
+    build_id: Optional[UUID, str] = None,
+    stack_id: Optional[UUID, str] = None,
+    code_repository_id: Optional[UUID, str] = None,
+    user: Optional[UUID, str] = None,
+    pipeline: Optional[UUID, str] = None,
+    stack: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[RunTemplateResponse]
+```
+
+Get a page of run templates. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by. 
+ - <b>`page`</b>:  The page of items. 
+ - <b>`size`</b>:  The maximum size of all pages. 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or]. 
+ - <b>`created`</b>:  Filter by the creation date. 
+ - <b>`updated`</b>:  Filter by the last updated date. 
+ - <b>`name`</b>:  Filter by run template name. 
+ - <b>`tag`</b>:  Filter by run template tags. 
+ - <b>`workspace_id`</b>:  Filter by workspace ID. 
+ - <b>`user_id`</b>:  Filter by user ID. 
+ - <b>`pipeline_id`</b>:  Filter by pipeline ID. 
+ - <b>`build_id`</b>:  Filter by build ID. 
+ - <b>`stack_id`</b>:  Filter by stack ID. 
+ - <b>`code_repository_id`</b>:  Filter by code repository ID. 
+ - <b>`user`</b>:  Filter by user name/ID. 
+ - <b>`pipeline`</b>:  Filter by pipeline name/ID. 
+ - <b>`stack`</b>:  Filter by stack name/ID. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of run templates. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3869"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_runs`
+
+```python
+list_runs(**kwargs: Any) → Page[PipelineRunResponse]
+```
+
+(Deprecated) List all pipeline runs. 
+
+
+
+**Args:**
+ 
+ - <b>`**kwargs`</b>:  The filter arguments passed to `list_pipeline_runs`. 
+
+
+
+**Returns:**
+ A page with Pipeline Runs fitting the filter description 
+
+---
+
+<a href="../../../src/zenml/client.py#L3629"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_schedules`
+
+```python
+list_schedules(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    pipeline_id: Optional[UUID, str] = None,
+    orchestrator_id: Optional[UUID, str] = None,
+    active: Optional[str, bool] = None,
+    cron_expression: Optional[str] = None,
+    start_time: Optional[datetime, str] = None,
+    end_time: Optional[datetime, str] = None,
+    interval_second: Optional[int] = None,
+    catchup: Optional[str, bool] = None,
+    hydrate: bool = False,
+    run_once_start_time: Optional[datetime, str] = None
+) → Page[ScheduleResponse]
+```
+
+List schedules. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of stacks to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  The name of the stack to filter by. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`pipeline_id`</b>:  The id of the pipeline to filter by. 
+ - <b>`orchestrator_id`</b>:  The id of the orchestrator to filter by. 
+ - <b>`active`</b>:  Use to filter by active status. 
+ - <b>`cron_expression`</b>:  Use to filter by cron expression. 
+ - <b>`start_time`</b>:  Use to filter by start time. 
+ - <b>`end_time`</b>:  Use to filter by end time. 
+ - <b>`interval_second`</b>:  Use to filter by interval second. 
+ - <b>`catchup`</b>:  Use to filter by catchup. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`run_once_start_time`</b>:  Use to filter by run once start time. 
+
+
+
+**Returns:**
+ A list of schedules. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4701"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_secrets`
+
+```python
+list_secrets(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    scope: Optional[SecretScope] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[SecretResponse]
+```
+
+Fetches all the secret models. 
+
+The returned secrets do not contain the secret values. To get the secret values, use `get_secret` individually for each secret. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of secrets to filter by. 
+ - <b>`created`</b>:  Use to secrets by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  The name of the secret to filter by. 
+ - <b>`scope`</b>:  The scope of the secret to filter by. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A list of all the secret models without the secret values. 
+
+
+
+**Raises:**
+ 
+ - <b>`NotImplementedError`</b>:  If centralized secrets management is not  enabled. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4913"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_secrets_in_scope`
+
+```python
+list_secrets_in_scope(
+    scope: SecretScope,
+    hydrate: bool = False
+) → Page[SecretResponse]
+```
+
+Fetches the list of secret in a given scope. 
+
+The returned secrets do not contain the secret values. To get the secret values, use `get_secret` individually for each secret. 
+
+
+
+**Args:**
+ 
+ - <b>`scope`</b>:  The secrets scope to search for. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The list of secrets in the given scope without the secret values. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7119"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_service_accounts`
+
+```python
+list_service_accounts(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    active: Optional[bool] = None,
+    hydrate: bool = False
+) → Page[ServiceAccountResponse]
+```
+
+List all service accounts. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of stacks to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  Use the service account name for filtering 
+ - <b>`description`</b>:  Use the service account description for filtering 
+ - <b>`active`</b>:  Use the service account active status for filtering 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The list of service accounts matching the filter description. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5953"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_service_connector_resources`
+
+```python
+list_service_connector_resources(
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None
+) → List[ServiceConnectorResourcesModel]
+```
+
+List resources that can be accessed by service connectors. 
+
+
+
+**Args:**
+ 
+ - <b>`connector_type`</b>:  The type of service connector to filter by. 
+ - <b>`resource_type`</b>:  The type of resource to filter by. 
+ - <b>`resource_id`</b>:  The ID of a particular resource instance to filter by. 
+
+
+
+**Returns:**
+ The matching list of resources that available service connectors have access to. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5977"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_service_connector_types`
+
+```python
+list_service_connector_types(
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    auth_method: Optional[str] = None
+) → List[ServiceConnectorTypeModel]
+```
+
+Get a list of service connector types. 
+
+
+
+**Args:**
+ 
+ - <b>`connector_type`</b>:  Filter by connector type. 
+ - <b>`resource_type`</b>:  Filter by resource type. 
+ - <b>`auth_method`</b>:  Filter by authentication method. 
+
+
+
+**Returns:**
+ List of service connector types. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5439"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_service_connectors`
+
+```python
+list_service_connectors(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    connector_type: Optional[str] = None,
+    auth_method: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    labels: Optional[Dict[str, Optional[str]]] = None,
+    secret_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[ServiceConnectorResponse]
+```
+
+Lists all registered service connectors. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  The id of the service connector to filter by. 
+ - <b>`created`</b>:  Filter service connectors by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`connector_type`</b>:  Use the service connector type for filtering 
+ - <b>`auth_method`</b>:  Use the service connector auth method for filtering 
+ - <b>`resource_type`</b>:  Filter service connectors by the resource type that  they can give access to. 
+ - <b>`resource_id`</b>:  Filter service connectors by the resource id that  they can give access to. 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`name`</b>:  The name of the service connector to filter by. 
+ - <b>`labels`</b>:  The labels of the service connector to filter by. 
+ - <b>`secret_id`</b>:  Filter by the id of the secret that is referenced by the  service connector. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of service connectors. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1677"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_services`
+
+```python
+list_services(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    type: Optional[str] = None,
+    flavor: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False,
+    running: Optional[bool] = None,
+    service_name: Optional[str] = None,
+    pipeline_name: Optional[str] = None,
+    pipeline_run_id: Optional[str] = None,
+    pipeline_step_name: Optional[str] = None,
+    model_version_id: Optional[UUID, str] = None,
+    config: Optional[Dict[str, Any]] = None
+) → Page[ServiceResponse]
+```
+
+List all services. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of services to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`type`</b>:  Use the service type for filtering 
+ - <b>`flavor`</b>:  Use the service flavor for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+ - <b>`running`</b>:  Use the running status for filtering 
+ - <b>`pipeline_name`</b>:  Use the pipeline name for filtering 
+ - <b>`service_name`</b>:  Use the service name or model name  for filtering 
+ - <b>`pipeline_step_name`</b>:  Use the pipeline step name for filtering 
+ - <b>`model_version_id`</b>:  Use the model version id for filtering 
+ - <b>`config`</b>:  Use the config for filtering 
+ - <b>`pipeline_run_id`</b>:  Use the pipeline run id for filtering 
+
+
+
+**Returns:**
+ The Service response page. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1893"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_stack_components`
+
+```python
+list_stack_components(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    flavor: Optional[str] = None,
+    type: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    connector_id: Optional[UUID, str] = None,
+    stack_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[ComponentResponse]
+```
+
+Lists all registered stack components. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of component to filter by. 
+ - <b>`created`</b>:  Use to component by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`flavor`</b>:  Use the component flavor for filtering 
+ - <b>`type`</b>:  Use the component type for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The id of the user to filter by. 
+ - <b>`connector_id`</b>:  The id of the connector to filter by. 
+ - <b>`stack_id`</b>:  The id of the stack to filter by. 
+ - <b>`name`</b>:  The name of the component to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of stack components. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1225"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_stacks`
+
+```python
+list_stacks(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    component_id: Optional[UUID, str] = None,
+    user: Optional[UUID, str] = None,
+    component: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[StackResponse]
+```
+
+Lists all stacks. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of stacks to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`description`</b>:  Use the stack description for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`component_id`</b>:  The id of the component to filter by. 
+ - <b>`user`</b>:  The name/ID of the user to filter by. 
+ - <b>`component`</b>:  The name/ID of the component to filter by. 
+ - <b>`name`</b>:  The name of the stack to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of stacks. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7549"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_tags`
+
+```python
+list_tags(
+    tag_filter_model: TagFilter,
+    hydrate: bool = False
+) → Page[TagResponse]
+```
+
+Get tags by filter. 
+
+
+
+**Args:**
+ 
+ - <b>`tag_filter_model`</b>:  All filter parameters including pagination  params. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of all tags. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6812"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_trigger_executions`
+
+```python
+list_trigger_executions(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    trigger_id: Optional[UUID] = None,
+    hydrate: bool = False
+) → Page[TriggerExecutionResponse]
+```
+
+List all trigger executions matching the given filter criteria. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by. 
+ - <b>`page`</b>:  The page of items. 
+ - <b>`size`</b>:  The maximum size of all pages. 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or]. 
+ - <b>`trigger_id`</b>:  ID of the trigger to filter by. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A list of all trigger executions matching the filter criteria. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3153"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_triggers`
+
+```python
+list_triggers(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime] = None,
+    updated: Optional[datetime] = None,
+    name: Optional[str] = None,
+    event_source_id: Optional[UUID] = None,
+    action_id: Optional[UUID] = None,
+    event_source_flavor: Optional[str] = None,
+    event_source_subtype: Optional[str] = None,
+    action_flavor: Optional[str] = None,
+    action_subtype: Optional[str] = None,
+    workspace_id: Optional[UUID, str] = None,
+    user_id: Optional[UUID, str] = None,
+    hydrate: bool = False
+) → Page[TriggerResponse]
+```
+
+Lists all triggers. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of triggers to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`workspace_id`</b>:  The id of the workspace to filter by. 
+ - <b>`user_id`</b>:  The  id of the user to filter by. 
+ - <b>`name`</b>:  The name of the trigger to filter by. 
+ - <b>`event_source_id`</b>:  The event source associated with the trigger. 
+ - <b>`action_id`</b>:  The action associated with the trigger. 
+ - <b>`event_source_flavor`</b>:  Flavor of the event source associated with the  trigger. 
+ - <b>`event_source_subtype`</b>:  Type of the event source associated with the  trigger. 
+ - <b>`action_flavor`</b>:  Flavor of the action associated with the trigger. 
+ - <b>`action_subtype`</b>:  Type of the action associated with the trigger. 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ A page of triggers. 
+
+---
+
+<a href="../../../src/zenml/client.py#L806"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_users`
+
+```python
+list_users(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    external_user_id: Optional[str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    full_name: Optional[str] = None,
+    email: Optional[str] = None,
+    active: Optional[bool] = None,
+    email_opted_in: Optional[bool] = None,
+    hydrate: bool = False
+) → Page[UserResponse]
+```
+
+List all users. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the id of stacks to filter by. 
+ - <b>`external_user_id`</b>:  Use the external user id for filtering. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  Use the username for filtering 
+ - <b>`full_name`</b>:  Use the user full name for filtering 
+ - <b>`email`</b>:  Use the user email for filtering 
+ - <b>`active`</b>:  User the user active status for filtering 
+ - <b>`email_opted_in`</b>:  Use the user opt in status for filtering 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ The User 
+
+---
+
+<a href="../../../src/zenml/client.py#L1012"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `list_workspaces`
+
+```python
+list_workspaces(
+    sort_by: str = 'created',
+    page: int = 1,
+    size: int = 20,
+    logical_operator: LogicalOperators = <LogicalOperators.AND: 'and'>,
+    id: Optional[UUID, str] = None,
+    created: Optional[datetime, str] = None,
+    updated: Optional[datetime, str] = None,
+    name: Optional[str] = None,
+    hydrate: bool = False
+) → Page[WorkspaceResponse]
+```
+
+List all workspaces. 
+
+
+
+**Args:**
+ 
+ - <b>`sort_by`</b>:  The column to sort by 
+ - <b>`page`</b>:  The page of items 
+ - <b>`size`</b>:  The maximum size of all pages 
+ - <b>`logical_operator`</b>:  Which logical operator to use [and, or] 
+ - <b>`id`</b>:  Use the workspace ID to filter by. 
+ - <b>`created`</b>:  Use to filter by time of creation 
+ - <b>`updated`</b>:  Use the last updated date for filtering 
+ - <b>`name`</b>:  Use the workspace name for filtering 
+ - <b>`hydrate`</b>:  Flag deciding whether to hydrate the output model(s)  by including metadata fields in the response. 
+
+
+
+**Returns:**
+ Page of workspaces 
+
+---
+
+<a href="../../../src/zenml/client.py#L5833"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `login_service_connector`
+
+```python
+login_service_connector(
+    name_id_or_prefix: Union[UUID, str],
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    **kwargs: Any
+) → ServiceConnector
+```
+
+Use a service connector to authenticate a local client/SDK. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the service connector  to use. 
+ - <b>`resource_type`</b>:  The type of the resource to connect to. If not  provided, the resource type from the service connector  configuration will be used. 
+ - <b>`resource_id`</b>:  The ID of a particular resource instance to configure  the local client to connect to. If the connector instance is  already configured with a resource ID that is not the same or  equivalent to the one requested, a `ValueError` exception is  raised. May be omitted for connectors and resource types that do  not support multiple resource instances. 
+ - <b>`kwargs`</b>:  Additional implementation specific keyword arguments to use  to configure the client. 
+
+
+
+**Returns:**
+ The service connector client instance that was used to configure the local client. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4119"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `prune_artifacts`
+
+```python
+prune_artifacts(
+    only_versions: bool = True,
+    delete_from_artifact_store: bool = False
+) → None
+```
+
+Delete all unused artifacts and artifact versions. 
+
+
+
+**Args:**
+ 
+ - <b>`only_versions`</b>:  Only delete artifact versions, keeping artifacts 
+ - <b>`delete_from_artifact_store`</b>:  Delete data from artifact metadata 
+
+---
+
+<a href="../../../src/zenml/client.py#L4954"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `restore_secrets`
+
+```python
+restore_secrets(
+    ignore_errors: bool = False,
+    delete_secrets: bool = False
+) → None
+```
+
+Restore all secrets from the configured backup secrets store. 
+
+
+
+**Args:**
+ 
+ - <b>`ignore_errors`</b>:  Whether to ignore individual errors during the  restore process and attempt to restore all secrets. 
+ - <b>`delete_secrets`</b>:  Whether to delete the secrets that have been  successfully restored from the backup secrets store. Setting  this flag effectively moves all secrets from the backup secrets  store to the primary secrets store. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7427"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `rotate_api_key`
+
+```python
+rotate_api_key(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    name_id_or_prefix: Union[UUID, str],
+    retain_period_minutes: int = 0,
+    set_key: bool = False
+) → APIKeyResponse
+```
+
+Rotate an API key. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to rotate the API key for. 
+ - <b>`name_id_or_prefix`</b>:  Name, ID or prefix of the API key to update. 
+ - <b>`retain_period_minutes`</b>:  The number of minutes to retain the old API  key for. If set to 0, the old API key will be invalidated. 
+ - <b>`set_key`</b>:  Whether to set the rotated API key as the active API key. 
+
+
+
+**Returns:**
+ The updated API key. 
+
+---
+
+<a href="../../../src/zenml/client.py#L678"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `set_active_workspace`
+
+```python
+set_active_workspace(workspace_name_or_id: Union[str, UUID]) → WorkspaceResponse
+```
+
+Set the workspace for the local client. 
+
+
+
+**Args:**
+ 
+ - <b>`workspace_name_or_id`</b>:  The name or ID of the workspace to set active. 
+
+
+
+**Returns:**
+ The model of the active workspace. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7255"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `set_api_key`
+
+```python
+set_api_key(key: str) → None
+```
+
+Configure the client with an API key. 
+
+
+
+**Args:**
+ 
+ - <b>`key`</b>:  The API key to use. 
+
+
+
+**Raises:**
+ 
+ - <b>`NotImplementedError`</b>:  If the client is not connected to a ZenML  server. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2442"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `trigger_pipeline`
+
+```python
+trigger_pipeline(
+    pipeline_name_or_id: Optional[str, UUID] = None,
+    run_configuration: Optional[PipelineRunConfiguration] = None,
+    config_path: Optional[str] = None,
+    template_id: Optional[UUID] = None,
+    stack_name_or_id: Optional[str, UUID] = None,
+    synchronous: bool = False
+) → PipelineRunResponse
+```
+
+Trigger a pipeline from the server. 
+
+Usage examples: 
+
+* Run the latest runnable template for a pipeline: 
+
+```python
+Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+``` * Run the latest runnable template for a pipeline on a specific stack: 
+
+```python
+Client().trigger_pipeline(
+     pipeline_name_or_id=<NAME>,
+     stack_name_or_id=<STACK_NAME_OR_ID>
+)
+``` * Run a specific template: 
+
+```python
+Client().trigger_pipeline(template_id=<ID>)
+``` 
+
+
+
+**Args:**
+ 
+ - <b>`pipeline_name_or_id`</b>:  Name or ID of the pipeline. If this is  specified, the latest runnable template for this pipeline will  be used for the run (Runnable here means that the build  associated with the template is for a remote stack without any  custom flavor stack components). If not given, a template ID  that should be run needs to be specified. 
+ - <b>`run_configuration`</b>:  Configuration for the run. Either this or a  path to a config file can be specified. 
+ - <b>`config_path`</b>:  Path to a YAML configuration file. This file will be  parsed as a `PipelineRunConfiguration` object. Either this or  the configuration in code can be specified. 
+ - <b>`template_id`</b>:  ID of the template to run. Either this or a pipeline  can be specified. 
+ - <b>`stack_name_or_id`</b>:  Name or ID of the stack on which to run the  pipeline. If not specified, this method will try to find a  runnable template on any stack. 
+ - <b>`synchronous`</b>:  If `True`, this method will wait until the triggered  run is finished. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If triggering the pipeline failed. 
+
+
+
+**Returns:**
+ Model of the pipeline run. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3034"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_action`
+
+```python
+update_action(
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    configuration: Optional[Dict[str, Any]] = None,
+    service_account_id: Optional[UUID] = None,
+    auth_window: Optional[int] = None
+) → ActionResponse
+```
+
+Update an action. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the action to update. 
+ - <b>`name`</b>:  The new name of the action. 
+ - <b>`description`</b>:  The new description of the action. 
+ - <b>`configuration`</b>:  The new configuration of the action. 
+ - <b>`service_account_id`</b>:  The new service account that is used to execute  the action. 
+ - <b>`auth_window`</b>:  The new time window in minutes for which the service  account is authorized to execute the action. Set this to 0 to  authorize the service account indefinitely (not recommended). 
+
+
+
+**Returns:**
+ The updated action. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7392"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_api_key`
+
+```python
+update_api_key(
+    service_account_name_id_or_prefix: Union[str, UUID],
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    active: Optional[bool] = None
+) → APIKeyResponse
+```
+
+Update an API key. 
+
+
+
+**Args:**
+ 
+ - <b>`service_account_name_id_or_prefix`</b>:  The name, ID or prefix of the  service account to update the API key for. 
+ - <b>`name_id_or_prefix`</b>:  Name, ID or prefix of the API key to update. 
+ - <b>`name`</b>:  New name of the API key. 
+ - <b>`description`</b>:  New description of the API key. 
+ - <b>`active`</b>:  Whether the API key is active or not. 
+
+
+
+**Returns:**
+ The updated API key. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4075"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_artifact`
+
+```python
+update_artifact(
+    name_id_or_prefix: Union[str, UUID],
+    new_name: Optional[str] = None,
+    add_tags: Optional[List[str]] = None,
+    remove_tags: Optional[List[str]] = None,
+    has_custom_name: Optional[bool] = None
+) → ArtifactResponse
+```
+
+Update an artifact. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the artifact to update. 
+ - <b>`new_name`</b>:  The new name of the artifact. 
+ - <b>`add_tags`</b>:  Tags to add to the artifact. 
+ - <b>`remove_tags`</b>:  Tags to remove from the artifact. 
+ - <b>`has_custom_name`</b>:  Whether the artifact has a custom name. 
+
+
+
+**Returns:**
+ The updated artifact. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4275"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_artifact_version`
+
+```python
+update_artifact_version(
+    name_id_or_prefix: Union[str, UUID],
+    version: Optional[str] = None,
+    add_tags: Optional[List[str]] = None,
+    remove_tags: Optional[List[str]] = None
+) → ArtifactVersionResponse
+```
+
+Update an artifact version. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, ID or prefix of the artifact to update. 
+ - <b>`version`</b>:  The version of the artifact to update. Only used if  `name_id_or_prefix` is the name of the artifact. If not  specified, the latest version is updated. 
+ - <b>`add_tags`</b>:  Tags to add to the artifact version. 
+ - <b>`remove_tags`</b>:  Tags to remove from the artifact version. 
+
+
+
+**Returns:**
+ The updated artifact version. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6752"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_authorized_device`
+
+```python
+update_authorized_device(
+    id_or_prefix: Union[UUID, str],
+    locked: Optional[bool] = None
+) → OAuthDeviceResponse
+```
+
+Update an authorized device. 
+
+
+
+**Args:**
+ 
+ - <b>`id_or_prefix`</b>:  The ID or ID prefix of the authorized device. 
+ - <b>`locked`</b>:  Whether to lock or unlock the authorized device. 
+
+
+
+**Returns:**
+ The updated authorized device. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5102"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_code_repository`
+
+```python
+update_code_repository(
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    logo_url: Optional[str] = None
+) → CodeRepositoryResponse
+```
+
+Update a code repository. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name, ID or prefix of the code repository to  update. 
+ - <b>`name`</b>:  New name of the code repository. 
+ - <b>`description`</b>:  New description of the code repository. 
+ - <b>`logo_url`</b>:  New logo URL of the code repository. 
+
+
+
+**Returns:**
+ The updated code repository. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2839"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_event_source`
+
+```python
+update_event_source(
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    configuration: Optional[Dict[str, Any]] = None,
+    rotate_secret: Optional[bool] = None,
+    is_active: Optional[bool] = None
+) → EventSourceResponse
+```
+
+Updates a event_source. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the event_source to update. 
+ - <b>`name`</b>:  the new name of the event_source. 
+ - <b>`description`</b>:  the new description of the event_source. 
+ - <b>`configuration`</b>:  The event source configuration. 
+ - <b>`rotate_secret`</b>:  Allows rotating of secret, if true, the response will  contain the new secret value 
+ - <b>`is_active`</b>:  Optional[bool] = Allows for activation/deactivating the  event source 
+
+
+
+**Returns:**
+ The model of the updated event_source. 
+
+
+
+**Raises:**
+ 
+ - <b>`EntityExistsError`</b>:  If the event_source name is already taken. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6075"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_model`
+
+```python
+update_model(
+    model_name_or_id: Union[str, UUID],
+    name: Optional[str] = None,
+    license: Optional[str] = None,
+    description: Optional[str] = None,
+    audience: Optional[str] = None,
+    use_cases: Optional[str] = None,
+    limitations: Optional[str] = None,
+    trade_offs: Optional[str] = None,
+    ethics: Optional[str] = None,
+    add_tags: Optional[List[str]] = None,
+    remove_tags: Optional[List[str]] = None,
+    save_models_to_registry: Optional[bool] = None
+) → ModelResponse
+```
+
+Updates an existing model in Model Control Plane. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  name or id of the model to be deleted. 
+ - <b>`name`</b>:  The name of the model. 
+ - <b>`license`</b>:  The license under which the model is created. 
+ - <b>`description`</b>:  The description of the model. 
+ - <b>`audience`</b>:  The target audience of the model. 
+ - <b>`use_cases`</b>:  The use cases of the model. 
+ - <b>`limitations`</b>:  The known limitations of the model. 
+ - <b>`trade_offs`</b>:  The tradeoffs of the model. 
+ - <b>`ethics`</b>:  The ethical implications of the model. 
+ - <b>`add_tags`</b>:  Tags to add to the model. 
+ - <b>`remove_tags`</b>:  Tags to remove from to the model. 
+ - <b>`save_models_to_registry`</b>:  Whether to save the model to the  registry. 
+
+
+
+**Returns:**
+ The updated model. 
+
+---
+
+<a href="../../../src/zenml/client.py#L6419"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_model_version`
+
+```python
+update_model_version(
+    model_name_or_id: Union[str, UUID],
+    version_name_or_id: Union[str, UUID],
+    stage: Optional[str, ModelStages] = None,
+    force: bool = False,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    add_tags: Optional[List[str]] = None,
+    remove_tags: Optional[List[str]] = None
+) → ModelVersionResponse
+```
+
+Get all model versions by filter. 
+
+
+
+**Args:**
+ 
+ - <b>`model_name_or_id`</b>:  The name or ID of the model containing model version. 
+ - <b>`version_name_or_id`</b>:  The name or ID of model version to be updated. 
+ - <b>`stage`</b>:  Target model version stage to be set. 
+ - <b>`force`</b>:  Whether existing model version in target stage should be  silently archived or an error should be raised. 
+ - <b>`name`</b>:  Target model version name to be set. 
+ - <b>`description`</b>:  Target model version description to be set. 
+ - <b>`add_tags`</b>:  Tags to add to the model version. 
+ - <b>`remove_tags`</b>:  Tags to remove from to the model version. 
+
+
+
+**Returns:**
+ An updated model version. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3542"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_run_template`
+
+```python
+update_run_template(
+    name_id_or_prefix: Union[str, UUID],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    add_tags: Optional[List[str]] = None,
+    remove_tags: Optional[List[str]] = None
+) → RunTemplateResponse
+```
+
+Update a run template. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name/ID/ID prefix of the template to update. 
+ - <b>`name`</b>:  The new name of the run template. 
+ - <b>`description`</b>:  The new description of the run template. 
+ - <b>`add_tags`</b>:  Tags to add to the run template. 
+ - <b>`remove_tags`</b>:  Tags to remove from the run template. 
+
+
+
+**Returns:**
+ The updated run template. 
+
+---
+
+<a href="../../../src/zenml/client.py#L4768"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_secret`
+
+```python
+update_secret(
+    name_id_or_prefix: Union[str, UUID],
+    scope: Optional[SecretScope] = None,
+    new_name: Optional[str] = None,
+    new_scope: Optional[SecretScope] = None,
+    add_or_update_values: Optional[Dict[str, str]] = None,
+    remove_values: Optional[List[str]] = None
+) → SecretResponse
+```
+
+Updates a secret. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the id for the  secret to update. 
+ - <b>`scope`</b>:  The scope of the secret to update. 
+ - <b>`new_name`</b>:  The new name of the secret. 
+ - <b>`new_scope`</b>:  The new scope of the secret. 
+ - <b>`add_or_update_values`</b>:  The values to add or update. 
+ - <b>`remove_values`</b>:  The values to remove. 
+
+
+
+**Returns:**
+ The updated secret. 
+
+
+
+**Raises:**
+ 
+ - <b>`KeyError`</b>:  If trying to remove a value that doesn't exist. 
+ - <b>`ValueError`</b>:  If a key is provided in both add_or_update_values and  remove_values. 
+
+---
+
+<a href="../../../src/zenml/client.py#L717"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_server_settings`
+
+```python
+update_server_settings(
+    updated_name: Optional[str] = None,
+    updated_logo_url: Optional[str] = None,
+    updated_enable_analytics: Optional[bool] = None,
+    updated_enable_announcements: Optional[bool] = None,
+    updated_enable_updates: Optional[bool] = None,
+    updated_onboarding_state: Optional[Dict[str, Any]] = None
+) → ServerSettingsResponse
+```
+
+Update the server settings. 
+
+
+
+**Args:**
+ 
+ - <b>`updated_name`</b>:  Updated name for the server. 
+ - <b>`updated_logo_url`</b>:  Updated logo URL for the server. 
+ - <b>`updated_enable_analytics`</b>:  Updated value whether to enable  analytics for the server. 
+ - <b>`updated_enable_announcements`</b>:  Updated value whether to display  announcements about ZenML. 
+ - <b>`updated_enable_updates`</b>:  Updated value whether to display updates  about ZenML. 
+ - <b>`updated_onboarding_state`</b>:  Updated onboarding state for the server. 
+
+
+
+**Returns:**
+ The updated server settings. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1752"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_service`
+
+```python
+update_service(
+    id: UUID,
+    name: Optional[str] = None,
+    service_source: Optional[str] = None,
+    admin_state: Optional[ServiceState] = None,
+    status: Optional[Dict[str, Any]] = None,
+    endpoint: Optional[Dict[str, Any]] = None,
+    labels: Optional[Dict[str, str]] = None,
+    prediction_url: Optional[str] = None,
+    health_check_url: Optional[str] = None,
+    model_version_id: Optional[UUID] = None
+) → ServiceResponse
+```
+
+Update a service. 
+
+
+
+**Args:**
+ 
+ - <b>`id`</b>:  The ID of the service to update. 
+ - <b>`name`</b>:  The new name of the service. 
+ - <b>`admin_state`</b>:  The new admin state of the service. 
+ - <b>`status`</b>:  The new status of the service. 
+ - <b>`endpoint`</b>:  The new endpoint of the service. 
+ - <b>`service_source`</b>:  The new service source of the service. 
+ - <b>`labels`</b>:  The new labels of the service. 
+ - <b>`prediction_url`</b>:  The new prediction url of the service. 
+ - <b>`health_check_url`</b>:  The new health check url of the service. 
+ - <b>`model_version_id`</b>:  The new model version id of the service. 
+
+
+
+**Returns:**
+ The updated service. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7168"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_service_account`
+
+```python
+update_service_account(
+    name_id_or_prefix: Union[str, UUID],
+    updated_name: Optional[str] = None,
+    description: Optional[str] = None,
+    active: Optional[bool] = None
+) → ServiceAccountResponse
+```
+
+Update a service account. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the service account to update. 
+ - <b>`updated_name`</b>:  The new name of the service account. 
+ - <b>`description`</b>:  The new description of the service account. 
+ - <b>`active`</b>:  The new active status of the service account. 
+
+
+
+**Returns:**
+ The updated service account. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5511"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_service_connector`
+
+```python
+update_service_connector(
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    auth_method: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    configuration: Optional[Dict[str, str]] = None,
+    resource_id: Optional[str] = None,
+    description: Optional[str] = None,
+    expires_at: Optional[datetime] = None,
+    expires_skew_tolerance: Optional[int] = None,
+    expiration_seconds: Optional[int] = None,
+    labels: Optional[Dict[str, Optional[str]]] = None,
+    verify: bool = True,
+    list_resources: bool = True,
+    update: bool = True
+) → Tuple[Union[ServiceConnectorResponse, ServiceConnectorUpdate, NoneType], Optional[ServiceConnectorResourcesModel]]
+```
+
+Validate and/or register an updated service connector. 
+
+If the `resource_type`, `resource_id` and `expiration_seconds` parameters are set to their "empty" values (empty string for resource type and resource ID, 0 for expiration seconds), the existing values will be removed from the service connector. Setting them to None or omitting them will not affect the existing values. 
+
+If supplied, the `configuration` parameter is a full replacement of the existing configuration rather than a partial update. 
+
+Labels can be updated or removed by setting the label value to None. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the service connector  to update. 
+ - <b>`name`</b>:  The new name of the service connector. 
+ - <b>`auth_method`</b>:  The new authentication method of the service connector. 
+ - <b>`resource_type`</b>:  The new resource type for the service connector.  If set to the empty string, the existing resource type will be  removed. 
+ - <b>`configuration`</b>:  The new configuration of the service connector. If  set, this needs to be a full replacement of the existing  configuration rather than a partial update. 
+ - <b>`resource_id`</b>:  The new resource id of the service connector.  If set to the empty string, the existing resource ID will be  removed. 
+ - <b>`description`</b>:  The description of the service connector. 
+ - <b>`expires_at`</b>:  The new UTC expiration time of the service connector. 
+ - <b>`expires_skew_tolerance`</b>:  The allowed expiration skew for the service  connector credentials. 
+ - <b>`expiration_seconds`</b>:  The expiration time of the service connector.  If set to 0, the existing expiration time will be removed. 
+ - <b>`labels`</b>:  The service connector to update or remove. If a label value  is set to None, the label will be removed. 
+ - <b>`verify`</b>:  Whether to verify that the service connector configuration  and credentials can be used to gain access to the resource. 
+ - <b>`list_resources`</b>:  Whether to also list the resources that the service  connector can give access to (if verify is True). 
+ - <b>`update`</b>:  Whether to update the service connector or not. 
+
+
+
+**Returns:**
+ The model of the registered service connector and the resources that the service connector can give access to (if verify is True). 
+
+
+
+**Raises:**
+ 
+ - <b>`AuthorizationException`</b>:  If the service connector verification  fails due to invalid credentials or insufficient permissions. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1285"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_stack`
+
+```python
+update_stack(
+    name_id_or_prefix: Optional[UUID, str] = None,
+    name: Optional[str] = None,
+    stack_spec_file: Optional[str] = None,
+    labels: Optional[Dict[str, Any]] = None,
+    description: Optional[str] = None,
+    component_updates: Optional[Dict[StackComponentType, List[Union[UUID, str]]]] = None
+) → StackResponse
+```
+
+Updates a stack and its components. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the stack to update. 
+ - <b>`name`</b>:  the new name of the stack. 
+ - <b>`stack_spec_file`</b>:  path to the stack spec file. 
+ - <b>`labels`</b>:  The new labels of the stack component. 
+ - <b>`description`</b>:  the new description of the stack. 
+ - <b>`component_updates`</b>:  dictionary which maps stack component types to  lists of new stack component names or ids. 
+
+
+
+**Returns:**
+ The model of the updated stack. 
+
+
+
+**Raises:**
+ 
+ - <b>`EntityExistsError`</b>:  If the stack name is already taken. 
+
+---
+
+<a href="../../../src/zenml/client.py#L2011"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_stack_component`
+
+```python
+update_stack_component(
+    name_id_or_prefix: Optional[UUID, str],
+    component_type: StackComponentType,
+    name: Optional[str] = None,
+    component_spec_path: Optional[str] = None,
+    configuration: Optional[Dict[str, Any]] = None,
+    labels: Optional[Dict[str, Any]] = None,
+    disconnect: Optional[bool] = None,
+    connector_id: Optional[UUID] = None,
+    connector_resource_id: Optional[str] = None
+) → ComponentResponse
+```
+
+Updates a stack component. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the stack component to  update. 
+ - <b>`component_type`</b>:  The type of the stack component to update. 
+ - <b>`name`</b>:  The new name of the stack component. 
+ - <b>`component_spec_path`</b>:  The new path to the stack spec file. 
+ - <b>`configuration`</b>:  The new configuration of the stack component. 
+ - <b>`labels`</b>:  The new labels of the stack component. 
+ - <b>`disconnect`</b>:  Whether to disconnect the stack component from its  service connector. 
+ - <b>`connector_id`</b>:  The new connector id of the stack component. 
+ - <b>`connector_resource_id`</b>:  The new connector resource id of the  stack component. 
+
+
+
+**Returns:**
+ The updated stack component. 
+
+
+
+**Raises:**
+ 
+ - <b>`EntityExistsError`</b>:  If the new name is already taken. 
+
+---
+
+<a href="../../../src/zenml/client.py#L7514"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_tag`
+
+```python
+update_tag(
+    tag_name_or_id: Union[str, UUID],
+    tag_update_model: TagUpdate
+) → TagResponse
+```
+
+Updates an existing tag. 
+
+
+
+**Args:**
+ 
+ - <b>`tag_name_or_id`</b>:  name or UUID of the tag to be updated. 
+ - <b>`tag_update_model`</b>:  the tag to be updated. 
+
+
+
+**Returns:**
+ The updated tag. 
+
+---
+
+<a href="../../../src/zenml/client.py#L3224"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_trigger`
+
+```python
+update_trigger(
+    name_id_or_prefix: Union[UUID, str],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    event_filter: Optional[Dict[str, Any]] = None,
+    is_active: Optional[bool] = None
+) → TriggerResponse
+```
+
+Updates a trigger. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the trigger to update. 
+ - <b>`name`</b>:  the new name of the trigger. 
+ - <b>`description`</b>:  the new description of the trigger. 
+ - <b>`event_filter`</b>:  The event filter configuration. 
+ - <b>`is_active`</b>:  Whether the trigger is active or not. 
+
+
+
+**Returns:**
+ The model of the updated trigger. 
+
+
+
+**Raises:**
+ 
+ - <b>`EntityExistsError`</b>:  If the trigger name is already taken. 
+
+---
+
+<a href="../../../src/zenml/client.py#L864"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_user`
+
+```python
+update_user(
+    name_id_or_prefix: Union[str, UUID],
+    updated_name: Optional[str] = None,
+    updated_full_name: Optional[str] = None,
+    updated_email: Optional[str] = None,
+    updated_email_opt_in: Optional[bool] = None,
+    updated_password: Optional[str] = None,
+    old_password: Optional[str] = None,
+    updated_is_admin: Optional[bool] = None,
+    updated_metadata: Optional[Dict[str, Any]] = None,
+    active: Optional[bool] = None
+) → UserResponse
+```
+
+Update a user. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name or ID of the user to update. 
+ - <b>`updated_name`</b>:  The new name of the user. 
+ - <b>`updated_full_name`</b>:  The new full name of the user. 
+ - <b>`updated_email`</b>:  The new email of the user. 
+ - <b>`updated_email_opt_in`</b>:  The new email opt-in status of the user. 
+ - <b>`updated_password`</b>:  The new password of the user. 
+ - <b>`old_password`</b>:  The old password of the user. Required for password  update. 
+ - <b>`updated_is_admin`</b>:  Whether the user should be an admin. 
+ - <b>`updated_metadata`</b>:  The new metadata for the user. 
+ - <b>`active`</b>:  Use to activate or deactivate the user. 
+
+
+
+**Returns:**
+ The updated user. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValidationError`</b>:  If the old password is not provided when updating  the password. 
+
+---
+
+<a href="../../../src/zenml/client.py#L1055"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `update_workspace`
+
+```python
+update_workspace(
+    name_id_or_prefix: Optional[UUID, str],
+    new_name: Optional[str] = None,
+    new_description: Optional[str] = None
+) → WorkspaceResponse
+```
+
+Update a workspace. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  Name, ID or prefix of the workspace to update. 
+ - <b>`new_name`</b>:  New name of the workspace. 
+ - <b>`new_description`</b>:  New description of the workspace. 
+
+
+
+**Returns:**
+ The updated workspace. 
+
+---
+
+<a href="../../../src/zenml/client.py#L5761"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `verify_service_connector`
+
+```python
+verify_service_connector(
+    name_id_or_prefix: Union[UUID, str],
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    list_resources: bool = True
+) → ServiceConnectorResourcesModel
+```
+
+Verifies if a service connector has access to one or more resources. 
+
+
+
+**Args:**
+ 
+ - <b>`name_id_or_prefix`</b>:  The name, id or prefix of the service connector  to verify. 
+ - <b>`resource_type`</b>:  The type of the resource for which to verify access.  If not provided, the resource type from the service connector  configuration will be used. 
+ - <b>`resource_id`</b>:  The ID of the resource for which to verify access. If  not provided, the resource ID from the service connector  configuration will be used. 
+ - <b>`list_resources`</b>:  Whether to list the resources that the service  connector has access to. 
+
+
+
+**Returns:**
+ The list of resources that the service connector has access to, scoped to the supplied resource type and ID, if provided. 
+
+
+
+**Raises:**
+ 
+ - <b>`AuthorizationException`</b>:  If the service connector does not have  access to the resources. 
+
+
+---
+
+## <kbd>class</kbd> `ClientConfiguration`
+Pydantic object used for serializing client configuration options. 
+
+
+---
+
+#### <kbd>property</kbd> active_workspace
+
+Get the active workspace for the local client. 
+
+
+
+**Returns:**
+  The active workspace. 
+
+
+
+**Raises:**
+ 
+ - <b>`RuntimeError`</b>:  If no active workspace is set. 
+
+---
+
+#### <kbd>property</kbd> model_extra
+
+Get extra fields set during validation. 
+
+
+
+**Returns:**
+  A dictionary of extra fields, or `None` if `config.extra` is not set to `"allow"`. 
+
+---
+
+#### <kbd>property</kbd> model_fields_set
+
+Returns the set of fields that have been explicitly set on this model instance. 
+
+
+
+**Returns:**
+  A set of strings representing the fields that have been set,  i.e. that were not filled from defaults. 
+
+
+
+---
+
+<a href="../../../src/zenml/client.py#L250"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `set_active_stack`
+
+```python
+set_active_stack(stack: 'StackResponse') → None
+```
+
+Set the stack for the local client. 
+
+
+
+**Args:**
+ 
+ - <b>`stack`</b>:  The stack to set active. 
+
+---
+
+<a href="../../../src/zenml/client.py#L241"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `set_active_workspace`
+
+```python
+set_active_workspace(workspace: 'WorkspaceResponse') → None
+```
+
+Set the workspace for the local client. 
+
+
+
+**Args:**
+ 
+ - <b>`workspace`</b>:  The workspace to set active. 
+
+
+---
+
+## <kbd>class</kbd> `ClientMetaClass`
+Client singleton metaclass. 
+
+This metaclass is used to enforce a singleton instance of the Client class with the following additional properties: 
+
+* the singleton Client instance is created on first access to reflect the global configuration and local client configuration. * the Client shouldn't be accessed from within pipeline steps (a warning is logged if this is attempted). 
+
+<a href="../../../src/zenml/client.py#L281"><img align="right" style={{"float":"right"}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(cls, *args: Any, **kwargs: Any) → None
+```
+
+Initialize the Client class. 
+
+
+
+**Args:**
+ 
+ - <b>`*args`</b>:  Positional arguments. 
+ - <b>`**kwargs`</b>:  Keyword arguments. 
+
+
+
+
+
