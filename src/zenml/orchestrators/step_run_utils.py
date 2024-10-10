@@ -239,6 +239,8 @@ def create_cached_step_runs(
             deployment=deployment,
             finished_invocations=cached_invocations,
         )
+        # We've already checked these invocations and were not able to cache
+        # them, no need to check them again
         - visited_invocations
     ):
         for invocation_id in cache_candidates:
