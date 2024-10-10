@@ -3,7 +3,7 @@ name: prepare-release
 on:
   # TODO: Change this back into pull_request
   push:
-    branches: [ misc/prepare-release-* ]
+    branches: [misc/prepare-release-*]
 jobs:
   prepare-release:
     if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
@@ -41,7 +41,7 @@ jobs:
           uv pip list
           uv pip check || true
 
-      #      # 1. Send a message to Discord to alert everyone for the release
+      #  # 1. Send a message to Discord to alert everyone for the release
       #      - name: Send message to Discord
       #        run: |
       #          curl -H "Content-Type: application/json" \
@@ -65,7 +65,7 @@ jobs:
           git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
 
       # 5.5. Update the quickstart references
-      - name:  Replace the references in the quickstart example
+      - name: Replace the references in the quickstart example
         run: |
           find examples/quickstart -type f \( -name "*.txt" -o -name "*.yaml" -o -name "*.ipynb" \) -print0 | 
           while IFS= read -r -d '' file; do
@@ -95,11 +95,30 @@ jobs:
         run: |
           git commit -m "Adding the new version to the necessary files."
           git push origin HEAD:${{ github.ref }} 
-
   test-release:
     if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
-    runs-on:
-      - ubuntu-latest
+    runs-on: [ubuntu-latest]
     steps:
-      - name: Build images
-        run: echo "something"
+      # Check out the release-assistant branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: feature/release-assistant
+
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+
+      # Rebase the release-assistant branch
+      - name: Rebase the release assistant
+        run: |
+          git fetch origin git rebase origin/misc/prepare-release-$VERSION 
+          git push origin feature/release-assistant
+#      - name: Build base image
+#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
+#
+#      - name: Build server image
+#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
