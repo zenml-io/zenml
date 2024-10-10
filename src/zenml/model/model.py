@@ -785,7 +785,11 @@ class Model(BaseModel):
             self.version = model_version.name
             self.was_created_in_this_run = True
 
-            logger.info(f"New model version `{self.version}` was created.")
+            logger.info(
+                "Created new model version `%s` for model `%s`.",
+                self.version,
+                self.name,
+            )
 
         self.model_version_id = model_version.id
         self._model_id = model_version.model.id

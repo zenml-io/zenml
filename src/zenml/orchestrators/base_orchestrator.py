@@ -198,7 +198,7 @@ class BaseOrchestrator(StackComponent, ABC):
             and not deployment.schedule
             and not prevent_client_side_caching
         ):
-            from zenml.orchestrators import publish_utils, step_run_utils
+            from zenml.orchestrators import step_run_utils
 
             cached_invocations = step_run_utils.create_cached_step_runs(
                 deployment=deployment,
@@ -214,9 +214,6 @@ class BaseOrchestrator(StackComponent, ABC):
             if len(deployment.step_configurations) == 0:
                 # All steps were cached, we update the pipeline run status and
                 # don't actually use the orchestrator to run the pipeline
-                publish_utils.publish_succesful_pipeline_run(
-                    placeholder_run.id
-                )
                 self._cleanup_run()
                 logger.info("All steps of the pipeline run were cached.")
                 return

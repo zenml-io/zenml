@@ -71,26 +71,6 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
-def publish_succesful_pipeline_run(
-    pipeline_run_id: "UUID",
-) -> "PipelineRunResponse":
-    """Publishes a succesful pipeline run.
-
-    Args:
-        pipeline_run_id: The ID of the pipeline run to update.
-
-    Returns:
-        The updated pipeline run.
-    """
-    return Client().zen_store.update_run(
-        run_id=pipeline_run_id,
-        run_update=PipelineRunUpdate(
-            status=ExecutionStatus.COMPLETED,
-            end_time=datetime.utcnow(),
-        ),
-    )
-
-
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":

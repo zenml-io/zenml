@@ -12,17 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import List, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
+from uuid import UUID
 
 from zenml import Model
 from zenml.client import Client
-from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
-    ModelVersionPipelineRunRequest,
     ModelVersionResponse,
     PipelineDeploymentResponse,
     PipelineRunResponse,
@@ -91,11 +90,6 @@ class StepRunRequestFactory:
         """
         step = self.deployment.step_configurations[request.name]
 
-        # TODO: How do we ensure this uses the same model version that we also
-        # link later, when using a model lazy loader. This only applies
-        # after we fixed the issue that the model lazy loader always
-        # creates the model version client side and stores in ID in the
-        # config.
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
@@ -115,8 +109,12 @@ class StepRunRequestFactory:
         )
         request.cache_key = cache_key
 
-        # TODO: doing this here means this will always fail when running a
-        # template, as the step dependencies are not installed in that case
+        # TODO: Doing this here means this will always fail when running a
+        # template, as the step dependencies are not installed in that case.
+        # In this case, should we just not store the docstring/source code?
+        # Or should we somehow already include that in the deployment? That
+        # would make the deployment object even bigger than it already is
+        # though, as it would contain the code for all steps of the pipeline.
         (
             docstring,
             source_code,
@@ -134,7 +132,7 @@ class StepRunRequestFactory:
             if cached_step_run := cache_utils.get_cached_step_run(
                 cache_key=cache_key
             ):
-                # TODO: if the step is cached, do we also want to include
+                # TODO: If the step is cached, do we also want to include
                 # all the inputs of the original step? This would only make
                 # a difference if the original step did some dynamic loading
                 # of artifacts using `load_artifact`, which would then not be
@@ -274,20 +272,29 @@ def create_cached_step_runs(
 
             model = step_model or pipeline_model
 
+            # TODO: This function also imports the step code, which means it
+            # will fail when running a template. The only reason it imports
+            # the step is to load the artifact configs to check whether a
+            # different model is specified for a single output. We can go two
+            # ways here I think:
+            # - Store the artifact config in the step configuration of the
+            #   deployment. This makes sense in any case I think, also for the
+            #   comment below about linking models to the pipeline run.
+            # - Get rid of having a separate model for an output. Not sure what
+            #   the use case of that actually is and whether it warrants all
+            #   this complexity.
             utils._link_cached_artifacts_to_model(
                 model_from_context=model,
                 step_run=step_run_request,
                 step_source=step_run.spec.source,
             )
             if model:
-                # TODO: this does not respect models in the artifact config?
+                # TODO: When a step is not cached, we parse the output artifact
+                # configs and also link the pipeline run to these model
+                # versions. Why is that not happening here?
                 utils._link_pipeline_run_to_model_from_context(
                     pipeline_run_id=pipeline_run.id, model=model
                 )
-            # Alternative to the above
-            # link_models_to_pipeline_run(
-            #     step_run=step_run, step_run_model=model
-            # )
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
@@ -295,56 +302,9 @@ def create_cached_step_runs(
     return cached_invocations
 
 
-def link_models_to_pipeline_run(
-    step_run: StepRunResponse, step_run_model: Optional[Model]
-) -> None:
-    models = get_all_models_from_step_outputs(step_source=step_run.spec.source)
-    if step_run_model:
-        models.append(step_run_model)
-
-    for model in models:
-        model._get_or_create_model_version()
-        Client().zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                pipeline_run=step_run.pipeline_run_id,
-                model=model.model_id,
-                model_version=model.model_version_id,
-            )
-        )
-
-
-def get_all_models_from_step_outputs(step_source: Source) -> List[Model]:
-    # TODO: This does not cover dynamic artifacts by calling `save_artifact`.
-    # It seems like `save_artifact` however does not allow linking to a specific
-    # model but always uses the one from the step context, in which case we
-    # don't really need to care about it
-
-    from zenml.steps.base_step import BaseStep
-    from zenml.steps.utils import parse_return_type_annotations
-
-    step_instance = BaseStep.load_from_source(step_source)
-    output_annotations = parse_return_type_annotations(
-        step_instance.entrypoint
-    )
-
-    models = []
-
-    for output in output_annotations.values():
-        if output.artifact_config and output.artifact_config.model_name:
-            model = Model(
-                name=output.artifact_config.model_name,
-                version=output.artifact_config.model_version,
-            )
-            models.append(model)
-
-    return models
-
-
 def get_or_create_model_version_for_pipeline_run(
     model: Model, pipeline_run: PipelineRunResponse
-) -> ModelVersionResponse:
+) -> Tuple[ModelVersionResponse, bool]:
     """Get or create a model version as part of a pipeline run.
 
     Args:
@@ -352,10 +312,11 @@ def get_or_create_model_version_for_pipeline_run(
         pipeline_run: The pipeline run for which the model should be created.
 
     Returns:
-        The model version.
+        The model version and a boolean indicating whether it was newly created
+        or not.
     """
     if model.model_version_id:
-        return model._get_model_version()
+        return model._get_model_version(), False
     elif model.version:
         if isinstance(model.version, str):
             start_time = pipeline_run.start_time or datetime.utcnow()
@@ -365,34 +326,40 @@ def get_or_create_model_version_for_pipeline_run(
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
 
-        return model._get_or_create_model_version()
+        # TODO: Check whether the version actually got created or not instead
+        # of always returning True here
+        return model._get_or_create_model_version(), True
 
     # The model version should be created as part of this run
     # -> We first check if it was already created as part of this run, and if
     # not we do create it. If this is running in two parallel steps, we might
     # run into issues that this will create two versions
     if model_version := get_model_version_created_by_pipeline_run(
-        model_name=model.name, pipeline_run=pipeline_run
+        model_name=model.name, pipeline_run_id=pipeline_run.id
     ):
-        return model_version
+        return model_version, False
     else:
-        return model._get_or_create_model_version()
+        return model._get_or_create_model_version(), True
 
 
 def get_model_version_created_by_pipeline_run(
-    model_name: str, pipeline_run: PipelineRunResponse
+    model_name: str, pipeline_run_id: UUID
 ) -> Optional[ModelVersionResponse]:
     """Get a model version that was created by a specific pipeline run.
 
     Args:
         model_name: The model name for which to get the version.
-        pipeline_run: The pipeline run for which to get the version.
+        pipeline_run_id: The ID of the pipeline run for which to get the
+            version.
 
     Returns:
         A model version with the given name created by the run, or None if such
         a model version does not exist.
     """
-    # TODO: We should probably fetch the run here to get all latest steps
+    # We always fetch the run here to make sure we get the latest state
+    # including all the step runs
+    pipeline_run = Client().get_pipeline_run(pipeline_run_id)
+
     if pipeline_run.config.model and pipeline_run.model_version:
         if (
             pipeline_run.config.model.name == model_name
@@ -425,7 +392,7 @@ def prepare_pipeline_run_model(
     if pipeline_run.model_version:
         return pipeline_run.model_version.to_model_class()
     elif model := pipeline_run.config.model:
-        model_version = get_or_create_model_version_for_pipeline_run(
+        model_version, _ = get_or_create_model_version_for_pipeline_run(
             model=model, pipeline_run=pipeline_run
         )
         pipeline_run = Client().zen_store.update_run(
@@ -453,14 +420,16 @@ def prepare_step_run_model(
     if step_run.model_version:
         return step_run.model_version.to_model_class()
     elif model := step_run.config.model:
-        model_version = get_or_create_model_version_for_pipeline_run(
+        model_version, created = get_or_create_model_version_for_pipeline_run(
             model=model, pipeline_run=pipeline_run
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(model_version_id=model_version.id),
         )
-        log_model_version_dashboard_url(model_version)
+        if created:
+            log_model_version_dashboard_url(model_version)
+
         return model_version.to_model_class()
     else:
         return None
