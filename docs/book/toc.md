@@ -136,7 +136,7 @@
   * [Load artifacts into memory](how-to/handle-data-artifacts/load-artifacts-into-memory.md)
   * [Skipping materialization](how-to/handle-data-artifacts/unmaterialized-artifacts.md)
   * [Passing artifacts between pipelines](how-to/handle-data-artifacts/passing-artifacts-between-pipelines.md)
-  * [Register Existing Data as a ZenML Artifact](how-to/handle-data-artifacts/registring-existing-data.md)
+  * [Register Existing Data as a ZenML Artifact](how-to/handle-data-artifacts/registering-existing-data.md)
 * [📊 Visualizing artifacts](how-to/visualize-artifacts/README.md)
   * [Default visualizations](how-to/visualize-artifacts/types-of-visualizations.md)
   * [Creating custom visualizations](how-to/visualize-artifacts/creating-custom-visualizations.md)
