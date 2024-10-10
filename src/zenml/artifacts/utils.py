@@ -101,6 +101,7 @@ def save_artifact(
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
     manual_save: bool = True,
+    is_external_artifact: bool = False,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -124,6 +125,7 @@ def save_artifact(
         is_deployment_artifact: If the artifact is a deployment artifact.
         manual_save: If this function is called manually and should therefore
             link the artifact to the current step run.
+        is_external_artifact: If the artifact is an external artifact.
 
     Returns:
         The saved artifact response.
@@ -211,6 +213,12 @@ def save_artifact(
     def _create_version(
         version: Union[int, str],
     ) -> Optional[ArtifactVersionResponse]:
+        if manual_save:
+            save_type = ArtifactSaveType.MANUAL
+        elif is_external_artifact:
+            save_type = ArtifactSaveType.EXTERNAL
+        else:
+            save_type = ArtifactSaveType.DEFAULT
         artifact_version = ArtifactVersionRequest(
             artifact_id=artifact.id,
             version=version,
@@ -224,9 +232,7 @@ def save_artifact(
             artifact_store_id=artifact_store.id,
             visualizations=visualizations,
             has_custom_name=has_custom_name,
-            save_type=ArtifactSaveType.MANUAL
-            if manual_save
-            else ArtifactSaveType.DEFAULT,
+            save_type=save_type,
         )
         try:
             return client.zen_store.create_artifact_version(
@@ -329,7 +335,7 @@ def register_artifact(
             workspace=Client().active_workspace.id,
             artifact_store_id=artifact_store.id,
             has_custom_name=has_custom_name,
-            save_type=ArtifactSaveType.MANUAL,
+            save_type=ArtifactSaveType.PREEXISTING,
         )
         try:
             return client.zen_store.create_artifact_version(

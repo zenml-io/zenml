@@ -21,6 +21,7 @@ from zenml import (
 )
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
+from zenml.enums import ArtifactSaveType
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -391,6 +392,7 @@ def test_register_artifact(clean_client: Client):
     )
     assert artifact
     assert artifact.uri == uri_prefix
+    assert artifact.save_type == ArtifactSaveType.PREEXISTING
 
     loaded_dir = artifact.load()
     assert isinstance(loaded_dir, Path)

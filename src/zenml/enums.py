@@ -42,7 +42,11 @@ class ArtifactSaveType(StrEnum):
     """All possible method types of how artifact versions can be saved."""
 
     DEFAULT = "default"  # output of the current step
-    MANUAL = "manual"  # manually saved via `zenml.save_artifact()/zenml.register_artifact()`
+    MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+    PREEXISTING = "preexisting"  # register via `zenml.register_artifact()`
+    EXTERNAL = (
+        "external"  # saved via `zenml.ExternalArtifact.upload_by_value()`
+    )
 
 
 class VisualizationType(StrEnum):
