@@ -36,6 +36,7 @@ from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
     load_artifact,
+    register_artifact,
 )
 from zenml.model.utils import (
     log_model_metadata,
@@ -62,6 +63,7 @@ __all__ = [
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",
+    "register_artifact",
     "show",
     "step",
     "entrypoint",
