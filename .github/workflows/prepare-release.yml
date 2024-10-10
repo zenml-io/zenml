@@ -6,7 +6,7 @@ on:
     branches: [misc/prepare-release-*]
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[run-ci]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -38,6 +38,7 @@ jobs:
           scripts/install-zenml-dev.sh --system --integrations "no"
           uv pip list
           uv pip check || true
+
       #  # 1. Send a message to Discord to alert everyone for the release
       #      - name: Send message to Discord
       #        run: |
@@ -83,9 +84,43 @@ jobs:
           echo "$RELEASE_NOTES" >> RELEASE_NOTES.md
           git add RELEASE_NOTES.md
 
-      # Testing
-      - name: Test if worked
-        run: |-
+      # 7. Push the changes
+      # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
+      - name: Push the changes
+        run: |
           git commit -m "Adding the new version to the necessary files."
-          # TODO: Change it to ${{ github.event.pull_request.head.ref }}  
-          git push origin HEAD:${{ github.ref }}
+          git push origin HEAD:${{ github.ref }} 
+  test-release:
+    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+    runs-on: [ubuntu-latest]
+    steps:
+      # Check out the prepare-release branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # Extract the version name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+
+      # Rebase the release-assistant branch
+      - name: Rebase the release assistant
+        run: |
+          git fetch origin 
+          git checkout feature/release-assistant
+          git rebase origin/misc/prepare-release-${{ env.VERSION }}
+          git push origin feature/release-assistant
+#      - name: Build base image
+#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
+#
+#      - name: Build server image
+#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
