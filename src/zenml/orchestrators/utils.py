@@ -222,7 +222,7 @@ def _link_cached_artifacts_to_model(
     output_annotations = parse_return_type_annotations(
         step_instance.entrypoint
     )
-    for output_name_, output_id in step_run.outputs.items():
+    for output_name_, output_ids in step_run.outputs.items():
         artifact_config_ = None
         if output_name_ in output_annotations:
             annotation = output_annotations.get(output_name_, None)
@@ -233,11 +233,12 @@ def _link_cached_artifacts_to_model(
         if artifact_config_ is None:
             artifact_config_ = ArtifactConfig(name=output_name_)
 
-        link_artifact_config_to_model(
-            artifact_config=artifact_config_,
-            model=model_from_context,
-            artifact_version_id=output_id,
-        )
+        for output_id in output_ids:
+            link_artifact_config_to_model(
+                artifact_config=artifact_config_,
+                model=model_from_context,
+                artifact_version_id=output_id,
+            )
 
 
 def _link_pipeline_run_to_model_from_artifacts(

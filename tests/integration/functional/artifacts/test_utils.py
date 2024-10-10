@@ -228,10 +228,10 @@ def test_log_artifact_metadata_multi_output(clean_client):
     artifact_metadata_logging_pipeline()
     run_ = artifact_metadata_logging_pipeline.model.last_run
     step_ = run_.steps["artifact_multi_output_metadata_logging_step"]
-    str_output = step_.outputs["str_output"]
+    str_output = step_.outputs["str_output"][0]
     assert "description" not in str_output.run_metadata
     assert "metrics" not in str_output.run_metadata
-    int_output = step_.outputs["int_output"]
+    int_output = step_.outputs["int_output"][0]
     assert "description" in int_output.run_metadata
     assert int_output.run_metadata["description"].value == "Blupus is great!"
     assert "metrics" in int_output.run_metadata

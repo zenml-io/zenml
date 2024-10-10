@@ -36,6 +36,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     PluginSubType,
     SecretScope,
@@ -98,6 +99,7 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StepRunFilter,
+    StepRunResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
@@ -163,14 +165,16 @@ class PipelineRunContext:
         self.runs = self.store.list_runs(
             PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
-        self.steps = []
+        self.steps: List[StepRunResponse] = []
         self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifact_versions += [a for a in s.outputs.values()]
+                self.artifact_versions += [
+                    av for avs in s.outputs.values() for av in avs
+                ]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -711,6 +715,7 @@ class ModelContext:
                     uri="",
                     user=user.id,
                     workspace=ws.id,
+                    save_type=ArtifactSaveType.DEFAULT,
                 )
             )
             self.artifact_versions.append(artifact_version)
@@ -1121,6 +1126,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         uri="",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
+        save_type=ArtifactSaveType.DEFAULT,
     ),
     filter_model=ArtifactVersionFilter,
     update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),

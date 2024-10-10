@@ -79,10 +79,10 @@ def test_generate_run_nodes_and_edges(
         )
 
         # Write some metadata for all artifacts
-        for output_artifact in step_.outputs.values():
+        for output_artifacts in step_.outputs.values():
             clean_client.create_run_metadata(
                 metadata={"aria_loves_alex": True},
-                resource_id=output_artifact.id,
+                resource_id=output_artifacts[0].id,
                 resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
             )
 
@@ -342,8 +342,8 @@ def _validate_graph(
         assert step_id in node_id_to_model_mapping
 
         # Check that each step node is connected to all of its output nodes
-        for output_artifact in step_.outputs.values():
-            artifact_version_id = ARTIFACT_PREFIX + str(output_artifact.id)
+        for output_artifacts in step_.outputs.values():
+            artifact_version_id = ARTIFACT_PREFIX + str(output_artifacts[0].id)
             assert artifact_version_id in node_id_to_model_mapping
             edge_id = step_id + "_" + artifact_version_id
             assert edge_id in edge_id_to_model_mapping

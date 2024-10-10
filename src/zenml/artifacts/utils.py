@@ -41,6 +41,7 @@ from zenml.constants import (
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -223,6 +224,9 @@ def save_artifact(
             artifact_store_id=artifact_store.id,
             visualizations=visualizations,
             has_custom_name=has_custom_name,
+            save_type=ArtifactSaveType.MANUAL
+            if manual_save
+            else ArtifactSaveType.DEFAULT,
         )
         try:
             return client.zen_store.create_artifact_version(
@@ -325,6 +329,7 @@ def register_artifact(
             workspace=Client().active_workspace.id,
             artifact_store_id=artifact_store.id,
             has_custom_name=has_custom_name,
+            save_type=ArtifactSaveType.MANUAL,
         )
         try:
             return client.zen_store.create_artifact_version(
@@ -624,7 +629,8 @@ def get_artifacts_versions_of_pipeline_run(
     artifact_versions: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
-            artifact_versions.extend(step.outputs.values())
+            for output in step.outputs.values():
+                artifact_versions.extend(output)
     return artifact_versions
 
 
