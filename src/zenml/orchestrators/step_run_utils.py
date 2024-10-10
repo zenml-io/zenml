@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from datetime import datetime
 from typing import Optional, Set, Tuple
-from uuid import UUID
 
 from zenml import Model
 from zenml.client import Client
@@ -231,7 +230,9 @@ def create_cached_step_runs(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
 
-    pipeline_model = prepare_pipeline_run_model(pipeline_run=pipeline_run)
+    pipeline_model, pipeline_run = prepare_pipeline_run_model(
+        pipeline_run=pipeline_run
+    )
 
     while (
         cache_candidates := find_cacheable_invocation_candidates(
@@ -266,7 +267,12 @@ def create_cached_step_runs(
                 continue
 
             step_run = Client().zen_store.create_run_step(step_run_request)
-            step_model = prepare_step_run_model(
+
+            # Refresh the pipeline run here to make sure we have the latest
+            # state
+            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
+
+            step_model, step_run = prepare_step_run_model(
                 step_run=step_run, pipeline_run=pipeline_run
             )
 
@@ -326,16 +332,19 @@ def get_or_create_model_version_for_pipeline_run(
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
 
-        # TODO: Check whether the version actually got created or not instead
-        # of always returning True here
-        return model._get_or_create_model_version(), True
+        # TODO: Don't misuse `was_created_in_this_run` here but refactor so
+        # we get this information correctly
+        return (
+            model._get_or_create_model_version(),
+            model.was_created_in_this_run,
+        )
 
     # The model version should be created as part of this run
     # -> We first check if it was already created as part of this run, and if
     # not we do create it. If this is running in two parallel steps, we might
     # run into issues that this will create two versions
     if model_version := get_model_version_created_by_pipeline_run(
-        model_name=model.name, pipeline_run_id=pipeline_run.id
+        model_name=model.name, pipeline_run=pipeline_run
     ):
         return model_version, False
     else:
@@ -343,23 +352,22 @@ def get_or_create_model_version_for_pipeline_run(
 
 
 def get_model_version_created_by_pipeline_run(
-    model_name: str, pipeline_run_id: UUID
+    model_name: str, pipeline_run: PipelineRunResponse
 ) -> Optional[ModelVersionResponse]:
     """Get a model version that was created by a specific pipeline run.
 
+    This function does not refresh the pipeline run, so it will only try to
+    fetch the model version from existing steps if they're already part of the
+    response.
+
     Args:
         model_name: The model name for which to get the version.
-        pipeline_run_id: The ID of the pipeline run for which to get the
-            version.
+        pipeline_run: The pipeline run for which to get the version.
 
     Returns:
         A model version with the given name created by the run, or None if such
         a model version does not exist.
     """
-    # We always fetch the run here to make sure we get the latest state
-    # including all the step runs
-    pipeline_run = Client().get_pipeline_run(pipeline_run_id)
-
     if pipeline_run.config.model and pipeline_run.model_version:
         if (
             pipeline_run.config.model.name == model_name
@@ -380,17 +388,19 @@ def get_model_version_created_by_pipeline_run(
 
 def prepare_pipeline_run_model(
     pipeline_run: PipelineRunResponse,
-) -> Optional[Model]:
+) -> Tuple[Optional[Model], PipelineRunResponse]:
     """Prepare the model for a pipeline run.
 
     Args:
         pipeline_run: The pipeline run for which to prepare the model.
 
     Returns:
-        The prepared model.
+        The prepared model and the updated pipeline run.
     """
+    model_version = None
+
     if pipeline_run.model_version:
-        return pipeline_run.model_version.to_model_class()
+        model_version = pipeline_run.model_version
     elif model := pipeline_run.config.model:
         model_version, _ = get_or_create_model_version_for_pipeline_run(
             model=model, pipeline_run=pipeline_run
@@ -400,14 +410,14 @@ def prepare_pipeline_run_model(
             run_update=PipelineRunUpdate(model_version_id=model_version.id),
         )
         log_model_version_dashboard_url(model_version)
-        return model_version.to_model_class()
-    else:
-        return None
+
+    model = model_version.to_model_class() if model_version else None
+    return model, pipeline_run
 
 
 def prepare_step_run_model(
     step_run: StepRunResponse, pipeline_run: PipelineRunResponse
-) -> Optional[Model]:
+) -> Tuple[Optional[Model], StepRunResponse]:
     """Prepare the model for a step run.
 
     Args:
@@ -415,10 +425,10 @@ def prepare_step_run_model(
         pipeline_run: The pipeline run of the step.
 
     Returns:
-        The prepared model.
+        The prepared model and the updated step run.
     """
     if step_run.model_version:
-        return step_run.model_version.to_model_class()
+        model_version = step_run.model_version
     elif model := step_run.config.model:
         model_version, created = get_or_create_model_version_for_pipeline_run(
             model=model, pipeline_run=pipeline_run
@@ -430,9 +440,8 @@ def prepare_step_run_model(
         if created:
             log_model_version_dashboard_url(model_version)
 
-        return model_version.to_model_class()
-    else:
-        return None
+    model = model_version.to_model_class() if model_version else None
+    return model, step_run
 
 
 def log_model_version_dashboard_url(

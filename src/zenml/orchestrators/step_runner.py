@@ -244,7 +244,7 @@ class StepRunner:
                     link_step_artifacts_to_model(
                         artifact_version_ids=output_artifact_ids
                     )
-                    # Why do we link the pipeline run to the model of the
+                    # TODO: Why do we link the pipeline run to the model of the
                     # output artifacts and external input artifacts, but not
                     # regular input artifacts? Or are the input artifacts
                     # already associated with a model through whereever they

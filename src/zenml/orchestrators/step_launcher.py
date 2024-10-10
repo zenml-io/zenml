@@ -180,8 +180,8 @@ class StepLauncher:
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
 
-                pipeline_model = step_run_utils.prepare_pipeline_run_model(
-                    pipeline_run
+                pipeline_model, pipeline_run = (
+                    step_run_utils.prepare_pipeline_run_model(pipeline_run)
                 )
 
                 request_factory = step_run_utils.StepRunRequestFactory(
@@ -204,31 +204,33 @@ class StepLauncher:
                     step_run_request.end_time = datetime.utcnow()
                     raise
                 finally:
-                    step_run_response = Client().zen_store.create_run_step(
+                    step_run = Client().zen_store.create_run_step(
                         step_run_request
                     )
 
-                    step_model = step_run_utils.prepare_step_run_model(
-                        step_run=step_run_response, pipeline_run=pipeline_run
+                    step_model, step_run = (
+                        step_run_utils.prepare_step_run_model(
+                            step_run=step_run, pipeline_run=pipeline_run
+                        )
                     )
 
-                if not step_run_request.status.is_finished:
+                if not step_run.status.is_finished:
                     logger.info(f"Step `{self._step_name}` has started.")
                     retries = 0
                     last_retry = True
                     max_retries = (
-                        step_run_response.config.retry.max_retries
-                        if step_run_response.config.retry
+                        step_run.config.retry.max_retries
+                        if step_run.config.retry
                         else 1
                     )
                     delay = (
-                        step_run_response.config.retry.delay
-                        if step_run_response.config.retry
+                        step_run.config.retry.delay
+                        if step_run.config.retry
                         else 0
                     )
                     backoff = (
-                        step_run_response.config.retry.backoff
-                        if step_run_response.config.retry
+                        step_run.config.retry.backoff
+                        if step_run.config.retry
                         else 1
                     )
 
@@ -254,7 +256,7 @@ class StepLauncher:
                                 force_write_logs = _bypass
                             self._run_step(
                                 pipeline_run=pipeline_run,
-                                step_run=step_run_response,
+                                step_run=step_run,
                                 last_retry=last_retry,
                                 force_write_logs=force_write_logs,
                             )
@@ -277,7 +279,7 @@ class StepLauncher:
                                 )
                                 logger.exception(e)
                                 publish_utils.publish_failed_step_run(
-                                    step_run_response.id
+                                    step_run.id
                                 )
                                 raise
                 else:
