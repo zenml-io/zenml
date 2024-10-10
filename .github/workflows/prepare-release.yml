@@ -6,7 +6,7 @@ on:
     branches: [ misc/prepare-release-* ]
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[run-ci]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -89,9 +89,17 @@ jobs:
           echo "$RELEASE_NOTES" >> RELEASE_NOTES.md
           git add RELEASE_NOTES.md
 
-      # Testing
-      - name: Test if worked
+      # 7. Push the changes
+      # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
+      - name: Push the changes
         run: |
           git commit -m "Adding the new version to the necessary files."
-          # TODO: Change it to ${{ github.event.pull_request.head.ref }}  
           git push origin HEAD:${{ github.ref }} 
+
+  test-release:
+    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+    runs-on:
+      - ubuntu-latest
+    steps:
+      - name: Build images
+        run: echo "something"
