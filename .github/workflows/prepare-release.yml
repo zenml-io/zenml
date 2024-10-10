@@ -3,7 +3,7 @@ name: prepare-release
 on:
   # TODO: Change this back into pull_request
   push:
-    branches: [misc/prepare-release-*]
+    branches: [ misc/prepare-release-* ]
 jobs:
   prepare-release:
     if: contains(github.event.head_commit.message, '[run-ci]')  # TODO: Remove
@@ -41,12 +41,12 @@ jobs:
           uv pip list
           uv pip check || true
 
-#      # 1. Send a message to Discord to alert everyone for the release
-#      - name: Send message to Discord
-#        run: |
-#          curl -H "Content-Type: application/json" \
-#            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
-#            ${{ secrets.DISCORD_WEBHOOK_URL }}
+      #      # 1. Send a message to Discord to alert everyone for the release
+      #      - name: Send message to Discord
+      #        run: |
+      #          curl -H "Content-Type: application/json" \
+      #            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
+      #            ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       # 4. Alembic merge
       - name: Run Alembic merge
@@ -67,17 +67,6 @@ jobs:
       # 5.5. Update the quickstart references
       - name: Replace the references in the quickstart example
         run: |
-#          for file in examples/quickstart/*.{txt,yaml,ipynb}; do
-#            if [[ -f "$file" ]]; then
-#              if [[ $file == *.txt || $file == *.yaml ]]; then
-#                sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
-#              elif [[ $file == *.ipynb ]]; then
-#                jq --arg old "$OLD_VERSION" --arg new ${{ env.VERSION }} \
-#                'walk(if type == "string" then gsub($old; $new) else . end)' "$file" > tmp.$$.json && mv tmp.$$.json "$file"
-#              fi
-#            fi
-#          done
-
           find examples/quickstart -type f \( -name "*.txt" -o -name "*.yaml" -o -name "*.ipynb" \) -print0 | 
           while IFS= read -r -d '' file; do
             if [[ "$file" == *.ipynb ]]; then
@@ -87,8 +76,18 @@ jobs:
             else
               # For .txt and .yaml files, we can use sed
               sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
+          #          for file in examples/quickstart/*.{txt,yaml,ipynb}; do
+          #            if [[ -f "$file" ]]; then
+          #              if [[ $file == *.txt || $file == *.yaml ]]; then
+          #                sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
+          #              elif [[ $file == *.ipynb ]]; then
+          #                jq --arg old "$OLD_VERSION" --arg new ${{ env.VERSION }} \
+          #                'walk(if type == "string" then gsub($old; $new) else . end)' "$file" > tmp.$$.json && mv tmp.$$.json "$file"
+          #              fi
+          #            fi
+          #          done
 
-          # git add examples/quickstart
+        # git add examples/quickstart
       # 6. Generate and append release notes
       - name: Generate release notes
         env:
