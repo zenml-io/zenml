@@ -180,6 +180,10 @@ class StepLauncher:
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
 
+                pipeline_model = step_run_utils.prepare_pipeline_run_model(
+                    pipeline_run
+                )
+
                 request_factory = step_run_utils.StepRunRequestFactory(
                     deployment=self._deployment,
                     pipeline_run=pipeline_run,
@@ -204,10 +208,8 @@ class StepLauncher:
                         step_run_request
                     )
 
-                    model = step_run_utils.get_and_link_model(
-                        deployment=self._deployment,
-                        pipeline_run=pipeline_run,
-                        step_run=step_run_response,
+                    step_model = step_run_utils.prepare_step_run_model(
+                        step_run=step_run_response, pipeline_run=pipeline_run
                     )
 
                 if not step_run_request.status.is_finished:

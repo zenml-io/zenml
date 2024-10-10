@@ -98,7 +98,7 @@ class StepRunRequestFactory:
         # config.
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=step,
-            run_id=self.pipeline_run.id,
+            pipeline_run=self.pipeline_run,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -295,27 +295,6 @@ def create_cached_step_runs(
     return cached_invocations
 
 
-def get_and_link_model(
-    deployment: PipelineDeploymentResponse,
-    pipeline_run: PipelineRunResponse,
-    step_run: StepRunResponse,
-) -> Optional["Model"]:
-    model = step_run.config.model or deployment.pipeline_configuration.model
-
-    if model:
-        pass_step_run = step_run.config.model is not None
-        preparation_logs = model._prepare_model_version_before_step_launch(
-            pipeline_run=pipeline_run,
-            step_run=step_run if pass_step_run else None,
-            return_logs=True,
-        )
-
-        if preparation_logs:
-            logger.info(preparation_logs)
-
-    return model
-
-
 def link_models_to_pipeline_run(
     step_run: StepRunResponse, step_run_model: Optional[Model]
 ) -> None:
@@ -378,12 +357,13 @@ def get_or_create_model_version_for_pipeline_run(
     if model.model_version_id:
         return model._get_model_version()
     elif model.version:
-        start_time = pipeline_run.start_time or datetime.utcnow()
-        model.version = string_utils.format_name_template(
-            model.version,
-            date=start_time.strftime("%Y_%m_%d"),
-            time=start_time.strftime("%H_%M_%S_%f"),
-        )
+        if isinstance(model.version, str):
+            start_time = pipeline_run.start_time or datetime.utcnow()
+            model.version = string_utils.format_name_template(
+                model.version,
+                date=start_time.strftime("%Y_%m_%d"),
+                time=start_time.strftime("%H_%M_%S_%f"),
+            )
 
         return model._get_or_create_model_version()
 
