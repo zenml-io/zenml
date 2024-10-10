@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType, GenericFilterOps
+from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -95,6 +95,9 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
 
     @field_validator("version")
     @classmethod
@@ -155,6 +158,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     producer_pipeline_run_id: Optional[UUID] = Field(
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
+    )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
     )
 
     @field_validator("version")
@@ -275,6 +281,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().producer_pipeline_run_id
+
+    @property
+    def save_type(self) -> ArtifactSaveType:
+        """The `save_type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().save_type
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:

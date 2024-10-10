@@ -29,7 +29,7 @@ def test_input_resolution(
     zen store."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_version_model},
+        output_artifacts={"output_name": [sample_artifact_version_model]},
     )
 
     mocker.patch(
@@ -132,7 +132,7 @@ def test_input_resolution_fetches_all_run_steps(
     """Tests that input resolution fetches all step runs of the pipeline run."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_version_model},
+        output_artifacts={"output_name": [sample_artifact_version_model]},
     )
     second_step_run = create_step_run(
         step_run_name="other_step",

@@ -455,8 +455,10 @@ class StepLauncher:
                 step_run.original_step_run_id = cached_step_run.id
 
                 step_run.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_outputs.items()
+                    output_name: [
+                        artifact.id for artifact in artifact_versions
+                    ]
+                    for output_name, artifact_versions in cached_outputs.items()
                 }
 
                 step_run.status = ExecutionStatus.CACHED

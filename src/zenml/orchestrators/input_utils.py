@@ -64,7 +64,12 @@ def resolve_step_inputs(
             )
 
         try:
-            artifact = step_run.outputs[input_.output_name]
+            if len(step_run.outputs[input_.output_name]) > 1:
+                raise InputResolutionError(
+                    f"Multiple artifacts versions found for the output "
+                    f"`{input_.output_name}` of the step `{input_.step_name}`. "
+                )
+            artifact = step_run.outputs[input_.output_name][0]
         except KeyError:
             raise InputResolutionError(
                 f"No output `{input_.output_name}` found for step "

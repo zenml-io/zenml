@@ -62,6 +62,7 @@ from zenml.constants import (
     USERS,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ColorVariants,
     ExecutionStatus,
@@ -5373,6 +5374,7 @@ class TestRunMetadata:
                     data_type=Source(
                         module="acme.foo", type=SourceType.INTERNAL
                     ),
+                    save_type=ArtifactSaveType.DEFAULT,
                 )
             )
         elif type_ == MetadataResourceTypes.MODEL_VERSION:

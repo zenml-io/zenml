@@ -158,6 +158,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             uri=uri,
             has_custom_name=False,
             manual_save=False,
+            is_external_artifact=True,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded

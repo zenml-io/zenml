@@ -39,6 +39,7 @@ from zenml.client import Client
 from zenml.config.source import Source
 from zenml.constants import PAGE_SIZE_DEFAULT
 from zenml.enums import (
+    ArtifactSaveType,
     MetadataResourceTypes,
     ModelStages,
     SecretScope,
@@ -1154,6 +1155,7 @@ class TestArtifact:
         artifact_id = ExternalArtifact(value="foo").upload_by_value()
         artifact = clean_client.get_artifact_version(artifact_id)
         assert artifact is not None
+        assert artifact.save_type == ArtifactSaveType.EXTERNAL
         clean_client.prune_artifacts(
             only_versions=False, delete_from_artifact_store=True
         )

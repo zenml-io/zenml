@@ -75,8 +75,8 @@ def test_multi_output_artifact_names(
     pipeline_instance = one_step_pipeline(multi_output_test_step)
     pipeline_run = pipeline_instance()
     step_run = pipeline_run.steps["multi_output_test_step"]
-    artifact_1 = step_run.outputs["number_7"]
-    artifact_2 = step_run.outputs["output_1"]
+    artifact_1 = step_run.outputs["number_7"][0]
+    artifact_2 = step_run.outputs["output_1"][0]
     assert artifact_1.name == "number_7"
     assert (
         artifact_2.name

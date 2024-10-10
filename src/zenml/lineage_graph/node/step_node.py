@@ -29,8 +29,8 @@ class StepNodeDetails(BaseNodeDetails):
     entrypoint_name: str
     parameters: Dict[str, Any]
     configuration: Dict[str, Any]
-    inputs: Dict[str, Any]
-    outputs: Dict[str, Any]
+    inputs: Dict[str, str]  # (key, uri)
+    outputs: Dict[str, List[str]]  # (key, [uris,...])
     metadata: List[Tuple[str, str, str]]  # (key, value, type)
 
 
