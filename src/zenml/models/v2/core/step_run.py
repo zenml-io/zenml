@@ -67,11 +67,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    code_hash: Optional[str] = Field(
-        title="The code hash of the step run.",
-        default=None,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     docstring: Optional[str] = Field(
         title="The docstring of the step function or class.",
         default=None,
@@ -182,11 +177,6 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     # Code related fields
     cache_key: Optional[str] = Field(
         title="The cache key of the step run.",
-        default=None,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    code_hash: Optional[str] = Field(
-        title="The code hash of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -376,15 +366,6 @@ class StepRunResponse(
         return self.get_metadata().cache_key
 
     @property
-    def code_hash(self) -> Optional[str]:
-        """The `code_hash` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().code_hash
-
-    @property
     def docstring(self) -> Optional[str]:
         """The `docstring` property.
 
@@ -494,10 +475,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
-        default=None,
-        description="Code hash for this step run",
-    )
     cache_key: Optional[str] = Field(
         default=None,
         description="Cache key for this step run",
@@ -519,6 +496,11 @@ class StepRunFilter(WorkspaceScopedFilter):
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline run of this step run",
+        union_mode="left_to_right",
+    )
+    deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Deployment of this step run",
         union_mode="left_to_right",
     )
     original_step_run_id: Optional[Union[UUID, str]] = Field(

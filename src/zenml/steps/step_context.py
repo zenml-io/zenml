@@ -169,36 +169,28 @@ class StepContext(metaclass=SingletonMetaClass):
         """Returns configured Model.
 
         Order of resolution to search for Model is:
-            1. Model from @step
-            2. Model from @pipeline
+            1. Model from the step
+            2. Model from the pipeline
 
         Returns:
             The `Model` object associated with the current step.
 
         Raises:
-            StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
+            StepContextError: If no `Model` object was specified for the step
+                or pipeline.
         """
-        if (
-            self.step_run.config.model is not None
-            and self.step_run.model_version is not None
-        ):
-            model = self.step_run.model_version.to_model_class(
-                suppress_class_validation_warnings=True
-            )
-        elif self.pipeline_run.config.model is not None:
-            if self.pipeline_run.model_version:
-                model = self.pipeline_run.model_version.to_model_class(
-                    suppress_class_validation_warnings=True
-                )
-            else:
-                model = self.pipeline_run.config.model
-        else:
+        model_version = (
+            self.step_run.model_version or self.pipeline_run.model_version
+        )
+
+        if not model_version:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
-                f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
+                f"run '{self.pipeline_run.id}': No model has been specified "
+                "the step or pipeline."
             )
 
-        return model
+        return model_version.to_model_class()
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:

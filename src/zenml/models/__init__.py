@@ -292,6 +292,7 @@ from zenml.models.v2.core.step_run import (
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
+    StepRunResponseResources
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -459,6 +460,7 @@ StackResponse.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
+StepRunResponseResources.model_rebuild()
 TriggerExecutionResponseResources.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -685,6 +687,7 @@ __all__ = [
     "StepRunResponse",
     "StepRunResponseBody",
     "StepRunResponseMetadata",
+    "StepRunResponseResources",
     "TagFilter",
     "TagResourceResponse",
     "TagResourceResponseBody",

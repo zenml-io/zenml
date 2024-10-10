@@ -786,15 +786,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment_model: The model for the pipeline deployment
         """
         try:
-            # Log about the schedule/run
-            if deployment_model.schedule:
-                logger.info(
-                    "Scheduling a run with the schedule: "
-                    f"`{deployment_model.schedule.name}`"
-                )
-            else:
-                logger.info("Executing a new run.")
-
             # Log about the caching status
             if deployment_model.pipeline_configuration.enable_cache is False:
                 logger.info(
