@@ -475,10 +475,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
-        default=None,
-        description="Code hash for this step run",
-    )
     cache_key: Optional[str] = Field(
         default=None,
         description="Cache key for this step run",
@@ -500,6 +496,11 @@ class StepRunFilter(WorkspaceScopedFilter):
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline run of this step run",
+        union_mode="left_to_right",
+    )
+    deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Deployment of this step run",
         union_mode="left_to_right",
     )
     original_step_run_id: Optional[Union[UUID, str]] = Field(
