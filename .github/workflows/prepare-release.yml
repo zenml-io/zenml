@@ -81,4 +81,4 @@ jobs:
       # Testing
       - name: Test if worked
         run:
-          git diff
+          git diff --color HEAD^ HEAD
