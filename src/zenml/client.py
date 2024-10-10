@@ -2452,11 +2452,14 @@ class Client(metaclass=ClientMetaClass):
         """Trigger a pipeline from the server.
 
         Usage examples:
+
         * Run the latest runnable template for a pipeline:
+        
         ```python
         Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
         ```
         * Run the latest runnable template for a pipeline on a specific stack:
+        
         ```python
         Client().trigger_pipeline(
             pipeline_name_or_id=<NAME>,
@@ -2464,6 +2467,7 @@ class Client(metaclass=ClientMetaClass):
         )
         ```
         * Run a specific template:
+        
         ```python
         Client().trigger_pipeline(template_id=<ID>)
         ```
