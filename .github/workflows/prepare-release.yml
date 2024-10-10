@@ -6,7 +6,7 @@ on:
     branches: [misc/prepare-release-*]
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[run-ci]') # TODO: Remove
+    if: contains(github.event.head_commit.message, '[run-ci]')  # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -40,7 +40,7 @@ jobs:
           scripts/install-zenml-dev.sh --system --integrations "no"
           uv pip list
           uv pip check || true
-#      # 1. Send a message to Discord to alert everyone
+#      # 1. Send a message to Discord to alert everyone for the release
 #      - name: Send message to Discord
 #        run: |
 #          curl -H "Content-Type: application/json" \
