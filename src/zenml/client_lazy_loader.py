@@ -16,17 +16,21 @@
 import contextlib
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.client import Client
 
+logger = get_logger(__name__)
+
 
 class _CallStep(BaseModel):
     attribute_name: Optional[str] = None
-    is_call: Optional[bool] = False
-    call_args: Optional[List[Any]] = []
-    call_kwargs: Optional[Dict[str, Any]] = {}
+    is_call: bool = False
+    call_args: List[Any] = Field(default_factory=list)
+    call_kwargs: Dict[str, Any] = Field(default_factory=dict)
     selector: Optional[Any] = None
 
 
@@ -112,11 +116,20 @@ class ClientLazyLoader(BaseModel):
                         "Invalid call chain. Reach out to the ZenML team."
                     )
             except Exception as e:
-                raise RuntimeError(
+                logger.debug(
                     f"Failed to evaluate lazy load chain `{self.method_name}` "
-                    f"+ `{self.call_chain}`. Reach out to the ZenML team via "
-                    "Slack or GitHub to check further."
-                ) from e
+                    f"+ `{next_step}` + `{self.call_chain}`."
+                )
+                msg = f"`{self.method_name}("
+                if next_step:
+                    for arg in next_step.call_args:
+                        msg += f"'{arg}',"
+                    for k, v in next_step.call_kwargs.items():
+                        msg += f"{k}='{v}',"
+                    msg = msg[:-1]
+                msg += f")` failed during lazy load with error: {e}"
+                logger.error(msg)
+                raise RuntimeError(msg)
             return self_
 
         self_ = getattr(Client(), self.method_name)
