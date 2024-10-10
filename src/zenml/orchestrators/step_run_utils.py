@@ -321,6 +321,10 @@ def get_or_create_model_version_for_pipeline_run(
         The model version and a boolean indicating whether it was newly created
         or not.
     """
+    # Copy the model here to not modify configurations in which the object is
+    # potentially referenced
+    model = model.model_copy()
+
     if model.model_version_id:
         return model._get_model_version(), False
     elif model.version:
@@ -401,9 +405,9 @@ def prepare_pipeline_run_model(
 
     if pipeline_run.model_version:
         model_version = pipeline_run.model_version
-    elif model := pipeline_run.config.model:
+    elif config_model := pipeline_run.config.model:
         model_version, _ = get_or_create_model_version_for_pipeline_run(
-            model=model, pipeline_run=pipeline_run
+            model=config_model, pipeline_run=pipeline_run
         )
         pipeline_run = Client().zen_store.update_run(
             run_id=pipeline_run.id,
@@ -429,9 +433,9 @@ def prepare_step_run_model(
     """
     if step_run.model_version:
         model_version = step_run.model_version
-    elif model := step_run.config.model:
+    elif config_model := step_run.config.model:
         model_version, created = get_or_create_model_version_for_pipeline_run(
-            model=model, pipeline_run=pipeline_run
+            model=config_model, pipeline_run=pipeline_run
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,
