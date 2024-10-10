@@ -3,8 +3,9 @@ name: prepare-release
 
 on:
   pull_request:
-#    types:
-#      - opened
+    types:
+      - opened
+      - synchronize
     branches:
       - 'misc/prepare-release-*'
 
