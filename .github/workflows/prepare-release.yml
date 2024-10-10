@@ -2,10 +2,8 @@
 name: prepare-release
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
+  # TODO: Change this back into pull_request
+  push:
     branches:
       - 'misc/prepare-release-*'
 
