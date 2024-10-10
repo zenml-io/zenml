@@ -1,12 +1,9 @@
 ---
 name: prepare-release
-
 on:
   # TODO: Change this back into pull_request
   push:
-    branches:
-      - 'misc/prepare-release-*'
-
+    branches: [misc/prepare-release-*]
 jobs:
   prepare-release:
     runs-on: ubuntu-latest
@@ -42,7 +39,6 @@ jobs:
           scripts/install-zenml-dev.sh --system --integrations "no"
           uv pip list
           uv pip check || true
-
 #      # 1. Send a message to Discord to alert everyone
 #      - name: Send message to Discord
 #        run: |
@@ -67,7 +63,19 @@ jobs:
           git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
 
       # 5.5. Update the quickstart references
-      # TODO!
+      - name: Replace the references in the quickstart example
+        run: |
+          for file in examples/quickstart/*.{txt,yaml,ipynb}; do
+            if [[ -f "$file" ]]; then
+              if [[ $file == *.txt || $file == *.yaml ]]; then
+                sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" "$file"
+              elif [[ $file == *.ipynb ]]; then
+                jq --arg old "$OLD_VERSION" --arg new ${{ env.VERSION }} \
+                'walk(if type == "string" then gsub($old; $new) else . end)' "$file" > tmp.$$.json && mv tmp.$$.json "$file"
+              fi
+            fi
+          done
+          git add examples/quickstart
 
       # 6. Generate and append release notes
       - name: Generate release notes
@@ -80,5 +88,4 @@ jobs:
 
       # Testing
       - name: Test if worked
-        run:
-          git status
+        run: git status
