@@ -53,6 +53,7 @@ jobs:
           alembic merge -m "Release" heads --rev-id ${{ env.VERSION }}
           scripts/format.sh
           git add src/zenml/zen_stores/migrations/versions
+
       # 5. Update the main files
       - name: Update main files
         run: |
@@ -60,6 +61,7 @@ jobs:
           echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
           sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
           git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
+
       # 5.5. Update the quickstart references
       - name: Replace the references in the quickstart example
         run: |
@@ -75,6 +77,7 @@ jobs:
             fi
           done
           git add examples/quickstart
+
       # 6. Generate and append release notes
       - name: Generate release notes
         env:
@@ -90,8 +93,8 @@ jobs:
         run: |
           git commit -m "Adding the new version to the necessary files."
           git push origin HEAD:${{ github.ref }} 
-  test-release:
-    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+  build-release:
+    if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
     runs-on: [ubuntu-latest]
     steps:
       # Check out the prepare-release branch
@@ -112,15 +115,51 @@ jobs:
           git config --global user.email "info@zenml.io"
           git config --global user.name "ZenML GmbH"
 
-      # Rebase the release-assistant branch
-      - name: Rebase the release assistant
+      # Build the base image
+      - name: Build base image
         run: |
-          git fetch origin 
-          git checkout feature/release-assistant
-          git rebase origin/misc/prepare-release-${{ env.VERSION }}
-          git push origin feature/release-assistant
-#      - name: Build base image
-#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
-#
-#      - name: Build server image
-#        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
+          docker build . \
+            --platform linux/amd64 \
+            -f docker/zenml-dev.Dockerfile 
+            -t dockerhub/prepare-release:base
+
+      # Build the server image
+      - name: Build server image
+        run: |
+          docker build . \
+            --platform linux/amd64 \
+            -f docker/zenml-server-dev.Dockerfile \
+            -t dockerhub/prepare-release:server
+
+      # Build the GCP quickstart image
+      - name: Build GCP quickstart image
+        run: |
+          docker build . \
+            --platform linux/amd64 \
+            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
+            --build-arg CLOUD_PROVIDER=gcp \
+            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+            -f docker/zenml-quickstart-dev.Dockerfile \
+            -t dockerhub/prepare-release:release-quickstart-gcp
+
+      # Build the AWS quickstart image
+      - name: Build AWS quickstart image
+        run: |
+          docker build . \
+            --platform linux/amd64 \
+            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
+            --build-arg CLOUD_PROVIDER=aws \
+            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+            -f docker/zenml-quickstart-dev.Dockerfile \
+            -t dockerhub/prepare-release:release-quickstart-aws
+
+      # Build the Azure quickstart image
+      - name: Build GCP quickstart image
+        run: |
+          docker build . \
+            --platform linux/amd64 \
+            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
+            --build-arg CLOUD_PROVIDER=azure \
+            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+            -f docker/zenml-quickstart-dev.Dockerfile \
+            -t dockerhub/prepare-release:release-quickstart-azure
