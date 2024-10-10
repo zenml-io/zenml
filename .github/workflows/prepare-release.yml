@@ -116,7 +116,7 @@ jobs:
       - name: Rebase the release assistant
         run: |
           git fetch origin 
-          git rebase "origin/misc/prepare-release-${{ env.VERSION }}"
+          git rebase "origin/misc/prepare-release-$VERSION"
           git push origin feature/release-assistant
 #      - name: Build base image
 #        run: docker build . --platform linux/amd64 -f docker/zenml-dev.Dockerfile -t dockerhub/prepare-release:base
