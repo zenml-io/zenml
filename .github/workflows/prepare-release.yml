@@ -1,0 +1,85 @@
+---
+name: prepare-release
+
+on:
+  pull_request:
+#    types:
+#      - opened
+    branches:
+      - 'misc/prepare-release-*'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      # 0. Check out the repository
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # 0. Extract the version name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # 0. Set up python
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.12'
+
+      # 0. Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+
+      # 0. Install ZenML
+      - name: Install ZenML and dependencies
+        shell: bash
+        run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
+          uv pip list
+          uv pip check || true
+
+#      # 1. Send a message to Discord to alert everyone
+#      - name: Send message to Discord
+#        run: |
+#          curl -H "Content-Type: application/json" \
+#            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
+#            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      # 4. Alembic merge
+      - name: Run Alembic merge
+        shell: bash
+        run: |
+          alembic merge -m "Release" heads --rev-id ${{ env.VERSION }}
+          scripts/format.sh
+          git add src/zenml/zen_stores/migrations/versions
+
+      # 5. Update the main files
+      - name: Update main files
+        run: |
+          OLD_VERSION=$(cat src/zenml/VERSION)
+          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+          sed -i "s/$OLD_VERSION/${{ env.VERSION }}/g" README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
+          git add README.md pyproject.toml src/zenml/VERSION src/zenml/zen_server/deploy/helm/Chart.yaml src/zenml/zen_server/deploy/helm/README.md
+
+      # 5.5. Update the quickstart references
+      # TODO!
+
+      # 6. Generate and append release notes
+      - name: Generate release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ env.VERSION }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ env.OLD_VERSION }} | jq -r '.body')
+          echo "$RELEASE_NOTES" >> RELEASE_NOTES.md
+          git add RELEASE_NOTES.md
+
+      # Testing
+      - name: Test if worked
+        run:
+          git diff
