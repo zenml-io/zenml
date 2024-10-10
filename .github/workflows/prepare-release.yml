@@ -8,7 +8,7 @@ on:
       - 'misc/prepare-release-*'
 
 jobs:
-  prepare:
+  prepare-release:
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -81,4 +81,4 @@ jobs:
       # Testing
       - name: Test if worked
         run:
-          git diff --color HEAD^ HEAD
+          git status
