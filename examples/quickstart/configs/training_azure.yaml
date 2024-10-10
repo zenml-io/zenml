@@ -3,7 +3,7 @@ enable_cache: True
 # Environment configuration
 settings:
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.67.0-py3.11-azure"
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.68.0rc0-py3.11-azure"
     skip_build: True
     requirements: requirements.txt
   # Uncomment the following lines to specify the accelerator for your azureml orchestrator

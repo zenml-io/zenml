@@ -5393,3 +5393,24 @@ The caveat is of course that this might involve a re-write of older ZenML code i
 Note: Future releases are also expected to be breaking. Until announced, please expect that upgrading ZenML versions may cause older-ZenML 
 generated pipelines to behave unexpectedly. 
 <!--  -->
+## What's Changed
+* Release 0.67.0 migration testing by @bcdurak in https://github.com/zenml-io/zenml/pull/3050
+* Prevent too large requests by @avishniakov in https://github.com/zenml-io/zenml/pull/3048
+* Fix Neptune linting after 1.12.0 release by @avishniakov in https://github.com/zenml-io/zenml/pull/3055
+* Fix Lightning Orchestrator (remove -y from pip install) by @wjayesh in https://github.com/zenml-io/zenml/pull/3058
+* Fix artifact pruning endpoint path by @schustmi in https://github.com/zenml-io/zenml/pull/3052
+* Update python versioning in docs by @avishniakov in https://github.com/zenml-io/zenml/pull/3059
+* Fix infinite loop while fetching artifact store in logs storage class by @avishniakov in https://github.com/zenml-io/zenml/pull/3061
+* Make sync a setting for sagemaker/azureml orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3062
+* Remove some deprecated features by @schustmi in https://github.com/zenml-io/zenml/pull/2926
+* Fix MySQL warning when filtering pipelines by latest run by @schustmi in https://github.com/zenml-io/zenml/pull/3051
+* Remove more deprecated stuff by @schustmi in https://github.com/zenml-io/zenml/pull/3063
+* Remove log versions from versioned buckets in S3 by @avishniakov in https://github.com/zenml-io/zenml/pull/3060
+* add docs on k8s per pod settings by @wjayesh in https://github.com/zenml-io/zenml/pull/3066
+* Remove Python 3.8 support by @strickvl in https://github.com/zenml-io/zenml/pull/3034
+* `register_artifact ` function by @avishniakov in https://github.com/zenml-io/zenml/pull/3053
+* Fix bad link in docs by @avishniakov in https://github.com/zenml-io/zenml/pull/3069
+* Fix model linkage for the lazy loading scenarios by @avishniakov in https://github.com/zenml-io/zenml/pull/3054
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.67.0...0.68.0rc0
