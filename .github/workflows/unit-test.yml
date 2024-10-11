@@ -60,6 +60,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
+      UV_CACHE_DIR: "$HOME/.cache/uv" 
 
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
@@ -108,12 +109,14 @@ jobs:
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
+          UV_CACHE_DIR: "$HOME/.cache/uv" 
         run: |
           bash scripts/lint.sh
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
         env:
+          UV_CACHE_DIR: "$HOME/.cache/uv" 
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
       - name: Setup tmate session after tests
