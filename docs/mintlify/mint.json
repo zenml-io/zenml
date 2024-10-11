@@ -711,8 +711,7 @@
     {
       "group": "📚 Code Docs",
       "pages": [
-        "sdk/python-client",
-        "sdk/client"
+        "sdk/python-client"
       ]
     },
     {
