@@ -156,10 +156,10 @@ pytest-rerunfailures = { version = ">=13.0", optional = true }
 pytest-split = { version = "^0.8.1", optional = true }
 
 # mkdocs including plugins
-mkdocs = { version = "^1.2.3", optional = true }
+mkdocs = { version = "^1.6.1", optional = true }
 mkdocs-material = { version = "^8.1.7", optional = true }
 mkdocs-awesome-pages-plugin = { version = "^2.6.1", optional = true }
-mkdocstrings = { version = "^0.17.0", optional = true }
+mkdocstrings = { version = "^0.26.1", optional = true }
 mike = { version = "^1.1.2", optional = true }
 
 # mypy type stubs
