@@ -109,16 +109,10 @@ class StepRunRequestFactory:
         )
         request.cache_key = cache_key
 
-        # TODO: Doing this here means this will always fail when running a
-        # template, as the step dependencies are not installed in that case.
-        # In this case, should we just not store the docstring/source code?
-        # Or should we somehow already include that in the deployment? That
-        # would make the deployment object even bigger than it already is
-        # though, as it would contain the code for all steps of the pipeline.
         (
             docstring,
             source_code,
-        ) = self._get_docstring_and_source_code(step=step)
+        ) = self._get_docstring_and_source_code(invocation_id=request.name)
 
         request.docstring = docstring
         request.source_code = source_code
@@ -152,11 +146,40 @@ class StepRunRequestFactory:
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
 
-    @staticmethod
     def _get_docstring_and_source_code(
+        self, invocation_id: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Get the docstring and source code for the step.
+
+        Args:
+            invocation_id: The step invocation ID for which to get the
+                docstring and source code.
+
+        Returns:
+            The docstring and source code of the step.
+        """
+        step = self.deployment.step_configurations[invocation_id]
+
+        try:
+            return self._get_docstring_and_source_code_from_step_instance(
+                step=step
+            )
+        except ImportError:
+            pass
+
+        # Failed to import the step instance, this is most likely because this
+        # code is running on the server as part of a template execution.
+        # We now try to fetch the docstring/source code from a step run of the
+        # deployment that was used to create the template
+        return self._try_to_get_docstring_and_source_code_from_template(
+            invocation_id=invocation_id
+        )
+
+    @staticmethod
+    def _get_docstring_and_source_code_from_step_instance(
         step: "Step",
     ) -> Tuple[Optional[str], str]:
-        """Gets the docstring and source code of a step.
+        """Get the docstring and source code of a step.
 
         Returns:
             The docstring and source code of a step.
@@ -174,6 +197,38 @@ class StepRunRequestFactory:
             source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         return docstring, source_code
+
+    def _try_to_get_docstring_and_source_code_from_template(
+        self, invocation_id: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Try to get the docstring and source code via a potential template.
+
+        Args:
+            invocation_id: The step invocation ID for which to get the
+                docstring and source code.
+
+        Returns:
+            The docstring and source code of the step.
+        """
+        if template_id := self.pipeline_run.template_id:
+            template = Client().get_run_template(template_id)
+            if (
+                deployment_id := template.source_deployment.id
+                if template.source_deployment
+                else None
+            ):
+                steps = Client().list_run_steps(
+                    deployment_id=deployment_id,
+                    name=invocation_id,
+                    size=1,
+                    hydrate=True,
+                )
+
+                if len(steps) > 0:
+                    step = steps[0]
+                    return step.docstring, step.source_code
+
+        return None, None
 
 
 def find_cacheable_invocation_candidates(
@@ -241,7 +296,7 @@ def create_cached_step_runs(
             finished_invocations=cached_invocations,
         )
         # We've already checked these invocations and were not able to cache
-        # them, no need to check them again
+        # them -> no need to check them again
         - visited_invocations
     ):
         for invocation_id in cache_candidates:
@@ -348,7 +403,9 @@ def get_or_create_model_version_for_pipeline_run(
     # The model version should be created as part of this run
     # -> We first check if it was already created as part of this run, and if
     # not we do create it. If this is running in two parallel steps, we might
-    # run into issues that this will create two versions
+    # run into issues that this will create two versions. Ideally, all model
+    # versions required for a pipeline run and its steps could be created
+    # server-side at run creation time before the first step starts.
     if model_version := get_model_version_created_by_pipeline_run(
         model_name=model.name, pipeline_run=pipeline_run
     ):
