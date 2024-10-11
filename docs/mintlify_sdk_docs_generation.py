@@ -57,7 +57,9 @@ def generate_markdown_files(
             if file.endswith(".mdx"):
                 with open(os.path.join(root, file), "r") as f:
                     content = f.read()
-                    content = content.replace("<!-- markdownlint-disable -->", "")
+                    content = content.replace(
+                        "<!-- markdownlint-disable -->", ""
+                    )
                 with open(os.path.join(root, file), "w") as f:
                     f.write(content)
 
@@ -117,22 +119,31 @@ def update_mint_json(mint_json_location: str, output_files_path: str) -> None:
         mint_json = json.load(f)
 
     # get all the .mdx files in the output_files_path
-    mdx_files = [f for f in os.listdir(os.path.join(output_files_path, "integrations")) if f.endswith(".mdx")]
+    mdx_files = [
+        f
+        for f in os.listdir(os.path.join(output_files_path, "integrations"))
+        if f.endswith(".mdx")
+    ]
 
-    files_for_code_docs_group = sorted([
-        "sdk/python-client",
-        *[f"sdk/integrations/{mdx_file[:-4]}" for mdx_file in mdx_files],
-    ])
+    files_for_code_docs_group = sorted(
+        [
+            "sdk/python-client",
+            *[f"sdk/integrations/{mdx_file[:-4]}" for mdx_file in mdx_files],
+        ]
+    )
 
     # Find the "📚 Code Docs" group in the navigation and update its pages
     for item in mint_json["navigation"]:
-        if item.get("group") == "\ud83d\udcda Code Docs":
+        if "Code Docs" in item.get("group", ""):
             item["pages"] = files_for_code_docs_group
             break
     else:
         # If the group doesn't exist, create it
         mint_json["navigation"].append(
-            {"group": "\ud83d\udcda Code Docs", "pages": files_for_code_docs_group}
+            {
+                "group": "\ud83d\udcda Code Docs",
+                "pages": files_for_code_docs_group,
+            }
         )
 
     # write the updated mint.json file

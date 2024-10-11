@@ -11,9 +11,14 @@ import sys
 import os
 import pkgutil
 import re
+import warnings
+from sqlalchemy import MetaData
+from sqlalchemy.exc import SAWarning
 import subprocess
 import types
 from pydoc import locate
+from sys_modules_mock import DocsMocker, setup_mocks
+
 from typing import Any, Callable, Dict, List, Optional
 
 _RE_BLOCKSTART_LIST = re.compile(
@@ -98,6 +103,7 @@ nav:
     - ...
 """
 
+setup_mocks()
 
 def _get_function_signature(
     function: Callable,
@@ -1048,14 +1054,30 @@ def generate_docs(
             )
             assert spec is not None
             mod = importlib.util.module_from_spec(spec)
+            
             try:
+                # Apply mocking before executing the module
+                original_modules = dict(sys.modules)
+                sys.modules.update({mod.__name__: mod})
+                
                 spec.loader.exec_module(mod)  # type: ignore
-            except ModuleNotFoundError:
-                print(f"Warning: Could not load all dependencies for {path}. Continuing with partial information.")
+            except ModuleNotFoundError as e:
+                print(f"Warning: Could not load all dependencies for {path}. Mocking missing module.")
+                missing_module = str(e).split("'")[1]
+                sys.modules[missing_module] = DocsMocker(name=missing_module)
+                # Try to execute the module again
+                try:
+                    spec.loader.exec_module(mod)  # type: ignore
+                except Exception as e:
+                    print(f"Error loading module {path} even after mocking: {str(e)}")
+                    # continue  # Skip this module and continue with the next one
             except Exception as e:
                 print(f"Error loading module {path}: {str(e)}")
-                continue  # Skip this module and continue with the next one
-
+                # continue  # Skip this module and continue with the next one
+            finally:
+                # Restore original sys.modules
+                sys.modules.clear()
+                sys.modules.update(original_modules)
 
             if mod:
                 module_md = generator.module2md(mod, is_mdx=is_mdx)
