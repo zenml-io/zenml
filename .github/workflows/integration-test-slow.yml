@@ -127,6 +127,11 @@ jobs:
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-local-path: "$HOME/.cache/uv"
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
