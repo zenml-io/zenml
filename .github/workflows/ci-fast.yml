@@ -24,15 +24,12 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-local-path: "$HOME/.cache/uv"
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.10'
       - name: Install darglint using uv
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
@@ -52,7 +49,6 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-local-path: "$HOME/.cache/uv"
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.0.0
         with:
@@ -80,7 +76,6 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-local-path: "$HOME/.cache/uv"
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.0.0
         with:

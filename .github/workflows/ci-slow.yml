@@ -157,7 +157,6 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-local-path: "$HOME/.cache/uv"
       - name: Create virtual environment
         run: |
           uv venv

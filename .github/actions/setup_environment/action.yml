@@ -33,11 +33,18 @@ runs:
       uses: astral-sh/setup-uv@v3
       with:
         enable-cache: true
-        cache-local-path: "$HOME/.cache/uv"
     - name: Set up Python
       uses: actions/setup-python@v5.0.0
       with:
         python-version: ${{ inputs.python-version }}
+    - name: Restore uv cache
+      uses: actions/cache@v4
+      with:
+        path: "$HOME/.cache/uv"
+        key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        restore-keys: |
+          uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          uv-${{ runner.os }}-${{ inputs.python-version }}
     - name: Delete error-causing bash
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
