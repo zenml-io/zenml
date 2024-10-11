@@ -152,14 +152,14 @@ jobs:
         run: |
           docker build . \
             --platform linux/amd64 \
-            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base \
+            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
             --build-arg CLOUD_PROVIDER=aws \
             --build-arg ZENML_BRANCH="${{ github.ref }}" \
             -f docker/zenml-quickstart-dev.Dockerfile \
             -t zenmldocker/prepare-release:quickstart-aws
 
       # Build the Azure quickstart image
-      - name: Build GCP quickstart image
+      - name: Build Azure quickstart image
         run: |
           docker build . \
             --platform linux/amd64 \
