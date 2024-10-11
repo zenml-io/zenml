@@ -199,7 +199,7 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -280,7 +280,7 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.11', '3.12']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql

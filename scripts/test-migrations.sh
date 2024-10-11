@@ -311,7 +311,7 @@ echo "Migration type: $MIGRATION_TYPE"
 # Start completely fresh
 rm -rf "$ZENML_CONFIG_PATH"
 
-pip install -U uv
+#pip install -U uv
 
 # Start the database
 start_db

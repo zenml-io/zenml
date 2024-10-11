@@ -16,7 +16,7 @@ concurrency:
 jobs:
   docstring-check:
     if: github.event.pull_request.draft == false
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -32,7 +32,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing-random:
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -95,6 +95,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   custom-arc-runner-set-integration-test:
+    needs: custom-ubuntu-setup-and-unit-test
     if: github.event.pull_request.draft == false
     strategy:
       matrix:

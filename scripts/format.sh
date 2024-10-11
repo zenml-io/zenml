@@ -34,7 +34,7 @@ if [ "$SKIP_UPGRADE" = false ]; then
     RED='\033[0;31m'
     NC='\033[0m'
     
-    pip install uv -q
+    #pip install uv -q
     uv_output=$(uv pip install ".[dev]" --dry-run --upgrade --system 2>&1 | grep "+")
     ruff_version_change=$(echo "$uv_output" | grep "+ ruff")
     yamlfix_version_change=$(echo "$uv_output" | grep "+ yamlfix")
