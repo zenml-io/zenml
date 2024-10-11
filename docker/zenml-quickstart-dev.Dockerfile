@@ -1,6 +1,6 @@
 ARG BASE_IMAGE="zenmldocker/prepare-release:base"
 
-FROM BASE_IMAGE AS base
+FROM $BASE_IMAGE AS base
 
 # Set the working directory
 WORKDIR /app
