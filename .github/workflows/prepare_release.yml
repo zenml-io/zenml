@@ -120,8 +120,9 @@ jobs:
         run: |
           docker build . \
             --platform linux/amd64 \
-            -f docker/zenml-dev.Dockerfile 
+            -f docker/zenml-dev.Dockerfile \
             -t zenmldocker/prepare-release:base
+          docker images
 
       # Build the server image
       - name: Build server image
