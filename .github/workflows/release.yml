@@ -21,9 +21,10 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-local-path: "$HOME/.cache/uv"
       - name: Create virtual environment
         run: |
           source $HOME/.cargo/env
