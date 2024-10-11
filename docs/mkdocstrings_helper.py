@@ -164,10 +164,12 @@ def generate_docs(
     # Set up output paths for the generated md files
     api_doc_file_dir = output_path / API_DOCS
     cli_dev_doc_file_dir = output_path / API_DOCS / "cli"
+    client_dev_doc_file_dir = output_path / API_DOCS / "client"
     integrations_dev_doc_file_dir = output_path / INTEGRATION_DOCS
 
     api_doc_file_dir.mkdir(parents=True, exist_ok=True)
     cli_dev_doc_file_dir.mkdir(parents=True, exist_ok=True)
+    client_dev_doc_file_dir.mkdir(parents=True, exist_ok=True)
     integrations_dev_doc_file_dir.mkdir(parents=True, exist_ok=True)
 
     if not ignored_modules:
@@ -176,8 +178,8 @@ def generate_docs(
     # The Cli docs are treated differently as the user facing docs need to be
     # split from the developer-facing docs
     ignored_modules.append("cli")
+    ignored_modules.append("client")
     ignored_modules.append("integrations")
-
     # Validate that all docstrings conform to pydocstyle rules
     if (
         validate
