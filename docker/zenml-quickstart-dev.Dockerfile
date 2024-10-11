@@ -5,7 +5,6 @@ FROM $BASE_IMAGE AS base
 # Set the working directory
 WORKDIR /app
 
-# Redeclare ARGs
 ARG ZENML_BRANCH
 ARG CLOUD_PROVIDER
 

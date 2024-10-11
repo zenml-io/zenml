@@ -4,6 +4,10 @@ on:
   # TODO: Change this back into pull_request
   push:
     branches: [misc/prepare-release-*]
+
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   prepare-release:
     if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
@@ -143,31 +147,43 @@ jobs:
             -f docker/zenml-quickstart-dev.Dockerfile \
             -t zenmldocker/prepare-release:quickstart-gcp
 
-#      # Build the AWS quickstart image
-#      - name: Build AWS quickstart image
-#        run: |
-#          docker build . \
-#            --platform linux/amd64 \
-#            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base \
-#            --build-arg CLOUD_PROVIDER=aws \
-#            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-#            -f docker/zenml-quickstart-dev.Dockerfile \
-#            -t zenmldocker/prepare-release:quickstart-aws
-#
-#      # Build the Azure quickstart image
-#      - name: Build GCP quickstart image
-#        run: |
-#          docker build . \
-#            --platform linux/amd64 \
-#            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
-#            --build-arg CLOUD_PROVIDER=azure \
-#            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-#            -f docker/zenml-quickstart-dev.Dockerfile \
-#            -t zenmldocker/prepare-release:quickstart-azure
-
-      - name: test
+      # Build the AWS quickstart image
+      - name: Build AWS quickstart image
         run: |
-          docker images
+          docker build . \
+            --platform linux/amd64 \
+            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base \
+            --build-arg CLOUD_PROVIDER=aws \
+            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+            -f docker/zenml-quickstart-dev.Dockerfile \
+            -t zenmldocker/prepare-release:quickstart-aws
+
+      # Build the Azure quickstart image
+      - name: Build GCP quickstart image
+        run: |
+          docker build . \
+            --platform linux/amd64 \
+            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
+            --build-arg CLOUD_PROVIDER=azure \
+            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+            -f docker/zenml-quickstart-dev.Dockerfile \
+            -t zenmldocker/prepare-release:quickstart-azure
+
+      # Login to docker hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
+
+      # Push the docker images
+      - name: Push the images
+        run: |
+          docker push zenmldocker/prepare-release:base
+          docker push zenmldocker/prepare-release:server
+          docker push zenmldocker/prepare-release:quickstart-gcp
+          docker push zenmldocker/prepare-release:quickstart-azure
 
   test-release:
     if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
