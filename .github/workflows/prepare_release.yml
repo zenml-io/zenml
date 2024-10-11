@@ -121,7 +121,7 @@ jobs:
           docker build . \
             --platform linux/amd64 \
             -f docker/zenml-dev.Dockerfile 
-            -t dockerhub/prepare-release:base
+            -t zenmldocker/prepare-release:base
 
       # Build the server image
       - name: Build server image
@@ -129,40 +129,44 @@ jobs:
           docker build . \
             --platform linux/amd64 \
             -f docker/zenml-server-dev.Dockerfile \
-            -t dockerhub/prepare-release:server
+            -t zenmldocker/prepare-release:server
 
       # Build the GCP quickstart image
       - name: Build GCP quickstart image
         run: |
           docker build . \
             --platform linux/amd64 \
-            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
+            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
             --build-arg CLOUD_PROVIDER=gcp \
             --build-arg ZENML_BRANCH="${{ github.ref }}" \
             -f docker/zenml-quickstart-dev.Dockerfile \
-            -t dockerhub/prepare-release:release-quickstart-gcp
+            -t zenmldocker/prepare-release:quickstart-gcp
 
-      # Build the AWS quickstart image
-      - name: Build AWS quickstart image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
-            --build-arg CLOUD_PROVIDER=aws \
-            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-            -f docker/zenml-quickstart-dev.Dockerfile \
-            -t dockerhub/prepare-release:release-quickstart-aws
+#      # Build the AWS quickstart image
+#      - name: Build AWS quickstart image
+#        run: |
+#          docker build . \
+#            --platform linux/amd64 \
+#            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base \
+#            --build-arg CLOUD_PROVIDER=aws \
+#            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+#            -f docker/zenml-quickstart-dev.Dockerfile \
+#            -t zenmldocker/prepare-release:quickstart-aws
+#
+#      # Build the Azure quickstart image
+#      - name: Build GCP quickstart image
+#        run: |
+#          docker build . \
+#            --platform linux/amd64 \
+#            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
+#            --build-arg CLOUD_PROVIDER=azure \
+#            --build-arg ZENML_BRANCH="${{ github.ref }}" \
+#            -f docker/zenml-quickstart-dev.Dockerfile \
+#            -t zenmldocker/prepare-release:quickstart-azure
 
-      # Build the Azure quickstart image
-      - name: Build GCP quickstart image
+      - name: test
         run: |
-          docker build . \
-            --platform linux/amd64 \
-            --build-arg BASE_IMAGE="zenmldocker/prepare-release:base" \
-            --build-arg CLOUD_PROVIDER=azure \
-            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-            -f docker/zenml-quickstart-dev.Dockerfile \
-            -t dockerhub/prepare-release:release-quickstart-azure
+          docker images
 
   test-release:
     if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
