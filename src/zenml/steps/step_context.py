@@ -24,7 +24,7 @@ from typing import (
     Type,
 )
 
-from zenml.exceptions import EntityExistsError, StepContextError
+from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -123,6 +123,9 @@ class StepContext(metaclass=SingletonMetaClass):
         except KeyError:
             pass
         self.step_run = step_run
+        self.model_version = (
+            step_run.model_version or pipeline_run.model_version
+        )
 
         # Get the stack that we are running in
         self._stack = Client().active_stack
@@ -179,18 +182,14 @@ class StepContext(metaclass=SingletonMetaClass):
             StepContextError: If no `Model` object was specified for the step
                 or pipeline.
         """
-        model_version = (
-            self.step_run.model_version or self.pipeline_run.model_version
-        )
-
-        if not model_version:
+        if not self.model_version:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
                 f"run '{self.pipeline_run.id}': No model has been specified "
                 "the step or pipeline."
             )
 
-        return model_version.to_model_class()
+        return self.model_version.to_model_class()
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:

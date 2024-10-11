@@ -13,19 +13,16 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Union, Any
-from zenml.utils.pydantic_utils import before_validator_handler
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-from zenml.enums import ModelStages
-from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.steps.step_context import get_step_context
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
-    from zenml.model.model import Model
+    pass
 
 
 logger = get_logger(__name__)
@@ -44,7 +41,6 @@ class ArtifactConfig(BaseModel):
             name="my_artifact",  # override the default artifact name
             version=42,  # set a custom version
             tags=["tag1", "tag2"],  # set custom tags
-            model_name="my_model",  # link the artifact to a model
         )
     ]:
         return ...
@@ -54,6 +50,7 @@ class ArtifactConfig(BaseModel):
         name: The name of the artifact.
         version: The version of the artifact.
         tags: The tags of the artifact.
+        run_metadata: Metadata to add to the artifact.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """

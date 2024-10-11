@@ -246,7 +246,7 @@ def save_artifact(
 
     if manual_save:
         _link_artifact_version_to_the_step_and_model(
-            response=response,
+            artifact_version=response,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         )
@@ -347,7 +347,7 @@ def register_artifact(
         )
 
     _link_artifact_version_to_the_step_and_model(
-        response=response,
+        artifact_version=response,
         is_model_artifact=is_model_artifact,
         is_deployment_artifact=is_deployment_artifact,
     )
@@ -763,7 +763,7 @@ def _create_artifact_version_with_retries(
 
 
 def _link_artifact_version_to_the_step_and_model(
-    response: ArtifactVersionResponse,
+    artifact_version: ArtifactVersionResponse,
     is_model_artifact: bool,
     is_deployment_artifact: bool,
 ) -> None:
@@ -786,19 +786,30 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={response.artifact.name: response.id}
+                saved_artifact_versions={
+                    artifact_version.artifact.name: artifact_version.id
+                }
             ),
         )
         error_message = "model"
-        model = step_context.model
-        if model:
-            from zenml.model.utils import link_artifact_to_model
+        model_version = (
+            step_context.step_run.model_version
+            or step_context.pipeline_run.model_version
+        )
+        if model_version:
+            from zenml.artifacts.artifact_config import ArtifactConfig
+            from zenml.orchestrators.step_run_utils import (
+                link_artifact_version_to_model_version,
+            )
 
-            link_artifact_to_model(
-                artifact_version_id=response.id,
-                model=model,
+            artifact_config = ArtifactConfig(
                 is_model_artifact=is_model_artifact,
                 is_deployment_artifact=is_deployment_artifact,
+            )
+            link_artifact_version_to_model_version(
+                artifact_version=artifact_version,
+                model_version=model_version,
+                artifact_config=artifact_config,
             )
     except (RuntimeError, StepContextError):
         logger.debug(f"Unable to link saved artifact to {error_message}.")

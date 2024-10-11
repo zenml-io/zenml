@@ -986,9 +986,7 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[str, Dict[str, Union[Source, Tuple[Source, ...]]]] = (
-            defaultdict(dict)
-        )
+        outputs: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
         for (
             output_name,
@@ -997,6 +995,8 @@ To avoid this consider setting step parameters only in one place (config or code
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
+            if artifact_config := output_annotation.artifact_config:
+                outputs[output_name]["artifact_config"] = artifact_config
 
             if output.materializer_source:
                 # The materializer source was configured by the user. We

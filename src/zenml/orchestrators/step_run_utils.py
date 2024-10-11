@@ -15,12 +15,15 @@ from datetime import datetime
 from typing import Optional, Set, Tuple
 
 from zenml import Model
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactVersionResponse,
+    ModelVersionArtifactRequest,
     ModelVersionPipelineRunRequest,
     ModelVersionResponse,
     PipelineDeploymentResponse,
@@ -280,7 +283,7 @@ def create_cached_step_runs(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
 
-    pipeline_model, pipeline_run = prepare_pipeline_run_model(
+    pipeline_model_version, pipeline_run = prepare_pipeline_run_model_version(
         pipeline_run=pipeline_run
     )
 
@@ -324,28 +327,16 @@ def create_cached_step_runs(
             # state
             pipeline_run = Client().get_pipeline_run(pipeline_run.id)
 
-            step_model, step_run = prepare_step_run_model(
+            step_model_version, step_run = prepare_step_run_model_version(
                 step_run=step_run, pipeline_run=pipeline_run
             )
 
-            model = step_model or pipeline_model
-
-            # TODO: This function also imports the step code, which means it
-            # will fail when running a template. The only reason it imports
-            # the step is to load the artifact configs to check whether a
-            # different model is specified for a single output. We can go two
-            # ways here I think:
-            # - Store the artifact config in the step configuration of the
-            #   deployment. This makes sense in any case I think, also for the
-            #   comment below about linking models to the pipeline run.
-            # - Get rid of having a separate model for an output. Not sure what
-            #   the use case of that actually is and whether it warrants all
-            #   this complexity.
-            utils._link_cached_artifacts_to_model(
-                model_from_context=model,
-                step_run=step_run_request,
-                step_source=step_run.spec.source,
-            )
+            if model_version := step_model_version or pipeline_model_version:
+                link_output_artifacts_to_model_version(
+                    artifacts=step_run.outputs,
+                    output_configurations=step_run.config.outputs,
+                    model_version=model_version,
+                )
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
@@ -435,16 +426,16 @@ def get_model_version_created_by_pipeline_run(
     return None
 
 
-def prepare_pipeline_run_model(
+def prepare_pipeline_run_model_version(
     pipeline_run: PipelineRunResponse,
-) -> Tuple[Optional[Model], PipelineRunResponse]:
-    """Prepare the model for a pipeline run.
+) -> Tuple[Optional[ModelVersionResponse], PipelineRunResponse]:
+    """Prepare the model version for a pipeline run.
 
     Args:
-        pipeline_run: The pipeline run for which to prepare the model.
+        pipeline_run: The pipeline run for which to prepare the model version.
 
     Returns:
-        The prepared model and the updated pipeline run.
+        The prepared model version and the updated pipeline run.
     """
     model_version = None
 
@@ -463,21 +454,20 @@ def prepare_pipeline_run_model(
         )
         log_model_version_dashboard_url(model_version)
 
-    model = model_version.to_model_class() if model_version else None
-    return model, pipeline_run
+    return model_version, pipeline_run
 
 
-def prepare_step_run_model(
+def prepare_step_run_model_version(
     step_run: StepRunResponse, pipeline_run: PipelineRunResponse
-) -> Tuple[Optional[Model], StepRunResponse]:
-    """Prepare the model for a step run.
+) -> Tuple[Optional[ModelVersionResponse], StepRunResponse]:
+    """Prepare the model version for a step run.
 
     Args:
-        step_run: The step run for which to prepare the model.
+        step_run: The step run for which to prepare the model version.
         pipeline_run: The pipeline run of the step.
 
     Returns:
-        The prepared model and the updated step run.
+        The prepared model version and the updated step run.
     """
     model_version = None
 
@@ -497,8 +487,7 @@ def prepare_step_run_model(
         if created:
             log_model_version_dashboard_url(model_version)
 
-    model = model_version.to_model_class() if model_version else None
-    return model, step_run
+    return model_version, step_run
 
 
 def log_model_version_dashboard_url(
@@ -541,4 +530,93 @@ def link_pipeline_run_to_model_version(
             model=model_version.model.id,
             model_version=model_version.id,
         )
+    )
+
+
+from typing import Dict, Mapping
+
+from zenml.config.step_configurations import ArtifactConfiguration
+
+
+def link_output_artifacts_to_model_version(
+    artifacts: Dict[str, ArtifactVersionResponse],
+    output_configurations: Mapping[str, ArtifactConfiguration],
+    model_version: ModelVersionResponse,
+) -> None:
+    """Link the outputs of a step run to a model version.
+
+    Args:
+        step_run: The step run for which to link the output artifacts.
+        model_version: The model version to link.
+    """
+    for output_name, output_artifact in artifacts.items():
+        artifact_config = None
+        if output_config := output_configurations.get(output_name, None):
+            artifact_config = output_config.artifact_config
+
+        link_artifact_version_to_model_version(
+            artifact_version=output_artifact,
+            model_version=model_version,
+            artifact_config=artifact_config,
+        )
+
+
+def link_artifact_version_to_model_version(
+    artifact_version: ArtifactVersionResponse,
+    model_version: ModelVersionResponse,
+    artifact_config: Optional[ArtifactConfig] = None,
+) -> None:
+    """Link an artifact version to a pipeline version.
+
+    Args:
+        artifact_version: The artifact version to link.
+        model_version: The model version to link.
+        artifact_config: Output artifact configuration.
+    """
+    if artifact_config:
+        is_model_artifact = artifact_config.is_model_artifact
+        is_deployment_artifact = artifact_config.is_deployment_artifact
+    else:
+        is_model_artifact = False
+        is_deployment_artifact = False
+
+    client = Client()
+    client.zen_store.create_model_version_artifact_link(
+        ModelVersionArtifactRequest(
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+            artifact_version=artifact_version.id,
+            model=model_version.model.id,
+            model_version=model_version.id,
+            is_model_artifact=is_model_artifact,
+            is_deployment_artifact=is_deployment_artifact,
+        )
+    )
+
+
+def link_artifact_to_model(
+    artifact_version: ArtifactVersionResponse,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
+) -> None:
+    from zenml import get_step_context
+    from zenml.exceptions import StepContextError
+
+    try:
+        step_context = get_step_context()
+        model_version = (
+            step_context.step_run.model_version
+            or step_context.pipeline_run.model_version
+        )
+    except StepContextError:
+        raise RuntimeError()
+
+    artifact_config = ArtifactConfig(
+        is_model_artifact=is_model_artifact,
+        is_deployment_artifact=is_deployment_artifact,
+    )
+    link_artifact_version_to_model_version(
+        artifact_version=artifact_version,
+        model_version=model_version,
+        artifact_config=artifact_config,
     )

@@ -8107,7 +8107,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model(include_metadata=True)
+            return existing_step_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     @staticmethod
     def _set_run_step_parent_step(

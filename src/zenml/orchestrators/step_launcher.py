@@ -180,8 +180,10 @@ class StepLauncher:
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
 
-                pipeline_model, pipeline_run = (
-                    step_run_utils.prepare_pipeline_run_model(pipeline_run)
+                pipeline_model_version, pipeline_run = (
+                    step_run_utils.prepare_pipeline_run_model_version(
+                        pipeline_run
+                    )
                 )
 
                 request_factory = step_run_utils.StepRunRequestFactory(
@@ -208,8 +210,8 @@ class StepLauncher:
                         step_run_request
                     )
 
-                    step_model, step_run = (
-                        step_run_utils.prepare_step_run_model(
+                    step_model_version, step_run = (
+                        step_run_utils.prepare_step_run_model_version(
                             step_run=step_run, pipeline_run=pipeline_run
                         )
                     )
@@ -286,12 +288,15 @@ class StepLauncher:
                     logger.info(
                         f"Using cached version of step `{self._step_name}`."
                     )
-                    model = step_model or pipeline_model
-                    orchestrator_utils._link_cached_artifacts_to_model(
-                        model_from_context=model,
-                        step_run=step_run_request,
-                        step_source=self._step.spec.source,
-                    )
+                    if (
+                        model_version := step_model_version
+                        or pipeline_model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            output_configurations=step_run.config.outputs,
+                            model_version=model_version,
+                        )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")

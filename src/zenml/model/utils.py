@@ -24,83 +24,11 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
 from zenml.models import (
-    ModelVersionArtifactRequest,
     ServiceUpdate,
 )
 from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
-
-
-def link_step_artifacts_to_model(
-    artifact_version_ids: Dict[str, UUID],
-) -> None:
-    """Links the output artifacts of a step to the model.
-
-    Args:
-        artifact_version_ids: The IDs of the published output artifacts.
-
-    Raises:
-        RuntimeError: If called outside of a step.
-    """
-    try:
-        step_context = get_step_context()
-    except StepContextError:
-        raise RuntimeError(
-            "`link_step_artifacts_to_model` can only be called from within a "
-            "step."
-        )
-    try:
-        model = step_context.model
-    except StepContextError:
-        model = None
-        logger.debug("No model context found, unable to auto-link artifacts.")
-
-    for artifact_name, artifact_version_id in artifact_version_ids.items():
-        artifact_config = step_context._get_output(
-            artifact_name
-        ).artifact_config
-
-        if artifact_config is None and model is not None:
-            artifact_config = ArtifactConfig(name=artifact_name)
-
-        if artifact_config:
-            link_artifact_config_to_model(
-                artifact_config=artifact_config,
-                artifact_version_id=artifact_version_id,
-                model=model,
-            )
-
-
-def link_artifact_config_to_model(
-    artifact_config: ArtifactConfig,
-    artifact_version_id: UUID,
-    model: "Model",
-) -> None:
-    """Link an artifact config to its model version.
-
-    Args:
-        artifact_config: The artifact config to link.
-        artifact_version_id: The ID of the artifact to link.
-        model: The model to link the artifact to.
-    """
-    client = Client()
-
-    logger.debug(
-        f"Linking artifact `{artifact_config.name}` to model "
-        f"`{model.name}` version `{model.version}` using config "
-        f"`{artifact_config}`."
-    )
-    request = ModelVersionArtifactRequest(
-        user=client.active_user.id,
-        workspace=client.active_workspace.id,
-        artifact_version=artifact_version_id,
-        model=model.model_id,
-        model_version=model.id,
-        is_model_artifact=artifact_config.is_model_artifact,
-        is_deployment_artifact=artifact_config.is_deployment_artifact,
-    )
-    client.zen_store.create_model_version_artifact_link(request)
 
 
 def log_model_metadata(
