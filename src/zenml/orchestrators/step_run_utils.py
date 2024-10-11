@@ -483,6 +483,12 @@ def log_model_version_dashboard_url(
 def link_pipeline_run_to_model_version(
     pipeline_run: PipelineRunResponse, model_version: ModelVersionResponse
 ) -> None:
+    """Link a pipeline run to a model version.
+
+    Args:
+        pipeline_run: The pipeline run to link.
+        model_version: The model version to link.
+    """
     client = Client()
     client.zen_store.create_model_version_pipeline_run_link(
         ModelVersionPipelineRunRequest(
