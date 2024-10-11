@@ -1,10 +1,5 @@
-"""Main module for markdown generation.
+"""Main module for markdown generation."""
 
-Code comes from https://github.com/guardrails-ai/lazydocs/tree/mdx
-"""
-
-
-import contextlib
 import datetime
 import importlib
 import importlib.util
@@ -35,6 +30,10 @@ _IGNORE_GENERATION_INSTRUCTION = "lazydocs: ignore"
 
 _SOURCE_BADGE_TEMPLATE = """
 <a href="{path}"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+"""
+
+_MDX_SOURCE_BADGE_TEMPLATE = """
+<a href="{path}"><img align="right" style={{{{"float":"right"}}}} src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
 """
 
 _SEPARATOR = """
@@ -128,7 +127,9 @@ def _get_function_signature(
     if hasattr(function, "__name__"):
         name_parts.append(function.__name__)
     else:
-        name_parts.extend((type(function).__name__, "__call__"))
+        name_parts.append(type(function).__name__)
+        name_parts.append("__call__")
+
         function = function.__call__  # type: ignore
     name = ".".join(name_parts)
 
@@ -143,8 +144,10 @@ def _get_function_signature(
             return_type = str(inspect.signature(function).return_annotation)
             if return_type.startswith("<class"):
                 # Base class -> get real name
-                with contextlib.suppress(Exception):
+                try:
                     return_type = inspect.signature(function).return_annotation.__name__
+                except Exception:
+                    pass
             # Remove all typing path prefixes
             return_type = return_type.replace("typing.", "")
             if remove_package:
@@ -173,7 +176,7 @@ def _get_function_signature(
                     argument = "=".join(argument_split)
             arguments.append(argument)
     else:
-        print(f"Seems like function {name}" + " does not have any signature")
+        print("Seems like function " + name + " does not have any signature")
 
     signature = name + "("
     if wrap_arguments:
@@ -201,6 +204,7 @@ def to_md_file(
     out_path: str = ".",
     watermark: bool = True,
     disable_markdownlint: bool = True,
+    is_mdx: bool = False
 ) -> None:
     """Creates an API docs file from a provided text.
 
@@ -215,7 +219,15 @@ def to_md_file(
         # Dont write empty files
         return
 
-    md_file = filename if filename.endswith(".md") else f"{filename}.md"
+    md_file = filename
+    
+    if is_mdx:
+        if not filename.endswith(".mdx"):
+            md_file = filename + ".mdx"
+    else:
+        if not filename.endswith(".md"):
+            md_file = filename + ".md"
+
     if disable_markdownlint:
         markdown_str = "<!-- markdownlint-disable -->\n" + markdown_str
 
@@ -224,7 +236,7 @@ def to_md_file(
             date=datetime.date.today().strftime("%d %b %Y")
         )
 
-    print(f"Writing {md_file}.")
+    print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:
         f.write(markdown_str)
 
@@ -296,7 +308,7 @@ def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
             return True
 
         # Check is module is subpackage of an ignored package
-        if module_name.startswith(f"{ignored_module}."):
+        if module_name.startswith(ignored_module + "."):
             return True
 
     return False
@@ -390,7 +402,11 @@ def _doc2md(obj: Any) -> str:
                 out.append("\n>")
         elif line.strip().startswith("```"):
             # Code snippet is used
-            md_code_snippet = not md_code_snippet
+            if md_code_snippet:
+                md_code_snippet = False
+            else:
+                md_code_snippet = True
+
             out.append(line)
         elif line.strip().endswith("::"):
             # Literal Block Support: https://docutils.sourceforge.io/docs/user/rst/quickref.html#literal-blocks
@@ -437,7 +453,7 @@ def _doc2md(obj: Any) -> str:
             out.append("\n")
         elif not line and not quote_block:
             out.append("\n\n")
-        elif not line:
+        elif not line and quote_block:
             out.append("\n>")
         else:
             out.append(" ")
@@ -515,7 +531,7 @@ class MarkdownGenerator(object):
 
         return relative_path
 
-    def func2md(self, func: Callable, clsname: str = "", depth: int = 3) -> str:
+    def func2md(self, func: Callable, clsname: str = "", depth: int = 3, is_mdx: bool = False) -> str:
         """Takes a function (or method) and generates markdown docs.
 
         Args:
@@ -592,15 +608,18 @@ class MarkdownGenerator(object):
             header=header,
             funcdef=funcdef,
             func_type=func_type,
-            doc=doc or "*No documentation found.*",
+            doc=doc if doc else "*No documentation found.*",
         )
 
         if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            if is_mdx:
+                markdown = _MDX_SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            else:    
+                markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
-    def class2md(self, cls: Any, depth: int = 2) -> str:
+    def class2md(self, cls: Any, depth: int = 2, is_mdx: bool = False) -> str:
         """Takes a class and creates markdown text to document its methods and variables.
 
         Args:
@@ -629,7 +648,7 @@ class MarkdownGenerator(object):
                 "name": header,
                 "full_name": header,
                 "module": modname,
-                "anchor_tag": _get_anchor_tag(f"class-{header}"),
+                "anchor_tag": _get_anchor_tag("class-" + header),
                 "description": summary,
             }
         )
@@ -640,7 +659,7 @@ class MarkdownGenerator(object):
                 hasattr(cls.__init__, "__module__")
                 and cls.__init__.__module__ == modname
             ):
-                init = self.func2md(cls.__init__, clsname=clsname)
+                init = self.func2md(cls.__init__, clsname=clsname, is_mdx=is_mdx)
             else:
                 init = ""
         except (ValueError, TypeError):
@@ -692,15 +711,14 @@ class MarkdownGenerator(object):
                 # object module should be the same as the calling module
                 and obj.__module__ == modname
             ):
-                if function_md := self.func2md(
-                    obj, clsname=clsname, depth=depth + 1
-                ):
+                function_md = self.func2md(obj, clsname=clsname, depth=depth + 1, is_mdx=is_mdx)
+                if function_md:
                     methods.append(_SEPARATOR + function_md)
 
         markdown = _CLASS_TEMPLATE.format(
             section=section,
             header=header,
-            doc=doc or "",
+            doc=doc if doc else "",
             init=init,
             variables="".join(variables),
             handlers="".join(handlers),
@@ -708,11 +726,14 @@ class MarkdownGenerator(object):
         )
 
         if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            if is_mdx:
+                markdown = _MDX_SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            else:
+                markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
-    def module2md(self, module: types.ModuleType, depth: int = 1) -> str:
+    def module2md(self, module: types.ModuleType, depth: int = 1, is_mdx: bool = False) -> str:
         """Takes an imported module object and create a Markdown string containing functions and classes.
 
         Args:
@@ -753,7 +774,7 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                class_markdown = self.class2md(obj, depth=depth + 1)
+                class_markdown = self.class2md(obj, depth=depth + 1, is_mdx=is_mdx)
                 if class_markdown:
                     classes.append(_SEPARATOR + class_markdown)
                     line_nos.append(_get_line_no(obj) or 0)
@@ -769,7 +790,7 @@ class MarkdownGenerator(object):
                 and hasattr(obj, "__module__")
                 and obj.__module__ == modname
             ):
-                function_md = self.func2md(obj, depth=depth + 1)
+                function_md = self.func2md(obj, depth=depth + 1, is_mdx=is_mdx)
                 if function_md:
                     functions.append(_SEPARATOR + function_md)
                     line_nos.append(_get_line_no(obj) or 0)
@@ -803,11 +824,14 @@ class MarkdownGenerator(object):
         )
 
         if path:
-            markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            if (is_mdx):
+                markdown = _MDX_SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
+            else:
+                markdown = _SOURCE_BADGE_TEMPLATE.format(path=path) + markdown
 
         return markdown
 
-    def import2md(self, obj: Any, depth: int = 1) -> str:
+    def import2md(self, obj: Any, depth: int = 1, is_mdx: bool = False) -> str:
         """Generates markdown documentation for a selected object/import.
 
         Args:
@@ -818,16 +842,16 @@ class MarkdownGenerator(object):
             str: Markdown documentation of selected object.
         """
         if inspect.isclass(obj):
-            return self.class2md(obj, depth=depth)
+            return self.class2md(obj, depth=depth, is_mdx=is_mdx)
         elif isinstance(obj, types.ModuleType):
-            return self.module2md(obj, depth=depth)
+            return self.module2md(obj, depth=depth, is_mdx=is_mdx)
         elif callable(obj):
-            return self.func2md(obj, depth=depth)
+            return self.func2md(obj, depth=depth, is_mdx=is_mdx)
         else:
             print(f"Could not generate markdown for object type {str(type(obj))}")
             return ""
 
-    def overview2md(self) -> str:
+    def overview2md(self, is_mdx: bool = False) -> str:
         """Generates a documentation overview file based on the generated docs."""
 
         entries_md = ""
@@ -836,14 +860,17 @@ class MarkdownGenerator(object):
         ):
             full_name = obj["full_name"]
             if "module" in obj:
-                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+                if is_mdx:
+                    link = "./" + obj["module"] + ".mdx#" + obj["anchor_tag"]
+                else:
+                    link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
             else:
                 link = "#unknown"
 
             description = obj["description"]
             entries_md += f"\n- [`{full_name}`]({link})"
             if description:
-                entries_md += f": {description}"
+                entries_md += ": " + description
         if not entries_md:
             entries_md = "\n- No modules"
         modules_md = entries_md
@@ -851,12 +878,15 @@ class MarkdownGenerator(object):
         entries_md = ""
         for obj in list(filter(lambda d: d["type"] == "class", self.generated_objects)):
             module_name = obj["module"].split(".")[-1]
-            name = f"{module_name}." + obj["full_name"]
-            link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+            name = module_name + "." + obj["full_name"]
+            if is_mdx:
+                link = "./" + obj["module"] + ".mdx#" + obj["anchor_tag"]
+            else:
+                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
             description = obj["description"]
             entries_md += f"\n- [`{name}`]({link})"
             if description:
-                entries_md += f": {description}"
+                entries_md += ": " + description
         if not entries_md:
             entries_md = "\n- No classes"
         classes_md = entries_md
@@ -866,12 +896,15 @@ class MarkdownGenerator(object):
             filter(lambda d: d["type"] == "function", self.generated_objects)
         ):
             module_name = obj["module"].split(".")[-1]
-            name = f"{module_name}." + obj["full_name"]
-            link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
+            name = module_name + "." + obj["full_name"]
+            if is_mdx:
+                link = "./" + obj["module"] + ".mdx#" + obj["anchor_tag"]
+            else:
+                link = "./" + obj["module"] + ".md#" + obj["anchor_tag"]
             description = obj["description"]
             entries_md += f"\n- [`{name}`]({link})"
             if description:
-                entries_md += f": {description}"
+                entries_md += ": " + description
         if not entries_md:
             entries_md = "\n- No functions"
         functions_md = entries_md
@@ -888,10 +921,11 @@ def generate_docs(
     src_base_url: Optional[str] = None,
     remove_package_prefix: bool = False,
     ignored_modules: Optional[List[str]] = None,
+    output_format: Optional[str] = None,
     overview_file: Optional[str] = None,
     watermark: bool = True,
     validate: bool = False,
-) -> None:
+) -> Optional[str]:
     """Generates markdown documentation for provided paths based on Google-style docstrings.
 
     Args:
@@ -904,8 +938,14 @@ def generate_docs(
         overview_file: Filename of overview file. If not provided, no overview file will be generated.
         watermark: If `True`, add a watermark with a timestamp to bottom of the markdown files.
         validate: If `True`, validate the docstrings via pydocstyle. Requires pydocstyle to be installed.
+
+    Returns:
+        Optional[str]: The generated overview markdown if `output_path` is set to `return`.
     """
     stdout_mode = output_path.lower() == "stdout"
+    return_mode = output_path.lower() == "return"
+
+    full_markdown_output = ""
 
     if not stdout_mode and not os.path.exists(output_path):
         # Create output path
@@ -913,6 +953,10 @@ def generate_docs(
 
     if not ignored_modules:
         ignored_modules = list()
+
+    if output_format and output_format != 'md' and output_format != 'mdx':
+        raise Exception(f"Unsupported output format: {output_format}. Choose either 'md' or 'mdx'.")
+    is_mdx = output_format == 'mdx'
 
     if not src_root_path:
         try:
@@ -962,7 +1006,7 @@ def generate_docs(
                 try:
                     mod_spec = loader.find_spec(module_name)
                     mod = importlib.util.module_from_spec(mod_spec)
-                    module_md = generator.module2md(mod)
+                    module_md = generator.module2md(mod, is_mdx=is_mdx)
                     if not module_md:
                         # Module md is empty -> ignore module and all submodules
                         # Add module to ignore list, so submodule will also be ignored
@@ -971,12 +1015,15 @@ def generate_docs(
 
                     if stdout_mode:
                         print(module_md)
+                    elif return_mode:
+                        full_markdown_output += module_md
                     else:
                         to_md_file(
                             module_md,
                             mod.__name__,
                             out_path=output_path,
                             watermark=watermark,
+                            is_mdx=is_mdx,
                         )
                 except Exception as ex:
                     print(
@@ -1000,15 +1047,18 @@ def generate_docs(
             spec.loader.exec_module(mod)  # type: ignore
 
             if mod:
-                module_md = generator.module2md(mod)
+                module_md = generator.module2md(mod, is_mdx=is_mdx)
                 if stdout_mode:
                     print(module_md)
+                elif return_mode:
+                    full_markdown_output += module_md
                 else:
                     to_md_file(
                         module_md,
                         module_name,
                         out_path=output_path,
                         watermark=watermark,
+                        is_mdx=is_mdx,
                     )
             else:
                 raise Exception(f"Failed to generate markdown for {path}")
@@ -1039,7 +1089,7 @@ def generate_docs(
                         try:
                             mod_spec = loader.find_spec(module_name)
                             mod = importlib.util.module_from_spec(mod_spec)
-                            module_md = generator.module2md(mod)
+                            module_md = generator.module2md(mod, is_mdx=is_mdx)
 
                             if not module_md:
                                 # Module MD is empty -> ignore module and all submodules
@@ -1049,12 +1099,15 @@ def generate_docs(
 
                             if stdout_mode:
                                 print(module_md)
+                            elif return_mode:
+                                full_markdown_output += module_md
                             else:
                                 to_md_file(
                                     module_md,
                                     mod.__name__,
                                     out_path=output_path,
                                     watermark=watermark,
+                                    is_mdx=is_mdx
                                 )
                         except Exception as ex:
                             print(
@@ -1062,25 +1115,32 @@ def generate_docs(
                                 + repr(ex)
                             )
                 else:
-                    import_md = generator.import2md(obj)
+                    import_md = generator.import2md(obj, is_mdx=is_mdx)
                     if stdout_mode:
                         print(import_md)
+                    elif return_mode:
+                        full_markdown_output += import_md
                     else:
                         to_md_file(
-                            import_md, path, out_path=output_path, watermark=watermark
+                            import_md, path, out_path=output_path, watermark=watermark, is_mdx=is_mdx
                         )
             else:
                 raise Exception(f"Failed to generate markdown for {path}.")
 
     if overview_file and not stdout_mode:
-        if not overview_file.endswith(".md"):
-            overview_file = overview_file + ".md"
+        if is_mdx:
+            if not overview_file.endswith(".mdx"):
+                overview_file = overview_file + ".mdx"
+        else:
+            if not overview_file.endswith(".md"):
+                overview_file = overview_file + ".md"
 
         to_md_file(
-            generator.overview2md(),
+            generator.overview2md(is_mdx=is_mdx),
             overview_file,
             out_path=output_path,
             watermark=watermark,
+            is_mdx=is_mdx
         )
 
         # Write mkdocs pages file
@@ -1088,3 +1148,6 @@ def generate_docs(
         # TODO: generate navigation items to fix problem with naming
         with open(os.path.join(output_path, ".pages"), "w") as f:
             f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
+
+    if return_mode:
+        return full_markdown_output
