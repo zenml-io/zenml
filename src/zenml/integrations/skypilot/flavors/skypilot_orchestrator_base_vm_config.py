@@ -36,16 +36,16 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             str, must be a string of the form `'16'` or `'16+'`, where
             the `+` indicates that the task requires at least 16 GB of memory.
         accelerators: the accelerators required. If a str, must be
-            a string of the form `'V100'` or `'V100:2'`, where the `:2`
+            a string of the form 'V100' or 'V100:2', where the ':2'
             indicates that the task requires 2 V100 GPUs. If a dict, must be a
-            dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
+            dict of the form {'V100': 2}.
         accelerator_args: accelerator-specific arguments. For example,
-            `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
+            {'tpu_vm': True, 'runtime_version': 'tpu-vm-base'} for TPUs.
         use_spot: whether to use spot instances. If None, defaults to
             False.
         job_recovery: the spot recovery strategy to use for the managed
             spot to recover the cluster from preemption. Refer to
-            `recovery_strategy module <https://github.com/skypilot-org/skypilot/blob/master/sky/spot/recovery_strategy.py>`__ # pylint: disable=line-too-long
+            https://github.com/skypilot-org/skypilot/blob/master/sky/spot/recovery_strategy.py # pylint: disable=line-too-long
             for more details.
         region: the region to use.
         zone: the zone to use.
@@ -55,14 +55,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             ``'projects/my-project-id/global/images/my-image-name'``;
             Or, a image tag provided by SkyPilot, such as AWS:
             ``'skypilot:gpu-ubuntu-2004'``. If a dict, must be a dict mapping
-            from region to image ID, such as:
-
-            .. code-block:: python
-
-                {
-                'us-west1': 'ami-1234567890abcdef0',
-                'us-east1': 'ami-1234567890abcdef0'
-                }
+            from region to image ID, such as ``{'us-west1': 'ami-1234567890abcdef0', 'us-east1': 'ami-1234567890abcdef0'}``.
 
         disk_size: the size of the OS disk in GiB.
         disk_tier: the disk performance tier to use. If None, defaults to

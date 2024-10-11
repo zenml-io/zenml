@@ -27,7 +27,7 @@ class FacetsComparison(BaseModel):
 
     Attributes:
         datasets: List of datasets to compare. Should be in the format
-            `[{"name": "dataset_name", "table": pd.DataFrame}, ...]`.
+            [{'name': 'dataset_name', 'table': pd.DataFrame}, ...].
     """
 
     datasets: List[Dict[str, Union[str, pd.DataFrame]]]

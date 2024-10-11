@@ -57,7 +57,7 @@ class S3ArtifactStoreConfig(
     them as a json string:
     ```
     zenml artifact-store register my_s3_store --flavor=s3 \
-    --path=s3://my_bucket --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
+    --path=s3://my_bucket --client_kwargs='\{\"endpoint_url\": \"http://my-s3-endpoint\"\}'
     ```
     """
 

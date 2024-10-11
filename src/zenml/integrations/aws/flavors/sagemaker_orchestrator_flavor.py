@@ -93,7 +93,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
                 - Dict[str, str]: (ChannelName, S3Location) which represent
                     channels (e.g. output_one, output_two) where
                     specific parts of the data are stored locally for S3 upload.
-                    Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
+                    Data must be available locally in /opt/ml/processing/output/data/\<ChannelName>.
     """
 
     instance_type: Optional[str] = None
