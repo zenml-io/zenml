@@ -21,6 +21,7 @@ from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    ModelVersionPipelineRunRequest,
     ModelVersionResponse,
     PipelineDeploymentResponse,
     PipelineRunResponse,
@@ -300,9 +301,10 @@ def create_cached_step_runs(
                 # TODO: When a step is not cached, we parse the output artifact
                 # configs and also link the pipeline run to these model
                 # versions. Why is that not happening here?
-                utils._link_pipeline_run_to_model_from_context(
-                    pipeline_run_id=pipeline_run.id, model=model
-                )
+                # utils._link_pipeline_run_to_model_from_context(
+                #     pipeline_run_id=pipeline_run.id, model=model
+                # )
+                pass
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
@@ -413,6 +415,9 @@ def prepare_pipeline_run_model(
             run_id=pipeline_run.id,
             run_update=PipelineRunUpdate(model_version_id=model_version.id),
         )
+        link_pipeline_run_to_model_version(
+            pipeline_run=pipeline_run, model_version=model_version
+        )
         log_model_version_dashboard_url(model_version)
 
     model = model_version.to_model_class() if model_version else None
@@ -443,6 +448,9 @@ def prepare_step_run_model(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(model_version_id=model_version.id),
         )
+        link_pipeline_run_to_model_version(
+            pipeline_run=pipeline_run, model_version=model_version
+        )
         if created:
             log_model_version_dashboard_url(model_version)
 
@@ -470,3 +478,18 @@ def log_model_version_dashboard_url(
             "Models can be viewed in the dashboard using ZenML Pro. Sign up "
             "for a free trial at https://www.zenml.io/pro/"
         )
+
+
+def link_pipeline_run_to_model_version(
+    pipeline_run: PipelineRunResponse, model_version: ModelVersionResponse
+) -> None:
+    client = Client()
+    client.zen_store.create_model_version_pipeline_run_link(
+        ModelVersionPipelineRunRequest(
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+            pipeline_run=pipeline_run.id,
+            model=model_version.model.id,
+            model_version=model_version.id,
+        )
+    )

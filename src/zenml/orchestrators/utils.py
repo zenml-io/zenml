@@ -161,34 +161,6 @@ def get_run_name(run_name_template: str) -> str:
     return run_name
 
 
-def _link_pipeline_run_to_model_from_context(
-    pipeline_run_id: "UUID", model: Optional["Model"] = None
-) -> None:
-    """Links the pipeline run to the model version using artifacts data.
-
-    Args:
-        pipeline_run_id: The ID of the current pipeline run.
-        model: Model configured in the step
-    """
-    from zenml.models import ModelVersionPipelineRunRequest
-
-    if not model:
-        model_id, model_version_id = _get_model_versions_from_config()
-    else:
-        model_id, model_version_id = model.model_id, model.id
-
-    if model_id and model_version_id:
-        Client().zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                pipeline_run=pipeline_run_id,
-                model=model_id,
-                model_version=model_version_id,
-            )
-        )
-
-
 def _get_model_versions_from_config() -> Tuple[Optional[UUID], Optional[UUID]]:
     """Gets the model versions from the step model version.
 

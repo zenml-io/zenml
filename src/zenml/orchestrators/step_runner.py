@@ -50,7 +50,6 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import (
     _link_pipeline_run_to_model_from_artifacts,
-    _link_pipeline_run_to_model_from_context,
     is_setting_enabled,
 )
 from zenml.steps.step_context import StepContext, get_step_context
@@ -173,10 +172,6 @@ class StepRunner:
                 args=spec.args,
                 annotations=spec.annotations,
                 input_artifacts=input_artifacts,
-            )
-
-            _link_pipeline_run_to_model_from_context(
-                pipeline_run_id=pipeline_run.id
             )
 
             step_failed = False

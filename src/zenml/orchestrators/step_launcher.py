@@ -292,11 +292,6 @@ class StepLauncher:
                         step_run=step_run_request,
                         step_source=self._step.spec.source,
                     )
-                    if model:
-                        orchestrator_utils._link_pipeline_run_to_model_from_context(
-                            pipeline_run_id=step_run_request.pipeline_run_id,
-                            model=model,
-                        )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
