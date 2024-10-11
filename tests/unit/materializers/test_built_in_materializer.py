@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import uuid
 from tempfile import TemporaryDirectory
 from typing import Optional, Type
 
@@ -230,3 +231,14 @@ def test_container_materializer_for_custom_types(
         assert result[0].myname == "aria"
         assert result[1].myname == "axl"
         assert result == example
+
+
+def test_uuid_materialization():
+    """Test materialization for `uuid.UUID` objects."""
+    example = uuid.uuid4()
+    result = _test_materializer(
+        step_output_type=uuid.UUID,
+        step_output=example,
+        expected_metadata_size=2,
+    )
+    assert result == example

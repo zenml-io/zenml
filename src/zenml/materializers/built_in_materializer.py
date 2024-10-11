@@ -26,6 +26,7 @@ from typing import (
     Type,
     Union,
 )
+from uuid import UUID
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType
@@ -47,11 +48,12 @@ BASIC_TYPES = (
     int,
     str,
     type(None),
+    UUID,
 )  # complex/bytes are not JSON serializable
 
 
 class BuiltInMaterializer(BaseMaterializer):
-    """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
+    """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`, `UUID`)."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = BASIC_TYPES
