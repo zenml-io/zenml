@@ -193,7 +193,7 @@ jobs:
         uses: actions/checkout@v4.1.1
 
       - name: Redeploy the tenant
-        run: echo "redeploy" # TODO: Implement
+        run: echo "redaeploy" # TODO: Implement
 
       - name: Connect to the tenant
         run: | # TODO: Implement
