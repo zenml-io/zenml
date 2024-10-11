@@ -75,42 +75,32 @@ def link_step_artifacts_to_model(
 def link_artifact_config_to_model(
     artifact_config: ArtifactConfig,
     artifact_version_id: UUID,
-    model: Optional["Model"] = None,
+    model: "Model",
 ) -> None:
     """Link an artifact config to its model version.
 
     Args:
         artifact_config: The artifact config to link.
         artifact_version_id: The ID of the artifact to link.
-        model: The model version from the step or pipeline context.
+        model: The model to link the artifact to.
     """
     client = Client()
 
-    # If the artifact config specifies a model itself then always use that
-    if artifact_config.model_name is not None:
-        from zenml.model.model import Model
-
-        model = Model(
-            name=artifact_config.model_name,
-            version=artifact_config.model_version,
-        )
-
-    if model:
-        logger.debug(
-            f"Linking artifact `{artifact_config.name}` to model "
-            f"`{model.name}` version `{model.version}` using config "
-            f"`{artifact_config}`."
-        )
-        request = ModelVersionArtifactRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            artifact_version=artifact_version_id,
-            model=model.model_id,
-            model_version=model.id,
-            is_model_artifact=artifact_config.is_model_artifact,
-            is_deployment_artifact=artifact_config.is_deployment_artifact,
-        )
-        client.zen_store.create_model_version_artifact_link(request)
+    logger.debug(
+        f"Linking artifact `{artifact_config.name}` to model "
+        f"`{model.name}` version `{model.version}` using config "
+        f"`{artifact_config}`."
+    )
+    request = ModelVersionArtifactRequest(
+        user=client.active_user.id,
+        workspace=client.active_workspace.id,
+        artifact_version=artifact_version_id,
+        model=model.model_id,
+        model_version=model.id,
+        is_model_artifact=artifact_config.is_model_artifact,
+        is_deployment_artifact=artifact_config.is_deployment_artifact,
+    )
+    client.zen_store.create_model_version_artifact_link(request)
 
 
 def log_model_metadata(

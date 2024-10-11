@@ -385,32 +385,6 @@ class StepContext(metaclass=SingletonMetaClass):
             output.tags = []
         output.tags += tags
 
-    def _set_artifact_config(
-        self,
-        artifact_config: "ArtifactConfig",
-        output_name: Optional[str] = None,
-    ) -> None:
-        """Adds artifact config for a given step output.
-
-        Args:
-            artifact_config: The artifact config of the output to set.
-            output_name: Optional name of the output for which to set the
-                output signature. If no name is given and the step only has a single
-                output, the metadata of this output will be added. If the
-                step has multiple outputs, an exception will be raised.
-
-        Raises:
-            EntityExistsError: If the output already has an output signature.
-        """
-        output = self._get_output(output_name)
-
-        if output.artifact_config is None:
-            output.artifact_config = artifact_config
-        else:
-            raise EntityExistsError(
-                f"Output with name '{output_name}' already has artifact config."
-            )
-
 
 class StepContextOutput:
     """Represents a step output in the step context."""
