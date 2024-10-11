@@ -60,7 +60,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
-      UV_CACHE_DIR: "/home/runner/.cache/uv"
+      UV_CACHE_DIR: /home/runner/.cache/uv
 
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
@@ -85,8 +85,9 @@ jobs:
       - name: Restore uv cache
         uses: actions/cache@v4
         with:
-          path: "$HOME/.cache/uv"
-          key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          path: $HOME/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+            }}
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
             uv-${{ runner.os }}-${{ inputs.python-version }}
@@ -109,14 +110,14 @@ jobs:
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
-          UV_CACHE_DIR: "/home/runner/.cache/uv"
+          UV_CACHE_DIR: /home/runner/.cache/uv
         run: |
           bash scripts/lint.sh
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
         env:
-          UV_CACHE_DIR: "/home/runner/.cache/uv" 
+          UV_CACHE_DIR: /home/runner/.cache/uv
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
       - name: Setup tmate session after tests

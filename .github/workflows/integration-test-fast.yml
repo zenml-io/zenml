@@ -126,8 +126,9 @@ jobs:
       - name: Restore uv cache
         uses: actions/cache@v4
         with:
-          path: "$HOME/.cache/uv"
-          key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          path: $HOME/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+            }}
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
             uv-${{ runner.os }}-${{ inputs.python-version }}
