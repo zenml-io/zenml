@@ -5,6 +5,10 @@ import importlib
 import importlib.util
 import inspect
 import os
+import importlib.util
+from unittest.mock import MagicMock
+import sys
+import os
 import pkgutil
 import re
 import subprocess
@@ -236,7 +240,7 @@ def to_md_file(
             date=datetime.date.today().strftime("%d %b %Y")
         )
 
-    print("Writing {}.".format(md_file))
+    # print("Writing {}.".format(md_file))
     with open(os.path.join(out_path, md_file), "w", encoding="utf-8") as f:
         f.write(markdown_str)
 
@@ -993,8 +997,8 @@ def generate_docs(
             if validate and subprocess.call(f"{pydocstyle_cmd} {path}", shell=True) > 0:
                 raise Exception(f"Validation for {path} failed.")
 
-            if not stdout_mode:
-                print(f"Generating docs for python package at: {path}")
+            # if not stdout_mode:
+            #     print(f"Generating docs for python package at: {path}")
 
             # Generate one file for every discovered module
             for loader, module_name, _ in pkgutil.walk_packages([path]):
@@ -1033,8 +1037,8 @@ def generate_docs(
             if validate and subprocess.call(f"{pydocstyle_cmd} {path}", shell=True) > 0:
                 raise Exception(f"Validation for {path} failed.")
 
-            if not stdout_mode:
-                print(f"Generating docs for python module at: {path}")
+            # if not stdout_mode:
+            #     print(f"Generating docs for python module at: {path}")
 
             module_name = os.path.basename(path)
 
@@ -1044,7 +1048,14 @@ def generate_docs(
             )
             assert spec is not None
             mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)  # type: ignore
+            try:
+                spec.loader.exec_module(mod)  # type: ignore
+            except ModuleNotFoundError:
+                print(f"Warning: Could not load all dependencies for {path}. Continuing with partial information.")
+            except Exception as e:
+                print(f"Error loading module {path}: {str(e)}")
+                continue  # Skip this module and continue with the next one
+
 
             if mod:
                 module_md = generator.module2md(mod, is_mdx=is_mdx)
@@ -1072,8 +1083,8 @@ def generate_docs(
                 #     subprocess.call(
                 #         f"pydocstyle --convention=google {obj.__file__}", shell=True
                 #     )
-                if not stdout_mode:
-                    print(f"Generating docs for python import: {path}")
+                # if not stdout_mode:
+                #     print(f"Generating docs for python import: {path}")
 
                 if hasattr(obj, "__path__"):
                     # Object is a package
@@ -1144,7 +1155,7 @@ def generate_docs(
         )
 
         # Write mkdocs pages file
-        print("Writing mkdocs .pages file.")
+        # print("Writing mkdocs .pages file.")
         # TODO: generate navigation items to fix problem with naming
         with open(os.path.join(output_path, ".pages"), "w") as f:
             f.write(_MKDOCS_PAGES_TEMPLATE.format(overview_file=overview_file))
