@@ -126,16 +126,10 @@ class StepRunRequestFactory:
             if cached_step_run := cache_utils.get_cached_step_run(
                 cache_key=cache_key
             ):
-                # TODO: If the step is cached, do we also want to include
-                # all the inputs of the original step? This would only make
-                # a difference if the original step did some dynamic loading
-                # of artifacts using `load_artifact`, which would then not be
-                # included for the new one
-
-                # request.inputs = {
-                #     input_name: artifact.id
-                #     for input_name, artifact in cached_step_run.inputs.items()
-                # }
+                request.inputs = {
+                    input_name: artifact.id
+                    for input_name, artifact in cached_step_run.inputs.items()
+                }
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
@@ -352,14 +346,6 @@ def create_cached_step_runs(
                 step_run=step_run_request,
                 step_source=step_run.spec.source,
             )
-            if model:
-                # TODO: When a step is not cached, we parse the output artifact
-                # configs and also link the pipeline run to these model
-                # versions. Why is that not happening here?
-                # utils._link_pipeline_run_to_model_from_context(
-                #     pipeline_run_id=pipeline_run.id, model=model
-                # )
-                pass
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
