@@ -60,8 +60,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
-      UV_CACHE_DIR: /home/runner/.cache/uv
-
+      # UV_CACHE_DIR: /home/runner/.cache/uv
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -78,20 +77,6 @@ jobs:
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-          cache-local-path: /home/runner/.cache/uv
-      - name: Restore uv cache
-        uses: actions/cache@v4
-        with:
-          path: $HOME/.cache/uv
-          key: uv-${{ runner.os }}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
-            }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-            uv-${{ runner.os }}-${{ inputs.python-version }}
       - name: Install libomp
         if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
         run: brew install libomp
@@ -111,14 +96,14 @@ jobs:
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
-          UV_CACHE_DIR: /home/runner/.cache/uv
+          UV_CACHE_DIR: /tmp/.uv-cache
         run: |
           bash scripts/lint.sh
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
         env:
-          UV_CACHE_DIR: /home/runner/.cache/uv
+          UV_CACHE_DIR: /tmp/.uv-cache
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
       - name: Setup tmate session after tests
