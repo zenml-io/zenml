@@ -45,14 +45,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-local-path: /home/runner/.cache/uv
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.10'
       - name: Install current package as editable
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh

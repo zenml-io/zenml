@@ -117,6 +117,10 @@ dev = [
     "maison<2.0",
 ]
 
+[project.scripts]
+zenml = "zenml.cli.cli:cli"
+
+
 [tool.poetry]
 name = "zenml"
 version = "0.67.0"
@@ -473,7 +477,7 @@ exclude = [
     ".venv",
     "_build",
     "buck-out",
-    "build]",
+    "build",
 ]
 
 [tool.ruff.lint]
