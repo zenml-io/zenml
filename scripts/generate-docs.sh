@@ -51,7 +51,7 @@ rm docs/mkdocs/index.md || true
 
 ################################################ Install Requirements ##################################################
 if [ -z "$SKIP_INSTALL" ]; then
-  #pip3 install uv
+  pip3 install uv
   uv pip install --system -e ".[server,dev]"
   uv pip install --system "Jinja2==3.0.3"
 fi

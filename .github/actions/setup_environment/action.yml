@@ -33,6 +33,7 @@ runs:
       uses: astral-sh/setup-uv@v3
       with:
         enable-cache: true
+        cache-local-path: "/home/runner/.cache/uv"
     - name: Set up Python
       uses: actions/setup-python@v5.0.0
       with:

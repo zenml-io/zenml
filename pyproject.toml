@@ -1,3 +1,32 @@
+[tool.uv]
+dev-dependencies = [
+    "bandit>=1.7.5",
+    "ruff>=0.1.7",
+    "yamlfix>=1.16.0",
+    "coverage[toml]>=5.5",
+    "pytest>=7.4.0",
+    "mypy==1.7.1",
+    "pre-commit",
+    "pyment>=0.3.3",
+    "tox>=3.24.3",
+    "hypothesis>=6.43.1",
+    "typing-extensions>=3.7.4",
+    "darglint>=1.8.1",
+    "pytest-randomly>=3.10.1",
+    "pytest-mock>=3.6.1",
+    "pytest-clarity>=1.0.1",
+    "pytest-instafail>=0.5.0",
+    "pytest-rerunfailures>=13.0",
+    "pytest-split>=0.8.1",
+    "mkdocs>=1.2.3",
+    "mkdocs-material>=8.1.7",
+    "mkdocs-awesome-pages-plugin>=2.6.1",
+    "mkdocstrings>=0.17.0",
+    "mike>=1.1.2",
+    "maison<2.0",
+]
+package = true
+
 [project]
 name = "zenml"
 version = "0.67.0"
@@ -119,7 +148,6 @@ dev = [
 
 [project.scripts]
 zenml = "zenml.cli.cli:cli"
-
 
 [tool.poetry]
 name = "zenml"

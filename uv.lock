@@ -5253,6 +5253,34 @@ vertex = [
     { name = "kfp" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "bandit" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "darglint" },
+    { name = "hypothesis" },
+    { name = "maison" },
+    { name = "mike" },
+    { name = "mkdocs" },
+    { name = "mkdocs-awesome-pages-plugin" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pyment" },
+    { name = "pytest" },
+    { name = "pytest-clarity" },
+    { name = "pytest-instafail" },
+    { name = "pytest-mock" },
+    { name = "pytest-randomly" },
+    { name = "pytest-rerunfailures" },
+    { name = "pytest-split" },
+    { name = "ruff" },
+    { name = "tox" },
+    { name = "typing-extensions" },
+    { name = "yamlfix" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "adlfs", marker = "extra == 'adlfs'", specifier = ">=2021.10.0" },
@@ -5339,6 +5367,34 @@ requires-dist = [
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=3.7.4" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.17.5" },
     { name = "yamlfix", marker = "extra == 'dev'", specifier = ">=1.16.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "bandit", specifier = ">=1.7.5" },
+    { name = "coverage", extras = ["toml"], specifier = ">=5.5" },
+    { name = "darglint", specifier = ">=1.8.1" },
+    { name = "hypothesis", specifier = ">=6.43.1" },
+    { name = "maison", specifier = "<2.0" },
+    { name = "mike", specifier = ">=1.1.2" },
+    { name = "mkdocs", specifier = ">=1.2.3" },
+    { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.6.1" },
+    { name = "mkdocs-material", specifier = ">=8.1.7" },
+    { name = "mkdocstrings", specifier = ">=0.17.0" },
+    { name = "mypy", specifier = "==1.7.1" },
+    { name = "pre-commit" },
+    { name = "pyment", specifier = ">=0.3.3" },
+    { name = "pytest", specifier = ">=7.4.0" },
+    { name = "pytest-clarity", specifier = ">=1.0.1" },
+    { name = "pytest-instafail", specifier = ">=0.5.0" },
+    { name = "pytest-mock", specifier = ">=3.6.1" },
+    { name = "pytest-randomly", specifier = ">=3.10.1" },
+    { name = "pytest-rerunfailures", specifier = ">=13.0" },
+    { name = "pytest-split", specifier = ">=0.8.1" },
+    { name = "ruff", specifier = ">=0.1.7" },
+    { name = "tox", specifier = ">=3.24.3" },
+    { name = "typing-extensions", specifier = ">=3.7.4" },
+    { name = "yamlfix", specifier = ">=1.16.0" },
 ]
 
 [[package]]
