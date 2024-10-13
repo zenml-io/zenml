@@ -60,13 +60,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
-
-      # on MAC OS, we need to set this environment variable
-      # to fix problems with the fork() calls (see this thread
-      # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-    # TODO: add Windows testing for Python 3.11 and 3.12 back in
-    # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') }}
     defaults:
       run:
@@ -77,6 +71,15 @@ jobs:
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+        with:
+          files: |
+            src/**
+            tests/**
+            examples/**
       - name: Restore pip cache
         uses: actions/cache@v4
         with:
@@ -112,8 +115,9 @@ jobs:
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          bash scripts/lint.sh
+          bash scripts/lint.sh --changed-files "$CHANGED_FILES"
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
