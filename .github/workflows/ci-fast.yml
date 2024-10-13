@@ -23,8 +23,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          enable-cache: true
-          cache-local-path: /home/runner/.cache/uv
+          # enable-cache: true
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
@@ -49,8 +48,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          enable-cache: true
-          cache-local-path: /home/runner/.cache/uv
+          # enable-cache: true
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.0.0
         with:
@@ -77,8 +75,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          enable-cache: true
-          cache-local-path: /home/runner/.cache/uv
+          # enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.0.0
         with:
