@@ -29,6 +29,22 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Restore pip cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+          }}
+        restore-keys: |
+          pip-${{ runner.os }}-${{ inputs.python-version }}
+    - name: Restore uv cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+          }}
+        restore-keys: |
+          uv-${{ runner.os }}-${{ inputs.python-version }}
     - name: Set up Python
       uses: actions/setup-python@v5.0.0
       with:
