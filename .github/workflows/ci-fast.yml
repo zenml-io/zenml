@@ -95,7 +95,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   custom-arc-runner-set-integration-test:
-    needs: custom-ubuntu-setup-and-unit-test
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
