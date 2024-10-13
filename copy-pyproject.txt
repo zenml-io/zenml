@@ -1,3 +1,154 @@
+[tool.uv]
+dev-dependencies = [
+    "bandit>=1.7.5",
+    "ruff>=0.1.7",
+    "yamlfix>=1.16.0",
+    "coverage[toml]>=5.5",
+    "pytest>=7.4.0",
+    "mypy==1.7.1",
+    "pre-commit",
+    "pyment>=0.3.3",
+    "tox>=3.24.3",
+    "hypothesis>=6.43.1",
+    "typing-extensions>=3.7.4",
+    "darglint>=1.8.1",
+    "pytest-randomly>=3.10.1",
+    "pytest-mock>=3.6.1",
+    "pytest-clarity>=1.0.1",
+    "pytest-instafail>=0.5.0",
+    "pytest-rerunfailures>=13.0",
+    "pytest-split>=0.8.1",
+    "mkdocs>=1.2.3",
+    "mkdocs-material>=8.1.7",
+    "mkdocs-awesome-pages-plugin>=2.6.1",
+    "mkdocstrings>=0.17.0",
+    "mike>=1.1.2",
+    "maison<2.0",
+]
+package = true
+
+[project]
+name = "zenml"
+version = "0.67.0"
+description = "ZenML: Write production-ready ML code."
+readme = "README.md"
+homepage = "https://zenml.io"
+documentation = "https://docs.zenml.io"
+repository = "https://github.com/zenml-io/zenml"
+license = "Apache-2.0"
+requires-python = ">=3.9,<3.13"
+keywords = ["machine learning", "production", "pipeline", "mlops", "devops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "alembic~=1.8.1",
+    "bcrypt==4.0.1",
+    "click>=8.0.1,<8.1.4",
+    "cloudpickle>=2.0.0,<3",
+    "distro>=1.6.0",
+    "docker~=7.1.0",
+    "gitpython>=3.1.18",
+    "packaging>=24.1",
+    "passlib[bcrypt]~=1.7.4",
+    "psutil>=5.0.0",
+    "pydantic~=2.8",
+    "pydantic-settings",
+    "pymysql~=1.1.0,>=1.1.1",
+    "python-dateutil>=2.8.1",
+    "pyyaml>=6.0.1",
+    "rich[jupyter]>=12.0.0",
+    "setuptools",
+    "sqlalchemy>=2.0.0",
+    "sqlalchemy_utils",
+    "sqlmodel==0.0.18",
+    "importlib_metadata<=7.0.0; python_version<'3.10'"
+]
+
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.100, <=0.110",
+    "uvicorn[standard]>=0.17.5",
+    "python-multipart~=0.0.9",
+    "pyjwt[crypto]==2.7.*",
+    "orjson~=3.10.0",
+    "Jinja2",
+    "ipinfo>=4.4.3",
+    "secure~=0.3.0",
+]
+templates = ["copier>=8.1.0", "jinja2-time>=0.2.0", "pyyaml-include<2.0"]
+terraform = ["python-terraform>=0.10.1"]
+secrets-aws = ["boto3>=1.16.0"]
+secrets-gcp = ["google-cloud-secret-manager>=2.12.5"]
+secrets-azure = ["azure-identity>=1.4.0", "azure-keyvault-secrets>=4.0.0"]
+secrets-hashicorp = ["hvac>=0.11.2"]
+s3fs = ["s3fs>=2022.11.0"]
+gcsfs = ["gcsfs>=2022.11.0"]
+adlfs = ["adlfs>=2021.10.0"]
+connectors-kubernetes = ["kubernetes>=18.20.0"]
+connectors-aws = ["boto3>=1.16.0", "kubernetes>=18.20.0", "aws-profile-manager>=0.5.0"]
+connectors-gcp = [
+    "google-cloud-container>=2.21.0",
+    "google-cloud-storage>=2.9.0",
+    "google-cloud-artifact-registry>=1.11.3",
+    "kubernetes>=18.20.0",
+]
+connectors-azure = [
+    "azure-identity>=1.4.0",
+    "azure-mgmt-containerservice>=20.0.0",
+    "azure-mgmt-containerregistry>=10.0.0",
+    "azure-mgmt-storage>=20.0.0",
+    "azure-storage-blob>=12.0.0",
+    "azure-mgmt-resource>=21.0.0",
+    "kubernetes>=18.20.0",
+]
+sagemaker = ["sagemaker>=2.117.0"]
+vertex = ["google-cloud-aiplatform>=1.34.0", "kfp>=2.6.0"]
+azureml = ["azure-ai-ml==1.18.0"]
+
+dev = [
+    "bandit>=1.7.5",
+    "ruff>=0.1.7",
+    "yamlfix>=1.16.0",
+    "coverage[toml]>=5.5",
+    "pytest>=7.4.0",
+    "mypy==1.7.1",
+    "pre-commit",
+    "pyment>=0.3.3",
+    "tox>=3.24.3",
+    "hypothesis>=6.43.1",
+    "typing-extensions>=3.7.4",
+    "darglint>=1.8.1",
+    "pytest-randomly>=3.10.1",
+    "pytest-mock>=3.6.1",
+    "pytest-clarity>=1.0.1",
+    "pytest-instafail>=0.5.0",
+    "pytest-rerunfailures>=13.0",
+    "pytest-split>=0.8.1",
+    "mkdocs>=1.2.3",
+    "mkdocs-material>=8.1.7",
+    "mkdocs-awesome-pages-plugin>=2.6.1",
+    "mkdocstrings>=0.17.0",
+    "mike>=1.1.2",
+    "maison<2.0",
+]
+
+[project.scripts]
+zenml = "zenml.cli.cli:cli"
+
 [tool.poetry]
 name = "zenml"
 version = "0.67.0"
