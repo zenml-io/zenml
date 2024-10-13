@@ -60,7 +60,7 @@ ruff format $SRC --check
 # check type annotations with mypy
 # If CHANGED_FILES is not set, check all files in SRC_NO_TESTS
 if [ -z "$CHANGED_FILES" ]; then
-    mypy $SRC_NO_TESTS
+    mypy --cache-dir='~/.cache/mypy' $SRC_NO_TESTS
 else
     # Convert the space-separated list to an array
     IFS=' ' read -ra CHANGED_FILES_ARRAY <<< "$CHANGED_FILES"
@@ -75,7 +75,7 @@ else
 
     # Run mypy only if there are files to check
     if [ ${#MYPY_FILES[@]} -gt 0 ]; then
-        mypy "${MYPY_FILES[@]}"
+        mypy --cache-dir='~/.cache/mypy' "${MYPY_FILES[@]}"
     else
         echo "No files to check with mypy."
     fi
