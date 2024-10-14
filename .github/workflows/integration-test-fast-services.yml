@@ -102,23 +102,6 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 20000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          build-mount-path: /var/lib/docker/
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - name: Reload Docker
-        run: sudo systemctl restart docker
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
       - name: Restore uv cache
         uses: actions/cache@v4
@@ -282,7 +265,7 @@ jobs:
         ports:
           - 8080:8080
         options: >-
-          --health-cmd="curl -f http://localhost:8080/health"
+          --health-cmd="curl -f http://127.0.0.1:8080/health"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
