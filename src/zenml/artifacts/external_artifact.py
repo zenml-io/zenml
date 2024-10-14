@@ -90,51 +90,16 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """Model validator for the external artifact.
 
         Raises:
-            ValueError: if the value, id and name fields are set incorrectly.
+            ValueError: If an ID was set.
 
         Returns:
-            the validated instance.
+            The validated instance.
         """
-        deprecation_msg = (
-            "Parameter `{param}` or `ExternalArtifact` will be deprecated "
-            "in upcoming releases. Please use `{substitute}` instead."
-        )
-        for param, substitute in [
-            ["id", "Client().get_artifact_version(name_id_or_prefix=<id>)"],
-            [
-                "name",
-                "Client().get_artifact_version(name_id_or_prefix=<name>)",
-            ],
-            [
-                "version",
-                "Client().get_artifact_version(name_id_or_prefix=<name>,version=<version>)",
-            ],
-            [
-                "model",
-                "Client().get_model_version(<model_name>,<model_version>).get_artifact(name)",
-            ],
-        ]:
-            if getattr(self, param, None):
-                logger.warning(
-                    deprecation_msg.format(
-                        param=param,
-                        substitute=substitute,
-                    )
-                )
-        options = [
-            getattr(self, field, None) is not None
-            for field in ["value", "id", "name"]
-        ]
-        if sum(options) > 1:
+        if self.id:
             raise ValueError(
-                "Only one of `value`, `id`, or `name` can be provided when "
-                "creating an external artifact."
+                "External artifacts can only be initialized with a value."
             )
-        elif sum(options) == 0:
-            raise ValueError(
-                "Either `value`, `id`, or `name` must be provided when "
-                "creating an external artifact."
-            )
+
         return self
 
     def upload_by_value(self) -> UUID:
@@ -177,7 +142,4 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """
         return ExternalArtifactConfiguration(
             id=self.id,
-            name=self.name,
-            version=self.version,
-            model=self.model,
         )

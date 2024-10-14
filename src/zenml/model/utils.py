@@ -23,8 +23,9 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
-from zenml.models import (
-    ServiceUpdate,
+from zenml.models import ArtifactVersionResponse, ServiceUpdate
+from zenml.orchestrators.step_run_utils import (
+    link_artifact_version_to_model_version,
 )
 from zenml.steps.step_context import get_step_context
 
@@ -71,7 +72,7 @@ def log_model_metadata(
 
 
 def link_artifact_to_model(
-    artifact_version_id: UUID,
+    artifact_version: "ArtifactVersionResponse",
     model: Optional["Model"] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
@@ -79,7 +80,7 @@ def link_artifact_to_model(
     """Link the artifact to the model.
 
     Args:
-        artifact_version_id: The ID of the artifact version.
+        artifact_version: The artifact version to link.
         model: The model to link to.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
@@ -103,13 +104,15 @@ def link_artifact_to_model(
                 "@step or @pipeline decorator."
             )
 
-    link_artifact_config_to_model(
-        artifact_config=ArtifactConfig(
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
-        ),
-        artifact_version_id=artifact_version_id,
-        model=model,
+    model_version = model._get_or_create_model_version()
+    artifact_config = ArtifactConfig(
+        is_model_artifact=is_model_artifact,
+        is_deployment_artifact=is_deployment_artifact,
+    )
+    link_artifact_version_to_model_version(
+        artifact_version=artifact_version,
+        model_version=model_version,
+        artifact_config=artifact_config,
     )
 
 

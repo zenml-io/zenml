@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """External artifact definition."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
-from zenml.model.model import Model
-from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -32,26 +31,23 @@ class ExternalArtifactConfiguration(BaseModel):
     """
 
     id: Optional[UUID] = None
-    name: Optional[str] = None
-    version: Optional[str] = None
-    model: Optional[Model] = None
 
-    @model_validator(mode="after")
-    def external_artifact_validator(self) -> "ExternalArtifactConfiguration":
-        """Model validator for the external artifact configuration.
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _remove_old_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove old attributes that are not used anymore.
 
-        Raises:
-            ValueError: if both version and model fields are set.
+        Args:
+            data: The model data.
 
         Returns:
-            the validated instance.
+            Model data without the removed attributes.
         """
-        if self.version and self.model:
-            raise ValueError(
-                "Cannot provide both `version` and `model` when "
-                "creating an external artifact."
-            )
-        return self
+        data.pop("name", None)
+        data.pop("version", None)
+        data.pop("model", None)
+        return data
 
     def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
@@ -71,23 +67,6 @@ class ExternalArtifactConfiguration(BaseModel):
 
         if self.id:
             response = client.get_artifact_version(self.id)
-        elif self.name:
-            if self.version:
-                response = client.get_artifact_version(
-                    self.name, version=self.version
-                )
-            elif self.model:
-                response_ = self.model.get_artifact(self.name)
-                if not isinstance(response_, ArtifactVersionResponse):
-                    raise RuntimeError(
-                        f"Failed to pull artifact `{self.name}` from the Model "
-                        f"(name=`{self.model.name}`, version="
-                        f"`{self.model.version}`). Please validate the "
-                        "input and try again."
-                    )
-                response = response_
-            else:
-                response = client.get_artifact_version(self.name)
         else:
             raise RuntimeError(
                 "Either the ID or name of the artifact must be provided. "
@@ -106,7 +85,5 @@ class ExternalArtifactConfiguration(BaseModel):
                 "reference artifact versions stored in your active artifact "
                 "store."
             )
-
-        self.id = response.id
 
         return self.id

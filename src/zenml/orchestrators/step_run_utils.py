@@ -12,12 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Optional, Set, Tuple
+from typing import Dict, Mapping, Optional, Set, Tuple
 
 from zenml import Model
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
@@ -533,11 +533,6 @@ def link_pipeline_run_to_model_version(
     )
 
 
-from typing import Dict, Mapping
-
-from zenml.config.step_configurations import ArtifactConfiguration
-
-
 def link_output_artifacts_to_model_version(
     artifacts: Dict[str, ArtifactVersionResponse],
     output_configurations: Mapping[str, ArtifactConfiguration],
@@ -591,32 +586,4 @@ def link_artifact_version_to_model_version(
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         )
-    )
-
-
-def link_artifact_to_model(
-    artifact_version: ArtifactVersionResponse,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
-) -> None:
-    from zenml import get_step_context
-    from zenml.exceptions import StepContextError
-
-    try:
-        step_context = get_step_context()
-        model_version = (
-            step_context.step_run.model_version
-            or step_context.pipeline_run.model_version
-        )
-    except StepContextError:
-        raise RuntimeError()
-
-    artifact_config = ArtifactConfig(
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
-    )
-    link_artifact_version_to_model_version(
-        artifact_version=artifact_version,
-        model_version=model_version,
-        artifact_config=artifact_config,
     )
