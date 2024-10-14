@@ -57,7 +57,7 @@ class UUIDMaterializer(BaseMaterializer):
     def extract_metadata(self, data: uuid.UUID) -> Dict[str, MetadataType]:
         """Extract metadata from the UUID."""
         return {
-            "uuid_version": data.version,
+            "uuid_version": str(data.version),
             "uuid_variant": data.variant,
             "string_representation": str(data),
         }
