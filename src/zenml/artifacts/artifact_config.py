@@ -21,9 +21,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
 
-if TYPE_CHECKING:
-    pass
-
 
 logger = get_logger(__name__)
 
