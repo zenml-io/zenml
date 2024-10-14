@@ -332,6 +332,18 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     else None
                 ),
             )
+            pipeline_tags = step_settings.pipeline_tags
+            args_for_step_executor.setdefault(
+                "pipeline_tags",
+                (
+                    [
+                        {"Key": key, "Value": value}
+                        for key, value in pipeline_tags.items()
+                    ]
+                    if pipeline_tags
+                    else None
+                ),
+            )
             args_for_step_executor.setdefault(
                 "instance_type", step_settings.instance_type
             )
@@ -457,7 +469,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=self.config.execution_role, tags=tags)
+        pipeline.create(
+            role_arn=self.config.execution_role, tags=pipeline_tags
+        )
         execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
