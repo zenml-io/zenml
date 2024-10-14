@@ -4,6 +4,8 @@ description: Why do we need to deploy ZenML?
 
 # 🤔 Deploying ZenML
 
+I am a [test](../how-broken-is-this.md)
+
 Moving your ZenML Server to a production environment offers several benefits over staying local:
 
 1. **Scalability**: Production environments are designed to handle large-scale workloads, allowing your models to process more data and deliver faster results.
