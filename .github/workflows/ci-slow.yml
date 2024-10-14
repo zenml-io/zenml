@@ -194,6 +194,7 @@ jobs:
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
   ubuntu-linting:
+    needs: run-slow-ci-label-is-set
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -219,6 +220,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-linting:
+    needs: run-slow-ci-label-is-set
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -244,6 +246,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-linting:
+    needs: run-slow-ci-label-is-set
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
