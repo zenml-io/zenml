@@ -261,7 +261,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: zenml
           MYSQL_DATABASE: zenml
-        ports: 
+        ports:
           - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping"
@@ -279,5 +279,10 @@ jobs:
           ZENML_SERVER_DEPLOYMENT_TYPE: docker
           ZENML_SERVER_AUTO_ACTIVATE: 'True'
           ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
-        ports: 
+        ports:
           - 8080:8080
+        options: >-
+          --health-cmd="curl -f http://localhost:8080/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
