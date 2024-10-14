@@ -279,20 +279,15 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+        test_environment: [default, docker-server-docker-orchestrator-mariadb]
         exclude:
           # docker is time-consuming to run, so we only run it on 3.9
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.11'
-          - test_environment: docker-server-docker-orchestrator-mysql
+          - test_environment: default
             python-version: '3.12'
+          - test_environment: default
+            python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
@@ -301,6 +296,21 @@ jobs:
             python-version: '3.12'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+  custom-ubuntu-integration-test-gh-actions-server-docker-orchestrator:
+    if: github.event.pull_request.draft == false
+    needs: run-slow-ci-label-is-set
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+        test_environment: [github-actions-server-docker-orchestrator]
+      fail-fast: false
+    uses: ./.github/workflows/integration-test-slow-services.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
