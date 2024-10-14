@@ -16,11 +16,11 @@ Despite these advantages, transitioning to production can be challenging due to 
 
 When you first get started with ZenML, it relies with the following architecture on your machine.
 
-![ZenML default local configuration](../.gitbook/assets/Scenario1.png)
+![ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
 The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. Users can run the `zenml up` command to spin up a local REST server to serve the dashboard. The diagram for this looks as follows:
 
-![ZenML with a local REST Server](../.gitbook/assets/Scenario2.png)
+![ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
 
 {% hint style="info" %}
 For the local REST server option, the `zenml up` command implicitly connects the client to the server.
@@ -34,7 +34,7 @@ command: `zenml up --legacy`.
 
 In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Deployed ZenML Server](../.gitbook/assets/Scenario3.2.png)
+![Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
 
 ### Deploying a ZenML Server
 
@@ -53,9 +53,8 @@ Both options offer distinct advantages, allowing you to choose the deployment ap
 
 ## How to deploy ZenML
 
-Documentation for the various deployment strategies can be found in the
-following pages below (in our 'how-to' guides):
+Documentation for the various deployment strategies can be found in the following pages below (in our 'how-to' guides):
 
-<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy with ZenML CLI</strong></mark></td><td>Deploying ZenML on cloud using the ZenML CLI.</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/deploy-zenml/deploy-with-zenml-cli">deploy-with-zenml-cli.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Docker</strong></mark></td><td>Deploying ZenML in a Docker container.</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/deploy-zenml/deploy-with-docker">deploy-with-docker.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Helm</strong></mark></td><td>Deploying ZenML in a Kubernetes cluster with Helm.</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/deploy-zenml/deploy-with-helm">deploy-with-helm.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with HuggingFace Spaces</strong></mark></td><td>Deploying ZenML to Hugging Face Spaces.</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/deploy-zenml/deploy-with-hugging-face-spaces">deploy-with-hugging-face-spaces.md</a></td></tr></tbody></table>
+<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy with ZenML CLI</strong></mark></td><td>Deploying ZenML on cloud using the ZenML CLI.</td><td></td><td></td><td><a href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-zenml-cli">deploy-with-zenml-cli.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Docker</strong></mark></td><td>Deploying ZenML in a Docker container.</td><td></td><td></td><td><a href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker">deploy-with-docker.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Helm</strong></mark></td><td>Deploying ZenML in a Kubernetes cluster with Helm.</td><td></td><td></td><td><a href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm">deploy-with-helm.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with HuggingFace Spaces</strong></mark></td><td>Deploying ZenML to Hugging Face Spaces.</td><td></td><td></td><td><a href="https://docs.zenml.io/getting-started/deploying-zenml/deploy-using-huggingface-spaces">deploy-with-hugging-face-spaces.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

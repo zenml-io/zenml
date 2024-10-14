@@ -24,7 +24,7 @@ and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md)
 
 ### Run templates for running your pipelines from the dashboard or the API
 
-ZenML Pro enables you to [create and run templates](../../how-to/create-and-run-templates/README.md).
+ZenML Pro enables you to [create and run templates](../../how-to/trigger-pipelines/README.md#run-templates).
 This way, you can use the dashboard or our Client/REST API to run a pipeline with updated configuration
 which allows you to iterate quickly with minimal friction. 
 

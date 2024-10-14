@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.66.0"
+version = "0.67.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -17,7 +17,6 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -55,7 +54,7 @@ psutil = ">=5.0.0"
 pydantic = "~2.8"
 pydantic-settings = "*"
 pymysql = { version = "~1.1.0,>=1.1.1" }
-python = ">=3.8,<3.13"
+python = ">=3.9,<3.13"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
@@ -73,7 +72,7 @@ pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
-secure = { version = "~0.3.0" , optional = true }
+secure = { version = "~0.3.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -117,11 +116,21 @@ azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 # Optional dependencies for the S3 artifact store
 s3fs = { version = ">=2022.11.0", optional = true }
 
+# Optional dependencies for the Sagemaker orchestrator
+sagemaker = { version = ">=2.117.0", optional = true }
+
 # Optional dependencies for the GCS artifact store
 gcsfs = { version = ">=2022.11.0", optional = true }
 
+# Optional dependencies for the Vertex orchestrator
+kfp = { version = ">=2.6.0", optional = true }
+google-cloud-aiplatform = { version = ">=1.34.0", optional = true }
+
 # Optional dependencies for the Azure artifact store
 adlfs = { version = ">=2021.10.0", optional = true }
+
+# Optional dependencies for the AzureML orchestrator
+azure-ai-ml = { version = "1.18.0", optional = true }
 
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
@@ -212,6 +221,16 @@ connectors-azure = [
     "azure-storage-blob",
     "azure-mgmt-resource",
     "kubernetes",
+]
+sagemaker = [
+    "sagemaker",
+]
+vertex = [
+    "google-cloud-aiplatform",
+    "kfp",
+]
+azureml = [
+    "azure-ai-ml",
 ]
 dev = [
     "bandit",
@@ -322,8 +341,8 @@ exclude = [
 ]
 
 src = ["src", "test"]
-# use Python 3.8 as the minimum version for autofixing
-target-version = "py38"
+# use Python 3.9 as the minimum version for autofixing
+target-version = "py39"
 
 
 [tool.ruff.format]
@@ -341,7 +360,7 @@ exclude = [
 [tool.ruff.lint]
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
-per-file-ignores = {}
+per-file-ignores = { }
 ignore = [
     "E501",
     "F401",
@@ -382,16 +401,6 @@ strict = true
 namespace_packages = true
 show_error_codes = true
 
-# temporary fix for python 3.8 https://github.com/apache/airflow/discussions/19006
-# remove once the issue is solved in airflow
-exclude = "airflow/"
-
-[[tool.mypy.overrides]]
-module = ["airflow.*"]
-follow_imports = "skip"
-
-# end of fix
-
 # import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
 module = [
@@ -404,6 +413,7 @@ follow_imports = "skip"
 
 [[tool.mypy.overrides]]
 module = [
+    "airflow.*",
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",

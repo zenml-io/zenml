@@ -12,20 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
 from unittest import mock
 from unittest.mock import ANY
 from uuid import uuid4
 
 import pytest
+from typing_extensions import Annotated
 
 from zenml.config.compiler import Compiler
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models import Page
-from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators import cache_utils
-from zenml.steps import Output, step
+from zenml.pipelines.pipeline_definition import Pipeline
+from zenml.steps import step
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_invocation import StepInvocation
 
@@ -60,7 +62,9 @@ def _compile_step(step: BaseStep) -> Step:
 
 
 @step
-def _cache_test_step() -> Output(output_1=str, output_2=int):
+def _cache_test_step() -> (
+    Tuple[Annotated[str, "output_1"], Annotated[str, "output_2"]]
+):
     return "Hello World", 42
 
 
@@ -68,7 +72,7 @@ def _cache_test_step() -> Output(output_1=str, output_2=int):
 def generate_cache_key_kwargs(local_artifact_store):
     """Returns a dictionary of inputs for the cache key generation."""
     return {
-        "step": _compile_step(_cache_test_step()),
+        "step": _compile_step(_cache_test_step),
         "input_artifact_ids": {"input_1": uuid4()},
         "artifact_store": local_artifact_store,
         "workspace_id": uuid4(),

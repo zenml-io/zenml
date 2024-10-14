@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.step_configurations import StepConfiguration
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
-    from zenml.new.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import StepArtifact
 
@@ -64,58 +64,8 @@ class StepInvocation:
         self.client_lazy_loaders = client_lazy_loaders
         self.parameters = parameters
         self.default_parameters = default_parameters
-        self.invocation_upstream_steps = upstream_steps
+        self.upstream_steps = upstream_steps
         self.pipeline = pipeline
-
-    @property
-    def upstream_steps(self) -> Set[str]:
-        """The upstream steps of the invocation.
-
-        Returns:
-            The upstream steps of the invocation.
-        """
-        return self.invocation_upstream_steps.union(
-            self._get_and_validate_step_upstream_steps()
-        )
-
-    def _get_and_validate_step_upstream_steps(self) -> Set[str]:
-        """Validates the upstream steps defined on the step instance.
-
-        This is only allowed in legacy pipelines when calling `step.after(...)`
-        and we need to make sure that both the upstream and downstream steps
-        of such a relationship are only invoked once inside a pipeline.
-
-        Returns:
-            The upstream steps defined on the step instance.
-        """
-
-        def _verify_single_invocation(step: "BaseStep") -> str:
-            invocations = {
-                invocation
-                for invocation in self.pipeline.invocations.values()
-                if invocation.step is step
-            }
-            if len(invocations) > 1:
-                raise RuntimeError(
-                    "Setting upstream steps for a step using "
-                    "`step_1.after(step_2)` is not allowed in combination "
-                    "with calling one of the two steps multiple times."
-                )
-            return invocations.pop().id
-
-        if self.step.upstream_steps:
-            # If the step has upstream steps, make sure it only got invoked once
-            _verify_single_invocation(step=self.step)
-
-        upstream_steps = set()
-
-        for upstream_step in self.step.upstream_steps:
-            upstream_step_invocation_id = _verify_single_invocation(
-                step=upstream_step
-            )
-            upstream_steps.add(upstream_step_invocation_id)
-
-        return upstream_steps
 
     def finalize(self, parameters_to_ignore: Set[str]) -> "StepConfiguration":
         """Finalizes a step invocation.
@@ -133,9 +83,6 @@ class StepInvocation:
         from zenml.artifacts.external_artifact_config import (
             ExternalArtifactConfiguration,
         )
-
-        # Validate the upstream steps for legacy .after() calls
-        self._get_and_validate_step_upstream_steps()
 
         parameters_to_apply = {
             key: value

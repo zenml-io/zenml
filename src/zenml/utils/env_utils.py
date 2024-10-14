@@ -14,7 +14,16 @@
 """Utility functions for handling environment variables."""
 
 import os
-from typing import Dict, List, Optional, cast
+import re
+from typing import Any, Dict, List, Match, Optional, TypeVar, cast
+
+from zenml.logger import get_logger
+from zenml.utils import string_utils
+
+logger = get_logger(__name__)
+
+V = TypeVar("V", bound=Any)
+ENV_VARIABLE_PLACEHOLDER_PATTERN = re.compile(pattern=r"\$\{([a-zA-Z0-9_]+)\}")
 
 ENV_VAR_CHUNK_SUFFIX = "_CHUNK_"
 
@@ -99,3 +108,47 @@ def reconstruct_environment_variables(
         # Remove the chunk environment variables
         for key in chunk_keys:
             env.pop(key)
+
+
+def substitute_env_variable_placeholders(
+    value: V, raise_when_missing: bool = True
+) -> V:
+    """Substitute environment variable placeholders in an object.
+
+    Args:
+        value: The object in which to substitute the placeholders.
+        raise_when_missing: If True, an exception will be raised when an
+            environment variable is missing. Otherwise, a warning will be logged
+            instead.
+
+    Returns:
+        The object with placeholders substituted.
+    """
+
+    def _replace_with_env_variable_value(match: Match[str]) -> str:
+        key = match.group(1)
+        if key in os.environ:
+            return os.environ[key]
+        else:
+            if raise_when_missing:
+                raise KeyError(
+                    "Unable to substitute environment variable placeholder "
+                    f"'{key}' because the environment variable is not set."
+                )
+            else:
+                logger.warning(
+                    "Unable to substitute environment variable placeholder %s "
+                    "because the environment variable is not set, using an "
+                    "empty string instead.",
+                    key,
+                )
+                return ""
+
+    def _substitution_func(v: str) -> str:
+        return ENV_VARIABLE_PLACEHOLDER_PATTERN.sub(
+            _replace_with_env_variable_value, v
+        )
+
+    return string_utils.substitute_string(
+        value=value, substitution_func=_substitution_func
+    )
