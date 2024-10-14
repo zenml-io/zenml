@@ -4,16 +4,48 @@ description: Stacks are the configuration of your infrastructure.
 
 # Managing stacks & components
 
+
+## What is a stack?
+
 The [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
 
-However, deploying and managing a MLOps stack is tricky 😭😵‍💫. It is not trivial to set up all the different tools that you might need for your pipeline.
+A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a container registry, a Kubernetes cluster as an orchestrator, an experiment tracker like MLflow and so on.
 
-* 🌈 Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
-* 🤔 Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
-* 🚧 Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in Vertex AI, it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
-* 🔐 Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard MLflow tracking server deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
-* 🗣️ All the components that you deploy must have the right permissions to be able to talk to each other. When you run your pipeline, it is inevitable that some components would need to communicate with the others. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
-* 🧹 Cleaning up your resources after you're done with your experiments is super important yet very challenging. Many of the components need a range of other resources to work which might slide past your radar if you're not careful. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
+## Stacks as a way to organize your execution environment
+
+With ZenML, you can run your pipelines on more than one stacks with ease. This pattern helps you test your code across different environments effortlessly.
+
+This enables a case like this: a data scientist starts experimentation locally on their system and then once they are satisfied, move to a cloud environment on your staging cloud account to test more advanced features of your pipeline. Finally, when all looks good, they can mark the pipeline ready for production and have it run on a production-grade stack in your production cloud account.
+
+Having separate stacks for these environments helps:
+- avoid wrongfully deploying your staging pipeline to production
+- curb costs by running less powerful resources in staging and testing locally first
+- control access to environments by granting permissions for only certain stacks to certain users
+
+## Setting up credentials for your stacks
+
+Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
+
+The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/auth-management/service-connectors-guide.md). Service connectors allow you to manage credentials in a centralized manner in your ZenML server.
+
+Here's an approach you can take that is a good balance between convenience and security:
+- have a limited set of people that have permissions to create service connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
+- you can create one connector for your development or staging environment and let your data scientists use that to register their stack components.
+- when you are ready to go production, you can create another connector with permissions for your production environment and create stacks that use it. This way you can ensure that your production resources are not accidentally used for development or staging.
+
+If you follow this approach, you can keep your data scientists free from the hassle of figuring out the best authentication mechanisms for the different cloud services, having to manage credentials locally, and keep your cloud accounts safe, while still giving them the freedom to run their experiments in the cloud.
+
+
+## Challenges with deploying and managing stacks
+
+Deploying and managing a MLOps stack is tricky.
+
+* Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
+* Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
+* Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in Vertex AI, it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
+* Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard MLflow tracking server deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
+* All the components that you deploy must have the right permissions to be able to talk to each other. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
+* Cleaning up your resources after you're done with your experiments is super important yet very challenging. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
 
