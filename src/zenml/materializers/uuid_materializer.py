@@ -44,18 +44,36 @@ class UUIDMaterializer(BaseMaterializer):
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
     def load(self, _: Type[uuid.UUID]) -> uuid.UUID:
-        """Read UUID from artifact store."""
+        """Read UUID from artifact store.
+        
+        Args:
+            _: The type of the data to be loaded.
+            
+        Returns:
+            The loaded UUID.
+        """
         with self.artifact_store.open(self.data_path, "r") as f:
             uuid_str = f.read().strip()
         return uuid.UUID(uuid_str)
 
     def save(self, data: uuid.UUID) -> None:
-        """Write UUID to artifact store."""
+        """Write UUID to artifact store.
+        
+        Args:
+            data: The UUID to be saved.
+        """
         with self.artifact_store.open(self.data_path, "w") as f:
             f.write(str(data))
 
     def extract_metadata(self, data: uuid.UUID) -> Dict[str, MetadataType]:
-        """Extract metadata from the UUID."""
+        """Extract metadata from the UUID.
+        
+        Args:
+            data: The UUID to extract metadata from.
+        
+        Returns:
+            A dictionary of metadata extracted from the UUID.
+        """
         return {
             "uuid_version": str(data.version),
             "uuid_variant": data.variant,
