@@ -36,21 +36,6 @@ def test_stack_component_default_method_implementations(stub_component):
     assert stub_component.settings_class is None
     assert stub_component.requirements == set()
 
-    assert stub_component.is_provisioned is True
-    assert stub_component.is_running is True
-
-    with pytest.raises(NotImplementedError):
-        stub_component.provision()
-
-    with pytest.raises(NotImplementedError):
-        stub_component.deprovision()
-
-    with pytest.raises(NotImplementedError):
-        stub_component.resume()
-
-    with pytest.raises(NotImplementedError):
-        stub_component.suspend()
-
 
 def test_stack_component_dict_only_contains_public_attributes(
     stub_component_config,

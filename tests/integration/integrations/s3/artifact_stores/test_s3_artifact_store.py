@@ -14,6 +14,7 @@
 
 
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -30,28 +31,55 @@ from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
 
 def test_s3_artifact_store_attributes():
     """Tests that the basic attributes of the s3 artifact store are set correctly."""
-    artifact_store = S3ArtifactStore(
-        name="",
-        id=uuid4(),
-        config=S3ArtifactStoreConfig(path="s3://tmp"),
-        flavor="s3",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
+    with patch("boto3.resource", MagicMock()):
+        artifact_store = S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(path="s3://tmp"),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            workspace=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
     assert artifact_store.type == StackComponentType.ARTIFACT_STORE
     assert artifact_store.flavor == "s3"
 
 
 def test_must_be_s3_path():
     """Checks that a s3 artifact store can only be initialized with a s3 path."""
-    with pytest.raises(ArtifactStoreInterfaceError):
-        S3ArtifactStore(
+    with patch("boto3.resource", MagicMock()):
+        with pytest.raises(ArtifactStoreInterfaceError):
+            S3ArtifactStore(
+                name="",
+                id=uuid4(),
+                config=S3ArtifactStoreConfig(path="/local/path"),
+                flavor="s3",
+                type=StackComponentType.ARTIFACT_STORE,
+                user=uuid4(),
+                workspace=uuid4(),
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
+
+        with pytest.raises(ArtifactStoreInterfaceError):
+            S3ArtifactStore(
+                name="",
+                id=uuid4(),
+                config=S3ArtifactStoreConfig(path="gs://mybucket"),
+                flavor="s3",
+                type=StackComponentType.ARTIFACT_STORE,
+                user=uuid4(),
+                workspace=uuid4(),
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
+
+        artifact_store = S3ArtifactStore(
             name="",
             id=uuid4(),
-            config=S3ArtifactStoreConfig(path="/local/path"),
+            config=S3ArtifactStoreConfig(path="s3://mybucket"),
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
@@ -59,29 +87,4 @@ def test_must_be_s3_path():
             created=datetime.now(),
             updated=datetime.now(),
         )
-
-    with pytest.raises(ArtifactStoreInterfaceError):
-        S3ArtifactStore(
-            name="",
-            id=uuid4(),
-            config=S3ArtifactStoreConfig(path="gs://mybucket"),
-            flavor="s3",
-            type=StackComponentType.ARTIFACT_STORE,
-            user=uuid4(),
-            workspace=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-
-    artifact_store = S3ArtifactStore(
-        name="",
-        id=uuid4(),
-        config=S3ArtifactStoreConfig(path="s3://mybucket"),
-        flavor="s3",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
     assert artifact_store.path == "s3://mybucket"

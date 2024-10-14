@@ -45,7 +45,7 @@ def my_pipeline():
 ```
 
 {% hint style="info" %}
-See the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.pipelines.pipeline_context.PipelineContext) for more information on which attributes and methods the `PipelineContext` provides.
+See the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.pipelines.pipeline_context.PipelineContext) for more information on which attributes and methods the `PipelineContext` provides.
 {% endhint %}
 
 <!-- For scarf -->

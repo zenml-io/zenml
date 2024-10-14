@@ -67,8 +67,8 @@ from zenml.models import (
     PipelineRunResponse,
     ScheduleRequest,
 )
-from zenml.new.pipelines import build_utils
-from zenml.new.pipelines.run_utils import (
+from zenml.pipelines import build_utils
+from zenml.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
     upload_notebook_cell_code_if_necessary,
@@ -847,22 +847,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
-    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
-        """(Deprecated) Get runs of this pipeline.
-
-        Args:
-            **kwargs: Further arguments for filtering or pagination that are
-                passed to `client.list_pipeline_runs()`.
-
-        Returns:
-            List of runs of this pipeline.
-        """
-        logger.warning(
-            "`Pipeline.get_runs()` is deprecated and will be removed in a "
-            "future version. Please use `Pipeline.model.get_runs()` instead."
-        )
-        return self.model.get_runs(**kwargs)
-
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
     ) -> None:
@@ -897,19 +881,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         steps = {}
         for step_name, invocation in self.invocations.items():
             step = invocation.step
-            parameters = (
-                pydantic_utils.TemplateGenerator(
-                    step.entrypoint_definition.legacy_params.annotation
-                ).run()
-                if step.entrypoint_definition.legacy_params
-                else {}
-            )
             outputs = {
                 name: PartialArtifactConfiguration()
                 for name in step.entrypoint_definition.outputs
             }
             step_template = StepConfigurationUpdate(
-                parameters=parameters,
+                parameters={},
                 settings=step_settings,
                 outputs=outputs,
             )
@@ -1260,14 +1237,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
-            # TODO: deprecate me
-            if "model_version" in _from_config_file:
-                logger.warning(
-                    "YAML config option `model_version` is deprecated. Please use `model`."
-                )
-                _from_config_file["model"] = _from_config_file["model_version"]
-                del _from_config_file["model_version"]
-
             if "model" in _from_config_file:
                 if "model" in self._from_config_file:
                     _from_config_file["model"] = self._from_config_file[
@@ -1454,10 +1423,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if config_path:
             self._from_config_file = self._parse_config_file(
                 config_path=config_path,
-                matcher=inspect.getfullargspec(self.configure)[0]
-                + [
-                    "model_version"
-                ],  # TODO: deprecate `model_version` later on
+                matcher=inspect.getfullargspec(self.configure)[0],
             )
 
         _from_config_file = dict_utils.recursive_update(

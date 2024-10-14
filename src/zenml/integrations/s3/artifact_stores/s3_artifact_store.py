@@ -25,6 +25,7 @@ from typing import (
     cast,
 )
 
+import boto3
 import s3fs
 from fsspec.asyn import FSTimeoutError, sync, sync_wrapper
 
@@ -32,9 +33,13 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
+from zenml.integrations.s3.utils import split_s3_path
 from zenml.io.fileio import convert_to_str
+from zenml.logger import get_logger
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+
+logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
 
@@ -110,6 +115,32 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
     _filesystem: Optional[ZenMLS3Filesystem] = None
+
+    is_versioned: bool = False
+
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initializes the artifact store.
+
+        Args:
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+
+        # determine bucket versioning status
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(self.config.bucket)
+        versioning = bucket.Versioning()
+        if versioning.status == "Enabled":
+            self.is_versioned = True
+            logger.warning(
+                f"The artifact store bucket `{self.config.bucket}` is versioned, "
+                "this may slow down logging process significantly."
+            )
 
     @property
     def config(self) -> S3ArtifactStoreConfig:
@@ -422,3 +453,24 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         # TODO [ENG-153]: Additional params
         for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
+
+    def _remove_previous_file_versions(self, path: PathType) -> None:
+        """Keep only the latest file version in the given path.
+
+        Method is useful for logs stored in versioned file systems
+        like AWS S3.
+
+        Args:
+            path: The path to the file.
+        """
+        if self.is_versioned:
+            if isinstance(path, bytes):
+                path = path.decode()
+            _, prefix = split_s3_path(path)
+            s3 = boto3.resource("s3")
+            bucket = s3.Bucket(self.config.bucket)
+            for version in bucket.object_versions.filter(Prefix=prefix):
+                if not version.is_latest:
+                    version.delete()
+
+        return
