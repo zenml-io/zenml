@@ -10,7 +10,7 @@ env:
 
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[prepare]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -99,7 +99,7 @@ jobs:
           git push origin HEAD:${{ github.ref }} 
 
   build-release:
-    if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[build]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: [ubuntu-latest]
     steps:
       # Check out the prepare-release branch
@@ -148,7 +148,7 @@ jobs:
 
 
   test-release:
-    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[test]')  && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: [ ubuntu-latest ]
     steps:
       - name: Checkout code
