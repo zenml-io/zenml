@@ -14,7 +14,7 @@ Note that using this feature means that you won't be able to leverage any update
 
 ## Where you can use this feature
 
-- When you are running in an environment that either doesn't have docker installed or doesn't have enough memory to pull your base image and build a new image on top of it (think Codespaces or other CI/CD environments).
+- When you are running in an environment that either doesn't have Docker installed or doesn't have enough memory to pull your base image and build a new image on top of it (think Codespaces or other CI/CD environments).
 - When ZenML has already built an image for your code in a previous pipeline run and you want to reuse it in a new run. This saves you build times at the cost of not being able to leverage any updates you made to your code (or your dependencies) since then.
 
 ## How do you use this feature
@@ -87,7 +87,7 @@ integration_requirements = set(
 )
 ```
 
-### Any project specific requirements
+### Any project-specific requirements
 
 Any other dependencies that your project relies on. You can then install all of these different requirements through a line in your Dockerfile that looks like the following. It assumes you have accumulated all the requirements in one file.
 
