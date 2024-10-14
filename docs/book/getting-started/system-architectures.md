@@ -42,7 +42,7 @@ varying scenarios described below.
 
 ### Scenario 1: Full SaaS
 
-![Scenario 1: Full SaaS deployment](../../.gitbook/assets/cloud_architecture_scenario_1.png)
+![Scenario 1: Full SaaS deployment](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
 
 In this scenario, all services are hosted on infrastructure hosted by the ZenML Team,
@@ -55,7 +55,7 @@ model tracking and versioning information) is stored. All the actual ML data
 artifacts (e.g. data produced or consumed by pipeline steps, logs and
 visualizations, models) are stored on the customer cloud. This can be set up
 quite easily by configuring
-an [artifact store](../../component-guide/artifact-stores/artifact-stores.md)
+an [artifact store](../component-guide/artifact-stores/artifact-stores.md)
 with your MLOps stack.
 
 Your tenant only needs permissions to read from this data to display artifacts
@@ -98,7 +98,7 @@ their secrets on their own infrastructure.
 
 ### Scenario 3: Fully On-prem
 
-![Scenario 3: Fully on-premises deployment](../../.gitbook/assets/cloud_architecture_scenario_5.png)
+![Scenario 3: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_5.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
