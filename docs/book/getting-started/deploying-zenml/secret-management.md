@@ -1,12 +1,8 @@
 ---
-description: Registering and utilizing secrets.
+description: Configuring the secrets store.
 ---
 
-# Secret management
-
-## What is a ZenML secret?
-
-ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks.
+# Secret store configuration and management
 
 ## Centralized secrets store
 

@@ -50,7 +50,9 @@ from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.modal import ModalIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
+from zenml.integrations.numpy import NumpyIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
+from zenml.integrations.pandas import PandasIntegration  # noqa
 from zenml.integrations.pigeon import PigeonIntegration # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.polars import PolarsIntegration  # noqa
@@ -68,6 +70,7 @@ from zenml.integrations.skypilot_aws import SkypilotAWSIntegration  # noqa
 from zenml.integrations.skypilot_gcp import SkypilotGCPIntegration  # noqa
 from zenml.integrations.skypilot_azure import SkypilotAzureIntegration  # noqa
 from zenml.integrations.skypilot_lambda import SkypilotLambdaIntegration  # noqa
+from zenml.integrations.skypilot_kubernetes import SkypilotKubernetesIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa

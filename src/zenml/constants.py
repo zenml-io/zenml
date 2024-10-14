@@ -317,6 +317,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
 DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
+DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES = 256 * 1024 * 1024
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
@@ -364,6 +365,7 @@ PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
 PLUGIN_FLAVORS = "/plugin-flavors"
+REFRESH = "/refresh"
 RUNS = "/runs"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
@@ -430,6 +432,8 @@ SORT_PIPELINES_BY_LATEST_RUN_KEY = "latest_run"
 
 # Metadata constants
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
+METADATA_ORCHESTRATOR_LOGS_URL = "orchestrator_logs_url"
+METADATA_ORCHESTRATOR_RUN_ID = "orchestrator_run_id"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
 

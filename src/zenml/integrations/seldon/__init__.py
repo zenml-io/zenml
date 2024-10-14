@@ -16,9 +16,8 @@
 The Seldon Core integration allows you to use the Seldon Core model serving
 platform to implement continuous model deployment.
 """
-from typing import List, Type
+from typing import List, Type, Optional
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import SELDON
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -33,7 +32,8 @@ class SeldonIntegration(Integration):
     REQUIREMENTS = [
         "kubernetes==18.20.0",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
+
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "numpy"]
 
     @classmethod
     def activate(cls) -> None:
@@ -51,6 +51,21 @@ class SeldonIntegration(Integration):
         from zenml.integrations.seldon.flavors import SeldonModelDeployerFlavor
 
         return [SeldonModelDeployerFlavor]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        from zenml.integrations.numpy import NumpyIntegration
+
+        return cls.REQUIREMENTS + \
+            NumpyIntegration.get_requirements(target_os=target_os)
 
 
 SeldonIntegration.check_installation()

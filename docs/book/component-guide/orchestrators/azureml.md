@@ -122,7 +122,7 @@ def example_step() -> int:
     return 3
 
 
-@pipeline(settings={"orchestrator.azureml": azureml_settings})
+@pipeline(settings={"orchestrator": azureml_settings})
 def pipeline():
     example_step()
 
@@ -157,7 +157,7 @@ def example_step() -> int:
     return 3
 
 
-@pipeline(settings={"orchestrator.azureml": azureml_settings})
+@pipeline(settings={"orchestrator": azureml_settings})
 def pipeline():
     example_step()
 
@@ -195,7 +195,7 @@ def example_step() -> int:
     return 3
 
 
-@pipeline(settings={"orchestrator.azureml": azureml_settings})
+@pipeline(settings={"orchestrator": azureml_settings})
 def pipeline():
     example_step()
 

@@ -167,7 +167,7 @@ class StepLauncher:
             )
 
             logs_context = step_logging.StepLogsStorageContext(
-                logs_uri=logs_uri
+                logs_uri=logs_uri, artifact_store=self._stack.artifact_store
             )  # type: ignore[assignment]
 
             logs_model = LogsRequest(
@@ -209,9 +209,21 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
+                # warm-up and register the pipeline model version
+                pipeline_model = self._deployment.pipeline_configuration.model
+                if pipeline_model and pipeline_run.model_version is None:
+                    prep_logs_to_show, pipeline_run, _ = (
+                        pipeline_model._prepare_model_version_before_step_launch(
+                            pipeline_run=pipeline_run,
+                            step_run=None,
+                            return_logs=True,
+                        )
+                    )
+                    if prep_logs_to_show:
+                        logger.info(prep_logs_to_show)
                 try:
                     execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                        step_run=step_run, pipeline_run=pipeline_run
                     )
                 except:
                     logger.exception(
@@ -225,27 +237,20 @@ class StepLauncher:
                         step_run
                     )
 
-                    # warm-up and register model version
-                    _step_run = None
-                    model = (
-                        self._deployment.step_configurations[
-                            step_run.name
-                        ].config.model
-                        or self._deployment.pipeline_configuration.model
-                    )
-                    if self._deployment.step_configurations[
+                    # warm-up and register the step model version
+                    step_model = self._deployment.step_configurations[
                         step_run.name
-                    ].config.model:
-                        _step_run = step_run_response
-
-                    if model:
-                        prep_logs_to_show = (
-                            model._prepare_model_version_before_step_launch(
+                    ].config.model
+                    if step_model:
+                        prep_logs_to_show, _, step_run_response_update = (
+                            step_model._prepare_model_version_before_step_launch(
                                 pipeline_run=pipeline_run,
-                                step_run=_step_run,
+                                step_run=step_run_response,
                                 return_logs=True,
                             )
                         )
+                        if step_run_response_update:
+                            step_run_response = step_run_response_update
                         if prep_logs_to_show:
                             logger.info(prep_logs_to_show)
 
@@ -321,6 +326,7 @@ class StepLauncher:
                                 )
                                 raise
                 else:
+                    model = step_model or pipeline_model
                     orchestrator_utils._link_cached_artifacts_to_model(
                         model_from_context=model,
                         step_run=step_run,
@@ -393,11 +399,13 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
+        pipeline_run: "PipelineRunResponse",
     ) -> Tuple[bool, StepRunRequest]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
+            pipeline_run: The pipeline run.
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
@@ -405,7 +413,7 @@ class StepLauncher:
         """
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
-            run_id=step_run.pipeline_run_id,
+            pipeline_run=pipeline_run,
         )
         input_artifact_ids = {
             input_name: artifact.id

@@ -76,6 +76,7 @@ from zenml.models import (
     StrFilter,
     UUIDFilter,
 )
+from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
@@ -2477,12 +2478,13 @@ def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
     Returns:
         The help text.
     """
-    if filter_model.is_sort_by_field(field):
+    filter_generator = FilterGenerator(filter_model)
+    if filter_generator.is_sort_by_field(field):
         return (
             "[STRING] Example: --sort_by='desc:name' to sort by name in "
             "descending order. "
         )
-    if filter_model.is_datetime_field(field):
+    if filter_generator.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "
             f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
@@ -2491,23 +2493,23 @@ def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
             f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
             f"filter for everything created on or after the given date."
         )
-    elif filter_model.is_uuid_field(field):
+    elif filter_generator.is_uuid_field(field):
         return (
             f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
             f"to filter for all UUIDs starting with that prefix."
         )
-    elif filter_model.is_int_field(field):
+    elif filter_generator.is_int_field(field):
         return (
             f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
             f"filter for all entities where this field has a value greater than "
             f"or equal to the value."
         )
-    elif filter_model.is_bool_field(field):
+    elif filter_generator.is_bool_field(field):
         return (
             f"[BOOL] Example: --{field}='True' to "
             f"filter for all instances where this field is true."
         )
-    elif filter_model.is_str_field(field):
+    elif filter_generator.is_str_field(field):
         return (
             f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
             f"to filter everything that contains the query string somewhere in "
@@ -2529,27 +2531,28 @@ def create_data_type_help_text(
     Returns:
         The help text.
     """
-    if filter_model.is_datetime_field(field):
+    filter_generator = FilterGenerator(filter_model)
+    if filter_generator.is_datetime_field(field):
         return (
             f"[DATETIME] supported filter operators: "
             f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_uuid_field(field):
+    elif filter_generator.is_uuid_field(field):
         return (
             f"[UUID] supported filter operators: "
             f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_int_field(field):
+    elif filter_generator.is_int_field(field):
         return (
             f"[INTEGER] supported filter operators: "
             f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_bool_field(field):
+    elif filter_generator.is_bool_field(field):
         return (
             f"[BOOL] supported filter operators: "
             f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_str_field(field):
+    elif filter_generator.is_str_field(field):
         return (
             f"[STRING] supported filter operators: "
             f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
@@ -2761,14 +2764,6 @@ def print_model_url(url: Optional[str]) -> None:
             "You can try it locally, by running `zenml up`, or remotely, "
             "by deploying ZenML on the infrastructure of your choice."
         )
-
-
-def warn_deprecated_example_subcommand() -> None:
-    """Warning for deprecating example subcommand."""
-    warning(
-        "The `example` CLI subcommand has been deprecated and will be removed "
-        "in a future release."
-    )
 
 
 def verify_mlstacks_prerequisites_installation() -> None:

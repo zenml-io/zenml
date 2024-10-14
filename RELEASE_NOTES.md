@@ -1,5 +1,161 @@
 <!-- markdown-link-check-disable -->
 
+# 0.67.0
+
+## Highlights
+
+- **Improved Sagemaker Orchestrator:** Now supports warm pools for AWS Sagemaker, enhancing performance and reducing startup times for TrainingJobs.
+- **New DAG Visualizer:** Shipped major enhancements to the DAG Visualizer for Pipeline Runs:
+  - Preview of the actual DAG before pipeline completion
+  - Visual adjustments for improved clarity
+  - Real-time updates during pipeline execution
+- **Environment Variable References in Configurations:** Introduced the ability to reference environment variables in both code and configuration files using the syntax ${ENV_VARIABLE_NAME}, increasing flexibility in setups.
+- **Enhanced UX for Major Cloud Providers:** Displaying direct pipeline/log URL when working with major cloud platforms.
+- **Skypilot with Kubernetes Support:** Added compatibility for running Skypilot orchestrator on Kubernetes clusters.
+- **Updated Deepchecks Integration:** The Deepchecks integration has been refreshed with the latest features and improvements.
+
+
+## Features and Improvements
+
+- **AWS Integration:**
+  - Added permissions to workflow to enable assuming AWS role.
+  - Fixed expired credentials error when using the docker service connector.
+- **Error Handling:** Improved error messages for stack components of uninstalled integrations.
+- **API Key Management:** Added an option to write API keys to a file instead of using the CLI.
+
+## Pipeline Execution:
+
+- Implemented fixes for executing steps as single step pipelines.
+- Added filter option for templatable runs.
+- Added additional filtering options for pipeline runs.
+- MLflow Integration: Linked registered models in MLflow with the corresponding MLflow run.
+- Analytics: Added missing analytics event to improve user insights.
+
+## Documentation Updates
+
+- Updated documentation for various integrations including:
+  - Lightning AI orchestrator
+  - Kubeflow
+  - Comet experiment tracker
+  - Neptune
+  - Hugging Face deployer
+  - Weights & Biases (wandb)
+- Added documentation for run templates.
+- Fixed incorrect method name in Pigeon docs.
+- Various small documentation fixes and improvements.
+
+## Bug Fixes
+
+- Fixed YAML formatting issues.
+- Resolved RBAC issues for subpages in response models.
+- Fixed step output annotation in Discord test.
+- Addressed MLFlow integration requirements duplication.
+- Fixed Lightning orchestrator functionality.
+
+## What's Changed
+* Error message for stack components of uninstalled integrations by @bcdurak in https://github.com/zenml-io/zenml/pull/2996
+* Enable migration testing for version 0.66.0 by @schustmi in https://github.com/zenml-io/zenml/pull/2998
+* Add permissions to workflow to enable assuming AWS role by @schustmi in https://github.com/zenml-io/zenml/pull/2999
+* Add option to write api key to file instead of CLI by @schustmi in https://github.com/zenml-io/zenml/pull/3001
+* Fix yaml formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3004
+* Update ZenML Pro links for consistency.- Update ZenML Pro links for c… by @htahir1 in https://github.com/zenml-io/zenml/pull/3007
+* Fix incorrect method name in Pigeon docs by @strickvl in https://github.com/zenml-io/zenml/pull/3008
+* Fixes for executing steps as single step pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/3006
+* Add filter option for templatable runs by @schustmi in https://github.com/zenml-io/zenml/pull/3000
+* Add missing analytics event by @schustmi in https://github.com/zenml-io/zenml/pull/3009
+* Fix expired credentials error when using the docker service connector by @schustmi in https://github.com/zenml-io/zenml/pull/3002
+* Fix Lightning docs by @strickvl in https://github.com/zenml-io/zenml/pull/3013
+* Remove image builder warning by @htahir1 in https://github.com/zenml-io/zenml/pull/3014
+* Fixed kubeflow docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3018
+* Update Comet experiment tracker docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3019
+* Small docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3022
+* Feature/cleanup unused file by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3023
+* MLFlow integration requirements duplicate fix by @bcdurak in https://github.com/zenml-io/zenml/pull/3011
+* Fix Neptune docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3026
+* Fix huggingface deployer docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3024
+* Fix step output annotation in Discord test by @wjayesh in https://github.com/zenml-io/zenml/pull/3029
+* Fix RBAC for subpages in response models by @schustmi in https://github.com/zenml-io/zenml/pull/3031
+* Allow env variable placeholders in configurations by @schustmi in https://github.com/zenml-io/zenml/pull/3003
+* Leverage warm pools for AWS Sagemaker by @avishniakov in https://github.com/zenml-io/zenml/pull/3027
+* Updated wandb docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3030
+* Add hyperlint by @htahir1 in https://github.com/zenml-io/zenml/pull/3035
+* Bump NLP template by @avishniakov in https://github.com/zenml-io/zenml/pull/3036
+* Add additional filtering options by @schustmi in https://github.com/zenml-io/zenml/pull/2951
+* Bump starter template version by @schustmi in https://github.com/zenml-io/zenml/pull/3038
+* Docs for run templates by @bcdurak in https://github.com/zenml-io/zenml/pull/3028
+* Update Lightning AI orchestrator documentation by @strickvl in https://github.com/zenml-io/zenml/pull/3016
+* Add default value for PipelineRun.is_templatable by @schustmi in https://github.com/zenml-io/zenml/pull/3040
+* Use a generic OAuth2 client credentials flow to login to the Cloud API by @stefannica in https://github.com/zenml-io/zenml/pull/3041
+* fix lightning orchestrator by @safoinme in https://github.com/zenml-io/zenml/pull/3010
+* Linking registered models in MLflow with the corresponding MLflow run by @aiakide in https://github.com/zenml-io/zenml/pull/3020
+* Bugfixing mlflow registry linting issue by @bcdurak in https://github.com/zenml-io/zenml/pull/3043
+* Enhancing the orchestrator UX for major cloud providers by @bcdurak in https://github.com/zenml-io/zenml/pull/3005
+* Skypilot with Kubernetes by @safoinme in https://github.com/zenml-io/zenml/pull/3033
+* Update deepchecks integration by @wjayesh in https://github.com/zenml-io/zenml/pull/2987
+
+## New Contributors
+* @aiakide made their first contribution in https://github.com/zenml-io/zenml/pull/3020
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.66.0...0.67.0
+
+# 0.66.0
+
+## New Features and Improvements
+
+### Python 3.12 support
+
+This release adds support for Python 3.12, which means you can now develop your ZenML pipelines
+with the latest python features.
+
+### Easier way to specify component settings
+
+Before this release, settings for stack components had to be specified with both the component type
+as well as the flavor. We simplified this and it is now possible to specify settings just using the
+component type:
+```python
+# Before
+@pipeline(settings={"orchestrator.sagemaker": SagemakerOrchestratorSettings(...)})
+def my_pipeline():
+  ...
+
+# Now
+@pipeline(settings={"orchestrator": SagemakerOrchestratorSettings(...)})
+def my_pipeline():
+  ...
+```
+
+## Breaking changes
+
+* In order to slim down the ZenML library, we removed the `numpy` and `pandas` libraries as dependencies of ZenML. If your
+code uses these libraries, you have to make sure they're installed in your local environment as well as the Docker images that
+get built to run your pipelines (Use `DockerSettings.requirements` or `DockerSettings.required_integrations`).
+
+## What's Changed
+* Add 0.65.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2963
+* Hotfix for release flow by @avishniakov in https://github.com/zenml-io/zenml/pull/2961
+* Fix the one-click AWS and GCP stack deployments by @stefannica in https://github.com/zenml-io/zenml/pull/2964
+* Fix wandb mypy error by @strickvl in https://github.com/zenml-io/zenml/pull/2967
+* Fix accelerate docs for 0.65.0+ by @avishniakov in https://github.com/zenml-io/zenml/pull/2968
+* Dynamic model version names docs by @avishniakov in https://github.com/zenml-io/zenml/pull/2970
+* Logging nits by @avishniakov in https://github.com/zenml-io/zenml/pull/2972
+* Fix excess Azure logging by @strickvl in https://github.com/zenml-io/zenml/pull/2965
+* Fix typo in docs by @strickvl in https://github.com/zenml-io/zenml/pull/2976
+* Pass code path to template run by @schustmi in https://github.com/zenml-io/zenml/pull/2973
+* Prevent extra attributes in component configs by @schustmi in https://github.com/zenml-io/zenml/pull/2978
+* Dependency cleanup and Python 3.12 support by @bcdurak in https://github.com/zenml-io/zenml/pull/2953
+* Few nits in docs based on integrations review by @avishniakov in https://github.com/zenml-io/zenml/pull/2983
+* Update slack alerter docs by @stefannica in https://github.com/zenml-io/zenml/pull/2981
+* Update Kubeflow orchestrator docs by @stefannica in https://github.com/zenml-io/zenml/pull/2985
+* Build docker images for python 3.12 by @schustmi in https://github.com/zenml-io/zenml/pull/2988
+* Allow shortcut keys for component settings by @schustmi in https://github.com/zenml-io/zenml/pull/2957
+* Remove references to workspaces from docs by @strickvl in https://github.com/zenml-io/zenml/pull/2991
+* Added some adjustments for colab by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2966
+* Reverting the installation of `mlstacks` after its new release by @bcdurak in https://github.com/zenml-io/zenml/pull/2980
+* Small dependency and docs updates by @strickvl in https://github.com/zenml-io/zenml/pull/2982
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.65.0...0.66.0
+
 # 0.65.0
 
 ## New Features and Improvements

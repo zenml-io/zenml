@@ -23,7 +23,6 @@ from zenml.artifact_stores.local_artifact_store import (
 )
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration, StepSpec
-from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -71,10 +70,10 @@ from zenml.models.v2.core.service import (
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
-from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
@@ -213,7 +212,7 @@ def _empty_step() -> None:
 @pytest.fixture
 def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
-    return _empty_step
+    return _empty_step.copy()
 
 
 @pytest.fixture
@@ -240,23 +239,29 @@ def generate_empty_steps():
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
-    @pipeline
-    def _pipeline(step_):
-        step_()
+    def _wrapper(step_):
+        @pipeline
+        def _pipeline():
+            step_()
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @pytest.fixture
 def unconnected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps `step_1` and `step_2`. The steps are not connected to each other."""
 
-    @pipeline
-    def _pipeline(step_1, step_2):
-        step_1()
-        step_2()
+    def _wrapper(step_1, step_2):
+        @pipeline
+        def _pipeline():
+            step_1()
+            step_2()
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @step
@@ -284,33 +289,14 @@ def step_with_two_int_inputs():
 
 
 @pytest.fixture
-def sample_step_run_info(
-    sample_pipeline_run: PipelineRunResponse,
-    sample_step_run: StepRunResponse,
-) -> StepRunInfo:
-    return StepRunInfo(
-        step_run_id=sample_step_run.id,
-        run_id=sample_pipeline_run.id,
-        run_name=sample_pipeline_run.name,
-        pipeline_step_name=sample_step_run.name,
-        config=sample_step_run.config,
-        pipeline=sample_pipeline_run.config,
-        force_write_logs=lambda: None,
-    )
-
-
-@pytest.fixture
 def step_context_with_no_output(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers={},
         output_artifact_uris={},
         output_artifact_configs={},
@@ -321,7 +307,6 @@ def step_context_with_no_output(
 def step_context_with_single_output(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
@@ -330,8 +315,6 @@ def step_context_with_single_output(
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
         output_artifact_configs=artifact_configs,
@@ -342,7 +325,6 @@ def step_context_with_single_output(
 def step_context_with_two_outputs(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
-    sample_step_run_info: StepRunInfo,
 ) -> StepContext:
     materializers = {
         "output_1": (BaseMaterializer,),
@@ -358,8 +340,6 @@ def step_context_with_two_outputs(
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
-        step_run_info=sample_step_run_info,
-        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
         output_artifact_configs=artifact_configs,
@@ -447,6 +427,7 @@ def sample_pipeline_run(
         metadata=PipelineRunResponseMetadata(
             workspace=sample_workspace_model,
             config=PipelineConfiguration(name="aria_pipeline"),
+            is_templatable=False,
         ),
     )
 

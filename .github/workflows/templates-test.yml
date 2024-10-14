@@ -22,9 +22,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11']
+        options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.8'
+        default: '3.9'
 jobs:
   all-template-tests:
     name: all-template-tests

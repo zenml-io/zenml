@@ -10,10 +10,6 @@ The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
-{% hint style="warning" %}
-SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
-{% endhint %}
-
 ## When to use it
 
 You should use the SkyPilot VM Orchestrator if:
@@ -242,6 +238,55 @@ The Lambda Labs orchestrator does not support some of the features like `job_rec
 While testing the orchestrator, we noticed that the Lambda Labs orchestrator does not support the `down` flag. This means the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
 {% endhint %}
 {% endtab %}
+
+{% tab title="Kubernetes" %}
+We need first to install the SkyPilot integration for Kubernetes, using the following two commands:
+
+```shell
+  zenml integration install skypilot_kubernetes
+```
+
+To provision skypilot on kubernetes cluster, your orchestrator stack components needs to be configured to authenticate with a 
+[Service Connector](../../how-to/auth-management/service-connectors-guide.md). To configure the Service Connector, you need to register a new service connector configured with the appropriate credentials and permissions to access the K8s cluster. You can then use the service connector to configure your registered the Orchestrator stack component using the following command:
+
+First, check that the Kubernetes service connector type is available using the following command:
+
+```shell
+zenml service-connector list-types --type kubernetes
+```
+```shell
+┏━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃            │            │ RESOURCE   │ AUTH      │       │        ┃
+┃    NAME    │ TYPE       │ TYPES      │ METHODS   │ LOCAL │ REMOTE ┃
+┠────────────┼────────────┼────────────┼───────────┼───────┼────────┨
+┃ Kubernetes │ 🌀         │ 🌀          │ password  │ ✅    │ ✅     ┃
+┃  Service   │ kubernetes │ kubernetes │ token     │       │        ┃
+┃ Connector  │            │ -cluster   │           │       │        ┃
+┗━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
+Next, configure a service connector using the CLI or the dashboard with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
+
+```shell
+zenml service-connector register kubernetes-skypilot --type kubernetes -i
+```
+
+This will automatically configure the service connector with the appropriate credentials and permissions to provision VMs on AWS. You can then use the service connector to configure your registered VM Orchestrator stack component using the following command:
+
+```shell
+# Register the orchestrator
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor sky_kubernetes
+# Connect the orchestrator to the service connector
+zenml orchestrator connect <ORCHESTRATOR_NAME> --connector kubernetes-skypilot
+
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+
+{% hint style="warning" %}
+Some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot` are not supported by the Kubernetes orchestrator. It is recommended not to use these features with the Kubernetes orchestrator and not to use [step-specific settings](skypilot-vm.md#configuring-step-specific-resources).
+{% endhint %}
+{% endtab %}
 {% endtabs %}
 
 #### Additional Configuration
@@ -299,7 +344,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_aws": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -334,7 +379,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_gcp": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -368,7 +413,7 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_azure": skypilot_settings
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -394,7 +439,35 @@ skypilot_settings = SkypilotLambdaOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.vm_lambda": skypilot_settings
+        "orchestrator": skypilot_settings
+    }
+)
+```
+{% endtab %}
+
+{% tab title="Kubernetes" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot_kubernetes.flavors.skypilot_orchestrator_kubernetes_vm_flavor import SkypilotKubernetesOrchestratorSettings
+
+skypilot_settings = SkypilotKubernetesOrchestratorSettings(
+    cpus="2",
+    memory="16",
+    accelerators="V100:2",
+    image_id="ami-1234567890abcdef0",
+    disk_size=100,
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    stream_logs=True
+    docker_run_args=["--gpus=all"]
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator": skypilot_settings
     }
 )
 ```
@@ -428,14 +501,14 @@ high_resource_settings = SkypilotAWSOrchestratorSettings(
     # ... other settings
 )
 
-@step(settings={"orchestrator.vm_aws": high_resource_settings})
+@step(settings={"orchestrator": high_resource_settings})
 def my_resource_intensive_step():
     # Step implementation
     pass
 ```
 
 {% hint style="warning" %}
-When configuring pipeline or step-specific resources, you can use the `settings` parameter to specifically target the orchestrator flavor you want to use `orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name `orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure resources for the `vm_gcp` flavor, you can use `settings={"orchestrator.vm_gcp": ...}`.
+When configuring pipeline or step-specific resources, you can use the `settings` parameter to specifically target the orchestrator flavor you want to use `orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name `orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure resources for the `vm_gcp` flavor, you can use `settings={"orchestrator": ...}`.
 {% endhint %}
 
 By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.

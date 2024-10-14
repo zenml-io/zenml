@@ -70,7 +70,6 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     IllegalOperationError,
-    ProvisioningError,
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
@@ -1124,51 +1123,6 @@ def get_active_stack() -> None:
             )
         except KeyError as err:
             cli_utils.error(str(err))
-
-
-@stack.command("up")
-def up_stack() -> None:
-    """Provisions resources for the active stack."""
-    stack_ = Client().active_stack
-
-    cli_utils.declare(
-        f"Provisioning resources for active stack '{stack_.name}'."
-    )
-    try:
-        stack_.provision()
-        stack_.resume()
-    except ProvisioningError as e:
-        cli_utils.error(str(e))
-
-
-@stack.command(
-    "down", help="Suspends resources of the active stack deployment."
-)
-@click.option(
-    "--force",
-    "-f",
-    "force",
-    is_flag=True,
-    help="Deprovisions local resources instead of suspending them.",
-)
-def down_stack(force: bool = False) -> None:
-    """Suspends resources of the active stack deployment.
-
-    Args:
-        force: Deprovisions local resources instead of suspending them.
-    """
-    stack_ = Client().active_stack
-
-    if force:
-        cli_utils.declare(
-            f"Deprovisioning resources for active stack '{stack_.name}'."
-        )
-        stack_.deprovision()
-    else:
-        cli_utils.declare(
-            f"Suspending resources for active stack '{stack_.name}'."
-        )
-        stack_.suspend()
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")

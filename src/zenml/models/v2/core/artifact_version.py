@@ -24,13 +24,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
-from zenml.model.model import Model
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -401,18 +400,6 @@ class ArtifactVersionResponse(
             overwrite=overwrite,
         )
 
-    def read(self) -> Any:
-        """(Deprecated) Materializes (loads) the data stored in this artifact.
-
-        Returns:
-            The materialized data.
-        """
-        logger.warning(
-            "`artifact.read()` is deprecated and will be removed in a future "
-            "release. Please use `artifact.load()` instead."
-        )
-        return self.load()
-
     def visualize(self, title: Optional[str] = None) -> None:
         """Visualize the artifact in notebook environments.
 
@@ -430,14 +417,14 @@ class ArtifactVersionResponse(
 class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
-    # `name` and `only_unused` refer to properties related to other entities
-    #  rather than a field in the db, hence they need to be handled
-    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
         "has_custom_name",
+        "user",
+        "model",
+        "pipeline_run",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -495,6 +482,22 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the artifact version.",
+    )
+    model: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the model that is associated with this "
+        "artifact version.",
+    )
+    pipeline_run: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of a pipeline run that is associated with this "
+        "artifact version.",
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
@@ -504,15 +507,18 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlmodel import and_, select
+        from sqlmodel import and_, or_, select
 
-        from zenml.zen_stores.schemas.artifact_schemas import (
+        from zenml.zen_stores.schemas import (
             ArtifactSchema,
             ArtifactVersionSchema,
-        )
-        from zenml.zen_stores.schemas.step_run_schemas import (
+            ModelSchema,
+            ModelVersionArtifactSchema,
+            PipelineRunSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
+            StepRunSchema,
+            UserSchema,
         )
 
         if self.name:
@@ -546,6 +552,48 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(custom_name_filter)
 
+        if self.user:
+            user_filter = and_(
+                ArtifactVersionSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        if self.model:
+            model_filter = and_(
+                ArtifactVersionSchema.id
+                == ModelVersionArtifactSchema.artifact_version_id,
+                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
+                ),
+            )
+            custom_filters.append(model_filter)
+
+        if self.pipeline_run:
+            pipeline_run_filter = and_(
+                or_(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == StepRunOutputArtifactSchema.artifact_id,
+                        StepRunOutputArtifactSchema.step_id
+                        == StepRunSchema.id,
+                    ),
+                    and_(
+                        ArtifactVersionSchema.id
+                        == StepRunInputArtifactSchema.artifact_id,
+                        StepRunInputArtifactSchema.step_id == StepRunSchema.id,
+                    ),
+                ),
+                StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline_run, table=PipelineRunSchema
+                ),
+            )
+            custom_filters.append(pipeline_run_filter)
+
         return custom_filters
 
 
@@ -562,7 +610,8 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     id: Optional[UUID] = None  # type: ignore[assignment]
     lazy_load_name: Optional[str] = None
     lazy_load_version: Optional[str] = None
-    lazy_load_model: Model
+    lazy_load_model_name: str
+    lazy_load_model_version: Optional[str] = None
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -592,7 +641,8 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
 
         return RunMetadataLazyGetter(  # type: ignore[return-value]
-            self.lazy_load_model,
+            self.lazy_load_model_name,
+            self.lazy_load_model_version,
             self.lazy_load_name,
             self.lazy_load_version,
         )
