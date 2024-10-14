@@ -10,7 +10,10 @@ Moving your ZenML Server to a production environment offers several benefits ove
 2. **Reliability**: Production-grade infrastructure ensures high availability and fault tolerance, minimizing downtime and ensuring consistent performance.
 3. **Collaboration**: A shared production environment enables seamless collaboration between team members, making it easier to iterate on models and share insights.
 
-Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
+Despite these advantages, transitioning to production can be challenging due to
+the complexities involved in setting up the needed infrastructure.
+
+## Components
 
 ### ZenML Server
 
@@ -36,7 +39,17 @@ In order to move into production, the ZenML server needs to be deployed somewher
 
 ![Deployed ZenML Server](../.gitbook/assets/Scenario3.2.png)
 
-### Deploying a ZenML Server
+TODO: MORE ON ZENML SERVER HERE
+
+### ZenML Client
+
+TODO: MORE ON ZENML CLIENT HERE
+
+### Client-Server Interaction
+
+TODO: MORE ON CLIENT-SERVER INTERACTION HERE
+
+## Deploying a ZenML Server
 
 Deploying the ZenML Server is a crucial step towards transitioning to a production-grade environment for your machine learning projects. By setting up a deployed ZenML Server instance, you gain access to powerful features, allowing you to use stacks with remote components, centrally track progress, collaborate effectively, and achieve reproducible results.
 
@@ -51,7 +64,7 @@ Currently the ZenML server supports a legacy and a brand-new version of the dash
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
-## How to deploy ZenML
+### How to deploy ZenML
 
 Documentation for the various deployment strategies can be found in the following pages below (in our 'how-to' guides):
 
