@@ -255,3 +255,27 @@ jobs:
           zenml integration list
           uv pip list
           uv pip check || true
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: zenml
+          MYSQL_DATABASE: zenml
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      zenml-server:
+        image: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
+          github.sha }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
+        env:
+          ZENML_STORE_URL: mysql://root:zenml@mysql:3306/zenml
+          ZENML_SERVER_DEPLOYMENT_TYPE: docker
+          ZENML_SERVER_AUTO_ACTIVATE: 'True'
+          ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
+        ports: [8080:8080]
