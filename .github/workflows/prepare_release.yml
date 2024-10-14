@@ -8,8 +8,7 @@ env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
-      && github.repository == 'zenml-io/zenml'
+    if: contains(github.event.head_commit.message, '[prepare]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -98,8 +97,7 @@ jobs:
           git push origin HEAD:${{ github.ref }} 
 
   build-release:
-    if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
-      && github.repository == 'zenml-io/zenml'
+    if: contains(github.event.head_commit.message, '[build]') && github.repository == 'zenml-io/zenml'   # TODO: Remove
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -145,8 +143,7 @@ jobs:
           docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
 
   test-release:
-    if: contains(github.event.head_commit.message, '[test]') # TODO: Remove
-      && github.repository == 'zenml-io/zenml'
+    if: contains(github.event.head_commit.message, '[test]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     env:
       TENANT_URL: ${{ secrets.TENANT_URL }}
       SERVICE_ACCOUNT_API_KEY: ${{ secrets.SERVICE_ACCOUNT_API_KEY }}
