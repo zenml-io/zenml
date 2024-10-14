@@ -64,7 +64,7 @@ ruff format $SRC
 
 # standardizes / formats CI yaml files
 if [ "$SKIP_YAMLFIX" = false ]; then
-    yamlfix .github tests --exclude "dependabot.yml"
+    yamlfix .github tests --exclude "dependabot.yml" --exclude "integration-test-fast-services.yml"
 fi
 
 set +x
