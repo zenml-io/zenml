@@ -457,7 +457,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=self.config.execution_role)
+        pipeline.create(role_arn=self.config.execution_role, tags=tags)
         execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
