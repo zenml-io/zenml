@@ -10,21 +10,21 @@ unifies user management and optimizes your workflows. Efficiently manage access
 and permissions through centralized user administration. Create fine-grained
 permissions for resources such as stacks, pipelines, models, etc.
 
-See the section on [user management](./user-management.md) to learn more.
+See the section on [user management](../how-to/use-zenml-pro/user-management.md) to learn more.
 
 ### A brand-new, modern MLOps experience
 
-![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane](../.gitbook/assets/mcp_walkthrough.gif)
 
 We have built the ZenML Pro experience from the ground-up. With ZenML Pro, you get
 access to a new dashboard, with a better experience. The new dashboard features
 more functionality such as
-the [Model Control Plane](../../user-guide/starter-guide/track-ml-models.md)
-and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md).
+the [Model Control Plane](../user-guide/starter-guide/track-ml-models.md)
+and [Artifact Control Plane](../user-guide/starter-guide/manage-artifacts.md).
 
 ### Run templates for running your pipelines from the dashboard or the API
 
-ZenML Pro enables you to [create and run templates](../../how-to/trigger-pipelines/README.md#run-templates).
+ZenML Pro enables you to [create and run templates](../how-to/trigger-pipelines/README.md#run-templates).
 This way, you can use the dashboard or our Client/REST API to run a pipeline with updated configuration
 which allows you to iterate quickly with minimal friction. 
 
@@ -54,7 +54,7 @@ via service connectors, allowing a straightforward connection with various cloud
 resources without sacrificing data security. We hold your confidential
 information in a secure and isolated environment, offering an extra degree of
 protection. If desired, you can
-even [supply your own secret store](../deploying-zenml/manage-the-deployed-services/custom-secret-stores.md).
+even [supply your own secret store](../how-to/interact-with-secrets/use-a-custom-secret-store.md).
 
 Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 
