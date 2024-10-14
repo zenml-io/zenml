@@ -334,17 +334,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             pipeline_tags = step_settings.pipeline_tags
             args_for_step_executor.setdefault(
-                "pipeline_tags",
-                (
-                    [
-                        {"Key": key, "Value": value}
-                        for key, value in pipeline_tags.items()
-                    ]
-                    if pipeline_tags
-                    else None
-                ),
-            )
-            args_for_step_executor.setdefault(
                 "instance_type", step_settings.instance_type
             )
 
