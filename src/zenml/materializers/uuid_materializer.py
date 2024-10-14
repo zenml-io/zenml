@@ -45,10 +45,10 @@ class UUIDMaterializer(BaseMaterializer):
 
     def load(self, _: Type[uuid.UUID]) -> uuid.UUID:
         """Read UUID from artifact store.
-        
+
         Args:
             _: The type of the data to be loaded.
-            
+
         Returns:
             The loaded UUID.
         """
@@ -58,7 +58,7 @@ class UUIDMaterializer(BaseMaterializer):
 
     def save(self, data: uuid.UUID) -> None:
         """Write UUID to artifact store.
-        
+
         Args:
             data: The UUID to be saved.
         """
@@ -67,10 +67,10 @@ class UUIDMaterializer(BaseMaterializer):
 
     def extract_metadata(self, data: uuid.UUID) -> Dict[str, MetadataType]:
         """Extract metadata from the UUID.
-        
+
         Args:
             data: The UUID to extract metadata from.
-        
+
         Returns:
             A dictionary of metadata extracted from the UUID.
         """
