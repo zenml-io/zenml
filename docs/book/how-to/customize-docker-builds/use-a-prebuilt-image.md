@@ -1,4 +1,8 @@
-# Skip building an image on every pipeline run
+---
+description: "Skip building an image for your ZenML pipeline altogether."
+---
+
+# Use a prebuilt image for pipeline execution
 
 When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies and your pipeline code to it. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is (to pull base layers and push the final image to your container registry). 
 
@@ -102,6 +106,11 @@ If you have any apt packages that are needed for your application to function, b
 RUN apt-get update && apt-get install -y 
 --no-install-recommends YOUR_APT_PACKAGES
 ```
+
+#### Your project code files
+
+The files containing your pipeline and step code and all other necessary functions should also be available inside the image. Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include. 
+
 
 {% hint style="info" %}
 Note that you also need Python, pip and zenml installed in your image.

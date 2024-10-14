@@ -102,6 +102,7 @@
 * [🐳 Customize Docker builds](how-to/customize-docker-builds/README.md)
   * [Docker settings on a pipeline](how-to/customize-docker-builds/docker-settings-on-a-pipeline.md)
   * [Docker settings on a step](how-to/customize-docker-builds/docker-settings-on-a-step.md)
+  * [Use a prebuilt image for pipeline execution](how-to/customize-docker-builds/use-a-prebuilt-image.md)
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
   * [Use your own Dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Which files are built into the image](how-to/customize-docker-builds/which-files-are-built-into-the-image.md)
