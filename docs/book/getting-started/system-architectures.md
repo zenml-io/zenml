@@ -83,7 +83,7 @@ while ensuring that credentials are always stored on the customer side.
 
 ### Scenario 2: Fully On-prem
 
-![Scenario 2: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_5.png)
+![Scenario 2: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_2.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
