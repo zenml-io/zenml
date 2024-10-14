@@ -22,7 +22,7 @@ from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import MetadataType
 
-DEFAULT_FILENAME = "data.json"
+DEFAULT_FILENAME = "uuid.txt"
 
 
 class UUIDMaterializer(BaseMaterializer):
@@ -45,17 +45,13 @@ class UUIDMaterializer(BaseMaterializer):
 
     def load(self, _: Type[uuid.UUID]) -> uuid.UUID:
         """Read UUID from artifact store."""
-        with self.artifact_store.open(
-            os.path.join(self.uri, "uuid.txt"), "r"
-        ) as f:
+        with self.artifact_store.open(self.data_path, "r") as f:
             uuid_str = f.read().strip()
         return uuid.UUID(uuid_str)
 
     def save(self, data: uuid.UUID) -> None:
         """Write UUID to artifact store."""
-        with self.artifact_store.open(
-            os.path.join(self.uri, "uuid.txt"), "w"
-        ) as f:
+        with self.artifact_store.open(self.data_path, "w") as f:
             f.write(str(data))
 
     def extract_metadata(self, data: uuid.UUID) -> Dict[str, MetadataType]:
