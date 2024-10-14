@@ -332,7 +332,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     else None
                 ),
             )
-            pipeline_tags = step_settings.pipeline_tags
+
             args_for_step_executor.setdefault(
                 "instance_type", step_settings.instance_type
             )
@@ -458,8 +458,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        )
+
         pipeline.create(
-            role_arn=self.config.execution_role, tags=pipeline_tags
+            role_arn=self.config.execution_role, tags=settings.pipeline_tags
         )
         execution = pipeline.start()
         logger.warning(
@@ -470,9 +474,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # Yield metadata based on the generated execution object
         yield from self.compute_metadata(execution=execution)
 
-        settings = cast(
-            SagemakerOrchestratorSettings, self.get_settings(deployment)
-        )
         # mainly for testing purposes, we wait for the pipeline to finish
         if settings.synchronous:
             logger.info(
