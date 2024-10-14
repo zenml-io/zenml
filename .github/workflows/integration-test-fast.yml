@@ -79,7 +79,8 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: zenml
           MYSQL_DATABASE: zenml
-        ports: [3306:3306]
+        ports: 
+          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
@@ -92,9 +93,10 @@ jobs:
           ZENML_SERVER_DEPLOYMENT_TYPE: docker
           ZENML_SERVER_AUTO_ACTIVATE: 'True'
           ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
-        ports: [8080:8080]
+        ports: 
+          - 8080:8080
     name: integration-tests-fast
-    runs-on: ${{ inputs.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
