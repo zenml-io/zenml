@@ -174,7 +174,7 @@
     * [Upgrade the version of the server](how-to/deploy-zenml/upgrade-the-version-of-the-server.md)
     * [Troubleshoot the deployed server](how-to/deploy-zenml/troubleshoot-the-deployed-server.md)
     * [Troubleshoot stack components](how-to/deploy-zenml/troubleshoot-stack-components.md)
-* [Use ZenML Pro](how-to/use-zenml-pro/README.md)
+* [⭐️ Use ZenML Pro](how-to/use-zenml-pro/README.md)
   * [User Management](how-to/use-zenml-pro/user-management.md)
 * [🐍 Configure Python environments](how-to/configure-python-environments/README.md)
   * [Handling dependencies](how-to/configure-python-environments/handling-dependencies.md)
