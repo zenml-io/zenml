@@ -1,7 +1,7 @@
 # Hierarchy of concepts in ZenML Pro
 
 In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML
-framework. This document walks you through the key differences and new concepts that are pro-only.
+framework. This document walks you through the key differences and new concepts that are only available for Pro users.
 
 
 ![Image showing the entity hierarchy in ZenML Pro](../../.gitbook/assets/org_hierarchy_pro.png)

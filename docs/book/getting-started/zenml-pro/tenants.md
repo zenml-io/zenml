@@ -14,7 +14,7 @@ The diagram below shows this use case, where folks working on the recommender sy
 
 ![Image showing the tenants for different teams](../../.gitbook/assets/zenml_pro_tenants_teams1.png)
 
-This helps you better manager project resources. You can imagine that 
+This helps you better manage project resources. You can imagine that 
 - certain teams might be based in a different region and have requirements for deployments within that region.
 - some teams may have external contributors and you don't want them to have any knowledge of other internal tenants and projects.
 

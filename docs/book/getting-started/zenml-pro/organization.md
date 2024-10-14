@@ -14,7 +14,7 @@ A tenant is a crucial part of your Organization and holds all of your pipelines,
 - Give your tenant a name and click on the "Create Tenant" button
     ![Image showing the create tenant modal](../../.gitbook/assets/new_tenant_modal.png)
 
-The tenant will be created in some time and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
+The tenant will then be created and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
 
 The image below shows you how the overview page looks like when you are being onboarded. Follow the instructions on the screen to get started.
 
@@ -28,7 +28,7 @@ You can also create a tenant through the Cloud API by navigating to https://clou
 
 Inviting users to your organization to work on the organization's tenants is
 easy. Simply click `Add Member` in the Organization settings, and give them an
-initial Role. The User will be sent an invitation email. If a user is part of an
+initial Role. The user will be sent an invitation email. If a user is part of an
 organization, they can utilize their login on all tenants they have authority to
 access.
 

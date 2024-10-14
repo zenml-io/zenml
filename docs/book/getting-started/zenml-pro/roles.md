@@ -25,14 +25,13 @@ Some points to note:
 - An organization admin can add themselves to a tenant with any tenant role they desire.
 - However, an organization editor and viewer cannot add themselves to existing tenants that they are not a part of. They won't be able to view such tenants in the organization either.
 
-You can also send invites to new members with a specific role.
 
-![Image showing the invite modal](../../.gitbook/assets/add_org_members.png)
+![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
 
 
 ## Tenant Roles
 
-Once you have added people to your organization, they can start interacting with the tenants in it, respecting the role they have been assigned. Each user needs to also have a tenant role to be able to perform any actions inside a ZenML tenant. You can choose from a selection of predefined roles or create your own custom role.
+Once you have added people to your organization, they can start interacting with the tenants in it, taking into account the role they have been assigned. Each user needs to also have a tenant role to be able to perform any actions inside a ZenML tenant. You can choose from a selection of predefined roles or create your own custom role.
 
 ![Image showing the tenant roles](../../.gitbook/assets/role_page.png)
 
