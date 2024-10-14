@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utilities for creating step runs."""
+
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
 
@@ -179,6 +181,9 @@ class StepRunRequestFactory:
         step: "Step",
     ) -> Tuple[Optional[str], str]:
         """Get the docstring and source code of a step.
+
+        Args:
+            step: The step configuration.
 
         Returns:
             The docstring and source code of a step.
@@ -543,7 +548,8 @@ def link_output_artifacts_to_model_version(
     """Link the outputs of a step run to a model version.
 
     Args:
-        step_run: The step run for which to link the output artifacts.
+        artifacts: The step output artifacts.
+        output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
     for output_name, output_artifact in artifacts.items():

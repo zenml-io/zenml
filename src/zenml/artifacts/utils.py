@@ -774,7 +774,7 @@ def _link_artifact_version_to_the_step_and_model(
         - the MV from the step context
 
     Args:
-        response: The artifact version to link.
+        artifact_version: The artifact version to link.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
