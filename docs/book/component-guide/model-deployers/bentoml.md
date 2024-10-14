@@ -166,7 +166,7 @@ You can now use this bento in any way you see fit.
 
 ### ZenML Bento Builder step
 
-Once you have your bento service defined, we can use the built-in bento builder step to build the bento bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step within a ZenML pipeline. Make sure you have the bento service file in your repository and then use the correct class name in the `service` parameter.
+Once you have your bento service defined, we can use the built-in bento builder step to build the bento bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step within a ZenML pipeline. Make sure you have the bento service file in your repository and at the root-level and then use the correct class name in the `service` parameter.
 
 ```python
 from zenml import pipeline, step
