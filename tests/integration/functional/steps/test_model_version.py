@@ -441,8 +441,8 @@ def _pipeline_run_link_attached_from_mixed_context_multiple_step():
         ),
     ),
     ids=[
-        "Single step pipeline (declarative+functional+step+pipeline)",
-        "Multiple steps pipeline (declarative+functional+step+pipeline)",
+        "Single step pipeline (step+pipeline)",
+        "Multiple steps pipeline (step+pipeline)",
     ],
 )
 def test_pipeline_run_link_attached_from_mixed_context(
