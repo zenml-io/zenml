@@ -94,20 +94,6 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-arc-runner-set-integration-test-default:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.12']
-        test_environment: [default]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
