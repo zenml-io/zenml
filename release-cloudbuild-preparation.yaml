@@ -1,0 +1,152 @@
+steps:
+  # login to Dockerhub
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - docker login --username=$$USERNAME --password=$$PASSWORD
+    id: docker-login
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+      - PASSWORD
+
+  # Build base image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build . \
+          --platform linux/amd64 \
+          -f docker/zenml-dev.Dockerfile \
+          -t $$USERNAME/prepare-release:base
+
+    id: build-base
+    waitFor: ['-']
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Push base image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - docker push $$USERNAME/prepare-release:base
+    id: push-base
+    waitFor:
+      - docker-login
+      - build-base
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Build server image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build . \
+          --platform linux/amd64 \
+          -f docker/zenml-server-dev.Dockerfile \
+          -t $$USERNAME/prepare-release:server
+
+    id: build-server
+    waitFor: ['-']
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Push server images
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - docker push $$USERNAME/prepare-release:server
+    id: push-server
+    waitFor:
+      - docker-login
+      - build-server
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Build Quickstart GCP Image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build . \
+          --platform linux/amd64 \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg CLOUD_PROVIDER=gcp \
+          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
+          -f docker/zenml-quickstart-dev.Dockerfile \
+          -t $$USERNAME/prepare-release:quickstart-gcp
+
+    id: build-quickstart-gcp
+    waitFor:
+      - push-base
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Build Quickstart AWS image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build . \
+          --platform linux/amd64 \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg CLOUD_PROVIDER=aws \
+          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
+          -f docker/zenml-quickstart-dev.Dockerfile \
+          -t $$USERNAME/prepare-release:quickstart-aws
+    id: build-quickstart-aws
+    waitFor:
+      - push-base
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Build Quickstart Azure image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - |
+        docker build . \
+          --platform linux/amd64 \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg CLOUD_PROVIDER=azure \
+          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
+          -f docker/zenml-quickstart-dev.Dockerfile \
+          -t $$USERNAME/prepare-release:quickstart-azure
+    id: build-quickstart-azure
+    waitFor:
+      - push-base
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+  # Push Quickstart images
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - '-c'
+      - docker push $$USERNAME/prepare-release:quickstart-aws
+      - docker push $$USERNAME/prepare-release:quickstart-azure
+      - docker push $$USERNAME/prepare-release:quickstart-gcp
+    id: push-quickstart
+    waitFor:
+      - docker-login
+      - build-quickstart-gcp
+      - build-quickstart-aws
+      - build-quickstart-azure
+    entrypoint: bash
+    secretEnv:
+      - USERNAME
+
+timeout: 3600s
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/docker-password/versions/1
+      env: PASSWORD
+    - versionName: projects/$PROJECT_ID/secrets/docker-username/versions/1
+      env: USERNAME

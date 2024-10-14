@@ -97,6 +97,7 @@ jobs:
         run: |
           git commit -m "Adding the new version to the necessary files."
           git push origin HEAD:${{ github.ref }} 
+
   build-release:
     if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
     runs-on: [ubuntu-latest]
@@ -105,85 +106,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
 
-      # Extract the version name
-      - name: Extract version from branch name
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      # Configure Git
-      - name: Configure git
-        shell: bash
-        run: |
-          git config --global user.email "info@zenml.io"
-          git config --global user.name "ZenML GmbH"
-
-      # Build the base image
-      - name: Build base image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            -f docker/zenml-dev.Dockerfile \
-            -t zenmldocker/prepare-release:base
-          docker images
-
-      # Build the server image
-      - name: Build server image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            -f docker/zenml-server-dev.Dockerfile \
-            -t zenmldocker/prepare-release:server
-
-      # Build the GCP quickstart image
-      - name: Build GCP quickstart image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
-            --build-arg CLOUD_PROVIDER=gcp \
-            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-            -f docker/zenml-quickstart-dev.Dockerfile \
-            -t zenmldocker/prepare-release:quickstart-gcp
-
-      # Build the AWS quickstart image
-      - name: Build AWS quickstart image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
-            --build-arg CLOUD_PROVIDER=aws \
-            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-            -f docker/zenml-quickstart-dev.Dockerfile \
-            -t zenmldocker/prepare-release:quickstart-aws
-
-      # Build the Azure quickstart image
-      - name: Build Azure quickstart image
-        run: |
-          docker build . \
-            --platform linux/amd64 \
-            --build-arg BASE_IMAGE=zenmldocker/prepare-release:base \
-            --build-arg CLOUD_PROVIDER=azure \
-            --build-arg ZENML_BRANCH="${{ github.ref }}" \
-            -f docker/zenml-quickstart-dev.Dockerfile \
-            -t zenmldocker/prepare-release:quickstart-azure
-
-      # Login to docker hub
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      # Sign in to Google
+      - uses: google-github-actions/setup-gcloud@v0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
 
-      # Push the docker images
-      - name: Push the images
+      # Submit the Cloudbuild job
+      - name: Build docker images
         run: |
-          docker push zenmldocker/prepare-release:base
-          docker push zenmldocker/prepare-release:server
-          docker push zenmldocker/prepare-release:quickstart-gcp
-          docker push zenmldocker/prepare-release:quickstart-azure
+          gcloud builds submit \
+            --quiet \
+            --config=release-cloudbuild-preparation.yaml \
+            --substitutions=_ZENML_BRANCH=${{ github.ref }} 
+
+      # Sign in to AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region eu-central-1 
+          docker login 715803424590.dkr.ecr.eu-central-1.amazonaws.com \
+            --username AWS 
+            --password-stdin
+
+      # Publish the AWS image
+      - name: Pull quickstart image from Dockerhub
+        run: |
+          docker pull zenmldocker/prepare-release:quickstart-aws
+
+      - name: Push quickstart image to ECR
+        run: |
+          docker tag zenmldocker/prepare-release:quickstart-aws 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
+          docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
+
 
   test-release:
     if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
@@ -193,7 +155,7 @@ jobs:
         uses: actions/checkout@v4.1.1
 
       - name: Redeploy the tenant
-        run: echo "redaeploy" # TODO: Implement
+        run: echo "redeploy" # TODO: Implement
 
       - name: Connect to the tenant
         run: | # TODO: Implement
