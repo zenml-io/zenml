@@ -378,6 +378,7 @@ class StepRunResponse(
     @property
     def code_hash(self) -> Optional[str]:
         """The `code_hash` property.
+
         Returns:
             the value of the property.
         """
