@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
@@ -34,6 +43,8 @@ from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
@@ -343,8 +354,8 @@ class ModelVersionResponse(
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
+            model_version_id=self.id,
         )
-        mv.model_version_id = self.id
 
         return mv
 
@@ -582,6 +593,11 @@ class ModelVersionResponse(
 class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     """Filter model for model versions."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "user",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="The name of the Model Version",
@@ -605,6 +621,10 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the model version.",
+    )
 
     _model_id: UUID = PrivateAttr(None)
 
@@ -622,6 +642,34 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
             model_id = Client().get_model(model_name_or_id).id
 
         self._model_id = model_id
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            ModelVersionSchema,
+            UserSchema,
+        )
+
+        if self.user:
+            user_filter = and_(
+                ModelVersionSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
 
     def apply_filter(
         self,

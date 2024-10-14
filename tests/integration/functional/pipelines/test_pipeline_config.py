@@ -94,7 +94,9 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.extra == {"a": 1}
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
         p.configure(extra={"a": 2})
         warning.assert_called_once()
 
@@ -127,7 +129,9 @@ def test_pipeline_config_from_file_not_overridden_for_model(
     p = assert_model_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.model.name == "bar"
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
         p.configure(
             model=Model(
                 name="foo",
@@ -160,6 +164,32 @@ def test_pipeline_config_from_file_not_overridden_for_model(
         p()
 
 
+def test_pipeline_config_from_file_appended_by_code(
+    clean_client: "Client", tmp_path
+):
+    """Test that the pipeline can be configured by both
+    YAML file and Python code for non-overlapping configurations.
+
+    Here we set Extra from the YAML and Model from the code.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(run_name="run_name_in_file", extra={"a": 1})
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_extra_pipeline():
+        assert_extra_step()
+
+    p = assert_extra_pipeline.with_options(config_path=str(config_path))
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
+        p.configure(model=Model(name="foo"))
+        warning.assert_not_called()
+
+    p()
+
+
 def test_pipeline_config_from_file_not_warns_on_new_value(
     clean_client: "Client", tmp_path
 ):
@@ -177,7 +207,9 @@ def test_pipeline_config_from_file_not_warns_on_new_value(
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.extra == {}
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
         p.configure(extra={"a": 1})
         warning.assert_not_called()
 
@@ -221,7 +253,9 @@ def test_pipeline_config_from_file_works_with_pipeline_parameters(
     assert p.configuration.parameters == {"foo": "bar"}
 
     # this configuration would be not efficient and overridden by config with warning
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch(
+        "zenml.pipelines.pipeline_definition.logger.warning"
+    ) as warning:
         p.configure(parameters={"foo": 1})
         warning.assert_called_once()
 

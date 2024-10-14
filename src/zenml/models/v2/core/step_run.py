@@ -108,6 +108,13 @@ class StepRunRequest(WorkspaceScopedRequest):
     deployment: UUID = Field(
         title="The deployment associated with the step run."
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
+    )
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Update Model ------------------
@@ -136,6 +143,12 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
+    )
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -151,6 +164,12 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         title="The output artifact versions of the step run.",
         default={},
     )
+    model_version_id: Optional[UUID] = Field(
+        title="The ID of the model version that was "
+        "configured by this step run explicitly.",
+        default=None,
+    )
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -319,6 +338,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().outputs
+
+    @property
+    def model_version_id(self) -> Optional[UUID]:
+        """The `model_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().model_version_id
 
     @property
     def config(self) -> "StepConfiguration":
@@ -508,3 +536,10 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Workspace of this step run",
         union_mode="left_to_right",
     )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Model version associated with the pipeline run.",
+        union_mode="left_to_right",
+    )
+
+    model_config = ConfigDict(protected_namespaces=())

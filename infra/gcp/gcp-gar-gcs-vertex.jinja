@@ -30,32 +30,32 @@
     }
   ],
   "components": {
-    "artifact_store": {
+    "artifact_store": [{
       "flavor": "gcp",
       "service_connector_index": 0,
       "configuration": {
         "path": "gs://zenml-{{ project_number }}-{{ resourceNameSuffix }}"
       }
-    },
-    "container_registry":{
+    }],
+    "container_registry":[{
       "flavor": "gcp",
       "service_connector_index": 0,
       "configuration": {
         "uri": "{{ region }}-docker.pkg.dev/{{ project }}/zenml-{{ resourceNameSuffix }}"
       }
-    },
-    "orchestrator": {
+    }],
+    "orchestrator": [{
       "flavor": "vertex",
       "service_connector_index": 0,
       "configuration": {
         "location": "{{ region }}",
         "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
       }
-    },
-    "image_builder": {
+    }],
+    "image_builder": [{
       "flavor": "gcp",
       "service_connector_index": 0
-    }
+    }]
   }
 }
 {%- endmacro -%}

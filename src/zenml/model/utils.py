@@ -27,7 +27,7 @@ from zenml.models import (
     ModelVersionArtifactRequest,
     ServiceUpdate,
 )
-from zenml.new.steps.step_context import get_step_context
+from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
 
@@ -61,13 +61,8 @@ def link_step_artifacts_to_model(
             artifact_name
         ).artifact_config
 
-        # Implicit linking
         if artifact_config is None and model is not None:
             artifact_config = ArtifactConfig(name=artifact_name)
-            logger.info(
-                f"Implicitly linking artifact `{artifact_name}` to model "
-                f"`{model.name}` version `{model.version}`."
-            )
 
         if artifact_config:
             link_artifact_config_to_model(
@@ -101,6 +96,11 @@ def link_artifact_config_to_model(
         )
 
     if model:
+        logger.debug(
+            f"Linking artifact `{artifact_config.name}` to model "
+            f"`{model.name}` version `{model.version}` using config "
+            f"`{artifact_config}`."
+        )
         request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
@@ -111,33 +111,6 @@ def link_artifact_config_to_model(
             is_deployment_artifact=artifact_config.is_deployment_artifact,
         )
         client.zen_store.create_model_version_artifact_link(request)
-
-
-def log_model_version_metadata(
-    metadata: Dict[str, "MetadataType"],
-    model_name: Optional[str] = None,
-    model_version: Optional[Union[ModelStages, int, str]] = None,
-) -> None:
-    """Log model version metadata.
-
-    This function can be used to log metadata for existing model versions.
-
-    Args:
-        metadata: The metadata to log.
-        model_name: The name of the model to log metadata for. Can
-            be omitted when being called inside a step with configured
-            `model` in decorator.
-        model_version: The version of the model to log metadata for. Can
-            be omitted when being called inside a step with configured
-            `model` in decorator.
-    """
-    logger.warning(
-        "`log_model_version_metadata` is deprecated. Please use "
-        "`log_model_metadata` instead."
-    )
-    log_model_metadata(
-        metadata=metadata, model_name=model_name, model_version=model_version
-    )
 
 
 def log_model_metadata(

@@ -37,9 +37,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11']
+        options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.8'
+        default: '3.9'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -65,9 +65,9 @@ jobs:
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-    # TODO: add Windows testing for Python 3.11 back in
+    # TODO: add Windows testing for Python 3.11 and 3.12 back in
     # Exit if it's a commit from Gitbook
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') }}
     defaults:
       run:
         shell: bash
@@ -104,11 +104,6 @@ jobs:
         env:
           ZENML_ANALYTICS_OPT_IN: false
           ZENML_DEBUG: true
-
-      # - name: Upload coverage
-      #  # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'arc-runner-set' && inputs.python-version == '3.8' }}
-      #   uses: codecov/codecov-action@v2
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17

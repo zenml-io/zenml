@@ -70,20 +70,19 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     IllegalOperationError,
-    ProvisioningError,
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.models import StackFilter
+from zenml.models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+    StackFilter,
+    StackRequest,
+)
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
     ServiceConnectorResponse,
-)
-from zenml.models.v2.misc.full_stack import (
-    ComponentInfo,
-    FullStackRequest,
-    ServiceConnectorInfo,
-    ServiceConnectorResourcesInfo,
 )
 from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,
@@ -281,10 +280,11 @@ def register_stack(
         artifact_store is None or orchestrator is None
     ):
         cli_utils.error(
-            "Only stack using service connector can be registered "
-            "without specifying an artifact store and an orchestrator. "
-            "Please specify the artifact store and the orchestrator or "
-            "the service connector or cloud type settings."
+            "The only way to register a stack without specifying an "
+            "orchestrator and an artifact store is by using either a provider"
+            "(-p/--provider) or an existing service connector "
+            "(-sc/--connector). Please specify the artifact store and "
+            "the orchestrator or the service connector or cloud type settings."
         )
 
     client = Client()
@@ -294,12 +294,12 @@ def register_stack(
             cli_utils.error(
                 "You are registering a stack using a service connector, but "
                 "this feature cannot be used with a local ZenML deployment. "
-                "ZenML needs to be accessible from the cloud provider to allow the "
-                "stack and its components to be registered automatically. "
-                "Please deploy ZenML in a remote environment as described in the "
-                "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
-                "or use a managed ZenML Pro server instance for quick access to "
-                "this feature and more: https://www.zenml.io/pro"
+                "ZenML needs to be accessible from the cloud provider to allow "
+                "the stack and its components to be registered automatically. "
+                "Please deploy ZenML in a remote environment as described in "
+                "the documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+                "or use a managed ZenML Pro server instance for quick access "
+                "to this feature and more: https://www.zenml.io/pro"
             )
 
     try:
@@ -315,8 +315,9 @@ def register_stack(
         pass
 
     labels: Dict[str, str] = {}
-    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
-    # cloud flow
+    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
+
+    # Cloud Flow
     created_objects: Set[str] = set()
     service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
     if provider is not None and connector is None:
@@ -339,6 +340,7 @@ def register_stack(
             )
         except Exception:
             pass
+
         if service_connector_response:
             use_auto_configure = Confirm.ask(
                 f"[bold]{provider.upper()} cloud service connector[/bold] "
@@ -364,8 +366,9 @@ def register_stack(
                         for connector in existing_connectors.items
                     ],
                     headers=["Name"],
-                    prompt_text=f"We found these {provider.upper()} service connectors. "
-                    "Do you want to create a new one or use one of the existing ones?",
+                    prompt_text=f"We found these {provider.upper()} service "
+                    "connectors. Do you want to create a new one or use one "
+                    "of the existing ones?",
                     default_choice="0",
                     allow_zero_be_a_new_object=True,
                 )
@@ -486,7 +489,7 @@ def register_stack(
                     component_info = selected_component.id
                     component_name = selected_component.name
 
-            components[component_type] = component_info
+            components[component_type] = [component_info]
             if component_type == StackComponentType.ARTIFACT_STORE:
                 artifact_store = component_name
             if component_type == StackComponentType.ORCHESTRATOR:
@@ -511,13 +514,15 @@ def register_stack(
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
         ]:
             if component_name_ and component_type_ not in components:
-                components[component_type_] = client.get_stack_component(
-                    component_type_, component_name_
-                ).id
+                components[component_type_] = [
+                    client.get_stack_component(
+                        component_type_, component_name_
+                    ).id
+                ]
 
         try:
-            created_stack = client.zen_store.create_full_stack(
-                full_stack=FullStackRequest(
+            created_stack = client.zen_store.create_stack(
+                stack=StackRequest(
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,
                     name=stack_name,
@@ -1118,51 +1123,6 @@ def get_active_stack() -> None:
             )
         except KeyError as err:
             cli_utils.error(str(err))
-
-
-@stack.command("up")
-def up_stack() -> None:
-    """Provisions resources for the active stack."""
-    stack_ = Client().active_stack
-
-    cli_utils.declare(
-        f"Provisioning resources for active stack '{stack_.name}'."
-    )
-    try:
-        stack_.provision()
-        stack_.resume()
-    except ProvisioningError as e:
-        cli_utils.error(str(e))
-
-
-@stack.command(
-    "down", help="Suspends resources of the active stack deployment."
-)
-@click.option(
-    "--force",
-    "-f",
-    "force",
-    is_flag=True,
-    help="Deprovisions local resources instead of suspending them.",
-)
-def down_stack(force: bool = False) -> None:
-    """Suspends resources of the active stack deployment.
-
-    Args:
-        force: Deprovisions local resources instead of suspending them.
-    """
-    stack_ = Client().active_stack
-
-    if force:
-        cli_utils.declare(
-            f"Deprovisioning resources for active stack '{stack_.name}'."
-        )
-        stack_.deprovision()
-    else:
-        cli_utils.declare(
-            f"Suspending resources for active stack '{stack_.name}'."
-        )
-        stack_.suspend()
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
@@ -2471,6 +2431,12 @@ def _get_stack_component_info(
                 "Skypilot cluster",
                 is_skypilot=True,
             )
+        elif flavor == "azureml":
+            config["subscription_id"] = Prompt.ask(
+                "Enter the subscription ID:"
+            )
+            config["resource_group"] = Prompt.ask("Enter the resource group:")
+            config["workspace"] = Prompt.ask("Enter the workspace name:")
         elif flavor == "vertex":
             config["location"] = query_region(
                 StackDeploymentProvider.GCP, "Vertex AI job"

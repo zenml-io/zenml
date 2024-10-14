@@ -35,6 +35,35 @@ Here we are specifically setting the model configuration for a particular step o
 Please note in the above example if the model version exists, it is automatically associated with the pipeline and becomes active in the pipeline context. Therefore, a user should be careful and intentional as to whether you want to create a new pipeline, or fetch an existing one. See below for an example of fetching a model from an existing version/stage.
 {% endhint %}
 
+## Use name templates for your model versions
+
+If you want to continuously run the same project, but keep track of your model versions using semantical naming, you can rely on templated naming in the `version` argument to the `Model` object. Instead of static model version name from the previous section, templated names will be unique with every new run, but also will be semantically searchable and readable by your team.
+
+```python
+from zenml import Model, step, pipeline
+
+model= Model(
+    name="my_model",
+    version="experiment_with_phi_3_{date}_{time}"
+)
+
+# The step configuration will take precedence over the pipeline
+@step(model=model)
+def llm_trainer(...) -> ...:
+    ...
+
+# This configures it for all steps within the pipeline
+@pipeline(model=model)
+def training_pipeline( ... ):
+    # training happens here
+```
+
+Here we are specifically setting the model configuration for a particular step or for the pipeline as a whole. Once you run this pipeline it will produce a model version with a name evaluated at a runtime, like `experiment_with_phi_3_2024_08_30_12_42_53`. Subsequent runs will also have unique but readable names.
+
+We currently support following placeholders to be used in model version name templates:
+- `{date}`: current date
+- `{time}`: current time in UTC format
+
 ## Fetching model versions by stage
 
 A common pattern is to assign a special `stage` to a model version, i.e. `production`, `staging`, `development` etc. This marks this version especially, and can be used to fetch it using a particular semantic meaning, disconnected from the concrete model version. A model version can be assigned a particular stage in the dashboard or by executing the following command in the CLI:

@@ -242,8 +242,6 @@ Service connector 'aws-implicit' of type 'aws' with id 'e3853748-34a0-4d78-8006-
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 18:08:37.969928                                              ┃
@@ -332,8 +330,6 @@ Service connector 'aws-implicit (s3-bucket | s3://zenfiles client)' of type 'aws
 ┠──────────────────┼─────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                         ┃
 ┠──────────────────┼─────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                         ┃
-┠──────────────────┼─────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                              ┃
 ┠──────────────────┼─────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 18:13:34.146659                      ┃
@@ -387,8 +383,6 @@ Service connector 'aws-implicit (s3-bucket | s3://sagemaker-studio-d8a14tvjsmb c
 ┃ EXPIRES IN       │ N/A                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                             ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                             ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                  ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
@@ -484,8 +478,6 @@ Service connector 'aws-secret-key' of type 'aws' with id 'a1b07c5a-13af-4571-8e6
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 19:23:39.982950                                              ┃
@@ -579,8 +571,6 @@ Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5
 ┃ EXPIRES IN       │ 11h58m24s                                                               ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
@@ -707,8 +697,6 @@ Service connector 'aws-iam-role' of type 'aws' with id '8e499202-57fd-478e-9d2f-
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 19:28:31.679843                                              ┃
@@ -763,8 +751,6 @@ Service connector 'aws-iam-role (s3-bucket | s3://zenfiles client)' of type 'aws
 ┃ EXPIRES IN       │ 59m56s                                          ┃
 ┠──────────────────┼─────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                         ┃
-┠──────────────────┼─────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                         ┃
 ┠──────────────────┼─────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                              ┃
 ┠──────────────────┼─────────────────────────────────────────────────┨
@@ -870,8 +856,6 @@ Service connector 'aws-session-token' of type 'aws' with id '3ae3e595-5cbc-446e-
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 19:31:54.971869                                              ┃
@@ -924,8 +908,6 @@ Service connector 'aws-session-token (s3-bucket | s3://zenfiles client)' of type
 ┃ EXPIRES IN       │ 11h59m56s                                            ┃
 ┠──────────────────┼──────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                              ┃
-┠──────────────────┼──────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                              ┃
 ┠──────────────────┼──────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                   ┃
 ┠──────────────────┼──────────────────────────────────────────────────────┨
@@ -1039,8 +1021,6 @@ Service connector 'aws-federation-token' of type 'aws' with id '868b17d4-b950-4d
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-19 19:36:28.619751                                              ┃
@@ -1093,8 +1073,6 @@ Service connector 'aws-federation-token (s3-bucket | s3://zenfiles client)' of t
 ┃ EXPIRES IN       │ 11h59m56s                                               ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────┨
@@ -1186,8 +1164,6 @@ Service connector 'aws-auto' of type 'aws' with id '9f3139fd-4726-421a-bc07-312d
 ┃ EXPIRES IN       │ N/A                                                                     ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
@@ -1480,7 +1456,7 @@ zenml service-connector list-resources --resource-type s3-bucket
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 's3-bucket' resources can be accessed by service connectors configured in your workspace:
+The following 's3-bucket' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                        ┃
 ┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼───────────────────────────────────────┨
@@ -1502,7 +1478,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
 ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
@@ -1522,7 +1498,7 @@ zenml service-connector list-resources --resource-type docker-registry
 {% code title="Example Command Output" %}
 ````
 ```text
-The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
 ┠──────────────────────────────────────┼────────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
@@ -1541,7 +1517,6 @@ The following 'docker-registry' resources can be accessed by service connectors 
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered artifact_store `s3-zenfiles`.
 ```
@@ -1558,7 +1533,6 @@ zenml artifact-store connect s3-zenfiles --connector aws-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected artifact store `s3-zenfiles` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
@@ -1579,7 +1553,6 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered orchestrator `eks-zenml-zenhacks`.
 ```
@@ -1596,7 +1569,6 @@ zenml orchestrator connect eks-zenml-zenhacks --connector aws-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected orchestrator `eks-zenml-zenhacks` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
@@ -1617,7 +1589,6 @@ Successfully connected orchestrator `eks-zenml-zenhacks` to the following resour
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully registered container_registry `ecr-us-east-1`.
 ```
@@ -1634,7 +1605,6 @@ zenml container-registry connect ecr-us-east-1 --connector aws-demo-multi
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (repository)
 Running with active stack: 'default' (repository)
 Successfully connected container registry `ecr-us-east-1` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1655,7 +1625,6 @@ Successfully connected container registry `ecr-us-east-1` to the following resou
 {% code title="Example Command Output" %}
 ````
 ```text
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered image_builder `local`.
 ```
@@ -1673,7 +1642,6 @@ zenml stack register aws-demo -a s3-zenfiles -o eks-zenml-zenhacks -c ecr-us-eas
 ````
 ```text
 Connected to the ZenML server: 'https://stefan.develaws.zenml.io'
-Running with active workspace: 'default' (repository)
 Stack 'aws-demo' successfully registered!
 Active repository stack set to:'aws-demo'
 ```
@@ -1747,7 +1715,7 @@ Hello World!
 Step step_2 has finished in 2.364s.
 Pod of step step_2 completed.
 Orchestration pod completed.
-Dashboard URL: https://stefan.develaws.zenml.io/workspaces/default/pipelines/be5adfe9-45af-4709-a8eb-9522c01640ce/runs
+Dashboard URL: https://stefan.develaws.zenml.io/default/pipelines/be5adfe9-45af-4709-a8eb-9522c01640ce/runs
 ```
 ````
 {% endcode %}

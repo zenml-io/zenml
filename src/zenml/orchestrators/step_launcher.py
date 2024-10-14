@@ -167,7 +167,7 @@ class StepLauncher:
             )
 
             logs_context = step_logging.StepLogsStorageContext(
-                logs_uri=logs_uri
+                logs_uri=logs_uri, artifact_store=self._stack.artifact_store
             )  # type: ignore[assignment]
 
             logs_model = LogsRequest(
@@ -209,9 +209,21 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
+                # warm-up and register the pipeline model version
+                pipeline_model = self._deployment.pipeline_configuration.model
+                if pipeline_model and pipeline_run.model_version is None:
+                    prep_logs_to_show, pipeline_run, _ = (
+                        pipeline_model._prepare_model_version_before_step_launch(
+                            pipeline_run=pipeline_run,
+                            step_run=None,
+                            return_logs=True,
+                        )
+                    )
+                    if prep_logs_to_show:
+                        logger.info(prep_logs_to_show)
                 try:
                     execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                        step_run=step_run, pipeline_run=pipeline_run
                     )
                 except:
                     logger.exception(
@@ -224,6 +236,23 @@ class StepLauncher:
                     step_run_response = Client().zen_store.create_run_step(
                         step_run
                     )
+
+                    # warm-up and register the step model version
+                    step_model = self._deployment.step_configurations[
+                        step_run.name
+                    ].config.model
+                    if step_model:
+                        prep_logs_to_show, _, step_run_response_update = (
+                            step_model._prepare_model_version_before_step_launch(
+                                pipeline_run=pipeline_run,
+                                step_run=step_run_response,
+                                return_logs=True,
+                            )
+                        )
+                        if step_run_response_update:
+                            step_run_response = step_run_response_update
+                        if prep_logs_to_show:
+                            logger.info(prep_logs_to_show)
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
@@ -296,6 +325,18 @@ class StepLauncher:
                                     step_run_response.id
                                 )
                                 raise
+                else:
+                    model = step_model or pipeline_model
+                    orchestrator_utils._link_cached_artifacts_to_model(
+                        model_from_context=model,
+                        step_run=step_run,
+                        step_source=self._step.spec.source,
+                    )
+                    if model:
+                        orchestrator_utils._link_pipeline_run_to_model_from_context(
+                            pipeline_run_id=step_run.pipeline_run_id,
+                            model=model,
+                        )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
@@ -358,23 +399,21 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
+        pipeline_run: "PipelineRunResponse",
     ) -> Tuple[bool, StepRunRequest]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
+            pipeline_run: The pipeline run.
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model = (
-            self._deployment.step_configurations[step_run.name].config.model
-            or self._deployment.pipeline_configuration.model
-        )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
-            run_id=step_run.pipeline_run_id,
+            pipeline_run=pipeline_run,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -414,20 +453,12 @@ class StepLauncher:
                 execution_needed = False
                 cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
+
                 step_run.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
-                orchestrator_utils._link_cached_artifacts_to_model(
-                    model_from_context=model,
-                    step_run=step_run,
-                    step_source=self._step.spec.source,
-                )
-                if self._step.config.model:
-                    orchestrator_utils._link_pipeline_run_to_model_from_context(
-                        pipeline_run_id=step_run.pipeline_run_id,
-                        model=self._step.config.model,
-                    )
+
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 

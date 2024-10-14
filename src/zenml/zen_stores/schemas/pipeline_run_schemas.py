@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
@@ -36,6 +37,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
@@ -52,6 +54,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionPipelineRunSchema,
+        ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
@@ -113,6 +116,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=MODEL_VERSION_TABLENAME,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     # Relationships
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
@@ -140,6 +151,9 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    model_version: "ModelVersionSchema" = Relationship(
+        back_populates="pipeline_runs",
     )
 
     # Temporary fields and foreign keys to be deprecated
@@ -200,6 +214,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         ),
     )
 
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
     @classmethod
     def from_request(
         cls, request: "PipelineRunRequest"
@@ -225,6 +241,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
+            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -307,9 +324,19 @@ class PipelineRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
+            model_version_id=self.model_version_id,
         )
         metadata = None
         if include_metadata:
+            is_templatable = False
+            if (
+                self.deployment
+                and self.deployment.build
+                and not self.deployment.build.is_local
+                and self.deployment.build.stack
+            ):
+                is_templatable = True
+
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(
@@ -328,19 +355,14 @@ class PipelineRunSchema(NamedSchema, table=True):
                 template_id=self.deployment.template_id
                 if self.deployment
                 else None,
+                is_templatable=is_templatable,
             )
 
         resources = None
         if include_resources:
             model_version = None
-            if config.model and config.model.model_version_id:
-                try:
-                    model_version = config.model._get_model_version(
-                        hydrate=False
-                    )
-                except KeyError:
-                    # Unable to find the model version, it was probably deleted
-                    pass
+            if self.model_version:
+                model_version = self.model_version.to_model()
 
             resources = PipelineRunResponseResources(
                 model_version=model_version,
@@ -367,6 +389,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
+        if run_update.model_version_id and self.model_version_id is None:
+            self.model_version_id = run_update.model_version_id
 
         self.updated = datetime.utcnow()
         return self

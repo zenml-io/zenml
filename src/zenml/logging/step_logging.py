@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML logging handler."""
 
+import datetime
 import os
 import re
 import sys
@@ -27,7 +28,6 @@ from zenml.artifacts.utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
 )
-from zenml.client import Client
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.logging import (
@@ -211,6 +211,7 @@ class StepLogsStorage:
     def __init__(
         self,
         logs_uri: str,
+        artifact_store: "BaseArtifactStore",
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
         merge_files_interval: int = STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
@@ -219,6 +220,7 @@ class StepLogsStorage:
 
         Args:
             logs_uri: the URI of the log file or folder.
+            artifact_store: Artifact Store from the current step context
             max_messages: the maximum number of messages to save in the buffer.
             time_interval: the amount of seconds before the buffer gets saved
                 automatically.
@@ -236,21 +238,10 @@ class StepLogsStorage:
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
-        self._artifact_store: Optional["BaseArtifactStore"] = None
+        self.artifact_store = artifact_store
 
         # Immutable filesystems state
         self.last_merge_time = time.time()
-
-    @property
-    def artifact_store(self) -> "BaseArtifactStore":
-        """Returns the active artifact store.
-
-        Returns:
-            The active artifact store.
-        """
-        if self._artifact_store is None:
-            self._artifact_store = Client().active_stack.artifact_store
-        return self._artifact_store
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -312,17 +303,26 @@ class StepLogsStorage:
                             "w",
                         ) as file:
                             for message in self.buffer:
+                                timestamp = datetime.datetime.now(
+                                    datetime.timezone.utc
+                                ).strftime("%Y-%m-%d %H:%M:%S")
                                 file.write(
-                                    remove_ansi_escape_codes(message) + "\n"
+                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )
                     else:
                         with self.artifact_store.open(
                             self.logs_uri, "a"
                         ) as file:
                             for message in self.buffer:
+                                timestamp = datetime.datetime.now(
+                                    datetime.timezone.utc
+                                ).strftime("%Y-%m-%d %H:%M:%S")
                                 file.write(
-                                    remove_ansi_escape_codes(message) + "\n"
+                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )
+                        self.artifact_store._remove_previous_file_versions(
+                            self.logs_uri
+                        )
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
@@ -399,13 +399,18 @@ class StepLogsStorage:
 class StepLogsStorageContext:
     """Context manager which patches stdout and stderr during step execution."""
 
-    def __init__(self, logs_uri: str) -> None:
+    def __init__(
+        self, logs_uri: str, artifact_store: "BaseArtifactStore"
+    ) -> None:
         """Initializes and prepares a storage object.
 
         Args:
             logs_uri: the URI of the logs file.
+            artifact_store: Artifact Store from the current step context.
         """
-        self.storage = StepLogsStorage(logs_uri=logs_uri)
+        self.storage = StepLogsStorage(
+            logs_uri=logs_uri, artifact_store=artifact_store
+        )
 
     def __enter__(self) -> "StepLogsStorageContext":
         """Enter condition of the context manager.

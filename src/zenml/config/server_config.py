@@ -29,6 +29,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
@@ -231,6 +232,8 @@ class ServerConfiguration(BaseModel):
         auto_activate: Whether to automatically activate the server and create a
             default admin user account with an empty password during the initial
             deployment.
+        max_request_body_size_in_bytes: The maximum size of the request body in
+            bytes. If not specified, the default value of 256 Kb will be used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -319,6 +322,10 @@ class ServerConfiguration(BaseModel):
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
 
+    max_request_body_size_in_bytes: int = (
+        DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
+    )
+
     _deployment_id: Optional[UUID] = None
 
     @model_validator(mode="before")
@@ -380,6 +387,36 @@ class ServerConfiguration(BaseModel):
                 if v.lower() in ["enabled", "yes", "true", "on"]:
                     # Revert to the default value if the header is enabled
                     del data[k]
+
+        # Handle merging of user-defined secure_headers_csp value with the default value
+        if "secure_headers_csp" in data:
+            user_defined_csp = data["secure_headers_csp"]
+            if isinstance(user_defined_csp, str):
+                # Parse the user-defined CSP string into a dictionary
+                user_defined_csp_dict = {}
+                for directive in user_defined_csp.split(";"):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        user_defined_csp_dict[key] = value.strip("'\"")
+
+                # Merge the user-defined CSP dictionary with the default CSP dictionary
+                default_csp_dict = {}
+                for directive in DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP.split(
+                    ";"
+                ):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        default_csp_dict[key] = value.strip("'\"")
+
+                merged_csp_dict = {**default_csp_dict, **user_defined_csp_dict}
+
+                # Convert the merged CSP dictionary back to a string
+                merged_csp_str = "; ".join(
+                    f"{key} {value}" for key, value in merged_csp_dict.items()
+                )
+                data["secure_headers_csp"] = merged_csp_str
 
         return data
 

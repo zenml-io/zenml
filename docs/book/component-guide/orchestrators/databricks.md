@@ -124,7 +124,7 @@ The Databricks orchestrator only supports the `cron_expression`, in the `Schedul
 {% endhint %}
 
 {% hint style="warning" %}
-The Databricks orchestrator requires Java Timezone IDs to be used in the `cron_expression`. You can find a list of supported timezones [here](https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html), the timezone ID must be set in the settings of the orchestrator (see below for more imformation how to set settings for the orchestrator).
+The Databricks orchestrator requires Java Timezone IDs to be used in the `cron_expression`. You can find a list of supported timezones [here](https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html), the timezone ID must be set in the settings of the orchestrator (see below for more information how to set settings for the orchestrator).
 {% endhint %}
 
 **How to delete a scheduled pipeline**
@@ -158,7 +158,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.databricks": databricks_settings,
+        "orchestrator": databricks_settings,
     }
 )
 def my_pipeline():

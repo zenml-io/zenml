@@ -18,7 +18,7 @@ import ast
 import contextlib
 import inspect
 import textwrap
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,12 +26,16 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import MetadataResourceTypes
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.new.steps.step_context import get_step_context
-from zenml.steps.step_output import Output
-from zenml.utils import source_code_utils, typing_utils
+from zenml.steps.step_context import get_step_context
+from zenml.utils import settings_utils, source_code_utils, typing_utils
+
+if TYPE_CHECKING:
+    from zenml.steps import BaseStep
+
 
 logger = get_logger(__name__)
 
@@ -44,6 +48,28 @@ class OutputSignature(BaseModel):
     resolved_annotation: Any = None
     artifact_config: Optional[ArtifactConfig] = None
     has_custom_name: bool = False
+
+    def get_output_types(self) -> Tuple[Any, ...]:
+        """Get all output types that match the type annotation.
+
+        Returns:
+            All output types that match the type annotation.
+        """
+        if self.resolved_annotation is Any:
+            return ()
+
+        if typing_utils.is_union(
+            typing_utils.get_origin(self.resolved_annotation)
+            or self.resolved_annotation
+        ):
+            return tuple(
+                type(None)
+                if typing_utils.is_none_type(output_type)
+                else output_type
+                for output_type in get_args(self.resolved_annotation)
+            )
+        else:
+            return (self.resolved_annotation,)
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
@@ -102,26 +128,7 @@ def parse_return_type_annotations(
         else:
             return_annotation = Any
 
-    # Return type annotated using deprecated `Output(...)`
-    if isinstance(return_annotation, Output):
-        logger.warning(
-            "Using the `Output` class to define the outputs of your steps is "
-            "deprecated. You should instead use the standard Python way of "
-            "type annotating your functions. Check out our documentation "
-            "https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation "
-            "for more information on how to assign custom names to your step "
-            "outputs."
-        )
-        return {
-            output_name: OutputSignature(
-                resolved_annotation=resolve_type_annotation(output_type),
-                artifact_config=None,
-                has_custom_name=True,
-            )
-            for output_name, output_type in return_annotation.items()
-        }
-
-    elif typing_utils.get_origin(return_annotation) is tuple:
+    if typing_utils.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
             output_signature: Dict[str, Any] = {}
@@ -464,3 +471,88 @@ def log_step_metadata(
         resource_id=step_run_id,
         resource_type=MetadataResourceTypes.STEP_RUN,
     )
+
+
+def run_as_single_step_pipeline(
+    __step: "BaseStep", *args: Any, **kwargs: Any
+) -> Any:
+    """Runs the step as a single step pipeline.
+
+    - All inputs that are not JSON serializable will be uploaded to the
+    artifact store before the pipeline is being executed.
+    - All output artifacts of the step will be loaded using the materializer
+    that was used to store them.
+
+    Args:
+        *args: Entrypoint function arguments.
+        **kwargs: Entrypoint function keyword arguments.
+
+    Raises:
+        RuntimeError: If the step execution failed.
+        StepInterfaceError: If the arguments to the entrypoint function are
+            invalid.
+
+    Returns:
+        The output of the step entrypoint function.
+    """
+    from zenml import ExternalArtifact, pipeline
+    from zenml.config.base_settings import BaseSettings
+    from zenml.pipelines.run_utils import (
+        wait_for_pipeline_run_to_finish,
+    )
+
+    logger.info(
+        "Running single step pipeline to execute step `%s`", __step.name
+    )
+
+    try:
+        validated_arguments = (
+            inspect.signature(__step.entrypoint)
+            .bind(*args, **kwargs)
+            .arguments
+        )
+    except TypeError as e:
+        raise StepInterfaceError(
+            "Invalid step function entrypoint arguments. Check out the "
+            "error above for more details."
+        ) from e
+
+    inputs: Dict[str, Any] = {}
+    for key, value in validated_arguments.items():
+        try:
+            __step.entrypoint_definition.validate_input(key=key, value=value)
+            inputs[key] = value
+        except Exception:
+            inputs[key] = ExternalArtifact(value=value)
+
+    orchestrator = Client().active_stack.orchestrator
+
+    pipeline_settings: Any = {}
+    if "synchronous" in orchestrator.config.model_fields:
+        # Make sure the orchestrator runs sync so we stream the logs
+        key = settings_utils.get_stack_component_setting_key(orchestrator)
+        pipeline_settings[key] = BaseSettings(synchronous=True)
+
+    @pipeline(name=__step.name, enable_cache=False, settings=pipeline_settings)
+    def single_step_pipeline() -> None:
+        __step(**inputs)
+
+    run = single_step_pipeline.with_options(unlisted=True)()
+    run = wait_for_pipeline_run_to_finish(run.id)
+
+    if run.status != ExecutionStatus.COMPLETED:
+        raise RuntimeError("Failed to execute step %s.", __step.name)
+
+    # 4. Load output artifacts
+    step_run = next(iter(run.steps.values()))
+    outputs = [
+        step_run.outputs[output_name].load()
+        for output_name in step_run.config.outputs.keys()
+    ]
+
+    if len(outputs) == 0:
+        return None
+    elif len(outputs) == 1:
+        return outputs[0]
+    else:
+        return tuple(outputs)

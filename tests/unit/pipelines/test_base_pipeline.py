@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 from contextlib import ExitStack as does_not_raise
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 from uuid import uuid4
 
 import pytest
-from pytest_mock import MockFixture
 
 from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.client import Client
@@ -24,185 +24,25 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
-    PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
+from zenml.models import (
+    Page,
+    PipelineBuildBase,
+)
 from zenml.pipelines import Schedule, pipeline
-from zenml.steps import BaseParameters, step
-
-
-def create_pipeline_with_param_value(param_value: int):
-    """Creates pipeline instance with a step named 'step' which has a parameter named 'value'."""
-
-    class Params(BaseParameters):
-        value: int
-
-    @step
-    def step_with_params(params: Params) -> None:
-        pass
-
-    @pipeline
-    def some_pipeline(step_):
-        step_()
-
-    pipeline_instance = some_pipeline(
-        step_=step_with_params(params=Params(value=param_value))
-    )
-    return pipeline_instance
-
-
-def test_initialize_pipeline_with_args(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that a pipeline can be initialized with args."""
-    with does_not_raise():
-        empty_step_1, empty_step_2 = generate_empty_steps(2)
-        unconnected_two_step_pipeline(empty_step_1(), empty_step_2())
-
-
-def test_initialize_pipeline_with_kwargs(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that a pipeline can be initialized with kwargs."""
-    with does_not_raise():
-        empty_step_1, empty_step_2 = generate_empty_steps(2)
-        unconnected_two_step_pipeline(
-            step_1=empty_step_1(), step_2=empty_step_2()
-        )
-
-
-def test_initialize_pipeline_with_args_and_kwargs(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that a pipeline can be initialized with a mix of args and kwargs."""
-    with does_not_raise():
-        empty_step_1, empty_step_2 = generate_empty_steps(2)
-        unconnected_two_step_pipeline(empty_step_1(), step_2=empty_step_2())
-
-
-def test_initialize_pipeline_with_too_many_args(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that pipeline initialization fails when too many args are passed."""
-    with pytest.raises(PipelineInterfaceError):
-        empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
-        unconnected_two_step_pipeline(
-            empty_step_1(), empty_step_2(), empty_step_3()
-        )
-
-
-def test_initialize_pipeline_with_too_many_args_and_kwargs(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that pipeline initialization fails when too many args and kwargs are passed."""
-    with pytest.raises(PipelineInterfaceError):
-        empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
-        unconnected_two_step_pipeline(
-            empty_step_3(), step_1=empty_step_1(), step_2=empty_step_2()
-        )
-
-
-def test_initialize_pipeline_with_missing_key(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization fails when an argument is missing."""
-    with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(step_1=empty_step())
-
-
-def test_initialize_pipeline_with_unexpected_key(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that pipeline initialization fails when an argument has an unexpected key."""
-    with pytest.raises(PipelineInterfaceError):
-        empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
-        unconnected_two_step_pipeline(
-            step_1=empty_step_1(), step_2=empty_step_2(), step_3=empty_step_3()
-        )
-
-
-def test_initialize_pipeline_with_repeated_args(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization works when same step object is used."""
-    step_instance = empty_step()
-    with does_not_raise():
-        unconnected_two_step_pipeline(step_instance, step_instance)
-
-
-def test_initialize_pipeline_with_repeated_kwargs(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization works when same step object is used."""
-    step_instance = empty_step()
-    with does_not_raise():
-        unconnected_two_step_pipeline(
-            step_1=step_instance, step_2=step_instance
-        )
-
-
-def test_initialize_pipeline_with_repeated_args_and_kwargs(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization works when same step object is used."""
-    step_instance = empty_step()
-    with does_not_raise():
-        unconnected_two_step_pipeline(step_instance, step_2=step_instance)
-
-
-def test_initialize_pipeline_with_wrong_arg_type(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization fails when an arg has a wrong type."""
-    with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(1, empty_step())
-
-
-def test_initialize_pipeline_with_wrong_kwarg_type(
-    unconnected_two_step_pipeline, empty_step
-):
-    """Test that pipeline initialization fails when a kwarg has a wrong type."""
-    with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(step_1=1, step_2=empty_step())
-
-
-def test_initialize_pipeline_with_missing_arg_step_brackets(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that pipeline initialization fails with missing arg brackets."""
-    with pytest.raises(PipelineInterfaceError):
-        empty_step_1, empty_step_2 = generate_empty_steps(2)
-        unconnected_two_step_pipeline(empty_step_1, empty_step_2)
-
-
-def test_initialize_pipeline_with_missing_kwarg_step_brackets(
-    unconnected_two_step_pipeline, generate_empty_steps
-):
-    """Test that pipeline initialization fails with missing kwarg brackets."""
-    with pytest.raises(PipelineInterfaceError):
-        empty_step_1, empty_step_2 = generate_empty_steps(2)
-        unconnected_two_step_pipeline(step_1=empty_step_1, step_2=empty_step_2)
-
-
-def test_setting_step_parameter_with_config_object():
-    """Test whether step parameters can be set using a config object."""
-    config_value = 0
-    pipeline_instance = create_pipeline_with_param_value(config_value)
-    step_instance = pipeline_instance.steps["step_"]
-
-    assert step_instance.configuration.parameters["value"] == config_value
+from zenml.steps import step
 
 
 def test_calling_a_pipeline_twice_raises_no_exception(
     one_step_pipeline, empty_step
 ):
     """Tests that calling one pipeline instance twice does not raise any exception."""
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     with does_not_raise():
-        pipeline_instance.run(unlisted=True)
-        pipeline_instance.run(unlisted=True)
+        pipeline_instance.with_options(unlisted=True)()
+        pipeline_instance.with_options(unlisted=True)()
 
 
 @step
@@ -219,32 +59,12 @@ def test_step_can_receive_the_same_input_artifact_multiple_times():
     """Tests that a step can receive the same input artifact multiple times."""
 
     @pipeline
-    def test_pipeline(step_1, step_2):
-        output = step_1()
-        step_2(a=output, b=output, c=output)
-
-    pipeline_instance = test_pipeline(
-        step_1=step_with_output(), step_2=step_with_three_inputs()
-    )
+    def test_pipeline():
+        output = step_with_output()
+        step_with_three_inputs(a=output, b=output, c=output)
 
     with does_not_raise():
-        pipeline_instance.run(unlisted=True)
-
-
-def test_pipeline_does_not_need_to_call_all_steps(empty_step):
-    """Tests that a pipeline does not have to call all it's steps."""
-
-    @pipeline
-    def test_pipeline(step_1, step_2):
-        step_1()
-        # don't call step_2
-
-    pipeline_instance = test_pipeline(
-        step_1=empty_step(), step_2=empty_step(name="other_name")
-    )
-
-    with does_not_raise():
-        pipeline_instance.run(unlisted=True)
+        test_pipeline.with_options(unlisted=True)()
 
 
 @step(step_operator="azureml")
@@ -259,9 +79,9 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     operator fails if the active stack does not contain this step operator."""
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_step_operator()).run(
+        one_step_pipeline(step_that_requires_step_operator).with_options(
             unlisted=True
-        )
+        )()
 
 
 def test_pipeline_decorator_configuration_gets_applied_during_initialization(
@@ -275,10 +95,9 @@ def test_pipeline_decorator_configuration_gets_applied_during_initialization(
     }
 
     @pipeline(**config)
-    def p():
+    def pipeline_instance():
         pass
 
-    pipeline_instance = p()
     assert pipeline_instance.configuration.name == "pipeline_name"
     assert pipeline_instance.configuration.extra == {"key": "value"}
 
@@ -334,10 +153,17 @@ def test_run_configuration_in_code(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     schedule = Schedule(cron_expression="5 * * * *")
-    pipeline_instance.run(run_name="run_name", schedule=schedule)
+
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        pipeline_instance.with_options(
+            run_name="run_name", schedule=schedule
+        )()
 
     expected_run_config = PipelineRunConfiguration(
         run_name="run_name", schedule=schedule
@@ -354,7 +180,7 @@ def test_run_configuration_from_file(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     schedule = Schedule(cron_expression="5 * * * *")
 
@@ -364,7 +190,11 @@ def test_run_configuration_from_file(
     )
     config_path.write_text(expected_run_config.yaml())
 
-    pipeline_instance.run(config_path=str(config_path))
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        pipeline_instance.with_options(config_path=str(config_path))()
     mock_compile.assert_called_once_with(
         pipeline=ANY, stack=ANY, run_configuration=expected_run_config
     )
@@ -378,7 +208,7 @@ def test_run_configuration_from_code_and_file(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     schedule = Schedule(cron_expression="5 * * * *")
 
@@ -388,10 +218,14 @@ def test_run_configuration_from_code_and_file(
     )
     config_path.write_text(file_config.yaml())
 
-    pipeline_instance.run(
-        config_path=str(config_path),
-        run_name="run_name_in_code",
-    )
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        pipeline_instance.with_options(
+            config_path=str(config_path),
+            run_name="run_name_in_code",
+        )()
 
     expected_run_config = PipelineRunConfiguration(
         run_name="run_name_in_code",
@@ -410,9 +244,9 @@ def test_pipeline_configuration_with_steps_argument(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
-    step_configs = {"step_": {"enable_artifact_visualization": False}}
+    step_configs = {"_empty_step": {"enable_artifact_visualization": False}}
     pipeline_instance.with_options(steps=step_configs)()
 
     expected_run_config = PipelineRunConfiguration(steps=step_configs)
@@ -430,10 +264,10 @@ def test_pipeline_configuration_with_duplicate_step_configurations(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
-    step_configs = {"step_": {"enable_artifact_visualization": False}}
-    ignored_step_configs = {"step_": {"enable_artifact_metadata": False}}
+    step_configs = {"_empty_step": {"enable_artifact_visualization": False}}
+    ignored_step_configs = {"_empty_step": {"enable_artifact_metadata": False}}
 
     pipeline_instance.with_options(
         step_configurations=step_configs, steps=ignored_step_configs
@@ -456,81 +290,79 @@ def step_with_cache_disabled() -> None:
 
 
 @pipeline(enable_cache=True)
-def pipeline_with_cache_enabled(step_1, step_2) -> None:
-    step_1()
-    step_2()
+def pipeline_with_cache_enabled() -> None:
+    step_with_cache_enabled()
+    step_with_cache_disabled()
 
 
 @pipeline(enable_cache=False)
-def pipeline_with_cache_disabled(
-    step_1,
-    step_2,
-) -> None:
-    step_1()
-    step_2()
+def pipeline_with_cache_disabled() -> None:
+    step_with_cache_enabled()
+    step_with_cache_disabled()
 
 
-def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
-    mocker: MockFixture,
-):
-    """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
+# TODO: This never worked for the new pipeline class, figure out a way to
+# reenable this once we figured out the config precedence
+# def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
+#     mocker: MockFixture,
+# ):
+#     """Test that `pipeline.with_options(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(deployment: PipelineDeploymentBase):
-        assert deployment.pipeline_configuration.enable_cache is True
-        for step_ in deployment.step_configurations.values():
-            assert step_.config.enable_cache is True
+#     def assert_cache_enabled(
+#         deployment: PipelineDeploymentBase,
+#         placeholder_run: Optional[PipelineRunResponse] = None,
+#     ):
+#         assert deployment.pipeline_configuration.enable_cache is True
+#         for step_ in deployment.step_configurations.values():
+#             assert step_.config.enable_cache is True
 
-    def assert_cache_disabled(
-        deployment: PipelineDeploymentBase,
-    ):
-        assert deployment.pipeline_configuration.enable_cache is False
-        for step_ in deployment.step_configurations.values():
-            assert step_.config.enable_cache is False
+#     def assert_cache_disabled(
+#         deployment: PipelineDeploymentBase,
+#         placeholder_run: Optional[PipelineRunResponse] = None,
+#     ):
+#         assert deployment.pipeline_configuration.enable_cache is False
+#         for step_ in deployment.step_configurations.values():
+#             assert step_.config.enable_cache is False
 
-    cache_enabled_mock = mocker.MagicMock(side_effect=assert_cache_enabled)
-    cache_disabled_mock = mocker.MagicMock(side_effect=assert_cache_disabled)
+#     cache_enabled_mock = mocker.MagicMock(side_effect=assert_cache_enabled)
+#     cache_disabled_mock = mocker.MagicMock(side_effect=assert_cache_disabled)
 
-    # Test that `enable_cache=True` overrides all decorator values
-    mocker.patch(
-        "zenml.stack.stack.Stack.deploy_pipeline", new=cache_enabled_mock
-    )
-    pipeline_instance = pipeline_with_cache_disabled(
-        step_1=step_with_cache_enabled(),
-        step_2=step_with_cache_disabled(),
-    )
-    pipeline_instance.run(unlisted=True, enable_cache=True)
-    assert cache_enabled_mock.call_count == 1
+#     # Test that `enable_cache=True` overrides all decorator values
+#     mocker.patch(
+#         "zenml.stack.stack.Stack.deploy_pipeline", new=cache_enabled_mock
+#     )
+#     pipeline_with_cache_disabled.with_options(
+#         unlisted=True, enable_cache=True
+#     )()
+#     assert cache_enabled_mock.call_count == 1
 
-    # Test that `enable_cache=False` overrides all decorator values
-    mocker.patch(
-        "zenml.stack.stack.Stack.deploy_pipeline", new=cache_disabled_mock
-    )
-    pipeline_instance = pipeline_with_cache_enabled(
-        step_1=step_with_cache_enabled(),
-        step_2=step_with_cache_disabled(),
-    )
-    pipeline_instance.run(unlisted=True, enable_cache=False)
-    assert cache_disabled_mock.call_count == 1
+#     # Test that `enable_cache=False` overrides all decorator values
+#     mocker.patch(
+#         "zenml.stack.stack.Stack.deploy_pipeline", new=cache_disabled_mock
+#     )
+#     pipeline_with_cache_enabled.with_options(
+#         unlisted=True, enable_cache=False
+#     )()
+#     assert cache_disabled_mock.call_count == 1
 
 
 def test_unique_identifier_considers_spec(empty_step):
     """Tests that the unique pipeline ID depends on the pipeline spec."""
 
     @pipeline
-    def p(s1, s2):
-        s1()
-        s2()
-        s2.after(s1)
-
-    step_1 = empty_step(name="step_1")
-    step_2 = empty_step(name="step_2")
-    pipeline_instance = p(step_1, step_2)
+    def pipeline_instance():
+        empty_step(id="step_1")
+        empty_step(id="step_2", after="step_1")
 
     pipeline_instance.prepare()
     spec = Compiler().compile_spec(pipeline=pipeline_instance)
     id_ = pipeline_instance._compute_unique_identifier(spec)
 
-    new_instance = p(step_1, step_with_cache_enabled())
+    @pipeline
+    def new_instance():
+        empty_step(id="step_1")
+        step_with_cache_enabled(id="step_2", after="step_1")
+
     new_instance.prepare()
     new_spec = Compiler().compile_spec(pipeline=new_instance)
     new_id = new_instance._compute_unique_identifier(new_spec)
@@ -543,8 +375,7 @@ def test_unique_identifier_considers_step_source_code(
     one_step_pipeline, empty_step, mocker
 ):
     """Tests that the unique pipeline ID depends on the step source code."""
-    step_instance = empty_step()
-    pipeline_instance = one_step_pipeline(step_instance)
+    pipeline_instance = one_step_pipeline(empty_step)
 
     pipeline_instance.prepare()
     spec = Compiler().compile_spec(pipeline=pipeline_instance)
@@ -583,224 +414,6 @@ def test_reusing_pipeline(
     result = pipeline_instance.register()
 
     assert result == pipeline_model
-
-
-# def test_loading_legacy_pipeline_from_model(create_pipeline_model):
-#     """Tests loading and running a pipeline from a model."""
-#     with open("my_steps.py", "w") as f:
-#         f.write(
-#             (
-#                 "from zenml.steps import step\n"
-#                 "@step\n"
-#                 "def s1() -> int:\n"
-#                 "  return 1\n\n"
-#                 "@step\n"
-#                 "def s2(inp: int) -> None:\n"
-#                 "  pass"
-#             )
-#         )
-
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "inp": {"step_name": "step_1", "output_name": "output"}
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     pipeline_instance = BasePipeline.from_model(pipeline_model)
-#     assert Compiler().compile_spec(pipeline_instance) == spec
-#     assert pipeline_instance.name == pipeline_model.name
-
-#     with does_not_raise():
-#         pipeline_instance.run()
-
-#     # Invalid source
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "WRONG_MODULE.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(ImportError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Missing upstream step
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": ["NONEXISTENT"],
-#                     "pipeline_parameter_name": "step_1",
-#                 }
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Missing output
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "inp": {
-#                             "step_name": "step_1",
-#                             "output_name": "NONEXISTENT",
-#                         }
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Wrong inputs
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "WRONG_INPUT_NAME": {
-#                             "step_name": "step_1",
-#                             "output_name": "output",
-#                         }
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-
-# TODO: move to deserialization utils tests
-# def test_connect_method_generation(clean_workspace, create_pipeline_model):
-#     """Tests dynamically generating the connect method from a model."""
-#     with open("my_steps.py", "w") as f:
-#         f.write(
-#             (
-#                 "from zenml.steps import step\n"
-#                 "@step\n"
-#                 "def s1() -> int:\n"
-#                 "  return 1\n\n"
-#                 "@step\n"
-#                 "def s2(inp: int) -> None:\n"
-#                 "  pass"
-#             )
-#         )
-
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["s1"],
-#                     "inputs": {
-#                         "inp": {"step_name": "s1", "output_name": "output"}
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ]
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     connect_method = BasePipeline._generate_connect_method(pipeline_model)
-
-#     arg_spec = inspect.getfullargspec(connect_method)
-#     assert arg_spec.args == ["step_1", "step_2"]
-
-#     steps = {
-#         "step_1": BaseStep.load_from_source("my_steps.s1"),
-#         "step_2": BaseStep.load_from_source("my_steps.s2"),
-#     }
-
-#     # Missing steps
-#     with pytest.raises(TypeError):
-#         connect_method()
-
-#     # Additional arg
-#     wrong_steps = steps.copy()
-#     wrong_steps["step_3"] = wrong_steps["step_1"]
-#     with pytest.raises(TypeError):
-#         connect_method(**wrong_steps)
-
-#     with does_not_raise():
-#         connect_method(**steps)
-
-#     # Reconfigure step name
-#     steps = {
-#         "step_1": BaseStep.load_from_source("my_steps.s1"),
-#         "step_2": BaseStep.load_from_source("my_steps.s2"),
-#     }
-#     steps["step_1"].configure(name="new_name")
-#     with pytest.raises(RuntimeError):
-#         connect_method(**steps)
-
-
-# def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
-#     """Tests that loading a pipeline from a spec version <0.2 fails."""
-#     old_spec = PipelineSpec(version="0.1", steps=[])
-#     model = create_pipeline_model(spec=old_spec)
-
-#     with pytest.raises(ValueError):
-#         BasePipeline.from_model(model)
 
 
 def test_compiling_a_pipeline_merges_schedule(
@@ -1028,7 +641,7 @@ def test_failure_during_initialization_deletes_placeholder_run(
 
 def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     mocker,
-    clean_client,
+    clean_client: "Client",
     empty_pipeline,  # noqa: F811
 ):
     """Tests that running a scheduled pipeline does not create a placeholder run
@@ -1040,11 +653,24 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     )
     pipeline_instance = empty_pipeline
 
-    scheduled_pipeline_instance = pipeline_instance.with_options(
-        schedule=Schedule(cron_expression="*/5 * * * *")
-    )
-    scheduled_pipeline_instance()
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        scheduled_pipeline_instance = pipeline_instance.with_options(
+            schedule=Schedule(cron_expression="*/5 * * * *")
+        )
+        scheduled_pipeline_instance()
 
     mock_create_run.assert_called_once()
     run_request = mock_create_run.call_args[0][0]  # First arg
     assert not is_placeholder_request(run_request)
+
+
+def test_env_var_substitution(clean_client, empty_pipeline):  # noqa: F811
+    """Test env var substitution in pipeline config."""
+    with patch.dict(os.environ, {"A": "1"}):
+        empty_pipeline.configure(extra={"key": "${A}_suffix"})
+        run = empty_pipeline()
+
+        assert run.config.extra["key"] == "1_suffix"

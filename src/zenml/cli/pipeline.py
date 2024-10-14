@@ -33,7 +33,7 @@ from zenml.models import (
     PipelineRunFilter,
     ScheduleFilter,
 )
-from zenml.new.pipelines.pipeline import Pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
@@ -500,6 +500,27 @@ def delete_pipeline_run(
         cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
 
 
+@runs.command("refresh")
+@click.argument("run_name_or_id", type=str, required=True)
+def refresh_pipeline_run(run_name_or_id: str) -> None:
+    """Refresh the status of a pipeline run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to refresh.
+    """
+    try:
+        # Fetch and update the run
+        run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
+        run.refresh_run_status()
+
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Refreshed the status of pipeline run '{run.name}'."
+        )
+
+
 @pipeline.group()
 def builds() -> None:
     """Commands for pipeline builds."""
@@ -516,7 +537,7 @@ def list_pipeline_builds(**kwargs: Any) -> None:
     client = Client()
     try:
         with console.status("Listing pipeline builds...\n"):
-            pipeline_builds = client.list_builds(**kwargs)
+            pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
@@ -526,7 +547,14 @@ def list_pipeline_builds(**kwargs: Any) -> None:
 
         cli_utils.print_pydantic_models(
             pipeline_builds,
-            exclude_columns=["created", "updated", "user", "workspace"],
+            exclude_columns=[
+                "created",
+                "updated",
+                "user",
+                "workspace",
+                "images",
+                "stack_checksum",
+            ],
         )
 
 

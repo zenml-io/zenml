@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -36,6 +45,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -248,10 +259,20 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
 
     CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "user",
+        "latest_run_status",
+    ]
 
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
+    )
+    latest_run_status: Optional[str] = Field(
+        default=None,
+        description="Filter by the status of the latest run of a pipeline. "
+        "This will always be applied as an `AND` filter for now.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -263,6 +284,92 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         description="User of the Pipeline",
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the pipeline.",
+    )
+
+    def apply_filter(
+        self, query: AnyQuery, table: Type["AnySchema"]
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query, table)
+
+        from sqlmodel import and_, col, func, select
+
+        from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
+
+        if self.latest_run_status:
+            latest_pipeline_run_subquery = (
+                select(
+                    PipelineRunSchema.pipeline_id,
+                    func.max(PipelineRunSchema.created).label("created"),
+                )
+                .where(col(PipelineRunSchema.pipeline_id).is_not(None))
+                .group_by(col(PipelineRunSchema.pipeline_id))
+                .subquery()
+            )
+
+            query = (
+                query.join(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                )
+                .join(
+                    latest_pipeline_run_subquery,
+                    and_(
+                        PipelineRunSchema.pipeline_id
+                        == latest_pipeline_run_subquery.c.pipeline_id,
+                        PipelineRunSchema.created
+                        == latest_pipeline_run_subquery.c.created,
+                    ),
+                )
+                .where(
+                    self.generate_custom_query_conditions_for_column(
+                        value=self.latest_run_status,
+                        table=PipelineRunSchema,
+                        column="status",
+                    )
+                )
+            )
+
+        return query
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            PipelineSchema,
+            UserSchema,
+        )
+
+        if self.user:
+            user_filter = and_(
+                PipelineSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
 
     def apply_sorting(
         self,

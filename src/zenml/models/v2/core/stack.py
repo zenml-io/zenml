@@ -17,31 +17,38 @@ import json
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseRequest, BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.core.component import ComponentResponse
+from zenml.models.v2.misc.info_models import (
+    ComponentInfo,
+    ServiceConnectorInfo,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.models.v2.core.component import ComponentResponse
 
 
 # ------------------ Request Model ------------------
 
 
-class StackRequest(WorkspaceScopedRequest):
-    """Request model for stacks."""
+class StackRequest(BaseRequest):
+    """Request model for a stack."""
+
+    user: Optional[UUID] = None
+    workspace: Optional[UUID] = None
 
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
@@ -55,14 +62,25 @@ class StackRequest(WorkspaceScopedRequest):
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
-        default=None,
-        title="A mapping of stack component types to the actual"
-        "instances of components of this type.",
+    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = (
+        Field(
+            title="The mapping for the components of the full stack registration.",
+            description="The mapping from component types to either UUIDs of "
+            "existing components or request information for brand new "
+            "components.",
+        )
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
+    )
+    service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
+        default=[],
+        title="The service connectors dictionary for the full stack "
+        "registration.",
+        description="The UUID of an already existing service connector or "
+        "request information to create a service connector from "
+        "scratch.",
     )
 
     @property
@@ -79,14 +97,25 @@ class StackRequest(WorkspaceScopedRequest):
             and StackComponentType.ORCHESTRATOR in self.components
         )
 
-
-class InternalStackRequest(StackRequest):
-    """Internal stack request model."""
-
-    user: Optional[UUID] = Field(  # type: ignore[assignment]
-        title="The id of the user that created this resource.",
-        default=None,
-    )
+    @model_validator(mode="after")
+    def _validate_indexes_in_components(self) -> "StackRequest":
+        for components in self.components.values():
+            for component in components:
+                if isinstance(component, ComponentInfo):
+                    if component.service_connector_index is not None:
+                        if (
+                            component.service_connector_index < 0
+                            or component.service_connector_index
+                            >= len(self.service_connectors)
+                        ):
+                            raise ValueError(
+                                f"Service connector index "
+                                f"{component.service_connector_index} "
+                                "is out of range. Please provide a valid index "
+                                "referring to the position in the list of service "
+                                "connectors."
+                            )
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -130,7 +159,7 @@ class StackResponseBody(WorkspaceScopedResponseBody):
 class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for stacks."""
 
-    components: Dict[StackComponentType, List[ComponentResponse]] = Field(
+    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
@@ -257,7 +286,9 @@ class StackResponse(
         return self.get_metadata().stack_spec_path
 
     @property
-    def components(self) -> Dict[StackComponentType, List[ComponentResponse]]:
+    def components(
+        self,
+    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
         """The `components` property.
 
         Returns:
@@ -287,12 +318,11 @@ class StackFilter(WorkspaceScopedFilter):
     scoping.
     """
 
-    # `component_id` refers to a relationship through a link-table
-    #  rather than a field in the db, hence it needs to be handled
-    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "component_id",  # This is a relationship, not a field
+        "component_id",
+        "user",
+        "component",
     ]
 
     name: Optional[str] = Field(
@@ -317,6 +347,13 @@ class StackFilter(WorkspaceScopedFilter):
         description="Component in the stack",
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the stack.",
+    )
+    component: Optional[Union[UUID, str]] = Field(
+        default=None, description="Name/ID of a component in the stack."
+    )
 
     def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
@@ -326,9 +363,11 @@ class StackFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from zenml.zen_stores.schemas.stack_schemas import (
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
+            UserSchema,
         )
 
         if self.component_id:
@@ -337,5 +376,25 @@ class StackFilter(WorkspaceScopedFilter):
                 StackCompositionSchema.component_id == self.component_id,
             )
             custom_filters.append(component_id_filter)
+
+        if self.user:
+            user_filter = and_(
+                StackSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        if self.component:
+            component_filter = and_(
+                StackCompositionSchema.stack_id == StackSchema.id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.component,
+                    table=StackComponentSchema,
+                ),
+            )
+            custom_filters.append(component_filter)
 
         return custom_filters

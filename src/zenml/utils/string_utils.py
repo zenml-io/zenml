@@ -14,12 +14,17 @@
 """Utils for strings."""
 
 import base64
+import datetime
+import functools
 import random
 import string
+from typing import Any, Callable, Dict, TypeVar, cast
 
 from pydantic import BaseModel
 
 from zenml.constants import BANNED_NAME_CHARACTERS
+
+V = TypeVar("V", bound=Any)
 
 
 def get_human_readable_time(seconds: float) -> str:
@@ -138,3 +143,77 @@ def validate_name(model: BaseModel) -> None:
             f"The class `{cls_name}` has no attribute `name` "
             "or it is set to `None`. Cannot validate the name."
         )
+
+
+def format_name_template(
+    name_template: str,
+    **kwargs: str,
+) -> str:
+    """Formats a name template with the given arguments.
+
+    By default, ZenML support Date and Time placeholders.
+    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
+    Extra placeholders need to be explicitly passed in as kwargs.
+
+    Args:
+        name_template: The name template to format.
+        **kwargs: The arguments to replace in the template.
+
+    Returns:
+        The formatted name template.
+    """
+    kwargs["date"] = kwargs.get(
+        "date",
+        datetime.datetime.now(datetime.timezone.utc).strftime("%Y_%m_%d"),
+    )
+    kwargs["time"] = kwargs.get(
+        "time",
+        datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
+    )
+    return name_template.format(**kwargs)
+
+
+def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
+    """Recursively substitute strings in objects.
+
+    Args:
+        value: An object in which the strings should be recursively substituted.
+            This can be a pydantic model, dict, set, list, tuple or any
+            primitive type.
+        substitution_func: The function that does the actual string
+            substitution.
+
+    Returns:
+        The object with the substitution function applied to all string values.
+    """
+    substitute_ = functools.partial(
+        substitute_string, substitution_func=substitution_func
+    )
+
+    if isinstance(value, BaseModel):
+        model_values = {}
+
+        for k, v in value.__iter__():
+            new_value = substitute_(v)
+
+            if k not in value.model_fields_set and new_value == getattr(
+                value, k
+            ):
+                # This is a default value on the model and was not set
+                # explicitly. In this case, we don't include it in the model
+                # values to keep the `exclude_unset` behavior the same
+                continue
+
+            model_values[k] = new_value
+
+        return cast(V, type(value).model_validate(model_values))
+    elif isinstance(value, Dict):
+        return cast(
+            V, {substitute_(k): substitute_(v) for k, v in value.items()}
+        )
+    elif isinstance(value, (list, set, tuple)):
+        return cast(V, type(value)(substitute_(v) for v in value))
+    elif isinstance(value, str):
+        return cast(V, substitution_func(value))
+
+    return value

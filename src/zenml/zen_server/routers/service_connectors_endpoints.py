@@ -30,15 +30,13 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     ServiceConnectorFilter,
+    ServiceConnectorInfo,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesInfo,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
-)
-from zenml.models.v2.misc.full_stack import (
-    ServiceConnectorInfo,
-    ServiceConnectorResourcesInfo,
 )
 from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,

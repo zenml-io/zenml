@@ -12,16 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tensorflow import keras
+import sys
+
+import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.tensorflow.materializers.keras_materializer import (
-    KerasMaterializer,
+
+
+@pytest.mark.skipif(
+    sys.version_info.minor == 12,
+    reason="The tensorflow integrations is not yet supported on 3.12.",
 )
-
-
 def test_tensorflow_keras_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
+    from tensorflow import keras
+
+    from zenml.integrations.tensorflow.materializers.keras_materializer import (
+        KerasMaterializer,
+    )
+
     inputs = keras.Input(shape=(32,))
     outputs = keras.layers.Dense(1)(inputs)
     model = keras.Model(inputs, outputs)

@@ -1715,6 +1715,13 @@ To delete a pipeline run, use:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
+To refresh the status of a pipeline run, you can use the `refresh` command (
+only supported for pipelines executed on Vertex, Sagemaker or AzureML).
+
+```bash
+zenml pipeline runs refresh <PIPELINE_RUN_NAME_OR_ID>
+```
+
 If you run any of your pipelines with `pipeline.run(schedule=...)`, ZenML keeps
 track of the schedule and you can list all schedules via:
 
@@ -2186,7 +2193,7 @@ zenml service-connector describe SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
 
 You can update a registered service connector by using the `update` command.
 Keep in mind that all service connector updates are validated before being
-applied. If you want to disable this behaviour please use the `--no-verify`
+applied. If you want to disable this behavior please use the `--no-verify`
 flag.
 
 ```bash

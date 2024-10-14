@@ -15,20 +15,19 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.azure import (
     AZURE_RESOURCE_TYPE,
     AZUREML_ORCHESTRATOR_FLAVOR,
 )
+from zenml.integrations.azure.flavors.azureml import AzureMLComputeSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.orchestrators import AzureMLOrchestrator
@@ -36,118 +35,13 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class AzureMLComputeTypes(StrEnum):
-    """Enum for different types of compute on AzureML."""
+class AzureMLOrchestratorSettings(AzureMLComputeSettings):
+    """Settings for the AzureML orchestrator."""
 
-    SERVERLESS = "serverless"
-    COMPUTE_INSTANCE = "compute-instance"
-    COMPUTE_CLUSTER = "compute-cluster"
-
-
-class AzureMLOrchestratorSettings(BaseSettings):
-    """Settings for the AzureML orchestrator.
-
-    These settings adjust the compute resources that will be used by the
-    pipeline execution.
-
-    There are three possible use cases for this implementation:
-
-        1. Serverless compute (default behaviour):
-            - The `mode` is set to `serverless` (default behaviour).
-            - All the other parameters become irrelevant and will throw a
-              warning if set.
-
-        2. Compute instance:
-            - The `mode` is set to `compute-instance`.
-            - In this case, users have to provide a `compute-name`.
-                - If a compute instance exists with this name, this instance
-                will be used and all the other parameters become irrelevant
-                and will throw a warning if set.
-                - If a compute instance does not already exist, ZenML will
-                create it. You can use the parameters `compute_size` and
-                `idle_type_before_shutdown_minutes` for this operation.
-
-        3. Compute cluster:
-            - The `mode` is set to `compute-cluster`.
-            - In this case, users have to provide a `compute-name`.
-                - If a compute cluster exists with this name, this instance
-                will be used and all the other parameters become irrelevant
-                and will throw a warning if set.
-                - If a compute cluster does not already exist, ZenML will
-                create it. You can all the additional parameters for this
-                operation.
-    """
-
-    # Mode for compute
-    mode: AzureMLComputeTypes = AzureMLComputeTypes.SERVERLESS
-
-    # Common Configuration for Compute Instances and Clusters
-    compute_name: Optional[str] = None
-    size: Optional[str] = None
-
-    # Additional configuration for a Compute Instance
-    idle_time_before_shutdown_minutes: Optional[int] = None
-
-    # Additional configuration for a Compute Cluster
-    idle_time_before_scaledown_down: Optional[int] = None
-    location: Optional[str] = None
-    min_instances: Optional[int] = None
-    max_instances: Optional[int] = None
-    tier: Optional[str] = None
-
-    @model_validator(mode="after")
-    def azureml_settings_validator(self) -> "AzureMLOrchestratorSettings":
-        """Checks whether the right configuration is set based on mode.
-
-        Returns:
-            the instance itself.
-
-        Raises:
-            AssertionError: if a name is not provided when working with
-                instances and clusters.
-        """
-        excluded_fields = {"subscription_id", "resource_group", "workspace"}
-
-        viable_configuration_fields = {
-            AzureMLComputeTypes.SERVERLESS: {"mode"},
-            AzureMLComputeTypes.COMPUTE_INSTANCE: {
-                "mode",
-                "compute_name",
-                "size",
-                "idle_time_before_shutdown_minutes",
-            },
-            AzureMLComputeTypes.COMPUTE_CLUSTER: {
-                "mode",
-                "compute_name",
-                "size",
-                "idle_time_before_scaledown_down",
-                "location",
-                "min_instances",
-                "max_instances",
-                "tier",
-            },
-        }
-        viable_fields = viable_configuration_fields[self.mode]
-
-        for field in self.model_fields_set:
-            if field not in viable_fields and field not in excluded_fields:
-                logger.warning(
-                    "In the AzureML Orchestrator Settings, the mode of "
-                    f"operation is set to {self.mode}. In this mode, you can "
-                    f"not configure the parameter '{field}'. This "
-                    "configuration will be ignored."
-                )
-
-        if (
-            self.mode == AzureMLComputeTypes.COMPUTE_INSTANCE
-            or self.mode == AzureMLComputeTypes.COMPUTE_CLUSTER
-        ):
-            assert self.compute_name is not None, (
-                "When you are working with compute instances and clusters, "
-                "please define a name for the compute target."
-            )
-
-        return self
+    synchronous: bool = Field(
+        default=True,
+        description="Whether the orchestrator runs synchronously or not.",
+    )
 
 
 class AzureMLOrchestratorConfig(
@@ -180,12 +74,21 @@ class AzureMLOrchestratorConfig(
 
     @property
     def is_synchronous(self) -> bool:
-        """Whether the orchestrator runs synchronous or not.
+        """Whether the orchestrator runs synchronously or not.
 
         Returns:
-            Whether the orchestrator runs synchronous or not.
+            Whether the orchestrator runs synchronously or not.
         """
-        return False
+        return self.synchronous
+
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
 
 
 class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):

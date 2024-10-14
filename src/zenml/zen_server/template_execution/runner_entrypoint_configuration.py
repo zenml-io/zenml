@@ -17,9 +17,8 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.new.pipelines.run_utils import (
+from zenml.pipelines.run_utils import (
     deploy_pipeline,
-    prepare_model_versions,
 )
 
 
@@ -37,5 +36,4 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         stack = Client().active_stack
         assert deployment.stack and stack.id == deployment.stack.id
 
-        prepare_model_versions(deployment=deployment)
         deploy_pipeline(deployment=deployment, stack=stack)

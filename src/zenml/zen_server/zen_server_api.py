@@ -24,7 +24,7 @@ import os
 from asyncio.log import logger
 from datetime import datetime, timedelta, timezone
 from genericpath import isfile
-from typing import Any, List
+from typing import Any, List, Set
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -32,8 +32,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    RequestResponseEndpoint,
+)
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.types import ASGIApp
 
 import zenml
 from zenml.analytics import source_context
@@ -78,15 +83,17 @@ from zenml.zen_server.routers import (
     webhook_endpoints,
     workspaces_endpoints,
 )
+from zenml.zen_server.secure_headers import (
+    initialize_secure_headers,
+    secure_headers,
+)
 from zenml.zen_server.utils import (
     initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
-    initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
     is_user_request,
-    secure_headers,
     server_config,
     zen_store,
 )
@@ -141,12 +148,92 @@ def validation_exception_handler(
     return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
+class RequestBodyLimit(BaseHTTPMiddleware):
+    """Limits the size of the request body."""
+
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        """Limits the size of the request body.
+
+        Args:
+            app: The FastAPI app.
+            max_bytes: The maximum size of the request body.
+        """
+        super().__init__(app)
+        self.max_bytes = max_bytes
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        """Limits the size of the request body.
+
+        Args:
+            request: The incoming request.
+            call_next: The next function to be called.
+
+        Returns:
+            The response to the request.
+        """
+        if content_length := request.headers.get("content-length"):
+            if int(content_length) > self.max_bytes:
+                return Response(status_code=413)  # Request Entity Too Large
+        return await call_next(request)
+
+
+class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
+    """Restrict file uploads to certain paths."""
+
+    def __init__(self, app: FastAPI, allowed_paths: Set[str]):
+        """Restrict file uploads to certain paths.
+
+        Args:
+            app: The FastAPI app.
+            allowed_paths: The allowed paths.
+        """
+        super().__init__(app)
+        self.allowed_paths = allowed_paths
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        """Restrict file uploads to certain paths.
+
+        Args:
+            request: The incoming request.
+            call_next: The next function to be called.
+
+        Returns:
+            The response to the request.
+        """
+        if request.method == "POST":
+            content_type = request.headers.get("content-type", "")
+            if (
+                "multipart/form-data" in content_type
+                and request.url.path not in self.allowed_paths
+            ):
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "detail": "File uploads are not allowed on this endpoint."
+                    },
+                )
+        return await call_next(request)
+
+
+ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=server_config().cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
+)
+app.add_middleware(
+    RestrictFileUploadsMiddleware, allowed_paths=ALLOWED_FOR_FILE_UPLOAD
 )
 
 

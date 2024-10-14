@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -26,6 +27,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from azure.ai.ml import Input, MLClient, Output
 from azure.ai.ml.constants import TimeZone
@@ -40,15 +42,19 @@ from azure.ai.ml.entities import (
 from azure.core.exceptions import (
     HttpResponseError,
     ResourceExistsError,
-    ResourceNotFoundError,
 )
 from azure.identity import DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.step_configurations import Step
-from zenml.enums import StackComponentType
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_RUN_ID,
+    METADATA_ORCHESTRATOR_URL,
+)
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.azure.azureml_utils import create_or_get_compute
+from zenml.integrations.azure.flavors.azureml import AzureMLComputeTypes
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
-    AzureMLComputeTypes,
     AzureMLOrchestratorConfig,
     AzureMLOrchestratorSettings,
 )
@@ -56,15 +62,14 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
     AzureMLEntrypointConfiguration,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from azure.ai.ml.entities import AmlCompute, ComputeInstance
-
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -193,178 +198,12 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             command=" ".join(command + arguments),
         )
 
-    @staticmethod
-    def _check_settings_and_compute_configuration(
-        parameter: str,
-        settings: AzureMLOrchestratorSettings,
-        compute: Union["ComputeInstance", "AmlCompute"],
-    ) -> None:
-        """Utility function comparing a parameter between settings and compute.
-
-        Args:
-            parameter: the name of the parameter.
-            settings: The AzureML orchestrator settings.
-            compute: The compute instance or cluster from AzureML.
-        """
-        # Check the compute size
-        compute_value = getattr(compute, parameter)
-        settings_value = getattr(settings, parameter)
-
-        if settings_value is not None and settings_value != compute_value:
-            logger.warning(
-                f"The '{parameter}' defined in the settings '{settings_value}' "
-                "does not match the actual parameter of the instance: "
-                f"'{compute_value}'. Will ignore this setting for now."
-            )
-
-    def _create_or_get_compute(
-        self, client: MLClient, settings: AzureMLOrchestratorSettings
-    ) -> Optional[str]:
-        """Creates or fetches the compute target if defined in the settings.
-
-        Args:
-            client: the AzureML client.
-            settings: the settings for the orchestrator.
-
-        Returns:
-            None, if the orchestrator is using serverless compute or
-            str, the name of the compute target (instance or cluster).
-
-        Raises:
-            RuntimeError: if the fetched compute target is unsupported or the
-                mode defined in the setting does not match the type of the
-                compute target.
-        """
-        # If the mode is serverless, we can not fetch anything anyhow
-        if settings.mode == AzureMLComputeTypes.SERVERLESS:
-            return None
-
-        # If a name is not provided, generate one based on the orchestrator id
-        compute_name = settings.compute_name or f"compute_{self.id}"
-        # Try to fetch the compute target
-        try:
-            compute = client.compute.get(compute_name)
-
-            logger.info(f"Using existing compute target: '{compute_name}'.")
-
-            # Check if compute size matches with the settings
-            self._check_settings_and_compute_configuration(
-                parameter="size", settings=settings, compute=compute
-            )
-
-            compute_type = compute.type
-
-            # Check the type and matches the settings
-            if compute_type == "computeinstance":  # Compute Instance
-                if settings.mode != AzureMLComputeTypes.COMPUTE_INSTANCE:
-                    raise RuntimeError(
-                        "The mode of operation for the compute target defined"
-                        f"in the settings '{settings.mode}' does not match "
-                        f"the type of the compute target: `{compute_name}` "
-                        "which is a 'compute-instance'. Please make sure that "
-                        "the settings are adjusted properly."
-                    )
-
-                if compute.state != "Running":
-                    raise RuntimeError(
-                        f"The compute instance `{compute_name}` is not in a "
-                        "running state at the moment. Please make sure that "
-                        "the compute target is running, before executing the "
-                        "pipeline."
-                    )
-
-                # Idle time before shutdown
-                self._check_settings_and_compute_configuration(
-                    parameter="idle_time_before_shutdown_minutes",
-                    settings=settings,
-                    compute=compute,
-                )
-
-            elif compute_type == "amIcompute":  # Compute Cluster
-                if settings.mode != AzureMLComputeTypes.COMPUTE_CLUSTER:
-                    raise RuntimeError(
-                        "The mode of operation for the compute target defined "
-                        f"in the settings '{settings.mode}' does not match "
-                        f"the type of the compute target: `{compute_name}` "
-                        "which is a 'compute-cluster'. Please make sure that "
-                        "the settings are adjusted properly."
-                    )
-
-                if compute.provisioning_state != "Succeeded":
-                    raise RuntimeError(
-                        f"The provisioning state '{compute.provisioning_state}'"
-                        f"of the compute cluster `{compute_name}` is not "
-                        "successful. Please make sure that the compute cluster "
-                        "is provisioned properly, before executing the "
-                        "pipeline."
-                    )
-
-                for parameter in [
-                    "idle_time_before_scale_down",
-                    "max_instances",
-                    "min_instances",
-                    "tier",
-                    "location",
-                ]:
-                    # Check all possible configurations
-                    self._check_settings_and_compute_configuration(
-                        parameter=parameter, settings=settings, compute=compute
-                    )
-            else:
-                raise RuntimeError(f"Unsupported compute type: {compute_type}")
-            return compute_name
-
-        # If the compute target does not exist create it
-        except ResourceNotFoundError:
-            logger.info(
-                "Can not find the compute target with name: "
-                f"'{compute_name}':"
-            )
-
-            if settings.mode == AzureMLComputeTypes.COMPUTE_INSTANCE:
-                logger.info(
-                    "Creating a new compute instance. This might take a "
-                    "few minutes."
-                )
-
-                from azure.ai.ml.entities import ComputeInstance
-
-                compute_instance = ComputeInstance(
-                    name=compute_name,
-                    size=settings.size,
-                    idle_time_before_shutdown_minutes=settings.idle_time_before_shutdown_minutes,
-                )
-                client.begin_create_or_update(compute_instance).result()
-                return compute_name
-
-            elif settings.mode == AzureMLComputeTypes.COMPUTE_CLUSTER:
-                logger.info(
-                    "Creating a new compute cluster. This might take a "
-                    "few minutes."
-                )
-
-                from azure.ai.ml.entities import AmlCompute
-
-                compute_cluster = AmlCompute(
-                    name=compute_name,
-                    size=settings.size,
-                    location=settings.location,
-                    min_instances=settings.min_instances,
-                    max_instances=settings.max_instances,
-                    idle_time_before_scale_down=settings.idle_time_before_scaledown_down,
-                    tier=settings.tier,
-                )
-                client.begin_create_or_update(compute_cluster).result()
-                return compute_name
-
-        return None
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-    ) -> None:
+    ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
 
         Args:
@@ -375,6 +214,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If the creation of the schedule fails.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
         """
         # Authentication
         if connector := self.get_connector():
@@ -429,7 +271,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         )
         pipeline_args["name"] = run_name
 
-        if compute_target := self._create_or_get_compute(ml_client, settings):
+        if compute_target := create_or_get_compute(
+            ml_client, settings, default_compute_name=f"zenml_{self.id}"
+        ):
             pipeline_args["compute"] = compute_target
 
         @pipeline(force_rerun=True, **pipeline_args)  # type: ignore[call-overload, misc]
@@ -540,5 +384,200 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 )
 
         else:
-            ml_client.jobs.create_or_update(pipeline_job)
+            job = ml_client.jobs.create_or_update(pipeline_job)
             logger.info(f"Pipeline {run_name} has been started.")
+
+            # Yield metadata based on the generated job object
+            yield from self.compute_metadata(job)
+
+            assert job.services is not None
+            assert job.name is not None
+
+            logger.info(
+                f"Pipeline {run_name} is running. "
+                "You can view the pipeline in the AzureML portal at "
+                f"{job.services['Studio'].endpoint}"
+            )
+
+            if settings.synchronous:
+                logger.info("Waiting for pipeline to finish...")
+                ml_client.jobs.stream(job.name)
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        try:
+            if connector := self.get_connector():
+                credentials = connector.connect()
+            else:
+                credentials = DefaultAzureCredential()
+
+            ml_client = MLClient(
+                credential=credentials,
+                subscription_id=self.config.subscription_id,
+                resource_group_name=self.config.resource_group,
+                workspace_name=self.config.workspace,
+            )
+
+            azureml_root_run_id = os.environ[ENV_ZENML_AZUREML_RUN_ID]
+            azureml_job = ml_client.jobs.get(azureml_root_run_id)
+
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri(azureml_job.studio_url),
+            }
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch the Studio URL of the AzureML pipeline "
+                f"job: {e}"
+            )
+            return {}
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Returns:
+            the actual status of the pipeline execution.
+
+        Raises:
+            AssertionError: If the run was not executed by to this orchestrator.
+            ValueError: If it fetches an unknown state or if we can not fetch
+                the orchestrator run ID.
+        """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the AzureML client
+        if connector := self.get_connector():
+            credentials = connector.connect()
+        else:
+            credentials = DefaultAzureCredential()
+
+        ml_client = MLClient(
+            credential=credentials,
+            subscription_id=self.config.subscription_id,
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace,
+        )
+
+        # Fetch the status of the PipelineJob
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not fetch "
+                "the status."
+            )
+        status = ml_client.jobs.get(run_id).status
+
+        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+        # https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.pipelinejob?view=azure-python#azure-ai-ml-entities-pipelinejob-status
+        if status in [
+            "NotStarted",
+            "Starting",
+            "Provisioning",
+            "Preparing",
+            "Queued",
+        ]:
+            return ExecutionStatus.INITIALIZING
+        elif status in ["Running", "Finalizing"]:
+            return ExecutionStatus.RUNNING
+        elif status in [
+            "CancelRequested",
+            "Failed",
+            "Canceled",
+            "NotResponding",
+        ]:
+            return ExecutionStatus.FAILED
+        elif status in ["Completed"]:
+            return ExecutionStatus.COMPLETED
+        else:
+            raise ValueError("Unknown status for the pipeline job.")
+
+    def compute_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
+        """Generate run metadata based on the generated AzureML PipelineJob.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Yields:
+            A dictionary of metadata related to the pipeline run.
+        """
+        # Metadata
+        metadata: Dict[str, MetadataType] = {}
+
+        # Orchestrator Run ID
+        if run_id := self._compute_orchestrator_run_id(job):
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+
+        # URL to the AzureML's pipeline view
+        if orchestrator_url := self._compute_orchestrator_url(job):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+        yield metadata
+
+    @staticmethod
+    def _compute_orchestrator_url(job: Any) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+             the URL to the dashboard view in AzureML.
+        """
+        try:
+            if job.studio_url:
+                return str(job.studio_url)
+
+            return None
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline url: {e}"
+            )
+            return None
+
+    @staticmethod
+    def _compute_orchestrator_run_id(job: Any) -> Optional[str]:
+        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+
+        Args:
+            job: The corresponding PipelineJob object.
+
+        Returns:
+             the URL to the dashboard view in AzureML.
+        """
+        try:
+            if job.name:
+                return str(job.name)
+
+            return None
+
+        except Exception as e:
+            logger.warning(
+                f"There was an issue while extracting the pipeline run ID: {e}"
+            )
+            return None
