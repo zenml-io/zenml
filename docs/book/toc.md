@@ -6,10 +6,8 @@
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 * [🤔 Deploying ZenML](getting-started/deploying-zenml.md)
-* [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
-  * [System Architectures](getting-started/zenml-pro/system-architectures.md)
-  * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
-  * [User Management](getting-started/zenml-pro/user-management.md)
+  * [System Architectures](getting-started/system-architectures.md)
+* [☁️ ZenML Pro](getting-started/zenml-pro.md)
 
 ## User Guide
 
@@ -176,6 +174,8 @@
     * [Upgrade the version of the server](how-to/deploy-zenml/upgrade-the-version-of-the-server.md)
     * [Troubleshoot the deployed server](how-to/deploy-zenml/troubleshoot-the-deployed-server.md)
     * [Troubleshoot stack components](how-to/deploy-zenml/troubleshoot-stack-components.md)
+* [Use ZenML Pro](how-to/use-zenml-pro/README.md)
+  * [User Management](how-to/use-zenml-pro/user-management.md)
 * [🐍 Configure Python environments](how-to/configure-python-environments/README.md)
   * [Handling dependencies](how-to/configure-python-environments/handling-dependencies.md)
   * [Configure the server environment](how-to/configure-python-environments/configure-the-server-environment.md)
