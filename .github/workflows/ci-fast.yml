@@ -130,7 +130,7 @@ jobs:
           context: .
           push: true
           tags: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:${{ github.sha }}
-          file: ./Dockerfile  # Adjust this path if your Dockerfile is located elsewhere
+          file: ./docker/zenml-server-dev.Dockerfile  # Adjust this path if your Dockerfile is located elsewhere
   custom-arc-runner-set-integration-test-server:
     needs: build-and-push
     if: github.event.pull_request.draft == false
