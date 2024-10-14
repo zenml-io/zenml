@@ -70,7 +70,7 @@ from an external SaaS provider.
 
 ### Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML
 
-![Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML](../../.gitbook/assets/cloud_architecture_scenario_2.png)
+![Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML](../.gitbook/assets/cloud_architecture_scenario_2.png)
 
 This scenario is a version of Scenario 1, modified to store all sensitive
 information on the customer side. In this case, the customer connects their own
