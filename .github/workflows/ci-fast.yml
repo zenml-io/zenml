@@ -112,7 +112,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions-:${{
+          tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
             github.sha }}
           file: ./docker/zenml-server-dev.Dockerfile
   custom-arc-runner-set-integration-test-server:
