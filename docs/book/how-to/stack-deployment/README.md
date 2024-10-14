@@ -26,12 +26,22 @@ Having separate stacks for these environments helps:
 
 Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
 
-The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/auth-management/service-connectors-guide.md). Service connectors allow you to manage credentials in a centralized manner in your ZenML server.
+The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
+
+### Recommended roles
+
+Ideally, you would want that only the people who deal with and have direct access to your cloud resources are the ones that are able to create Service Connectors. This is useful for a few reasons:
+
+- Less chance of credentials leaking: the more people that have access to your cloud resources, the higher the chance that some of them will be leaked.
+- Folks who have direct access to your cloud resources can revoke the credentials instantly if they are compromised, making this a much more secure setup.
+- You can have a much easier time auditing and tracking who did what if you have a clear separation between the people who can create Service Connectors (who have direct access to your cloud resources) and those who can only use them.
+
+### Recommended workflow
 
 Here's an approach you can take that is a good balance between convenience and security:
-- have a limited set of people that have permissions to create service connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
-- you can create one connector for your development or staging environment and let your data scientists use that to register their stack components.
-- when you are ready to go production, you can create another connector with permissions for your production environment and create stacks that use it. This way you can ensure that your production resources are not accidentally used for development or staging.
+- Have a limited set of people that have permissions to create service connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
+- You can create one connector for your development or staging environment and let your data scientists use that to register their stack components.
+- When you are ready to go production, you can create another connector with permissions for your production environment and create stacks that use it. This way you can ensure that your production resources are not accidentally used for development or staging.
 
 If you follow this approach, you can keep your data scientists free from the hassle of figuring out the best authentication mechanisms for the different cloud services, having to manage credentials locally, and keep your cloud accounts safe, while still giving them the freedom to run their experiments in the cloud.
 
