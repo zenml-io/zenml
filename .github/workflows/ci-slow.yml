@@ -303,7 +303,7 @@ jobs:
     secrets: inherit
   custom-ubuntu-integration-test-gh-actions-server-docker-orchestrator:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]
