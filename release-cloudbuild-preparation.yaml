@@ -130,9 +130,10 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
-      - docker push $$USERNAME/prepare-release:quickstart-aws
-      - docker push $$USERNAME/prepare-release:quickstart-azure
-      - docker push $$USERNAME/prepare-release:quickstart-gcp
+      - |
+        docker push $$USERNAME/prepare-release:quickstart-aws
+        docker push $$USERNAME/prepare-release:quickstart-azure
+        docker push $$USERNAME/prepare-release:quickstart-gcp
     id: push-quickstart
     waitFor:
       - docker-login

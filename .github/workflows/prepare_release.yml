@@ -101,6 +101,9 @@ jobs:
   build-release:
     if: contains(github.event.head_commit.message, '[build]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: [ubuntu-latest]
+    permissions:
+      contents: read
+      id-token: write
     steps:
       # Check out the prepare-release branch
       - name: Checkout code
@@ -146,7 +149,6 @@ jobs:
           docker tag zenmldocker/prepare-release:quickstart-aws 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
 
-
   test-release:
     if: contains(github.event.head_commit.message, '[test]')  && github.repository == 'zenml-io/zenml' # TODO: Remove
     runs-on: [ ubuntu-latest ]
@@ -162,6 +164,7 @@ jobs:
           echo "connect" 
           cd examples/quickstart
 
+      # TODO: Change the config somewhere here
       - name: Run on AWS
         run: |
           zenml stack set aws
