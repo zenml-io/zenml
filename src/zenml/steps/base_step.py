@@ -38,8 +38,8 @@ from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
+    CODE_HASH_PARAMETER_NAME,
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
-    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.exceptions import StepInterfaceError
@@ -283,7 +283,7 @@ class BaseStep:
             A dictionary containing the caching parameters
         """
         parameters = {
-            STEP_SOURCE_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
+            CODE_HASH_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
                 self.source_object
             )
         }

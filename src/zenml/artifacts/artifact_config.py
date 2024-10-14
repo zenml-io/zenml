@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
-
 
 logger = get_logger(__name__)
 

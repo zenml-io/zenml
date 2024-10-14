@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
@@ -123,6 +123,9 @@ class StepRunRequestFactory:
 
         request.docstring = docstring
         request.source_code = source_code
+        request.code_hash = step.config.parameters.get(
+            CODE_HASH_PARAMETER_NAME
+        )
 
         cache_enabled = utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
