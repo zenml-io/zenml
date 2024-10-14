@@ -69,7 +69,7 @@ class ExternalArtifactConfiguration(BaseModel):
             response = client.get_artifact_version(self.id)
         else:
             raise RuntimeError(
-                "Either the ID or name of the artifact must be provided. "
+                "The ID of the artifact must be provided. "
                 "If you created this ExternalArtifact from a value, please "
                 "ensure that `upload_by_value` was called before trying to "
                 "fetch the artifact ID."

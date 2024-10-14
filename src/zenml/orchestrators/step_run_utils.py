@@ -12,9 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Dict, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
 
-from zenml import Model
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
@@ -36,6 +35,9 @@ from zenml.models import (
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
 from zenml.utils import string_utils
+
+if TYPE_CHECKING:
+    from zenml.model.model import Model
 
 logger = get_logger(__name__)
 
@@ -345,7 +347,7 @@ def create_cached_step_runs(
 
 
 def get_or_create_model_version_for_pipeline_run(
-    model: Model, pipeline_run: PipelineRunResponse
+    model: "Model", pipeline_run: PipelineRunResponse
 ) -> Tuple[ModelVersionResponse, bool]:
     """Get or create a model version as part of a pipeline run.
 

@@ -40,19 +40,11 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     can be used to provide any value as input to a step without needing to
     write an additional step that returns this value.
 
-    The external artifact needs to have either a value associated with it
-    that will be uploaded to the artifact store, or reference an artifact
-    that is already registered in ZenML.
-
-    There are several ways to reference an existing artifact:
-    - By providing an artifact ID.
-    - By providing an artifact name and version. If no version is provided,
-        the latest version of that artifact will be used.
+    The external artifact needs to have a value associated with it
+    that will be uploaded to the artifact store.
 
     Args:
         value: The artifact value.
-        id: The ID of an artifact that should be referenced by this external
-            artifact.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
