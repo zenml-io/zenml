@@ -132,12 +132,8 @@ def my_pipeline(...):
     ...
 ```
 
-One way to use this is when ZenML has already built an image for your code in a previous pipeline run and you want to reuse it in a new run. This saves you build times at the cost of not being able to leverage any updates you made to your code (or your dependencies) since then.
-
-This is also helpful when you are running in an environment that either doesn't have docker installed or doesn't have enough memory to pull your base image and build a new image on top of it (think Codespaces or other CI/CD environments).
-
 {% hint style="warning" %}
-This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your code files are correctly included in the image you specified.
+This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your code files are correctly included in the image you specified. Read in detail about this feature [here](./use-a-prebuilt-image.md) before proceeding.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
