@@ -38,7 +38,7 @@ product as well as the self-hosted version.:
 ## Deployment Scenarios
 
 The above four interact with other MLOps stack components, secrets, and data in
-varying scenarios described below.
+the two scenarios described below.
 
 ### Scenario 1: Full SaaS
 
@@ -68,12 +68,9 @@ This scenario is meant for customers who want to quickly get started with ZenML
 and can to a certain extent allow ingress connections into their infrastructure
 from an external SaaS provider.
 
-### Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML
-
-![Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML](../.gitbook/assets/cloud_architecture_scenario_2.png)
-
-This scenario is a version of Scenario 1, modified to store all sensitive
-information on the customer side. In this case, the customer connects their own
+{% hint style="info" %}
+We also offer a hybrid SaaS option where customer secrets are stored on the
+customer side. In this case, the customer connects their own
 secret store directly to the ZenML server that is managed by us. All ZenML
 secrets used by running pipelines to access infrastructure services and
 resources are stored in the customer secret store. This allows users to
@@ -82,23 +79,11 @@ and the [secrets API](../../how-to/interact-with-secrets.md) to authenticate
 ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 
-Even though they are stored customer side, access to ZenML secrets is fully
-managed by ZenML Pro. The individually deployed ZenML Servers can also allowed to use some of those
-credentials to connect directly to customer infrastructure services to implement
-control plane features such as artifact visualization or triggering pipelines.
-This implies that the secret values are allowed to leave the customer
-environment to allow their access to be managed centrally by the ZenML Pro and
-to enforce access control policies, but the ZenML users and pipelines never have
-direct access to the secret store.
+{% endhint %}
 
-All access to customer secrets is, of course, regulated through authentication
-and RBAC, so that only authorized users can access the secrets. This deployment
-scenario is meant for customers who want to use the ZenML Pro but want to keep
-their secrets on their own infrastructure.
+### Scenario 2: Fully On-prem
 
-### Scenario 3: Fully On-prem
-
-![Scenario 3: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_5.png)
+![Scenario 2: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_5.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
