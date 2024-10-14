@@ -133,7 +133,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/zenml-pro.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
 
 #### Metadata Tracking
 

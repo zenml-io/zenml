@@ -12,7 +12,7 @@ description: Welcome to ZenML!
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
-*   <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro/zenml-pro.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
+*   <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
 
     <figure><img src=".gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption></figcaption></figure>
 *   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
