@@ -104,12 +104,12 @@ jobs:
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
-      - name: Run unit tests
-        run: |
-          bash scripts/test-coverage-xml.sh unit
+      - name: Lint check
         env:
-          ZENML_ANALYTICS_OPT_IN: false
-          ZENML_DEBUG: true
+          OS: ${{ inputs.os }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: |
+          bash scripts/lint.sh
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17

@@ -193,9 +193,21 @@ jobs:
           bash scripts/check-alembic-branches.sh
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
+  ubuntu-linting:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   custom-ubuntu-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, ubuntu-linting]
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -206,9 +218,21 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  windows-linting:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   windows-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-linting]
     strategy:
       matrix:
         os: [windows-latest]
@@ -219,9 +243,21 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  macos-linting:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-linting]
     strategy:
       matrix:
         os: [macos-latest]
@@ -240,7 +276,7 @@ jobs:
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
@@ -255,7 +291,7 @@ jobs:
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-unit-test]
     strategy:
       matrix:
         os: [macos-13]
@@ -276,7 +312,7 @@ jobs:
     secrets: inherit
   custom-ubuntu-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]

@@ -82,7 +82,20 @@ jobs:
       python-version: '3.9'
       os: ubuntu-latest
     secrets: inherit
+  linting:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   custom-ubuntu-setup-and-unit-test:
+    needs: linting
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -95,7 +108,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   custom-arc-runner-set-integration-test:
-    needs: build-and-push
+    needs: [build-and-push, linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -131,7 +144,7 @@ jobs:
             github.sha }}
           file: ./docker/zenml-server-dev.Dockerfile
   custom-arc-runner-set-integration-test-server:
-    needs: build-and-push
+    needs: [build-and-push, linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
