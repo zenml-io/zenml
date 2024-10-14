@@ -100,6 +100,26 @@ jobs:
     defaults:
       run:
         shell: bash
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: zenml
+          MYSQL_DATABASE: zenml
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      zenml-server:
+        image: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:${{ github.sha }}
+        env:
+          ZENML_STORE_URL: mysql://root:zenml@mysql:3306/zenml
+          ZENML_SERVER_DEPLOYMENT_TYPE: docker
+          ZENML_SERVER_AUTO_ACTIVATE: 'True'
+          ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
+        ports: [8080:8080]
     steps:
       - name: Maximize space for Docker
         uses: easimon/maximize-build-space@v10
