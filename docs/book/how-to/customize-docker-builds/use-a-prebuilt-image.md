@@ -100,8 +100,7 @@ RUN pip insatll <ANY_ARGS> -r FILE
 If you have any apt packages that are needed for your application to function, be sure to include them too. This can be achieved in a Dockerfile as follows:
 
 ```Dockerfile
-RUN apt-get update && apt-get install -y 
---no-install-recommends YOUR_APT_PACKAGES
+RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAGES
 ```
 
 ### Your project code files
