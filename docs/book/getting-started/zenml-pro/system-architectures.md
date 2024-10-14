@@ -16,7 +16,7 @@ productivity. No matter your specific needs, the hosting options for ZenML Pro
 range from easy SaaS integration to completely airgapped deployments on your own
 infrastructure.
 
-A ZenML Pro deployment consists of the following moving pieces for both the SaaS
+A [ZenML Pro deployment](./zenml-pro.md) consists of the following moving pieces for both the SaaS
 product as well as the self-hosted version.:
 
 * **ZenML Pro Control Plane**: This is a centralized MLOps control plane that includes a
@@ -35,10 +35,12 @@ product as well as the self-hosted version.:
   ML metadata such as tracking and versioning information about pipelines and
   models.
 
-The above four interact with other MLOps stack components, secrets, and data in
-varying scenarios described below.
+## Deployment Scenarios
 
-## Scenario 1: Full SaaS
+The above four interact with other MLOps stack components, secrets, and data in
+the two scenarios described below.
+
+### Scenario 1: Full SaaS
 
 ![Scenario 1: Full SaaS deployment](../../.gitbook/assets/cloud_architecture_scenario_1.png)
 
@@ -66,12 +68,9 @@ This scenario is meant for customers who want to quickly get started with ZenML
 and can to a certain extent allow ingress connections into their infrastructure
 from an external SaaS provider.
 
-## Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML
-
-![Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML](../../.gitbook/assets/cloud_architecture_scenario_2.png)
-
-This scenario is a version of Scenario 1. modified to store all sensitive
-information on the customer side. In this case, the customer connects their own
+{% hint style="info" %}
+We also offer a hybrid SaaS option where customer secrets are stored on the
+customer side. In this case, the customer connects their own
 secret store directly to the ZenML server that is managed by us. All ZenML
 secrets used by running pipelines to access infrastructure services and
 resources are stored in the customer secret store. This allows users to
@@ -79,24 +78,12 @@ use [service connectors](../../how-to/auth-management/service-connectors-guide.m
 and the [secrets API](../../how-to/interact-with-secrets.md) to authenticate
 ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
+{% endhint %}
 
-Even though they are stored customer side, access to ZenML secrets is fully
-managed by ZenML Pro. The individually deployed ZenML Servers can also allowed to use some of those
-credentials to connect directly to customer infrastructure services to implement
-control plane features such as artifact visualization or triggering pipelines.
-This implies that the secret values are allowed to leave the customer
-environment to allow their access to be managed centrally by the ZenML Pro and
-to enforce access control policies, but the ZenML users and pipelines never have
-direct access to the secret store.
 
-All access to customer secrets is, of course, regulated through authentication
-and RBAC, so that only authorized users can access the secrets. This deployment
-scenario is meant for customers who want to use the ZenML Pro but want to keep
-their secrets on their own infrastructure.
+## Scenario 2: Fully On-prem
 
-## Scenario 3: Fully On-prem
-
-![Scenario 3: Fully on-premises deployment](../../.gitbook/assets/cloud_architecture_scenario_5.png)
+![Scenario 2: Fully on-premises deployment](../../.gitbook/assets/cloud_architecture_scenario_2.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
@@ -105,5 +92,10 @@ require completely airgapped deployments, for the tightest security standards.
 
 Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
 and get access to Scenario 1. with a free 14 day trial now!
+
+## ZenML Pro vs ZenML Open Source
+
+TODO: add diagram + feature differences
+also more on architectural distinctions
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

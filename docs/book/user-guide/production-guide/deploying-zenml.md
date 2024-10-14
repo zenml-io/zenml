@@ -66,4 +66,15 @@ This command will start a series of steps to validate the device from where you 
 You can always go back to the local zenml experience by using `zenml disconnect`
 {% endhint %}
 
+## Further resources
+
+To learn more about deploying ZenML, check out the following resources:
+
+- [Deploying ZenML](../../getting-started/deploying-zenml.md): an overview of
+  the different options for deploying ZenML and the system architecture of a
+  deployed ZenML instance.
+- [Full how-to guides](../../getting-started/deploying-zenml/README.md): guides on how to
+  deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
+  provider.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

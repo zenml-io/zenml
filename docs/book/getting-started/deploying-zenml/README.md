@@ -12,19 +12,25 @@ Moving your ZenML Server to a production environment offers several benefits ove
 
 Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
+## Components
+
 ### ZenML Server
 
-When you first get started with ZenML, it relies with the following architecture on your machine.
+When you first get started with ZenML, you have the following architecture on your machine.
 
 ![ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. Users can run the `zenml up` command to spin up a local REST server to serve the dashboard. The diagram for this looks as follows:
+The SQLite database that you can see in this diagram is used to store
+information about pipelines, pipeline runs, stacks, and other configurations.
+This default setup allows you to get started and try out the core features but
+you won't be able to use cloud-based components like serverless orchestrators
+and so on.
+
+Users can run the `zenml up` command to spin up a local REST server to serve the
+dashboard. For the local REST server option, the `zenml up` command implicitly
+connects the client to the server. The diagram for this looks as follows:
 
 ![ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
-
-{% hint style="info" %}
-For the local REST server option, the `zenml up` command implicitly connects the client to the server.
-{% endhint %}
 
 {% hint style="warning" %}
 Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version simply use the
@@ -33,9 +39,31 @@ following command `zenml up --legacy`
 
 In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
+![Deployed ZenML Server](../.gitbook/assets/Scenario3.2.png)
 
-### Deploying a ZenML Server
+You connect to your deployed ZenML server using the `zenml connect` command and
+then you have the full benefits and power of ZenML. You can use all the
+cloud-based components, your metadata will be stored and synchronized across all
+the users of the server and you can leverage features like centralized logs
+storage and pipeline artifact visualization.
+
+### ZenML Client
+
+The ZenML client is a Python package that you can install on your machine. It
+is used to interact with the ZenML server. You can install it using the `pip`
+command. This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli/) which
+you can use to interact with the ZenML server for common tasks like managing
+stacks, setting up secrets, and so on.
+
+If you want to have more fine-grained control and access to the metadata that
+ZenML manages, you can use the Python SDK to access the API. This allows you to
+create your own custom automations and scripts and is the most common way teams
+access the metadata stored in the ZenML server. Our full documentation for the
+Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). Our full HTTP
+API documentation can also be found by adding the `/doc` suffix to the URL when
+accessing your deployed ZenML server.
+
+## Deploying a ZenML Server
 
 Deploying the ZenML Server is a crucial step towards transitioning to a production-grade environment for your machine learning projects. By setting up a deployed ZenML Server instance, you gain access to powerful features, allowing you to use stacks with remote components, centrally track progress, collaborate effectively, and achieve reproducible results.
 
@@ -50,7 +78,7 @@ Currently the ZenML server supports a legacy and a brand-new version of the dash
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
-## How to deploy ZenML
+### How to deploy ZenML
 
 Documentation for the various deployment strategies can be found in the following pages below (in our 'how-to' guides):
 
