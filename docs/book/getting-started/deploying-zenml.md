@@ -16,11 +16,11 @@ Despite these advantages, transitioning to production can be challenging due to 
 
 When you first get started with ZenML, it relies with the following architecture on your machine.
 
-![ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
+![ZenML default local configuration](../.gitbook/assets/Scenario1.png)
 
 The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. Users can run the `zenml up` command to spin up a local REST server to serve the dashboard. The diagram for this looks as follows:
 
-![ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
+![ZenML with a local REST Server](../.gitbook/assets/Scenario2.png)
 
 {% hint style="info" %}
 For the local REST server option, the `zenml up` command implicitly connects the client to the server.
@@ -34,7 +34,7 @@ command: `zenml up --legacy`.
 
 In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
+![Deployed ZenML Server](../.gitbook/assets/Scenario3.2.png)
 
 ### Deploying a ZenML Server
 
