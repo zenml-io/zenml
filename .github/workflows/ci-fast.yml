@@ -98,25 +98,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      packages: write  # Needed for pushing to GHCR
     steps:
       - uses: actions/checkout@v4.1.1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v1
         with:
-          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
-          aws-region: eu-central-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        run: |
-          aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
-      - name: Build and push ZenML server image to AWS ECR
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ZenML server image to GHCR
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
-          tags: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:${{ github.sha }}
-          file: ./docker/zenml-server-dev.Dockerfile  # Adjust this path if your Dockerfile is located elsewhere
+          tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions-:${{
+            github.sha }}
+          file: ./docker/zenml-server-dev.Dockerfile
   custom-arc-runner-set-integration-test-server:
     needs: build-and-push
     if: github.event.pull_request.draft == false
