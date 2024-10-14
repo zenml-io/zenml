@@ -811,7 +811,9 @@ def _link_artifact_version_to_the_step_and_model(
                 model_version=model_version,
                 artifact_config=artifact_config,
             )
-    except (RuntimeError, StepContextError):
+        else:
+            raise RuntimeError
+    except RuntimeError:
         logger.debug(f"Unable to link saved artifact to {error_message}.")
 
 

@@ -138,7 +138,7 @@ def artifact_linker(
 
     if model:
         link_artifact_to_model(
-            artifact_version_id=artifact.id,
+            artifact_version=artifact,
             model=model,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
@@ -625,7 +625,7 @@ class TestModel:
                         data="Hello, World!", name=artifact_name
                     )
                     link_artifact_to_model(
-                        artifact_version_id=artifact.id,
+                        artifact_version=artifact,
                         model=Model(name=mdl_name),
                     )
 

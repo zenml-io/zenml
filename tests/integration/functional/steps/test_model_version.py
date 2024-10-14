@@ -21,7 +21,6 @@ from typing_extensions import Annotated
 
 from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model import Model
@@ -403,45 +402,11 @@ def test_pipeline_run_link_attached_from_step_context(
     }
 
 
-@step
-def _this_step_has_model_on_artifact_level() -> (
-    Tuple[
-        Annotated[
-            int,
-            "declarative_link",
-            ArtifactConfig(
-                model_name="declarative", model_version=ModelStages.LATEST
-            ),
-        ],
-        Annotated[
-            int,
-            "functional_link",
-            ArtifactConfig(
-                model_name="functional", model_version=ModelStages.LATEST
-            ),
-        ],
-    ]
-):
-    return 1, 2
-
-
-@pipeline(enable_cache=False)
-def _pipeline_run_link_attached_from_artifact_context_single_step():
-    _this_step_has_model_on_artifact_level()
-
-
-@pipeline(enable_cache=False)
-def _pipeline_run_link_attached_from_artifact_context_multiple_step():
-    _this_step_has_model_on_artifact_level()
-    _this_step_has_model_on_artifact_level()
-
-
 @pipeline(
     enable_cache=False,
     model=Model(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_single_step():
-    _this_step_has_model_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model=Model(name="step", version=ModelStages.LATEST),
@@ -453,12 +418,10 @@ def _pipeline_run_link_attached_from_mixed_context_single_step():
     model=Model(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_multiple_step():
-    _this_step_has_model_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model=Model(name="step", version=ModelStages.LATEST),
     )()
-    _this_step_has_model_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model=Model(name="step", version=ModelStages.LATEST),
@@ -469,25 +432,15 @@ def _pipeline_run_link_attached_from_mixed_context_multiple_step():
     "pipeline,model_names",
     (
         (
-            _pipeline_run_link_attached_from_artifact_context_single_step,
-            ["declarative", "functional"],
-        ),
-        (
-            _pipeline_run_link_attached_from_artifact_context_multiple_step,
-            ["declarative", "functional"],
-        ),
-        (
             _pipeline_run_link_attached_from_mixed_context_single_step,
-            ["declarative", "functional", "step", "pipeline"],
+            ["step", "pipeline"],
         ),
         (
             _pipeline_run_link_attached_from_mixed_context_multiple_step,
-            ["declarative", "functional", "step", "pipeline"],
+            ["step", "pipeline"],
         ),
     ),
     ids=[
-        "Single step pipeline (declarative+functional)",
-        "Multiple steps pipeline (declarative+functional)",
         "Single step pipeline (declarative+functional+step+pipeline)",
         "Multiple steps pipeline (declarative+functional+step+pipeline)",
     ],
@@ -553,13 +506,13 @@ def _producer_step() -> (
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(
         model=Model(name="step", version=ModelStages.LATEST)
-    )(ExternalArtifact(name="output_0"), 1)
+    )(Client().get_artifact_version("output_0"), 1)
 
 
 @pipeline(model=Model(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
-        ExternalArtifact(name="output_2"),
+        Client().get_artifact_version("output_2"),
         3,
     )
 
