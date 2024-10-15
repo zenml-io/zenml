@@ -70,8 +70,8 @@ track and retrieve specific artifacts later in your workflow.
 ![Dynamic artifact pipeline DAG in the
 dashboard](../../.gitbook/assets/dynamic_artifact_pipeline.png)
 
-One caveat applies to this first method: either of the following two things must
-be true
+One caveat applies to this first method which is that either of the following
+two things must be true:
 
 - The factory must be in the same file as where the steps are defined -> This is
   so the logic with `globals()` works
