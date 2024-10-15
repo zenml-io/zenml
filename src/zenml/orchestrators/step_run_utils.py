@@ -16,15 +16,14 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
 
-from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
+from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
-    ModelVersionArtifactRequest,
     ModelVersionPipelineRunRequest,
     ModelVersionResponse,
     PipelineDeploymentResponse,
@@ -565,36 +564,3 @@ def link_output_artifacts_to_model_version(
             model_version=model_version,
             artifact_config=artifact_config,
         )
-
-
-def link_artifact_version_to_model_version(
-    artifact_version: ArtifactVersionResponse,
-    model_version: ModelVersionResponse,
-    artifact_config: Optional[ArtifactConfig] = None,
-) -> None:
-    """Link an artifact version to a pipeline version.
-
-    Args:
-        artifact_version: The artifact version to link.
-        model_version: The model version to link.
-        artifact_config: Output artifact configuration.
-    """
-    if artifact_config:
-        is_model_artifact = artifact_config.is_model_artifact
-        is_deployment_artifact = artifact_config.is_deployment_artifact
-    else:
-        is_model_artifact = False
-        is_deployment_artifact = False
-
-    client = Client()
-    client.zen_store.create_model_version_artifact_link(
-        ModelVersionArtifactRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            artifact_version=artifact_version.id,
-            model=model_version.model.id,
-            model_version=model_version.id,
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
-        )
-    )

@@ -32,6 +32,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.load_directory_materializer import (
     PreexistingDataMaterializer,
 )
@@ -797,8 +798,7 @@ def _link_artifact_version_to_the_step_and_model(
             or step_context.pipeline_run.model_version
         )
         if model_version:
-            from zenml.artifacts.artifact_config import ArtifactConfig
-            from zenml.orchestrators.step_run_utils import (
+            from zenml.model.utils import (
                 link_artifact_version_to_model_version,
             )
 
@@ -813,7 +813,7 @@ def _link_artifact_version_to_the_step_and_model(
             )
         else:
             raise RuntimeError
-    except RuntimeError:
+    except (RuntimeError, StepContextError):
         logger.debug(f"Unable to link saved artifact to {error_message}.")
 
 
