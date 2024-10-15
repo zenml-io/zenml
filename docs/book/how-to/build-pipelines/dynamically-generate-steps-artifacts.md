@@ -8,8 +8,7 @@ In ZenML pipelines, you often need to reuse the same step multiple times with
 different inputs, resulting in multiple artifacts. However, the default naming
 convention for artifacts can make it challenging to track and differentiate
 between these outputs, especially when they need to be used in subsequent
-pipelines. Below you can find a detailed exploration of how you might go about dynamically generating steps and artifacts to improve pipeline
-flexibility and maintainability.
+pipelines. Below you can find a detailed exploration of how you might go about dynamically generating steps and artifacts to improve pipeline flexibility and maintainability.
 
 By default, ZenML uses type annotations in function definitions to determine artifact names. While this works well for steps used once in a pipeline, it becomes problematic when:
 
