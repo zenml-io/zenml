@@ -31,7 +31,7 @@ This approach allows you to create steps with custom artifact names dynamically:
 ```python
 from typing import Any, Dict
 from typing_extensions import Annotated
-from zenml import step, ArtifactConfig
+from zenml import step, ArtifactConfig, pipeline
 
 def create_dynamic_step(prefix: str):
     @step
@@ -84,6 +84,10 @@ def metadata_artifact_pipeline(train_data, val_data, test_data):
     generic_step(val_data, prefix="validation")
     generic_step(test_data, prefix="test")
 ```
+
+We can see the metadata in the dashboard:
+
+![Metadata visible in the dashboard](../../.gitbook/assets/metadata_artifact_pipeline.png)
 
 This method uses a single `generic_step` but adds custom metadata to each artifact. You can later use this metadata to identify and differentiate between artifacts:
 
