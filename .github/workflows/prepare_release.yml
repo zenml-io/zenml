@@ -173,8 +173,8 @@ jobs:
       # Deactivate and rerun the tenant
       - name: Run tenant management script
         env:
-          CLOUDAPI_STAGING_CLIENT_ID: ${{ secrets.CLOUDAPI_STAGING_CLIENT_ID }}
-          CLOUDAPI_STAGING_CLIENT_SECRET: ${{ secrets.CLOUDAPI_STAGING_CLIENT_SECRET }}
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
         run: python scripts/redeploy-release-prep-tenant.py
 

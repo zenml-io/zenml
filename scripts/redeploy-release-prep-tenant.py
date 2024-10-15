@@ -117,8 +117,8 @@ def main() -> None:
         requests.HTTPError: If any API requests fail.
     """
     # Get environment variables
-    client_id = os.environ.get("CLOUDAPI_STAGING_CLIENT_ID")
-    client_secret = os.environ.get("CLOUDAPI_STAGING_CLIENT_SECRET")
+    client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
+    client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
     tenant_id = os.environ.get("RELEASE_TENANT_ID")
 
     if not all([client_id, client_secret, tenant_id]):
