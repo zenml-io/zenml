@@ -89,7 +89,7 @@ Currently, there are two main options to access a deployed ZenML server:
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
-### How to deploy ZenML
+### Options for deploying ZenML
 
 Documentation for the various deployment strategies can be found in the following pages below (in our 'how-to' guides):
 
