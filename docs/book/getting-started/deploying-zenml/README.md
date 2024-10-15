@@ -21,10 +21,9 @@ A ZenML deployment consists of multiple infrastructure components:
 - An [open-source companion ReactJS](https://github.com/zenml-io/zenml-dashboard) dashboard
 - (Optional) ZenML Pro API + ZenML Pro dashboard
 
-
 <details>
 
-<summary>Small note on the ZenML Python Client</summary>
+<summary>Details on the ZenML Python Client</summary>
 
 The ZenML client is a Python package that you can install on your machine. It
 is used to interact with the ZenML server. You can install it using the `pip`
