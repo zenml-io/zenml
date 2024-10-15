@@ -1,8 +1,8 @@
 ---
-description: How to dynamically generate steps and artifacts in your pipelines.
+description: How to dynamically assign artifact names in your pipelines.
 ---
 
-# Dynamically Generating Steps and Artifacts
+# Dynamically assign artifact names
 
 In ZenML pipelines, you often need to reuse the same step multiple times with
 different inputs, resulting in multiple artifacts. However, the default naming
@@ -24,7 +24,7 @@ ZenML offers two possible ways to address this problem:
 1. Using factory functions to create dynamic steps with custom artifact names.
 2. Using metadata to identify artifacts in a single step.
 
-## Using Factory Functions for Dynamic Step Creation
+## 1. Using factory functions for dynamic artifact names
 
 This approach allows you to create steps with custom artifact names dynamically:
 
@@ -66,7 +66,7 @@ from typing_extensions import Annotated
 from zenml import step, get_step_context
 
 @step
-def generic_step(data: Any, prefix: str) -> Annotated[Dict[str, Any], "generic_artifact"]:
+def generic_step(data: Any, prefix: str) -> Annotated[Dict[str, Any], "dataset"]:
     result = {"processed_data": data}
 
     # Add custom metadata
