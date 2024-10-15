@@ -165,6 +165,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
+      - name: Test
+        run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
+          zenml stack list
+
       # Deactivate and rerun the tenant
       - name: Run tenant management script
         env:
@@ -173,10 +178,7 @@ jobs:
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
         run: python scripts/redeploy-release-prep-tenant.py
 
-      - name: Test
-        run: |
-          scripts/install-zenml-dev.sh --system --integrations "no"
-          zenml stack list
+
 
 #      # TODO: Change the config somewhere here
 #      - name: Run on AWS
