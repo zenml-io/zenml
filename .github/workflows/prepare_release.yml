@@ -1,14 +1,14 @@
 ---
 name: prepare-release
 on:
-  # TODO: Change this back into pull_request
+  # TODO: Change this back into pull_request and add proper precautions
   push:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[prepare]') && github.repository == 'zenml-io/zenml' # TODO: Remove
+    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
@@ -94,10 +94,9 @@ jobs:
       - name: Push the changes
         run: |
           git commit -m "Adding the new version to the necessary files."
-          git push origin HEAD:${{ github.ref }} 
-
+          git push origin HEAD:${{ github.ref }}
   build-release:
-    if: contains(github.event.head_commit.message, '[build]') && github.repository == 'zenml-io/zenml'   # TODO: Remove
+    if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -141,9 +140,8 @@ jobs:
         run: |
           docker tag zenmldocker/prepare-release:quickstart-aws 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
-
   test-release:
-    if: contains(github.event.head_commit.message, '[test]') && github.repository == 'zenml-io/zenml' # TODO: Remove
+    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
     env:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
@@ -165,18 +163,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Test
-        run: |
-          scripts/install-zenml-dev.sh --system --integrations "no"
-          zenml stack list
-
-#      # Deactivate and rerun the tenant
-#      - name: Run tenant management script
-#        env:
-#          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-#          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
-#          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
-#        run: python scripts/redeploy-release-prep-tenant.py
+      # Deactivate and rerun the tenant
+      - name: Run tenant management script
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
+        run: python scripts/redeploy-release-prep-tenant.py
 
       # ZenML Integrations
       - name: Install the required integrations
@@ -189,8 +182,7 @@ jobs:
           cd examples/quickstart
           zenml stack set aws
           sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
-          cat configs/training_aws.yaml
-          # python run.py --model_type=t5-small
+          python run.py --model_type=t5-small
 
       # Run the Quickstart on the Azure stack
       - name: Run on Azure
@@ -198,14 +190,12 @@ jobs:
           cd examples/quickstart
           zenml stack set azure
           sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" "configs/training_azure.yaml"
-          cat configs/training_azure.yaml
-          # python run.py --model_type=t5-small
+          python run.py --model_type=t5-small
 
       # Run the Quickstart on the GCP stack
       - name: Run on GCP
-        run: |
+        run: |-
           cd examples/quickstart
           zenml stack set gcp
           sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" "configs/training_gcp.yaml"
-          cat configs/training_gcp.yaml
-          # python run.py --model_type=t5-small
+          python run.py --model_type=t5-small
