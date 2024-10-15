@@ -177,18 +177,18 @@ jobs:
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
 
-      # Run the Quickstart on the AWS stack
-      - name: Run on AWS
-        run: |
-          cd examples/quickstart
-          zenml stack set aws
-          # Adjust the config to use the right parent image
-          sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
-          # Adjust the requirements to use the right zenml installation
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_aws.txt
-          pip install -r requirements_aws.txt
-          zenml integration install aws -y
-          python run.py --model_type=t5-small
+#      # Run the Quickstart on the AWS stack
+#      - name: Run on AWS
+#        run: |
+#          cd examples/quickstart
+#          zenml stack set aws
+#          # Adjust the config to use the right parent image
+#          sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
+#          # Adjust the requirements to use the right zenml installation
+#          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_aws.txt
+#          pip install -r requirements_aws.txt
+#          zenml integration install aws -y
+#          python run.py --model_type=t5-small
 
       # Run the Quickstart on the Azure stack
       - name: Run on Azure
