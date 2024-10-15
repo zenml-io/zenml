@@ -170,26 +170,41 @@ jobs:
           scripts/install-zenml-dev.sh --system --integrations "no"
           zenml stack list
 
-      # Deactivate and rerun the tenant
-      - name: Run tenant management script
-        env:
-          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
-          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
-        run: python scripts/redeploy-release-prep-tenant.py
+#      # Deactivate and rerun the tenant
+#      - name: Run tenant management script
+#        env:
+#          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+#          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+#          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
+#        run: python scripts/redeploy-release-prep-tenant.py
 
+      # Quickstart example
+      - name: Quickstart example
+        run: cd examples/quickstart
 
+      # Run the Quickstart on the AWS stack
+      - name: Run on AWS
+        run: |
+          zenml integration install aws -y
+          zenml stack set aws
+          sed -i '' "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" configs/training_aws.yaml
+          cat configs/training_aws.yaml
+          # python run.py --model_type=t5-small
 
-#      # TODO: Change the config somewhere here
-#      - name: Run on AWS
-#        run: |
-#          zenml stack set aws
-#          python run.py --model_type=t5-small
-#      - name: Run on GCP
-#        run: |
-#          zenml stack set gcp
-#          python run.py --model_type=t5-small
-#      - name: Run on Azure
-#        run: |-
-#          zenml stack set azure
-#          python run.py --model_type=t5-small
+      # Run the Quickstart on the Azure stack
+      - name: Run on Azure
+        run: |-
+          zenml integration install azure -y
+          zenml stack set azure
+          sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" configs/training_azure.yaml
+          cat configs/training_azure.yaml
+          # python run.py --model_type=t5-small
+
+      # Run the Quickstart on the GCP stack
+      - name: Run on GCP
+        run: |
+          zenml integration install gcp -y
+          zenml stack set gcp
+          sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" configs/training_gcp.yaml
+          cat configs/training_gcp.yaml
+          # python run.py --model_type=t5-small
