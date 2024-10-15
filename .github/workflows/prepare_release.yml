@@ -187,6 +187,7 @@ jobs:
         run: |
           zenml integration install aws -y
           zenml stack set aws
+          ls
           sed -i '' "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" configs/training_aws.yaml
           cat configs/training_aws.yaml
           # python run.py --model_type=t5-small
