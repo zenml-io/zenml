@@ -178,24 +178,24 @@ jobs:
 #          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
 #        run: python scripts/redeploy-release-prep-tenant.py
 
-      # Quickstart example
-      - name: Quickstart example
-        run: cd examples/quickstart
+      # ZenML Integrations
+      - name: Install the required integrations
+        run: |
+          zenml integration install aws azure gcp -y
 
       # Run the Quickstart on the AWS stack
       - name: Run on AWS
         run: |
-          zenml integration install aws -y
+          cd examples/quickstart
           zenml stack set aws
-          ls
           sed -i '' "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" configs/training_aws.yaml
           cat configs/training_aws.yaml
           # python run.py --model_type=t5-small
 
       # Run the Quickstart on the Azure stack
       - name: Run on Azure
-        run: |-
-          zenml integration install azure -y
+        run: |
+          cd examples/quickstart
           zenml stack set azure
           sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" configs/training_azure.yaml
           cat configs/training_azure.yaml
@@ -204,7 +204,7 @@ jobs:
       # Run the Quickstart on the GCP stack
       - name: Run on GCP
         run: |
-          zenml integration install gcp -y
+          cd examples/quickstart
           zenml stack set gcp
           sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" configs/training_gcp.yaml
           cat configs/training_gcp.yaml
