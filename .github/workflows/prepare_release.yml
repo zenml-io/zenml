@@ -171,7 +171,7 @@ jobs:
           CLOUDAPI_STAGING_CLIENT_ID: ${{ secrets.CLOUDAPI_STAGING_CLIENT_ID }}
           CLOUDAPI_STAGING_CLIENT_SECRET: ${{ secrets.CLOUDAPI_STAGING_CLIENT_SECRET }}
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
-        run: python .github/scripts/tenant_management.py
+        run: python scripts/redeploy-release-prep-tenant.py
 
       - name: Test
         run: |
