@@ -29,7 +29,11 @@ from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.resource_settings import ResourceSettings
 from zenml.config.settings_resolver import SettingsResolver
+from zenml.config.stack_component_resource_settings import (
+    StackComponentResourceSettings,
+)
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -483,6 +487,13 @@ class Compiler:
         complete_step_configuration = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
         )
+        self._warn_about_unused_resource_settings(
+            resource_settings=complete_step_configuration.resource_settings,
+            stack=stack,
+            invocation_id=invocation.id,
+            step_operator=complete_step_configuration.step_operator,
+        )
+
         return Step(spec=step_spec, config=complete_step_configuration)
 
     def _get_sorted_invocations(
@@ -552,7 +563,7 @@ class Compiler:
                     f"Step `{name}` requires step operator "
                     f"'{step_operator}' which is not configured in "
                     f"the stack '{stack.name}'. Available step operators: "
-                    f"{available_step_operators}."
+                    f"{list(available_step_operators)}."
                 )
 
             experiment_tracker = step.config.experiment_tracker
@@ -564,7 +575,8 @@ class Compiler:
                     f"Step `{name}` requires experiment tracker "
                     f"'{experiment_tracker}' which is not "
                     f"configured in the stack '{stack.name}'. Available "
-                    f"experiment trackers: {available_experiment_trackers}."
+                    "experiment trackers: "
+                    f"{list(available_experiment_trackers)}."
                 )
 
     @staticmethod
@@ -598,6 +610,60 @@ class Compiler:
         }
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
+
+    @staticmethod
+    def _warn_about_unused_resource_settings(
+        resource_settings: "ResourceSettings",
+        stack: "Stack",
+        invocation_id: str,
+        step_operator: Optional[str] = None,
+    ) -> None:
+        """Warn about unused resource settings.
+
+        Args:
+            resource_settings: The resource settings for the step invocation.
+            stack: The stack on which the step will run.
+            invocation_id: ID of the step invocation.
+            step_operator: The step operator used for the step invocation.
+        """
+        if step_operator:
+            if (
+                stack.step_operator
+                and stack.step_operator.name == step_operator
+            ):
+                settings_class = stack.step_operator.settings_class
+            else:
+                # This will fail right after when we validate that the step
+                # operator configuration is possible with the active stack, so
+                # we don't need to log any warning here.
+                return
+        else:
+            settings_class = stack.orchestrator.settings_class
+
+        if settings_class and issubclass(
+            settings_class, StackComponentResourceSettings
+        ):
+            allowed_keys = settings_class.get_allowed_resource_settings_keys()
+        else:
+            allowed_keys = set()
+
+        ignored_keys = [
+            key
+            for key in resource_settings.model_dump(exclude_none=True)
+            if key not in allowed_keys
+        ]
+
+        if ignored_keys:
+            # TODO: should this be a warning at runtime as well, to get more
+            # awareness? And also to catch the case when users run from the
+            # dashboard
+            logger.warning(
+                "Ignoring the following resource settings for step `%s` "
+                "because your active %s does not support them: %s",
+                invocation_id,
+                "step operator" if step_operator else "orchestrator",
+                ignored_keys,
+            )
 
 
 def convert_component_shortcut_settings_keys(

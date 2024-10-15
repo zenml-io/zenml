@@ -18,12 +18,26 @@ from abc import ABC
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from inspect import isclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from zenml.config import ResourceSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.stack_component_resource_settings import (
+    StackComponentResourceSettings,
+)
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -47,6 +61,8 @@ if TYPE_CHECKING:
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
+
+    T = TypeVar("T", bound="StackComponentResourceSettings")
 
 logger = get_logger(__name__)
 
@@ -537,9 +553,70 @@ class StackComponent:
         )
 
         if key in all_settings:
-            return self.settings_class.model_validate(dict(all_settings[key]))
+            component_settings = self.settings_class.model_validate(
+                dict(all_settings[key])
+            )
         else:
-            return self.settings_class()
+            component_settings = self.settings_class()
+
+        if isinstance(component_settings, StackComponentResourceSettings):
+            resource_settings = (
+                container.config.resource_settings
+                if isinstance(container, (Step, StepRunResponse, StepRunInfo))
+                else container.pipeline_configuration.resource_settings
+            )
+
+            component_settings = self._apply_resource_settings(
+                resource_settings=resource_settings,
+                component_settings=component_settings,
+            )
+
+        return component_settings
+
+    def _apply_resource_settings(
+        self,
+        component_settings: "T",
+        resource_settings: ResourceSettings,
+    ) -> "T":
+        """Apply resource settings to the component settings.
+
+        Args:
+            component_settings: The component settings.
+            resource_settings: The resource settings to apply.
+
+        Raises:
+            ValueError: If multiple different values are specified for a
+                resource key.
+
+        Returns:
+            The component settings with resource settings applied.
+        """
+        updates = {}
+
+        allowed_keys = component_settings.get_allowed_resource_settings_keys()
+        for key, resource_settings_value in resource_settings.model_dump(
+            exclude_none=True
+        ).items():
+            if key not in allowed_keys:
+                continue
+
+            settings_value = getattr(component_settings, key)
+
+            if not settings_value:
+                updates[key] = resource_settings_value
+            elif (
+                resource_settings_value
+                and resource_settings_value != settings_value
+            ):
+                raise ValueError(
+                    "Got multiple conflicting values for resource attribute "
+                    f"{key} of {self.type} {self.name}: "
+                    f"{resource_settings_value} (specified using "
+                    f"ResourceSettings) and {settings_value} (specified using "
+                    "the component settings)."
+                )
+
+        return component_settings.model_copy(update=updates)
 
     def connector_has_expired(self) -> bool:
         """Checks whether the connector linked to this stack component has expired.

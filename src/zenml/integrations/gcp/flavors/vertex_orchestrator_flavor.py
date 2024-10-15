@@ -13,9 +13,15 @@
 #  permissions and limitations under the License.
 """Vertex orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, Union
 
-from zenml.config.base_settings import BaseSettings
+from pydantic import Field, NonNegativeInt, PositiveFloat
+
+from zenml.config.resource_settings import MEMORY_REGEX
+from zenml.config.stack_component_resource_settings import (
+    StackComponentResourceSettings,
+)
+from zenml.enums import AcceleratorType
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_ORCHESTRATOR_FLAVOR,
@@ -32,7 +38,66 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 
 
-class VertexOrchestratorSettings(BaseSettings):
+class VertexOrchestratorResourceSettings(StackComponentResourceSettings):
+    """Allowed resource settings for the Vertex orchestrator.
+
+    See https://cloud.google.com/vertex-ai/docs/pipelines/machine-types for
+    more information.
+
+    Attributes:
+        cpu_count: The amount of CPU cores that should be configured.
+        memory: The amount of memory that should be configured.
+        accelerator: The accelerator to use.
+        accelerator_count: The amount of accelerators that should be configured.
+    """
+
+    cpu_count: Optional[PositiveFloat] = None
+    memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+
+    accelerator: Optional[Union[AcceleratorType, str]] = Field(
+        union_mode="left_to_right", default=None
+    )
+    accelerator_count: Optional[NonNegativeInt] = None
+
+    def get_converted_accelerator(self) -> Optional[str]:
+        """Get the converted accelerator type.
+
+        Raises:
+            ValueError: If an unsupported accelerator type was provided.
+
+        Returns:
+            The converted accelerator type.
+        """
+        if not isinstance(self.accelerator, AcceleratorType):
+            return self.accelerator
+
+        accelerator_mapping = {
+            AcceleratorType.A100: "NVIDIA_TESLA_A100",
+            AcceleratorType.A100_80GB: "NVIDIA_A100_80GB",
+            AcceleratorType.H100_80GB: "NVIDIA_H100_80GB",
+            AcceleratorType.P4: "NVIDIA_TESLA_P4",
+            AcceleratorType.P100: "NVIDIA_TESLA_P100",
+            AcceleratorType.V100: "NVIDIA_TESLA_V100",
+            AcceleratorType.L4: "NVIDIA_L4",
+            AcceleratorType.T4: "NVIDIA_TESLA_T4",
+            AcceleratorType.TPU_V2: "TPU_V2",
+            AcceleratorType.TPU_V3: "TPU_V3",
+        }
+
+        if converted_value := accelerator_mapping.get(self.accelerator):
+            return converted_value
+        else:
+            raise ValueError(
+                "Unsupported accelerator type for Vertex orchestrator: "
+                f"{self.accelerator}. If you think this is a mistake and the "
+                "accelerator is supported, please contact the ZenML team. "
+                "To solve this issue in the meantime, you can always provide a "
+                "raw string value for the accelerator that gets directly "
+                "passed to Vertex."
+            )
+
+
+class VertexOrchestratorSettings(VertexOrchestratorResourceSettings):
     """Settings for the Vertex orchestrator.
 
     Attributes:
@@ -41,18 +106,7 @@ class VertexOrchestratorSettings(BaseSettings):
             the client returns immediately and the pipeline is executed
             asynchronously. Defaults to `True`.
         labels: Labels to assign to the pipeline job.
-        node_selector_constraint: Each constraint is a key-value pair label.
-            For the container to be eligible to run on a node, the node must have
-            each of the constraints appeared as labels.
-            For example a GPU type can be providing by one of the following tuples:
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
-            Hint: the selected region (location) must provide the requested accelerator
-            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
+        node_selector_constraint: DEPRECATED. Use `accelerator` instead.
         pod_settings: Pod settings to apply.
     """
 
