@@ -145,8 +145,8 @@ jobs:
   test-release:
     if: contains(github.event.head_commit.message, '[test]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     env:
-      RELEASE_TENANT_URL: ${{ secrets.RELEASE_TENANT_URL }}
-      RELEASE_SERVICE_ACCOUNT_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+      ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
+      ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
     runs-on: ubuntu-latest
     steps:
       # Check out the code
