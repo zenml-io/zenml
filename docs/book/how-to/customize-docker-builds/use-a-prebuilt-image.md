@@ -4,9 +4,9 @@ description: "Skip building an image for your ZenML pipeline altogether."
 
 # Use a prebuilt image for pipeline execution
 
-When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies and your pipeline code to it. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is (to pull base layers and push the final image to your container registry). Although this process only happens once and is skipped if ZenML detects no change in your environment, it might still be a bottleneck in your pipeline execution.
+When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies and your pipeline code to it. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is. This is because Docker must pull base layers and push the final image to your container registry. Although this process only happens once and is skipped if ZenML detects no change in your environment, it might still be a bottleneck slowing down your pipeline execution.
 
-To save time and costs, you can choose to not build a Docker image every time your pipeline runs. This guide shows you how to do it using a pre-built image, what you should include in your image for the pipeline to run successfully and other tips.
+To save time and costs, you can choose to not build a Docker image every time your pipeline runs. This guide shows you how to do it using a prebuilt image, what you should include in your image for the pipeline to run successfully and other tips.
 
 {% hint style="info" %}
 Note that using this feature means that you won't be able to leverage any updates you make to your code or dependencies, outside of what your image already contains.
@@ -46,7 +46,7 @@ Note that this is different from the case where you [only specify a parent image
 If you're using an image that was already built by ZenML in a previous pipeline run, you don't need to worry about what goes in it as long as it was built for the same stack as your current pipeline run. You can use it directly.
 {% endhint %}
 
-The following points are derived from how ZenML builds an image internally and will help you make your own images:
+The following points are derived from how ZenML builds an image internally and will help you make your own images.
 
 ### Your stack requirements
 
@@ -66,7 +66,7 @@ stack_requirements = active_stack.requirements()
 
 ### Integration requirements
 
-For all integrations that you use in your pipeline, you need to have their dependencies installed too. The following is how you can get a list of them.
+For all integrations that you use in your pipeline, you need to have their dependencies installed too. You can get a list of them in the following way:
 
 ```python
 from zenml.integrations.registry import integration_registry
@@ -89,15 +89,15 @@ integration_requirements = set(
 
 ### Any project specific requirements
 
-Any other dependencies that your project relies on. You can then install all of these different requirements through a line in your Dockerfile that looks like the following. It assumes you have accumulated all the requirements in one file.
+For any other dependencies that your project relies on, you can then install all of these different requirements through a line in your `Dockerfile` that looks like the following. It assumes you have accumulated all the requirements in one file.
 
 ```Dockerfile
-RUN pip insatll <ANY_ARGS> -r FILE
+RUN pip install <ANY_ARGS> -r FILE
 ```
 
 ### Any system packages
 
-If you have any apt packages that are needed for your application to function, be sure to include them too. This can be achieved in a Dockerfile as follows:
+If you have any `apt` packages that are needed for your application to function, be sure to include them too. This can be achieved in a `Dockerfile` as follows:
 
 ```Dockerfile
 RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAGES
@@ -109,5 +109,5 @@ The files containing your pipeline and step code and all other necessary functio
 
 
 {% hint style="info" %}
-Note that you also need Python, pip and zenml installed in your image.
+Note that you also need Python, `pip` and `zenml` installed in your image.
 {% endhint %}
