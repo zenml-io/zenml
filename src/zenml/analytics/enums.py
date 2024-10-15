@@ -81,13 +81,8 @@ class AnalyticsEvent(str, Enum):
     CREATED_SERVICE_ACCOUNT = "Service account created"
 
     # Stack recipes
-    RUN_STACK_RECIPE = "Stack recipe ran"
     DEPLOY_STACK = "Stack deployed"
     DESTROY_STACK = "Stack destroyed"
-
-    # Stack component deploy
-    DEPLOY_STACK_COMPONENT = "Stack component deployed"
-    DESTROY_STACK_COMPONENT = "Stack component destroyed"
 
     # Full stack infrastructure deployment
     DEPLOY_FULL_STACK = "Full stack deployed"

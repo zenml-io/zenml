@@ -124,7 +124,6 @@
   * [Deploy a cloud stack with ZenML](how-to/stack-deployment/deploy-a-cloud-stack.md)
   * [Deploy a cloud stack with Terraform](how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
   * [Register a cloud stack](how-to/stack-deployment/register-a-cloud-stack.md)
-  * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
   * [Troubleshoot stack components](how-to/stack-deployment/troubleshoot-stack-components.md)

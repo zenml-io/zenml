@@ -99,11 +99,6 @@ This docs section consists of information that makes it easier to provision, con
       <td><a href="./deploy-a-cloud-stack-with-terraform.md">./deploy-a-cloud-stack-with-terraform.md</a></td>
     </tr>
     <tr>
-      <td><mark style="color:purple;"><strong>Deploy stack/components using mlstacks</strong></mark></td>
-      <td>Deploying an entire stack with ZenML's `mlstacks` package.</td>
-      <td><a href="./deploy-a-stack-using-mlstacks.md">./deploy-a-stack-using-mlstacks.md</a></td>
-    </tr>
-    <tr>
       <td><mark style="color:purple;"><strong>Reference secrets in stack configuration</strong></mark></td>
       <td>Description of referencing secrets in stack configuration.</td>
       <td><a href="./reference-secrets-in-stack-configuration.md">./reference-secrets-in-stack-configuration.md</a></td>

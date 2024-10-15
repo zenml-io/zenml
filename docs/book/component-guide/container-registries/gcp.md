@@ -33,15 +33,9 @@ When using the Google Artifact Registry, you need to:
 * enable it [here](https://console.cloud.google.com/marketplace/product/google/artifactregistry.googleapis.com)
 * go [here](https://console.cloud.google.com/artifacts) and create a `Docker` repository.
 
-### Infrastructure Deployment
-
-A GCP Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy gcp_container_registry --flavor=gcp --provider=gcp ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md).
+{% hint style="info" %}
+We have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
+{% endhint %}
 
 ## How to find the registry URI
 
