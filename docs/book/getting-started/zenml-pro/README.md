@@ -1,7 +1,7 @@
 # ☁️ ZenML Pro
 
 The Pro version of ZenML comes with a number of features that expand the
-functionality of the Open Source product
+functionality of the Open Source product. Supercharge your MLOps with a fully-managed control plane
 
 ### Role-based access control and permissions
 
