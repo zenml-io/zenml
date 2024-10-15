@@ -2,6 +2,7 @@
 name: prepare-release
 on:
   # TODO: Change this back into pull_request and add proper precautions
+  # TODO: Parallize the quickstart run more logically
   push:
     branches: [misc/prepare-release-*]
 env:
@@ -172,8 +173,9 @@ jobs:
         run: python scripts/redeploy-release-prep-tenant.py
 
       # ZenML Integrations
-      - name: Install the required integrations
+      - name: Install ZenML and the required integrations
         run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
           zenml integration install aws azure gcp -y
 
       # Run the Quickstart on the AWS stack
