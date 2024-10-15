@@ -145,8 +145,8 @@ jobs:
   test-release:
     if: contains(github.event.head_commit.message, '[test]') && github.repository == 'zenml-io/zenml' # TODO: Remove
     env:
-      TENANT_URL: ${{ secrets.TENANT_URL }}
-      SERVICE_ACCOUNT_API_KEY: ${{ secrets.SERVICE_ACCOUNT_API_KEY }}
+      RELEASE_TENANT_URL: ${{ secrets.RELEASE_TENANT_URL }}
+      RELEASE_SERVICE_ACCOUNT_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
     runs-on: ubuntu-latest
     steps:
       # Check out the code
@@ -168,13 +168,16 @@ jobs:
       # Deactivate and rerun the tenant
       - name: Run tenant management script
         env:
-          STAGING_CLIENT_ID: ${{ secrets.STAGING_CLIENT_ID }}
-          STAGING_CLIENT_SECRET: ${{ secrets.STAGING_CLIENT_SECRET }}
-          TENANT_ID: ${{ secrets.TENANT_ID }}
+          CLOUDAPI_STAGING_CLIENT_ID: ${{ secrets.CLOUDAPI_STAGING_CLIENT_ID }}
+          CLOUDAPI_STAGING_CLIENT_SECRET: ${{ secrets.CLOUDAPI_STAGING_CLIENT_SECRET }}
+          RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
         run: python .github/scripts/tenant_management.py
 
       - name: Test
-        run: zenml stack list
+        run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
+          zenml stack list
+
 #      # TODO: Change the config somewhere here
 #      - name: Run on AWS
 #        run: |
