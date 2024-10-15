@@ -793,11 +793,8 @@ def _link_artifact_version_to_the_step_and_model(
             ),
         )
         error_message = "model"
-        model_version = (
-            step_context.step_run.model_version
-            or step_context.pipeline_run.model_version
-        )
-        if model_version:
+
+        if step_context.model_version:
             from zenml.model.utils import (
                 link_artifact_version_to_model_version,
             )
@@ -808,11 +805,9 @@ def _link_artifact_version_to_the_step_and_model(
             )
             link_artifact_version_to_model_version(
                 artifact_version=artifact_version,
-                model_version=model_version,
+                model_version=step_context.model_version,
                 artifact_config=artifact_config,
             )
-        else:
-            raise RuntimeError
     except (RuntimeError, StepContextError):
         logger.debug(f"Unable to link saved artifact to {error_message}.")
 
