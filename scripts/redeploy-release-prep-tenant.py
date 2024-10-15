@@ -117,9 +117,9 @@ def main() -> None:
         requests.HTTPError: If any API requests fail.
     """
     # Get environment variables
-    client_id = os.environ.get("STAGING_CLIENT_ID")
-    client_secret = os.environ.get("STAGING_CLIENT_SECRET")
-    tenant_id = os.environ.get("TENANT_ID")
+    client_id = os.environ.get("CLOUDAPI_STAGING_CLIENT_ID")
+    client_secret = os.environ.get("CLOUDAPI_STAGING_CLIENT_SECRET")
+    tenant_id = os.environ.get("RELEASE_TENANT_ID")
 
     if not all([client_id, client_secret, tenant_id]):
         raise EnvironmentError("Missing required environment variables")
@@ -129,15 +129,22 @@ def main() -> None:
     print("Fetched the token.")
 
     # Deactivate the tenant
-    deactivate_tenant(token, tenant_id)
-    print("Tenant deactivation initiated.")
+    status = get_tenant_status(token, tenant_id)
+    if status == "available":
+        deactivate_tenant(token, tenant_id)
+        print("Tenant deactivation initiated.")
 
     # Wait until it's deactivated
     time.sleep(10)
-    while status := get_tenant_status(token, tenant_id) != "pending":
+
+    status = get_tenant_status(token, tenant_id)
+    while status == "pending":
         print(f"Waiting... Current tenant status: {status}.")
         time.sleep(20)
-    assert status == "deactivated"
+        status = get_tenant_status(token, tenant_id)
+
+    if status != "deactivated":
+        raise RuntimeError("Tenant deactivation failed.")
     print("Tenant deactivated.")
 
     # Redeploy the tenant
@@ -146,10 +153,15 @@ def main() -> None:
 
     # Wait until it's deployed
     time.sleep(10)
-    while status := get_tenant_status(token, tenant_id) != "pending":
+
+    status = get_tenant_status(token, tenant_id)
+    while status == "pending":
         print(f"Waiting... Current tenant status: {status}.")
         time.sleep(20)
-    assert status == "available"
+        status = get_tenant_status(token, tenant_id)
+
+    if status != "available":
+        raise RuntimeError("Tenant redeployment failed.")
     print("Tenant redeployed.")
 
 
