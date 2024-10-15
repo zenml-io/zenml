@@ -176,14 +176,17 @@ jobs:
       - name: Install ZenML and the required integrations
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
-          zenml integration install aws azure gcp -y
 
       # Run the Quickstart on the AWS stack
       - name: Run on AWS
         run: |
           cd examples/quickstart
           zenml stack set aws
+          # Adjust the config to use the right parent image
           sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
+          # Adjust the requirements to use the right zenml installation
+          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_aws.txt
+          pip install -r requirements_aws.txt
           python run.py --model_type=t5-small
 
       # Run the Quickstart on the Azure stack
@@ -191,7 +194,11 @@ jobs:
         run: |
           cd examples/quickstart
           zenml stack set azure
+          # Adjust the config to use the right parent image
           sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" "configs/training_azure.yaml"
+          # Adjust the requirements to use the right zenml installation
+          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_azure.txt
+          pip install -r requirements_azure.txt
           python run.py --model_type=t5-small
 
       # Run the Quickstart on the GCP stack
@@ -199,5 +206,9 @@ jobs:
         run: |-
           cd examples/quickstart
           zenml stack set gcp
+          # Adjust the config to use the right parent image
           sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" "configs/training_gcp.yaml"
+          # Adjust the requirements to use the right zenml installation
+          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_gcp.txt
+          pip install -r requirements_gcp.txt
           python run.py --model_type=t5-small
