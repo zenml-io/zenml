@@ -1,97 +1,40 @@
----
-description: Learn how to upgrade your server to a new version of ZenML for the different deployment options.
----
+# Best practices for upgrading ZenML
 
-# Upgrade the version of the ZenML server
+While upgrading ZenML is generally a smooth process, there are some best practices that you should follow to ensure a successful upgrade. Based on experiences shared by ZenML users, here are some key strategies and considerations:
 
-The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. 
+## Data Backups
 
-## Before you upgrade
+- **Database Backup**: Before upgrading, create a backup of your MySQL database. This allows you to rollback if necessary.
+- **Automated Backups**: Consider setting up automatic daily backups of your database for added security.
 
-- Make sure you have a backup of your data. More information about backups is in the [Using ZenML server in production](../manage-the-zenml-server/using-zenml-server-in-prod.md#backups) guide.
-- Check the [changelog of the release](https://github.com/zenml-io/zenml/releases) you are upgrading to, to see if there are any breaking changes that you need to be aware of.
-- Upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes that you can benefit from.
-- Check out the [migration guide](./migration-guide/migration-guide.md) of the release you are upgrading to (if there is one), to see if you need to make any changes to your pipeline code or configuration.
+## Testing and Compatibility
 
+- **Local Testing**: It's a good idea to update your local server first and run some old pipelines to check for compatibility issues between the old and new versions.
+- **End-to-End Testing**: You can also develop simple end-to-end tests to ensure that the new version works with your pipeline code and your stack.
+- **Artifact Compatibility**: Be cautious with pickle-based materializers, as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts.
 
-## Upgrade
+## Dependency Management
 
-{% tabs %}
-{% tab title="Docker" %}
-To upgrade to a new version with docker, you have to delete the existing container and then run the new version of
-the `zenml-server` image.
+- **Python Version**: Make sure that the Python version you are using is compatible with the ZenML version you are upgrading to.
+- **External Dependencies**: Be mindful of external dependencies (e.g. from integrations) that might be incompatible with the new version of ZenML. This could be the case when some older versions are no longer supported or maintained and the ZenML integration is updated to use a newer version.
 
-{% hint style="danger" %}
-Check that your data is persisted (either on persistent storage or on an external MySQL instance) before doing this.
+## Upgrade Strategies
 
-Optionally also perform a backup before the upgrade.
-{% endhint %}
+- **Staged Upgrade**: For large organizations or critical systems, consider using two ZenML server instances (old and new) and migrating services one by one to the new version.
+- **Team Coordination**: If multiple teams share a ZenML server instance, coordinate the upgrade timing to minimize disruption.
+- **Separate Tenants**: Coordination between teams might be difficult if one team requires new features but the other can't upgrade yet. In such cases, it is recommended to use dedicated ZenML server instances per team or product to allow for more flexible upgrade schedules.
 
-* Delete the existing ZenML container, for example like this:
+## Handling API Changes
 
-  ```bash
-  # find your container ID
-  docker ps
-  ```
+While ZenML strives for backward compatibility, be prepared for occasional breaking changes (e.g., the Pydantic 2 upgrade).
 
-  ```bash
-  # stop the container
-  docker stop <CONTAINER_ID>
+- **Changelog Review**: Always review the changelog for new syntax, instructions, or breaking changes.
+- **Migration Scripts**: Use provided migration scripts when available to handle database schema changes.
 
-  # remove the container
-  docker rm <CONTAINER_ID>
-  ```
-* Deploy the version of the `zenml-server` image that you want to use. Find all
-  versions [here](https://hub.docker.com/r/zenmldocker/zenml-server/tags).
+## Minimizing Downtime
 
-  ```bash
-  docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
-  ```
+1. **Upgrade Timing**: Plan upgrades during low-activity periods to minimize disruption.
 
-{% endtab %}
+2. **Avoid Mid-Pipeline Upgrades**: Be cautious of automated upgrades or redeployments that might interrupt long-running pipelines.
 
-{% tab title="Kubernetes with Helm" %}
-To upgrade your ZenML server Helm release to a new version, follow the steps below:
-
-* Pull the latest version of the Helm chart from the ZenML GitHub repository, or a version of your choice, e.g.:
-
-```bash
-# If you haven't cloned the ZenML repository yet
-git clone https://github.com/zenml-io/zenml.git
-# Optional: checkout an explicit release tag
-# git checkout 0.21.1
-git pull
-# Switch to the directory that hosts the helm chart
-cd src/zenml/zen_server/deploy/helm/
-```
-
-* Simply reuse the `custom-values.yaml` file that you used during the previous installation or upgrade. If you don't
-  have it handy, you can extract the values from the ZenML Helm deployment using the following command:
-
-  ```bash
-  helm -n <namespace> get values zenml-server > custom-values.yaml
-  ```
-* Upgrade the release using your modified values file. Make sure you are in the directory that hosts the helm chart:
-
-  ```bash
-  helm -n <namespace> upgrade zenml-server . -f custom-values.yaml
-  ```
-
-{% hint style="info" %}
-It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart
-version is tested to work only with the default image tag. However, if you know what you're doing you can change
-the `zenml.image.tag` value in your `custom-values.yaml` file to the desired ZenML version (e.g. `0.32.0`).
-{% endhint %}
-{% endtab %}
-{% endtabs %}
-
-{% hint style="warning" %}
-Downgrading the server to an older version is not supported and can lead to unexpected behavior.
-{% endhint %}
-
-{% hint style="info" %}
-The version of the Python client that connects to the server should be kept at the same version as the server.
-{% endhint %}
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
