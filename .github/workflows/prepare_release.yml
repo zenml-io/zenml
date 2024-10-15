@@ -188,7 +188,7 @@ jobs:
         run: |
           cd examples/quickstart
           zenml stack set aws
-          sed -i '' "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
+          sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
           cat configs/training_aws.yaml
           # python run.py --model_type=t5-small
 
@@ -197,7 +197,7 @@ jobs:
         run: |
           cd examples/quickstart
           zenml stack set azure
-          sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" "configs/training_azure.yaml"
+          sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" "configs/training_azure.yaml"
           cat configs/training_azure.yaml
           # python run.py --model_type=t5-small
 
@@ -206,6 +206,6 @@ jobs:
         run: |
           cd examples/quickstart
           zenml stack set gcp
-          sed -i '' "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" "configs/training_gcp.yaml"
+          sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" "configs/training_gcp.yaml"
           cat configs/training_gcp.yaml
           # python run.py --model_type=t5-small
