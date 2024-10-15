@@ -132,7 +132,14 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         super().__init__(*args, **kwargs)
 
         # determine bucket versioning status
-        s3 = boto3.resource("s3")
+        key, secret, token, region = self.get_credentials()
+        s3 = boto3.resource(
+            "s3",
+            aws_access_key_id=key,
+            aws_secret_access_key=secret,
+            aws_session_token=token,
+            region_name=region,
+        )
         bucket = s3.Bucket(self.config.bucket)
         versioning = bucket.Versioning()
         if versioning.status == "Enabled":
