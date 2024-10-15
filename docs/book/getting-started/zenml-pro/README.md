@@ -10,7 +10,7 @@ unifies user management and optimizes your workflows. Efficiently manage access
 and permissions through centralized user administration. Create fine-grained
 permissions for resources such as stacks, pipelines, models, etc.
 
-See the section on [user management](./user-management.md) to learn more.
+See the section on [roles](./roles.md) to learn more.
 
 ### A brand-new, modern MLOps experience
 
