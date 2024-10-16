@@ -7,6 +7,11 @@ description: >
 
 Setting up a ZenML server is pretty straightforward. However, most people have to move ahead of day zero operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
 
+{% hint style="info" %}
+If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!
+You can sign up for a free trial [here](https://cloud.zenml.io).
+{% endhint %}
+
 ## Autoscaling replicas
 
 In production, you often have to run bigger and longer running pipelines that might strain your server's resources. It is a good idea to set up autoscaling for your ZenML server so that you don't have to worry about your pipeline runs getting interrupted or your Dashboard slowing down due to high traffic.
