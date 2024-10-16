@@ -25,7 +25,7 @@ Follow the tips below while upgrading your server to mitigate data losses, downt
 ![Server Migration Step 1](../../.gitbook/assets/server_migration_1.png)
 
 
-    ![Server Migration Step 2](../../.gitbook/assets/server_migration_2.png)
+![Server Migration Step 2](../../.gitbook/assets/server_migration_2.png)
 
 - **Team Coordination**: If multiple teams share a ZenML server instance, coordinate the upgrade timing to minimize disruption.
 - **Separate ZenML Servers**: Coordination between teams might be difficult if one team requires new features but the other can't upgrade yet. In such cases, it is recommended to use dedicated ZenML server instances per team or product to allow for more flexible upgrade schedules.
