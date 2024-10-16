@@ -17,6 +17,8 @@ With ZenML, you can run your pipelines on more than one stacks with ease. This p
 
 This enables a case like this: a data scientist starts experimentation locally on their system and then once they are satisfied, move to a cloud environment on your staging cloud account to test more advanced features of your pipeline. Finally, when all looks good, they can mark the pipeline ready for production and have it run on a production-grade stack in your production cloud account.
 
+![Stacks as a way to organize your execution environment](../../../../docs/book/.gitbook/assets/stack_envs.png)
+
 Having separate stacks for these environments helps:
 - avoid wrongfully deploying your staging pipeline to production
 - curb costs by running less powerful resources in staging and testing locally first
