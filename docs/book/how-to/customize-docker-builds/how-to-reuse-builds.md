@@ -5,11 +5,11 @@ description: >
 
 # How to reuse builds
 
+When you run a pipeline, ZenML will check if a build with the same pipeline and stack exists. If it does, it will reuse that build. If it doesn't, ZenML will create a new build. This guide explains what a build is and the best practices around reusing builds.
+
 ## What is a build?
 
 A pipeline build is an encapsulation of a pipeline and the stack it was run on. It contains the Docker images that were built for the pipeline with all the requirements from the stack, integrations and the user. Optionally, it also contains the pipeline code.
-
-When you run a pipeline, ZenML will check if a build with the same pipeline and stack exists. If it does, it will reuse that build. If it doesn't, ZenML will create a new build.
 
 You can list all the builds for a pipeline using the CLI:
 
@@ -33,7 +33,7 @@ While reusing Docker builds is useful, it can be limited. This is because specif
 
 ## Use code repositories to speed up Docker build times
 
-One way to speed up Docker builds is to connect a git repository. Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+One way to speed up Docker builds is to connect a git repository. Registering a [code repository](../../user-guide/production-guide/connect-code-repository.md) lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 ZenML will **automatically figure out which builds match your pipeline and reuse the appropriate build id**. Therefore, you **do not** need to explicitly pass in the build id when you have a clean repository state and a connected git repository. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
 
@@ -56,7 +56,7 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
-## Tips and best practices
+### Tips and best practices
 
 It is also important to take some additional points into consideration:
 

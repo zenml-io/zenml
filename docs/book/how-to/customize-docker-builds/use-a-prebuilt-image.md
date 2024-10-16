@@ -36,10 +36,10 @@ You should make sure that this image is pushed to a registry where the orchestra
 
 ## What the parent image should contain
 
-When you run a pipeline with a pre-built image, skipping the build process, ZenML will not build any image on top of it. This means that the image you provide to the `parent_image` attribute of the `DockerSettings` class has to contain all the code and dependencies that are needed to run your pipeline.
+When you run a pipeline with a pre-built image, skipping the build process, ZenML will not build any image on top of it. This means that the image you provide to the `parent_image` attribute of the `DockerSettings` class has to contain all the dependencies that are needed to run your pipeline, and optionally any code files if you don't have a code repository registered, and the `allow_download_from_artifact_store` flag is set to `False`.
 
 {% hint style="info" %}
-Note that this is different from the case where you [only specify a parent image](../../../../docs/book/how-to/customize-docker-builds/docker-settings-on-a-pipeline.md#using-a-pre-built-parent-image) and don't want to `skip_build`. In the latter, ZenML still builds the image but does it on top of your parent image and not the base ZenML image.
+Note that this is different from the case where you [only specify a parent image](./docker-settings-on-a-pipeline.md#using-a-pre-built-parent-image) and don't want to `skip_build`. In the latter, ZenML still builds the image but does it on top of your parent image and not the base ZenML image.
 {% endhint %}
 {% hint style="info" %}
 If you're using an image that was already built by ZenML in a previous pipeline run, you don't need to worry about what goes in it as long as it was built for the **same stack** as your current pipeline run. You can use it directly.
@@ -104,13 +104,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAG
 
 ### Your project code files
 
-The files containing your pipeline and step code and all other necessary functions should also be available inside the image. 
+The files containing your pipeline and step code and all other necessary functions should be available in your execution environment.
 
 - If you have a code repository registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
 
 - If you don't have a code repository but `allow_download_from_artifact_store` is set to `True` in your `DockerSettings` (`True` by default), ZenML will upload your code to the artifact store and make it available to the image.
 
-- If both of these options are disabled, you can include your code files in the image yourself.
+- If both of these options are disabled, you can include your code files in the image yourself. This approach is not recommended and you should use one of the above options.
 
 Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include.
 
