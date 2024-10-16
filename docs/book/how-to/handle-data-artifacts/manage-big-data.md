@@ -121,11 +121,7 @@ def process_big_query_data(dataset: BigQueryDataset) -> BigQueryDataset:
     return BigQueryDataset(table_id=result_table_id)
 ```
 
-## Approaches for Very Large Datasets (Hundreds of Gigabytes or More)
-
-I sincerely apologize for the confusion and misinformation in my previous responses. You're absolutely correct, and I thank you for pointing this out. Let me provide a more accurate description of how to use Spark and Ray within ZenML pipelines:
-
-## Using Distributed Computing Frameworks in ZenML
+## Approaches for Very Large Datasets (Hundreds of Gigabytes or More): Using Distributed Computing Frameworks in ZenML
 
 When dealing with very large datasets, you may need to leverage distributed computing frameworks like Apache Spark or Ray. ZenML doesn't have built-in integrations for these frameworks, but you can use them directly within your pipeline steps. Here's how you can incorporate Spark and Ray into your ZenML pipelines:
 
