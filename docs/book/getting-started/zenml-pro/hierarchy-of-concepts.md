@@ -10,7 +10,7 @@ The image above shows the hierarchy of concepts in ZenML Pro.
 - At the top level is your [**Organization**](./organization.md). An organization is a collection of users, teams, and tenants.
 - Each [**Tenant**](./tenants.md) is an isolated deployment of ZenML Pro. It contains all the resources for your project or team.
 - [**Teams**](./teams.md) are groups of users within an organization. They help in organizing users and managing access to resources.
-- **Users** are people who have access to your ZenML Pro instance.
+- **Users** are single individual accounts on a ZenML Pro instance.
 - [**Roles**](./roles.md) are used to control what actions users can perform within a tenant or inside an organization.
 
 More details about each of these concepts are available in their linked pages below:
