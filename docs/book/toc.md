@@ -77,6 +77,7 @@
   * [Schedule a pipeline](how-to/build-pipelines/schedule-a-pipeline.md)
   * [Deleting a pipeline](how-to/build-pipelines/delete-a-pipeline.md)
   * [Compose pipelines](how-to/build-pipelines/compose-pipelines.md)
+  * [Dynamically generate steps and artifacts](how-to/build-pipelines/dynamically-generate-steps-artifacts.md)
   * [Automatically retry steps](how-to/build-pipelines/retry-steps.md)
   * [Run pipelines asynchronously](how-to/build-pipelines/run-pipelines-asynchronously.md)
   * [Control execution order of steps](how-to/build-pipelines/control-execution-order-of-steps.md)

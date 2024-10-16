@@ -110,7 +110,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface):
             feature=resource,
             total=1 if not is_decrement else -1,
             metadata={
-                "tenant_id": str(server_config.external_server_id),
+                "tenant_id": str(server_config.get_external_server_id()),
                 "resource_id": str(resource_id),
             },
         ).model_dump()
