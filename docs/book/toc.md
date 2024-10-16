@@ -135,6 +135,8 @@
   * [Get arbitrary artifacts in a step](how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
   * [Handle custom data types](how-to/handle-data-artifacts/handle-custom-data-types.md)
   * [Load artifacts into memory](how-to/handle-data-artifacts/load-artifacts-into-memory.md)
+  * [Datasets in ZenML](how-to/handle-data-artifacts/datasets.md)
+  * [Manage big data](how-to/handle-data-artifacts/manage-big-data.md)
   * [Skipping materialization](how-to/handle-data-artifacts/unmaterialized-artifacts.md)
   * [Passing artifacts between pipelines](how-to/handle-data-artifacts/passing-artifacts-between-pipelines.md)
   * [Register Existing Data as a ZenML Artifact](how-to/handle-data-artifacts/registering-existing-data.md)
