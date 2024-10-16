@@ -132,16 +132,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         super().__init__(*args, **kwargs)
 
         # determine bucket versioning status
-        key, secret, token, region = self.get_credentials()
-        s3 = boto3.resource(
-            "s3",
-            aws_access_key_id=key,
-            aws_secret_access_key=secret,
-            aws_session_token=token,
-            region_name=region,
-        )
-        bucket = s3.Bucket(self.config.bucket)
-        versioning = bucket.Versioning()
+        versioning = self._boto3_bucket.Versioning()
         if versioning.status == "Enabled":
             self.is_versioned = True
             logger.warning(
@@ -474,10 +465,27 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             if isinstance(path, bytes):
                 path = path.decode()
             _, prefix = split_s3_path(path)
-            s3 = boto3.resource("s3")
-            bucket = s3.Bucket(self.config.bucket)
-            for version in bucket.object_versions.filter(Prefix=prefix):
+            for version in self._boto3_bucket.object_versions.filter(
+                Prefix=prefix
+            ):
                 if not version.is_latest:
                     version.delete()
 
         return
+
+    @property
+    def _boto3_bucket(self) -> boto3.resources.factory.s3.Bucket:
+        """Get the boto3 bucket object.
+
+        Returns:
+            The boto3 bucket object.
+        """
+        key, secret, token, region = self.get_credentials()
+        s3 = boto3.resource(
+            "s3",
+            aws_access_key_id=key,
+            aws_secret_access_key=secret,
+            aws_session_token=token,
+            region_name=region,
+        )
+        return s3.Bucket(self.config.bucket)
