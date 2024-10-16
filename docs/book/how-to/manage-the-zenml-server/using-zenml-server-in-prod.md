@@ -5,7 +5,7 @@ description: >
 
 # Using ZenML server in production
 
-Setting up a ZenML server is pretty straightforward. However, most people have to move ahead of so-called 'day zero' operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
+Setting up a ZenML server for testing is a quick process. However, most people have to move beyond so-called 'day zero' operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
 
 {% hint style="info" %}
 If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!
