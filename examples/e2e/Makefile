@@ -12,5 +12,4 @@ install-stack-local:
 	zenml stack register -a default -o default -r mlflow_local_$${stack_name} \
 	-d mlflow_local_$${stack_name} -e mlflow_local_$${stack_name} -dv \
 	evidently_$${stack_name} $${stack_name} && \
-	zenml stack set $${stack_name} && \
-	zenml stack up
+	zenml stack set $${stack_name}

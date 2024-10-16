@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Deprecated post-execution utility functions."""
+"""BentoML Service Deployment Types."""
 
-from zenml.post_execution.pipeline import (
-    get_pipeline,
-    get_pipelines,
-)
-from zenml.post_execution.pipeline_run import (
-    get_run,
-    get_unlisted_runs,
-)
+from enum import Enum
 
-__all__ = [
-    "get_pipeline",
-    "get_pipelines",
-    "get_run",
-    "get_unlisted_runs",
-]
+
+class BentoMLDeploymentType(Enum):
+    """BentoML Service Deployment Types."""
+
+    LOCAL = "local"
+    CONTAINER = "container"

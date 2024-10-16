@@ -40,7 +40,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import SecretValidationLevel, StackComponentType
-from zenml.exceptions import ProvisioningError, StackValidationError
+from zenml.exceptions import StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponse
@@ -768,31 +768,10 @@ class Stack:
             deployment: The pipeline deployment
 
         Raises:
-            StackValidationError: If the stack component is not running.
             RuntimeError: If trying to deploy a pipeline that requires a remote
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
-
-        for component in self.components.values():
-            if not component.is_running:
-                raise StackValidationError(
-                    f"The '{component.name}' {component.type} stack component "
-                    f"is not currently running. Please run the following "
-                    f"command to provision and start the component:\n\n"
-                    f"    `zenml stack up`\n"
-                    f"It is worth noting that the provision command will "
-                    f" be deprecated in the future. ZenML will no longer "
-                    f"be responsible for provisioning infrastructure, "
-                    f"or port-forwarding directly. Instead of managing "
-                    f"the state of the components, ZenML will be utilizing "
-                    f"the already running stack or stack components directly. "
-                    f"Additionally, we are also providing a variety of "
-                    f" deployment recipes for popular Kubernetes-based "
-                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
-                    f"Check out https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-using-mlstacks"
-                    f"for more information."
-                )
 
         if self.requires_remote_server and Client().zen_store.is_local_store():
             raise RuntimeError(
@@ -956,83 +935,3 @@ class Stack:
             info.config
         ).values():
             component.cleanup_step_run(info=info, step_failed=step_failed)
-
-    @property
-    def is_provisioned(self) -> bool:
-        """If the stack provisioned resources to run locally.
-
-        Returns:
-            True if the stack provisioned resources to run locally.
-        """
-        return all(
-            component.is_provisioned for component in self.components.values()
-        )
-
-    @property
-    def is_running(self) -> bool:
-        """If the stack is running locally.
-
-        Returns:
-            True if the stack is running locally, False otherwise.
-        """
-        return all(
-            component.is_running for component in self.components.values()
-        )
-
-    def provision(self) -> None:
-        """Provisions resources to run the stack locally."""
-        self.validate(fail_if_secrets_missing=True)
-        logger.info("Provisioning resources for stack '%s'.", self.name)
-        for component in self.components.values():
-            if not component.is_provisioned:
-                component.provision()
-                logger.info("Provisioned resources for %s.", component)
-
-    def deprovision(self) -> None:
-        """Deprovisions all local resources of the stack."""
-        logger.info("Deprovisioning resources for stack '%s'.", self.name)
-        for component in self.components.values():
-            if component.is_provisioned:
-                try:
-                    component.deprovision()
-                    logger.info("Deprovisioned resources for %s.", component)
-                except NotImplementedError as e:
-                    logger.warning(e)
-
-    def resume(self) -> None:
-        """Resumes the provisioned local resources of the stack.
-
-        Raises:
-            ProvisioningError: If any stack component is missing provisioned
-                resources.
-        """
-        logger.info("Resuming provisioned resources for stack %s.", self.name)
-        for component in self.components.values():
-            if component.is_running:
-                # the component is already running, no need to resume anything
-                pass
-            elif component.is_provisioned:
-                component.resume()
-                logger.info("Resumed resources for %s.", component)
-            else:
-                raise ProvisioningError(
-                    f"Unable to resume resources for {component}: No "
-                    f"resources have been provisioned for this component."
-                )
-
-    def suspend(self) -> None:
-        """Suspends the provisioned local resources of the stack."""
-        logger.info(
-            "Suspending provisioned resources for stack '%s'.", self.name
-        )
-        for component in self.components.values():
-            if not component.is_suspended:
-                try:
-                    component.suspend()
-                    logger.info("Suspended resources for %s.", component)
-                except NotImplementedError:
-                    logger.warning(
-                        "Suspending provisioned resources not implemented "
-                        "for %s. Continuing without suspending resources...",
-                        component,
-                    )

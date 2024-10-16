@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML."""
 
-# Define ROOT_DIR
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -37,20 +36,17 @@ from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
     load_artifact,
+    register_artifact,
 )
 from zenml.model.utils import (
     log_model_metadata,
     link_artifact_to_model,
-    log_model_version_metadata,
 )
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model import Model
-from zenml.model.model_version import ModelVersion # TODO: deprecate me
-from zenml.pipelines import get_pipeline_context
-from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_context import get_step_context
+from zenml.pipelines import get_pipeline_context, pipeline
+from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
 from zenml.entrypoints import entrypoint
 
@@ -62,13 +58,12 @@ __all__ = [
     "load_artifact",
     "log_artifact_metadata",
     "log_model_metadata",
-    "log_model_version_metadata",
     "log_step_metadata",
     "Model",
-    "ModelVersion", # TODO: deprecate me
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",
+    "register_artifact",
     "show",
     "step",
     "entrypoint",

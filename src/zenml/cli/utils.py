@@ -2766,14 +2766,6 @@ def print_model_url(url: Optional[str]) -> None:
         )
 
 
-def warn_deprecated_example_subcommand() -> None:
-    """Warning for deprecating example subcommand."""
-    warning(
-        "The `example` CLI subcommand has been deprecated and will be removed "
-        "in a future release."
-    )
-
-
 def verify_mlstacks_prerequisites_installation() -> None:
     """Checks if the `mlstacks` package is installed."""
     try:

@@ -6,12 +6,12 @@ from zenml import (
     Model,
     get_pipeline_context,
     get_step_context,
+    log_model_metadata,
     pipeline,
     step,
 )
 from zenml.artifacts.utils import log_artifact_metadata
 from zenml.client import Client
-from zenml.model.utils import log_model_version_metadata
 
 
 @step
@@ -102,7 +102,7 @@ def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not
 def producer() -> Annotated[str, "bar"]:
     """Produce artifact with metadata and attach metadata to model version."""
     ver = get_step_context().model.version
-    log_model_version_metadata(metadata={"foobar": "model_meta_" + ver})
+    log_model_metadata(metadata={"foobar": "model_meta_" + ver})
     log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
     return "artifact_data_" + ver
 
