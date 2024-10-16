@@ -4,5 +4,5 @@ structure:
   readme: introduction.md
   summary: toc.md
 
-#redirects:
-#  help: ./support.md
+redirects:
+ how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md: how-to/customize-docker-builds/how-to-reuse-builds.md
