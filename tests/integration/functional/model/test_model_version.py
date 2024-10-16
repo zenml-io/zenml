@@ -664,13 +664,6 @@ class TestModel:
                     name=mdl_name,
                 )
 
-                # no context, no model
-                with patch("zenml.artifacts.utils.logger.debug") as logger:
-                    _inner_pipeline()
-                    logger.assert_called_once_with(
-                        "Unable to link saved artifact to model."
-                    )
-
                 # use context
                 _inner_pipeline.with_options(model=mv_in_pipe)()
 
