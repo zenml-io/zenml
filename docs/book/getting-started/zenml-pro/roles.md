@@ -65,7 +65,7 @@ Tenant roles determine a user's permissions within a specific ZenML tenant. Ther
 3. **Viewer**
    - Read-only access to all resources and information
 
-## Custom Roles
+### Custom Roles
 
 Custom roles allow you to define specific permissions for users or groups. To create a custom role
 for a tenant:
