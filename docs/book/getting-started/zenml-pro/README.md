@@ -3,8 +3,7 @@
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
 
 The [pro version of ZenML](https://zenml.io/pro) comes with a number of features 
-that expand the functionality of the Open Source product. ZenML Pro adds a managed control
-plane that allows you to:
+that expand the functionality of the Open Source product. ZenML Pro adds a managed control plane with benefits like:
 
 - **A managed production-grade ZenML deployment**: With ZenML Pro you can deploy multiple ZenML servers called [tenants](./tenants).
 - **User management with teams**: Create [organizations](./organization.md) and [teams](./teams.md) to easily manage users at scale.
