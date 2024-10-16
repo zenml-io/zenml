@@ -106,7 +106,7 @@
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
   * [Use your own Dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Which files are built into the image](how-to/customize-docker-builds/which-files-are-built-into-the-image.md)
-  * [Use code repositories to automate Docker build reuse](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
+  * [How to reuse builds](how-to/customize-docker-builds/how-to-reuse-builds.md)
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
 * [📔 Run remote pipelines from notebooks](how-to/run-remote-steps-and-pipelines-from-notebooks/README.md)
   * [Limitations of defining steps in notebook cells](how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells.md)
