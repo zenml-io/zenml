@@ -107,7 +107,7 @@ For each resource, you can define the following permissions:
 - Share
 
 You can then assign this role to a user or a team on the "Members" page.
-
+#### Managing permissions for roles
 To manage permissions for a role:
 
 1. Go to the Roles page in tenant settings
