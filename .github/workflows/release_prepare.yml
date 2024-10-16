@@ -180,6 +180,7 @@ jobs:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - cloud: "aws"
