@@ -78,7 +78,7 @@ def link_artifact_version_to_model_version(
     model_version: ModelVersionResponse,
     artifact_config: Optional[ArtifactConfig] = None,
 ) -> None:
-    """Link an artifact version to a pipeline version.
+    """Link an artifact version to a model version.
 
     Args:
         artifact_version: The artifact version to link.
@@ -107,7 +107,7 @@ def link_artifact_version_to_model_version(
 
 
 def link_artifact_to_model(
-    artifact_version: "ArtifactVersionResponse",
+    artifact_version: ArtifactVersionResponse,
     model: Optional["Model"] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,

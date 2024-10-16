@@ -172,8 +172,8 @@ class StepContext(metaclass=SingletonMetaClass):
         """Returns configured Model.
 
         Order of resolution to search for Model is:
-            1. Model from the step
-            2. Model from the pipeline
+            1. Model from the step context
+            2. Model from the pipeline context
 
         Returns:
             The `Model` object associated with the current step.
