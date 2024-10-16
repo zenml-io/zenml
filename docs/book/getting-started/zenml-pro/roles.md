@@ -1,62 +1,132 @@
 ---
 description: >
-  Learn about the different roles you can assign to your team members in ZenML Pro.
+  Learn about the different roles and permissions you can assign to your team members in ZenML Pro.
 ---
 
-# Roles in ZenML Pro
+# ZenML Pro: Roles and Permissions
 
-In ZenML Pro, you can assign roles to your team members to have better control over who can do what. Roles can be assigned at the organization level and the tenant level.
+ZenML Pro offers a robust role-based access control (RBAC) system to manage permissions across your organization and tenants. This guide will help you understand the different roles available, how to assign them, and how to create custom roles tailored to your team's needs.
 
-## Organization Roles
+Please note that roles can be assigned to both individual users and [teams](./teams.md).
 
-At the organization level, you can assign the following roles to people.
+## Organization-Level Roles
 
-![Image showing the organization roles](../../.gitbook/assets/org_members.png)
+At the organization level, ZenML Pro provides three predefined roles:
 
-- **Org admin**: This role has full control over the organization. They can add
-  members, create and update tenants, adjust the billing information and assign roles.
-- **Org editor**: This role can manage tenants and members but is not allowed to
-  access the subscription information or delete the organization.
-- **Org viewer**: This role can view the tenants within the organization with only
-  view permissions.
+1. **Org Admin**
+   - Full control over the organization
+   - Can add members, create and update tenants
+   - Can manage billing information
+   - Can assign roles to other members
+
+2. **Org Editor**
+   - Can manage tenants and members
+   - Cannot access subscription information
+   - Cannot delete the organization
+
+3. **Org Viewer**
+   - Can view tenants within the organization
+   - Read-only permissions
+
+To assign organization roles:
+
+1. Navigate to the Organization settings page
+2. Click on the "Members" tab
+3. Use the "Invite Member" button to add new members or update existing ones
+
+![Organization Roles](../../.gitbook/assets/org_members.png)
 
 Some points to note:
 - In addition to adding organization roles, you might also want to add tenant roles for people who you want to have access to a specific tenant.
 - An organization admin can add themselves to a tenant with any tenant role they desire.
 - However, an organization editor and viewer cannot add themselves to existing tenants that they are not a part of. They won't be able to view such tenants in the organization either.
 
-
 ![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
 
+## Tenant-Level Roles
 
-## Tenant Roles
-
-Once you have added people to your organization, they can start interacting with the tenants in it, taking into account the role they have been assigned. Each user needs to also have a tenant role to be able to perform any actions inside a ZenML tenant. You can choose from a selection of predefined roles or create your own custom role.
+Tenant roles determine a user's permissions within a specific ZenML tenant. There are predefined roles available, and you can also create custom roles for more granular control.
 
 ![Image showing the tenant roles](../../.gitbook/assets/role_page.png)
 
-### Predefined Roles
+### Predefined Tenant Roles
 
-- **Admin**: This role gives the user full control over the tenant. They can create, read, delete and update all resources within the tenant.
-    ![Image showing the admin role](../../.gitbook/assets/admin_role.png)
-- **Editor**: This role gives the user permissions to create, read and share resources but not modify or delete existing ones.
-- **Viewer**: This role gives the user read-only access to all resources and information in the tenant.
+1. **Admin**
+   - Full control over the tenant
+   - Can create, read, update, and delete all resources
+
+![Image showing the admin role](../../.gitbook/assets/admin_role.png)
+
+2. **Editor**
+   - Can create, read, and share resources
+   - Cannot modify or delete existing resources
+
+3. **Viewer**
+   - Read-only access to all resources and information
 
 ### Custom Roles
 
-You can also create your own custom roles. This is useful if you want to give a user access to a specific resource but not to others.
+Custom roles allow you to define specific permissions for users or groups. To create a custom role:
 
-To create a custom role, follow these steps:
+1. Go to the tenant settings page
+![Image showing the tenant settings page](../../.gitbook/assets/custom_role_settings_page.png)
+2. Click on "Roles" in the left sidebar and Select "Add Custom Role"
+![Image showing the add custom role page](../../.gitbook/assets/tenant_roles_page.png)
+3. Provide a name and description for the role. Choose a base role to inherit permissions from
+![Image showing the add custom role page](../../.gitbook/assets/create_role_modal.png)
+4. Edit permissions as needed
+![Image showing the add custom role page](../../.gitbook/assets/assign_permissions.png)
+  
+You can then assign this role to a user or a team on the "Members" page.
 
-- In your tenant page, click on the "Settings" tab.
-    ![Image showing the tenant settings page](../../.gitbook/assets/custom_role_settings_page.png)
-- Click on "Roles" in the left-hand sidebar and select "Add Custom Role".
-    ![Image showing the add custom role page](../../.gitbook/assets/tenant_roles_page.png)
-- Fill in the name and description of the role and choose a base role to inherit permissions from. This helps you get started faster with the base permissions already filled in.
-    ![Image showing the add custom role page](../../.gitbook/assets/create_role_modal.png)
-- Once you have created the role, you can now click on it to perform actions like adding members and editing permissions.
-    ![Image showing the add custom role page](../../.gitbook/assets/role_page.png)
-- Edit the permissions of the role and add specific actions on certain resources as you wish.
-    ![Image showing the add custom role page](../../.gitbook/assets/assign_permissions.png)
-- You can then assign this role to a user on the "Members" page.
+## Resource-Specific Permissions
 
+ZenML Pro allows you to set permissions for various resources, including:
+
+- Artifacts
+- Models
+- Model Versions
+- Pipelines
+- Runs
+- Stacks
+- Components
+- Secrets
+- Service Connectors
+
+For each resource, you can define the following permissions:
+
+- Create
+- Read
+- Update
+- Delete
+- Share
+
+## Managing Permissions
+
+To manage permissions for a role:
+
+1. Go to the Roles page in tenant settings
+2. Select the role you want to modify
+3. Click on "Edit Permissions"
+4. Adjust permissions for each resource type as needed
+
+![Assign Permissions](../../.gitbook/assets/assign_permissions.png)
+
+## Best Practices
+
+1. **Least Privilege**: Assign the minimum necessary permissions to each role.
+2. **Regular Audits**: Periodically review and update role assignments and permissions.
+3. **Use Custom Roles**: Create custom roles for teams or projects with specific needs.
+4. **Document Roles**: Maintain documentation of your custom roles and their intended use.
+
+## API Integration
+
+ZenML Pro's RBAC system can be integrated with your existing tools and workflows using the API. Key endpoints include:
+
+- `/api/v1/users`: Manage users and their roles
+- `/api/v1/workspaces`: Control access to workspaces
+- `/api/v1/service_accounts`: Manage service accounts for automated processes
+
+For detailed API documentation, refer to the [ZenML API Reference](https://sdkdocs.zenml.io/latest/core_code_docs/core-rest/).
+
+By leveraging ZenML Pro's role-based access control, you can ensure that your team members have the right level of access to resources, maintaining security while enabling collaboration across your MLOps projects.
