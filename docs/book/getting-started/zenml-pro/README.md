@@ -11,7 +11,7 @@ plane that allows you to:
 - **Role-based access control and permissions**: Implement fine-grained access control using customizable [roles](./roles.md) to ensure secure and efficient resource management.
 - **Enhanced model and artifact control plane**: Leverage the [Model Control Plane](../../user-guide/starter-guide/track-ml-models.md) and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md) for improved tracking and management of your ML assets.
 - **Triggers and run templates**: ZenML Pro enables you to [create and run templates](../../how-to/trigger-pipelines/README.md#run-templates). This way, you can use the dashboard or our Client/REST API to run a pipeline with updated configuration, allowing you to iterate quickly with minimal friction.
-- **Early-access features**: Get early access to pro-specific features such as triggers, integration with your code repository CI/CD system, generating usage reports, and more.
+- **Early-access features**: Get early access to pro-specific features such as triggers, filters, sorting, generating usage reports, and more.
 
 Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 
