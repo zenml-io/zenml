@@ -70,3 +70,7 @@ While ZenML strives for backward compatibility, be prepared for occasional break
 - **Migration Scripts**: Use provided [migration scripts](../../how-to/manage-the-zenml-server/migration-guide/migration-guide.md) when available to handle database schema changes.
 
 By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

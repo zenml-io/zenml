@@ -145,7 +145,7 @@ Monitoring your service is crucial to ensure that it is running smoothly and to 
 
 {% tabs %}
 {% tab title="Kubernetes with Helm" %}
-You can set up Prometheus and Grafana to monitor your ZenML server. We recommned using the `kube-prometheus-stack` [Helm chart from the prometheus-community](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack) to get started quickly.
+You can set up Prometheus and Grafana to monitor your ZenML server. We recommend using the `kube-prometheus-stack` [Helm chart from the prometheus-community](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack) to get started quickly.
 
 Once you have deployed the chart, you can find your grafana service by searching for services in the namespace you have deployed the chart in. Port-forward it to your local machine or deploy it through an ingress.
 
@@ -188,4 +188,8 @@ Some common strategies include:
 - Setting up automated backups with a good retention period (say 30 days).
 - Periodically exporting the data to an external storage (e.g. S3, GCS, etc.).
 - Manual backups before upgrading your server to avoid any problems.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
 
