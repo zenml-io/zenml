@@ -4,5 +4,5 @@ structure:
   readme: introduction.md
   summary: toc.md
 
-#redirects:
-#  help: ./support.md
+redirects:
+ how-to/stack-deployment/implement-a-custom-integration.md: how-to/contribute-to-zenml/implement-a-custom-integration.md

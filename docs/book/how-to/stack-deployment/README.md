@@ -10,7 +10,7 @@ description: >
 
 The [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
 
-A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](../../component-guide/container-registries/container-registries.md), a [Kubernetes cluster](../../component-guide/orchestrators/kubernetes.md) as an [orchestrator](../../component-guide/orchestrators/orchestrators.md), an [experiment tracker](../../component-guide/experiment-trackers/experiment-trackers.md) like MLflow and so on.
+A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](../../component-guide/container-registries/container-registries.md), a [Kubernetes cluster](../../component-guide/orchestrators/kubernetes.md) as an [orchestrator](../../component-guide/orchestrators/orchestrators.md), an [artifact store](../../component-guide/artifact-stores/artifact-stores.md), an [experiment tracker](../../component-guide/experiment-trackers/experiment-trackers.md) like MLflow and so on.
 
 ## Stacks as a way to organize your execution environment
 
@@ -30,6 +30,8 @@ Having separate stacks for these environments helps:
 Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
 
 The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
+
+![Service Connectors abstract away complexity and implement security best practices](../../.gitbook/assets/ConnectorsDiagram.png)
 
 ### Recommended roles
 
