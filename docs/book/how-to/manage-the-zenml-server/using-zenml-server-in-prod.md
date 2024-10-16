@@ -152,7 +152,7 @@ sum by(namespace) (rate(container_cpu_usage_seconds_total{namespace=~"zenml.*"}[
 
 This query would give you the CPU utilization of your server pods in all namespaces that start with `zenml`. The image below shows how this query would look like in Grafana.
 
-![Image showing CPU utilization of ZenML server pods](../../.gitbook/assets/grafana_cpu_utilization.png)
+![Image showing CPU utilization of ZenML server pods](../../.gitbook/assets/grafana_dashboard.png)
 
 
 {% endtab %}
