@@ -26,11 +26,6 @@ The SQLite database that you can see in this diagram is used to store informatio
 For the local REST server option, the `zenml up` command implicitly connects the client to the server.
 {% endhint %}
 
-{% hint style="warning" %}
-Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version simply use the
-following command `zenml up --legacy`
-{% endhint %}
-
 In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
 ![Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
@@ -43,10 +38,6 @@ Currently, there are two main options to access a deployed ZenML server:
 
 1. **SaaS:** With [ZenML Pro](../zenml-pro/zenml-pro.md) offering you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
 2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](deploy-with-zenml-cli.md), [Docker](../../component-guide/model-registries/model-registries.md), [Helm](deploy-with-helm.md), or [HuggingFace Spaces](deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
-
-{% hint style="warning" %}
-Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version which supports stack registration from the dashboard simply set the following environment variable in the deployment environment: `export ZEN_SERVER_USE_LEGACY_DASHBOARD=True`.
-{% endhint %}
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 

@@ -9195,7 +9195,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_activate or config.use_legacy_dashboard:
+            if config.auto_activate:
                 return True
 
         else:
