@@ -5,7 +5,7 @@ description: >
 
 # Using ZenML server in production
 
-Setting up a ZenML server is pretty straightforward. However, most people have to move ahead of day zero operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
+Setting up a ZenML server is pretty straightforward. However, most people have to move ahead of so-called 'day zero' operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
 
 {% hint style="info" %}
 If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!
@@ -16,7 +16,7 @@ You can sign up for a free trial [here](https://cloud.zenml.io).
 
 In production, you often have to run bigger and longer running pipelines that might strain your server's resources. It is a good idea to set up autoscaling for your ZenML server so that you don't have to worry about your pipeline runs getting interrupted or your Dashboard slowing down due to high traffic.
 
-How you do it depends greatly on the environment you have deployed your ZenML server in. Below are some commmon deployment options and how to set up autoscaling for them.
+How you do it depends greatly on the environment in which you have deployed your ZenML server. Below are some common deployment options and how to set up autoscaling for them.
 
 {% tabs %}
 {% tab title="Kubernetes with Helm" %}
@@ -93,7 +93,7 @@ Once this is set, you should also modify the `zenml.database.poolSize` and `zenm
 
 An important component of the ZenML server deployment is the backing database. When you start scaling your ZenML server instances, you will also need to scale your database to avoid any bottlenecks.
 
-We would recommend starting out with a simple database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
+We would recommend starting out with a simple (single) database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
 - CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utlization are expected but it should not be consistently high.
 - Freeable Memory: It is natural for the freeable memory to go down with time as your database uses it for caching and buffering but if it drops below 100-200 MB, you may need to scale your database.
 
@@ -184,6 +184,7 @@ The "Metrics" tab in the Cloud Run console will show you metrics like Container 
 The data in your ZenML server is critical as it contains your pipeline runs, stack configurations, and other important information. It is, therefore, recommended to have a backup strategy in place to avoid losing any data.
 
 Some common strategies include:
+
 - Setting up automated backups with a good retention period (say 30 days).
 - Periodically exporting the data to an external storage (e.g. S3, GCS, etc.).
 - Manual backups before upgrading your server to avoid any problems.

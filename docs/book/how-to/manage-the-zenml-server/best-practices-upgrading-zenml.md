@@ -21,7 +21,9 @@ Follow the tips below while upgrading your server to mitigate data losses, downt
 ### Upgrade Strategies
 
 - **Staged Upgrade**: For large organizations or critical systems, consider using two ZenML server instances (old and new) and migrating services one by one to the new version.
-    ![Server Migration Step 1](../../.gitbook/assets/server_migration_1.png)
+
+![Server Migration Step 1](../../.gitbook/assets/server_migration_1.png)
+
 
     ![Server Migration Step 2](../../.gitbook/assets/server_migration_2.png)
 

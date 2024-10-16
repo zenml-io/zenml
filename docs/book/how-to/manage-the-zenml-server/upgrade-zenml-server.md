@@ -6,7 +6,7 @@ description: Learn how to upgrade your server to a new version of ZenML for the 
 
 The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. Before you upgrade, check out the [best practices for upgrading ZenML](./best-practices-upgrading-zenml.md) guide.
 
-In general, upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes that you can benefit from.
+In general, upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes from which you can benefit.
 
 {% tabs %}
 {% tab title="Docker" %}
