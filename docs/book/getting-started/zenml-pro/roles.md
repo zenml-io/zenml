@@ -117,6 +117,13 @@ To manage permissions for a role:
 
 ![Assign Permissions](../../.gitbook/assets/assign_permissions.png)
 
+## Sharing individual resources
+
+While roles define permission on broad resource groups, users can also share individual resources
+through the dashboard like this:
+
+![Share dialog](../../.gitbook/assets/share_dialog.png)
+
 ## Best Practices
 
 1. **Least Privilege**: Assign the minimum necessary permissions to each role.
