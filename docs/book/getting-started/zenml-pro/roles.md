@@ -32,7 +32,7 @@ To assign organization roles:
 
 1. Navigate to the Organization settings page
 2. Click on the "Members" tab
-3. Use the "Invite Member" button to add new members or update existing ones
+3. Use the "Add members" button to add new members
 
 ![Organization Roles](../../.gitbook/assets/org_members.png)
 
