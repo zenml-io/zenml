@@ -6,7 +6,6 @@
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 * [🤔 Deploying ZenML](getting-started/deploying-zenml/README.md)
-  * [Deploy with ZenML CLI](getting-started/deploying-zenml/deploy-with-zenml-cli.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)

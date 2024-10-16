@@ -18,9 +18,6 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 *   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
 
     ```bash
-    # Deploy ZenML to any cloud
-    zenml deploy --provider aws
-
     # Connect cloud resources with a simple wizard
     zenml stack register <STACK_NAME> --provider aws
 
