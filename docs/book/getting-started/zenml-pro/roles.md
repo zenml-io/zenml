@@ -32,7 +32,7 @@ To assign organization roles:
 
 1. Navigate to the Organization settings page
 2. Click on the "Members" tab
-3. Use the "Invite Member" button to add new members or update existing ones
+3. Use the "Add members" button to add new members
 
 ![Organization Roles](../../.gitbook/assets/org_members.png)
 
@@ -65,7 +65,7 @@ Tenant roles determine a user's permissions within a specific ZenML tenant. Ther
 3. **Viewer**
    - Read-only access to all resources and information
 
-## Custom Roles
+### Custom Roles
 
 Custom roles allow you to define specific permissions for users or groups. To create a custom role
 for a tenant:
@@ -107,7 +107,7 @@ For each resource, you can define the following permissions:
 - Share
 
 You can then assign this role to a user or a team on the "Members" page.
-
+#### Managing permissions for roles
 To manage permissions for a role:
 
 1. Go to the Roles page in tenant settings

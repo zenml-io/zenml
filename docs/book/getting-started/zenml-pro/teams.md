@@ -23,7 +23,7 @@ To create a team:
 
 1. Navigate to the Organization settings page
 2. Click on the "Teams" tab
-3. Use the "Create Team" button to add a new team
+3. Use the "Add team" button to add a new team
 
 ![Create Team](../../.gitbook/assets/create_team.png)
 
