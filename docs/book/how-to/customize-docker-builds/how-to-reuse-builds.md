@@ -31,6 +31,10 @@ As already mentioned, ZenML will find an existing build if it matches your pipel
 
 While reusing Docker builds is useful, it can be limited. This is because specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a Docker build AND make sure your local code changes are also downloaded into the image, you need to disconnect your code from the build. You can do this either by registering a code repository or by letting ZenML use the artifact store to upload your code.
 
+## Use the artifact store to upload your code
+
+You can also let ZenML use the artifact store to upload your code. This is the default behaviour if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
+
 ## Use code repositories to speed up Docker build times
 
 One way to speed up Docker builds is to connect a git repository. Registering a [code repository](../../user-guide/production-guide/connect-code-repository.md) lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
@@ -63,8 +67,5 @@ It is also important to take some additional points into consideration:
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
 * If you want to disable or enforce the downloading of files, check out [this docs page](./docker-settings-on-a-pipeline.md) for the available options.
 
-## Use the artifact store to upload your code
-
-You can also let ZenML use the artifact store to upload your code. This is the default behaviour if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
