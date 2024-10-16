@@ -22,7 +22,7 @@
     * [Organizations](getting-started/zenml-pro/organization.md)
     * [Tenants](getting-started/zenml-pro/tenants.md)
     * [Teams](getting-started/zenml-pro/teams.md)
-    * [Roles](getting-started/zenml-pro/roles.md)
+    * [Roles & Permissions](getting-started/zenml-pro/roles.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
   * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
 
