@@ -70,9 +70,13 @@ class ExternalArtifactConfiguration(BaseModel):
         else:
             raise RuntimeError(
                 "The ID of the artifact must be provided. "
-                "If you created this ExternalArtifact from a value, please "
+                "- If you created this ExternalArtifact from a value, please "
                 "ensure that `upload_by_value` was called before trying to "
-                "fetch the artifact ID."
+                "fetch the artifact ID.\n- If you specified an artifact name "
+                "or model name for this external artifact, this functionality "
+                "was removed from the ExternalArtifact class. Use Client "
+                "methods instead to dynamically fetch an artifact via name or "
+                "from a model instead."
             )
 
         artifact_store_id = client.active_stack.artifact_store.id
