@@ -22,7 +22,7 @@ Having separate stacks for these environments helps:
 - curb costs by running less powerful resources in staging and testing locally first
 - control access to environments by granting permissions for only certain stacks to certain users
 
-## Setting up credentials for your stacks
+## How to manage credentials for your stacks
 
 Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
 
@@ -52,7 +52,7 @@ Please note that restricting permissions for users through roles is a ZenML Pro 
 {% endhint %}
 
 
-## Challenges with deploying and managing stacks
+## How to deploy and manage stacks
 
 Deploying and managing a MLOps stack is tricky.
 
