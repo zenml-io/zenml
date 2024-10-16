@@ -24,6 +24,7 @@
     * [Teams](getting-started/zenml-pro/teams.md)
     * [Roles & Permissions](getting-started/zenml-pro/roles.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
+  * [ZenML Pro API](getting-started/zenml-pro/pro-api.md)
 
 ## User Guide
 
