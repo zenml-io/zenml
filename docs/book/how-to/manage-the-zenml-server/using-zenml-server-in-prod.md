@@ -43,6 +43,7 @@ To scale your ZenML server deployed as a service on ECS, you can follow the step
 - Click on the "Update Service" button.
 - If you scroll down, you will see the "Service auto scaling - optional" section.
 - Here you can enable autoscaling and set the minimum and maximum number of tasks to run for your service and also the ECS service metric to use for scaling.
+
 ![Image showing autoscaling settings for a service](../../.gitbook/assets/ecs_autoscaling.png)
 
 {% endtab %}
@@ -58,6 +59,7 @@ To scale your ZenML server deployed on Cloud Run, you can follow the steps below
 - Click on the "Edit & Deploy new Revision" button.
 - Scroll down to the "Revision auto-scaling" section.
 - Here you can set the minimum and maximum number of instances to run for your service.
+
 ![Image showing autoscaling settings for a service](../../.gitbook/assets/cloudrun_autoscaling.png)
 
 {% endtab %}
