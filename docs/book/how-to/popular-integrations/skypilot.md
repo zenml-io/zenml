@@ -77,7 +77,7 @@ This allows specifying VM size, spot usage, region, and more.
 
 You can also configure resources per step:
 
-```
+```python
 high_resource_settings = Skypilot<PROVIDER>OrchestratorSettings(...)
 
 @step(settings={"orchestrator": high_resource_settings})  
