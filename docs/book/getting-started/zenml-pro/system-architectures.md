@@ -16,7 +16,7 @@ productivity. No matter your specific needs, the hosting options for ZenML Pro
 range from easy SaaS integration to completely airgapped deployments on your own
 infrastructure.
 
-A [ZenML Pro deployment](./zenml-pro.md) consists of the following moving pieces for both the SaaS
+A [ZenML Pro deployment](./README.md) consists of the following moving pieces for both the SaaS
 product as well as the self-hosted version.:
 
 * **ZenML Pro Control Plane**: This is a centralized MLOps control plane that includes a
@@ -97,5 +97,17 @@ and get access to Scenario 1. with a free 14 day trial now!
 
 TODO: add diagram + feature differences
 also more on architectural distinctions
+
+### Maximum data security
+
+At ZenML Pro, your data security and privacy are our top priority. The
+platform enables a secure connection to your infrastructure, tracking only
+metadata via an encrypted connection to maintain the confidentiality of your
+sensitive information. ZenML Pro integrates smoothly with your cloud services
+via service connectors, allowing a straightforward connection with various cloud
+resources without sacrificing data security. We hold your confidential
+information in a secure and isolated environment, offering an extra degree of
+protection. If desired, you can
+even [supply your own secret store](../deploying-zenml/manage-the-deployed-services/custom-secret-stores.md).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

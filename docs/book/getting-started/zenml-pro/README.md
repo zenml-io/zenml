@@ -6,8 +6,6 @@ The [pro version of ZenML](https://zenml.io/pro) comes with a number of features
 that expand the functionality of the Open Source product. ZenML Pro adds a managed control
 plane that allows you to:
 
-You're right, I apologize for missing that. I'll complete the bullet points and then provide the corrected table. Here's the updated content with completed bullet points:
-
 - **A managed production-grade ZenML deployment**: With ZenML Pro you can deploy multiple ZenML servers called [tenants](./tenants).
 - **User management with teams**: Create [organizations](./organization.md) and [teams](./teams.md) to easily manage users at scale.
 - **Role-based access control and permissions**: Implement fine-grained access control using customizable [roles](./roles.md) to ensure secure and efficient resource management.
@@ -17,7 +15,27 @@ You're right, I apologize for missing that. I'll complete the bullet points and 
 
 Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 
-Certainly, I'll fix the table for you. Here's the corrected version:
+{% hint style="info" %}
+If you're interested in assessing ZenML Pro, you can simply create
+a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
+Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
+{% endhint %}
+
+## Deployment scenarios: SaaS vs Self-hosted
+
+<div data-full-width="false">
+
+<figure>.gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption><p>ZenML Pro comes equipped with powerful pro-only dashboard features</p></figcaption></figure>
+
+</div>
+
+One of the most straightforward paths to start with a deployed ZenML server is
+to use [ZenML Pro](https://zenml.io/pro). The ZenML Pro offering eliminates the need
+for you to dedicate time and resources to deploy and manage a ZenML server,
+allowing you to focus primarily on your MLOps workflows.
+
+Click [here](./system-architectures.md) to understand about the ZenML Pro system
+architecture.
 
 <table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Tenants</strong></mark></td><td>Deploying ZenML with ZenML Pro.</td><td></td><td></td><td><a href="./tenants.md">tenants.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Organizations</strong></mark></td><td>Organizations in ZenML Pro.</td><td></td><td></td><td><a href="./organization.md">organization.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Teams</strong></mark></td><td>Teams in ZenML Pro.</td><td></td><td></td><td><a href="./teams.md">teams.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Roles</strong></mark></td><td>Roles in ZenML Pro.</td><td></td><td></td><td><a href="./roles.md">roles.md</a></td></tr></tbody></table>
 
