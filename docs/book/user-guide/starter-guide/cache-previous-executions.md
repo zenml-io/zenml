@@ -22,7 +22,7 @@ ZenML understands that nothing has changed between subsequent runs, so it re-use
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
-If you run a pipeline without a schedule, ZenML will be able to compute the cached steps on your client machine. This means steps that these steps don't have to be executed by your [orchestrator](../../component-guide/orchestrators/orchestrators.md), which can save time and money when you're executing your pipelines remotely. If you always want your orchestrator
+If you run a pipeline without a schedule, ZenML will be able to compute the cached steps on your client machine. This means that these steps don't have to be executed by your [orchestrator](../../component-guide/orchestrators/orchestrators.md), which can save time and money when you're executing your pipelines remotely. If you always want your orchestrator
 to compute cached steps dynamically, you can set the `ZENML_PREVENT_CLIENT_SIDE_CACHING` environment variable to `True`.
 
 {% hint style="warning" %}
