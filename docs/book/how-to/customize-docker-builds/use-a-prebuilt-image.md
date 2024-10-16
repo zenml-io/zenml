@@ -112,7 +112,7 @@ The files containing your pipeline and step code and all other necessary functio
 
 - If both of these options are disabled, you can include your code files in the image yourself. This approach is not recommended and you should use one of the above options.
 
-Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include.
+Take a look at [which files are built into the image](./which-files-are-built-into-the-image.md) page to learn more about what to include. Make sure that your code is in the `/app` directory and that this is set as the active working directory.
 
 
 {% hint style="info" %}
