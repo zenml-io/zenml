@@ -26,7 +26,7 @@ if [[ $ALEMBIC_HISTORY == "$OLD_VERSION"* ]]; then
 else
     # Checkout to the develop branch
     git checkout develop
-    git pull develop
+    git pull origin develop
 
 #    # Branch off of develop
 #    NEW_BRANCH="feature/adding-$NEW_VERSION-to-the-migration-tests"
