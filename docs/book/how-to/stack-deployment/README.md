@@ -1,5 +1,6 @@
 ---
-description: Stacks are the configuration of your infrastructure.
+description: >
+  Stacks represent the infrastructure and tooling that defines where and how a pipeline executes.
 ---
 
 # Managing stacks & components
@@ -34,16 +35,18 @@ The preferred way to handle credentials in ZenML is to use [Service Connectors](
 
 Ideally, you would want that only the people who deal with and have direct access to your cloud resources are the ones that are able to create Service Connectors. This is useful for a few reasons:
 
-- Less chance of credentials leaking: the more people that have access to your cloud resources, the higher the chance that some of them will be leaked.
-- Folks who have direct access to your cloud resources can revoke the credentials instantly if they are compromised, making this a much more secure setup.
-- You can have a much easier time auditing and tracking who did what if you have a clear separation between the people who can create Service Connectors (who have direct access to your cloud resources) and those who can only use them.
+- **Less chance of credentials leaking**: the more people that have access to your cloud resources, the higher the chance that some of them will be leaked.
+- **Instant revocation of compromised credentials**: folks who have direct access to your cloud resources can revoke the credentials instantly if they are compromised, making this a much more secure setup.
+- **Easier auditing**: you can have a much easier time auditing and tracking who did what if you have a clear separation between the people who can create Service Connectors (who have direct access to your cloud resources) and those who can only use them.
 
 ### Recommended workflow
 
+![Recommended workflow for managing credentials](../../../../docs/book/.gitbook/assets/service_con_workflow.png)
+
 Here's an approach you can take that is a good balance between convenience and security:
-- Have a limited set of people that have permissions to create service connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
+- Have a limited set of people that have permissions to create Service Connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
 - You can create one connector for your development or staging environment and let your data scientists use that to register their stack components.
-- When you are ready to go production, you can create another connector with permissions for your production environment and create stacks that use it. This way you can ensure that your production resources are not accidentally used for development or staging.
+- When you are ready to go to production, you can create another connector with permissions for your production environment and create stacks that use it. This way you can ensure that your production resources are not accidentally used for development or staging.
 
 If you follow this approach, you can keep your data scientists free from the hassle of figuring out the best authentication mechanisms for the different cloud services, having to manage credentials locally, and keep your cloud accounts safe, while still giving them the freedom to run their experiments in the cloud.
 
@@ -58,12 +61,12 @@ Please note that restricting permissions for users through roles is a ZenML Pro 
 
 Deploying and managing a MLOps stack is tricky.
 
-* Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
+* Each tool comes with a certain set of requirements. For example, a [Kubeflow installation](https://www.kubeflow.org/docs/started/installing-kubeflow/) will require you to have a Kubernetes cluster, and so would a **Seldon Core deployment**.
 * Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
-* Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in Vertex AI, it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
-* Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard MLflow tracking server deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
+* Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in [Vertex AI](https://cloud.google.com/vertex-ai), it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
+* Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard **MLflow tracking server** deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
 * All the components that you deploy must have the right permissions to be able to talk to each other. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
-* Cleaning up your resources after you're done with your experiments is super important yet very challenging. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
+* Cleaning up your resources after you're done with your experiments is super important yet very challenging. For example, if your Kubernetes cluster has made use of [Load Balancers](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer), you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
 
