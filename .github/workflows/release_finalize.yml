@@ -1,0 +1,113 @@
+---
+name: release-finalize
+  # TODO: Change this back into pull_request and closed and merged==true
+  # TODO: Remove the merged trigger
+  # TODO: Remove the echos
+on:
+  push:
+    branches: [ misc/prepare-release-* ]
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+jobs:
+  create-release-branch:
+    if: contains(github.event.head_commit.message, '[merged]')
+    runs-on: ubuntu-latest
+    steps:
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+          
+      # Extract the version name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      #  Push the changes
+      - name: Push the changes
+        run: |
+          echo git checkout -b release/${{ env.VERSION }}
+          echo git push --set-upstream origin release/${{ env.VERSION }}
+          
+  create-docs-pr:
+    if: contains(github.event.head_commit.message, '[merged]')
+    runs-on: ubuntu-latest
+    steps:
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+
+      # Extract the old version name
+      - name: Fetch the old version
+        run: |
+          OLD_VERSION=$(cat src/zenml/VERSION)
+          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+
+      # Check out the previous release branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: release/${{ env.OLD_VERSION }}
+
+      # Create the docs update PR
+      - name: Create docs update PR
+        shell: bash
+        run: |
+          echo bash scripts/add-docs-warning.sh ${{ env.OLD_VERSION }}
+
+  create-migration-test:
+    if: contains(github.event.head_commit.message, '[merged]')
+    runs-on: ubuntu-latest
+    steps:
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # Setting up the Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
+      # Install ZenML
+      - name: Install ZenML and the required integrations
+        run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
+
+      # Extract the new version name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      # Extract the old version name
+      - name: Fetch the old version
+        run: |
+          OLD_VERSION=$(cat src/zenml/VERSION)
+          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+
+      # Create the migration test version if necessary
+      - name: Create docs update PR
+        shell: bash
+        run: |
+          echo bash scripts/add-migration-test-version.sh ${{ env.OLD_VERSION }} ${{ env.NEW_VERSION }}
