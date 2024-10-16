@@ -519,7 +519,7 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         step_context = get_step_context()
-        output_artifacts: Dict[str, ArtifactVersionResponse] = {}
+        output_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
