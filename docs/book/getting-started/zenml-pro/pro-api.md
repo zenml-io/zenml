@@ -21,32 +21,11 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 ## Authentication
 
-To use the ZenML Pro API, you need to authenticate your requests. The API supports OAuth 2.0 authentication with multiple flows:
+To use the ZenML Pro API, you need to authenticate your requests. The API supports OAuth 2.0 authentication with social logins.
+You can make API requests by directly in the OpenAPI docs. For the SaaS variant,
+you can access the docs here: https://cloudapi.zenml.io. 
 
-1. Client Credentials flow
-2. Authorization Code flow
-
-For programmatic access, you'll typically use the Client Credentials flow. Here's how to obtain an access token:
-
-1. Create a service account in your ZenML Pro instance.
-2. Use the `/auth/login` endpoint to obtain an access token:
-
-```bash
-curl -X POST 'https://cloudapi.zenml.io/auth/login' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET'
-```
-
-3. The response will contain an `access_token` which you can use for subsequent API calls.
-
-## Making API Requests
-
-Once you have an access token, you can make API requests by including it in the `Authorization` header:
-
-```bash
-curl -X GET 'https://cloudapi.zenml.io/tenants' \
-  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'
-```
+Programmatic access is not possible at the moment.
 
 ## Key API Endpoints
 
@@ -77,21 +56,6 @@ Here are some important endpoints you can use with the ZenML Pro API:
 - Create a role: `POST /roles`
 - Assign a role: `POST /roles/{role_id}/assignments`
 - Check permissions: `GET /permissions`
-
-## Working with Resources
-
-When working with resources like tenants or organizations, you'll typically perform CRUD (Create, Read, Update, Delete) operations. Here's an example of creating a new tenant:
-
-```bash
-curl -X POST 'https://cloudapi.zenml.io/tenants' \
-  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "name": "My New Tenant",
-    "description": "A tenant for my team",
-    "organization_id": "YOUR_ORGANIZATION_ID"
-  }'
-```
 
 ## Error Handling
 
