@@ -123,52 +123,100 @@ def process_big_query_data(dataset: BigQueryDataset) -> BigQueryDataset:
 
 ## Approaches for Very Large Datasets (Hundreds of Gigabytes or More)
 
-When dealing with extremely large datasets, it's time to leverage distributed processing frameworks. ZenML allows you to integrate these frameworks directly into your pipeline steps.
+I sincerely apologize for the confusion and misinformation in my previous responses. You're absolutely correct, and I thank you for pointing this out. Let me provide a more accurate description of how to use Spark and Ray within ZenML pipelines:
 
-### Using Apache Spark
+## Using Distributed Computing Frameworks in ZenML
+
+When dealing with very large datasets, you may need to leverage distributed computing frameworks like Apache Spark or Ray. ZenML doesn't have built-in integrations for these frameworks, but you can use them directly within your pipeline steps. Here's how you can incorporate Spark and Ray into your ZenML pipelines:
+
+### Using Apache Spark in ZenML
+
+To use Spark within a ZenML pipeline, you simply need to initialize and use Spark within your step function:
 
 ```python
 from pyspark.sql import SparkSession
+from zenml import step, pipeline
 
 @step
-def process_with_spark(dataset: BigQueryDataset) -> None:
-    spark = SparkSession.builder.appName("BigDataProcessing").getOrCreate()
+def process_with_spark(input_data: str) -> None:
+    # Initialize Spark
+    spark = SparkSession.builder.appName("ZenMLSparkStep").getOrCreate()
     
-    # Read data from BigQuery
-    df = spark.read.format("bigquery").option("table", dataset.table_id).load()
+    # Read data
+    df = spark.read.format("csv").option("header", "true").load(input_data)
     
     # Process data using Spark
     result = df.groupBy("column1").agg({"column2": "mean"})
     
-    # Write results back to BigQuery
-    result.write.format("bigquery").option("table", "project.dataset.result_table").mode("overwrite").save()
+    # Write results
+    result.write.csv("output_path", header=True, mode="overwrite")
+    
+    # Stop the Spark session
+    spark.stop()
+
+@pipeline
+def spark_pipeline(input_data: str):
+    process_with_spark(input_data)
+
+# Run the pipeline
+spark_pipeline(input_data="path/to/your/data.csv")
 ```
 
-### Using Ray
+Note that you'll need to have Spark installed in your environment and ensure that the necessary Spark dependencies are available when running your pipeline.
+
+### Using Ray in ZenML
+
+Similarly, to use Ray within a ZenML pipeline, you can initialize and use Ray directly within your step:
 
 ```python
 import ray
-
-@ray.remote
-def process_partition(partition):
-    # Process a partition of the data
-    return processed_partition
+from zenml import step, pipeline
 
 @step
-def process_with_ray(dataset: BigQueryDataset) -> None:
+def process_with_ray(input_data: str) -> None:
     ray.init()
-    
-    # Read data from BigQuery (you might need to implement this part)
-    data = read_from_bigquery(dataset.table_id)
-    
-    # Distribute processing across Ray cluster
+
+    @ray.remote
+    def process_partition(partition):
+        # Process a partition of the data
+        return processed_partition
+
+    # Load and split your data
+    data = load_data(input_data)
     partitions = split_data(data)
+
+    # Distribute processing across Ray cluster
     results = ray.get([process_partition.remote(part) for part in partitions])
-    
-    # Combine results and write back to BigQuery
+
+    # Combine and save results
     combined_results = combine_results(results)
-    write_to_bigquery(combined_results, "project.dataset.result_table")
+    save_results(combined_results, "output_path")
+
+    ray.shutdown()
+
+@pipeline
+def ray_pipeline(input_data: str):
+    process_with_ray(input_data)
+
+# Run the pipeline
+ray_pipeline(input_data="path/to/your/data.csv")
 ```
+
+As with Spark, you'll need to have Ray installed in your environment and ensure that the necessary Ray dependencies are available when running your pipeline.
+
+## Important Considerations
+
+1. **Environment Setup**: Ensure that your execution environment (local or remote) has the necessary frameworks (Spark or Ray) installed.
+
+2. **Resource Management**: When using these frameworks within ZenML steps, be mindful of resource allocation. The frameworks will manage their own resources, which needs to be coordinated with ZenML's orchestration.
+
+3. **Error Handling**: Implement proper error handling and cleanup, especially for shutting down Spark sessions or Ray runtime.
+
+4. **Data I/O**: Consider how data will be passed into and out of the distributed processing step. You might need to use intermediate storage (like cloud storage) for large datasets.
+
+5. **Scaling**: While these frameworks allow for distributed processing, you'll need to ensure your infrastructure can support the scale of computation you're attempting.
+
+By incorporating Spark or Ray directly into your ZenML steps, you can leverage the power of distributed computing for processing very large datasets while still benefiting from ZenML's pipeline management and versioning capabilities.
 
 ## Choosing the Right Scaling Strategy
 
