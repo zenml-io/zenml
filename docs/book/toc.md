@@ -114,7 +114,7 @@
 * [📍 Develop locally](how-to/develop-locally/README.md)
   * [Use config files to develop locally](how-to/develop-locally/use-config-files-to-develop-locally.md)
   * [Start with notebooks](how-to/develop-locally/start-with-notebooks.md)
-  * [Keep your pipeline runs clean](how-to/develop-locally/keep-your-pipeline-runs-clean.md)
+  * [Keep your pipelines and dashboard clean](how-to/develop-locally/keep-your-pipeline-dashboard-clean.md)
 * [⚒️ Manage stacks & components](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack with ZenML](how-to/stack-deployment/deploy-a-cloud-stack.md)
   * [Deploy a cloud stack with Terraform](how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
