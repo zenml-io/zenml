@@ -166,7 +166,6 @@
   * [Kubernetes](how-to/popular-integrations/kubernetes.md)
   * [MLflow](how-to/popular-integrations/mlflow.md)
   * [Skypilot](how-to/popular-integrations/skypilot.md)
-  * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🔌 Connect services (AWS, GCP, Azure, K8s etc)](how-to/auth-management/README.md)
   * [Service Connectors guide](how-to/auth-management/service-connectors-guide.md)
   * [Security best practices](how-to/auth-management/best-security-practices.md)
@@ -184,6 +183,8 @@
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
+* [🤝 Contribute to ZenML](how-to/contribute-to-zenml/README.md)
+  * [Implement a custom integration](how-to/contribute-to-zenml/implement-a-custom-integration.md)
 
 ## Stack Components
 
