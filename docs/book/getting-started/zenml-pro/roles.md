@@ -28,21 +28,21 @@ At the organization level, ZenML Pro provides three predefined roles:
    - Can view tenants within the organization
    - Read-only permissions
 
+![Organization Roles](../../.gitbook/assets/org_members.png)
+
 To assign organization roles:
 
 1. Navigate to the Organization settings page
-2. Click on the "Members" tab
+2. Click on the "Members" tab. Here you can update roles for existing members.
 3. Use the "Add members" button to add new members
 
-![Organization Roles](../../.gitbook/assets/org_members.png)
+![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
 
 Some points to note:
 - In addition to adding organization roles, you might also want to add tenant roles for people who you want to have access to a specific tenant.
 - An organization admin can add themselves to a tenant with any tenant role they desire.
 - However, an organization editor and viewer cannot add themselves to existing tenants that they are not a part of. They won't be able to view such tenants in the organization either.
 - Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
-
-![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
 
 ## Tenant-Level Roles
 
@@ -107,7 +107,9 @@ For each resource, you can define the following permissions:
 - Share
 
 You can then assign this role to a user or a team on the "Members" page.
+
 #### Managing permissions for roles
+
 To manage permissions for a role:
 
 1. Go to the Roles page in tenant settings
