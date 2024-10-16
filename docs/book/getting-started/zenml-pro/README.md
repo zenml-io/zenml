@@ -13,7 +13,7 @@ plane that allows you to:
 and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md).
 - **Triggers and run templates**: ZenML Pro enables you to [create and run templates](../../how-to/trigger-pipelines/README.md#run-templates).
 This way, you can use the dashboard or our Client/REST API to run a pipeline with updated configuration
-which allows you to iterate quickly with minimal friction. 
+which allows you to iterate quickly with minimal friction.
 
 Additionally, ZenML Pro users get exclusive access to an array of
 cloud-specific features, such as triggers, integrating with your code
@@ -23,7 +23,7 @@ Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 
 Certainly, I'll fix the table for you. Here's the corrected version:
 
-<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploying ZenML using ZenML Pro</strong></mark></td><td>Deploying ZenML using ZenML Pro.</td><td></td><td></td><td><a href="./README.md">README.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Organizations</strong></mark></td><td>Managing organizations in ZenML Pro.</td><td></td><td></td><td><a href="./organization.md">organization.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Teams</strong></mark></td><td>Managing teams in ZenML Pro.</td><td></td><td></td><td><a href="./teams.md">teams.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Roles</strong></mark></td><td>Understanding and managing roles in ZenML Pro.</td><td></td><td></td><td><a href="./roles.md">roles.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Tenants</strong></mark></td><td>Managing tenants in ZenML Pro.</td><td></td><td></td><td><a href="./tenants.md">tenants.md</a></td></tr></tbody></table>
+<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Organizations</strong></mark></td><td>Managing organizations in ZenML Pro.</td><td></td><td></td><td><a href="./organization.md">organization.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Teams</strong></mark></td><td>Managing teams in ZenML Pro.</td><td></td><td></td><td><a href="./teams.md">teams.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Roles</strong></mark></td><td>Understanding and managing roles in ZenML Pro.</td><td></td><td></td><td><a href="./roles.md">roles.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Tenants</strong></mark></td><td>Managing tenants in ZenML Pro.</td><td></td><td></td><td><a href="./tenants.md">tenants.md</a></td></tr></tbody></table>
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
