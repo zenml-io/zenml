@@ -4,18 +4,13 @@ description: "Skip building an image for your ZenML pipeline altogether."
 
 # Use a prebuilt image for pipeline execution
 
-When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies and your pipeline code to it. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is. This is because Docker must pull base layers and push the final image to your container registry. Although this process only happens once and is skipped if ZenML detects no change in your environment, it might still be a bottleneck slowing down your pipeline execution.
+When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies to it. Optionally, if a code repository is not registered and `allow_download_from_artifact_store` is not set to `True` in your `DockerSettings`, ZenML will also add your pipeline code to the image. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is. This is because Docker must pull base layers and push the final image to your container registry. Although this process only happens once and is skipped if ZenML detects no change in your environment, it might still be a bottleneck slowing down your pipeline execution.
 
 To save time and costs, you can choose to not build a Docker image every time your pipeline runs. This guide shows you how to do it using a prebuilt image, what you should include in your image for the pipeline to run successfully and other tips.
 
 {% hint style="info" %}
 Note that using this feature means that you won't be able to leverage any updates you make to your code or dependencies, outside of what your image already contains.
 {% endhint %}
-
-## Where you can use this feature
-
-- When you are running in an environment that either doesn't have Docker installed or doesn't have enough memory to pull your base image and build a new image on top of it (think Codespaces or other CI/CD environments).
-- When ZenML has already built an image for your code in a previous pipeline run and you want to reuse it in a new run. This saves you build times at the cost of not being able to leverage any updates you made to your code (or your dependencies) since then.
 
 ## How do you use this feature
 
@@ -35,6 +30,10 @@ def my_pipeline(...):
     ...
 ```
 
+{% hint style="warning" %}
+You should make sure that this image is pushed to a registry where the orchestrator/step operator/other components that require the image can pull it from, without any involvement by ZenML.
+{% endhint %}
+
 ## What the parent image should contain
 
 When you run a pipeline with a pre-built image, skipping the build process, ZenML will not build any image on top of it. This means that the image you provide to the `parent_image` attribute of the `DockerSettings` class has to contain all the code and dependencies that are needed to run your pipeline.
@@ -43,14 +42,14 @@ When you run a pipeline with a pre-built image, skipping the build process, ZenM
 Note that this is different from the case where you [only specify a parent image](../../../../docs/book/how-to/customize-docker-builds/docker-settings-on-a-pipeline.md#using-a-pre-built-parent-image) and don't want to `skip_build`. In the latter, ZenML still builds the image but does it on top of your parent image and not the base ZenML image.
 {% endhint %}
 {% hint style="info" %}
-If you're using an image that was already built by ZenML in a previous pipeline run, you don't need to worry about what goes in it as long as it was built for the same stack as your current pipeline run. You can use it directly.
+If you're using an image that was already built by ZenML in a previous pipeline run, you don't need to worry about what goes in it as long as it was built for the **same stack** as your current pipeline run. You can use it directly.
 {% endhint %}
 
 The following points are derived from how ZenML builds an image internally and will help you make your own images.
 
 ### Your stack requirements
 
-A ZenML Stack can have different tools and each comes with its own requirements. You need to ensure that your image contains them. The following is how you can get a list of stack requirements.
+A ZenML Stack can have different components and each comes with its own requirements. You need to ensure that your image contains them. The following is how you can get a list of stack requirements.
 
 ```python
 from zenml.client import Client
@@ -105,7 +104,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAG
 
 ### Your project code files
 
-The files containing your pipeline and step code and all other necessary functions should also be available inside the image. Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include. 
+The files containing your pipeline and step code and all other necessary functions should also be available inside the image. 
+
+- If you have a code repository registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
+
+- If you don't have a code repository but `allow_download_from_artifact_store` is set to `True` in your `DockerSettings` (`True` by default), ZenML will upload your code to the artifact store and make it available to the image.
+
+- If both of these options are disabled, you can include your code files in the image yourself.
+
+Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include.
 
 
 {% hint style="info" %}
