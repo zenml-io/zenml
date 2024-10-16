@@ -9,7 +9,6 @@
   * [Deploy with ZenML CLI](getting-started/deploying-zenml/deploy-with-zenml-cli.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
-  * [Deploy with ZenML Pro](getting-started/zenml-pro/README.md)
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Manage deployed services](getting-started/deploying-zenml/manage-the-deployed-services/README.md)
