@@ -110,7 +110,7 @@
   * [Run a single step from a notebook](how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook.md)
 * [🤹 Manage your ZenML server](how-to/manage-the-zenml-server/README.md)
   * [Best practices for upgrading ZenML](how-to/manage-the-zenml-server/best-practices-upgrading-zenml.md)
-  * [Upgrade the ZenML server](how-to/manage-the-zenml-server/upgrade-zenml-server.md)
+  * [Upgrade your ZenML server](how-to/manage-the-zenml-server/upgrade-zenml-server.md)
   * [Using ZenML server in production](how-to/manage-the-zenml-server/using-zenml-server-in-prod.md)
   * [Troubleshoot your ZenML server](how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md)
   * [Migration guide](how-to/manage-the-zenml-server/migration-guide/migration-guide.md)
