@@ -474,7 +474,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         return
 
     @property
-    def _boto3_bucket(self) -> boto3.resources.factory.s3.Bucket:
+    def _boto3_bucket(self) -> Any:
         """Get the boto3 bucket object.
 
         Returns:
