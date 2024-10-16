@@ -52,6 +52,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
         tags: Tags to apply to the Processor/Estimator assigned to the step.
+        pipeline_tags: Tags to apply to the pipeline via the
+            sagemaker.workflow.pipeline.Pipeline.create method.
         processor_tags: DEPRECATED: use `tags` instead.
         keep_alive_period_in_seconds: The time in seconds after which the
             provisioned instance will be terminated if not used. This is only
@@ -107,6 +109,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     tags: Dict[str, str] = {}
+    pipeline_tags: Dict[str, str] = {}
     keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
     use_training_step: Optional[bool] = None
 
