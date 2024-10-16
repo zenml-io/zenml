@@ -6,7 +6,32 @@ Tenants are individual, isolated deployments of the ZenML server. Each tenant ha
 
 The ZenML server that you get through a tenant is a supercharged version of the open-source ZenML server. This means that you get all the features of the open-source version, plus some extra Pro features.
 
+## Create a Tenant in your organization
+
+A tenant is a crucial part of your Organization and holds all of your pipelines, experiments and models, among other things. You need to have a tenant to fully utilize the benefits that ZenML Pro brings. The following is how you can create a tenant yourself:
+
+- Go to your organization page
+- Click on the "+ New Tenant" button
+
+![Image showing the create tenant page](../../.gitbook/assets/new_tenant.png)
+
+- Give your tenant a name and click on the "Create Tenant" button
+
+![Image showing the create tenant modal](../../.gitbook/assets/new_tenant_modal.png)
+
+The tenant will then be created and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
+
+The image below shows you how the overview page looks like when you are being onboarded. Follow the instructions on the screen to get started.
+
+![Image showing the onboarding experience](../../.gitbook/assets/tenant_onboarding.png)
+
+{% hint style="info" %}
+You can also create a tenant through the Cloud API by navigating to https://cloudapi.zenml.io/ and using the `POST /organizations` endpoint to create a tenant.
+{% endhint %}
+
+
 ## Organizing your tenants
+
 You can also restrict what your team members can access within a tenant by using roles. Read more about roles [here](../../../../docs/book/getting-started/zenml-pro/roles.md).
 
 You can choose to define and organize tenants in any way you wish, depending on your needs. One example could be creating different tenants for different projects or teams in your organization.
