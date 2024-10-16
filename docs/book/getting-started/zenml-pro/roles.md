@@ -40,6 +40,7 @@ Some points to note:
 - In addition to adding organization roles, you might also want to add tenant roles for people who you want to have access to a specific tenant.
 - An organization admin can add themselves to a tenant with any tenant role they desire.
 - However, an organization editor and viewer cannot add themselves to existing tenants that they are not a part of. They won't be able to view such tenants in the organization either.
+- Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
 
 ![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
 
@@ -64,9 +65,10 @@ Tenant roles determine a user's permissions within a specific ZenML tenant. Ther
 3. **Viewer**
    - Read-only access to all resources and information
 
-### Custom Roles
+## Custom Roles
 
-Custom roles allow you to define specific permissions for users or groups. To create a custom role:
+Custom roles allow you to define specific permissions for users or groups. To create a custom role
+for a tenant:
 
 1. Go to the tenant settings page
 
@@ -84,11 +86,7 @@ Custom roles allow you to define specific permissions for users or groups. To cr
 
 ![Image showing the add custom role page](../../.gitbook/assets/assign_permissions.png)
   
-You can then assign this role to a user or a team on the "Members" page.
-
-## Resource-Specific Permissions
-
-ZenML Pro allows you to set permissions for various resources, including:
+A custom role allows you to set permissions for various resources, including:
 
 - Artifacts
 - Models
@@ -108,7 +106,7 @@ For each resource, you can define the following permissions:
 - Delete
 - Share
 
-## Managing Permissions
+You can then assign this role to a user or a team on the "Members" page.
 
 To manage permissions for a role:
 
@@ -125,15 +123,5 @@ To manage permissions for a role:
 2. **Regular Audits**: Periodically review and update role assignments and permissions.
 3. **Use Custom Roles**: Create custom roles for teams or projects with specific needs.
 4. **Document Roles**: Maintain documentation of your custom roles and their intended use.
-
-## API Integration
-
-ZenML Pro's RBAC system can be integrated with your existing tools and workflows using the API. Key endpoints include:
-
-- `/api/v1/users`: Manage users and their roles
-- `/api/v1/workspaces`: Control access to workspaces
-- `/api/v1/service_accounts`: Manage service accounts for automated processes
-
-For detailed API documentation, refer to the [ZenML API Reference](https://sdkdocs.zenml.io/latest/core_code_docs/core-rest/).
 
 By leveraging ZenML Pro's role-based access control, you can ensure that your team members have the right level of access to resources, maintaining security while enabling collaboration across your MLOps projects.
