@@ -69,12 +69,19 @@ Tenant roles determine a user's permissions within a specific ZenML tenant. Ther
 Custom roles allow you to define specific permissions for users or groups. To create a custom role:
 
 1. Go to the tenant settings page
+
 ![Image showing the tenant settings page](../../.gitbook/assets/custom_role_settings_page.png)
+
 2. Click on "Roles" in the left sidebar and Select "Add Custom Role"
+
 ![Image showing the add custom role page](../../.gitbook/assets/tenant_roles_page.png)
+
 3. Provide a name and description for the role. Choose a base role to inherit permissions from
+
 ![Image showing the add custom role page](../../.gitbook/assets/create_role_modal.png)
+
 4. Edit permissions as needed
+
 ![Image showing the add custom role page](../../.gitbook/assets/assign_permissions.png)
   
 You can then assign this role to a user or a team on the "Members" page.
