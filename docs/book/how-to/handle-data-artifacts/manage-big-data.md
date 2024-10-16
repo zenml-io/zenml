@@ -204,7 +204,7 @@ ray_pipeline(input_data="path/to/your/data.csv")
 
 As with Spark, you'll need to have Ray installed in your environment and ensure that the necessary Ray dependencies are available when running your pipeline.
 
-## Important Considerations
+### Important Considerations
 
 1. **Environment Setup**: Ensure that your execution environment (local or remote) has the necessary frameworks (Spark or Ray) installed.
 
