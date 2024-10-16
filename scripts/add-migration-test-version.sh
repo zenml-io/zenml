@@ -33,7 +33,7 @@ else
     echo git checkout -b "$NEW_BRANCH"
 
     # Add the new version to the VERSIONS list
-    sed -i '' '/VERSIONS=/,/)/ s/)/\n  "'$NEW_VERSION'")/' scripts/test-migrations.sh
+    sed -i '' "/^VERSIONS=(.*)$/s/)/ \"$NEW_VERSION\")/" scripts/test-migrations.sh
     echo "Added new version $NEW_VERSION to scripts/test-migrations.sh"
 
 #    # Add, commit and push the new changes
