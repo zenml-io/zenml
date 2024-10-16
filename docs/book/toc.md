@@ -12,8 +12,6 @@
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Manage deployed services](getting-started/deploying-zenml/manage-the-deployed-services/README.md)
-    * [Upgrade the version of the ZenML server](getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
-    * [Troubleshoot the deployed server](getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
     * [Troubleshoot stack components](getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components.md)
     * [Custom secret stores](getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
