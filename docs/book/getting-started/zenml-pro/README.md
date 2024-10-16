@@ -23,19 +23,15 @@ Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 
 ## Deployment scenarios: SaaS vs Self-hosted
 
-<div data-full-width="false">
-
-<figure>.gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption><p>ZenML Pro comes equipped with powerful pro-only dashboard features</p></figcaption></figure>
-
-</div>
-
 One of the most straightforward paths to start with a deployed ZenML server is
-to use [ZenML Pro](https://zenml.io/pro). The ZenML Pro offering eliminates the need
+to use [the SaaS version of ZenML Pro](https://zenml.io/pro). The ZenML Pro offering eliminates the need
 for you to dedicate time and resources to deploy and manage a ZenML server,
 allowing you to focus primarily on your MLOps workflows.
 
-Click [here](./system-architectures.md) to understand about the ZenML Pro system
-architecture.
+However, ZenML Pro can also be deployed fully self-hosted. Please [book a demo](https://www.zenml.io/book-your-demo)
+to learn more.
+
+Click [here](./system-architectures.md) to understand about the various deployment scenarios with ZenML Pro.
 
 <table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Tenants</strong></mark></td><td>Deploying ZenML with ZenML Pro.</td><td></td><td></td><td><a href="./tenants.md">tenants.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Organizations</strong></mark></td><td>Organizations in ZenML Pro.</td><td></td><td></td><td><a href="./organization.md">organization.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Teams</strong></mark></td><td>Teams in ZenML Pro.</td><td></td><td></td><td><a href="./teams.md">teams.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Roles</strong></mark></td><td>Roles in ZenML Pro.</td><td></td><td></td><td><a href="./roles.md">roles.md</a></td></tr></tbody></table>
 
