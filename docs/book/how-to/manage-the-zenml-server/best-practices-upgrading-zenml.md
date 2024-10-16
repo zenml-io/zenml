@@ -36,8 +36,8 @@ Sometimes, you might have to upgrade your code to work with a new version of Zen
 ### Testing and Compatibility
 
 - **Local Testing**: It's a good idea to update your local server first and run some old pipelines to check for compatibility issues between the old and new versions.
-- **End-to-End Testing**: You can also develop simple end-to-end tests to ensure that the new version works with your pipeline code and your stack.
-- **Artifact Compatibility**: Be cautious with pickle-based materializers, as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts.
+- **End-to-End Testing**: You can also develop simple end-to-end tests to ensure that the new version works with your pipeline code and your stack. ZenML already has an [extensive test suite](https://github.com/zenml-io/zenml/tree/main/tests) that we use for releases and you can use it as an example.
+- **Artifact Compatibility**: Be cautious with pickle-based [materializers](../../how-to/handle-data-artifacts/handle-custom-data-types.md), as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts.
 
 ### Dependency Management
 
@@ -48,7 +48,7 @@ Sometimes, you might have to upgrade your code to work with a new version of Zen
 
 While ZenML strives for backward compatibility, be prepared for occasional breaking changes (e.g., the Pydantic 2 upgrade).
 
-- **Changelog Review**: Always review the changelog for new syntax, instructions, or breaking changes.
-- **Migration Scripts**: Use provided migration scripts when available to handle database schema changes.
+- **Changelog Review**: Always review the [changelog from new releases](https://github.com/zenml-io/zenml/releases) for new syntax, instructions, or breaking changes.
+- **Migration Scripts**: Use provided [migration scripts](../../how-to/manage-the-zenml-server/migration-guide/migration-guide.md) when available to handle database schema changes.
 
 By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
