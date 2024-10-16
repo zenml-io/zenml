@@ -113,7 +113,7 @@
   * [Upgrade the ZenML server](how-to/manage-the-zenml-server/upgrade-zenml-server.md)
   * [Using ZenML server in production](how-to/manage-the-zenml-server/using-zenml-server-in-prod.md)
   * [Troubleshoot your ZenML server](how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md)
-  * [♻️ Migration guide](how-to/manage-the-zenml-server/migration-guide/migration-guide.md)
+  * [Migration guide](how-to/manage-the-zenml-server/migration-guide/migration-guide.md)
     * [Migration guide 0.13.2 → 0.20.0](how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty.md)
     * [Migration guide 0.23.0 → 0.30.0](how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty.md)
     * [Migration guide 0.39.1 → 0.41.0](how-to/manage-the-zenml-server/migration-guide/migration-zero-forty.md)
