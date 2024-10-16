@@ -41,16 +41,6 @@ The only other thing necessary to use the ZenML Sagemaker orchestrator is enabli
 
 In order to quickly enable APIs, and create other resources necessary for to use this integration, we will soon provide a Sagemaker stack recipe via [our `mlstacks` repository](https://github.com/zenml-io/mlstacks), which will help you set up the infrastructure with one click.
 
-### Infrastructure Deployment
-
-A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker --provider=aws ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
-
 ## How to use it
 
 To use the Sagemaker orchestrator, we need:

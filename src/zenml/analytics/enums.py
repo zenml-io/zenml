@@ -80,19 +80,11 @@ class AnalyticsEvent(str, Enum):
     # Service account and API keys
     CREATED_SERVICE_ACCOUNT = "Service account created"
 
-    # Stack recipes
-    DEPLOY_STACK = "Stack deployed"
-    DESTROY_STACK = "Stack destroyed"
-
     # Full stack infrastructure deployment
     DEPLOY_FULL_STACK = "Full stack deployed"
 
     # Tag created
     CREATED_TAG = "Tag created"
-
-    # ZenML server events
-    ZENML_SERVER_DEPLOYED = "ZenML server deployed"
-    ZENML_SERVER_DESTROYED = "ZenML server destroyed"
 
     # Server Settings
     SERVER_SETTINGS_UPDATED = "Server Settings Updated"

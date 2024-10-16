@@ -22,6 +22,9 @@ including an AWS ECR container registry? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
+
+You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
+infrastructure using Terraform.
 {% endhint %}
 
 The ECR registry is automatically activated once you create an AWS account. However, you'll need to create a `Repository` in order to push container images to it:
@@ -48,16 +51,6 @@ To figure out the URI for your registry:
 * Go to the [AWS console](https://console.aws.amazon.com/) and click on your user account in the top right to see the `Account ID`.
 * Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which you would like to store your container images. Make sure to choose a nearby region for faster access.
 * Once you have both these values, fill in the values in this template `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry URI.
-
-#### Infrastructure Deployment
-
-An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy ecr_container_registry --flavor=aws --provider=aws ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
 
 ### How to use it
 

@@ -23,11 +23,9 @@ To use the Kubernetes Orchestrator, you'll need:
 
 ## Deploying the Orchestrator
 
-You can deploy the orchestrator from the ZenML CLI:
+The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
 
-```bash
-zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes --provider=<YOUR_PROVIDER>
-```
+You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up infrastructure using Terraform.
 
 ## Configuring the Orchestrator
 

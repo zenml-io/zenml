@@ -26,6 +26,9 @@ including a Google Artifact Registry? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
+
+You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
+infrastructure using Terraform.
 {% endhint %}
 
 When using the Google Artifact Registry, you need to:
@@ -54,16 +57,6 @@ To figure out the URI for your registry:
 
 * Go [here](https://console.cloud.google.com/artifacts) and select the repository that you want to use to store Docker images. If you don't have a repository yet, take a look at the [deployment section](gcp.md#how-to-deploy-it).
 * On the top, click the copy button to copy the full repository URL.
-
-#### Infrastructure Deployment
-
-A GCP Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy gcp_container_registry --flavor=gcp --provider=gcp ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
 
 ### How to use it
 

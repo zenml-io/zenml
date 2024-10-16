@@ -39,7 +39,6 @@ from zenml.constants import (
     INFO,
     VERSION_1,
 )
-from zenml.enums import ServerProviderType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
@@ -237,45 +236,23 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
+def get_local_server() -> Optional["ServerDeployment"]:
+    """Get the active local server.
 
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
+    Call this function to retrieve the local server deployed on this machine.
 
     Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
+        The local server deployment or None, if no local server deployment was
+        found.
     """
     from zenml.zen_server.deploy.deployer import ServerDeployer
 
     deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
+    servers = deployer.list_servers()
     if not servers:
         return None
 
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
-
-    return None
+    return servers[0]
 
 
 def get_active_server_details() -> Tuple[str, Optional[int]]:
@@ -284,8 +261,7 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     When multiple servers are present, the following precedence is used to
     determine which server to use:
     - If the client is connected to a server, that server has precedence.
-    - If no server is connected, a server that was deployed remotely has
-        precedence over a server that was deployed locally.
+    - If no server is connected, the local server is used, if present.
 
     Returns:
         The URL and port of the currently active server.
@@ -299,14 +275,8 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
         logger.debug("Getting URL of connected server.")
         parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
-    # Else, check for deployed servers
-    server = get_active_deployment(local=False)
-    if server:
-        logger.debug("Getting URL of remote server.")
-    else:
-        server = get_active_deployment(local=True)
-        logger.debug("Getting URL of local server.")
-
+    # Else, check for local servers
+    server = get_local_server()
     if server and server.status and server.status.url:
         if isinstance(server.config, LocalServerDeploymentConfig):
             return server.status.url, server.config.port

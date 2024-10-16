@@ -69,15 +69,7 @@ If one or more of the deployments are not in the `Running` state, try increasing
 ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with previous versions.
 {% endhint %}
 
-#### Infrastructure Deployment
-
-A Tekton orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy tekton_orchestrator --flavor=tekton --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up infrastructure using Terraform.
 
 ### How to use it
 

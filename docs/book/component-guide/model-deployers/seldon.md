@@ -54,16 +54,6 @@ In addition to these parameters, the Seldon Core Model Deployer may also require
 Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
 {% endhint %}
 
-### Infrastructure Deployment
-
-The Seldon Model Deployer can be deployed directly from the ZenML CLI:
-
-```shell
-zenml model-deployer deploy seldon_deployer --flavor=seldon --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
-
 ### Seldon Core Installation Example
 
 The following example briefly shows how you can install Seldon in an EKS Kubernetes cluster. It assumes that the EKS cluster itself is already set up and configured with IAM access. For more information or tutorials for other clouds, check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup).

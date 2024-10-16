@@ -28,8 +28,10 @@ including a GCS Artifact Store? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
-{% endhint %}
 
+You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
+infrastructure using Terraform.
+{% endhint %}
 
 The GCS Artifact Store flavor is provided by the GCP ZenML integration, you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
@@ -50,16 +52,6 @@ zenml stack register custom_stack -a gs_store ... --set
 ```
 
 Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](gcp.md#authentication-methods) to match your deployment scenario.
-
-#### Infrastructure Deployment
-
-A GCS Artifact Store can be deployed directly from the ZenML CLI:
-
-```shell
-zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
 
 #### Authentication Methods
 
