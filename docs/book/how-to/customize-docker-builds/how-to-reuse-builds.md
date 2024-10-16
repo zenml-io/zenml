@@ -20,10 +20,10 @@ zenml pipeline builds list --pipeline_id='startswith:ab53ca'
 You can also create a build manually using the CLI:
 
 ```bash
-zenml pipeline build [OPTIONS] SOURCE
+zenml pipeline build --stack vertex-stack my_module.my_pipeline_instance
 ```
 
-You can use the options to specify the configuration file and the stack to use for the build. The source should be a path to a pipeline instance. Learn more about the build function [here](https://sdkdocs.zenml.io/0.66.0/core_code_docs/core-new/#zenml.new.pipelines.pipeline.Pipeline.build).
+You can use the options to specify the configuration file and the stack to use for the build. The source should be a path to a pipeline instance. Learn more about the build function [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.pipelines.pipeline.Pipeline.build).
 
 ## Reusing builds
 
@@ -33,7 +33,7 @@ While reusing Docker builds is useful, it can be limited. This is because specif
 
 ## Use code repositories to speed up Docker build times
 
-You can do so by connecting a git repository. Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+One way to speed up Docker builds is to connect a git repository. Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 ZenML will **automatically figure out which builds match your pipeline and reuse the appropriate build id**. Therefore, you **do not** need to explicitly pass in the build id when you have a clean repository state and a connected git repository. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
 
@@ -66,8 +66,5 @@ It is also important to take some additional points into consideration:
 ## Use the artifact store to upload your code
 
 You can also let ZenML use the artifact store to upload your code. This is the default behaviour if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
-
-
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
