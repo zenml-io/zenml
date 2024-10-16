@@ -1,21 +1,23 @@
 ---
-name: prepare-release
+name: release-prepare
 on:
   # TODO: Change this back into pull_request and add proper precautions
   # TODO: Parallize the quickstart run more logically
+  # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
+  # TODO: Remove the triggers like [prepare]....
+  # TODO: Add the order to all the jobs
   push:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   prepare-release:
-    if: contains(github.event.head_commit.message, '[prepare]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[prepare]')
     runs-on: ubuntu-latest
     steps:
       # 0. Check out the repository
       - name: Checkout code
         uses: actions/checkout@v4.1.1
-
       # 0. Extract the version name
       - name: Extract version from branch name
         run: |
@@ -27,7 +29,6 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.12'
-
       # 0. Configure Git
       - name: Configure git
         shell: bash
@@ -42,12 +43,12 @@ jobs:
           uv pip list
           uv pip check || true
 
-      #  # 1. Send a message to Discord to alert everyone for the release
-      #      - name: Send message to Discord
-      #        run: |
-      #          curl -H "Content-Type: application/json" \
-      #            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
-      #            ${{ secrets.DISCORD_WEBHOOK_URL }}
+      # 1. Send a message to Discord to alert everyone for the release
+      - name: Send message to Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\": \"New changes pushed to the main branch!\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       # 4. Alembic merge
       - name: Run Alembic merge
@@ -91,13 +92,12 @@ jobs:
           git add RELEASE_NOTES.md
 
       # 7. Push the changes
-      # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
       - name: Push the changes
         run: |
           git commit -m "Adding the new version to the necessary files."
           git push origin HEAD:${{ github.ref }}
   build-release:
-    if: contains(github.event.head_commit.message, '[build]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[build]')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -142,7 +142,7 @@ jobs:
           docker tag zenmldocker/prepare-release:quickstart-aws 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
   test-release:
-    if: contains(github.event.head_commit.message, '[test]')  # TODO: Remove
+    if: contains(github.event.head_commit.message, '[test]')
     env:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
@@ -172,46 +172,52 @@ jobs:
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
         run: python scripts/redeploy-release-prep-tenant.py
 
+  run_pipelines:
+    needs: test-release
+    if: contains(github.event.head_commit.message, '[test]')
+    runs-on: ubuntu-latest
+    env:
+      ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
+      ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+    strategy:
+      matrix:
+        include:
+          - cloud: "aws"
+            parent_image: "715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws"
+          - cloud: "azure"
+            parent_image: "zenmldocker/prepare-release:quickstart-azure"
+          - cloud: "gcp"
+            parent_image: "zenmldocker/prepare-release:quickstart-gcp"
+
+    steps:
+      # Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      # Setting up the Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
       # ZenML Integrations
       - name: Install ZenML and the required integrations
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
 
-#      # Run the Quickstart on the AWS stack
-#      - name: Run on AWS
-#        run: |
-#          cd examples/quickstart
-#          zenml stack set aws
-#          # Adjust the config to use the right parent image
-#          sed -i "s|parent_image:.*|parent_image: \"715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws\"|" "configs/training_aws.yaml"
-#          # Adjust the requirements to use the right zenml installation
-#          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_aws.txt
-#          pip install -r requirements_aws.txt
-#          zenml integration install aws -y
-#          python run.py --model_type=t5-small
-
-      # Run the Quickstart on the Azure stack
-      - name: Run on Azure
+      # Run the Quickstart pipeline
+      - name: Run on ${{ matrix.cloud }}
         run: |
           cd examples/quickstart
-          zenml stack set azure
-          # Adjust the config to use the right parent image
-          sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-azure\"|" "configs/training_azure.yaml"
-          # Adjust the requirements to use the right zenml installation
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_azure.txt
-          pip install -r requirements_azure.txt
-          zenml integration install azure -y
-          python run.py --model_type=t5-small
-
-      # Run the Quickstart on the GCP stack
-      - name: Run on GCP
-        run: |-
-          cd examples/quickstart
-          zenml stack set gcp
-          # Adjust the config to use the right parent image
-          sed -i "s|parent_image:.*|parent_image: \"zenmldocker/prepare-release:quickstart-gcp\"|" "configs/training_gcp.yaml"
-          # Adjust the requirements to use the right zenml installation
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_gcp.txt
-          pip install -r requirements_gcp.txt
-          zenml integration install gcp -y
+          
+          zenml stack set ${{ matrix.cloud }}
+          
+          sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
+          
+          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
+          
+          pip install -r requirements_${{ matrix.cloud }}.txt
+          
+          zenml integration install ${{ matrix.cloud }} -y
+          
           python run.py --model_type=t5-small
