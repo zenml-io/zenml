@@ -29,11 +29,11 @@ else
     git pull origin develop
 
 #    # Branch off of develop
-#    NEW_BRANCH="feature/adding-$NEW_VERSION-to-the-migration-tests"
+    NEW_BRANCH="feature/adding-$NEW_VERSION-to-the-migration-tests"
     echo git checkout -b "$NEW_BRANCH"
 
     # Add the new version to the VERSIONS list
-    sed -i '/VERSIONS=/,/)/ s/)/\n  "'$NEW_VERSION'")/' scripts/test-migrations.sh
+    sed -i '' '/VERSIONS=/,/)/ s/)/\n  "'$NEW_VERSION'")/' scripts/test-migrations.sh
     echo "Added new version $NEW_VERSION to scripts/test-migrations.sh"
 
 #    # Add, commit and push the new changes
