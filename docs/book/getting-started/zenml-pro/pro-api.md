@@ -21,9 +21,11 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 ## Authentication
 
-To use the ZenML Pro API, you need to authenticate your requests. The API supports OAuth 2.0 authentication with social logins.
-You can make API requests by directly in the OpenAPI docs. For the SaaS variant,
-you can access the docs here: https://cloudapi.zenml.io. 
+To use the ZenML Pro API, you need to authenticate your requests. If you are logged in to your ZenML Pro account,
+you can use the same browser window to authenticate requests to your ZenML Pro API, directly in the OpenAPI docs. 
+
+For example, for the SaaS variant, you can access the docs here: https://cloudapi.zenml.io. You can make requests
+by being logged into ZenML Pro at https://cloud.zenml.io.
 
 Programmatic access is not possible at the moment.
 

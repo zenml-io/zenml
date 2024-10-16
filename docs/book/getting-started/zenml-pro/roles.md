@@ -20,7 +20,7 @@ At the organization level, ZenML Pro provides three predefined roles:
    - Can assign roles to other members
 
 2. **Org Editor**
-   - Can manage tenants and members
+   - Can manage tenants and teams
    - Cannot access subscription information
    - Cannot delete the organization
 
