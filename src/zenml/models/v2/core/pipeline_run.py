@@ -575,7 +575,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
