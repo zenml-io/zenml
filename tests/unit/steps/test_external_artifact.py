@@ -12,13 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, ClassVar, Optional
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
 from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.artifacts.external_artifact_config import (
+    ExternalArtifactConfiguration,
+)
 
 GLOBAL_ARTIFACT_VERSION_ID = uuid4()
 
@@ -69,47 +72,11 @@ class MockZenmlClient:
             return MockZenmlClient.Client.MockPipelineRunResponse()
 
 
-@pytest.mark.parametrize(
-    argnames="value,id,artifact_name,exception_start",
-    argvalues=[
-        [1, None, None, None],
-        [None, uuid4(), None, None],
-        [None, None, "name", None],
-        [None, None, None, "Either `value`, `id`, or `name` must be provided"],
-        [1, uuid4(), None, "Only one of `value`, `id`, or `name`"],
-        [None, uuid4(), "name", "Only one of `value`, `id`, or `name`"],
-        [1, None, "name", "Only one of `value`, `id`, or `name`"],
-    ],
-    ids=[
-        "good_by_value",
-        "good_by_id",
-        "good_by_name",
-        "bad_all_none",
-        "bad_id_and_value",
-        "bad_id_and_name",
-        "bad_value_and_name",
-    ],
-)
-def test_external_artifact_init(
-    value: Optional[Any],
-    id: Optional[UUID],
-    artifact_name: Optional[str],
-    exception_start: Optional[str],
-):
+def test_external_artifact_only_allows_init_by_value():
     """Tests that initialization logic of `ExternalArtifact` works expectedly."""
-    if exception_start:
-        with pytest.raises(ValueError, match=exception_start):
-            ExternalArtifact(
-                value=value,
-                id=id,
-                name=artifact_name,
-            )
-    else:
-        ExternalArtifact(
-            value=value,
-            id=id,
-            name=artifact_name,
-        )
+
+    with pytest.raises(ValueError):
+        ExternalArtifact(id=uuid4())
 
 
 def test_upload_by_value(sample_artifact_version_model, mocker):
@@ -123,7 +90,6 @@ def test_upload_by_value(sample_artifact_version_model, mocker):
     ea.upload_by_value()
     assert ea.id is not None
     assert ea.value is None
-    assert ea.name is None
 
 
 def test_get_artifact_by_value_before_upload_raises():
@@ -141,12 +107,9 @@ def test_get_artifact_by_value_before_upload_raises():
             ea.get_artifact_version_id()
 
 
-def test_get_artifact_by_id():
+def test_get_artifact_config_by_id():
     """Tests that `get_artifact` works as expected for `id`."""
-    ea = ExternalArtifact(id=GLOBAL_ARTIFACT_VERSION_ID)
-    assert ea.value is None
-    assert ea.name is None
-    assert ea.id is not None
+    ea = ExternalArtifactConfiguration(id=GLOBAL_ARTIFACT_VERSION_ID)
     with patch.dict(
         "sys.modules",
         {
@@ -173,6 +136,8 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
                     "zenml.client": MockZenmlClient,
                 },
             ):
-                ExternalArtifact(name="bar").get_artifact_version_id()
+                ExternalArtifactConfiguration(
+                    id=GLOBAL_ARTIFACT_VERSION_ID
+                ).get_artifact_version_id()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
