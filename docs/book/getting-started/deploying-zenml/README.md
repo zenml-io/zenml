@@ -21,7 +21,7 @@ A ZenML deployment consists of multiple infrastructure components:
 - [FastAPI server](https://github.com/zenml-io/zenml/tree/main/src/zenml/zen_server) backed with a SQLite or MySQL database
 - [Python Client](https://github.com/zenml-io/zenml/tree/main/src/zenml)
 - An [open-source companion ReactJS](https://github.com/zenml-io/zenml-dashboard) dashboard
-- (Optional) ZenML Pro API + ZenML Pro dashboard
+- (Optional) [ZenML Pro API + Database + ZenML Pro dashboard](../zenml-pro/system-architectures.md)
 
 <details>
 
