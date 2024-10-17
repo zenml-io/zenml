@@ -2722,7 +2722,7 @@ class SqlZenStore(BaseZenStore):
 
         return artifact
 
-    def _get_next_numberic_version_for_artifact(
+    def _get_next_numeric_version_for_artifact(
         self, session: Session, artifact_id: UUID
     ) -> int:
         """Get the next numeric version for an artifact.
@@ -2733,7 +2733,7 @@ class SqlZenStore(BaseZenStore):
                 version.
 
         Returns:
-            The next numberic version number.
+            The next numeric version.
         """
         current_max_version = session.exec(
             select(func.max(ArtifactVersionSchema.version_number)).where(
@@ -2778,7 +2778,7 @@ class SqlZenStore(BaseZenStore):
                     try:
                         with session.begin_nested():
                             artifact_version.version = (
-                                self._get_next_numberic_version_for_artifact(
+                                self._get_next_numeric_version_for_artifact(
                                     session=session,
                                     artifact_id=artifact_version.artifact_id,
                                 )
