@@ -16,7 +16,7 @@ Note that using this feature means that you won't be able to leverage any update
 
 The [`DockerSettings`](./docker-settings-on-a-pipeline.md#specify-docker-settings-for-a-pipeline) class in ZenML allows you to set a parent image to be used in your pipeline runs and gives the ability to skip building an image on top of it.
 
-Just set the `parent_image` attribute of the `DockerSettings` class to the image you want to use and set `skip_build` to `True`.
+To do this, just set the `parent_image` attribute of the `DockerSettings` class to the image you want to use and set `skip_build` to `True`.
 
 ```python
 docker_settings = DockerSettings(
@@ -31,7 +31,7 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-You should make sure that this image is pushed to a registry where the orchestrator/step operator/other components that require the image can pull it from, without any involvement by ZenML.
+You should make sure that this image is pushed to a registry from which the orchestrator/step operator/other components that require the image can pull, without any involvement by ZenML.
 {% endhint %}
 
 ## What the parent image should contain
