@@ -131,7 +131,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.__boto3_bucket = None
+        self._boto3_bucket_holder = None
 
         # determine bucket versioning status
         self.is_versioned = False
@@ -489,8 +489,8 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             The boto3 bucket object.
         """
-        if self.__boto3_bucket and not self.connector_has_expired():
-            return self.__boto3_bucket
+        if self._boto3_bucket_holder and not self.connector_has_expired():
+            return self._boto3_bucket_holder
 
         key, secret, token, region = self.get_credentials()
         s3 = boto3.resource(
@@ -500,5 +500,5 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             aws_session_token=token,
             region_name=region,
         )
-        self.__boto3_bucket = s3.Bucket(self.config.bucket)
-        return self.__boto3_bucket
+        self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
+        return self._boto3_bucket_holder
