@@ -14,3 +14,5 @@ redirects:
   getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md: how-to/manage-the-zenml-server/upgrade-zenml-server.md
   getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server.md: how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md
   how-to/stack-deployment/implement-a-custom-integration.md: how-to/contribute-to-zenml/implement-a-custom-integration.md
+
+  getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
