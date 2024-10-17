@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -224,7 +224,7 @@ class StepRunSchema(NamedSchema, table=True):
             for artifact in self.input_artifacts
         }
 
-        output_artifacts: Dict[str, Set["ArtifactVersionResponse"]] = {}
+        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
         for artifact in self.output_artifacts:
             if artifact.name not in output_artifacts:
                 output_artifacts[artifact.name] = set()
