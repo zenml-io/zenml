@@ -104,7 +104,6 @@ def up(
     connect: bool = False,
     image: Optional[str] = None,
     ngrok_token: Optional[str] = None,
-    legacy: bool = False,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
