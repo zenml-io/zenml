@@ -326,7 +326,7 @@ class ModelVersionResponse(
     def to_model_class(
         self,
         was_created_in_this_run: bool = False,
-        suppress_class_validation_warnings: bool = False,
+        suppress_class_validation_warnings: bool = True,
     ) -> "Model":
         """Convert response model to Model object.
 
