@@ -23,6 +23,9 @@ A ZenML deployment consists of multiple infrastructure components:
 - An [open-source companion ReactJS](https://github.com/zenml-io/zenml-dashboard) dashboard
 - (Optional) [ZenML Pro API + Database + ZenML Pro dashboard](../system-architectures.md)
 
+You can read more in-depth about the system architecture of ZenML [here](../system-architectures.md).
+This docs page will focus on the components required to deploy ZenML OSS.
+
 <details>
 
 <summary>Details on the ZenML Python Client</summary>
