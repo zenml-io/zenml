@@ -2687,13 +2687,14 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Artifact Versions --------------------
 
     def _get_or_create_artifact_for_name(
-        self, session: Session, name: str
+        self, session: Session, name: str, has_custom_name: bool
     ) -> ArtifactSchema:
         """Get or create an artifact with a specific name.
 
         Args:
             session: DB session.
             name: The artifact name.
+            has_custom_name: Whether the artifact has a custom name.
 
         Returns:
             Schema of the artifact.
@@ -2706,7 +2707,9 @@ class SqlZenStore(BaseZenStore):
         if artifact is None:
             try:
                 with session.begin_nested():
-                    artifact_request = ArtifactRequest(name=name)
+                    artifact_request = ArtifactRequest(
+                        name=name, has_custom_name=has_custom_name
+                    )
                     artifact = ArtifactSchema.from_request(artifact_request)
                     session.add(artifact)
                     session.commit(artifact)
@@ -2760,7 +2763,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             if artifact_name := artifact_version.artifact_name:
                 artifact_schema = self._get_or_create_artifact_for_name(
-                    session=session, name=artifact_name
+                    session=session,
+                    name=artifact_name,
+                    has_custom_name=artifact_version.has_custom_name,
                 )
                 artifact_version.artifact_id = artifact_schema.id
 
