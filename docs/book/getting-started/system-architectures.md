@@ -2,7 +2,7 @@
 description: Different variations of the ZenML Pro architecture depending on your needs.
 ---
 
-# System Architectures
+# 🏛️ System Architectures
 
 {% hint style="info" %}
 If you're interested in assessing ZenML Pro, you can create
