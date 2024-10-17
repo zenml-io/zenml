@@ -19,7 +19,7 @@ A ZenML deployment consists of the following moving pieces:
   infrastructure services on behalf of the ZenML Pro. The secrets store can be
   hosted either by the ZenML Pro or by the customer.
 
-![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
+![ZenML OSS server deployment architecture](../.gitbook/assets/oss_simple_deployment.png)
 
 The above deployment can be augmented with the ZenML Pro components, that augment and add functionality:
 
