@@ -225,13 +225,16 @@ The configured credentials must have at least the following AWS IAM permissions
 associated with the ARNs of S3 buckets that the connector will be allowed to    
 access (e.g. arn:aws:s3:::* and arn:aws:s3:::*/* represent all the available S3 
 buckets).                                                                       
-                                                                                
- • s3:ListBucket                                                                
- • s3:GetObject                                                                 
- • s3:PutObject                                                                 
- • s3:DeleteObject                                                              
- • s3:ListAllMyBuckets                                                          
-                                                                                
+
+ • s3:ListBucket
+ • s3:GetObject
+ • s3:PutObject
+ • s3:DeleteObject
+ • s3:ListAllMyBuckets
+ • s3:GetBucketVersioning
+ • s3:ListBucketVersions
+ • s3:DeleteObjectVersion
+
 If set, the resource name must identify an S3 bucket using one of the following 
 formats:                                                                        
                                                                                 
