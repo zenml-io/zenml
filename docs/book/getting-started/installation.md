@@ -11,7 +11,7 @@ pip install zenml
 ```
 
 {% hint style="warning" %}
-Note that ZenML currently supports **Python 3.8, 3.9, 3.10, 3.11 and 3.12**. Please make sure that you are using a supported Python version.
+Note that ZenML currently supports **Python 3.9, 3.10, 3.11 and 3.12**. Please make sure that you are using a supported Python version.
 {% endhint %}
 
 ## Install with the dashboard

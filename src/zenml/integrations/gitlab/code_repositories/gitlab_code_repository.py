@@ -159,7 +159,12 @@ class GitLabCodeRepository(BaseCodeRepository):
             return True
 
         ssh_regex = re.compile(
-            f".*{self.config.host}:{self.config.group}/{self.config.project}.git"
+            r"^(?P<scheme_with_delimiter>ssh://)?"
+            r"(?P<userinfo>git)"
+            f"@{self.config.host}:"
+            r"(?P<port>\d+)?"
+            r"(?(scheme_with_delimiter)/|/?)"
+            f"{self.config.group}/{self.config.project}.git$",
         )
         if ssh_regex.fullmatch(url):
             return True

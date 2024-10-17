@@ -16,7 +16,6 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from zenml.model.model import Model
     from zenml.models import RunMetadataResponse
 
 
@@ -30,18 +29,21 @@ class RunMetadataLazyGetter:
 
     def __init__(
         self,
-        _lazy_load_model: "Model",
-        _lazy_load_artifact_name: Optional[str],
-        _lazy_load_artifact_version: Optional[str],
+        _lazy_load_model_name: str,
+        _lazy_load_model_version: Optional[str],
+        _lazy_load_artifact_name: Optional[str] = None,
+        _lazy_load_artifact_version: Optional[str] = None,
     ):
         """Initialize a RunMetadataLazyGetter.
 
         Args:
-            _lazy_load_model: The model version.
+            _lazy_load_model_name: The model name.
+            _lazy_load_model_version: The model version.
             _lazy_load_artifact_name: The artifact name.
             _lazy_load_artifact_version: The artifact version.
         """
-        self._lazy_load_model = _lazy_load_model
+        self._lazy_load_model_name = _lazy_load_model_name
+        self._lazy_load_model_version = _lazy_load_model_version
         self._lazy_load_artifact_name = _lazy_load_artifact_name
         self._lazy_load_artifact_version = _lazy_load_artifact_version
 
@@ -57,7 +59,8 @@ class RunMetadataLazyGetter:
         from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         return LazyRunMetadataResponse(
-            lazy_load_model=self._lazy_load_model,
+            lazy_load_model_name=self._lazy_load_model_name,
+            lazy_load_model_version=self._lazy_load_model_version,
             lazy_load_artifact_name=self._lazy_load_artifact_name,
             lazy_load_artifact_version=self._lazy_load_artifact_version,
             lazy_load_metadata_name=key,

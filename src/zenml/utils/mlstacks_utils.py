@@ -625,7 +625,7 @@ def deploy_mlstacks_stack(
     declare("Stack successfully deployed.")
 
     if not no_import_stack_flag:
-        declare(f"Importing stack '{stack_name}' into ZenML...")
+        declare(f"Importing stack '{stack_name}' into ZenML..")
         import_new_mlstacks_stack(
             stack_name=stack_name,
             provider=stack_provider,

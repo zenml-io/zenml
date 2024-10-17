@@ -399,7 +399,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 f"{job.services['Studio'].endpoint}"
             )
 
-            if self.config.synchronous:
+            if settings.synchronous:
                 logger.info("Waiting for pipeline to finish...")
                 ml_client.jobs.stream(job.name)
 

@@ -39,12 +39,12 @@ from zenml.config.step_configurations import (
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
-from zenml.new.pipelines.run_utils import get_default_run_name
+from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.new.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps.step_invocation import StepInvocation
 
@@ -583,8 +583,6 @@ class Compiler:
         Raises:
             ValueError: If the pipeline has no steps.
         """
-        from zenml.pipelines import BasePipeline
-
         if not step_specs:
             raise ValueError(
                 f"Pipeline '{pipeline.name}' cannot be compiled because it has "
@@ -594,13 +592,10 @@ class Compiler:
                 "https://docs.zenml.io/user-guide/starter-guide."
             )
 
-        additional_spec_args: Dict[str, Any] = {}
-        if isinstance(pipeline, BasePipeline):
-            # use older spec version for legacy pipelines
-            additional_spec_args["version"] = "0.3"
-        else:
-            additional_spec_args["source"] = pipeline.resolve()
-            additional_spec_args["parameters"] = pipeline._parameters
+        additional_spec_args: Dict[str, Any] = {
+            "source": pipeline.resolve(),
+            "parameters": pipeline._parameters,
+        }
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
 

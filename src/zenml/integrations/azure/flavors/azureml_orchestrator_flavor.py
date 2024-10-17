@@ -38,6 +38,11 @@ logger = get_logger(__name__)
 class AzureMLOrchestratorSettings(AzureMLComputeSettings):
     """Settings for the AzureML orchestrator."""
 
+    synchronous: bool = Field(
+        default=True,
+        description="Whether the orchestrator runs synchronously or not.",
+    )
+
 
 class AzureMLOrchestratorConfig(
     BaseOrchestratorConfig, AzureMLOrchestratorSettings
@@ -52,10 +57,6 @@ class AzureMLOrchestratorConfig(
     )
     workspace: str = Field(
         description="Name of the workspace that AzureML is running on."
-    )
-    synchronous: bool = Field(
-        default=True,
-        description="Whether the orchestrator runs synchronously or not.",
     )
 
     @property
