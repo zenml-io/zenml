@@ -62,7 +62,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -85,7 +85,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -104,7 +104,7 @@ jobs:
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
     needs: run-slow-ci-label-is-set
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -126,7 +126,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -193,22 +193,48 @@ jobs:
           bash scripts/check-alembic-branches.sh
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
-  custom-ubuntu-unit-test:
-    if: github.event.pull_request.draft == false
+  ubuntu-linting:
     needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  custom-ubuntu-unit-test:
+    if: github.event.pull_request.draft == false
+    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  windows-linting:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   windows-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-linting]
     strategy:
       matrix:
         os: [windows-latest]
@@ -219,9 +245,22 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  macos-linting:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-linting]
     strategy:
       matrix:
         os: [macos-latest]
@@ -240,7 +279,7 @@ jobs:
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
@@ -255,7 +294,7 @@ jobs:
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-unit-test]
     strategy:
       matrix:
         os: [macos-13]
@@ -276,23 +315,18 @@ jobs:
     secrets: inherit
   custom-ubuntu-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+        test_environment: [default, docker-server-docker-orchestrator-mariadb]
         exclude:
           # docker is time-consuming to run, so we only run it on 3.9
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.11'
-          - test_environment: docker-server-docker-orchestrator-mysql
+          - test_environment: default
             python-version: '3.12'
+          - test_environment: default
+            python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
@@ -301,6 +335,21 @@ jobs:
             python-version: '3.12'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+  custom-ubuntu-integration-test-gh-actions-server-docker-orchestrator:
+    if: github.event.pull_request.draft == false
+    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11']
+        test_environment: [github-actions-server-docker-orchestrator]
+      fail-fast: false
+    uses: ./.github/workflows/integration-test-slow-services.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}

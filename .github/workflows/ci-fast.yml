@@ -16,7 +16,7 @@ concurrency:
 jobs:
   docstring-check:
     if: github.event.pull_request.draft == false
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -32,7 +32,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing-random:
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -82,12 +82,25 @@ jobs:
       python-version: '3.9'
       os: ubuntu-latest
     secrets: inherit
-  custom-ubuntu-setup-and-unit-test:
+  linting:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.10']
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  custom-ubuntu-setup-and-unit-test:
+    needs: linting
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -95,14 +108,51 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   custom-arc-runner-set-integration-test:
+    needs: [build-and-push, linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.10']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+        test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # Needed for pushing to GHCR
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ZenML server image to GHCR
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
+            github.sha }}
+          file: ./docker/zenml-server-dev.Dockerfile
+  custom-arc-runner-set-integration-test-server:
+    needs: [build-and-push, linting]
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+        test_environment: [github-actions-server-docker-orchestrator]
+      fail-fast: false
+    uses: ./.github/workflows/integration-test-fast-services.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
