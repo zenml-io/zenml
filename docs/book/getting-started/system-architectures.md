@@ -35,10 +35,10 @@ product as well as the self-hosted version.:
   ML metadata such as tracking and versioning information about pipelines and
   models.
 
-![ZenML Pro deployment architecture](../../.gitbook/assets/pro_deployment_simple.png)
+![ZenML Pro deployment architecture](../.gitbook/assets/pro_deployment_simple.png)
 
 You might have noticed this architecture builds on top of the
-[ZenML OSS system architecture.](../deploying-zenml/README.md)
+[ZenML OSS system architecture.](./deploying-zenml/README.md)
 Therefore, if you already have ZenML OSS deployed, it is easy to enroll it as part of a 
 ZenML Pro deployment!
 
@@ -49,7 +49,7 @@ the two scenarios described below.
 
 ### Scenario 1: Full SaaS
 
-![Scenario 1: Full SaaS deployment](../../.gitbook/assets/cloud_architecture_scenario_1.png)
+![Scenario 1: Full SaaS deployment](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
 
 In this scenario, all services are hosted on infrastructure hosted by the ZenML Team,
@@ -62,7 +62,7 @@ model tracking and versioning information) is stored. All the actual ML data
 artifacts (e.g. data produced or consumed by pipeline steps, logs and
 visualizations, models) are stored on the customer cloud. This can be set up
 quite easily by configuring
-an [artifact store](../../component-guide/artifact-stores/artifact-stores.md)
+an [artifact store](../component-guide/artifact-stores/artifact-stores.md)
 with your MLOps stack.
 
 Your tenant only needs permissions to read from this data to display artifacts
@@ -81,15 +81,15 @@ customer side. In this case, the customer connects their own
 secret store directly to the ZenML server that is managed by us. All ZenML
 secrets used by running pipelines to access infrastructure services and
 resources are stored in the customer secret store. This allows users to
-use [service connectors](../../how-to/auth-management/service-connectors-guide.md)
-and the [secrets API](../../how-to/interact-with-secrets.md) to authenticate
+use [service connectors](../how-to/auth-management/service-connectors-guide.md)
+and the [secrets API](../how-to/interact-with-secrets.md) to authenticate
 ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 {% endhint %}
 
 ## Scenario 2: Fully On-prem
 
-![Scenario 2: Fully on-premises deployment](../../.gitbook/assets/cloud_architecture_scenario_2.png)
+![Scenario 2: Fully on-premises deployment](../.gitbook/assets/cloud_architecture_scenario_2.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
@@ -114,6 +114,6 @@ via service connectors, allowing a straightforward connection with various cloud
 resources without sacrificing data security. We hold your confidential
 information in a secure and isolated environment, offering an extra degree of
 protection. If desired, you can
-even [supply your own secret store](../deploying-zenml/manage-the-deployed-services/custom-secret-stores.md).
+even [supply your own secret store](./deploying-zenml/secret-management.md#secret-store-configuration-and-management.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
