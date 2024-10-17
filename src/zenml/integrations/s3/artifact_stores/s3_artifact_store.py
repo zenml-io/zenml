@@ -27,6 +27,7 @@ from typing import (
 
 import boto3
 import s3fs
+from botocore.exceptions import ClientError
 from fsspec.asyn import FSTimeoutError, sync, sync_wrapper
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -134,12 +135,20 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
         # determine bucket versioning status
         versioning = self._boto3_bucket.Versioning()
-        if versioning.status == "Enabled":
-            self.is_versioned = True
-            logger.warning(
-                f"The artifact store bucket `{self.config.bucket}` is versioned, "
-                "this may slow down logging process significantly."
-            )
+        try:
+            if versioning.status == "Enabled":
+                self.is_versioned = True
+                logger.warning(
+                    f"The artifact store bucket `{self.config.bucket}` is versioned, "
+                    "this may slow down logging process significantly."
+                )
+        except ClientError as e:
+            if "not authorized" in e.args[0]:
+                logger.warning(
+                    "Your AWS Connector is lacking critical Versioning permissions. "
+                    "Please check that `s3:GetBucketVersioning`, "
+                    "`s3:ListBucketVersions`, `s3:DeleteObjectVersion` are granted."
+                )
 
     @property
     def config(self) -> S3ArtifactStoreConfig:
