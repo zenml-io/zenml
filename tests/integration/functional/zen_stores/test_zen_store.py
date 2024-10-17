@@ -5374,7 +5374,7 @@ class TestRunMetadata:
                     data_type=Source(
                         module="acme.foo", type=SourceType.INTERNAL
                     ),
-                    save_type=ArtifactSaveType.DEFAULT,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
         elif type_ == MetadataResourceTypes.MODEL_VERSION:

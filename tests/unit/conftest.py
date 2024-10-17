@@ -496,7 +496,7 @@ def sample_artifact_version_model(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
             tags=[],
-            save_type=ArtifactSaveType.DEFAULT,
+            save_type=ArtifactSaveType.STEP_OUTPUT,
         ),
         metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
@@ -516,7 +516,7 @@ def sample_artifact_request_model() -> ArtifactVersionRequest:
         data_type="sample_data_type",
         workspace=uuid4(),
         user=uuid4(),
-        save_type=ArtifactSaveType.DEFAULT,
+        save_type=ArtifactSaveType.STEP_OUTPUT,
     )
 
 

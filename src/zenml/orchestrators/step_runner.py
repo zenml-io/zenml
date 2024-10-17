@@ -595,7 +595,7 @@ class StepRunner:
                 version=version,
                 tags=tags,
                 user_metadata=user_metadata,
-                save_type=ArtifactSaveType.DEFAULT,
+                save_type=ArtifactSaveType.STEP_OUTPUT,
             )
             output_artifacts[output_name] = artifact.id
 

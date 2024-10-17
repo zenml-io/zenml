@@ -156,7 +156,7 @@ def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
     materialize the artifact but instead returns the response model."""
 
     artifact_response = save_artifact(
-        42, "main_answer", save_type=ArtifactSaveType.DEFAULT
+        42, "main_answer", save_type=ArtifactSaveType.STEP_OUTPUT
     ).get_hydrated_version()
 
     step = Step.model_validate(

@@ -553,7 +553,7 @@ def run_as_single_step_pipeline(
         artifact_version.load()
         for output_name in step_run.config.outputs.keys()
         for artifact_version in step_run.outputs[output_name]
-        if artifact_version.save_type == ArtifactSaveType.DEFAULT
+        if artifact_version.save_type == ArtifactSaveType.STEP_OUTPUT
     ]
 
     if len(outputs) == 0:

@@ -715,7 +715,7 @@ class ModelContext:
                     uri="",
                     user=user.id,
                     workspace=ws.id,
-                    save_type=ArtifactSaveType.DEFAULT,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
             self.artifact_versions.append(artifact_version)
@@ -1126,7 +1126,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         uri="",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        save_type=ArtifactSaveType.DEFAULT,
+        save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
     filter_model=ArtifactVersionFilter,
     update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),

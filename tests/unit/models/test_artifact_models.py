@@ -47,7 +47,7 @@ def test_artifact_request_model_works_with_long_materializer():
             uri="abc",
             materializer=long_materializer,
             data_type="abc",
-            save_type=ArtifactSaveType.DEFAULT,
+            save_type=ArtifactSaveType.STEP_OUTPUT,
         )
 
 
@@ -64,5 +64,5 @@ def test_artifact_version_request_model_works_with_long_data_type():
             uri="abc",
             materializer="abc",
             data_type=long_data_type,
-            save_type=ArtifactSaveType.DEFAULT,
+            save_type=ArtifactSaveType.STEP_OUTPUT,
         )
