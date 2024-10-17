@@ -1,8 +1,44 @@
 ---
-description: Different variations of the ZenML Pro architecture depending on your needs.
+description: Different variations of the ZenML architecture depending on your needs.
 ---
 
-# 🏛️ System Architectures
+# 🏛️ System Architecture
+
+A ZenML deployment consists of the following moving pieces:
+
+* **ZenML Server**: This is a FastAPI.
+* **ML Metadata Store**: This is where all ZenML tenant metadata is stored, including
+  ML metadata such as tracking and versioning information about pipelines and
+  models.
+
+This can be augmented with the ZenML Pro components, that augment and add functionality:
+
+* **ZenML Pro Control Plane**: This is a centralized MLOps control plane that includes a
+  managed ZenML dashboard and a special ZenML server optimized for production
+  MLOps workloads.
+* **Single Sign-On (SSO)**: ZenML Pro offers flexible authentication options.
+  In cloud-hosted deployments, it integrates with [Auth0](https://auth0.com/),
+  allowing users to log in via social media or corporate credentials.
+  For self-hosted deployments, customers can configure their
+  own identity management solution, with ZenML Pro supporting
+  custom OIDC provider integration. This allows organizations to
+  leverage their existing identity infrastructure for authentication
+  and authorization, whether using the cloud service or deploying on-premises.
+* **Secrets Store**: All secrets and credentials required to access customer
+  infrastructure services are stored in a secure secrets store. The ZenML Pro
+  API has access to these secrets and uses them to access customer
+  infrastructure services on behalf of the ZenML Pro. The secrets store can be
+  hosted either by the ZenML Pro or by the customer.
+* **ZenML Pro Database**: This is where all ZenML Pro related data is stored such
+as roles, permissions, teams, and tenant management related data.
+
+## ZenML Pro vs ZenML Open Source
+
+TODO: add diagram + feature differences
+also more on architectural distinctions
+
+
+
 
 {% hint style="info" %}
 If you're interested in assessing ZenML Pro, you can create
@@ -16,24 +52,7 @@ productivity. No matter your specific needs, the hosting options for ZenML Pro
 range from easy SaaS integration to completely airgapped deployments on your own
 infrastructure.
 
-A [ZenML Pro deployment](./README.md) consists of the following moving pieces for both the SaaS
-product as well as the self-hosted version.:
 
-* **ZenML Pro Control Plane**: This is a centralized MLOps control plane that includes a
-  managed ZenML dashboard and a special ZenML server optimized for production
-  MLOps workloads.
-* **Single Sign-On (SSO)**: The ZenML Pro API is integrated
-  with [Auth0](https://auth0.com/) as an SSO provider to manage user
-  authentication and authorization. Users can log in to the ZenML Pro
-  app using their social media accounts or their corporate credentials.
-* **Secrets Store**: All secrets and credentials required to access customer
-  infrastructure services are stored in a secure secrets store. The ZenML Pro
-  API has access to these secrets and uses them to access customer
-  infrastructure services on behalf of the ZenML Pro. The secrets store can be
-  hosted either by the ZenML Pro or by the customer.
-* **ML Metadata Store**: This is where all ZenML metadata is stored, including
-  ML metadata such as tracking and versioning information about pipelines and
-  models.
 
 ![ZenML Pro deployment architecture](../.gitbook/assets/pro_deployment_simple.png)
 
@@ -99,10 +118,7 @@ require completely airgapped deployments, for the tightest security standards.
 Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
 and get access to Scenario 1. with a free 14 day trial now!
 
-## ZenML Pro vs ZenML Open Source
 
-TODO: add diagram + feature differences
-also more on architectural distinctions
 
 ### Maximum data security
 
