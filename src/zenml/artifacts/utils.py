@@ -789,7 +789,7 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={response.artifact.name: response.id}
+                outputs={response.artifact.name: response.id}
             ),
         )
         error_message = "model"

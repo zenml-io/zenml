@@ -8063,9 +8063,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the artifacts.
-            for name, artifact_version_id in list(
-                step_run_update.outputs.items()
-            ) + list(step_run_update.saved_artifact_versions.items()):
+            for name, artifact_version_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_version_id=artifact_version_id,

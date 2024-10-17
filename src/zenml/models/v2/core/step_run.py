@@ -127,10 +127,6 @@ class StepRunUpdate(BaseModel):
         title="The IDs of the output artifact versions of the step run.",
         default={},
     )
-    saved_artifact_versions: Dict[str, UUID] = Field(
-        title="The IDs of artifact versions that were saved by this step run.",
-        default={},
-    )
     loaded_artifact_versions: Dict[str, UUID] = Field(
         title="The IDs of artifact versions that were loaded by this step run.",
         default={},
