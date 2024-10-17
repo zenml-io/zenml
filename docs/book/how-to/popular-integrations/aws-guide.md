@@ -350,7 +350,7 @@ aws budgets create-budget --account-id your-account-id --budget file://budget-co
 Set up cost allocation tags to track expenses related to your ZenML projects:
 
 ```shell
-aws ce create-cost-category --name ZenML-Projects --rules-version 1 --rules file://rules.json
+aws ce create-cost-category-definition --name ZenML-Projects --rules-version 1 --rules file://rules.json
 ```
 
 ### Use Warm Pools for your SageMaker Pipelines
@@ -369,7 +369,7 @@ This configuration keeps instances warm for 5 minutes after each job completes, 
 
 ### Implement a Robust Backup Strategy
 
-Regularly backup your critical data and configurations. For S3, enable versioning and consider using cross-region replication for disaster recovery.
+Regularly backup your critical data and configurations. For S3, enable versioning and consider using [cross-region replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html) for disaster recovery.
 
 By following these best practices and implementing the provided examples, you can create a more secure, efficient, and cost-effective AWS stack for your ZenML projects. Remember to regularly review and update your practices as your projects evolve and as AWS introduces new features and services.
 

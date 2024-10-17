@@ -185,27 +185,37 @@ Always adhere to the principle of least privilege when setting up IAM roles. Onl
 
 ### Leverage GCP Resource Labeling
 
-Implement a consistent labeling strategy for your GCP resources. To label a GCS
-bucket, for example:
+Implement a consistent labeling strategy for your GCP resources. To label a GCS bucket, for example:
 
 ```shell
-gsutil label set project-labels.json gs://your-bucket-name
+gcloud storage buckets update gs://your-bucket-name --update-labels=project=zenml,environment=production
 ```
 
-Where `project-labels.json` contains:
+This command adds two labels to the bucket:
+- A label with key "project" and value "zenml"
+- A label with key "environment" and value "production"
 
-```json
-{
-  "project": "zenml",
-  "environment": "production"
-}
+You can add or update multiple labels in a single command by separating them with commas.
+
+To remove a label, set its value to null:
+
+```shell
+gcloud storage buckets update gs://your-bucket-name --update-labels=label-to-remove=null
 ```
 
 These labels will help you with billing and cost allocation tracking and also with any cleanup efforts.
 
+To view the labels on a bucket:
+
+```shell
+gcloud storage buckets describe gs://your-bucket-name --format="default(labels)"
+```
+
+This will display all labels currently set on the specified bucket.
+
 ### Implement Cost Management Strategies
 
-Use Google Cloud's Cost Management tools to monitor and manage your spending. To set up a budget alert:
+Use Google Cloud's [Cost Management tools](https://cloud.google.com/docs/costs-usage) to monitor and manage your spending. To set up a budget alert:
 
 1. Navigate to the Google Cloud Console
 2. Go to Billing > Budgets & Alerts
