@@ -2800,6 +2800,8 @@ class SqlZenStore(BaseZenStore):
                                 "to create versions for this artifact in the "
                                 "database."
                             )
+                    else:
+                        break
                 session.refresh(artifact_version_schema)
             else:
                 # An explicit version was specified for the artifact version.
