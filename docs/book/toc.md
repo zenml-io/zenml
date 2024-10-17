@@ -77,7 +77,7 @@
   * [Schedule a pipeline](how-to/build-pipelines/schedule-a-pipeline.md)
   * [Deleting a pipeline](how-to/build-pipelines/delete-a-pipeline.md)
   * [Compose pipelines](how-to/build-pipelines/compose-pipelines.md)
-  * [Dynamically generate steps and artifacts](how-to/build-pipelines/dynamically-generate-steps-artifacts.md)
+  * [Dynamically assign artifact names](how-to/build-pipelines/dynamically-assign-artifact-names.md)
   * [Automatically retry steps](how-to/build-pipelines/retry-steps.md)
   * [Run pipelines asynchronously](how-to/build-pipelines/run-pipelines-asynchronously.md)
   * [Control execution order of steps](how-to/build-pipelines/control-execution-order-of-steps.md)
@@ -112,6 +112,9 @@
 * [📔 Run remote pipelines from notebooks](how-to/run-remote-steps-and-pipelines-from-notebooks/README.md)
   * [Limitations of defining steps in notebook cells](how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells.md)
   * [Run a single step from a notebook](how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook.md)
+* [📍 Develop locally](how-to/develop-locally/README.md)
+  * [Use config files to develop locally](how-to/develop-locally/local-prod-pipeline-variants.md)
+  * [Keep your pipelines and dashboard clean](how-to/develop-locally/keep-your-dashboard-server-clean.md)
 * [⚒️ Manage stacks & components](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack with ZenML](how-to/stack-deployment/deploy-a-cloud-stack.md)
   * [Deploy a cloud stack with Terraform](how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
@@ -119,7 +122,6 @@
   * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
-  * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
   * [Distributed Training with 🤗 Accelerate](how-to/training-with-gpus/accelerate-distributed-training.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
@@ -187,6 +189,8 @@
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
+* [🤝 Contribute to ZenML](how-to/contribute-to-zenml/README.md)
+  * [Implement a custom integration](how-to/contribute-to-zenml/implement-a-custom-integration.md)
 
 ## Stack Components
 
