@@ -2712,7 +2712,7 @@ class SqlZenStore(BaseZenStore):
                     )
                     artifact = ArtifactSchema.from_request(artifact_request)
                     session.add(artifact)
-                    session.commit(artifact)
+                    session.commit()
                     session.refresh(artifact)
             except IntegrityError:
                 # We failed to create the artifact due to the unique constraint
