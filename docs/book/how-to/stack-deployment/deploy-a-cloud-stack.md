@@ -320,6 +320,9 @@ following AWS permissions in your AWS account:
   * s3:GetObject
   * s3:PutObject
   * s3:DeleteObject
+  * s3:GetBucketVersioning
+  * s3:ListBucketVersions
+  * s3:DeleteObjectVersion
 * ECR Repository:
   * ecr:DescribeRepositories
   * ecr:ListRepositories
