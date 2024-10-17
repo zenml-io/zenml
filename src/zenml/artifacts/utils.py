@@ -32,6 +32,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.load_directory_materializer import (
     PreexistingDataMaterializer,
 )
@@ -247,7 +248,7 @@ def save_artifact(
 
     if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
-            response=response,
+            artifact_version=response,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         )
@@ -349,7 +350,7 @@ def register_artifact(
         )
 
     _link_artifact_version_to_the_step_and_model(
-        response=response,
+        artifact_version=response,
         is_model_artifact=is_model_artifact,
         is_deployment_artifact=is_deployment_artifact,
     )
@@ -766,7 +767,7 @@ def _create_artifact_version_with_retries(
 
 
 def _link_artifact_version_to_the_step_and_model(
-    response: ArtifactVersionResponse,
+    artifact_version: ArtifactVersionResponse,
     is_model_artifact: bool,
     is_deployment_artifact: bool,
 ) -> None:
@@ -777,7 +778,7 @@ def _link_artifact_version_to_the_step_and_model(
         - the MV from the step context
 
     Args:
-        response: The artifact version to link.
+        artifact_version: The artifact version to link.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
@@ -789,19 +790,24 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                outputs={response.artifact.name: response.id}
+                outputs={artifact_version.artifact.name: artifact_version.id}
             ),
         )
         error_message = "model"
-        model = step_context.model
-        if model:
-            from zenml.model.utils import link_artifact_to_model
 
-            link_artifact_to_model(
-                artifact_version_id=response.id,
-                model=model,
+        if step_context.model_version:
+            from zenml.model.utils import (
+                link_artifact_version_to_model_version,
+            )
+
+            artifact_config = ArtifactConfig(
                 is_model_artifact=is_model_artifact,
                 is_deployment_artifact=is_deployment_artifact,
+            )
+            link_artifact_version_to_model_version(
+                artifact_version=artifact_version,
+                model_version=step_context.model_version,
+                artifact_config=artifact_config,
             )
     except (RuntimeError, StepContextError):
         logger.debug(f"Unable to link saved artifact to {error_message}.")

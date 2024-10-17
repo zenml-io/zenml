@@ -41,19 +41,11 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     can be used to provide any value as input to a step without needing to
     write an additional step that returns this value.
 
-    The external artifact needs to have either a value associated with it
-    that will be uploaded to the artifact store, or reference an artifact
-    that is already registered in ZenML.
-
-    There are several ways to reference an existing artifact:
-    - By providing an artifact ID.
-    - By providing an artifact name and version. If no version is provided,
-        the latest version of that artifact will be used.
+    The external artifact needs to have a value associated with it
+    that will be uploaded to the artifact store.
 
     Args:
         value: The artifact value.
-        id: The ID of an artifact that should be referenced by this external
-            artifact.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -91,51 +83,16 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """Model validator for the external artifact.
 
         Raises:
-            ValueError: if the value, id and name fields are set incorrectly.
+            ValueError: If an ID was set.
 
         Returns:
-            the validated instance.
+            The validated instance.
         """
-        deprecation_msg = (
-            "Parameter `{param}` or `ExternalArtifact` will be deprecated "
-            "in upcoming releases. Please use `{substitute}` instead."
-        )
-        for param, substitute in [
-            ["id", "Client().get_artifact_version(name_id_or_prefix=<id>)"],
-            [
-                "name",
-                "Client().get_artifact_version(name_id_or_prefix=<name>)",
-            ],
-            [
-                "version",
-                "Client().get_artifact_version(name_id_or_prefix=<name>,version=<version>)",
-            ],
-            [
-                "model",
-                "Client().get_model_version(<model_name>,<model_version>).get_artifact(name)",
-            ],
-        ]:
-            if getattr(self, param, None):
-                logger.warning(
-                    deprecation_msg.format(
-                        param=param,
-                        substitute=substitute,
-                    )
-                )
-        options = [
-            getattr(self, field, None) is not None
-            for field in ["value", "id", "name"]
-        ]
-        if sum(options) > 1:
+        if self.id:
             raise ValueError(
-                "Only one of `value`, `id`, or `name` can be provided when "
-                "creating an external artifact."
+                "External artifacts can only be initialized with a value."
             )
-        elif sum(options) == 0:
-            raise ValueError(
-                "Either `value`, `id`, or `name` must be provided when "
-                "creating an external artifact."
-            )
+
         return self
 
     def upload_by_value(self) -> UUID:
@@ -178,7 +135,4 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """
         return ExternalArtifactConfiguration(
             id=self.id,
-            name=self.name,
-            version=self.version,
-            model=self.model,
         )

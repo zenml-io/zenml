@@ -26,7 +26,6 @@ from typing import (
     Tuple,
     Type,
 )
-from uuid import UUID
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
@@ -42,16 +41,11 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.model.utils import (
-    link_step_artifacts_to_model,
-)
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
 )
 from zenml.orchestrators.utils import (
-    _link_pipeline_run_to_model_from_artifacts,
-    _link_pipeline_run_to_model_from_context,
     is_setting_enabled,
 )
 from zenml.steps.step_context import StepContext, get_step_context
@@ -176,10 +170,6 @@ class StepRunner:
                 input_artifacts=input_artifacts,
             )
 
-            _link_pipeline_run_to_model_from_context(
-                pipeline_run_id=pipeline_run.id
-            )
-
             step_failed = False
             try:
                 return_values = step_instance.call_entrypoint(
@@ -234,7 +224,7 @@ class StepRunner:
                         is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
                         is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
                     )
-                    output_artifact_ids = self._store_output_artifacts(
+                    output_artifacts = self._store_output_artifacts(
                         output_data=output_data,
                         output_artifact_uris=output_artifact_uris,
                         output_materializers=output_materializers,
@@ -242,19 +232,26 @@ class StepRunner:
                         artifact_metadata_enabled=artifact_metadata_enabled,
                         artifact_visualization_enabled=artifact_visualization_enabled,
                     )
-                    link_step_artifacts_to_model(
-                        artifact_version_ids=output_artifact_ids
-                    )
-                    _link_pipeline_run_to_model_from_artifacts(
-                        pipeline_run_id=pipeline_run.id,
-                        artifact_names=list(output_artifact_ids.keys()),
-                        external_artifacts=list(
-                            step_run.config.external_input_artifacts.values()
-                        ),
-                    )
+
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        from zenml.orchestrators import step_run_utils
+
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=output_artifacts,
+                            output_configurations=step_run.config.outputs,
+                            model_version=model_version,
+                        )
+
                 StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
+            output_artifact_ids = {
+                output_name: artifact.id
+                for output_name, artifact in output_artifacts.items()
+            }
             publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
@@ -505,7 +502,7 @@ class StepRunner:
         output_annotations: Dict[str, OutputSignature],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
-    ) -> Dict[str, UUID]:
+    ) -> Dict[str, "ArtifactVersionResponse"]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -523,7 +520,7 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         step_context = get_step_context()
-        output_artifacts: Dict[str, UUID] = {}
+        output_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -597,7 +594,7 @@ class StepRunner:
                 user_metadata=user_metadata,
                 save_type=ArtifactSaveType.STEP_OUTPUT,
             )
-            output_artifacts[output_name] = artifact.id
+            output_artifacts[output_name] = artifact
 
         return output_artifacts
 

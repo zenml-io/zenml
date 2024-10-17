@@ -4,24 +4,11 @@ description: Learn how to upgrade your server to a new version of ZenML for the 
 
 # Upgrade the version of the ZenML server
 
-The way to upgrade your ZenML server depends a lot on how you deployed it.
+The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. Before you upgrade, check out the [best practices for upgrading ZenML](./best-practices-upgrading-zenml.md) guide.
+
+In general, upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes from which you can benefit.
 
 {% tabs %}
-{% tab title="ZenML CLI" %}
-To upgrade your ZenML server that was deployed with the `zenml deploy` command to a newer version, you can follow the
-steps below.
-
-* In the config file, set `zenmlserver_image_tag` to the version that you want your ZenML server to be running.
-* Run the deploy command again with this config file:
-
-  ```bash
-  zenml deploy --config=/PATH/TO/FILE
-  ```
-
-Any database schema updates are automatically handled by ZenML and unless mentioned otherwise, all of your data is
-migrated to the new version, intact.
-{% endtab %}
-
 {% tab title="Docker" %}
 To upgrade to a new version with docker, you have to delete the existing container and then run the new version of
 the `zenml-server` image.
@@ -55,7 +42,7 @@ Optionally also perform a backup before the upgrade.
 
 {% endtab %}
 
-{% tab title="Helm" %}
+{% tab title="Kubernetes with Helm" %}
 To upgrade your ZenML server Helm release to a new version, follow the steps below:
 
 * Pull the latest version of the Helm chart from the ZenML GitHub repository, or a version of your choice, e.g.:

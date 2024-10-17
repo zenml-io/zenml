@@ -54,10 +54,12 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
+    PipelineRunResponseResources,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
+    StepRunResponseResources,
     UserResponse,
     UserResponseBody,
     UserResponseMetadata,
@@ -429,6 +431,7 @@ def sample_pipeline_run(
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
         ),
+        resources=PipelineRunResponseResources(tags=[]),
     )
 
 
@@ -564,6 +567,7 @@ def create_step_run(
                 workspace=sample_workspace_model,
                 **kwargs,
             ),
+            resources=StepRunResponseResources(),
         )
 
     return f
