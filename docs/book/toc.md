@@ -119,7 +119,6 @@
   * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
-  * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
   * [Distributed Training with 🤗 Accelerate](how-to/training-with-gpus/accelerate-distributed-training.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
@@ -187,6 +186,8 @@
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
+* [🤝 Contribute to ZenML](how-to/contribute-to-zenml/README.md)
+  * [Implement a custom integration](how-to/contribute-to-zenml/implement-a-custom-integration.md)
 
 ## Stack Components
 

@@ -6,3 +6,4 @@ structure:
 
 redirects:
   how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
+  how-to/stack-deployment/implement-a-custom-integration.md: how-to/contribute-to-zenml/implement-a-custom-integration.md
