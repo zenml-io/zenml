@@ -11,7 +11,7 @@ A `stack` is the configuration of tools and infrastructure that your pipelines c
 <figure><img src="../../.gitbook/assets/vpc_zenml.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
 
 Note, this guide focuses on the *registering* a stack, meaning that the resources required to run pipelines have already been *provisioned*. In order to provision the underlying infrastructure, you can either do so manually, use the [in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md), the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md), or use ZenML's sister project [MLStacks](https://mlstacks.zenml.io/).
+or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -50,10 +50,6 @@ Since the Seldon Model Deployer is interacting with the Seldon Core model server
 
 In addition to these parameters, the Seldon Core Model Deployer may also require additional configuration to be set up to allow it to authenticate to the remote artifact store or persistent storage service where model artifacts are located. This is covered in the [Managing Seldon Core Authentication](seldon.md#managing-seldon-core-authentication) section.
 
-{% hint style="info" %}
-Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
-{% endhint %}
-
 ### Seldon Core Installation Example
 
 The following example briefly shows how you can install Seldon in an EKS Kubernetes cluster. It assumes that the EKS cluster itself is already set up and configured with IAM access. For more information or tutorials for other clouds, check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup).

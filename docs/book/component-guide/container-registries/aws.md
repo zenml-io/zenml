@@ -22,9 +22,6 @@ including an AWS ECR container registry? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
-
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
-infrastructure using Terraform.
 {% endhint %}
 
 The ECR registry is automatically activated once you create an AWS account. However, you'll need to create a `Repository` in order to push container images to it:

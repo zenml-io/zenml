@@ -570,9 +570,6 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
     )
 
-    if stack.stack_spec_path:
-        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
-
 
 def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
     """Prints the list of flavors.

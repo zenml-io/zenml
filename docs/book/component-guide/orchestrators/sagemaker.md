@@ -39,8 +39,6 @@ In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to 
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is enabling the relevant permissions for your particular role.
 
-In order to quickly enable APIs, and create other resources necessary for to use this integration, we will soon provide a Sagemaker stack recipe via [our `mlstacks` repository](https://github.com/zenml-io/mlstacks), which will help you set up the infrastructure with one click.
-
 ## How to use it
 
 To use the Sagemaker orchestrator, we need:

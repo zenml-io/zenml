@@ -26,19 +26,12 @@ including a Google Artifact Registry? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
-
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
-infrastructure using Terraform.
 {% endhint %}
 
 When using the Google Artifact Registry, you need to:
 
 * enable it [here](https://console.cloud.google.com/marketplace/product/google/artifactregistry.googleapis.com)
 * go [here](https://console.cloud.google.com/artifacts) and create a `Docker` repository.
-
-{% hint style="info" %}
-We have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
-{% endhint %}
 
 ## How to find the registry URI
 

@@ -32,8 +32,6 @@ There are many options to use a deployed Airflow server:
 
 * Use [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
   which includes a [Google Cloud Composer](https://cloud.google.com/composer) component.
-* Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlstacks). The recipe also takes care of
-  additional steps such as installing required Python dependencies in your Airflow server environment.
 * Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer)
   , [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/),
   or [Astronomer](https://www.astronomer.io/).
@@ -41,7 +39,7 @@ There are many options to use a deployed Airflow server:
   official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more
   information.
 
-If you're not using the ZenML GCP Terraform module or `mlstacks` to deploy Airflow, there are some additional Python
+If you're not using the ZenML GCP Terraform module to deploy Airflow, there are some additional Python
 packages that you'll need to install in the Python environment of your Airflow server:
 
 * `pydantic~=2.7.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate

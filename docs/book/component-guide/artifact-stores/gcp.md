@@ -28,9 +28,6 @@ including a GCS Artifact Store? Check out the
 the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
-
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up
-infrastructure using Terraform.
 {% endhint %}
 
 The GCS Artifact Store flavor is provided by the GCP ZenML integration, you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:

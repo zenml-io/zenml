@@ -69,8 +69,6 @@ If one or more of the deployments are not in the `Running` state, try increasing
 ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with previous versions.
 {% endhint %}
 
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up infrastructure using Terraform.
-
 ### How to use it
 
 To use the Tekton orchestrator, we need:

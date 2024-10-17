@@ -17,8 +17,6 @@ You should use the SageMaker step operator if:
 
 Create a role in the IAM console that you want the jobs running in SageMaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) for a guide on how to set up this role.
 
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up infrastructure using Terraform.
-
 ### How to use it
 
 To use the SageMaker step operator, we need:

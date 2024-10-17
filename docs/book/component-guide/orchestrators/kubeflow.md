@@ -88,8 +88,6 @@ If one or more of the deployments are not in the `Running` state, try increasing
 If you're installing Kubeflow Pipelines manually, make sure the Kubernetes service is called exactly `ml-pipeline`. This is a requirement for ZenML to connect to your Kubeflow Pipelines deployment.
 {% endhint %}
 
-You can also consider using [our sister mlstacks project](https://mlstacks.zenml.io), which helps you to quickly set up infrastructure using Terraform.
-
 ### How to use it
 
 To use the Kubeflow orchestrator, we need:
