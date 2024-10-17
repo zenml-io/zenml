@@ -215,6 +215,14 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
                         f"`{hydrated_value}`"
                     )
 
+    def hydrate(self) -> None:
+        """Hydrate the response."""
+        hydrated_version = self.get_hydrated_version()
+        self._validate_hydrated_version(hydrated_version)
+
+        self.resources = hydrated_version.resources
+        self.metadata = hydrated_version.metadata
+
     def get_hydrated_version(
         self,
     ) -> "BaseResponse[AnyBody, AnyMetadata, AnyResources]":
@@ -269,9 +277,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             if len(metadata_type.model_fields):
                 # If the metadata class defines any fields, fetch the metadata
                 # through the hydrated version.
-                hydrated_version = self.get_hydrated_version()
-                self._validate_hydrated_version(hydrated_version)
-                self.metadata = hydrated_version.metadata
+                self.hydrate()
             else:
                 # Otherwise, use the metadata class to create an empty metadata
                 # object.
@@ -298,8 +304,8 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
                 "field should exist."
             )
 
-            # metadata is defined as:
-            #   metadata: Optional[....ResponseMetadata] = Field(default=None)
+            # resources is defined as:
+            #   resources: Optional[....ResponseResources] = Field(default=None)
             # We need to find the actual class inside the Optional annotation.
             from zenml.utils.typing_utils import get_args
 
@@ -309,9 +315,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             if len(resources_type.model_fields):
                 # If the resources class defines any fields, fetch the resources
                 # through the hydrated version.
-                hydrated_version = self.get_hydrated_version()
-                self._validate_hydrated_version(hydrated_version)
-                self.resources = hydrated_version.resources
+                self.hydrate()
             else:
                 # Otherwise, use the resources class to create an empty
                 # resources object.
