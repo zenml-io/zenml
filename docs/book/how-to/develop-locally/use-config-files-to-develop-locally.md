@@ -4,7 +4,7 @@ description: Learn how to use configuration files to manage local development.
 
 # Use configuration files for local development
 
-Configuration files allow you to easily manage and customize your ZenML pipelines for different environments, such as local development vs remote execution. By using YAML config files, you can separate the configuration from your code and easily switch between different setups.
+[Configuration files](../use-configuration-files/how-to-use-config.md) allow you to easily manage and customize your ZenML pipelines for different environments, such as local development vs remote execution. By using YAML config files, you can separate the configuration from your code and easily switch between different setups.
 
 ## YAML config files for local and remote development
 
