@@ -134,6 +134,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self.__boto3_bucket = None
 
         # determine bucket versioning status
+        self.is_versioned = False
         versioning = self._boto3_bucket.Versioning()
         try:
             if versioning.status == "Enabled":
@@ -480,8 +481,6 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             ):
                 if not version.is_latest:
                     version.delete()
-
-        return
 
     @property
     def _boto3_bucket(self) -> Any:
