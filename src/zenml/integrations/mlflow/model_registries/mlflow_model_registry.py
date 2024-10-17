@@ -362,10 +362,16 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If the registered model does not exist.
+            ValueError: If no model source URI was provided.
 
         Returns:
             The registered model version.
         """
+        if not model_source_uri:
+            raise ValueError(
+                "Unable to register model version without model source URI."
+            )
+
         # Check if the model exists, if not create it.
         try:
             self.get_model(name=name)
