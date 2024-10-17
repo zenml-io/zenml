@@ -303,7 +303,8 @@ Always adhere to the principle of least privilege when setting up IAM roles. Onl
 
 ### Leverage AWS Resource Tagging
 
-Implement a consistent tagging strategy for your AWS resources. To tag an S3 bucket:
+Implement a [consistent tagging strategy](https://aws.amazon.com/solutions/guidance/tagging-on-aws/) for all of your AWS resources that you use for your pipelines. For example, if you have S3 as an artifact store in your stack, you should tag it like shown below:
+
 
 ```shell
 aws s3api put-bucket-tagging --bucket your-bucket-name --tagging 'TagSet=[{Key=Project,Value=ZenML},{Key=Environment,Value=Production}]'
