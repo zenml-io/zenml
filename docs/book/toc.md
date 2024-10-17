@@ -112,7 +112,7 @@
   * [Limitations of defining steps in notebook cells](how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells.md)
   * [Run a single step from a notebook](how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook.md)
 * [📍 Develop locally](how-to/develop-locally/README.md)
-  * [Use config files to develop locally](how-to/develop-locally/use-config-files-to-develop-locally.md)
+  * [Use config files to develop locally](how-to/develop-locally/local-prod-pipeline-variants.md)
   * [Keep your pipelines and dashboard clean](how-to/develop-locally/keep-your-dashboard-server-clean.md)
 * [⚒️ Manage stacks & components](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack with ZenML](how-to/stack-deployment/deploy-a-cloud-stack.md)
