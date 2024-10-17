@@ -15,11 +15,21 @@
 
 import io
 import tarfile
+import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import IO, Any, Dict
+from typing import IO, Any, Dict, Optional
 
 from zenml.io import fileio
+from zenml.utils.enum_utils import StrEnum
+
+
+class ArchiveType(StrEnum):
+    """Archive types supported by the ZenML build context."""
+
+    TAR = "tar"
+    TAR_GZ = "tar.gz"
+    ZIP = "zip"
 
 
 class Archivable(ABC):
@@ -81,52 +91,71 @@ class Archivable(ABC):
                     self._extra_files[file_destination.as_posix()] = f.read()
 
     def write_archive(
-        self, output_file: IO[bytes], use_gzip: bool = True
+        self,
+        output_file: IO[bytes],
+        archive_type: ArchiveType = ArchiveType.TAR_GZ,
     ) -> None:
         """Writes an archive of the build context to the given file.
 
         Args:
             output_file: The file to write the archive to.
-            use_gzip: Whether to use `gzip` to compress the file.
+            archive_type: The type of archive to create.
         """
         files = self.get_files()
         extra_files = self.get_extra_files()
+        intermediate_fileobj: Optional[Any] = None
+        fileobj: Any = output_file
 
-        if use_gzip:
-            from gzip import GzipFile
-
-            # We don't use the builtin gzip functionality of the `tarfile`
-            # library as that one includes the tar filename and creation
-            # timestamp in the archive which causes the hash of the resulting
-            # file to be different each time. We use this hash to avoid
-            # duplicate uploads, which is why we pass empty values for filename
-            # and mtime here.
-            fileobj: Any = GzipFile(
-                filename="", mode="wb", fileobj=output_file, mtime=0.0
-            )
+        if archive_type == ArchiveType.ZIP:
+            fileobj = zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED)
         else:
-            fileobj = output_file
+            if archive_type == ArchiveType.TAR_GZ:
+                from gzip import GzipFile
 
-        with tarfile.open(mode="w", fileobj=fileobj) as tf:
-            for archive_path, file_path in files.items():
-                if archive_path in extra_files:
-                    continue
+                # We don't use the builtin gzip functionality of the `tarfile`
+                # library as that one includes the tar filename and creation
+                # timestamp in the archive which causes the hash of the resulting
+                # file to be different each time. We use this hash to avoid
+                # duplicate uploads, which is why we pass empty values for filename
+                # and mtime here.
+                fileobj = intermediate_fileobj = GzipFile(
+                    filename="", mode="wb", fileobj=output_file, mtime=0.0
+                )
+            fileobj = tarfile.open(mode="w", fileobj=fileobj)
 
-                if info := tf.gettarinfo(file_path, arcname=archive_path):
-                    if info.isfile():
-                        with open(file_path, "rb") as f:
-                            tf.addfile(info, f)
+        try:
+            with fileobj as af:
+                for archive_path, file_path in files.items():
+                    if archive_path in extra_files:
+                        continue
+                    if archive_type == ArchiveType.ZIP:
+                        assert isinstance(af, zipfile.ZipFile)
+                        af.write(file_path, arcname=archive_path)
                     else:
-                        tf.addfile(info, None)
+                        assert isinstance(af, tarfile.TarFile)
+                        if info := af.gettarinfo(
+                            file_path, arcname=archive_path
+                        ):
+                            if info.isfile():
+                                with open(file_path, "rb") as f:
+                                    af.addfile(info, f)
+                            else:
+                                af.addfile(info, None)
 
-            for archive_path, contents in extra_files.items():
-                info = tarfile.TarInfo(archive_path)
-                contents_encoded = contents.encode("utf-8")
-                info.size = len(contents_encoded)
-                tf.addfile(info, io.BytesIO(contents_encoded))
+                for archive_path, contents in extra_files.items():
+                    contents_encoded = contents.encode("utf-8")
 
-        if use_gzip:
-            fileobj.close()
+                    if archive_type == ArchiveType.ZIP:
+                        assert isinstance(af, zipfile.ZipFile)
+                        af.writestr(archive_path, contents_encoded)
+                    else:
+                        assert isinstance(af, tarfile.TarFile)
+                        info = tarfile.TarInfo(archive_path)
+                        info.size = len(contents_encoded)
+                        af.addfile(info, io.BytesIO(contents_encoded))
+        finally:
+            if intermediate_fileobj:
+                intermediate_fileobj.close()
 
         output_file.seek(0)
 
