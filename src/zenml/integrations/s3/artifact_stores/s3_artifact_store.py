@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
+from contextlib import contextmanager
 from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     Iterable,
     List,
     Optional,
@@ -134,21 +136,15 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self._boto3_bucket_holder = None
 
         # determine bucket versioning status
-        self.is_versioned = False
         versioning = self._boto3_bucket.Versioning()
-        try:
+        with self._shield_lack_of_versioning_permissions(
+            "s3:GetBucketVersioning"
+        ):
             if versioning.status == "Enabled":
                 self.is_versioned = True
                 logger.warning(
                     f"The artifact store bucket `{self.config.bucket}` is versioned, "
                     "this may slow down logging process significantly."
-                )
-        except ClientError as e:
-            if "not authorized" in e.args[0]:
-                logger.warning(
-                    "Your AWS Connector is lacking critical Versioning permissions. "
-                    "Please check that `s3:GetBucketVersioning`, "
-                    "`s3:ListBucketVersions`, `s3:DeleteObjectVersion` are granted."
                 )
 
     @property
@@ -476,11 +472,17 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             if isinstance(path, bytes):
                 path = path.decode()
             _, prefix = split_s3_path(path)
-            for version in self._boto3_bucket.object_versions.filter(
-                Prefix=prefix
+            with self._shield_lack_of_versioning_permissions(
+                "s3:ListBucketVersions"
             ):
-                if not version.is_latest:
-                    version.delete()
+                for version in self._boto3_bucket.object_versions.filter(
+                    Prefix=prefix
+                ):
+                    if not version.is_latest:
+                        with self._shield_lack_of_versioning_permissions(
+                            "s3:DeleteObjectVersion"
+                        ):
+                            version.delete()
 
     @property
     def _boto3_bucket(self) -> Any:
@@ -502,3 +504,19 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         )
         self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
         return self._boto3_bucket_holder
+
+    @contextmanager
+    def _shield_lack_of_versioning_permissions(
+        self, auth_missing: str
+    ) -> Generator[Any, None, None]:
+        try:
+            yield
+        except ClientError as e:
+            if "not authorized" in e.args[0] and auth_missing in e.args[0]:
+                logger.warning(
+                    "Your AWS Connector is lacking critical Versioning permissions. "
+                    f"Please check that `{auth_missing}` is granted."
+                    "This is needed to remove previous versions of log files from your "
+                    "Artifact Store bucket."
+                )
+                self.is_versioned = False
