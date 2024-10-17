@@ -30,6 +30,7 @@ from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -50,9 +51,6 @@ if TYPE_CHECKING:
         ArtifactVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.models.v2.core.step_run import StepRunResponse
 
 logger = get_logger(__name__)
@@ -193,7 +191,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={}, title="Metadata of the artifact."
     )
 
@@ -306,7 +304,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().visualizations
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property.
 
         Returns:
@@ -632,17 +630,11 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property in lazy loading mode.
 
         Returns:
             getter of lazy responses for internal use.
         """
-        from zenml.metadata.lazy_load import RunMetadataLazyGetter
-
-        return RunMetadataLazyGetter(  # type: ignore[return-value]
-            self.lazy_load_model_name,
-            self.lazy_load_model_version,
-            self.lazy_load_name,
-            self.lazy_load_version,
-        )
+        # todo: figure this out
+        pass

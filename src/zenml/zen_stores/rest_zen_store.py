@@ -188,9 +188,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -1939,9 +1937,7 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -1951,55 +1947,8 @@ class RestZenStore(BaseZenStore):
             The created run metadata.
         """
         route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
-        response_body = self.post(f"{route}", body=run_metadata)
-        result: List[RunMetadataResponse] = []
-        if isinstance(response_body, list):
-            for metadata in response_body or []:
-                result.append(RunMetadataResponse.model_validate(metadata))
-        return result
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._get_resource(
-            resource_id=run_metadata_id,
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._list_paginated_resources(
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            filter_model=run_metadata_filter_model,
-            params={"hydrate": hydrate},
-        )
+        self.post(f"{route}", body=run_metadata)
+        return None
 
     # ----------------------------- Schedules -----------------------------
 

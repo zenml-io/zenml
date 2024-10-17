@@ -90,9 +90,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -1620,52 +1618,14 @@ class ZenStoreInterface(ABC):
     # -------------------- Run metadata --------------------
 
     @abstractmethod
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
             run_metadata: The run metadata to create.
 
         Returns:
-            The created run metadata.
-        """
-
-    @abstractmethod
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Get run metadata by its unique ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata with the given ID.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-
-    @abstractmethod
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
+            None
         """
 
     # -------------------- Schedules --------------------

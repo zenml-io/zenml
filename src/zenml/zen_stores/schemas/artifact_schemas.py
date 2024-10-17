@@ -351,7 +351,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 artifact_store_id=self.artifact_store_id,
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
-                run_metadata={m.key: m.to_model() for m in self.run_metadata},
+                run_metadata={m.key: m.value for m in self.run_metadata},
             )
 
         resources = None
