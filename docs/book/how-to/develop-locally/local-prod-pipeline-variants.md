@@ -6,8 +6,6 @@ description: Create different variants of your pipeline for local development an
 
 When developing ZenML pipelines, it's often beneficial to have different variants of your pipeline for local development and production environments. This approach allows you to iterate quickly during development while maintaining a full-scale setup for production. While configuration files are one way to achieve this, you can also implement this directly in your code.
 
-## Creating pipeline variants
-
 There are several ways to create different variants of your pipeline:
 
 1. Using configuration files
@@ -16,7 +14,7 @@ There are several ways to create different variants of your pipeline:
 
 Let's explore each of these methods:
 
-### Using configuration files
+## Using configuration files
 
 ZenML allows you to specify pipeline and step configurations using YAML files. Here's an example:
 
@@ -53,7 +51,7 @@ You can create separate configuration files for development and production:
 - `config_dev.yaml`: Configuration for local development
 - `config_prod.yaml`: Configuration for production
 
-### Implementing variants in code
+## Implementing variants in code
 
 You can also create pipeline variants directly in your code:
 
@@ -72,20 +70,20 @@ def ml_pipeline(is_dev: bool = False):
     load_data(dataset)
 
 if __name__ == "__main__":
-    is_dev = os.environ.get("ENVIRONMENT") == "dev"
+    is_dev = os.environ.get("ZENML_ENVIRONMENT") == "dev"
     ml_pipeline(is_dev=is_dev)
 ```
 
 This approach allows you to switch between development and production variants using a simple boolean flag.
 
-### Using environment variables
+## Using environment variables
 
 You can use environment variables to determine which variant to run:
 
 ```python
 import os
 
-if os.environ.get("ENVIRONMENT") == "dev":
+if os.environ.get("ZENML_ENVIRONMENT") == "dev":
     config_path = "config_dev.yaml"
 else:
     config_path = "config_prod.yaml"
@@ -93,11 +91,12 @@ else:
 ml_pipeline.with_options(config_path=config_path)()
 ```
 
-Run your pipeline with: `ENVIRONMENT=dev python run.py` or `ENVIRONMENT=prod python run.py`.
+Run your pipeline with: `ZENML_ENVIRONMENT=dev python run.py` or `ZENML_ENVIRONMENT=prod python run.py`.
 
 ## Development variant considerations
 
-When creating a development variant of your pipeline, consider optimizing these aspectsfor faster iteration and debugging:
+When creating a development variant of your pipeline, consider optimizing these
+aspects for faster iteration and debugging:
 
 - Use smaller datasets for quicker runs
 - Specify a local stack for execution

@@ -154,7 +154,8 @@ scratch on your local machine. This will:
 - delete all artifacts
 
 There is also a `--local` flag that you can set if you want to delete local
-files relating to the active stack.
+files relating to the active stack. Note that `zenml clean` does not delete
+artifacts and pipelines on the server; it only deletes the local data and metadata.
 
 By utilizing these options, you can maintain a clean and organized pipeline
 dashboard, focusing on the runs that matter most for your project.
