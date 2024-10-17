@@ -100,8 +100,7 @@ def save_artifact(
     uri: Optional[str] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
-    manual_save: bool = True,
-    is_external_artifact: bool = False,
+    save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -123,9 +122,7 @@ def save_artifact(
             `custom_artifacts/{name}/{version}`.
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
-        manual_save: If this function is called manually and should therefore
-            link the artifact to the current step run.
-        is_external_artifact: If the artifact is an external artifact.
+        save_type: The type of save operation that created the artifact version.
 
     Returns:
         The saved artifact response.
@@ -152,7 +149,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         _check_if_artifact_with_given_uri_already_registered(
@@ -213,12 +210,6 @@ def save_artifact(
     def _create_version(
         version: Union[int, str],
     ) -> Optional[ArtifactVersionResponse]:
-        if manual_save:
-            save_type = ArtifactSaveType.MANUAL
-        elif is_external_artifact:
-            save_type = ArtifactSaveType.EXTERNAL
-        else:
-            save_type = ArtifactSaveType.DEFAULT
         artifact_version = ArtifactVersionRequest(
             artifact_id=artifact.id,
             version=version,
@@ -254,7 +245,7 @@ def save_artifact(
             resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
             response=response,
             is_model_artifact=is_model_artifact,

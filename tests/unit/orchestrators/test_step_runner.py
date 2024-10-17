@@ -21,6 +21,7 @@ from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
+from zenml.enums import ArtifactSaveType
 from zenml.models import PipelineRunResponse, StepRunResponse
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
@@ -155,7 +156,7 @@ def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
     materialize the artifact but instead returns the response model."""
 
     artifact_response = save_artifact(
-        42, "main_answer", manual_save=False
+        42, "main_answer", save_type=ArtifactSaveType.DEFAULT
     ).get_hydrated_version()
 
     step = Step.model_validate(
