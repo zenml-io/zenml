@@ -99,7 +99,7 @@ from an external SaaS provider.
 
 <summary>Detailed Architecture Diagram for SaaS deployment</summary>
 
-![ZenML Pro Full SaaS deployment](../.gitbook/assets/cloud_architecture_saas_detailed.png)
+<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment"><figcaption>ZenML Pro Full SaaS deployment</figcaption></figure>
 
 </details>
 
@@ -119,7 +119,7 @@ while ensuring that credentials are always stored on the customer side.
 
 <summary>Detailed Architecture Diagram for SaaS deployment with custom secret store configuration</summary>
 
-![ZenML Pro Full SaaS deployment](../.gitbook/assets/cloud_architecture_saas_detailed_2.png)
+<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed_2.png" alt="ZenML Pro Full SaaS deployment with custom secret store"><figcaption>ZenML Pro Full SaaS deployment with custom secret store</figcaption></figure>
 
 </details>
 
@@ -136,7 +136,7 @@ require completely airgapped deployments, for the tightest security standards.
 
 <summary>Detailed Architecture Diagram for self-hosted ZenML Pro deployment</summary>
 
-![ZenML Pro self-hosted deployment details](../.gitbook/assets/cloud_architecture_self_hosted_detailed.png)
+<figure><img src="../.gitbook/assets/cloud_architecture_self_hosted_detailed.png" alt="ZenML Pro self-hosted deployment details"><figcaption>ZenML Pro self-hosted deployment details</figcaption></figure>
 
 </details>
 
