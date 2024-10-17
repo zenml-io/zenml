@@ -6,16 +6,31 @@ description: Different variations of the ZenML architecture depending on your ne
 
 A ZenML deployment consists of the following moving pieces:
 
-* **ZenML Server**: This is a FastAPI.
+* **ZenML Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
+  Note: In ZenML Pro, the notion of a ZenML server is replaced with so-called "Tenant". For
+  all intents and purposes, consider a ZenML Tenant == ZenML OSS server + more functionality. 
 * **ML Metadata Store**: This is where all ZenML tenant metadata is stored, including
   ML metadata such as tracking and versioning information about pipelines and
   models.
+* **ZenML OSS Dashboard**: This is a ReactJS app that shows pipelines, runs, etc.
+* **Secrets Store**: All secrets and credentials required to access customer
+  infrastructure services are stored in a secure secrets store. The ZenML Pro
+  API has access to these secrets and uses them to access customer
+  infrastructure services on behalf of the ZenML Pro. The secrets store can be
+  hosted either by the ZenML Pro or by the customer.
 
-This can be augmented with the ZenML Pro components, that augment and add functionality:
+![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
 
-* **ZenML Pro Control Plane**: This is a centralized MLOps control plane that includes a
+The above deployment can be augmented with the ZenML Pro components, that augment and add functionality:
+
+* **ZenML Pro API**: This is a centralized MLOps control plane that includes a
   managed ZenML dashboard and a special ZenML server optimized for production
   MLOps workloads.
+* **ZenML Pro Dashboard**: This is a centralized MLOps control plane that includes a
+  managed ZenML dashboard and a special ZenML server optimized for production
+  MLOps workloads.
+* **ZenML Pro Database**: This is where all ZenML Pro related data is stored such
+as roles, permissions, teams, and tenant management related data.
 * **Single Sign-On (SSO)**: ZenML Pro offers flexible authentication options.
   In cloud-hosted deployments, it integrates with [Auth0](https://auth0.com/),
   allowing users to log in via social media or corporate credentials.
@@ -24,13 +39,8 @@ This can be augmented with the ZenML Pro components, that augment and add functi
   custom OIDC provider integration. This allows organizations to
   leverage their existing identity infrastructure for authentication
   and authorization, whether using the cloud service or deploying on-premises.
-* **Secrets Store**: All secrets and credentials required to access customer
-  infrastructure services are stored in a secure secrets store. The ZenML Pro
-  API has access to these secrets and uses them to access customer
-  infrastructure services on behalf of the ZenML Pro. The secrets store can be
-  hosted either by the ZenML Pro or by the customer.
-* **ZenML Pro Database**: This is where all ZenML Pro related data is stored such
-as roles, permissions, teams, and tenant management related data.
+
+![ZenML Pro deployment architecture](../.gitbook/assets/pro_deployment_simple.png)
 
 ## ZenML Pro vs ZenML Open Source
 
