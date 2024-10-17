@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
 
-from typing import Optional, Tuple
+from typing import Optional
 from uuid import UUID
 
 from zenml import constants
@@ -48,7 +48,7 @@ def get_cloud_dashboard_url() -> Optional[str]:
     return None
 
 
-def get_server_dashboard_url() -> Tuple[Optional[str], bool]:
+def get_server_dashboard_url() -> Optional[str]:
     """Get the base url of the dashboard deployed by the server.
 
     Returns:
