@@ -315,7 +315,7 @@ any cleanup efforts.
 
 ### Implement Cost Management Strategies
 
-Use AWS Cost Explorer and AWS Budgets to monitor and manage your spending. To create a cost budget:
+Use [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) and [AWS Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/) to monitor and manage your spending. To create a cost budget:
 
 1. Create a JSON file (e.g., `budget-config.json`) defining the budget:
 
