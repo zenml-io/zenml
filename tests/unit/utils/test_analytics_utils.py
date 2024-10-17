@@ -176,4 +176,4 @@ def test_analytics_event(
     )
 
     # Test pipeline run
-    one_step_pipeline(empty_step()).run(unlisted=True)
+    one_step_pipeline(empty_step).with_options(unlisted=True)()

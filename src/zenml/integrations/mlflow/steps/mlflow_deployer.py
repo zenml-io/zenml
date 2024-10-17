@@ -114,7 +114,7 @@ def mlflow_model_deployer_step(
     # Fetch the model URI from the MLflow artifact store
     model_uri = ""
     if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
-        model_uri = artifact_utils.get_artifact_uri(
+        model_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call]
             run_id=mlflow_run_id, artifact_path=model_name
         )
 

@@ -267,6 +267,39 @@ def my_kubernetes_pipeline():
     ...
 ```
 
+#### Define settings on the step level
+
+You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](../../how-to/use-configuration-files/configuration-hierarchy.md).
+
+```python
+k8s_settings = KubernetesOrchestratorSettings(
+    pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-nodepool": "gpu-pool",
+        },
+        "tolerations": [
+            V1Toleration(
+                key="gpu",
+                operator="Equal",
+                value="present",
+                effect="NoSchedule"
+            ),
+        ]
+    }
+)
+
+@step(settings={"orchestrator": k8s_settings})
+def train_model(data: dict) -> None:
+    ...
+
+
+@pipeline() 
+def simple_ml_pipeline(parameter: int):
+    ...
+```
+
+This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
+
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes\_orchestrator.KubernetesOrchestrator) .

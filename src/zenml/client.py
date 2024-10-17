@@ -2494,7 +2494,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Model of the pipeline run.
         """
-        from zenml.new.pipelines.run_utils import (
+        from zenml.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,
@@ -3862,21 +3862,6 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
-    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
-        """(Deprecated) List all pipeline runs.
-
-        Args:
-            **kwargs: The filter arguments passed to `list_pipeline_runs`.
-
-        Returns:
-            A page with Pipeline Runs fitting the filter description
-        """
-        logger.warning(
-            "`Client.list_runs()` is deprecated and will be removed in a "
-            "future release. Please use `Client.list_pipeline_runs()` instead."
-        )
-        return self.list_pipeline_runs(**kwargs)
-
     def delete_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -3923,13 +3908,12 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        entrypoint_name: Optional[str] = None,
-        code_hash: Optional[str] = None,
         cache_key: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         pipeline_run_id: Optional[Union[str, UUID]] = None,
+        deployment_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
@@ -3951,12 +3935,11 @@ class Client(metaclass=ClientMetaClass):
             end_time: Use to filter by the time when the step finished running
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
-            pipeline_run_id: The  id of the pipeline run to filter by.
-            original_step_run_id: The  id of the pipeline run to filter by.
+            pipeline_run_id: The id of the pipeline run to filter by.
+            deployment_id: The id of the deployment to filter by.
+            original_step_run_id: The id of the original step run to filter by.
             model_version_id: The ID of the model version to filter by.
-            name: The name of the run to filter by.
-            entrypoint_name: The entrypoint_name of the run to filter by.
-            code_hash: The code_hash of the run to filter by.
+            name: The name of the step run to filter by.
             cache_key: The cache_key of the run to filter by.
             status: The name of the run to filter by.
             num_outputs: The number of outputs for the step run
@@ -3972,10 +3955,9 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             logical_operator=logical_operator,
             id=id,
-            entrypoint_name=entrypoint_name,
-            code_hash=code_hash,
             cache_key=cache_key,
             pipeline_run_id=pipeline_run_id,
+            deployment_id=deployment_id,
             original_step_run_id=original_step_run_id,
             status=status,
             created=created,

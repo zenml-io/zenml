@@ -3,7 +3,9 @@
 import multiprocessing
 import os
 import shutil
+import tempfile
 import zipfile
+from pathlib import Path
 from typing import Optional, Tuple
 from unittest.mock import patch
 
@@ -17,6 +19,7 @@ from zenml import (
     save_artifact,
     step,
 )
+from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
@@ -266,7 +269,7 @@ def test_download_artifact_files_from_response(
 ):
     """Test that we can download artifact files from an artifact version."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)
@@ -293,7 +296,7 @@ def test_download_artifact_files_from_response_fails_if_exists(
 
     Failure when the file already exists and `overwrite` is False."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)
@@ -369,3 +372,94 @@ def test_parallel_artifact_creation(clean_client: Client):
     assert {av.version for av in avs} == {
         str(i) for i in range(1, process_count + 1)
     }
+
+
+def test_register_artifact(clean_client: Client):
+    """Tests that a folder can be linked as an artifact in local setting."""
+
+    uri_prefix = os.path.join(
+        clean_client.active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    with open(os.path.join(uri_prefix, "test.txt"), "w") as f:
+        f.write("test")
+
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
+
+    artifact = clean_client.get_artifact_version(
+        name_id_or_prefix="test_folder", version=1
+    )
+    assert artifact
+    assert artifact.uri == uri_prefix
+
+    loaded_dir = artifact.load()
+    assert isinstance(loaded_dir, Path)
+
+    with open(loaded_dir / "test.txt", "r") as f:
+        assert f.read() == "test"
+
+
+def test_register_artifact_out_of_bounds(clean_client: Client):
+    """Tests that a folder cannot be linked as an artifact if out of bounds."""
+
+    uri_prefix = tempfile.mkdtemp()
+    try:
+        with pytest.raises(FileNotFoundError):
+            register_artifact(
+                folder_or_file_uri=uri_prefix, name="test_folder"
+            )
+    finally:
+        os.rmdir(uri_prefix)
+
+
+@step(enable_cache=False)
+def register_artifact_step_1() -> None:
+    # find out where to save some data
+    uri_prefix = os.path.join(
+        Client().active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    # generate dat to validate in register_artifact_step_2
+    test_file = os.path.join(uri_prefix, "test.txt")
+    with open(test_file, "w") as f:
+        f.write("test")
+
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
+
+    register_artifact(folder_or_file_uri=test_file, name="test_file")
+
+
+@step(enable_cache=False)
+def register_artifact_step_2(
+    inp_folder: Path,
+) -> None:
+    # step should receive a path pointing to the folder
+    # from register_artifact_step_1
+    with open(inp_folder / "test.txt", "r") as f:
+        assert f.read() == "test"
+    # at the same time the input artifact is no longer inside the
+    # artifact store, but in the temporary folder of local file system
+    assert not str(inp_folder.absolute()).startswith(
+        Client().active_stack.artifact_store.path
+    )
+
+    file_artifact_path = Client().get_artifact_version("test_file").load()
+
+    with open(file_artifact_path, "r") as f:
+        assert f.read() == "test"
+
+
+def test_register_artifact_between_steps(clean_client: Client):
+    """Tests that a folder can be linked as an artifact and used in pipelines."""
+
+    @pipeline(enable_cache=False)
+    def register_artifact_pipeline():
+        register_artifact_step_1()
+        register_artifact_step_2(
+            clean_client.get_artifact_version(
+                name_id_or_prefix="test_folder", version=1
+            ),
+            after=["register_artifact_step_1"],
+        )
+
+    register_artifact_pipeline()
