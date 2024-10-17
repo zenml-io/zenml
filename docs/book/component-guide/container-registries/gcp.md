@@ -33,16 +33,6 @@ When using the Google Artifact Registry, you need to:
 * enable it [here](https://console.cloud.google.com/marketplace/product/google/artifactregistry.googleapis.com)
 * go [here](https://console.cloud.google.com/artifacts) and create a `Docker` repository.
 
-### Infrastructure Deployment
-
-A GCP Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy gcp_container_registry --flavor=gcp --provider=gcp ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md).
-
 ## How to find the registry URI
 
 When using the Google Artifact Registry, the GCP container registry URI should have the following format:
@@ -60,16 +50,6 @@ To figure out the URI for your registry:
 
 * Go [here](https://console.cloud.google.com/artifacts) and select the repository that you want to use to store Docker images. If you don't have a repository yet, take a look at the [deployment section](gcp.md#how-to-deploy-it).
 * On the top, click the copy button to copy the full repository URL.
-
-#### Infrastructure Deployment
-
-A GCP Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy gcp_container_registry --flavor=gcp --provider=gcp ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
 
 ### How to use it
 

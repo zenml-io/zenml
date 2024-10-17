@@ -30,7 +30,7 @@ template: you can fork it and easily adapt it to your own MLOps stack, infrastru
 ### Configure an API Key in ZenML
 
 In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those
-[here](https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account).
+[here](../../how-to/connecting-to-zenml/connect-with-a-service-account.md).
 
 ```bash
 zenml service-account create github_action_api_key

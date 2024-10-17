@@ -56,7 +56,7 @@ is still using `sqlalchemy` v1 and is incompatible with pydantic v2. As a
 solution, we have removed the dependencies of the `airflow` integration. Now,
 you can use ZenML to create your Airflow pipelines and use a separate
 environment to run them with Airflow. You can check the updated docs
-[right here](https://docs.zenml.io/stack-components/orchestrators/airflow).
+[right here](../../component-guide/orchestrators/airflow.md).
 
 ### AWS
 

@@ -50,7 +50,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
-from zenml.zen_server.utils import get_active_deployment
+from zenml.zen_server.utils import get_local_server
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -358,7 +358,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
         )
 
     if yes or confirm:
-        server = get_active_deployment(local=True)
+        server = get_local_server()
 
         if server:
             from zenml.zen_server.deploy.deployer import ServerDeployer

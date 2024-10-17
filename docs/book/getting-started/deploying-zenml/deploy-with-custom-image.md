@@ -56,24 +56,6 @@ If you want to verify your custom image locally, you can follow the [Deploy a cu
 
 Next, adjust your preferred deployment strategy to use the custom Docker image you just built.
 
-#### Deploy a custom ZenML image via CLI
-
-You can deploy your custom image via the `zenml deploy` CLI command by setting the `--config` argument to a custom configuration file that has both `zenmlserver_image_repo` and `zenmlserver_image_tag` set:
-
-1.  Define a custom `config.yaml` based on the [base deployment configuration file](deploy-with-zenml-cli.md#base-configuration-file) and set `zenmlserver_image_repo` and `zenmlserver_image_tag` according to the custom image you built:
-
-    ```yaml
-    zenmlserver_image_repo: <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>
-    zenmlserver_image_tag: <IMAGE_TAG>
-    ```
-2.  Run `zenml deploy` with the custom config file:
-
-    ```shell
-    zenml deploy --config=/PATH/TO/FILE
-    ```
-
-See the general [ZenML CLI Deployment Guide](deploy-with-zenml-cli.md) for more information on how to use the `zenml deploy` CLI command and what other options can be configured.
-
 #### Deploy a custom ZenML image via Docker
 
 To deploy your custom image via Docker, first familiarize yourself with the general [ZenML Docker Deployment Guide](deploy-with-docker.md).

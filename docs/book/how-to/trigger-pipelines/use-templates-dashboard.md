@@ -27,9 +27,8 @@ In order to run a template from the dashboard:
 - You can go to a specific template page and click on `Run Template`.
 
 Either way, you will be forwarded to a page where you will see the 
-`Run Details`. Here, you have the option to upload a `.yaml` [configurations
-file](https://docs.zenml.io/how-to/use-configuration-files) or change the 
-configuration on the go by using our editor.
+`Run Details`. Here, you have the option to upload a `.yaml` [configurations file](../../how-to/use-configuration-files/README.md)
+or change the  configuration on the go by using our editor.
 
 ![Run Details](../../.gitbook/assets/run-templates-run-1.png)
 

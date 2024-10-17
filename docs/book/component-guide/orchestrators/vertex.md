@@ -35,8 +35,6 @@ In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
 
-In order to quickly enable APIs, and create other resources necessary for using this integration, you can also consider using [mlstacks](https://mlstacks.zenml.io/vertex), which helps you set up the infrastructure with one click.
-
 ## How to use it
 
 To use the Vertex orchestrator, we need:
