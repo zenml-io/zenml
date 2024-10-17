@@ -14,3 +14,7 @@ ZenML supports this pattern and the sections that follow guide you through this
 pattern of working locally and then (at certain moments) pushing and running
 your pipelines on more powerful remote hardware.
 
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

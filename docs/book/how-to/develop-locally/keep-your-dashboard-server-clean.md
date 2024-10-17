@@ -159,3 +159,7 @@ artifacts and pipelines on the server; it only deletes the local data and metada
 
 By utilizing these options, you can maintain a clean and organized pipeline
 dashboard, focusing on the runs that matter most for your project.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
