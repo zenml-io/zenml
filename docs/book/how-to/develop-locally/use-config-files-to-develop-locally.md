@@ -84,6 +84,5 @@ stack: local_stack
 ```
 
 This allows you to quickly test and debug your code locally before running it with the full-scale configuration for remote execution.
-
 By leveraging configuration files, you can easily manage different setups for
 your ZenML pipelines and streamline your development workflow.
