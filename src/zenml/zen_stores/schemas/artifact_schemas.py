@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
@@ -65,6 +65,12 @@ class ArtifactSchema(NamedSchema, table=True):
     """SQL Model for artifacts."""
 
     __tablename__ = "artifact"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_artifact_name",
+        ),
+    )
 
     # Fields
     has_custom_name: bool
@@ -167,6 +173,13 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     """SQL Model for artifact versions."""
 
     __tablename__ = "artifact_version"
+    __table_args__ = (
+        UniqueConstraint(
+            "version",
+            "artifact_id",
+            name="unique_version_for_artifact_id",
+        ),
+    )
 
     # Fields
     version: str

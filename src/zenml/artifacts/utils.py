@@ -16,13 +16,11 @@
 import base64
 import os
 import tempfile
-import time
 import zipfile
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -38,7 +36,6 @@ from zenml.artifacts.load_directory_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
-    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
@@ -50,13 +47,12 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     DoesNotExistException,
-    EntityExistsError,
     StepContextError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import validate_metadata
 from zenml.models import (
-    ArtifactRequest,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVisualizationRequest,
@@ -65,7 +61,6 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
@@ -90,7 +85,7 @@ logger = get_logger(__name__)
 def save_artifact(
     data: Any,
     name: str,
-    version: Optional[Union[int, str]] = None,
+    version: Optional[str] = None,
     tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
@@ -134,12 +129,6 @@ def save_artifact(
     from zenml.utils import source_utils
 
     client = Client()
-
-    artifact = _get_or_create_artifact(
-        name=name,
-        has_custom_name=has_custom_name,
-        tags=tags,
-    )
 
     # Get the current artifact store
     artifact_store = client.active_stack.artifact_store
@@ -207,58 +196,41 @@ def save_artifact(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
             )
 
-    # Create the artifact version
-    def _create_version(
-        version: Union[int, str],
-    ) -> Optional[ArtifactVersionResponse]:
-        artifact_version = ArtifactVersionRequest(
-            artifact_id=artifact.id,
-            version=version,
-            tags=tags,
-            type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
-            uri=materializer_object.uri,
-            materializer=source_utils.resolve(materializer_object.__class__),
-            data_type=source_utils.resolve(data_type),
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
-            artifact_store_id=artifact_store.id,
-            visualizations=visualizations,
-            has_custom_name=has_custom_name,
-        )
-        try:
-            return client.zen_store.create_artifact_version(
-                artifact_version=artifact_version
-            )
-        except EntityExistsError:
-            return None
-
-    response = _create_artifact_version_with_retries(
-        name=name,
+    artifact_version_request = ArtifactVersionRequest(
+        artifact_name=name,
         version=version,
-        create_version_fn=_create_version,
+        tags=tags,
+        type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer_object.uri,
+        materializer=source_utils.resolve(materializer_object.__class__),
+        data_type=source_utils.resolve(data_type),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store.id,
+        visualizations=visualizations,
+        has_custom_name=has_custom_name,
+        metadata=validate_metadata(artifact_metadata)
+        if artifact_metadata
+        else None,
     )
-
-    if artifact_metadata:
-        client.create_run_metadata(
-            metadata=artifact_metadata,
-            resource_id=response.id,
-            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-        )
+    artifact_version = client.zen_store.create_artifact_version(
+        artifact_version=artifact_version_request
+    )
 
     if manual_save:
         _link_artifact_version_to_the_step_and_model(
-            artifact_version=response,
+            artifact_version=artifact_version,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         )
 
-    return response
+    return artifact_version
 
 
 def register_artifact(
     folder_or_file_uri: str,
     name: str,
-    version: Optional[Union[int, str]] = None,
+    version: Optional[str] = None,
     tags: Optional[List[str]] = None,
     has_custom_name: bool = True,
     is_model_artifact: bool = False,
@@ -304,56 +276,33 @@ def register_artifact(
         name=name,
     )
 
-    artifact = _get_or_create_artifact(
-        name=name,
-        has_custom_name=has_custom_name,
-        tags=tags,
-    )
-
-    # Create the artifact version
-    def _create_version(
-        version: Union[int, str],
-    ) -> Optional[ArtifactVersionResponse]:
-        artifact_version = ArtifactVersionRequest(
-            artifact_id=artifact.id,
-            version=version,
-            tags=tags,
-            type=ArtifactType.DATA,
-            uri=folder_or_file_uri,
-            materializer=source_utils.resolve(PreexistingDataMaterializer),
-            data_type=source_utils.resolve(Path),
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
-            artifact_store_id=artifact_store.id,
-            has_custom_name=has_custom_name,
-        )
-        try:
-            return client.zen_store.create_artifact_version(
-                artifact_version=artifact_version
-            )
-        except EntityExistsError:
-            return None
-
-    response = _create_artifact_version_with_retries(
-        name=name,
+    artifact_version_request = ArtifactVersionRequest(
+        artifact_name=name,
         version=version,
-        create_version_fn=_create_version,
+        tags=tags,
+        type=ArtifactType.DATA,
+        uri=folder_or_file_uri,
+        materializer=source_utils.resolve(PreexistingDataMaterializer),
+        data_type=source_utils.resolve(Path),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store.id,
+        has_custom_name=has_custom_name,
+        metadata=validate_metadata(artifact_metadata)
+        if artifact_metadata
+        else None,
     )
-
-    if artifact_metadata:
-        client.create_run_metadata(
-            metadata=artifact_metadata,
-            resource_id=response.id,
-            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-        )
+    artifact_version = client.zen_store.create_artifact_version(
+        artifact_version=artifact_version_request
+    )
 
     _link_artifact_version_to_the_step_and_model(
-        artifact_version=response,
+        artifact_version=artifact_version,
         is_model_artifact=is_model_artifact,
         is_deployment_artifact=is_deployment_artifact,
     )
 
-    return response
+    return artifact_version
 
 
 def load_artifact(
@@ -660,107 +609,6 @@ def _check_if_artifact_with_given_uri_already_registered(
                 f"{uri} because the URI is already used by artifact "
                 f"{other_artifact.name} (version {other_artifact.version})."
             )
-
-
-def _get_or_create_artifact(
-    name: str, has_custom_name: bool, tags: Optional[List[str]] = None
-) -> ArtifactResponse:
-    """Get or create an artifact with the given name.
-
-    Args:
-        name: The name of the artifact.
-        has_custom_name: If the artifact name is custom and should be listed in
-            the dashboard "Artifacts" tab.
-        tags: Tags to associate with the artifact.
-
-    Returns:
-        The artifact.
-    """
-    client = Client()
-    # Get or create the artifact
-    try:
-        artifact = client.list_artifacts(name=name)[0]
-        if artifact.has_custom_name != has_custom_name:
-            client.update_artifact(
-                name_id_or_prefix=artifact.id, has_custom_name=has_custom_name
-            )
-    except IndexError:
-        try:
-            artifact = client.zen_store.create_artifact(
-                ArtifactRequest(
-                    name=name,
-                    has_custom_name=has_custom_name,
-                    tags=tags,
-                )
-            )
-        except EntityExistsError:
-            artifact = client.list_artifacts(name=name)[0]
-    return artifact
-
-
-def _create_artifact_version_with_retries(
-    name: str,
-    version: Optional[Union[int, str]],
-    create_version_fn: Callable[
-        [
-            Union[int, str],
-        ],
-        Optional[ArtifactVersionResponse],
-    ],
-) -> ArtifactVersionResponse:
-    """Create an artifact version with some retries.
-
-    This function will retry the creation of an artifact version up to
-    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION times if it fails.
-    It can fail in high-concurrency environments.
-
-    Args:
-        name: The name of the artifact.
-        version: The version of the artifact. If not provided, a new
-            auto-incremented version will be used.
-        create_version_fn: The function to create the artifact version.
-
-    Returns:
-        The created artifact version.
-
-    Raises:
-        EntityExistsError: If the artifact version could not be created
-            after MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION attempts due
-            to collisions.
-
-    """
-    response = None
-    if not version:
-        retries_made = 0
-        for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
-            # Get new artifact version
-            version = _get_new_artifact_version(name)
-            if response := create_version_fn(version):
-                break
-            # smoothed exponential back-off, it will go as 0.2, 0.3,
-            # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
-            sleep = 0.2 * 1.5**i
-            logger.debug(
-                f"Failed to create artifact version `{version}` for "
-                f"artifact `{name}`. Retrying in {sleep}..."
-            )
-            time.sleep(sleep)
-            retries_made += 1
-        if not response:
-            raise EntityExistsError(
-                f"Failed to create new artifact version for artifact "
-                f"`{name}`. Retried {retries_made} times. "
-                "This could be driven by exceptionally high concurrency of "
-                "pipeline runs. Please, reach out to us on ZenML Slack for support."
-            )
-    else:
-        response = create_version_fn(version)
-        if not response:
-            raise EntityExistsError(
-                f"Failed to create artifact version `{version}` for artifact "
-                f"`{name}`. Given version already exists."
-            )
-    return response
 
 
 def _link_artifact_version_to_the_step_and_model(
