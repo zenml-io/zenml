@@ -146,14 +146,13 @@ def transform_bq(dataset: BigQueryDataset) -> Annotated[BigQueryDataset, "transf
     return BigQueryDataset(table_id="project.dataset.transformed_table", df=transformed_df)
 
 @pipeline
-def etl_pipeline(mode: str = "develop") -> Dataset:
+def etl_pipeline(mode: str = "develop"):
     if mode == "develop":
         raw_data = extract_data_local()
         transformed_data = transform_csv(raw_data)
     else:
         raw_data = extract_data_remote(table_id="project.dataset.raw_table")
         transformed_data = transform_bq(raw_data)
-    return transformed_data
 ```
 
 ## Best Practices for Designing Flexible and Maintainable Pipelines
