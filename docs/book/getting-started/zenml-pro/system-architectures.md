@@ -1,5 +1,5 @@
 ---
-description: Different variations of the ZenML architecture depending on your needs.
+description: Different variations of the ZenML Pro architecture depending on your needs.
 ---
 
 # System Architectures
@@ -34,6 +34,13 @@ product as well as the self-hosted version.:
 * **ML Metadata Store**: This is where all ZenML metadata is stored, including
   ML metadata such as tracking and versioning information about pipelines and
   models.
+
+![ZenML Pro deployment architecture](../../.gitbook/assets/pro_deployment_simple.png)
+
+You might have noticed this architecture builds on top of the
+[ZenML OSS system architecture.](../deploying-zenml/README.md)
+Therefore, if you already have ZenML OSS deployed, it is easy to enroll it as part of a 
+ZenML Pro deployment!
 
 ## Deployment Scenarios
 
@@ -79,7 +86,6 @@ and the [secrets API](../../how-to/interact-with-secrets.md) to authenticate
 ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 {% endhint %}
-
 
 ## Scenario 2: Fully On-prem
 
