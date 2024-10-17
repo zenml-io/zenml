@@ -5,4 +5,4 @@ structure:
   summary: toc.md
 
 redirects:
- how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
+  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
