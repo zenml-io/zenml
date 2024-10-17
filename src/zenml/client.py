@@ -346,6 +346,7 @@ class Client(metaclass=ClientMetaClass):
     """
 
     _active_user: Optional["UserResponse"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
 
     def __init__(
         self,
@@ -1113,9 +1114,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
-        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
-            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
-            return self.get_workspace(workspace_id)
+        if workspace_id := os.environ.get(ENV_ZENML_ACTIVE_WORKSPACE_ID):
+            if not self._active_workspace or self._active_workspace.id != UUID(
+                workspace_id
+            ):
+                self._active_workspace = self.get_workspace(workspace_id)
+
+            return self._active_workspace
 
         from zenml.constants import DEFAULT_WORKSPACE_NAME
 
