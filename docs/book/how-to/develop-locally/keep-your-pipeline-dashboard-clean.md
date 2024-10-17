@@ -18,7 +18,7 @@ Unlisted runs are not displayed on the pipeline's page in the dashboard, keeping
 
 ## Deleting Pipelines
 
-Pipelines can be deleted and recreated using the command:
+Pipelines that are no longer needed can be deleted using the command:
 
 ```bash
 zenml pipeline delete <PIPELINE_ID_OR_NAME>
