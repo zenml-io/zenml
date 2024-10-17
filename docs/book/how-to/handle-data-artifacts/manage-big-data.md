@@ -200,6 +200,86 @@ ray_pipeline(input_data="path/to/your/data.csv")
 
 As with Spark, you'll need to have Ray installed in your environment and ensure that the necessary Ray dependencies are available when running your pipeline.
 
+### Using Dask in ZenML
+
+[Dask](https://docs.dask.org/en/stable/) is a flexible library for parallel computing in Python. It can be integrated into ZenML pipelines to handle large datasets and parallelize computations. Here's how you can use Dask within a ZenML pipeline:
+
+```python
+from zenml import step, pipeline
+import dask.dataframe as dd
+from zenml.materializers.base_materializer import BaseMaterializer
+import os
+
+class DaskDataFrameMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (dd.DataFrame,)
+    ASSOCIATED_ARTIFACT_TYPE = "dask_dataframe"
+
+    def load(self, data_type):
+        return dd.read_parquet(os.path.join(self.uri, "data.parquet"))
+
+    def save(self, data):
+        data.to_parquet(os.path.join(self.uri, "data.parquet"))
+
+@step(output_materializers=DaskDataFrameMaterializer)
+def create_dask_dataframe():
+    df = dd.from_pandas(pd.DataFrame({'A': range(1000), 'B': range(1000, 2000)}), npartitions=4)
+    return df
+
+@step
+def process_dask_dataframe(df: dd.DataFrame) -> dd.DataFrame:
+    result = df.map_partitions(lambda x: x ** 2)
+    return result
+
+@step
+def compute_result(df: dd.DataFrame) -> pd.DataFrame:
+    return df.compute()
+
+@pipeline
+def dask_pipeline():
+    df = create_dask_dataframe()
+    processed = process_dask_dataframe(df)
+    result = compute_result(processed)
+
+# Run the pipeline
+dask_pipeline()
+
+```
+
+In this example, we've created a custom `DaskDataFrameMaterializer` to handle Dask DataFrames. The pipeline creates a Dask DataFrame, processes it using Dask's distributed computing capabilities, and then computes the final result.
+
+### Using Numba in ZenML
+
+[Numba](https://numba.pydata.org/) is a just-in-time compiler for Python that can significantly speed up numerical Python code. Here's how you can integrate Numba into a ZenML pipeline:
+
+```python
+from zenml import step, pipeline
+import numpy as np
+from numba import jit
+import os
+
+@jit(nopython=True)
+def numba_function(x):
+    return x * x + 2 * x - 1
+
+@step
+def load_data() -> np.ndarray:
+    return np.arange(1000000)
+
+@step
+def apply_numba_function(data: np.ndarray) -> np.ndarray:
+    return numba_function(data)
+
+@pipeline
+def numba_pipeline():
+    data = load_data()
+    result = apply_numba_function(data)
+
+# Run the pipeline
+numba_pipeline()
+```
+
+The pipeline creates a Numba-accelerated function, applies it to a large NumPy array, and returns the result.
+
 ### Important Considerations
 
 1. **Environment Setup**: Ensure that your execution environment (local or remote) has the necessary frameworks (Spark or Ray) installed.
