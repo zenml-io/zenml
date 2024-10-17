@@ -2713,7 +2713,7 @@ class SqlZenStore(BaseZenStore):
                     artifact = ArtifactSchema.from_request(artifact_request)
                     session.add(artifact)
                     session.commit()
-                    session.refresh(artifact)
+                session.refresh(artifact)
             except IntegrityError:
                 # We failed to create the artifact due to the unique constraint
                 # for artifact names -> The artifact was already created, we can
@@ -2791,7 +2791,6 @@ class SqlZenStore(BaseZenStore):
                             )
                             session.add(artifact_version_schema)
                             session.commit()
-                            session.refresh(artifact_version_schema)
                     except IntegrityError:
                         if remaining_tries == 0:
                             raise EntityExistsError(
@@ -2801,6 +2800,7 @@ class SqlZenStore(BaseZenStore):
                                 "to create versions for this artifact in the "
                                 "database."
                             )
+                session.refresh(artifact_version_schema)
             else:
                 # An explicit version was specified for the artifact version.
                 # We don't do any incrementing and fail immediately if the
