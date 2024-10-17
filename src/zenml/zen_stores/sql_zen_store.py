@@ -102,12 +102,14 @@ from zenml.constants import (
     handle_bool_env_var,
     is_false_string_value,
     is_true_string_value,
+    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 )
 from zenml.enums import (
     AuthScheme,
     DatabaseBackupStrategy,
     ExecutionStatus,
     LoggingLevels,
+    MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
     SecretScope,
@@ -134,6 +136,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -2683,55 +2686,136 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Artifact Versions --------------------
 
+    def _get_or_create_artifact_for_name(
+        self, session: Session, name: str
+    ) -> ArtifactSchema:
+        """Get or create an artifact with a specific name.
+
+        Args:
+            session: DB session.
+            name: The artifact name.
+
+        Returns:
+            Schema of the artifact.
+        """
+        artifact_query = select(ArtifactSchema).where(
+            ArtifactSchema.name == name
+        )
+        artifact = session.exec(artifact_query).first()
+
+        if artifact is None:
+            try:
+                with session.begin_nested():
+                    artifact_request = ArtifactRequest(name=name)
+                    artifact = ArtifactSchema.from_request(artifact_request)
+                    session.add(artifact)
+                    session.commit(artifact)
+                    session.refresh(artifact)
+            except IntegrityError:
+                # We failed to create the artifact due to the unique constraint
+                # for artifact names -> The artifact was already created, we can
+                # just fetch it from the DB now
+                artifact = session.exec(artifact_query).one()
+
+        return artifact
+
+    def _get_next_numberic_version_for_artifact(
+        self, session: Session, artifact_id: UUID
+    ) -> int:
+        """Get the next numeric version for an artifact.
+
+        Args:
+            session: DB session.
+            artifact_id: ID of the artifact for which to get the next numeric
+                version.
+
+        Returns:
+            The next numberic version number.
+        """
+        current_max_version = session.exec(
+            select(func.max(ArtifactVersionSchema.version_number)).where(
+                ArtifactVersionSchema.artifact_id == artifact_id
+            )
+        ).first()
+
+        if current_max_version is None:
+            return 1
+        else:
+            return int(current_max_version) + 1
+
     def create_artifact_version(
         self, artifact_version: ArtifactVersionRequest
     ) -> ArtifactVersionResponse:
-        """Creates an artifact version.
+        """Create an artifact version.
 
         Args:
             artifact_version: The artifact version to create.
 
+        Raises:
+            EntityExistsError: If the artifact version already exists.
+
         Returns:
             The created artifact version.
-
-        Raises:
-            EntityExistsError: if an artifact with the same name and version
-                already exists.
         """
         with Session(self.engine) as session:
-            # Check if an artifact with the given name and version exists
-            def _check(tolerance: int = 0) -> None:
-                query = session.exec(
-                    select(ArtifactVersionSchema)
-                    .where(
-                        ArtifactVersionSchema.artifact_id
-                        == artifact_version.artifact_id
-                    )
-                    .where(
-                        ArtifactVersionSchema.version
-                        == artifact_version.version
-                    )
+            if artifact_name := artifact_version.artifact_name:
+                artifact_schema = self._get_or_create_artifact_for_name(
+                    session=session, name=artifact_name
                 )
-                existing_artifact = query.fetchmany(tolerance + 1)
-                if (
-                    existing_artifact is not None
-                    and len(existing_artifact) > tolerance
-                ):
+                artifact_version.artifact_id = artifact_schema.id
+
+            if artifact_version.version is None:
+                # No explicit version in the request -> We will try to
+                # auto-increment the numeric version of the artifact version
+                remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                while remaining_tries > 0:
+                    remaining_tries -= 1
+                    try:
+                        with session.begin_nested():
+                            artifact_version.version = (
+                                self._get_next_numberic_version_for_artifact(
+                                    session=session,
+                                    artifact_id=artifact_version.artifact_id,
+                                )
+                            )
+
+                            artifact_version_schema = (
+                                ArtifactVersionSchema.from_request(
+                                    artifact_version
+                                )
+                            )
+                            session.add(artifact_version_schema)
+                            session.commit()
+                            session.refresh(artifact_version_schema)
+                    except IntegrityError:
+                        if remaining_tries == 0:
+                            raise EntityExistsError(
+                                f"Failed to create version for artifact "
+                                f"{artifact_schema.name}. This is most likely "
+                                "caused by multiple parallel requests that try "
+                                "to create versions for this artifact in the "
+                                "database."
+                            )
+            else:
+                # An explicit version was specified for the artifact version.
+                # We don't do any incrementing and fail immediately if the
+                # version already exists.
+                try:
+                    artifact_version_schema = (
+                        ArtifactVersionSchema.from_request(artifact_version)
+                    )
+                    session.add(artifact_version_schema)
+                    session.commit()
+                    session.refresh(artifact_version_schema)
+                except IntegrityError:
                     raise EntityExistsError(
-                        f"Unable to create artifact with name "
-                        f"'{existing_artifact[0].artifact.name}' and version "
-                        f"'{artifact_version.version}': An artifact with the same "
-                        "name and version already exists."
+                        f"Unable to create artifact version "
+                        f"{artifact_schema.name}({artifact_version.version}: "
+                        "An artifact with the same name and version already "
+                        "exists."
                     )
 
-            _check()
-            # Create the artifact version.
-            artifact_version_schema = ArtifactVersionSchema.from_request(
-                artifact_version
-            )
-            session.add(artifact_version_schema)
-
-            # Save visualizations of the artifact.
+            # Save visualizations of the artifact
             if artifact_version.visualizations:
                 for vis in artifact_version.visualizations:
                     vis_schema = ArtifactVisualizationSchema.from_model(
@@ -2740,7 +2824,7 @@ class SqlZenStore(BaseZenStore):
                     )
                     session.add(vis_schema)
 
-            # Save tags of the artifact.
+            # Save tags of the artifact
             if artifact_version.tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
@@ -2748,14 +2832,26 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
-            try:
-                _check(1)
-                session.commit()
-            except EntityExistsError as e:
-                session.rollback()
-                raise e
+            # Save metadata of the artifact
+            if artifact_version.metadata:
+                for key, value in artifact_version.metadata.items():
+                    run_metadata_schema = RunMetadataSchema(
+                        workspace_id=artifact_version.workspace,
+                        user_id=artifact_version.user,
+                        resource_id=artifact_version_schema.id,
+                        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+                        key=key,
+                        value=json.dumps(value),
+                        type=get_metadata_type(value),
+                    )
+                    session.add(run_metadata_schema)
 
-            return artifact_version_schema.to_model(include_metadata=True)
+            session.commit()
+            session.refresh(artifact_version_schema)
+
+            return artifact_version_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
