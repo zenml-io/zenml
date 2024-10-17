@@ -31,7 +31,7 @@ Follow the tips below while upgrading your server to mitigate data losses, downt
 - **Separate ZenML Servers**: Coordination between teams might be difficult if one team requires new features but the other can't upgrade yet. In such cases, it is recommended to use dedicated ZenML server instances per team or product to allow for more flexible upgrade schedules.
 
 {% hint style="info" %}
-ZenML Pro comes with multi-tenacy which makes it easy for you to have multiple ZenML servers and switch between them. This is useful if you have multiple teams and you want to upgrade them at different times.
+ZenML Pro comes with multi-tenancy which makes it easy for you to have multiple ZenML servers and switch between them. This is useful if you have multiple teams and you want to upgrade them at different times.
 {% endhint %}
 
 ### Minimizing Downtime
