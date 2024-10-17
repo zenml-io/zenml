@@ -299,7 +299,7 @@ tried running some pipelines on your AWS stack.
 
 ### Use IAM Roles and Least Privilege Principle
 
-Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your IAM roles to ensure they remain appropriate and secure.
+Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your [IAM roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) to ensure they remain appropriate and secure.
 
 ### Leverage AWS Resource Tagging
 
