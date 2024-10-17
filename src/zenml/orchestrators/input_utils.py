@@ -19,6 +19,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
+from zenml.metadata.metadata_types import MetadataType
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ def resolve_step_inputs(
         The IDs of the input artifact versions and the IDs of parent steps of
             the current step.
     """
-    from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+    from zenml.models import ArtifactVersionResponse
 
     current_run_steps = {
         run_step.name: run_step
@@ -142,7 +143,7 @@ def resolve_step_inputs(
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
             input_artifacts[name] = value_
-        elif isinstance(value_, RunMetadataResponse):
+        elif isinstance(value_, MetadataType):
             step.config.parameters[name] = value_.value
         else:
             step.config.parameters[name] = value_

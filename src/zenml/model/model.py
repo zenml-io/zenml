@@ -43,7 +43,6 @@ if TYPE_CHECKING:
         ModelResponse,
         ModelVersionResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
         StepRunResponse,
     )
 
@@ -350,7 +349,7 @@ class Model(BaseModel):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, "MetadataType"]:
         """Get model version run metadata.
 
         Returns:
@@ -359,18 +358,6 @@ class Model(BaseModel):
         Raises:
             RuntimeError: If the model version run metadata cannot be fetched.
         """
-        from zenml.metadata.lazy_load import RunMetadataLazyGetter
-
-        try:
-            get_pipeline_context()
-            # avoid exposing too much of internal details by keeping the return type
-            return RunMetadataLazyGetter(  # type: ignore[return-value]
-                self.name,
-                self._lazy_version,
-            )
-        except RuntimeError:
-            pass
-
         response = self._get_or_create_model_version(hydrate=True)
         if response.run_metadata is None:
             raise RuntimeError(

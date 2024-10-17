@@ -136,10 +136,7 @@ class EntrypointFunctionDefinition(NamedTuple):
             UnmaterializedArtifact,
         )
         from zenml.client_lazy_loader import ClientLazyLoader
-        from zenml.models import (
-            ArtifactVersionResponse,
-            RunMetadataResponse,
-        )
+        from zenml.models import ArtifactVersionResponse
 
         if key not in self.inputs:
             raise KeyError(
@@ -154,7 +151,6 @@ class EntrypointFunctionDefinition(NamedTuple):
                 StepArtifact,
                 ExternalArtifact,
                 ArtifactVersionResponse,
-                RunMetadataResponse,
                 ClientLazyLoader,
             ),
         ):

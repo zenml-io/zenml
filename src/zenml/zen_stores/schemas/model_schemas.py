@@ -378,10 +378,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
-                run_metadata={
-                    rm.key: rm.to_model(include_metadata=True)
-                    for rm in self.run_metadata
-                },
+                run_metadata={rm.key: rm.value for rm in self.run_metadata},
             )
 
         resources = None

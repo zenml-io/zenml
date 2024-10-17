@@ -330,7 +330,6 @@ class BaseStep:
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,
         )
-        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
@@ -377,14 +376,6 @@ class BaseStep:
                     artifact_name=value.lazy_load_name,
                     artifact_version=value.lazy_load_version,
                     metadata_name=None,
-                )
-            elif isinstance(value, LazyRunMetadataResponse):
-                model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model_name=value.lazy_load_model_name,
-                    model_version=value.lazy_load_model_version,
-                    artifact_name=value.lazy_load_artifact_name,
-                    artifact_version=value.lazy_load_artifact_version,
-                    metadata_name=value.lazy_load_metadata_name,
                 )
             elif isinstance(value, ClientLazyLoader):
                 client_lazy_loaders[key] = value
