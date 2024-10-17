@@ -346,6 +346,7 @@ class Client(metaclass=ClientMetaClass):
     """
 
     _active_user: Optional["UserResponse"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
 
     def __init__(
         self,
@@ -1113,9 +1114,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
-        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
-            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
-            return self.get_workspace(workspace_id)
+        if workspace_id := os.environ.get(ENV_ZENML_ACTIVE_WORKSPACE_ID):
+            if not self._active_workspace or self._active_workspace.id != UUID(
+                workspace_id
+            ):
+                self._active_workspace = self.get_workspace(workspace_id)
+
+            return self._active_workspace
 
         from zenml.constants import DEFAULT_WORKSPACE_NAME
 
@@ -3918,7 +3923,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
-        num_outputs: Optional[Union[int, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -3939,10 +3944,10 @@ class Client(metaclass=ClientMetaClass):
             deployment_id: The id of the deployment to filter by.
             original_step_run_id: The id of the original step run to filter by.
             model_version_id: The ID of the model version to filter by.
+            model: Filter by model name/ID.
             name: The name of the step run to filter by.
             cache_key: The cache_key of the run to filter by.
             status: The name of the run to filter by.
-            num_outputs: The number of outputs for the step run
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3968,7 +3973,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             model_version_id=model_version_id,
-            num_outputs=num_outputs,
+            model=model,
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
