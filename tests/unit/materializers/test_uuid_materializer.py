@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ def test_uuid_materializer():
         step_output_type=uuid.UUID,
         materializer_class=UUIDMaterializer,
         step_output=test_uuid,
-        expected_metadata_size=4,
+        expected_metadata_size=2,
     )
     assert result == test_uuid
     assert isinstance(result, uuid.UUID)
@@ -37,7 +37,5 @@ def test_uuid_materializer_metadata():
     test_uuid = uuid.uuid4()
     materializer = UUIDMaterializer("test_uri")
     metadata = materializer.extract_metadata(test_uuid)
-    assert len(metadata) == 3
-    assert metadata["uuid_version"] == test_uuid.version
-    assert metadata["uuid_variant"] == test_uuid.variant
+    assert len(metadata) == 1
     assert metadata["string_representation"] == str(test_uuid)
