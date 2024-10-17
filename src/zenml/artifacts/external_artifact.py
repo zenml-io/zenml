@@ -23,6 +23,7 @@ from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
 from zenml.config.source import Source
+from zenml.enums import ArtifactSaveType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -114,7 +115,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             materializer=self.materializer,
             uri=uri,
             has_custom_name=False,
-            manual_save=False,
+            save_type=ArtifactSaveType.EXTERNAL,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded

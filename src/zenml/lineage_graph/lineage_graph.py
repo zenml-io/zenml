@@ -80,22 +80,25 @@ class LineageGraph(BaseModel):
         self.add_step_node(step, step_id)
 
         # Add nodes and edges for all output artifacts
-        for artifact_name, artifact_version in step.outputs.items():
-            artifact_version_id = ARTIFACT_PREFIX + str(artifact_version.id)
-            if step.status == ExecutionStatus.CACHED:
-                artifact_status = ArtifactNodeStatus.CACHED
-            elif step.status == ExecutionStatus.COMPLETED:
-                artifact_status = ArtifactNodeStatus.CREATED
-            else:
-                artifact_status = ArtifactNodeStatus.UNKNOWN
-            self.add_artifact_node(
-                artifact=artifact_version,
-                id=artifact_version_id,
-                name=artifact_name,
-                step_id=str(step_id),
-                status=artifact_status,
-            )
-            self.add_edge(step_id, artifact_version_id)
+        for artifact_name, output in step.outputs.items():
+            for artifact_version in output:
+                artifact_version_id = ARTIFACT_PREFIX + str(
+                    artifact_version.id
+                )
+                if step.status == ExecutionStatus.CACHED:
+                    artifact_status = ArtifactNodeStatus.CACHED
+                elif step.status == ExecutionStatus.COMPLETED:
+                    artifact_status = ArtifactNodeStatus.CREATED
+                else:
+                    artifact_status = ArtifactNodeStatus.UNKNOWN
+                self.add_artifact_node(
+                    artifact=artifact_version,
+                    id=artifact_version_id,
+                    name=artifact_name,
+                    step_id=str(step_id),
+                    status=artifact_status,
+                )
+                self.add_edge(step_id, artifact_version_id)
 
         # Add nodes and edges for all input artifacts
         for artifact_name, artifact_version in step.inputs.items():
@@ -186,7 +189,10 @@ class LineageGraph(BaseModel):
                     parameters=step.config.parameters,
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
-                    outputs={k: v.uri for k, v in step.outputs.items()},
+                    outputs={
+                        k: [av.uri for av in v]
+                        for k, v in step.outputs.items()
+                    },
                     metadata=[
                         (m.key, str(m.value), str(m.type))
                         for m in step.run_metadata.values()

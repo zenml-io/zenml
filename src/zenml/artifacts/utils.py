@@ -42,6 +42,7 @@ from zenml.constants import (
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -100,7 +101,7 @@ def save_artifact(
     uri: Optional[str] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
-    manual_save: bool = True,
+    save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -122,8 +123,7 @@ def save_artifact(
             `custom_artifacts/{name}/{version}`.
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
-        manual_save: If this function is called manually and should therefore
-            link the artifact to the current step run.
+        save_type: The type of save operation that created the artifact version.
 
     Returns:
         The saved artifact response.
@@ -150,7 +150,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         _check_if_artifact_with_given_uri_already_registered(
@@ -224,6 +224,7 @@ def save_artifact(
             artifact_store_id=artifact_store.id,
             visualizations=visualizations,
             has_custom_name=has_custom_name,
+            save_type=save_type,
         )
         try:
             return client.zen_store.create_artifact_version(
@@ -245,7 +246,7 @@ def save_artifact(
             resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
             artifact_version=response,
             is_model_artifact=is_model_artifact,
@@ -326,6 +327,7 @@ def register_artifact(
             workspace=Client().active_workspace.id,
             artifact_store_id=artifact_store.id,
             has_custom_name=has_custom_name,
+            save_type=ArtifactSaveType.PREEXISTING,
         )
         try:
             return client.zen_store.create_artifact_version(
@@ -625,7 +627,8 @@ def get_artifacts_versions_of_pipeline_run(
     artifact_versions: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
-            artifact_versions.extend(step.outputs.values())
+            for output in step.outputs.values():
+                artifact_versions.extend(output)
     return artifact_versions
 
 
@@ -787,9 +790,7 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={
-                    artifact_version.artifact.name: artifact_version.id
-                }
+                outputs={artifact_version.artifact.name: artifact_version.id}
             ),
         )
         error_message = "model"
