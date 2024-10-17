@@ -99,7 +99,7 @@ class BigQueryDatasetMaterializer(BaseMaterializer):
             metadata = json.load(f)
         dataset = BigQueryDataset(
             table_id=metadata["table_id"],
-            project=metadata.get("project"),
+            project=metadata["project"],
         )
         dataset.read_data()
         return dataset
