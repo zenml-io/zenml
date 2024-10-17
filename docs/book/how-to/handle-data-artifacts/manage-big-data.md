@@ -4,7 +4,7 @@ description: Learn about how to manage big data with ZenML.
 
 # Scaling Strategies for Big Data in ZenML
 
-As your machine learning projects grow, you'll often encounter datasets that challenge your existing data processing pipelines. This chapter explores strategies for scaling your ZenML pipelines to handle increasingly large datasets. For information on creating custom Dataset classes and managing complex data flows, refer to [custom dataset classes](datasets.md).
+As your machine learning projects grow, you'll often encounter datasets that challenge your existing data processing pipelines. This section explores strategies for scaling your ZenML pipelines to handle increasingly large datasets. For information on creating custom Dataset classes and managing complex data flows, refer to [custom dataset classes](datasets.md).
 
 ## Understanding Dataset Size Thresholds
 
@@ -98,7 +98,7 @@ def process_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
 
 ### Leveraging Data Warehouses for Large Datasets
 
-You can utilize data warehouses like Google BigQuery for its distributed processing capabilities:
+You can utilize data warehouses like [Google BigQuery](https://cloud.google.com/bigquery) for its distributed processing capabilities:
 
 ```python
 @step
