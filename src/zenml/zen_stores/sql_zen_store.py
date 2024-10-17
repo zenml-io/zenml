@@ -96,13 +96,13 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
     SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
     is_false_string_value,
     is_true_string_value,
-    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 )
 from zenml.enums import (
     AuthScheme,
