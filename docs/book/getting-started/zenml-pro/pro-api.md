@@ -7,7 +7,7 @@ description: >
 
 ZenML Pro offers a powerful API that allows you to interact with your ZenML resources. Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage this API to manage tenants, organizations, users, roles, and more.
 
-Note, the SaaS version of ZenML Pro API is hosted [here](https://cloudapi.zenml.io)
+The SaaS version of ZenML Pro API is hosted [here](https://cloudapi.zenml.io).
 
 ## API Overview
 

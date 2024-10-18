@@ -95,7 +95,7 @@ By thoughtfully organizing your tenants, you can create a more manageable, secur
 
 ## Using your tenant
 
-As said already, a tenant is a supercharged ZenML server that you can use to run your pipelines, carry out experiments and perform all the other actions you expect out of your ZenML server.
+As previously mentioned, a tenant is a supercharged ZenML server that you can use to run your pipelines, carry out experiments and perform all the other actions you expect out of your ZenML server.
 
 Some Pro-only features that you can leverage in your tenant are as follows:
 

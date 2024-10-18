@@ -17,7 +17,7 @@ Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 {% hint style="info" %}
 If you're interested in assessing ZenML Pro, you can simply create
 a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
-Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
+Learn more about ZenML Pro on the [ZenML website](https://zenml.io/pro).
 {% endhint %}
 
 ## Deployment scenarios: SaaS vs Self-hosted
@@ -29,8 +29,6 @@ allowing you to focus primarily on your MLOps workflows.
 
 However, ZenML Pro can also be deployed fully self-hosted. Please [book a demo](https://www.zenml.io/book-your-demo)
 to learn more.
-
-Click [here](../system-architectures.md) to understand about the various deployment scenarios with ZenML Pro.
 
 <table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Tenants</strong></mark></td><td>Tenants in ZenML Pro</td><td></td><td></td><td><a href="./tenants.md">tenants.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Organizations</strong></mark></td><td>Organizations in ZenML Pro</td><td></td><td></td><td><a href="./organization.md">organization.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Teams</strong></mark></td><td>Teams in ZenML Pro</td><td></td><td></td><td><a href="./teams.md">teams.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Roles</strong></mark></td><td>Roles in ZenML Pro</td><td></td><td></td><td><a href="./roles.md">roles.md</a></td></tr></tbody></table>
 

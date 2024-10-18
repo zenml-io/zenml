@@ -22,6 +22,6 @@ The billing information for your tenants is managed on the organization level, a
 
 ## Other operations involving organizations
 
-There are a lot of other operations involving Organizations that you can perform directly through the API. You can find more information about the API by visiting https://cloudapi.zenml.io/.
+There are a lot of other operations involving Organizations that you can perform directly through the API. You can find more information about the API by visiting [https://cloudapi.zenml.io/](https://cloudapi.zenml.io/).
 
 ![Image showing the swagger docs](../../.gitbook/assets/cloudapi_swagger.png)

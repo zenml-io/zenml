@@ -14,7 +14,7 @@ This page is intended as a high level overview. To learn more about how about to
 read [this guide](../getting-started/deploying-zenml/README.md).
 {% endhint %}
 
-A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
+A ZenML OSS deployment consists of the following moving pieces:
 
 * **ZenML OSS Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
   Note: In ZenML Pro, the notion of a ZenML server is replaced with so-called "Tenant". For
@@ -34,13 +34,13 @@ A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
 ZenML OSS is free with Apache 2.0 license. Learn how to deploy it [here](./deploying-zenml/README.md).
 
 {% hint style="info" %}
-To learn more about the core concepts for ZenML OSS, go [here](../getting-started/core-concepts.md)
+To learn more about the core concepts for ZenML OSS, go [here](../getting-started/core-concepts.md).
 {% endhint %}
 
 ## ZenML Pro (SaaS or Self-hosted)
 
 {% hint style="info" %}
-If you're interested in assessing ZenML Pro SaaSs, you can create
+If you're interested in assessing ZenML Pro SaaS, you can create
 a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
 
 If would like to self-host ZenML Pro, please [book a demo](https://zenml.io/book-a-demo).
@@ -85,7 +85,7 @@ To learn more about the core concepts for ZenML Pro, go [here](../getting-starte
 
 ![ZenML Pro SaaS deployment with ZenML secret store](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
-In this scenario, all ZenML services are hosted on infrastructure hosted by the ZenML Team.
+For the ZenML Pro SaaS deployment case, all ZenML services are hosted on infrastructure hosted by the ZenML Team.
 Customer secrets and credentials required to access customer infrastructure are
 stored and managed by the ZenML Pro Control Plane.
 
@@ -140,9 +140,9 @@ while ensuring that credentials are always stored on the customer side.
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.png)
 
-In this scenario, all services, data, and secrets are deployed on the customer
-cloud. This is the opposite of Scenario 1, and is meant for customers who
-require completely airgapped deployments, for the tightest security standards. 
+In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer
+cloud. This is meant for customers who
+require completely air-gapped deployments, for the tightest security standards.
 [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
 
 <details>
