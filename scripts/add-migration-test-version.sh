@@ -12,10 +12,6 @@ fi
 OLD_VERSION=$1
 NEW_VERSION=$2
 
-# Check out the the new release branch
-git checkout "release/$NEW_VERSION"
-git pull origin "release/$NEW_VERSION"
-
 # Fetch the last changes in the alembic history
 ALEMBIC_HISTORY=$(alembic history | head -n 1)
 
@@ -24,28 +20,23 @@ if [[ $ALEMBIC_HISTORY == "$OLD_VERSION"* ]]; then
     echo "Alembic history starts with $OLD_VERSION. No changes needed."
     exit 0
 else
-    # Checkout to the develop branch
-    git checkout develop
-    git pull origin develop
-
-#    # Branch off of develop
+    # Branch off
     NEW_BRANCH="feature/adding-$NEW_VERSION-to-the-migration-tests"
-    echo git checkout -b "$NEW_BRANCH"
+    git checkout -b "$NEW_BRANCH"
 
     # Add the new version to the VERSIONS list
     sed -i '' "/^VERSIONS=(.*)$/s/)/ \"$NEW_VERSION\")/" scripts/test-migrations.sh
     echo "Added new version $NEW_VERSION to scripts/test-migrations.sh"
 
-#    # Add, commit and push the new changes
-#    git add scripts/test-migrations.sh
-#    git commit -m "Adding the new version to the migration tests."
-#    git push origin "$NEW_BRANCH"
-#
-#    # Open up a pull request
-#    gh pr create --base "develop" --head "$NEW_BRANCH" \
-#      --title "Add $NEW_VERSION to the migration tests" \
-#      --body "This PR adds $NEW_VERSION to the list of version in the migration test script." \
-#      --label "internal"
-#    exit 0
-fi
+    # Add, commit and push the new changes
+    git add scripts/test-migrations.sh
+    git commit -m "Adding the new version to the migration tests."
+    git push origin "$NEW_BRANCH"
 
+    # Open up a pull request
+    gh pr create --base "develop" --head "$NEW_BRANCH" \
+      --title "Add $NEW_VERSION to the migration tests" \
+      --body "This PR adds $NEW_VERSION to the list of version in the migration test script." \
+      --label "internal"
+    exit 0
+fi
