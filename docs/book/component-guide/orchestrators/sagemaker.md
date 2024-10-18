@@ -290,7 +290,6 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 Using multichannel output or output mode except `EndOfJob` will make it impossible to use TrainingStep and also Warm Pools. See corresponding section of this document for details.
 {% endhint %}
 
-
 ### Tagging SageMaker Pipeline Executions and Jobs
 
 The SageMaker orchestrator allows you to add tags to your pipeline executions and individual jobs. Here's how you can apply tags at both the pipeline and step levels:
