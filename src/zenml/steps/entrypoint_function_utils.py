@@ -32,6 +32,7 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -152,6 +153,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 ExternalArtifact,
                 ArtifactVersionResponse,
                 ClientLazyLoader,
+                LazyRunMetadataResponse,
             ),
         ):
             # If we were to do any type validation for artifacts here, we
