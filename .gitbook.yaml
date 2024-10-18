@@ -5,6 +5,7 @@ structure:
   summary: toc.md
 
 redirects:
+  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
   reference/migration-guide/README.md: how-to/manage-the-zenml-server/migration-guide/migration-guide.md
   reference/migration-guide/migration-zero-twenty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty.md
   reference/migration-guide/migration-zero-thirty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty.md
