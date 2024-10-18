@@ -290,7 +290,6 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 Using multichannel output or output mode except `EndOfJob` will make it impossible to use TrainingStep and also Warm Pools. See corresponding section of this document for details.
 {% endhint %}
 
-You're absolutely right. Showing examples of how to apply these settings at both the @pipeline and @step level would be much more helpful and illustrative for users. Let's revise the code snippets to demonstrate this:
 
 ### Tagging SageMaker Pipeline Executions and Jobs
 
@@ -332,7 +331,7 @@ my_training_pipeline()
 
 In this example:
 
-- The `pipeline_tags` are applied to the entire SageMaker pipeline execution.
+- The `pipeline_tags` are applied to the entire SageMaker pipeline execution. They are also propagated automatically by AWS down to the child Sagemaker jobs.
 - The `tags` in `step_settings` are applied to the specific SageMaker job for the `preprocess_data` step.
 
 This approach allows for more granular tagging, giving you flexibility in how you categorize and manage your SageMaker resources. You can view and manage these tags in the AWS Management Console, CLI, or API calls related to your SageMaker resources.
