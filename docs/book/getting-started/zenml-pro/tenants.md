@@ -49,7 +49,7 @@ One common approach is to separate your tenants based on the development stage o
 
 This separation allows for a clear distinction between experimental work and production-ready systems, reducing the risk of untested changes affecting live services.
 
-![Staging vs production tenants](../../.gitbook/assets/staging-production-tenants-svg.svg)
+![Staging vs production tenants](../../.gitbook/assets/staging-production-tenants.png)
 
 The image could depict two parallel paths: one for staging (showing icons for experimentation, testing, and development) and one for production (showing icons for deployment, monitoring, and customer-facing services). Arrows could show the flow from staging to production.
 
@@ -77,7 +77,7 @@ This organization method offers several benefits:
 - Better alignment with team structures and workflows
 - Enhanced data security and compliance management
 
-![Business logic-based tenant organization](../../.gitbook/assets/business-logic-tenants-svg.svg)
+![Business logic-based tenant organization](../../.gitbook/assets/business-logic-tenants.png)
 
 Of course, both approaches can be mixed and matched.
 
