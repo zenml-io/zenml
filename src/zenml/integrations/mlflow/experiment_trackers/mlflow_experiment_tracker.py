@@ -221,13 +221,16 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
-        return {
+        metadata: Dict[str, Any] = {
             METADATA_EXPERIMENT_TRACKER_URL: Uri(
                 self.get_tracking_uri(as_plain_text=False)
             ),
-            "mlflow_run_id": mlflow.active_run().info.run_id,
-            "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }
+        if run := mlflow.active_run():
+            metadata["mlflow_run_id"] = run.info.run_id
+            metadata["mlflow_experiment_id"] = run.info.experiment_id
+
+        return metadata
 
     def disable_autologging(self) -> None:
         """Disables MLflow autologging for all supported frameworks."""

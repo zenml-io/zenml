@@ -1870,13 +1870,7 @@ Connecting to a ZenML Server
 
 The ZenML client can be [configured to connect to a remote database or ZenML
 server](https://docs.zenml.io/how-to/connecting-to-zenml)
-with the `zenml connect` command. If no arguments are supplied, ZenML
-will attempt to connect to the last ZenML server deployed from the local host
-using the 'zenml deploy' command:
-
-```bash
-zenml connect
-```
+with the `zenml connect` command.
 
 To connect to a ZenML server, you can either pass the configuration as command
 line arguments or as a YAML file:
@@ -2517,37 +2511,6 @@ The verbosity of the ZenML client output can be configured using the
 ```bash
 zenml logging set-verbosity DEBUG
 ```
-
-Deploying ZenML to the cloud
-----------------------------
-
-The ZenML CLI provides a simple way to deploy ZenML to the cloud. Simply run
-
-```bash
-zenml deploy
-```
-
-You will be prompted to provide a name for your deployment and details like what
-cloud provider you want to deploy to — and that's it! It creates the
-database and any VPCs, permissions, and more that are needed.
-
-In order to be able to run the deploy command, you should have your cloud
-provider's CLI configured locally with permissions to create resources like
-MySQL databases and networks.
-
-Deploying Stack Components
---------------------------
-
-Stack components can be deployed directly via the CLI. You can use the `deploy`
-subcommand for this. For example, you could deploy a GCP artifact store using
-the following command:
-
-```shell
-zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
-```
-
-For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-component).
 """
 
 from zenml.cli.version import *  # noqa
@@ -2570,7 +2533,6 @@ from zenml.cli.service_accounts import *  # noqa
 from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
-from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.workspace import *  # noqa
 from zenml.cli.tag import *  # noqa
