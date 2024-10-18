@@ -14,7 +14,7 @@
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
-  * [Core Concepts](getting-started/zenml-pro/hierarchy-of-concepts.md)
+  * [Core Concepts](getting-started/zenml-pro/core-concepts.md)
     * [Organizations](getting-started/zenml-pro/organization.md)
     * [Tenants](getting-started/zenml-pro/tenants.md)
     * [Teams](getting-started/zenml-pro/teams.md)

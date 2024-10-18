@@ -33,6 +33,10 @@ A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
 
 ZenML OSS is free with Apache 2.0 license. Learn how to deploy it [here](./deploying-zenml/README.md).
 
+{% hint style="info" %}
+To learn more about the core concepts for ZenML OSS, go [here](../getting-started/core-concepts.md)
+{% endhint %}
+
 ## ZenML Pro (SaaS or Self-hosted)
 
 {% hint style="info" %}
@@ -72,6 +76,10 @@ ZenML Pro deployment!
 
 The above components interact with other MLOps stack components, secrets, and data in
 the following scenarios described below.
+
+{% hint style="info" %}
+To learn more about the core concepts for ZenML Pro, go [here](../getting-started/zenml-pro/core-concepts.md)
+{% endhint %}
 
 ### ZenML Pro SaaS Architecture
 
