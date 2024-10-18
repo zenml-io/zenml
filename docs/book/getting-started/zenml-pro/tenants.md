@@ -29,37 +29,47 @@ The image below shows you how the overview page looks like when you are being on
 You can also create a tenant through the Cloud API by navigating to https://cloudapi.zenml.io/ and using the `POST /organizations` endpoint to create a tenant.
 {% endhint %}
 
-
 ## Organizing your tenants
 
-You can also restrict what your team members can access within a tenant by using roles. Read more about roles [here](../../../../docs/book/getting-started/zenml-pro/roles.md).
+You can choose to define and organize tenants in any way you wish, depending on your needs. However, there are primarily
+two dimensions.
 
-You can choose to define and organize tenants in any way you wish, depending on your needs. One example could be creating different tenants for different projects or teams in your organization.
+### Organzing tenants in `staging` and `production` 
+
+
+### Organizing tenants by business logic
+
+One example could be creating different tenants for different projects or use-cases in your organization.
 The diagram below shows this use case, where folks working on the recommender systems, LLMs and fraud detection each have a separate tenant.
 
-![Image showing the tenants for different teams](../../.gitbook/assets/zenml_pro_tenants_teams1.png)
+![Image showing the tenants for different use-cases](../../.gitbook/assets/zenml_pro_tenants_teams1.png)
 
 This helps you better manage project resources. You can imagine that 
 - certain teams might be based in a different region and have requirements for deployments within that region.
 - some teams may have external contributors and you don't want them to have any knowledge of other internal tenants and projects.
 
-...and so on.
+![Image showing the tenants for different use-cases](../../.gitbook/assets/zenml_pro_tenants_teams2.png)
 
 One other example could be separating tenants based on the type of data they handle. The diagram below shows how C1 and C2 type data (highly confidential) are handled differently.
 
 ![Image showing the tenants for different types of data](../../.gitbook/assets/zenml_pro_c1_c2.png)
+
+{% hint style="info" %}
+For all constellations, you can restrict what your team members can access within a tenant by using roles. Read more about roles [here](../../../../docs/book/getting-started/zenml-pro/roles.md).
+{% endhint %}
 
 ## Using your tenant
 
 As said already, a tenant is a supercharged ZenML server that you can use to run your pipelines, carry out experiments and perform all the other actions you expect out of your ZenML server.
 
 Some Pro-only features that you can leverage in your tenant are as follows:
+
 - the [Model Control Plane](../../../../docs/book/how-to/use-the-model-control-plane/register-a-model.md)
 - Artifact Control Plane
 - [ability to run pipelines from the Dashboard](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md), 
 - [create templates out of your pipeline runs](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md)
 
-and more!
+and [more](https://zenml.io/pro)!
 
 ### Accessing tenant docs
 
