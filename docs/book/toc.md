@@ -5,6 +5,7 @@
 * [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
+* [🏛️ System Architecture](getting-started/system-architectures.md)
 * [🤔 Deploying ZenML](getting-started/deploying-zenml/README.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
@@ -19,7 +20,6 @@
     * [Teams](getting-started/zenml-pro/teams.md)
     * [Roles & Permissions](getting-started/zenml-pro/roles.md)
   * [Accessing the ZenML Pro API](getting-started/zenml-pro/pro-api.md)
-* [🏛️ System Architecture](getting-started/system-architectures.md)
 
 ## User Guide
 
