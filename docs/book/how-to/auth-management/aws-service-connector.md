@@ -72,6 +72,9 @@ The configured credentials must have at least the following [AWS IAM permissions
 * `s3:PutObject`
 * `s3:DeleteObject`
 * `s3:ListAllMyBuckets`
+* `s3:GetBucketVersioning`
+* `s3:ListBucketVersions`
+* `s3:DeleteObjectVersion`
 
 {% hint style="info" %}
 If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token), or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
