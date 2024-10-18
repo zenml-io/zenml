@@ -84,12 +84,11 @@ class CSVDatasetMaterializer(BaseMaterializer):
     def load(self, data_type: Type[CSVDataset]) -> CSVDataset:
         # Create a temporary file to store the CSV data
         with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_file:
+            # Copy the CSV file from the artifact store to the temporary location
+            with fileio.open(os.path.join(self.uri, "data.csv"), "rb") as source_file:
+                temp_file.write(source_file.read())
+            
             temp_path = temp_file.name
-
-        # Copy the CSV file from the artifact store to the temporary location
-        with fileio.open(os.path.join(self.uri, "data.csv"), "rb") as source_file:
-            with open(temp_path, "wb") as target_file:
-                target_file.write(source_file.read())
 
         # Create and return the CSVDataset
         dataset = CSVDataset(temp_path)
@@ -98,12 +97,11 @@ class CSVDatasetMaterializer(BaseMaterializer):
 
     def save(self, dataset: CSVDataset) -> None:
         # Ensure we have data to save
-        if dataset.df is None:
-            dataset.read_data()
+        df = dataset.read_data()
 
         # Save the dataframe to a temporary CSV file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_file:
-            dataset.df.to_csv(temp_file.name, index=False)
+            df.to_csv(temp_file.name, index=False)
             temp_path = temp_file.name
 
         # Copy the temporary file to the artifact store
@@ -147,36 +145,29 @@ When working with multiple data sources, it's crucial to design flexible pipelin
 from zenml import step, pipeline
 from typing_extensions import Annotated
 
-@step
+@step(output_materializer=CSVDatasetMaterializer)
 def extract_data_local(data_path: str = "data/raw_data.csv") -> CSVDataset:
     return CSVDataset(data_path)
 
-@step
+@step(output_materializer=BigQueryDatasetMaterializer)
 def extract_data_remote(table_id: str) -> BigQueryDataset:
     return BigQueryDataset(table_id)
 
 @step
-def transform_csv(dataset: CSVDataset) -> Annotated[CSVDataset, "transformed_dataset"]:
+def transform(dataset: Dataset) -> pd.DataFrame
     df = dataset.read_data()
     # Transform data
     transformed_df = df.copy()  # Apply transformations here
-    return CSVDataset("tmp/transformed_data.csv", df=transformed_df)
-
-@step
-def transform_bq(dataset: BigQueryDataset) -> Annotated[BigQueryDataset, "transformed_dataset"]:
-    df = dataset.read_data()
-    # Transform data
-    transformed_df = df.copy()  # Apply transformations here
-    return BigQueryDataset(table_id="project.dataset.transformed_table", df=transformed_df)
+    return transformed_df
 
 @pipeline
 def etl_pipeline(mode: str = "develop"):
     if mode == "develop":
         raw_data = extract_data_local()
-        transformed_data = transform_csv(raw_data)
     else:
         raw_data = extract_data_remote(table_id="project.dataset.raw_table")
-        transformed_data = transform_bq(raw_data)
+
+    transformed_data = transform(raw_data)
 ```
 
 ## Best Practices for Designing Flexible and Maintainable Pipelines
@@ -190,23 +181,28 @@ Here are some best practices to ensure your pipelines remain flexible and mainta
 
 ```python
 @step
-def process_data(dataset: Dataset) -> ProcessedData:
+def process_data(dataset: Dataset) -> pd.DataFrame:
     data = dataset.read_data()
     # Process data...
     return processed_data
 ```
 
-2. **Create specialized steps**: Implement separate steps for different dataset types to handle specific processing requirements while keeping your code modular. This approach allows you to tailor your processing to the unique characteristics of each data source.
+2. **Create specialized steps to load the right dataset**: Implement separate steps to load different datasets, while keeping underlying steps standardized.
 
 ```python
 @step
-def process_csv_data(dataset: CSVDataset) -> ProcessedData:
+def load_csv_data() -> CSVDataset:
     # CSV-specific processing
     pass
 
 @step
-def process_bigquery_data(dataset: BigQueryDataset) -> ProcessedData:
+def load_bigquery_data() -> BigQueryDataset:
     # BigQuery-specific processing
+    pass
+
+@step
+def common_processing_step(dataset: Dataset) -> pd.DataFrame:
+    # Loads the base dataset, does not know concrete type
     pass
 ```
 
@@ -217,12 +213,10 @@ def process_bigquery_data(dataset: BigQueryDataset) -> ProcessedData:
 def flexible_data_pipeline(data_source: str):
     if data_source == "csv":
         dataset = load_csv_data()
-        processed_data = process_csv_data(dataset)
     elif data_source == "bigquery":
         dataset = load_bigquery_data()
-        processed_data = process_bigquery_data(dataset)
     
-    final_result = common_processing_step(processed_data)
+    final_result = common_processing_step(dataset)
     return final_result
 ```
 
@@ -230,13 +224,13 @@ def flexible_data_pipeline(data_source: str):
 
 ```python
 @step
-def transform_data(dataset: Dataset) -> TransformedData:
+def transform_data(dataset: Dataset) -> pd.DataFrame:
     data = dataset.read_data()
     # Common transformation logic
     return transformed_data
 
 @step
-def analyze_data(data: TransformedData) -> AnalysisResult:
+def analyze_data(data: pd.DataFrame) -> pd.DataFrame:
     # Common analysis logic
     return analysis_result
 ```
