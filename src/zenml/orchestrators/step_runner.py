@@ -414,7 +414,7 @@ class StepRunner:
             materializer.validate_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
 
-        if artifact.artifact_store_id != self._stack.artifact_store.id:
+        if artifact.artifact_store_id == self._stack.artifact_store.id:
             # Register the artifact store of the active stack here to avoid
             # unnecessary component/flavor calls when using
             # `register_artifact_store_filesystem(...)`
