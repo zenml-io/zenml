@@ -160,8 +160,8 @@ class StepRunRequestFactory:
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_step_run.outputs.items()
+                    output_name: [artifact.id for artifact in artifacts]
+                    for output_name, artifacts in cached_step_run.outputs.items()
                 }
 
                 request.status = ExecutionStatus.CACHED
