@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, List, Tuple, get_args, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.metadata.metadata_types import MetadataType
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
@@ -99,9 +98,7 @@ def resolve_step_inputs(
             ):
                 # metadata values should go directly in parameters, as primitive types
                 step.config.parameters[name] = (
-                    context_model_version.run_metadata[
-                        config_.metadata_name
-                    ]
+                    context_model_version.run_metadata[config_.metadata_name]
                 )
             elif config_.artifact_name is None:
                 err_msg = (
@@ -118,9 +115,7 @@ def resolve_step_inputs(
                         # metadata values should go directly in parameters, as primitive types
                         try:
                             step.config.parameters[name] = (
-                                artifact_.run_metadata[
-                                    config_.metadata_name
-                                ]
+                                artifact_.run_metadata[config_.metadata_name]
                             )
                         except KeyError:
                             err_msg = (

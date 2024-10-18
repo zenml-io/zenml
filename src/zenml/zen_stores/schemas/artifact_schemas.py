@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -351,7 +352,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 artifact_store_id=self.artifact_store_id,
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
-                run_metadata={m.key: m.value for m in self.run_metadata},
+                run_metadata={
+                    m.key: json.loads(m.value) for m in self.run_metadata
+                },
             )
 
         resources = None

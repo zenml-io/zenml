@@ -21,7 +21,8 @@ from pydantic import Field
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedRequest, WorkspaceScopedResponse
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
 )
 
 # ------------------ Request Model ------------------

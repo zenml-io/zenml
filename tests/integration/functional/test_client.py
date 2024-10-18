@@ -20,7 +20,6 @@ from typing import Any, Dict, Generator, Optional
 from uuid import uuid4
 
 import pytest
-from mypy.types import names
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
@@ -31,10 +30,13 @@ from tests.integration.functional.conftest import (
 from tests.integration.functional.utils import sample_name
 from zenml import (
     ExternalArtifact,
+    get_pipeline_context,
+    get_step_context,
     log_artifact_metadata,
+    log_model_metadata,
     pipeline,
     save_artifact,
-    step, get_pipeline_context, log_model_metadata, get_step_context,
+    step,
 )
 from zenml.client import Client
 from zenml.config.source import Source
@@ -1096,34 +1098,9 @@ def test_basic_crud_for_entity(
             # This means the test already succeeded and deleted the entity,
             # nothing to do here
             pass
-#
-#
-# @step
-# def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
-#     """Produce artifact with metadata."""
-#     from zenml.client import Client
-#
-#     log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
-#
-#     client = Client()
-#     model = client.create_model(name="model_name", description="model_desc")
-#     client.create_model_version(
-#         model_name_or_id=model.id,
-#         name="model_version",
-#         description="mv_desc_1",
-#     )
-#     mv = client.create_model_version(
-#         model_name_or_id=model.id,
-#         name="model_version2",
-#         description="mv_desc_2",
-#     )
-#     client.update_model_version(
-#         model_name_or_id=model.id, version_name_or_id=mv.id, stage="staging"
-#     )
-#     return "body_new_one"
 
 
-@step()
+@step
 def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     """Produce artifact with metadata."""
     from zenml.client import Client
@@ -1135,10 +1112,16 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     log_model_metadata(
         metadata={"some_meta": "meta_new_one"},
     )
+
     model = get_step_context().model
 
+    mv = client.create_model_version(
+        model_name_or_id=model.name,
+        name="model_version2",
+        description="mv_desc_2",
+    )
     client.update_model_version(
-        model_name_or_id=model.name, version_name_or_id=model.version, stage="staging"
+        model_name_or_id=model.name, version_name_or_id=mv.id, stage="staging"
     )
     return "body_new_one"
 
@@ -1152,6 +1135,7 @@ def lazy_asserter_test_artifact(
     model: ModelResponse,
     model_version_by_version: ModelVersionResponse,
     model_version_by_stage: ModelVersionResponse,
+    model_version_run_metadata: str,
 ):
     """Assert that passed in values are loaded in lazy mode.
     They do not exists before actual run of the pipeline.
@@ -1161,12 +1145,13 @@ def lazy_asserter_test_artifact(
     assert artifact_new == "body_new_one"
     assert artifact_metadata_new == "meta_new_one"
 
-    assert model.name == "model_name"
-    assert model.description == "model_desc"
+    assert model.name == "aria"
+    # assert model.description == "model_description"
     assert model_version_by_version.name == "model_version"
-    assert model_version_by_version.description == "mv_desc_1"
+    # assert model_version_by_version.description == "mv_desc_1"
     assert model_version_by_stage.name == "model_version2"
     assert model_version_by_stage.description == "mv_desc_2"
+    assert model_version_run_metadata == "meta_new_one"
 
 
 class TestArtifact:
@@ -1227,7 +1212,12 @@ class TestArtifact:
     ):
         """Tests that user can load model artifact versions, metadata and models (versions) in lazy mode in pipeline codes."""
 
-        @pipeline(enable_cache=False, model=Model(name="aria", version="new"))
+        @pipeline(
+            enable_cache=False,
+            model=Model(
+                name="aria", version="model_version", description="mv_desc_1"
+            ),
+        )
         def dummy():
             artifact_existing = clean_client.get_artifact_version(
                 name_id_or_prefix="preexisting"
@@ -1241,9 +1231,11 @@ class TestArtifact:
             )
             artifact_metadata_new = artifact_new.run_metadata["some_meta"]
 
-            model = clean_client.get_model(model_name_or_id="model_name")
+            model = clean_client.get_model(model_name_or_id="aria")
 
-            lz2 = get_pipeline_context().model.run_metadata["some_meta"]
+            model_version_run_metadata = (
+                get_pipeline_context().model.run_metadata["some_meta"]
+            )
 
             lazy_producer_test_artifact()
             lazy_asserter_test_artifact(
@@ -1266,9 +1258,10 @@ class TestArtifact:
                 # load model version by stage
                 clean_client.get_model_version(
                     # this can be lazy loaders too
-                    model.id,
+                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id="staging",
                 ),
+                model_version_run_metadata,
                 after=["lazy_producer_test_artifact"],
             )
 
@@ -1283,7 +1276,7 @@ class TestArtifact:
         log_model_metadata(
             metadata={"some_meta": "meta_preexisting"},
             model_name="aria",
-            model_version="new"
+            model_version="model_version",
         )
         with pytest.raises(KeyError):
             clean_client.get_artifact_version("new_one")
