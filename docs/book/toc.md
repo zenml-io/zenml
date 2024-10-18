@@ -61,11 +61,12 @@
 
 * [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
   * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
-  * [Project
-    templates](how-to/setting-up-a-project-repository/using-project-templates.md)
+  * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
   * [Create your own template](how-to/setting-up-a-project-repository/create-your-own-template.md)
   * [Shared components for teams](how-to/setting-up-a-project-repository/shared_components_for_teams.md)
   * [Set up repository](how-to/setting-up-a-project-repository/set-up-repository.md)
+  * [Stacks, pipelines and models](how-to/setting-up-a-project-repository/stacks-pipelines-models.md)
+  * [Access management](how-to/setting-up-a-project-repository/access-management.md)
 * [⛓️ Build a pipeline](how-to/build-pipelines/README.md)
   * [Use pipeline/step parameters](how-to/build-pipelines/use-pipeline-step-parameters.md)
   * [Configuring a pipeline at runtime](how-to/build-pipelines/configuring-a-pipeline-at-runtime.md)
