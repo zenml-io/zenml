@@ -54,15 +54,19 @@ Note that [ZenML Pro](https://zenml.io/pro) users can tag artifacts directly in 
 
 Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Pro Dashboard directly](https://zenml.io/pro)).
 
-When creating a model using the `Model` object, you can specify tags as key-value pairs that will be attached to the model upon creation:
+When creating a model version using the `Model` object, you can specify tags as key-value pairs that will be attached to the model version upon creation.
+{% hint style="warning" %}
+During pipeline run a model can be also implicitly created (if not exists), in such cases it will not get the `tags` from the `Model` class.
+You can manipulate the model tags using SDK (see below) or the ZenML Pro UI.
+{% endhint %}
 
 ```python
 from zenml.models import Model
 
-# Define tags to be added to the model
+# Define tags to be added to the model version
 tags = ["experiment", "v1", "classification-task"]
 
-# Create a model with tags
+# Create a model version with tags
 model = Model(
     name="iris_classifier",
     version="1.0.0",
