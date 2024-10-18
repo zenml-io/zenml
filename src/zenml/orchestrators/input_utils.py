@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple, get_args, Union
 from uuid import UUID
 
 from zenml.client import Client
@@ -101,7 +101,7 @@ def resolve_step_inputs(
                 step.config.parameters[name] = (
                     context_model_version.run_metadata[
                         config_.metadata_name
-                    ].value
+                    ]
                 )
             elif config_.artifact_name is None:
                 err_msg = (
@@ -120,7 +120,7 @@ def resolve_step_inputs(
                             step.config.parameters[name] = (
                                 artifact_.run_metadata[
                                     config_.metadata_name
-                                ].value
+                                ]
                             )
                         except KeyError:
                             err_msg = (
@@ -143,8 +143,6 @@ def resolve_step_inputs(
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
             input_artifacts[name] = value_
-        elif isinstance(value_, MetadataType):
-            step.config.parameters[name] = value_.value
         else:
             step.config.parameters[name] = value_
 

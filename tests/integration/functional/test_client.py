@@ -20,6 +20,7 @@ from typing import Any, Dict, Generator, Optional
 from uuid import uuid4
 
 import pytest
+from mypy.types import names
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
@@ -33,7 +34,7 @@ from zenml import (
     log_artifact_metadata,
     pipeline,
     save_artifact,
-    step,
+    step, get_pipeline_context, log_model_metadata, get_step_context,
 )
 from zenml.client import Client
 from zenml.config.source import Source
@@ -1095,9 +1096,34 @@ def test_basic_crud_for_entity(
             # This means the test already succeeded and deleted the entity,
             # nothing to do here
             pass
+#
+#
+# @step
+# def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
+#     """Produce artifact with metadata."""
+#     from zenml.client import Client
+#
+#     log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
+#
+#     client = Client()
+#     model = client.create_model(name="model_name", description="model_desc")
+#     client.create_model_version(
+#         model_name_or_id=model.id,
+#         name="model_version",
+#         description="mv_desc_1",
+#     )
+#     mv = client.create_model_version(
+#         model_name_or_id=model.id,
+#         name="model_version2",
+#         description="mv_desc_2",
+#     )
+#     client.update_model_version(
+#         model_name_or_id=model.id, version_name_or_id=mv.id, stage="staging"
+#     )
+#     return "body_new_one"
 
 
-@step
+@step()
 def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     """Produce artifact with metadata."""
     from zenml.client import Client
@@ -1105,19 +1131,14 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
 
     client = Client()
-    model = client.create_model(name="model_name", description="model_desc")
-    client.create_model_version(
-        model_name_or_id=model.id,
-        name="model_version",
-        description="mv_desc_1",
+
+    log_model_metadata(
+        metadata={"some_meta": "meta_new_one"},
     )
-    mv = client.create_model_version(
-        model_name_or_id=model.id,
-        name="model_version2",
-        description="mv_desc_2",
-    )
+    model = get_step_context().model
+
     client.update_model_version(
-        model_name_or_id=model.id, version_name_or_id=mv.id, stage="staging"
+        model_name_or_id=model.name, version_name_or_id=model.version, stage="staging"
     )
     return "body_new_one"
 
@@ -1206,7 +1227,7 @@ class TestArtifact:
     ):
         """Tests that user can load model artifact versions, metadata and models (versions) in lazy mode in pipeline codes."""
 
-        @pipeline(enable_cache=False)
+        @pipeline(enable_cache=False, model=Model(name="aria", version="new"))
         def dummy():
             artifact_existing = clean_client.get_artifact_version(
                 name_id_or_prefix="preexisting"
@@ -1222,6 +1243,8 @@ class TestArtifact:
 
             model = clean_client.get_model(model_name_or_id="model_name")
 
+            lz2 = get_pipeline_context().model.run_metadata["some_meta"]
+
             lazy_producer_test_artifact()
             lazy_asserter_test_artifact(
                 # load artifact directly
@@ -1231,7 +1254,7 @@ class TestArtifact:
                 # pass as artifact response
                 artifact_new,
                 # read value of metadata directly
-                artifact_metadata_new.value,
+                artifact_metadata_new,
                 # load model
                 model,
                 # load model version by version
@@ -1256,6 +1279,11 @@ class TestArtifact:
             metadata={"some_meta": "meta_preexisting"},
             artifact_name="preexisting",
             artifact_version="1.2.3",
+        )
+        log_model_metadata(
+            metadata={"some_meta": "meta_preexisting"},
+            model_name="aria",
+            model_version="new"
         )
         with pytest.raises(KeyError):
             clean_client.get_artifact_version("new_one")

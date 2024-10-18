@@ -21,7 +21,7 @@ from pydantic import Field
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedRequest,
+    WorkspaceScopedRequest, WorkspaceScopedResponse
 )
 
 # ------------------ Request Model ------------------
@@ -45,3 +45,38 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
+
+
+class LazyRunMetadataResponse(WorkspaceScopedResponse):
+    """Lazy run metadata response.
+
+    Used if the run metadata is accessed from the model in
+    a pipeline context available only during pipeline compilation.
+    """
+
+    id: Optional[UUID] = None  # type: ignore[assignment]
+    lazy_load_artifact_name: Optional[str] = None
+    lazy_load_artifact_version: Optional[str] = None
+    lazy_load_metadata_name: Optional[str] = None
+    lazy_load_model_name: str
+    lazy_load_model_version: Optional[str] = None
+
+    def get_body(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata body before pipeline runs."
+        )
+
+    def get_metadata(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata metadata before pipeline runs."
+        )

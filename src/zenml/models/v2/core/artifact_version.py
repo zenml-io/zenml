@@ -636,5 +636,11 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         Returns:
             getter of lazy responses for internal use.
         """
-        # todo: figure this out
-        pass
+        from zenml.metadata.lazy_load import RunMetadataLazyGetter
+
+        return RunMetadataLazyGetter(  # type: ignore[return-value]
+            self.lazy_load_model_name,
+            self.lazy_load_model_version,
+            self.lazy_load_name,
+            self.lazy_load_version,
+        )
