@@ -2,13 +2,12 @@
 name: release-prepare
 on:
   # TODO: Change this back into pull_request and add proper precautions
-  # TODO: Parallize the quickstart run more logically
   # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
   # TODO: Remove the triggers like [prepare]....
-  # TODO: Add the order to all the jobs
   # TODO: Complete the discord message
   # TODO: Test validate new version errors and warnings
   # TODO: Test new version might fail if the latest version is 0.42.0rc
+  # TODO: Trigger it on pull_request.opened
   push:
     branches: [misc/prepare-release-*]
 env:
