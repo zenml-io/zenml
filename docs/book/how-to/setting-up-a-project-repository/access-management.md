@@ -53,7 +53,7 @@ and more. Read in detail about the best practices for upgrading your ZenML serve
 
 When you upgrade to a new version of ZenML, you might have to test if your code works as expected and if the syntax is up to date with what ZenML expects. Although we do our best to make new releases compatible with older versions, there might be some breaking changes that you might have to address.
 
-The pipeline code itself is typically owned by the Data Scientist, but the Platform Engineer is responsible for making sure that new changes can be tested in a safe environment without impacting existing worflows. This involves setting up a new server and doing a staged upgrade and other strategies.
+The pipeline code itself is typically owned by the Data Scientist, but the Platform Engineer is responsible for making sure that new changes can be tested in a safe environment without impacting existing workflows. This involves setting up a new server and doing a staged upgrade and other strategies.
 
 The Data Scientist should also check out the release notes, and the migration guide where applicable when upgrading the code. Read more about the best practices for upgrading your ZenML server and your code in the [Best Practices for Upgrading ZenML Servers](../manage-the-zenml-server/best-practices-upgrading-zenml.md) guide.
 
@@ -74,5 +74,9 @@ The Role-Based Access Control (RBAC) and assigning of permissions is only availa
 By following these guidelines, you can ensure a secure and well-managed ZenML environment that supports collaboration while maintaining proper access controls.
 
 
+
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
 

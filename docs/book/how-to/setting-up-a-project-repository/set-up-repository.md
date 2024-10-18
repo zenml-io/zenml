@@ -102,7 +102,7 @@ By running `zenml init` at the root of your project, you define the project scop
 
 Although this is optional, it is recommended that you do this for all of your
 projects. This is especially important if you are using Jupyter noteeboks in
-your project as these require you to have initialised a `.zen` file.
+your project as these require you to have initialized a `.zen` file.
 
 {% hint style="warning" %}
 All of your import paths should be relative to the source's root.
