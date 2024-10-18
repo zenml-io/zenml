@@ -61,11 +61,11 @@ This default setup allows you to get started and try out the core features but
 you won't be able to use cloud-based components like serverless orchestrators
 and so on.
 
-Users can run the `zenml up` command to spin up a local REST server to serve the
-dashboard. For the local REST server option, the `zenml up` command implicitly
+Users can run the `zenml up` command to spin up a local ZenML OSS server to serve the
+dashboard. For the local OSS server option, the `zenml up` command implicitly
 connects the client to the server. The diagram for this looks as follows:
 
-![ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
+![ZenML with a local ZenML OSS Server](../../.gitbook/assets/Scenario2.png)
 
 {% hint style="warning" %}
 Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version simply use the
@@ -74,7 +74,7 @@ following command `zenml up --legacy`
 
 In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
+![ZenML centrally deployed for multiple users](../../.gitbook/assets/Scenario3.2.png)
 
 You connect to your deployed ZenML server using the `zenml connect` command and
 then you have the full benefits and power of ZenML. You can use all the

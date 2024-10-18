@@ -32,15 +32,13 @@ ZenML OSS is free with Apache 2.0 license. Learn how to deploy it [here](./deplo
 
 The above deployment can be augmented with the ZenML Pro components:
 
-* **ZenML Pro API**: This is a centralized MLOps control plane that includes a
-  managed ZenML dashboard and a special ZenML server optimized for production
-  MLOps workloads.
-* **ZenML Pro Dashboard**: This is a centralized MLOps control plane that includes a
-  managed ZenML dashboard and a special ZenML server optimized for production
-  MLOps workloads.
-* **ZenML Pro Database**: This is where all ZenML Pro related data is stored such
+* **ZenML Pro Control Plane**: This is the central controlling entity of all tenants.
+* **Pro Dashboard**: This is a dashboard that builds on top of the OSS dashboard, and
+add further functionality.
+* **Pro Metadata Store**: This is where all ZenML Pro related metadata is stored such
 as roles, permissions, teams, and tenant management related data.
-* **Single Sign-On (SSO)**: ZenML Pro offers flexible authentication options.
+* **Pro Add-ons**: These are Python modules injected into the OSS Server for enhanced functionality.
+* **Identity Provider**: ZenML Pro offers flexible authentication options.
   In cloud-hosted deployments, it integrates with [Auth0](https://auth0.com/),
   allowing users to log in via social media or corporate credentials.
   For self-hosted deployments, customers can configure their
@@ -53,11 +51,11 @@ as roles, permissions, teams, and tenant management related data.
 
 ZenML Pro offers many additional features to increase your teams
 productivity. No matter your specific needs, the hosting options for ZenML Pro
-range from easy SaaS integration to completely airgapped deployments on your own
+range from easy SaaS integration to completely air-gapped deployments on your own
 infrastructure.
 
 You might have noticed this architecture builds on top of the ZenML OSS system architecture.
-Therefore, if you already have ZenML OSS deployed, it is easy to enroll it as part of a 
+Therefore, if you already have ZenML OSS deployed, it is easy to enroll it as part of a
 ZenML Pro deployment!
 
 The above components interact with other MLOps stack components, secrets, and data in
@@ -72,8 +70,7 @@ a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\
 
 ![ZenML Pro Full SaaS deployment](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
-In this scenario, all services are hosted on infrastructure hosted by the ZenML Team,
-except the MLOps stack components.
+In this scenario, all ZenML services are hosted on infrastructure hosted by the ZenML Team.
 Customer secrets and credentials required to access customer infrastructure are
 stored and managed by the ZenML Pro Control Plane.
 
@@ -91,9 +88,9 @@ customer infrastructure services to support dashboard control plane features
 such as CI/CD, triggering and running pipelines, triggering model deployments
 etc.
 
-This scenario is meant for customers who want to quickly get started with ZenML
-and can to a certain extent allow ingress connections into their infrastructure
-from an external SaaS provider.
+The advantage of this setup is that it is a fully-managed service, and is
+very easy to get started with. However, for some clients even some metadata
+can be sensitive: These clients should refer to the other architecture diagram.
 
 <details>
 
@@ -142,9 +139,5 @@ require completely airgapped deployments, for the tightest security standards.
 
 Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
 and get access to Scenario 1. with a free 14 day trial now!
-
-TODO:
-- Add info about migrating between OSS and Pro self-hsoted
-- Finish with better CTA
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
