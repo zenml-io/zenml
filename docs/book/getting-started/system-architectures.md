@@ -7,7 +7,12 @@ description: Different variations of the ZenML architecture depending on your ne
 This guide walks through the various ways that ZenML can be deployed, from self-hosted OSS, to
 SaaS, to self-hosted ZenML Pro!
 
-## ZenML OSS (Community Edition, Self-hosted)
+## ZenML OSS (Self-hosted)
+
+{% hint style="info" %}
+This page is intended as a high level overview. To learn more about how about to deploy ZenML OSS,
+read [this guide](../getting-started/deploying-zenml/README.md).
+{% endhint %}
 
 A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
 
@@ -28,7 +33,14 @@ A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
 
 ZenML OSS is free with Apache 2.0 license. Learn how to deploy it [here](./deploying-zenml/README.md).
 
-## ZenML Pro (Commercial Product, SaaS or Self-hosted)
+## ZenML Pro (SaaS or Self-hosted)
+
+{% hint style="info" %}
+If you're interested in assessing ZenML Pro, you can create
+a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
+
+If would like to self-host ZenML Pro, please [book a demo](https://zenml.io/book-a-demo).
+{% endhint %}
 
 The above deployment can be augmented with the ZenML Pro components:
 
@@ -62,11 +74,6 @@ The above components interact with other MLOps stack components, secrets, and da
 the following scenarios described below.
 
 ### ZenML Pro SaaS Architecture
-
-{% hint style="info" %}
-If you're interested in assessing ZenML Pro SaaS, you can create
-a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
-{% endhint %}
 
 ![ZenML Pro Full SaaS deployment](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
