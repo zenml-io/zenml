@@ -279,6 +279,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Returns:
             The converted schema.
         """
+        if not artifact_version_request.version:
+            raise ValueError("Missing version for artifact version request.")
+
         try:
             version_number = int(artifact_version_request.version)
         except ValueError:

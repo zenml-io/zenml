@@ -2769,6 +2769,8 @@ class SqlZenStore(BaseZenStore):
                 )
                 artifact_version.artifact_id = artifact_schema.id
 
+            assert artifact_version.artifact_id
+
             if artifact_version.version is None:
                 # No explicit version in the request -> We will try to
                 # auto-increment the numeric version of the artifact version
@@ -2777,7 +2779,7 @@ class SqlZenStore(BaseZenStore):
                     remaining_tries -= 1
                     try:
                         with session.begin_nested():
-                            artifact_version.version = (
+                            artifact_version.version = str(
                                 self._get_next_numeric_version_for_artifact(
                                     session=session,
                                     artifact_id=artifact_version.artifact_id,
