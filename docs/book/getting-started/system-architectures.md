@@ -83,7 +83,9 @@ To learn more about the core concepts for ZenML Pro, go [here](../getting-starte
 
 ### ZenML Pro SaaS Architecture
 
-![ZenML Pro Full SaaS deployment](../.gitbook/assets/cloud_architecture_scenario_1.png)
+![ZenML Pro SaaS deployment with ZenML secret store](../.gitbook/assets/cloud_architecture_scenario_1.png)
+
+![ZenML Pro SaaS deployment with Customer secret store](../.gitbook/assets/cloud_architecture_scenario_1_1.png)
 
 In this scenario, all ZenML services are hosted on infrastructure hosted by the ZenML Team.
 Customer secrets and credentials required to access customer infrastructure are
