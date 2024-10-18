@@ -1546,7 +1546,7 @@ class Client(metaclass=ClientMetaClass):
                         component_type=component_type,
                     )
                     component_config = component_response.configuration
-                    component_flavor = component_response.flavor
+                    component_flavor = component_response.flavor_name
                 else:
                     component_config = component.configuration
                     component_flavor = component.flavor
@@ -2088,7 +2088,7 @@ class Client(metaclass=ClientMetaClass):
 
             validated_config = validate_stack_component_config(
                 configuration_dict=existing_configuration,
-                flavor_name=component.flavor,
+                flavor_name=component.flavor_name,
                 component_type=component.type,
                 # Always enforce validation of custom flavors
                 validate_custom_flavors=True,

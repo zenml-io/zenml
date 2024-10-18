@@ -139,7 +139,7 @@ def generate_stack_component_describe_command(
             if component_.connector:
                 # We also need the flavor to get the connector requirements
                 connector_requirements = client.get_flavor_by_name_and_type(
-                    name=component_.flavor, component_type=component_type
+                    name=component_.flavor_name, component_type=component_type
                 ).connector_requirements
             else:
                 connector_requirements = None
@@ -584,7 +584,7 @@ def generate_stack_component_copy_command(
 
             copied_component = client.create_stack_component(
                 name=target_component,
-                flavor=component_to_copy.flavor,
+                flavor=component_to_copy.flavor_name,
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
                 labels=component_to_copy.labels,
@@ -1774,11 +1774,11 @@ def connect_stack_component_with_service_connector(
 
     try:
         flavor_model = client.get_flavor_by_name_and_type(
-            name=component_model.flavor, component_type=component_type
+            name=component_model.flavor_name, component_type=component_type
         )
     except KeyError as err:
         cli_utils.error(
-            f"Could not find flavor '{component_model.flavor}' for "
+            f"Could not find flavor '{component_model.flavor_name}' for "
             f"{display_name} '{name_id_or_prefix}': {str(err)}"
         )
 

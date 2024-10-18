@@ -7368,7 +7368,7 @@ class SqlZenStore(BaseZenStore):
                             hydrate=False,
                         )
                         need_to_generate_permanent_tokens = (
-                            orchestrator.flavor.startswith("vm_")
+                            orchestrator.flavor_name.startswith("vm_")
                         )
                     else:
                         need_to_generate_permanent_tokens = (

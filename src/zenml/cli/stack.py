@@ -450,7 +450,7 @@ def register_stack(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
                                 [
-                                    component.flavor,
+                                    component.flavor_name,
                                     component.name,
                                     component.configuration or "",
                                     component.connector_resource_id,
@@ -1757,7 +1757,7 @@ Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
         if components:
             component = components[0]
             stack_desc += (
-                f" * `{component.flavor}` {component_type.value}: "
+                f" * `{component.flavor_name}` {component_type.value}: "
                 f"[{component.name}]({get_component_url(component)})\n"
             )
 

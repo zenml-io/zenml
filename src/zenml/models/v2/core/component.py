@@ -44,9 +44,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
     from sqlmodel import SQLModel
 
-    from zenml.models.v2.core.service_connector import (
-        ServiceConnectorResponse,
-    )
+    from zenml.models import FlavorResponse, ServiceConnectorResponse
 
 # ------------------ Base Model ------------------
 
@@ -187,7 +185,7 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
     type: StackComponentType = Field(
         title="The type of the stack component.",
     )
-    flavor: str = Field(
+    flavor_name: str = Field(
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -231,6 +229,11 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ComponentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the component entity."""
+
+    flavor: Optional["FlavorResponse"] = Field(
+        default=None,
+        title="The flavor of this stack component.",
+    )
 
 
 class ComponentResponse(
@@ -288,13 +291,13 @@ class ComponentResponse(
         return self.get_body().type
 
     @property
-    def flavor(self) -> str:
-        """The `flavor` property.
+    def flavor_name(self) -> str:
+        """The `flavor_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().flavor
+        return self.get_body().flavor_name
 
     @property
     def integration(self) -> Optional[str]:
@@ -358,6 +361,15 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_metadata().connector
+
+    @property
+    def flavor(self) -> Optional["FlavorResponse"]:
+        """The `flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().flavor
 
 
 # ------------------ Filter Model ------------------
