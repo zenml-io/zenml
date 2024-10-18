@@ -2,7 +2,7 @@
 description: Recommended repository structure and best practices.
 ---
 
-# Best practices
+# Set up your repository
 
 While it doesn't matter how you structure your ZenML project, here is a recommended project structure the core team often uses:
 

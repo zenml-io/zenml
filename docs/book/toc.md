@@ -64,7 +64,7 @@
   * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
   * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
   * [Shared components for teams](how-to/setting-up-a-project-repository/shared_components_for_teams.md)
-  * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
+  * [Set up repository](how-to/setting-up-a-project-repository/set-up-repository.md)
 * [⛓️ Build a pipeline](how-to/build-pipelines/README.md)
   * [Use pipeline/step parameters](how-to/build-pipelines/use-pipeline-step-parameters.md)
   * [Configuring a pipeline at runtime](how-to/build-pipelines/configuring-a-pipeline-at-runtime.md)
