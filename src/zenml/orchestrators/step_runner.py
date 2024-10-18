@@ -36,6 +36,7 @@ from zenml.constants import (
     ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
+from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
@@ -239,7 +240,9 @@ class StepRunner:
                         from zenml.orchestrators import step_run_utils
 
                         step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=output_artifacts,
+                            artifacts={
+                                k: [v] for k, v in output_artifacts.items()
+                            },
                             output_configurations=step_run.config.outputs,
                             model_version=model_version,
                         )
@@ -591,7 +594,7 @@ class StepRunner:
                 version=version,
                 tags=tags,
                 user_metadata=user_metadata,
-                manual_save=False,
+                save_type=ArtifactSaveType.STEP_OUTPUT,
             )
             output_artifacts[output_name] = artifact
 

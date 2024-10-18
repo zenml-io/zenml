@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 
 import pytest
@@ -27,7 +27,7 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactSaveType, ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponse,
@@ -499,6 +499,7 @@ def sample_artifact_version_model(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
             tags=[],
+            save_type=ArtifactSaveType.STEP_OUTPUT,
         ),
         metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
@@ -518,6 +519,7 @@ def sample_artifact_request_model() -> ArtifactVersionRequest:
         data_type="sample_data_type",
         workspace=uuid4(),
         user=uuid4(),
+        save_type=ArtifactSaveType.STEP_OUTPUT,
     )
 
 
@@ -533,7 +535,9 @@ def create_step_run(
         step_run_name: str = "step_run_name",
         step_name: str = "step_name",
         outputs: Optional[Dict[str, Any]] = None,
-        output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
+        output_artifacts: Optional[
+            Dict[str, List[ArtifactVersionResponse]]
+        ] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         spec = StepSpec.model_validate(
