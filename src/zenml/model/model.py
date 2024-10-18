@@ -88,6 +88,7 @@ class Model(BaseModel):
     was_created_in_this_run: bool = False
     _model_id: UUID = PrivateAttr(None)
     _number: Optional[int] = PrivateAttr(None)
+    _created_model_version: bool = PrivateAttr(False)
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -568,7 +569,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    tags=self.tags,
                     user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,
@@ -784,8 +784,13 @@ class Model(BaseModel):
                     retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
+            self._created_model_version = True
 
-            logger.info(f"New model version `{self.version}` was created.")
+            logger.info(
+                "Created new model version `%s` for model `%s`.",
+                self.version,
+                self.name,
+            )
 
         self.model_version_id = model_version.id
         self._model_id = model_version.model.id

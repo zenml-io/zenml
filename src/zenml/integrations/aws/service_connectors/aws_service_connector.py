@@ -522,6 +522,9 @@ that the connector will be allowed to access (e.g. `arn:aws:s3:::*` and
 - `s3:PutObject`
 - `s3:DeleteObject`
 - `s3:ListAllMyBuckets`
+- `s3:GetBucketVersioning`
+- `s3:ListBucketVersions`
+- `s3:DeleteObjectVersion`
 
 If set, the resource name must identify an S3 bucket using one of the following
 formats:
@@ -795,6 +798,9 @@ class AWSServiceConnector(ServiceConnector):
                             "s3:PutObject",
                             "s3:DeleteObject",
                             "s3:ListAllMyBuckets",
+                            "s3:GetBucketVersioning",
+                            "s3:ListBucketVersions",
+                            "s3:DeleteObjectVersion",
                         ],
                         "Resource": resource,
                     },

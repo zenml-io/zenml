@@ -50,6 +50,9 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
