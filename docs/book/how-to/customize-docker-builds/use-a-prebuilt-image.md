@@ -14,9 +14,9 @@ Note that using this feature means that you won't be able to leverage any update
 
 ## How do you use this feature
 
-The [DockerSettings](../../../../docs/book/how-to/customize-docker-builds/docker-settings-on-a-pipeline.md#specify-docker-settings-for-a-pipeline) class in ZenML allows you to set a parent image to be used in your pipeline runs and the ability to skip building an image on top of it.
+The [`DockerSettings`](./docker-settings-on-a-pipeline.md#specify-docker-settings-for-a-pipeline) class in ZenML allows you to set a parent image to be used in your pipeline runs and gives the ability to skip building an image on top of it.
 
-Just set the `parent_image` attribute of the `DockerSettings` class to the image you want to use and set `skip_build` to `True`.
+To do this, just set the `parent_image` attribute of the `DockerSettings` class to the image you want to use and set `skip_build` to `True`.
 
 ```python
 docker_settings = DockerSettings(
@@ -31,7 +31,7 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-You should make sure that this image is pushed to a registry where the orchestrator/step operator/other components that require the image can pull it from, without any involvement by ZenML.
+You should make sure that this image is pushed to a registry from which the orchestrator/step operator/other components that require the image can pull, without any involvement by ZenML.
 {% endhint %}
 
 ## What the parent image should contain
@@ -106,15 +106,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAG
 
 The files containing your pipeline and step code and all other necessary functions should be available in your execution environment.
 
-- If you have a code repository registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
+- If you have a [code repository](../../user-guide/production-guide/connect-code-repository.md) registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
 
 - If you don't have a code repository but `allow_download_from_artifact_store` is set to `True` in your `DockerSettings` (`True` by default), ZenML will upload your code to the artifact store and make it available to the image.
 
 - If both of these options are disabled, you can include your code files in the image yourself. This approach is not recommended and you should use one of the above options.
 
-Take a look at [which files are built into the image](../../../../docs/book/how-to/customize-docker-builds/which-files-are-built-into-the-image.md) page to learn more about what to include.
+Take a look at [which files are built into the image](./which-files-are-built-into-the-image.md) page to learn more about what to include. Make sure that your code is in the `/app` directory and that this is set as the active working directory.
 
 
 {% hint style="info" %}
 Note that you also need Python, `pip` and `zenml` installed in your image.
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

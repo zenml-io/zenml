@@ -138,7 +138,7 @@ def artifact_linker(
 
     if model:
         link_artifact_to_model(
-            artifact_version_id=artifact.id,
+            artifact_version=artifact,
             model=model,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
@@ -625,7 +625,7 @@ class TestModel:
                         data="Hello, World!", name=artifact_name
                     )
                     link_artifact_to_model(
-                        artifact_version_id=artifact.id,
+                        artifact_version=artifact,
                         model=Model(name=mdl_name),
                     )
 
@@ -663,13 +663,6 @@ class TestModel:
                 mv_in_pipe = Model(
                     name=mdl_name,
                 )
-
-                # no context, no model
-                with patch("zenml.artifacts.utils.logger.debug") as logger:
-                    _inner_pipeline()
-                    logger.assert_called_once_with(
-                        "Unable to link saved artifact to model."
-                    )
 
                 # use context
                 _inner_pipeline.with_options(model=mv_in_pipe)()

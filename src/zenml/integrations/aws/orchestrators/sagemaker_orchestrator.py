@@ -467,8 +467,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # Yield metadata based on the generated execution object
         yield from self.compute_metadata(execution=execution)
 
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        )
         # mainly for testing purposes, we wait for the pipeline to finish
-        if self.config.synchronous:
+        if settings.synchronous:
             logger.info(
                 "Executing synchronously. Waiting for pipeline to finish... \n"
                 "At this point you can `Ctrl-C` out without cancelling the "

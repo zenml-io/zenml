@@ -5,4 +5,13 @@ structure:
   summary: toc.md
 
 redirects:
- how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
+  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
+  reference/migration-guide/README.md: how-to/manage-the-zenml-server/migration-guide/migration-guide.md
+  reference/migration-guide/migration-zero-twenty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty.md
+  reference/migration-guide/migration-zero-thirty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty.md
+  reference/migration-guide/migration-zero-forty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-forty.md
+  reference/migration-guide/migration-zero-sixty.md: how-to/manage-the-zenml-server/migration-guide/migration-zero-sixty.md
+
+  getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md: how-to/manage-the-zenml-server/upgrade-zenml-server.md
+  getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server.md: how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/stack-deployment/implement-a-custom-integration.md: how-to/contribute-to-zenml/implement-a-custom-integration.md

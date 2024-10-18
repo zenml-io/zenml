@@ -50,10 +50,10 @@ def test_generate_run_nodes_and_edges(
 
     # Create and retrieve a pipeline run
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
@@ -188,7 +188,7 @@ def external_artifact_loader_step(a: int) -> int:
 
 @pipeline
 def second_pipeline(artifact_version_id: UUID):
-    external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
+    external_artifact_loader_step(a=ExternalArtifact(value=1))
 
 
 def test_add_external_artifacts(clean_client: "Client"):

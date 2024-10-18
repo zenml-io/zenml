@@ -23,19 +23,18 @@ from tests.integration.functional.conftest import (
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.pipelines.base_pipeline import BasePipeline
 
 
 def test_pipeline_run_linkage(
     clean_client: "Client", connected_two_step_pipeline
 ):
     """Integration test for `pipeline.get_runs()` and related properties."""
-    pipeline_instance: BasePipeline = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
     for i in range(3):
-        pipeline_instance.run()
+        pipeline_instance()
         model = pipeline_instance.model
         runs = model.get_runs()
         assert len(runs) == model.num_runs == i + 1
@@ -45,16 +44,16 @@ def test_pipeline_run_linkage(
     assert pipeline_instance.model.num_runs == 3
 
     # Check different versions of the pipeline are using the same model
-    pipeline_instance_2: BasePipeline = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_two_test_step(),
+    pipeline_instance_2 = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_two_test_step,
     )
-    pipeline_instance_2.run()
+    pipeline_instance_2()
     assert pipeline_instance.model.num_runs == 4
     assert pipeline_instance_2.model.num_runs == 4
-    pipeline_instance.run()
+    pipeline_instance()
     assert pipeline_instance.model.num_runs == 5
     assert pipeline_instance_2.model.num_runs == 5
-    pipeline_instance_2.run()
+    pipeline_instance_2()
     assert pipeline_instance.model.num_runs == 6
     assert pipeline_instance_2.model.num_runs == 6
