@@ -57,6 +57,8 @@ Artifacts can be tied to a Model for better organization and visibility across p
 
 ## So how do I put this all together?
 
+![Diagram showing how Models bring together Pipelines and Artifacts](../../.gitbook/assets/model_pipeline_artifact.png)
+
 Let's go through a real-world example to see how we can use Stacks, Pipelines, Models, and Artifacts together. Imagine there are two people in your team working on a classification model, Bob and Alice.
 
 Here's how the workflow would look like with ZenML:
