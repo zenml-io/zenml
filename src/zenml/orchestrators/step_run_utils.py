@@ -278,6 +278,8 @@ class StepRunRequestFactory:
 
         if artifact.save_type == ArtifactSaveType.STEP_OUTPUT:
             try:
+                # TODO: this fails for the cached steps, since artifact was not produced by that parent step,
+                # so STEP_OUTPUT become LAZY_LOADED by mistake. Any thoughts?
                 if artifact.step.id not in parent_step_ids:
                     return StepRunInputArtifactType.LAZY_LOADED
             except RuntimeError:
