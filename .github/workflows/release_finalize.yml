@@ -1,7 +1,8 @@
 ---
 name: release-finalize
   # TODO: Change this back into pull_request and closed and merged==true
-  # TODO: Remove the merged trigger
+  # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
+  # TODO: Remove the triggers like [merge]....
 on:
   push:
     branches: [misc/prepare-release-*]

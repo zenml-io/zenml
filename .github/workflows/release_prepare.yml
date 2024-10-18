@@ -7,7 +7,6 @@ on:
   # TODO: Complete the discord message
   # TODO: Test validate new version errors and warnings
   # TODO: Test new version might fail if the latest version is 0.42.0rc
-  # TODO: Trigger it on pull_request.opened
   push:
     branches: [misc/prepare-release-*]
 env:

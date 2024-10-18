@@ -53,7 +53,7 @@ else
   fi
 
   if [ "$PLANNED_VERSION" != "$IDEAL_NEW_VERSION" ]; then
-    echo "::warning::Warning: The new planned version '$PLANNED_VERSION' is not the same as the ideal version '$IDEAL_NEW_VERSION'. Make sure this is the intended behaviour."
+    echo "::warning::Warning: The new planned version '$PLANNED_VERSION' is not the same as the ideal version '$IDEAL_NEW_VERSION'. Please, make sure this '$PLANNED_VERSION' is selected on purpose."
   fi
 
 fi
