@@ -6,20 +6,22 @@ description: Sharing code and libraries within teams.
 
 Teams often need to collaborate on projects, share versioned logic, and implement cross-cutting functionality that benefits the entire organization. Sharing code libraries allows for incremental improvements, increased robustness, and standardization across projects.
 
-ZenML offers several approaches for teams to share code and functionality. Let's explore these options:
+This guide will cover two main aspects of sharing code within teams using ZenML:
 
-## 1. ZenML Custom Components
+1. What can be shared
+2. How to distribute shared components
 
-ZenML allows sharing of custom components between teams, including custom flavors, steps, and materializers.
+## What Can Be Shared
+
+ZenML offers several types of custom components that can be shared between teams:
 
 ### Custom Flavors
 
-Custom flavors are special integrations that don't come built-in with ZenML. To implement and share a custom flavor:
+Custom flavors are special integrations that don't come built-in with ZenML. These can be implemented and shared as follows:
 
 1. Create the custom flavor in a shared repository.
 2. Implement the custom stack component as described in the [ZenML documentation](../stack-deployment/implement-a-custom-stack-component.md#implementing-a-custom-stack-component-flavor).
-3. Register the component using the ZenML CLI, for example in the case of a
-   custom artifact store flavor:
+3. Register the component using the ZenML CLI, for example in the case of a custom artifact store flavor:
 
 ```bash
 zenml artifact-store flavor register <path.to.MyS3ArtifactStoreFlavor>
@@ -27,7 +29,7 @@ zenml artifact-store flavor register <path.to.MyS3ArtifactStoreFlavor>
 
 ### Custom Steps
 
-Custom steps can be shared via a separate repository. Team members can reference these components as they would normally reference Python modules.
+Custom steps can be created and shared via a separate repository. Team members can reference these components as they would normally reference Python modules.
 
 ### Custom Materializers
 
@@ -37,11 +39,15 @@ Custom materializers are common components that teams often need to share. To im
 2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types).
 3. Team members can import and use the shared materializer in their projects.
 
-## 2. Shared Private Wheels
+## How to Distribute Shared Components
 
-Another approach to sharing code within a team is using shared private wheels. This method packages Python code for internal distribution without making it publicly available.
+There are several methods to distribute and use shared components within a team:
 
-### Benefits of Using Shared Private Wheels
+### Shared Private Wheels
+
+Using shared private wheels is an effective approach to sharing code within a team. This method packages Python code for internal distribution without making it publicly available.
+
+#### Benefits of Using Shared Private Wheels
 
 - Packaged format: Easy to install using pip
 - Version management: Simplifies managing different code versions
@@ -49,7 +55,7 @@ Another approach to sharing code within a team is using shared private wheels. T
 - Privacy: Can be hosted on internal PyPI servers
 - Smooth integration: Imported like any other Python package
 
-### Setting Up Shared Private Wheels
+#### Setting Up Shared Private Wheels
 
 1. Create a private PyPI server or use a service like AWS CodeArtifact.
 2. Build your code into wheel format.
@@ -57,11 +63,11 @@ Another approach to sharing code within a team is using shared private wheels. T
 4. Configure pip to use the private PyPI server in addition to the public one.
 5. Install the private packages using pip, just like public packages.
 
-## 3. Using Shared Libraries with `DockerSettings`
+### Using Shared Libraries with `DockerSettings`
 
 When running pipelines with remote orchestrators, ZenML generates a Dockerfile at runtime. You can use the `DockerSettings` class to specify how to include your shared libraries in this Docker image.
 
-### Installing Shared Libraries
+#### Installing Shared Libraries
 
 Here are some ways to include shared libraries using `DockerSettings`. Either specify a list of requirements:
 
@@ -83,9 +89,11 @@ def my_pipeline(...):
     ...
 ```
 
-For more on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../customize-docker-builds/how-to-use-a-private-pypi-repository.md).
+For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../customize-docker-builds/how-to-use-a-private-pypi-repository.md).
 
 ## Best Practices
+
+Regardless of what you're sharing or how you're distributing it, consider these best practices:
 
 - Use version control for shared code repositories.
 
@@ -113,5 +121,3 @@ accelerate development processes within the ZenML framework.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-
