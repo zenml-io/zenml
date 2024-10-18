@@ -24,4 +24,7 @@ The billing information for your tenants is managed on the organization level, a
 
 There are a lot of other operations involving Organizations that you can perform directly through the API. You can find more information about the API by visiting [https://cloudapi.zenml.io/](https://cloudapi.zenml.io/).
 
-![Image showing the swagger docs](../../.gitbook/assets/cloudapi_swagger.png)
+![Image showing the swagger docs](../../.gitbook/assets/cloudapi_swagger.png)<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

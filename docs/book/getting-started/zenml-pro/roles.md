@@ -133,4 +133,7 @@ through the dashboard like this:
 3. **Use Custom Roles**: Create custom roles for teams or projects with specific needs.
 4. **Document Roles**: Maintain documentation of your custom roles and their intended use.
 
-By leveraging ZenML Pro's role-based access control, you can ensure that your team members have the right level of access to resources, maintaining security while enabling collaboration across your MLOps projects.
+By leveraging ZenML Pro's role-based access control, you can ensure that your team members have the right level of access to resources, maintaining security while enabling collaboration across your MLOps projects.<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

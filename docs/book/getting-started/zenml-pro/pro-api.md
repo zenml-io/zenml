@@ -67,4 +67,7 @@ The API uses standard HTTP status codes to indicate the success or failure of re
 
 Be aware that the ZenML Pro API may have rate limiting in place to ensure fair usage. If you exceed the rate limit, you may receive a 429 (Too Many Requests) status code. Implement appropriate backoff and retry logic in your applications to handle this scenario.
 
-Remember to refer to the complete API documentation available at `https://cloudapi.zenml.io` for detailed information about all available endpoints, request/response schemas, and additional features.
+Remember to refer to the complete API documentation available at `https://cloudapi.zenml.io` for detailed information about all available endpoints, request/response schemas, and additional features.<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

@@ -70,4 +70,7 @@ For example, if you assign the "Editor" role to a team in a specific tenant, all
 4. **Regular Audits**: Periodically review team memberships and their assigned roles.
 5. **Document Team Purposes**: Maintain clear documentation about each team's purpose and associated projects or tenants.
 
-By leveraging Teams in ZenML Pro, you can streamline user management, simplify access control, and better organize your MLOps workflows across your organization and tenants.
+By leveraging Teams in ZenML Pro, you can streamline user management, simplify access control, and better organize your MLOps workflows across your organization and tenants.<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

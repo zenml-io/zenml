@@ -113,4 +113,7 @@ Simply visit `<TENANT_URL>/docs` on your browser to see a full list of methods t
 
 ![Image showing the tenant swagger docs](../../.gitbook/assets/swagger_docs_zenml.png)
 
-Read more about to access the API [here](../../reference/api-reference.md).
+Read more about to access the API [here](../../reference/api-reference.md).<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
