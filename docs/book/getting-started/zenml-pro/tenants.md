@@ -1,3 +1,8 @@
+---
+description: >
+  Learn how to use tenants in ZenML Pro.
+---
+
 # Tenants
 
 Tenants are individual, isolated deployments of the ZenML server. Each tenant has its own set of users, roles, and resources. Essentially, everything you do in ZenML Pro revolves around a tenant: all of your pipelines, stacks, runs, connectors, etc. are scoped to a tenant.

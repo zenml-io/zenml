@@ -1,6 +1,6 @@
 ---
 description: >
-  Learn how to use the ZenML Pro API programmatically.
+  Learn how to use the ZenML Pro API.
 ---
 
 # Using the ZenML Pro API
