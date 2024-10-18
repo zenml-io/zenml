@@ -347,6 +347,7 @@ class Client(metaclass=ClientMetaClass):
 
     _active_user: Optional["UserResponse"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_stack: Optional["StackResponse"] = None
 
     def __init__(
         self,
@@ -1470,8 +1471,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+        if stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
+            if not self._active_stack or self._active_stack.id != UUID(
+                stack_id
+            ):
+                self._active_stack = self.get_stack(stack_id)
+
+            return self._active_stack
 
         stack_id: Optional[UUID] = None
 
