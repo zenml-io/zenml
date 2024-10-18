@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
 
-from typing import Optional, Tuple
+from typing import Optional
 from uuid import UUID
 
 from zenml import constants
@@ -48,30 +48,25 @@ def get_cloud_dashboard_url() -> Optional[str]:
     return None
 
 
-def get_server_dashboard_url() -> Tuple[Optional[str], bool]:
+def get_server_dashboard_url() -> Optional[str]:
     """Get the base url of the dashboard deployed by the server.
 
     Returns:
-        The server dashboard url and whether the dashboard is the legacy
-        dashboard or not.
+        The server dashboard url.
     """
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
         server_info = client.zen_store.get_store_info()
-        if server_info.use_legacy_dashboard:
-            suffix = f"{constants.WORKSPACES}/{client.active_workspace.name}"
-        else:
-            suffix = ""
 
         if server_info.server_url:
             url = server_info.server_url
         else:
             url = client.zen_store.url
 
-        return url + suffix, server_info.use_legacy_dashboard
+        return url
 
-    return None, False
+    return None
 
 
 def get_stack_url(stack: StackResponse) -> Optional[str]:
@@ -83,13 +78,10 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     Returns:
         the URL to the stack if the dashboard is available, else None.
     """
-    base_url, is_legacy_dashboard = get_server_dashboard_url()
+    base_url = get_server_dashboard_url()
 
     if base_url:
-        if is_legacy_dashboard:
-            return base_url + f"{constants.STACKS}/{stack.id}/configuration"
-        else:
-            return base_url + constants.STACKS
+        return base_url + constants.STACKS
 
     return None
 
@@ -103,16 +95,10 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     Returns:
         the URL to the component if the dashboard is available, else None.
     """
-    base_url, is_legacy_dashboard = get_server_dashboard_url()
+    base_url = get_server_dashboard_url()
 
     if base_url:
-        if is_legacy_dashboard:
-            return (
-                base_url
-                + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
-            )
-        else:
-            return base_url + constants.STACKS
+        return base_url + constants.STACKS
 
     return None
 
@@ -130,15 +116,9 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     if cloud_url:
         return f"{cloud_url}{constants.RUNS}/{run.id}"
 
-    dashboard_url, is_legacy_dashboard = get_server_dashboard_url()
+    dashboard_url = get_server_dashboard_url()
     if dashboard_url:
-        if is_legacy_dashboard:
-            if run.pipeline:
-                return f"{dashboard_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
-            else:
-                return f"{dashboard_url}/all-runs/{run.id}/dag"
-        else:
-            return f"{dashboard_url}{constants.RUNS}/{run.id}"
+        return f"{dashboard_url}{constants.RUNS}/{run.id}"
 
     return None
 
