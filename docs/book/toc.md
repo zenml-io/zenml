@@ -11,7 +11,7 @@
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
-  * [Custom secret stores](getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores.md)
+  * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
   * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
