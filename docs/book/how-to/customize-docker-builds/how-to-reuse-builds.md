@@ -56,7 +56,7 @@ Once you have registered one or more code repositories, ZenML will check whether
 * First, the [source root](./which-files-are-built-into-the-image.md) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
-### Tracking code version for pipeline runs
+### Tracking code versions for pipeline runs
 
 If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
