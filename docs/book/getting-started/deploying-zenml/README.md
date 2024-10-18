@@ -89,7 +89,11 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 Currently, there are two main options to access a deployed ZenML server:
 
 1. **Managed deployment:** With [ZenML Pro](../zenml-pro/README.md) offering you can utilize a control plane to create ZenML servers, also known as [tenants](../zenml-pro/tenants.md). These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [Docker](./deploy-with-docker.md), [Helm](./deploy-with-helm.md), or [HuggingFace Spaces](./deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
+2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [Docker](./deploy-with-docker.md), [Helm](./deploy-with-helm.md), or [HuggingFace Spaces](./deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an air-gapped solution on your infrastructure.
+
+{% hint style="warning" %}
+Currently the ZenML server supports a legacy and a brand-new version of the dashboard. To use the legacy version which supports stack registration from the dashboard simply set the following environment variable in the deployment environment: `export ZEN_SERVER_USE_LEGACY_DASHBOARD=True`.
+{% endhint %}
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
