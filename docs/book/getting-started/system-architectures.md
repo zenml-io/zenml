@@ -85,8 +85,6 @@ To learn more about the core concepts for ZenML Pro, go [here](../getting-starte
 
 ![ZenML Pro SaaS deployment with ZenML secret store](../.gitbook/assets/cloud_architecture_scenario_1.png)
 
-![ZenML Pro SaaS deployment with Customer secret store](../.gitbook/assets/cloud_architecture_scenario_1_1.png)
-
 In this scenario, all ZenML services are hosted on infrastructure hosted by the ZenML Team.
 Customer secrets and credentials required to access customer infrastructure are
 stored and managed by the ZenML Pro Control Plane.
@@ -113,11 +111,10 @@ can be sensitive: These clients should refer to the other architecture diagram.
 
 <summary>Detailed Architecture Diagram for SaaS deployment</summary>
 
-<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment"><figcaption>ZenML Pro Full SaaS deployment</figcaption></figure>
+<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment"><figcaption>ZenML Pro Full SaaS deployment with ZenML secret store</figcaption></figure>
 
 </details>
 
-{% hint style="info" %}
 We also offer a hybrid SaaS option where customer secrets are stored on the
 customer side. In this case, the customer connects their own
 secret store directly to the ZenML server that is managed by us. All ZenML
@@ -129,11 +126,13 @@ ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 {% endhint %}
 
+![ZenML Pro SaaS deployment with Customer secret store](../.gitbook/assets/cloud_architecture_scenario_1_1.png)
+
 <details>
 
 <summary>Detailed Architecture Diagram for SaaS deployment with custom secret store configuration</summary>
 
-<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed_2.png" alt="ZenML Pro Full SaaS deployment with custom secret store"><figcaption>ZenML Pro Full SaaS deployment with custom secret store</figcaption></figure>
+<figure><img src="../.gitbook/assets/cloud_architecture_saas_detailed_2.png" alt="ZenML Pro Full SaaS deployment with custom secret store"><figcaption>ZenML Pro Full SaaS deployment with customer secret store</figcaption></figure>
 
 </details>
 
