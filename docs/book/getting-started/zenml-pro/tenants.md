@@ -56,8 +56,6 @@ This separation allows for a clear distinction between experimental work and pro
 
 ![Staging vs production tenants](../../.gitbook/assets/staging-production-tenants.png)
 
-The image could depict two parallel paths: one for staging (showing icons for experimentation, testing, and development) and one for production (showing icons for deployment, monitoring, and customer-facing services). Arrows could show the flow from staging to production.
-
 ### Organizing tenants by business logic
 
 Another approach is to create tenants based on your organization's structure or specific use cases. This method can help in:
@@ -84,7 +82,7 @@ This organization method offers several benefits:
 
 ![Business logic-based tenant organization](../../.gitbook/assets/business-logic-tenants.png)
 
-Of course, both approaches can be mixed and matched.
+Of course, both approaches of organizing your tenants can be mixed and matched to create a structure that works best for you.
 
 ### Best Practices for Tenant Organization
 
