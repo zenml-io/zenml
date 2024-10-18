@@ -31,7 +31,7 @@ def upgrade() -> None:
     """)
     op.execute("""
         UPDATE artifact_version
-        SET save_type = 'default'
+        SET save_type = 'external'
         WHERE save_type is NULL
     """)
 
