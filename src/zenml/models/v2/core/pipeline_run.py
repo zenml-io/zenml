@@ -30,6 +30,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -50,9 +51,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
-    )
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
     )
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
@@ -190,7 +188,7 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipeline runs."""
 
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
@@ -450,7 +448,7 @@ class PipelineRunResponse(
         return self.get_body().model_version_id
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:

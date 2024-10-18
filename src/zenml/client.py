@@ -136,9 +136,7 @@ from zenml.models import (
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -4390,7 +4388,7 @@ class Client(metaclass=ClientMetaClass):
         resource_id: UUID,
         resource_type: MetadataResourceTypes,
         stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponse]:
+    ) -> None:
         """Create run metadata.
 
         Args:
@@ -4403,7 +4401,7 @@ class Client(metaclass=ClientMetaClass):
                 the metadata.
 
         Returns:
-            The created metadata, as string to model dictionary.
+            None
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -4438,74 +4436,8 @@ class Client(metaclass=ClientMetaClass):
             values=values,
             types=types,
         )
-        return self.zen_store.create_run_metadata(run_metadata)
-
-    def list_run_metadata(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        resource_id: Optional[UUID] = None,
-        resource_type: Optional[MetadataResourceTypes] = None,
-        stack_component_id: Optional[UUID] = None,
-        key: Optional[str] = None,
-        value: Optional["MetadataType"] = None,
-        type: Optional[str] = None,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            sort_by: The field to sort the results by.
-            page: The page number to return.
-            size: The number of results to return per page.
-            logical_operator: The logical operator to use for filtering.
-            id: The ID of the metadata.
-            created: The creation time of the metadata.
-            updated: The last update time of the metadata.
-            workspace_id: The ID of the workspace the metadata belongs to.
-            user_id: The ID of the user that created the metadata.
-            resource_id: The ID of the resource the metadata belongs to.
-            resource_type: The type of the resource the metadata belongs to.
-            stack_component_id: The ID of the stack component that produced
-                the metadata.
-            key: The key of the metadata.
-            value: The value of the metadata.
-            type: The type of the metadata.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        metadata_filter_model = RunMetadataFilter(
-            sort_by=sort_by,
-            page=page,
-            size=size,
-            logical_operator=logical_operator,
-            id=id,
-            created=created,
-            updated=updated,
-            workspace_id=workspace_id,
-            user_id=user_id,
-            resource_id=resource_id,
-            resource_type=resource_type,
-            stack_component_id=stack_component_id,
-            key=key,
-            value=value,
-            type=type,
-        )
-        metadata_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_run_metadata(
-            metadata_filter_model,
-            hydrate=hydrate,
-        )
+        self.zen_store.create_run_metadata(run_metadata)
+        return None
 
     # -------------------------------- Secrets ---------------------------------
 

@@ -45,7 +45,7 @@ def resolve_step_inputs(
         The IDs of the input artifact versions and the IDs of parent steps of
             the current step.
     """
-    from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+    from zenml.models import ArtifactVersionResponse
 
     current_run_steps = {
         run_step.name: run_step
@@ -98,9 +98,7 @@ def resolve_step_inputs(
             ):
                 # metadata values should go directly in parameters, as primitive types
                 step.config.parameters[name] = (
-                    context_model_version.run_metadata[
-                        config_.metadata_name
-                    ].value
+                    context_model_version.run_metadata[config_.metadata_name]
                 )
             elif config_.artifact_name is None:
                 err_msg = (
@@ -117,9 +115,7 @@ def resolve_step_inputs(
                         # metadata values should go directly in parameters, as primitive types
                         try:
                             step.config.parameters[name] = (
-                                artifact_.run_metadata[
-                                    config_.metadata_name
-                                ].value
+                                artifact_.run_metadata[config_.metadata_name]
                             )
                         except KeyError:
                             err_msg = (
@@ -142,8 +138,6 @@ def resolve_step_inputs(
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
             input_artifacts[name] = value_
-        elif isinstance(value_, RunMetadataResponse):
-            step.config.parameters[name] = value_.value
         else:
             step.config.parameters[name] = value_
 

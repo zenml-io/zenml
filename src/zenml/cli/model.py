@@ -62,7 +62,7 @@ def _model_version_to_print(
     run_metadata = None
     if model_version.run_metadata:
         run_metadata = {
-            k: v.value for k, v in model_version.run_metadata.items()
+            k: v for k, v in model_version.run_metadata.items()
         }
     return {
         "id": model_version.id,
