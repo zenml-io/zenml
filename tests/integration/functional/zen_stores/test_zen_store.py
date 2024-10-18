@@ -5364,7 +5364,6 @@ class TestRunMetadata:
                     artifact_id=artifact.id,
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,
-                    version="1",
                     type=ArtifactType.DATA,
                     uri=sample_name("foo"),
                     materializer=Source(
