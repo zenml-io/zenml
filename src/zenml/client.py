@@ -190,6 +190,7 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
+from zenml.models.v2.core.step_run import StepRunUpdate
 from zenml.services.service import ServiceConfig
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
@@ -4139,6 +4140,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        from zenml import get_step_context
+
         if cll := client_lazy_loader(
             method_name="get_artifact_version",
             name_id_or_prefix=name_id_or_prefix,
@@ -4146,13 +4149,26 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         ):
             return cll  # type: ignore[return-value]
-        return self._get_entity_version_by_id_or_name_or_prefix(
+
+        artifact = self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,
             name_id_or_prefix=name_id_or_prefix,
             version=version,
             hydrate=hydrate,
         )
+        try:
+            step_run = get_step_context().step_run
+            client = Client()
+            client.zen_store.update_run_step(
+                step_run_id=step_run.id,
+                step_run_update=StepRunUpdate(
+                    loaded_artifact_versions={artifact.name: artifact.id}
+                ),
+            )
+        except RuntimeError:
+            pass  # Cannot link to step run if called outside of a step
+        return artifact
 
     def list_artifact_versions(
         self,

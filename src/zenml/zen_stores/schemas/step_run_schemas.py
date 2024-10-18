@@ -28,6 +28,7 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    StepRunInputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -223,6 +224,10 @@ class StepRunSchema(NamedSchema, table=True):
             artifact.name: artifact.artifact_version.to_model()
             for artifact in self.input_artifacts
         }
+        input_artifact_types = {
+            artifact.name: StepRunInputArtifactType(artifact.type)
+            for artifact in self.input_artifacts
+        }
 
         output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
         for artifact in self.output_artifacts:
@@ -267,6 +272,7 @@ class StepRunSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             status=ExecutionStatus(self.status),
             inputs=input_artifacts,
+            input_types=input_artifact_types,
             outputs=output_artifacts,
             created=self.created,
             updated=self.updated,

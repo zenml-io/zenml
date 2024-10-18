@@ -34,8 +34,12 @@ class ArtifactType(StrEnum):
 class StepRunInputArtifactType(StrEnum):
     """All possible types of a step run input artifact."""
 
-    DEFAULT = "default"  # input argument that is the output of a previous step
+    STEP_OUTPUT = (
+        "default"  # input argument that is the output of a previous step
+    )
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+    EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
+    LAZY_LOADED = "lazy"  # loaded via various lazy methods
 
 
 class ArtifactSaveType(StrEnum):

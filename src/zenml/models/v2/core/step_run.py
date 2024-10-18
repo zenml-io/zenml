@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -97,6 +97,10 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="The IDs of the input artifact versions of the step run.",
         default_factory=dict,
     )
+    input_types: Dict[str, StepRunInputArtifactType] = Field(
+        title="The types of the input artifacts of the step run.",
+        default_factory=dict,
+    )
     outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
@@ -154,6 +158,10 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     status: ExecutionStatus = Field(title="The status of the step.")
     inputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The input artifact versions of the step run.",
+        default_factory=dict,
+    )
+    input_types: Dict[str, StepRunInputArtifactType] = Field(
+        title="The types of the input artifacts of the step run.",
         default_factory=dict,
     )
     outputs: Dict[str, List["ArtifactVersionResponse"]] = Field(
@@ -328,6 +336,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().inputs
+
+    @property
+    def input_types(self) -> Dict[str, StepRunInputArtifactType]:
+        """The `input_types` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().input_types
 
     @property
     def outputs(self) -> Dict[str, List["ArtifactVersionResponse"]]:
