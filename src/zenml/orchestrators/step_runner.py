@@ -240,7 +240,9 @@ class StepRunner:
                         from zenml.orchestrators import step_run_utils
 
                         step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=output_artifacts,
+                            artifacts={
+                                k: [v] for k, v in output_artifacts.items()
+                            },
                             output_configurations=step_run.config.outputs,
                             model_version=model_version,
                         )

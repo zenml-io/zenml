@@ -14,7 +14,7 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
@@ -543,7 +543,7 @@ def link_pipeline_run_to_model_version(
 
 
 def link_output_artifacts_to_model_version(
-    artifacts: Dict[str, ArtifactVersionResponse],
+    artifacts: Dict[str, List[ArtifactVersionResponse]],
     output_configurations: Mapping[str, ArtifactConfiguration],
     model_version: ModelVersionResponse,
 ) -> None:
@@ -554,13 +554,14 @@ def link_output_artifacts_to_model_version(
         output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
-    for output_name, output_artifact in artifacts.items():
-        artifact_config = None
-        if output_config := output_configurations.get(output_name, None):
-            artifact_config = output_config.artifact_config
+    for output_name, output_artifacts in artifacts.items():
+        for output_artifact in output_artifacts:
+            artifact_config = None
+            if output_config := output_configurations.get(output_name, None):
+                artifact_config = output_config.artifact_config
 
-        link_artifact_version_to_model_version(
-            artifact_version=output_artifact,
-            model_version=model_version,
-            artifact_config=artifact_config,
-        )
+            link_artifact_version_to_model_version(
+                artifact_version=output_artifact,
+                model_version=model_version,
+                artifact_config=artifact_config,
+            )

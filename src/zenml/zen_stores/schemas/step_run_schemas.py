@@ -227,8 +227,8 @@ class StepRunSchema(NamedSchema, table=True):
         output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
         for artifact in self.output_artifacts:
             if artifact.name not in output_artifacts:
-                output_artifacts[artifact.name] = set()
-            output_artifacts[artifact.name].add(
+                output_artifacts[artifact.name] = []
+            output_artifacts[artifact.name].append(
                 artifact.artifact_version.to_model(
                     pipeline_run_id_in_context=self.pipeline_run_id
                 )
