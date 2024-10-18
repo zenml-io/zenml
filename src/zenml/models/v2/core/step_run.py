@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -95,6 +95,10 @@ class StepRunRequest(WorkspaceScopedRequest):
     )
     inputs: Dict[str, UUID] = Field(
         title="The IDs of the input artifact versions of the step run.",
+        default_factory=dict,
+    )
+    input_types: Dict[str, StepRunInputArtifactType] = Field(
+        title="The types of the input artifacts of the step run.",
         default_factory=dict,
     )
     outputs: Dict[str, List[UUID]] = Field(

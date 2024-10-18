@@ -14,12 +14,17 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import (
+    ArtifactSaveType,
+    ExecutionStatus,
+    StepRunInputArtifactType,
+)
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -104,7 +109,14 @@ class StepRunRequestFactory:
             input_name: artifact.id
             for input_name, artifact in input_artifacts.items()
         }
+        input_types = {}
+        for input_name, artifact in input_artifacts.items():
+            input_types[input_name] = self._define_input_type(
+                artifact=artifact, parent_step_ids=parent_step_ids
+            )
+
         request.inputs = input_artifact_ids
+        request.input_types = input_types
         request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(
@@ -139,6 +151,12 @@ class StepRunRequestFactory:
                     input_name: artifact.id
                     for input_name, artifact in cached_step_run.inputs.items()
                 }
+                input_types = {}
+                for input_name, artifact in cached_step_run.inputs.items():
+                    input_types[input_name] = self._define_input_type(
+                        artifact=artifact, parent_step_ids=parent_step_ids
+                    )
+                request.input_types = input_types
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
@@ -235,6 +253,37 @@ class StepRunRequestFactory:
                     return step.docstring, step.source_code
 
         return None, None
+
+    def _define_input_type(
+        self, artifact: ArtifactVersionResponse, parent_step_ids: List[UUID]
+    ) -> StepRunInputArtifactType:
+        """Define the input type of an artifact.
+
+        Args:
+            artifact: The artifact for which to define the input type.
+            parent_step_ids: The IDs of the parent steps of the current step.
+
+        Returns:
+            The input type of the artifact.
+        """
+        # StepRunInputArtifactType.MANUAL is a special case covered in step run update flow
+        if artifact.save_type == ArtifactSaveType.EXTERNAL:
+            try:
+                artifact.step
+            except RuntimeError:
+                return StepRunInputArtifactType.EXTERNAL
+
+        if artifact.save_type == ArtifactSaveType.MANUAL:
+            return StepRunInputArtifactType.LAZY_LOADED
+
+        if artifact.save_type == ArtifactSaveType.STEP_OUTPUT:
+            try:
+                if artifact.step.id not in parent_step_ids:
+                    return StepRunInputArtifactType.LAZY_LOADED
+            except RuntimeError:
+                return StepRunInputArtifactType.LAZY_LOADED
+
+        return StepRunInputArtifactType.STEP_OUTPUT
 
 
 def find_cacheable_invocation_candidates(
