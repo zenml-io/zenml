@@ -704,7 +704,6 @@ class ModelContext:
             artifact_version = client.zen_store.create_artifact_version(
                 ArtifactVersionRequest(
                     artifact_id=artifact.id,
-                    version=1,
                     data_type="module.class",
                     materializer="module.class",
                     type=ArtifactType.DATA,
@@ -1114,7 +1113,6 @@ artifact_version_crud_test_config = CrudTestConfig(
     entity_name="artifact_version",
     create_model=ArtifactVersionRequest(
         artifact_id=uuid.uuid4(),  # will be overridden in create()
-        version=1,
         data_type="module.class",
         materializer="module.class",
         type=ArtifactType.DATA,

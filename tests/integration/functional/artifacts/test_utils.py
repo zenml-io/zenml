@@ -33,9 +33,9 @@ def test_save_load_artifact_outside_run(clean_client):
     assert load_artifact("meaning_of_life") == 43
     assert load_artifact("meaning_of_life", version="1") == 42
 
-    save_artifact(44, "meaning_of_life", version="44")
+    save_artifact(44, "meaning_of_life", version="version_44")
     assert load_artifact("meaning_of_life") == 44
-    assert load_artifact("meaning_of_life", version="44") == 44
+    assert load_artifact("meaning_of_life", version="version_44") == 44
 
 
 @step
@@ -107,7 +107,7 @@ def test_save_load_artifact_in_run(clean_client):
         value=44,
         saving_name="meaning_of_life",
         loading_name="meaning_of_life",
-        saving_version="44",
+        saving_version="version_44",
         loading_version="2",
         expected_value=43,
     )
@@ -115,7 +115,7 @@ def test_save_load_artifact_in_run(clean_client):
     _load_pipeline(
         expected_value=44,
         name="meaning_of_life",
-        version="44",
+        version="version_44",
     )
 
 
@@ -125,7 +125,7 @@ def test_log_artifact_metadata_existing(clean_client):
     log_artifact_metadata(
         {"description": "Aria is great!"}, artifact_name="meaning_of_life"
     )
-    save_artifact(43, "meaning_of_life", version="43")
+    save_artifact(43, "meaning_of_life", version="version_43")
     log_artifact_metadata(
         {"description_2": "Blupus is great!"}, artifact_name="meaning_of_life"
     )
@@ -172,7 +172,7 @@ def test_log_artifact_metadata_existing(clean_client):
             assert each - 2.0 < 10e-6
 
     artifact_2 = clean_client.get_artifact_version(
-        "meaning_of_life", version="43"
+        "meaning_of_life", version="version_43"
     )
     assert "description_2" in artifact_2.run_metadata
     assert artifact_2.run_metadata["description_2"].value == "Blupus is great!"

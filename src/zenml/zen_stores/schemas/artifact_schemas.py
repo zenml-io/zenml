@@ -276,6 +276,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Args:
             artifact_version_request: The request model to convert.
 
+        Raises:
+            ValueError: If the request does not specify a version number.
+
         Returns:
             The converted schema.
         """
