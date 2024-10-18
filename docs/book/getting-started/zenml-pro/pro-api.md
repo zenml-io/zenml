@@ -1,13 +1,13 @@
 ---
 description: >
-  Learn about how to use the ZenML Pro API programmatically.
+  Learn how to use the ZenML Pro API programmatically.
 ---
 
 # Using the ZenML Pro API
 
 ZenML Pro offers a powerful API that allows you to interact with your ZenML resources. Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage this API to manage tenants, organizations, users, roles, and more.
 
-The SaaS version of ZenML Pro API is hosted [here](https://cloudapi.zenml.io).
+The SaaS version of ZenML Pro API is hosted at [https://cloudapi.zenml.io](https://cloudapi.zenml.io).
 
 ## API Overview
 
@@ -67,7 +67,8 @@ The API uses standard HTTP status codes to indicate the success or failure of re
 
 Be aware that the ZenML Pro API may have rate limiting in place to ensure fair usage. If you exceed the rate limit, you may receive a 429 (Too Many Requests) status code. Implement appropriate backoff and retry logic in your applications to handle this scenario.
 
-Remember to refer to the complete API documentation available at `https://cloudapi.zenml.io` for detailed information about all available endpoints, request/response schemas, and additional features.<!-- For scarf -->
+Remember to refer to the complete API documentation available at `https://cloudapi.zenml.io` for detailed information about all available endpoints, request/response schemas, and additional features.
+<!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
 

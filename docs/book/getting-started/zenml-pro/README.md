@@ -2,7 +2,7 @@
 
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
 
-The [pro version of ZenML](https://zenml.io/pro) comes with a number of features 
+The [Pro version of ZenML](https://zenml.io/pro) comes with a number of features 
 that expand the functionality of the Open Source product. ZenML Pro adds a managed control plane with benefits like:
 
 - **A managed production-grade ZenML deployment**: With ZenML Pro you can deploy multiple ZenML servers called [tenants](./tenants).
@@ -12,7 +12,7 @@ that expand the functionality of the Open Source product. ZenML Pro adds a manag
 - **Triggers and run templates**: ZenML Pro enables you to [create and run templates](../../how-to/trigger-pipelines/README.md#run-templates). This way, you can use the dashboard or our Client/REST API to run a pipeline with updated configuration, allowing you to iterate quickly with minimal friction.
 - **Early-access features**: Get early access to pro-specific features such as triggers, filters, sorting, generating usage reports, and more.
 
-Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
+Learn more about ZenML Pro on the [ZenML website](https://zenml.io/pro).
 
 {% hint style="info" %}
 If you're interested in assessing ZenML Pro, you can simply create

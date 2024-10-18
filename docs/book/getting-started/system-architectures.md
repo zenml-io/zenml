@@ -17,8 +17,8 @@ read [this guide](../getting-started/deploying-zenml/README.md).
 A ZenML OSS deployment consists of the following moving pieces:
 
 * **ZenML OSS Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
-  Note: In ZenML Pro, the notion of a ZenML server is replaced with so-called "Tenant". For
-  all intents and purposes, consider a ZenML Tenant == ZenML OSS server + more functionality. 
+  Note: In ZenML Pro, the notion of a ZenML server is replaced with what is known as a "Tenant". For
+  all intents and purposes, consider a ZenML Tenant to be a ZenML OSS server that comes with more functionality. 
 * **OSS Metadata Store**: This is where all ZenML tenant metadata is stored, including
   ML metadata such as tracking and versioning information about pipelines and
   models.
@@ -101,11 +101,11 @@ Your tenant only needs permissions to read from this data to display artifacts
 on the ZenML dashboard. The tenant also needs direct access to parts of the
 customer infrastructure services to support dashboard control plane features
 such as CI/CD, triggering and running pipelines, triggering model deployments
-etc.
+and so on.
 
 The advantage of this setup is that it is a fully-managed service, and is
 very easy to get started with. However, for some clients even some metadata
-can be sensitive: These clients should refer to the other architecture diagram.
+can be sensitive; these clients should refer to the other architecture diagram.
 
 <details>
 
@@ -122,7 +122,7 @@ secrets used by running pipelines to access infrastructure services and
 resources are stored in the customer secret store. This allows users to
 use [service connectors](../how-to/auth-management/service-connectors-guide.md)
 and the [secrets API](../how-to/interact-with-secrets.md) to authenticate
-ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
+ZenML pipelines and the ZenML Pro to third-party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 {% endhint %}
 
@@ -154,6 +154,6 @@ require completely air-gapped deployments, for the tightest security standards.
 </details>
 
 Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
-and get access to Scenario 1. with a free 14 day trial now!
+and get access to Scenario 1. with a free 14-day trial now!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

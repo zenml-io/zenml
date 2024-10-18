@@ -24,7 +24,7 @@ A ZenML deployment consists of multiple infrastructure components:
 - (Optional) [ZenML Pro API + Database + ZenML Pro dashboard](../system-architectures.md)
 
 You can read more in-depth about the system architecture of ZenML [here](../system-architectures.md).
-This docs page will focus on the components required to deploy ZenML OSS.
+This documentation page will focus on the components required to deploy ZenML OSS.
 
 <details>
 
@@ -36,7 +36,7 @@ command as outlined [here](../installation.md).
 
 This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli/) which
 you can use to interact with the ZenML server for common tasks like managing
-stacks, setting up secrets, and so on. It also gives you the general framework that let's you
+stacks, setting up secrets, and so on. It also gives you the general framework that lets you
 [author and deploy pipelines](../../user-guide/starter-guide/README.md) and so forth.
 
 If you want to have more fine-grained control and access to the metadata that
