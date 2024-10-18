@@ -48,7 +48,7 @@ Proper access management ensures that team members have the right permissions an
 - Define roles such as data scientists, MLOps engineers, and infrastructure managers
 - Set up service connectors and manage authorizations
 - Establish processes for pipeline maintenance and server upgrades
-- Leverage [Teams in ZenML Pro](../../getting-started/zenml-pro/zenml-pro.md) to assign roles and permissions to a group of users, to mimick your real-world team roles.
+- Leverage [Teams in ZenML Pro](../../getting-started/zenml-pro/zenml-pro.md) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 TODO: update when teams is merged
 
 Explore access management strategies in the [Access Management and Roles guide](./access-management-and-roles.md).
