@@ -40,7 +40,7 @@ To learn more about the core concepts for ZenML OSS, go [here](../getting-starte
 ## ZenML Pro (SaaS or Self-hosted)
 
 {% hint style="info" %}
-If you're interested in assessing ZenML Pro SaaS, you can create
+If you're interested in assessing ZenML Pro SaaSs, you can create
 a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
 
 If would like to self-host ZenML Pro, please [book a demo](https://zenml.io/book-a-demo).
