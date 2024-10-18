@@ -18,6 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.enums import ArtifactSaveType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
@@ -64,15 +65,13 @@ def resolve_step_inputs(
             )
 
         try:
-            if len(step_run.outputs[input_.output_name]) > 1:
-                raise InputResolutionError(
-                    f"Multiple artifacts versions found for the output "
-                    f"`{input_.output_name}` of the step `{input_.step_name}`. "
-                )
-            artifact = step_run.outputs[input_.output_name][0]
+            os_ = step_run.outputs[input_.output_name]
+            artifact = [
+                o for o in os_ if o.save_type == ArtifactSaveType.STEP_OUTPUT
+            ].pop()
         except KeyError:
             raise InputResolutionError(
-                f"No output `{input_.output_name}` found for step "
+                f"No step output `{input_.output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
