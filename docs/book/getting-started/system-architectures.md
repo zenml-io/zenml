@@ -9,15 +9,15 @@ SaaS, to self-hosted ZenML Pro!
 
 ## ZenML OSS (Community Edition, Self-hosted)
 
-A ZenML OSS deployment consists of the following moving pieces:
+A ZenML OSS deployment (AKA a tenant) consists of the following moving pieces:
 
-* **ZenML Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
+* **ZenML OSS Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
   Note: In ZenML Pro, the notion of a ZenML server is replaced with so-called "Tenant". For
   all intents and purposes, consider a ZenML Tenant == ZenML OSS server + more functionality. 
-* **ML Metadata Store**: This is where all ZenML tenant metadata is stored, including
+* **OSS Metadata Store**: This is where all ZenML tenant metadata is stored, including
   ML metadata such as tracking and versioning information about pipelines and
   models.
-* **ZenML OSS Dashboard**: This is a ReactJS app that shows pipelines, runs, etc.
+* **OSS Dashboard**: This is a ReactJS app that shows pipelines, runs, etc.
 * **Secrets Store**: All secrets and credentials required to access customer
   infrastructure services are stored in a secure secrets store. The ZenML Pro
   API has access to these secrets and uses them to access customer
