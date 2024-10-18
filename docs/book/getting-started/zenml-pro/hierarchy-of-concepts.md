@@ -1,4 +1,4 @@
-# Hierarchy of concepts in ZenML Pro
+# ZenML Pro Core Concepts
 
 In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML
 framework. This document walks you through the key differences and new concepts that are only available for Pro users.
