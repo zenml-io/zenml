@@ -2,9 +2,6 @@
 name: release-finalize
   # TODO: Change this back into pull_request and closed and merged==true
   # TODO: Remove the merged trigger
-  # TODO: Remove the echos
-  # TODO: Generalize the parameterization
-  # TODO: Extract the old version and the new version in a job first
 on:
   push:
     branches: [misc/prepare-release-*]
@@ -121,10 +118,12 @@ jobs:
       # Adjust the docs
       - name: Adjust gitbook docs
         env:
-          GITBOOK_API_KEY: ${{ secrets.GITBOOK_API_KEY }}
-          LEGACY_COLLECTION_ID: ${{ secrets.GITBOOK_LEGACY_COLLECTION_ID }}
-          NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-          PREV_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
+          ZENML_NEW_VERSION:  ${{ needs.fetch-versions.outputs.new_version }
+          ZENML_OLD_VERSION:  ${{ needs.fetch-versions.outputs.old_version }
+          GITBOOK_API_KEY: ${{secrets.GITBOOK_API_KEY}}
+          GITBOOK_ORGANIZATION: ${{secrets.GITBOOK_ORGANIZATION}}
+          GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
+          GITBOOK_LEGACY_COLLECTION: ${{secrets.GITBOOK_LEGACY_COLLECTION}}
         run: python scripts/sync-gitbook-release-spaces.py
   deprecate-docs-gitbook-legacy:
     needs: [fetch-versions, order-gitbook-release-spaces]
@@ -146,4 +145,3 @@ jobs:
         shell: bash
         run: |-
           bash scripts/deprecate-previous-docs-to-legacy.sh ${{ needs.fetch-versions.outputs.old_version }}
-

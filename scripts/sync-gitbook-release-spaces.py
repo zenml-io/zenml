@@ -146,7 +146,7 @@ def main() -> None:
     """
     # Get environment variables
     zenml_new_version = os.environ.get("ZENML_NEW_VERSION")
-    zenml_old_version = os.environ.get("ZENML_VERSION")
+    zenml_old_version = os.environ.get("ZENML_OLD_VERSION")
     gitbook_api_key = os.environ.get("GITBOOK_API_KEY")
     gitbook_organization = os.environ.get("GITBOOK_ORGANIZATION")
     gitbook_docs_collection = os.environ.get("GITBOOK_DOCS_COLLECTION")
