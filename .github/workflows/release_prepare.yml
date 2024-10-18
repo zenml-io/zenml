@@ -1,19 +1,17 @@
 ---
 name: release-prepare
 on:
-  # TODO: Change this back into pull_request and add proper precautions
-  # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
-  # TODO: Remove the triggers like [prepare]....
   # TODO: Complete the discord message
   # TODO: Test validate new version errors and warnings
   # TODO: Test new version might fail if the latest version is 0.42.0rc
-  push:
+  pull_request:
+    types: [ opened ]
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   prepare-changes:
-    if: contains(github.event.head_commit.message, '[prepare]')
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     steps:
       # Check out the code
@@ -97,7 +95,7 @@ jobs:
       - name: Push the changes
         run: |
           git commit -m "Adding the new version to the necessary files."
-          git push origin HEAD:${{ github.ref }}
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
   build-test-images:
     runs-on: ubuntu-latest
     needs: prepare-changes
@@ -120,7 +118,7 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=release-cloudbuild-preparation.yaml \
-            --substitutions=_ZENML_BRANCH=${{ github.ref }}
+            --substitutions=_ZENML_BRANCH=${{ github.event.pull_request.head.ref }}
       # Sign in to AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -201,7 +199,7 @@ jobs:
           cd examples/quickstart
           zenml stack set ${{ matrix.cloud }}
           sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
+          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.event.pull_request.head.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
           pip install -r requirements_${{ matrix.cloud }}.txt
           zenml integration install ${{ matrix.cloud }} -y
           python run.py --model_type=t5-small

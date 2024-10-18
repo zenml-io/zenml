@@ -1,16 +1,14 @@
 ---
 name: release-finalize
-  # TODO: Change this back into pull_request and closed and merged==true
-  # TODO: Change the reference to ${{ github.event.pull_request.head.ref }}
-  # TODO: Remove the triggers like [merge]....
 on:
-  push:
+  pull_request:
+    types: [ closed ]
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   fetch-versions:
-    if: contains(github.event.head_commit.message, '[merged]')
+    if: github.repository == 'zenml-io/zenml' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.new-version.outputs.new_version }}
