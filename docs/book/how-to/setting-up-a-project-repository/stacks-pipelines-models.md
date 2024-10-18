@@ -21,7 +21,7 @@ You can learn more about organizing and managing stacks in the [Managing Stacks 
 
 You don't need a separate stack for each pipeline; instead, you can run multiple pipelines on the same stack. A stack is meant to be created once and then reused across multiple users and pipelines. This helps in the following ways:
 
-- reduces the overhead of configuring your infrastrcuture every time you run a pipeline.
+- reduces the overhead of configuring your infrastructure every time you run a pipeline.
 - provides a consistent environment for your pipelines to run in, promoting reproducibility.
 - reduces risk of errors when it comes to what hardware and tool configurations to use.
 
