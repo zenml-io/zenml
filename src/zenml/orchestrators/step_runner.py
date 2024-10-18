@@ -57,6 +57,7 @@ from zenml.utils import materializer_utils, source_utils
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
@@ -406,14 +407,24 @@ class StepRunner:
             )
         )
 
-        with register_artifact_store_filesystem(
-            artifact.artifact_store_id
-        ) as target_artifact_store:
+        def _load_artifact(artifact_store: "BaseArtifactStore") -> Any:
             materializer: BaseMaterializer = materializer_class(
-                uri=artifact.uri, artifact_store=target_artifact_store
+                uri=artifact.uri, artifact_store=artifact_store
             )
             materializer.validate_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
+
+        if artifact.artifact_store_id != self._stack.artifact_store.id:
+            # Register the artifact store of the active stack here to avoid
+            # unnecessary component/flavor calls when using
+            # `register_artifact_store_filesystem(...)`
+            self._stack.artifact_store._register()
+            return _load_artifact(artifact_store=self._stack.artifact_store)
+        else:
+            with register_artifact_store_filesystem(
+                artifact.artifact_store_id
+            ) as target_artifact_store:
+                return _load_artifact(artifact_store=target_artifact_store)
 
     def _validate_outputs(
         self,
