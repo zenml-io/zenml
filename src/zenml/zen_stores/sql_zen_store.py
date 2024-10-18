@@ -7952,7 +7952,7 @@ class SqlZenStore(BaseZenStore):
                     run_step_id=step_schema.id,
                     artifact_version_id=artifact_version_id,
                     name=input_name,
-                    input_type=step_run.input_types.get(input_name),
+                    input_type=step_run.input_types[input_name],
                     session=session,
                 )
 
