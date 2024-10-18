@@ -2,7 +2,7 @@
 description: Recommended repository structure and best practices.
 ---
 
-# Best practices
+# Set up your repository
 
 While it doesn't matter how you structure your ZenML project, here is a recommended project structure the core team often uses:
 
@@ -34,7 +34,21 @@ While it doesn't matter how you structure your ZenML project, here is a recommen
 └── run.py
 ```
 
-All ZenML [Project templates](using-project-templates.md#generating-project-from-a-project-template) are modeled around this basic structure.
+All ZenML [Project
+templates](using-project-templates.md#generating-project-from-a-project-template)
+are modeled around this basic structure. The `steps` and `pipelines` folders
+contain the steps and pipelines defined in your project. If your project is
+simpler you can also just keep your steps at the top level of the `steps` folder
+without the need so structure them in subfolders.
+
+{% hint style="info" %}
+It might also make sense to register your repository as a code repository. These
+enable ZenML to keep track of the code version that you use for your pipeline
+runs. Additionally, running a pipeline that is tracked in a registered code
+repository can speed up the Docker image building for containerized stack
+components by eliminating the need to rebuild Docker images each time you change
+one of your source code files. Learn more about these in <a href="https://docs.zenml.io/how-to/setting-up-a-project-repository/connect-your-git-repository">connecting your Git repository</a>.
+{% endhint %}
 
 #### Steps
 
@@ -87,7 +101,9 @@ Collect all your notebooks in one place.
 
 By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your "source's root". This will be used to resolve import paths and store configurations.
 
-Although this is optional, it is recommended that you do this for all of your projects.
+Although this is optional, it is recommended that you do this for all of your
+projects. This is especially important if you are using Jupyter noteeboks in
+your project as these require you to have initialised a `.zen` file.
 
 {% hint style="warning" %}
 All of your import paths should be relative to the source's root.
