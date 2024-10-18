@@ -11,8 +11,96 @@ on:
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
-  create-release-branch:
+  fetch-versions:
     if: contains(github.event.head_commit.message, '[merged]')
+    runs-on: ubuntu-latest
+    outputs:
+      old_version: ${{ steps.new-version.outputs.new_version }}
+      new_version: ${{ steps.old-version.outputs.old_version }}
+    steps:
+      # Extract the version
+      - name: Extract version from branch name
+        id: new-version
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "::set-output name=new_version::${{ env.NEW_VERSION }}"
+      # Checkout main as develop is already changed
+      - name: Checkout code
+        id: checkout-code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: main
+      # Extract the old version
+      - name: Fetch the old version
+        id: old-version
+        run: |
+          OLD_VERSION=$(cat src/zenml/VERSION)
+          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+          echo "::set-output name=ideal_new_version::${{ env.OLD_VERSION }}"
+  create-release-branch:
+    needs: fetch-versions
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      # Create the release branch
+      - name: Release branch
+        run: |
+          git checkout -b release/${{ needs.fetch-versions.outputs.new_version }}
+          git push --set-upstream origin release/${{ needs.fetch-versions.outputs.new_version }}
+  add-docs-warning-header:
+    needs: fetch-versions
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out the previous release branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: release/${{ needs.fetch-versions.outputs.old_version }}
+      # Create the docs update PR
+      - name: Create docs update PR
+        shell: bash
+        run: |
+          bash scripts/add-docs-warning.sh ${{ needs.fetch-versions.outputs.old_version }}
+  add-new-version-to-migration-tests:
+    needs: fetch-versions
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      # Create the migration test version if necessary
+      - name: Create docs update PR
+        shell: bash
+        run: |-
+          bash scripts/add-migration-test-version.sh ${{ needs.fetch-versions.outputs.old_version }} ${{ needs.fetch-versions.outputs.new_version }}
+  order-gitbook-release-spaces:
+    needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
       # Check out develop
@@ -20,109 +108,42 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           ref: develop
-      # Configure Git
-      - name: Configure git
-        shell: bash
-        run: |
-          git config --global user.email "info@zenml.io"
-          git config --global user.name "ZenML GmbH"
-      # Extract the version name
-      - name: Extract version from branch name
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-      #  Push the changes
-      - name: Push the changes
-        run: |
-          git checkout -b release/${{ env.NEW_VERSION }}
-          git push --set-upstream origin release/${{ env.NEW_VERSION }}
-  add-docs-warning-header:
-    needs: create-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      # Check out develop
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: main
-      # Configure Git
-      - name: Configure git
-        shell: bash
-        run: |
-          git config --global user.email "info@zenml.io"
-          git config --global user.name "ZenML GmbH"
-      # Extract the old version name
-      - name: Fetch the old version
-        run: |
-          OLD_VERSION=$(cat src/zenml/VERSION)
-          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
-      # Check out the previous release branch
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: release/${{ env.OLD_VERSION }}
-      # Create the docs update PR
-      - name: Create docs update PR
-        shell: bash
-        run: |
-          bash scripts/add-docs-warning.sh ${{ env.OLD_VERSION }}
-  create-migration-test:
-    needs: create-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      # Check out develop
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
       # Setting up the Python
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      # Extract the new version name
-      - name: Extract version from branch name
+      # Install requests
+      - name: Install dependencies
         run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-      # Extract the old version name # TODO: This is wrong
-      - name: Fetch the old version
-        run: |
-          OLD_VERSION=$(cat src/zenml/VERSION)
-          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
-      # Create the migration test version if necessary
-      - name: Create docs update PR
-        shell: bash
-        run: |-
-          bash scripts/add-migration-test-version.sh ${{ env.OLD_VERSION }} ${{ env.NEW_VERSION }}
-  update-gitbook:
-    needs: create-release-branch
-    runs-on: ubuntu-latest
-    steps:
-      # Check out develop
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      # Setting up the Python
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'
-      # Extract the new version name
-      - name: Extract version from branch name
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-      # Extract the old version name
-      - name: Fetch the old version
-        run: |
-          OLD_VERSION=$(cat src/zenml/VERSION)
-          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
+          pip install requests
       # Adjust the docs
       - name: Adjust gitbook docs
         env:
-          NEW_VERSION: ${{ env.NEW_VERSION }}
-          PREV_VERSION: ${{ env.OLD_VERSION }}
-          LEGACY_COLLECTION_ID: ${{ secrets.GITBOOK_LEGACY_COLLECTION_ID }}
           GITBOOK_API_KEY: ${{ secrets.GITBOOK_API_KEY }}
-        run: python path/to/sync_script.py
+          LEGACY_COLLECTION_ID: ${{ secrets.GITBOOK_LEGACY_COLLECTION_ID }}
+          NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
+          PREV_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
+        run: python scripts/sync-gitbook-release-spaces.py
+  deprecate-docs-gitbook-legacy:
+    needs: [fetch-versions, order-gitbook-release-spaces]
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out legacy docs branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: docs/legacy-docs-page
+      # Append new version to the legacy docs table
+      - name: Update legacy docs file
+        shell: bash
+        run: |-
+          bash scripts/deprecate-previous-docs-to-legacy.sh ${{ needs.fetch-versions.outputs.old_version }}
+
