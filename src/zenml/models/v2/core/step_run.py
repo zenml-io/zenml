@@ -14,7 +14,7 @@
 """Models representing steps runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -33,6 +33,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.logs import (
         LogsRequest,
@@ -490,6 +492,11 @@ class StepRunResponse(
 class StepRunFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of step runs."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "model",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the step run",
@@ -543,8 +550,42 @@ class StepRunFilter(WorkspaceScopedFilter):
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Model version associated with the pipeline run.",
+        description="Model version associated with the step run.",
         union_mode="left_to_right",
+    )
+    model: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the model associated with the step run.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            ModelSchema,
+            ModelVersionSchema,
+            StepRunSchema,
+        )
+
+        if self.model:
+            model_filter = and_(
+                StepRunSchema.model_version_id == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
+                ),
+            )
+            custom_filters.append(model_filter)
+
+        return custom_filters

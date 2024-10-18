@@ -132,6 +132,7 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+    ComponentResponseResources
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -410,6 +411,7 @@ CodeRepositoryResponseBody.model_rebuild()
 CodeRepositoryResponseMetadata.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
+ComponentResponseResources.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()

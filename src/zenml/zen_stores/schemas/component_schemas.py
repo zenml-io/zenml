@@ -26,6 +26,7 @@ from zenml.models import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+    ComponentResponseResources,
     ComponentUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -165,7 +166,7 @@ class StackComponentSchema(NamedSchema, table=True):
         """
         body = ComponentResponseBody(
             type=StackComponentType(self.type),
-            flavor=self.flavor,
+            flavor_name=self.flavor,
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
@@ -192,9 +193,17 @@ class StackComponentSchema(NamedSchema, table=True):
                 if self.connector
                 else None,
             )
+        resources = None
+        if include_resources:
+            resources = ComponentResponseResources(
+                flavor=self.flavor_schema.to_model()
+                if self.flavor_schema
+                else None
+            )
         return ComponentResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
