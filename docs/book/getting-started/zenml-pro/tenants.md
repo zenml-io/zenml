@@ -109,6 +109,8 @@ and [more](https://zenml.io/pro)!
 ### Accessing tenant docs
 
 Every tenant has a connection URL that you can use to connect your `zenml` client to your deployed Pro server. This URL can also be used to access the OpenAPI specification for the ZenML Server.
-Simply visit `<URL>/docs` on your browser to see a full list of methods that you can execute from it, like running a pipeline through the REST API.
+Simply visit `<TENANT_URL>/docs` on your browser to see a full list of methods that you can execute from it, like running a pipeline through the REST API.
 
 ![Image showing the tenant swagger docs](../../.gitbook/assets/swagger_docs_zenml.png)
+
+Read more about to access the API [here](../../reference/api-reference.md).

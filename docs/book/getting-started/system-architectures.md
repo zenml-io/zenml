@@ -51,7 +51,7 @@ The above deployment can be augmented with the ZenML Pro components:
 * **ZenML Pro Control Plane**: This is the central controlling entity of all tenants.
 * **Pro Dashboard**: This is a dashboard that builds on top of the OSS dashboard, and
 add further functionality.
-* **Pro Metadata Store**: This is where all ZenML Pro related metadata is stored such
+* **Pro Metadata Store**: This is a PostgreSQL database where all ZenML Pro related metadata is stored such
 as roles, permissions, teams, and tenant management related data.
 * **Pro Add-ons**: These are Python modules injected into the OSS Server for enhanced functionality.
 * **Identity Provider**: ZenML Pro offers flexible authentication options.
