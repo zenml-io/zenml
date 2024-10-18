@@ -31,32 +31,67 @@ You can also create a tenant through the Cloud API by navigating to https://clou
 
 ## Organizing your tenants
 
-You can choose to define and organize tenants in any way you wish, depending on your needs. However, there are primarily
-two dimensions.
+Organizing your tenants effectively is crucial for managing your MLOps infrastructure efficiently. There are primarily two dimensions to consider when structuring your tenants:
 
-### Organzing tenants in `staging` and `production` 
+### Organizing tenants in `staging` and `production`
 
+One common approach is to separate your tenants based on the development stage of your ML projects. This typically involves creating at least two types of tenants:
+
+1. **Staging Tenants**: These are used for development, testing, and experimentation. They provide a safe environment where data scientists and ML engineers can:
+   - Develop and test new pipelines
+   - Experiment with different models and hyperparameters
+   - Validate changes before moving to production
+
+2. **Production Tenants**: These host your live, customer-facing ML services. They are characterized by:
+   - Stricter access controls
+   - More rigorous monitoring and alerting
+   - Optimized for performance and reliability
+
+This separation allows for a clear distinction between experimental work and production-ready systems, reducing the risk of untested changes affecting live services.
+
+![Staging vs production tenants](../../.gitbook/assets/staging-production-tenants-svg.svg)
+
+The image could depict two parallel paths: one for staging (showing icons for experimentation, testing, and development) and one for production (showing icons for deployment, monitoring, and customer-facing services). Arrows could show the flow from staging to production.
 
 ### Organizing tenants by business logic
 
-One example could be creating different tenants for different projects or use-cases in your organization.
-The diagram below shows this use case, where folks working on the recommender systems, LLMs and fraud detection each have a separate tenant.
+Another approach is to create tenants based on your organization's structure or specific use cases. This method can help in:
 
-![Image showing the tenants for different use-cases](../../.gitbook/assets/zenml_pro_tenants_teams1.png)
+1. **Project-based Separation**: Create tenants for different ML projects or products. For example:
+   - Recommendation System Tenant
+   - Natural Language Processing Tenant
+   - Computer Vision Tenant
 
-This helps you better manage project resources. You can imagine that 
-- certain teams might be based in a different region and have requirements for deployments within that region.
-- some teams may have external contributors and you don't want them to have any knowledge of other internal tenants and projects.
+2. **Team-based Separation**: Align tenants with your organizational structure:
+   - Data Science Team Tenant
+   - ML Engineering Team Tenant
+   - Business Intelligence Team Tenant
 
-![Image showing the tenants for different use-cases](../../.gitbook/assets/zenml_pro_tenants_teams2.png)
+3. **Data Sensitivity Levels**: Separate tenants based on data classification:
+   - Public Data Tenant
+   - Internal Data Tenant
+   - Highly Confidential Data Tenant
 
-One other example could be separating tenants based on the type of data they handle. The diagram below shows how C1 and C2 type data (highly confidential) are handled differently.
+This organization method offers several benefits:
+- Improved resource allocation and cost tracking
+- Better alignment with team structures and workflows
+- Enhanced data security and compliance management
 
-![Image showing the tenants for different types of data](../../.gitbook/assets/zenml_pro_c1_c2.png)
+![Business logic-based tenant organization](../../.gitbook/assets/business-logic-tenants-svg.svg)
 
-{% hint style="info" %}
-For all constellations, you can restrict what your team members can access within a tenant by using roles. Read more about roles [here](../../../../docs/book/getting-started/zenml-pro/roles.md).
-{% endhint %}
+Of course, both approaches can be mixed and matched.
+
+### Best Practices for Tenant Organization
+
+Regardless of the approach you choose, consider these best practices:
+
+1. **Clear Naming Conventions**: Use consistent, descriptive names for your tenants to easily identify their purpose.
+2. **Access Control**: Implement [role-based access control](./roles.md) within each tenant to manage permissions effectively.
+3. **Documentation**: Maintain clear documentation about the purpose and contents of each tenant.
+4. **Regular Reviews**: Periodically review your tenant structure to ensure it still aligns with your organization's needs.
+5. **Scalability**: Design your tenant structure to accommodate future growth and new projects.
+
+By thoughtfully organizing your tenants, you can create a more manageable, secure, and efficient MLOps environment that scales with your organization's needs.
 
 ## Using your tenant
 
