@@ -424,7 +424,7 @@ def get_model_version_created_by_pipeline_run(
         ):
             return pipeline_run.model_version
 
-    # We fetch a list of hydrated step runs here in oder to avoid hydration
+    # We fetch a list of hydrated step runs here in order to avoid hydration
     # calls for each step separately.
     candidate_step_runs = pagination_utils.depaginate(
         Client().list_run_steps,
