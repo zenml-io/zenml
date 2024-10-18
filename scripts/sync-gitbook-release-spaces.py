@@ -21,18 +21,34 @@ import requests
 BASE_URL = "https://api.gitbook.com/v1"
 
 
-def get_space_id(name, collection, organization, headers) -> str:
+def get_space_id(
+    name: str, collection: str, organization: str, headers: dict
+) -> str:
+    """Get the ID of a Gitbook space based on its name and collection.
+
+    Args:
+        name: The name of the space to find.
+        collection: The ID of the collection containing the space.
+        organization: The ID of the organization.
+        headers: The headers for the API request.
+
+    Returns:
+        The ID of the space as a string.
+
+    Raises:
+        StopIteration: If the space is not found.
+    """
     # Make the initial list-spaces call
     params = {"limit": 50}
 
-    response = requests.get(
-        f"{BASE_URL}/orgs/{organization}/spaces",
-        headers=headers,
-        params=params,
-    ).json()
-
-    # Iterate through the pages until we can find the correct space
     while True:
+        response = requests.get(
+            f"{BASE_URL}/orgs/{organization}/spaces",
+            headers=headers,
+            params=params,
+        ).json()
+
+        # Iterate through the spaces in the current page
         for space in response["items"]:
             if (
                 space.get("parent", None) == collection
@@ -40,15 +56,30 @@ def get_space_id(name, collection, organization, headers) -> str:
             ):
                 return space["id"]
 
+        # Check if there are more pages
+        if "next" not in response or not response["next"]:
+            # If no more pages and space not found, raise StopIteration
+            raise StopIteration(
+                f"Space '{name}' not found in collection '{collection}'"
+            )
+
+        # If space not found in current page, update params for next page
         params.update(response["next"])
-        response = requests.get(
-            f"{BASE_URL}/orgs/{organization}/spaces",
-            headers=headers,
-            params=params,
-        ).json()
 
 
-def duplicate_space(space_id, headers):
+def duplicate_space(space_id: str, headers: dict) -> str:
+    """Duplicate a Gitbook space.
+
+    Args:
+        space_id: The ID of the space to duplicate.
+        headers: The headers for the API request.
+
+    Returns:
+        The ID of the newly created space as a string.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
     response = requests.post(
         f"{BASE_URL}/spaces/{space_id}/duplicate", headers=headers
     )
@@ -57,7 +88,17 @@ def duplicate_space(space_id, headers):
     return response.json()["id"]
 
 
-def update_space(space_id, changes, headers):
+def update_space(space_id: str, changes: dict, headers: dict) -> None:
+    """Update a Gitbook space with the provided changes.
+
+    Args:
+        space_id: The ID of the space to update.
+        changes: A dictionary containing the changes to apply.
+        headers: The headers for the API request.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
     response = requests.patch(
         f"{BASE_URL}/spaces/{space_id}", headers=headers, json=changes
     )
@@ -65,7 +106,19 @@ def update_space(space_id, changes, headers):
         raise requests.HTTPError("There was a problem updating the space.")
 
 
-def move_space(space_id, target_collection_id, headers):
+def move_space(
+    space_id: str, target_collection_id: str, headers: dict
+) -> None:
+    """Move a Gitbook space to a different collection.
+
+    Args:
+        space_id: The ID of the space to move.
+        target_collection_id: The ID of the collection to move the space to.
+        headers: The headers for the API request.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
     # Define the endpoint URL
     url = f"{BASE_URL}/spaces/{space_id}/move"
 
@@ -80,6 +133,17 @@ def move_space(space_id, target_collection_id, headers):
 
 
 def main() -> None:
+    """Main function to sync Gitbook spaces for a new release.
+
+    This function performs the following steps:
+    1. Get the Space ID of the previous release.
+    2. Duplicate the previous release space.
+    3. Rename the duplicate to the new version.
+    4. Move the previous release to the legacy collection.
+
+    Raises:
+        EnvironmentError: If any required environment variables are missing.
+    """
     # Get environment variables
     zenml_new_version = os.environ.get("ZENML_NEW_VERSION")
     zenml_old_version = os.environ.get("ZENML_VERSION")
@@ -88,6 +152,7 @@ def main() -> None:
     gitbook_docs_collection = os.environ.get("GITBOOK_DOCS_COLLECTION")
     gitbook_legacy_collection = os.environ.get("GITBOOK_LEGACY_COLLECTION")
 
+    # Check if all required environment variables are set
     if not all(
         [
             zenml_new_version,
@@ -100,7 +165,7 @@ def main() -> None:
     ):
         raise EnvironmentError("Missing required environment variables")
 
-    # Create the headers
+    # Create the headers for API requests
     headers = {
         "Authorization": f"Bearer {gitbook_api_key}",
         "Content-Type": "application/json",
