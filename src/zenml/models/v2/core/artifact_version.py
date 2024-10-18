@@ -156,6 +156,10 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
+    artifact_store_id: Optional[UUID] = Field(
+        title="ID of the artifact store in which this artifact is stored.",
+        default=None,
+    )
 
     @field_validator("version")
     @classmethod
@@ -182,10 +186,6 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    artifact_store_id: Optional[UUID] = Field(
-        title="ID of the artifact store in which this artifact is stored.",
-        default=None,
-    )
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
@@ -283,7 +283,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_store_id
+        return self.get_body().artifact_store_id
 
     @property
     def producer_step_run_id(self) -> Optional[UUID]:
