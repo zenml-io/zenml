@@ -160,6 +160,10 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         title="The input artifact versions of the step run.",
         default_factory=dict,
     )
+    input_types: Dict[str, StepRunInputArtifactType] = Field(
+        title="The types of the input artifacts of the step run.",
+        default_factory=dict,
+    )
     outputs: Dict[str, List["ArtifactVersionResponse"]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
@@ -332,6 +336,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().inputs
+
+    @property
+    def input_types(self) -> Dict[str, StepRunInputArtifactType]:
+        """The `input_types` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().input_types
 
     @property
     def outputs(self) -> Dict[str, List["ArtifactVersionResponse"]]:
