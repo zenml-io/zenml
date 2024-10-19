@@ -87,7 +87,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.11']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -100,7 +100,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.11']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -113,7 +113,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.11']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
@@ -149,7 +149,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.11']
         test_environment: [github-actions-server-docker-orchestrator]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast-services.yml

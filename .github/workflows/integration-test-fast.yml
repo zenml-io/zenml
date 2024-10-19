@@ -38,7 +38,7 @@ on:
         type: choice
         options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.9'
+        default: '3.11'
       test_environment:
         description: The test environment
         type: choice
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -245,7 +245,7 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 3 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
