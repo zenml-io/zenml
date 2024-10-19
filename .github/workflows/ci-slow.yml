@@ -62,7 +62,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -85,7 +85,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -104,7 +104,7 @@ jobs:
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
     needs: run-slow-ci-label-is-set
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -126,7 +126,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -193,7 +193,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [arc-runner-set]
+        os: [ubuntu-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
@@ -274,7 +274,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [arc-runner-set]
+        os: [ubuntu-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
         test_environment:
           - default

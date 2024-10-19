@@ -30,7 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
+        options: [ubuntu-latest, macos-13, windows-latest, ubuntu-latest]
         required: false
         default: ubuntu-latest
       python-version:
@@ -197,7 +197,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-latest')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"

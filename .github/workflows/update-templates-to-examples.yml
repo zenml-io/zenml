@@ -16,7 +16,7 @@ on:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
+        options: [ubuntu-latest, macos-13, windows-latest, ubuntu-latest]
         required: false
         default: ubuntu-latest
       python-version:

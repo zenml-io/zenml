@@ -16,7 +16,7 @@ concurrency:
 jobs:
   spellcheck:
     if: github.event.pull_request.draft == false && github.repository == 'zenml-io/zenml'
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
