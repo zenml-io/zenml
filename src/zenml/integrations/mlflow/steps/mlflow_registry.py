@@ -124,7 +124,7 @@ def mlflow_register_model_step(
     if not model_source_uri and client.list_artifacts(
         mlflow_run_id, trained_model_name
     ):
-        model_source_uri = artifact_utils.get_artifact_uri(
+        model_source_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call]
             run_id=mlflow_run_id, artifact_path=trained_model_name
         )
     if not model_source_uri:

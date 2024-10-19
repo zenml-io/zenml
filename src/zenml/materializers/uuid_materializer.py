@@ -75,7 +75,5 @@ class UUIDMaterializer(BaseMaterializer):
             A dictionary of metadata extracted from the UUID.
         """
         return {
-            "uuid_version": str(data.version),
-            "uuid_variant": data.variant,
             "string_representation": str(data),
         }

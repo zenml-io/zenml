@@ -24,7 +24,7 @@ from typing import (
     Type,
 )
 
-from zenml.exceptions import EntityExistsError, StepContextError
+from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -123,6 +123,9 @@ class StepContext(metaclass=SingletonMetaClass):
         except KeyError:
             pass
         self.step_run = step_run
+        self.model_version = (
+            step_run.model_version or pipeline_run.model_version
+        )
 
         # Get the stack that we are running in
         self._stack = Client().active_stack
@@ -169,36 +172,24 @@ class StepContext(metaclass=SingletonMetaClass):
         """Returns configured Model.
 
         Order of resolution to search for Model is:
-            1. Model from @step
-            2. Model from @pipeline
+            1. Model from the step context
+            2. Model from the pipeline context
 
         Returns:
             The `Model` object associated with the current step.
 
         Raises:
-            StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
+            StepContextError: If no `Model` object was specified for the step
+                or pipeline.
         """
-        if (
-            self.step_run.config.model is not None
-            and self.step_run.model_version is not None
-        ):
-            model = self.step_run.model_version.to_model_class(
-                suppress_class_validation_warnings=True
-            )
-        elif self.pipeline_run.config.model is not None:
-            if self.pipeline_run.model_version:
-                model = self.pipeline_run.model_version.to_model_class(
-                    suppress_class_validation_warnings=True
-                )
-            else:
-                model = self.pipeline_run.config.model
-        else:
+        if not self.model_version:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
-                f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
+                f"run '{self.pipeline_run.id}': No model has been specified "
+                "the step or pipeline."
             )
 
-        return model
+        return self.model_version.to_model_class()
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
@@ -392,32 +383,6 @@ class StepContext(metaclass=SingletonMetaClass):
         if not output.tags:
             output.tags = []
         output.tags += tags
-
-    def _set_artifact_config(
-        self,
-        artifact_config: "ArtifactConfig",
-        output_name: Optional[str] = None,
-    ) -> None:
-        """Adds artifact config for a given step output.
-
-        Args:
-            artifact_config: The artifact config of the output to set.
-            output_name: Optional name of the output for which to set the
-                output signature. If no name is given and the step only has a single
-                output, the metadata of this output will be added. If the
-                step has multiple outputs, an exception will be raised.
-
-        Raises:
-            EntityExistsError: If the output already has an output signature.
-        """
-        output = self._get_output(output_name)
-
-        if output.artifact_config is None:
-            output.artifact_config = artifact_config
-        else:
-            raise EntityExistsError(
-                f"Output with name '{output_name}' already has artifact config."
-            )
 
 
 class StepContextOutput:

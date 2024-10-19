@@ -69,8 +69,7 @@ Azure hosting environments and credentials used in local development.
 of service principals on Azure to allow you to connect your cloud components 
 with proper authentication. For this method, you will need to [create a service 
 principal on Azure](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal), 
-assign it the correct permissions and use it to [register a ZenML Azure Service 
-Connector](https://docs.zenml.io/how-to/auth-management/azure-service-connector).
+assign it the correct permissions and use it to [register a ZenML Azure Service Connector](../../how-to/auth-management/azure-service-connector.md).
     ```bash
     zenml service-connector register <CONNECTOR_NAME> --type azure -i
     zenml orchestrator connect <ORCHESTRATOR_NAME> -c <CONNECTOR_NAME>

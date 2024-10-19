@@ -188,7 +188,7 @@ def external_artifact_loader_step(a: int) -> int:
 
 @pipeline
 def second_pipeline(artifact_version_id: UUID):
-    external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
+    external_artifact_loader_step(a=ExternalArtifact(value=1))
 
 
 def test_add_external_artifacts(clean_client: "Client"):

@@ -199,9 +199,9 @@ class KanikoImageBuilder(BaseImageBuilder):
             "--image-name-with-digest-file=/dev/termination-log",
         ] + self.config.executor_args
 
-        optional_container_args: Dict[str, Any] = {}
+        optional_spec_args: Dict[str, Any] = {}
         if self.config.service_account_name:
-            optional_container_args["serviceAccountName"] = (
+            optional_spec_args["serviceAccountName"] = (
                 self.config.service_account_name
             )
 
@@ -218,10 +218,10 @@ class KanikoImageBuilder(BaseImageBuilder):
                         "env": self.config.env,
                         "envFrom": self.config.env_from,
                         "volumeMounts": self.config.volume_mounts,
-                        **optional_container_args,
                     }
                 ],
                 "volumes": self.config.volumes,
+                **optional_spec_args,
             },
         }
 

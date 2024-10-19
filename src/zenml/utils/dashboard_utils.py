@@ -24,26 +24,11 @@ from zenml.logger import get_logger
 from zenml.models import (
     ComponentResponse,
     PipelineRunResponse,
-    ServerModel,
+    ServerDeploymentType,
     StackResponse,
 )
 
 logger = get_logger(__name__)
-
-
-def is_cloud_server(server_info: ServerModel) -> bool:
-    """Checks whether the server info refers to a ZenML Pro server.
-
-    Args:
-        server_info: Info of the server.
-
-    Returns:
-        Whether the server info refers to a ZenML Pro server.
-    """
-    return (
-        "organization_id" in server_info.metadata
-        and "cloud.zenml.io" in server_info.dashboard_url
-    )
 
 
 def get_cloud_dashboard_url() -> Optional[str]:
@@ -57,7 +42,7 @@ def get_cloud_dashboard_url() -> Optional[str]:
     if client.zen_store.type == StoreType.REST:
         server_info = client.zen_store.get_store_info()
 
-        if is_cloud_server(server_info):
+        if server_info.deployment_type == ServerDeploymentType.CLOUD:
             return server_info.dashboard_url
 
     return None
@@ -167,9 +152,9 @@ def get_model_version_url(model_version_id: UUID) -> Optional[str]:
     Returns:
         the URL to the model version if the dashboard is available, else None.
     """
-    base_url = get_cloud_dashboard_url()
-    if base_url:
-        return f"{base_url}/model-versions/{str(model_version_id)}"
+    cloud_url = get_cloud_dashboard_url()
+    if cloud_url:
+        return f"{cloud_url}/model-versions/{str(model_version_id)}"
 
     return None
 

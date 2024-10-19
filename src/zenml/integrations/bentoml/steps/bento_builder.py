@@ -93,6 +93,7 @@ def bento_builder_step(
     # Build the BentoML bundle
     bento = bentos.build(
         service=service,
+        models=[model_name],
         version=version,
         labels=labels,
         description=description,

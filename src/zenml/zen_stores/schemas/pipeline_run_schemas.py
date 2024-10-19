@@ -412,10 +412,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if (
-            self.orchestrator_run_id
-            or self.status != ExecutionStatus.INITIALIZING
-        ):
+        if not self.is_placeholder_run():
             raise RuntimeError(
                 f"Unable to replace pipeline run {self.id} which is not a "
                 "placeholder run."
@@ -439,3 +436,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
 
         return self
+
+    def is_placeholder_run(self) -> bool:
+        """Whether the pipeline run is a placeholder run.
+
+        Returns:
+            Whether the pipeline run is a placeholder run.
+        """
+        return (
+            self.orchestrator_run_id is None
+            and self.status == ExecutionStatus.INITIALIZING
+        )
