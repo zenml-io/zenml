@@ -306,4 +306,7 @@ When selecting a scaling strategy, consider:
 
 Remember, it's often best to start simple and scale up as needed. ZenML's flexible architecture allows you to evolve your data processing strategies as your project grows.
 
-By implementing these scaling strategies, you can extend your ZenML pipelines to handle datasets of any size, ensuring that your machine learning workflows remain efficient and manageable as your projects scale. For more information on creating custom Dataset classes and managing complex data flows, refer back to [custom dataset classes](datasets.md).
+By implementing these scaling strategies, you can extend your ZenML pipelines to handle datasets of any size, ensuring that your machine learning workflows remain efficient and manageable as your projects scale. For more information on creating custom Dataset classes and managing complex data flows, refer back to [custom dataset classes](datasets.md).<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
