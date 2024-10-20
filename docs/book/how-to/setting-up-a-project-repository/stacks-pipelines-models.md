@@ -1,3 +1,7 @@
+---
+description: A guide on how to organize stacks, pipelines, models, and artifacts in ZenML.
+---
+
 # Organizing Stacks, Pipelines, Models, and Artifacts
 
 In ZenML, pipelines, stacks and models form a crucial part of your project's

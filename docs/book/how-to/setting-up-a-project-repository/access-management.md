@@ -1,7 +1,6 @@
-- Write about Access Management and roles within a ZenML server (data scientist, stacks/infra engineer) etc
-    - Write on  how to set up service connectors and give authorization to which team members
-    - write about who migrates and maintains pipelines (link to the right place from [Include best practices for upgrading ZenML servers](../../how-to/manage-the-zenml-server/best-practices-upgrading-zenml.md))
-    - Write about who upgrades the zenml server and how to do it (link to the right place from [Include best practices for upgrading ZenML servers](../../how-to/manage-the-zenml-server/best-practices-upgrading-zenml.md))
+---
+description: A guide on managing user roles and responsibilities in ZenML.
+---
 
 # Access Management and Roles in ZenML
 
@@ -18,8 +17,8 @@ In an ML project, you will typically have the following roles:
 The above is an estimation of roles that you might have in your team. In your case, the names might be different or there might be more roles, but you can relate the responbilities we discuss in this document to your own project loosely.
 
 {% hint style="info" %}
-You can create Roles in ZenML Pro with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
-{% endhint %} TODO: add link to roles in Pro
+You can create [Roles in ZenML Pro](../../getting-started/zenml-pro/roles.md) with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
+{% endhint %}
 
 ## Service Connectors: Gateways to External Services
 
@@ -37,8 +36,7 @@ Learn more about the best practices in managing credentials and recommended role
 The decision to upgrade your ZenML server is usually taken by your Project Owners after consulting with all the teams using the server. This is because there might be teams with conflicting requirements and moving to a new version of ZenML (that might come with upgrades to certain libraries) can break code for some users.
 
 {% hint style="info" %}
-You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers multi-tenancy out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
-TODO: add link to tenants in Pro
+You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers [multi-tenancy](../../getting-started/zenml-pro/tenants.md) out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
 {% endhint %}
 
 Performing the upgrade itself is a task that typically falls on the MLOps Platform Engineers. They should:
