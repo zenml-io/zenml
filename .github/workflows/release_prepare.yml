@@ -109,7 +109,7 @@ jobs:
           git commit -m "Adding the new version to the necessary files."
           git push origin HEAD:${{ github.ref }}
       # Create a PR
-      - name: Create a pul request
+      - name: Create a pull request
         run: |
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
