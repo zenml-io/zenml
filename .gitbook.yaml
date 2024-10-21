@@ -16,4 +16,4 @@ redirects:
   getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server: how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md
   how-to/stack-deployment/implement-a-custom-integration: how-to/contribute-to-zenml/implement-a-custom-integration.md
   how-to/setting-up-a-project-repository/best-practices: how-to/setting-up-a-project-repository/set-up-repository.md
-
+  getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
