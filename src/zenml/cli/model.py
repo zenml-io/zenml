@@ -61,9 +61,7 @@ def _model_version_to_print(
 ) -> Dict[str, Any]:
     run_metadata = None
     if model_version.run_metadata:
-        run_metadata = {
-            k: v for k, v in model_version.run_metadata.items()
-        }
+        run_metadata = {k: v for k, v in model_version.run_metadata.items()}
     return {
         "id": model_version.id,
         "model": model_version.model.name,
