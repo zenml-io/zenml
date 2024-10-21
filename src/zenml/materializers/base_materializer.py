@@ -229,35 +229,65 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # ================
     # Internal Methods
     # ================
-
-    def validate_type_compatibility(self, data_type: Type[Any]) -> None:
-        """Checks whether the materializer can read/write the given type.
+    def validate_save_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can save the given type.
 
         Args:
             data_type: The type to check.
 
         Raises:
-            TypeError: If the materializer cannot read/write the given type.
+            TypeError: If the materializer cannot save the given type.
         """
-        if not self.can_handle_type(data_type):
+        if not self.can_save_type(data_type):
             raise TypeError(
-                f"Unable to handle type {data_type}. {self.__class__.__name__} "
-                f"can only read/write artifacts of the following types: "
+                f"Unable to save type {data_type}. {self.__class__.__name__} "
+                f"can only save artifacts of the following types: "
+                f"{self.ASSOCIATED_TYPES}."
+            )
+
+    def validate_load_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can load the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Raises:
+            TypeError: If the materializer cannot load the given type.
+        """
+        if not self.can_load_type(data_type):
+            raise TypeError(
+                f"Unable to load type {data_type}. {self.__class__.__name__} "
+                f"can only load artifacts of the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
 
     @classmethod
-    def can_handle_type(cls, data_type: Type[Any]) -> bool:
-        """Whether the materializer can read/write a certain type.
+    def can_save_type(cls, data_type: Type[Any]) -> bool:
+        """Whether the materializer can save a certain type.
 
         Args:
             data_type: The type to check.
 
         Returns:
-            Whether the materializer can read/write the given type.
+            Whether the materializer can save the given type.
         """
         return any(
             issubclass(data_type, associated_type)
+            for associated_type in cls.ASSOCIATED_TYPES
+        )
+
+    @classmethod
+    def can_load_type(cls, data_type: Type[Any]) -> bool:
+        """Whether the materializer can load an artifact as the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Returns:
+            Whether the materializer can load an artifact as the given type.
+        """
+        return any(
+            issubclass(associated_type, data_type)
             for associated_type in cls.ASSOCIATED_TYPES
         )
 
