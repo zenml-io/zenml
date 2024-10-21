@@ -37,7 +37,12 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from starlette.types import ASGIApp
 
 import zenml
@@ -48,6 +53,7 @@ from zenml.constants import (
     HEALTH,
 )
 from zenml.enums import AuthScheme, SourceContextTypes
+from zenml.models import ServerDeploymentType
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     actions_endpoints,
@@ -97,10 +103,7 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-if server_config().use_legacy_dashboard:
-    DASHBOARD_DIRECTORY = "dashboard_legacy"
-else:
-    DASHBOARD_DIRECTORY = "dashboard"
+DASHBOARD_DIRECTORY = "dashboard"
 
 
 def relative_path(rel: str) -> str:
@@ -345,17 +348,14 @@ def initialize() -> None:
     initialize_secure_headers()
 
 
-if server_config().use_legacy_dashboard:
-    app.mount(
-        "/static",
-        StaticFiles(
-            directory=relative_path(
-                os.path.join(DASHBOARD_DIRECTORY, "static")
-            ),
-            check_dir=False,
-        ),
-    )
-else:
+DASHBOARD_REDIRECT_URL = None
+if (
+    server_config().dashboard_url
+    and server_config().deployment_type == ServerDeploymentType.CLOUD
+):
+    DASHBOARD_REDIRECT_URL = server_config().dashboard_url
+
+if not DASHBOARD_REDIRECT_URL:
     app.mount(
         "/assets",
         StaticFiles(
@@ -395,6 +395,9 @@ async def dashboard(request: Request) -> Any:
     Raises:
         HTTPException: If the dashboard files are not included.
     """
+    if DASHBOARD_REDIRECT_URL:
+        return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
+
     if not os.path.isfile(
         os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
     ):
@@ -502,6 +505,8 @@ async def catch_all(request: Request, file_path: str) -> Any:
     Returns:
         The ZenML dashboard.
     """
+    if DASHBOARD_REDIRECT_URL:
+        return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
     # some static files need to be served directly from the root dashboard
     # directory
     if file_path and file_path in root_static_files:
