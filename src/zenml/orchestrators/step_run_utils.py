@@ -35,7 +35,7 @@ from zenml.models import (
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
-from zenml.utils import string_utils
+from zenml.utils import pagination_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
@@ -424,7 +424,15 @@ def get_model_version_created_by_pipeline_run(
         ):
             return pipeline_run.model_version
 
-    for step_run in pipeline_run.steps.values():
+    # We fetch a list of hydrated step runs here in order to avoid hydration
+    # calls for each step separately.
+    candidate_step_runs = pagination_utils.depaginate(
+        Client().list_run_steps,
+        pipeline_run_id=pipeline_run.id,
+        model=model_name,
+        hydrate=True,
+    )
+    for step_run in candidate_step_runs:
         if step_run.config.model and step_run.model_version:
             if (
                 step_run.config.model.name == model_name

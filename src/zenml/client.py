@@ -346,6 +346,8 @@ class Client(metaclass=ClientMetaClass):
     """
 
     _active_user: Optional["UserResponse"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_stack: Optional["StackResponse"] = None
 
     def __init__(
         self,
@@ -1113,9 +1115,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
-        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
-            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
-            return self.get_workspace(workspace_id)
+        if workspace_id := os.environ.get(ENV_ZENML_ACTIVE_WORKSPACE_ID):
+            if not self._active_workspace or self._active_workspace.id != UUID(
+                workspace_id
+            ):
+                self._active_workspace = self.get_workspace(workspace_id)
+
+            return self._active_workspace
 
         from zenml.constants import DEFAULT_WORKSPACE_NAME
 
@@ -1465,8 +1471,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+        if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
+            if not self._active_stack or self._active_stack.id != UUID(
+                env_stack_id
+            ):
+                self._active_stack = self.get_stack(env_stack_id)
+
+            return self._active_stack
 
         stack_id: Optional[UUID] = None
 
@@ -1541,7 +1552,7 @@ class Client(metaclass=ClientMetaClass):
                         component_type=component_type,
                     )
                     component_config = component_response.configuration
-                    component_flavor = component_response.flavor
+                    component_flavor = component_response.flavor_name
                 else:
                     component_config = component.configuration
                     component_flavor = component.flavor
@@ -2083,7 +2094,7 @@ class Client(metaclass=ClientMetaClass):
 
             validated_config = validate_stack_component_config(
                 configuration_dict=existing_configuration,
-                flavor_name=component.flavor,
+                flavor_name=component.flavor_name,
                 component_type=component.type,
                 # Always enforce validation of custom flavors
                 validate_custom_flavors=True,
@@ -3919,7 +3930,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
-        num_outputs: Optional[Union[int, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -3940,11 +3951,11 @@ class Client(metaclass=ClientMetaClass):
             deployment_id: The id of the deployment to filter by.
             original_step_run_id: The id of the original step run to filter by.
             model_version_id: The ID of the model version to filter by.
+            model: Filter by model name/ID.
             name: The name of the step run to filter by.
             cache_key: The cache key of the step run to filter by.
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
-            num_outputs: The number of outputs for the step run
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3971,7 +3982,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             model_version_id=model_version_id,
-            num_outputs=num_outputs,
+            model=model,
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
