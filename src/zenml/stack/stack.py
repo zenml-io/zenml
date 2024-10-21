@@ -40,7 +40,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import SecretValidationLevel, StackComponentType
-from zenml.exceptions import ProvisioningError, StackValidationError
+from zenml.exceptions import StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponse
@@ -62,7 +62,11 @@ if TYPE_CHECKING:
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
-    from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
+    from zenml.models import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
@@ -751,21 +755,6 @@ class Stack:
                 updated=datetime.utcnow(),
             )
 
-            logger.warning(
-                "The stack `%s` contains components that require building "
-                "Docker images. Older versions of ZenML always built these "
-                "images locally, but since version 0.32.0 this behavior can be "
-                "configured using the `image_builder` stack component. This "
-                "stack will temporarily default to a local image builder that "
-                "mirrors the previous behavior, but this will be removed in "
-                "future versions of ZenML. Please add an image builder to this "
-                "stack:\n"
-                "`zenml image-builder register <NAME> ...\n"
-                "zenml stack update %s -i <NAME>`",
-                self.name,
-                self.id,
-            )
-
             self._image_builder = image_builder
 
     def prepare_pipeline_deployment(
@@ -779,31 +768,10 @@ class Stack:
             deployment: The pipeline deployment
 
         Raises:
-            StackValidationError: If the stack component is not running.
             RuntimeError: If trying to deploy a pipeline that requires a remote
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
-
-        for component in self.components.values():
-            if not component.is_running:
-                raise StackValidationError(
-                    f"The '{component.name}' {component.type} stack component "
-                    f"is not currently running. Please run the following "
-                    f"command to provision and start the component:\n\n"
-                    f"    `zenml stack up`\n"
-                    f"It is worth noting that the provision command will "
-                    f" be deprecated in the future. ZenML will no longer "
-                    f"be responsible for provisioning infrastructure, "
-                    f"or port-forwarding directly. Instead of managing "
-                    f"the state of the components, ZenML will be utilizing "
-                    f"the already running stack or stack components directly. "
-                    f"Additionally, we are also providing a variety of "
-                    f" deployment recipes for popular Kubernetes-based "
-                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
-                    f"Check out https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-using-mlstacks"
-                    f"for more information."
-                )
 
         if self.requires_remote_server and Client().zen_store.is_local_store():
             raise RuntimeError(
@@ -841,16 +809,21 @@ class Stack:
     def deploy_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
             deployment: The pipeline deployment.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        return self.orchestrator.run(deployment=deployment, stack=self)
+        return self.orchestrator.run(
+            deployment=deployment, stack=self, placeholder_run=placeholder_run
+        )
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"
@@ -962,83 +935,3 @@ class Stack:
             info.config
         ).values():
             component.cleanup_step_run(info=info, step_failed=step_failed)
-
-    @property
-    def is_provisioned(self) -> bool:
-        """If the stack provisioned resources to run locally.
-
-        Returns:
-            True if the stack provisioned resources to run locally.
-        """
-        return all(
-            component.is_provisioned for component in self.components.values()
-        )
-
-    @property
-    def is_running(self) -> bool:
-        """If the stack is running locally.
-
-        Returns:
-            True if the stack is running locally, False otherwise.
-        """
-        return all(
-            component.is_running for component in self.components.values()
-        )
-
-    def provision(self) -> None:
-        """Provisions resources to run the stack locally."""
-        self.validate(fail_if_secrets_missing=True)
-        logger.info("Provisioning resources for stack '%s'.", self.name)
-        for component in self.components.values():
-            if not component.is_provisioned:
-                component.provision()
-                logger.info("Provisioned resources for %s.", component)
-
-    def deprovision(self) -> None:
-        """Deprovisions all local resources of the stack."""
-        logger.info("Deprovisioning resources for stack '%s'.", self.name)
-        for component in self.components.values():
-            if component.is_provisioned:
-                try:
-                    component.deprovision()
-                    logger.info("Deprovisioned resources for %s.", component)
-                except NotImplementedError as e:
-                    logger.warning(e)
-
-    def resume(self) -> None:
-        """Resumes the provisioned local resources of the stack.
-
-        Raises:
-            ProvisioningError: If any stack component is missing provisioned
-                resources.
-        """
-        logger.info("Resuming provisioned resources for stack %s.", self.name)
-        for component in self.components.values():
-            if component.is_running:
-                # the component is already running, no need to resume anything
-                pass
-            elif component.is_provisioned:
-                component.resume()
-                logger.info("Resumed resources for %s.", component)
-            else:
-                raise ProvisioningError(
-                    f"Unable to resume resources for {component}: No "
-                    f"resources have been provisioned for this component."
-                )
-
-    def suspend(self) -> None:
-        """Suspends the provisioned local resources of the stack."""
-        logger.info(
-            "Suspending provisioned resources for stack '%s'.", self.name
-        )
-        for component in self.components.values():
-            if not component.is_suspended:
-                try:
-                    component.suspend()
-                    logger.info("Suspended resources for %s.", component)
-                except NotImplementedError:
-                    logger.warning(
-                        "Suspending provisioned resources not implemented "
-                        "for %s. Continuing without suspending resources...",
-                        component,
-                    )

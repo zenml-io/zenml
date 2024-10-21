@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
-      python-version: '3.8'
+      python-version: '3.9'
       git-ref: develop
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'

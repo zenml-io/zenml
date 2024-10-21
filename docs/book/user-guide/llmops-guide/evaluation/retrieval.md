@@ -34,9 +34,7 @@ could be improved. I looked in our documentation to find some examples where the
 information could only be found in a single page and then wrote some queries
 that would require the retrieval component to find that page. For example, the
 query "How do I get going with the Label Studio integration? What are the first
-steps?" would require the retrieval component to find [the Label Studio
-integration
-page](https://docs.zenml.io/stacks-and-components/component-guide/annotators/label-studio).
+steps?" would require the retrieval component to find [the Label Studio integration page](../../../component-guide/annotators/label-studio.md).
 Some of the other examples used are:
 
 | Question | URL Ending |

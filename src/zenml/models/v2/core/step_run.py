@@ -521,6 +521,11 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
+    deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Deployment of this step run",
+        union_mode="left_to_right",
+    )
     original_step_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Original id for this step run",
@@ -536,3 +541,10 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Workspace of this step run",
         union_mode="left_to_right",
     )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Model version associated with the pipeline run.",
+        union_mode="left_to_right",
+    )
+
+    model_config = ConfigDict(protected_namespaces=())

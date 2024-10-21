@@ -33,7 +33,7 @@ def my_step():
 ```
 
 {% hint style="info" %}
-See the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-new/#zenml.new.steps.step\_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
+See the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-new/#zenml.steps.step\_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

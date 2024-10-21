@@ -50,7 +50,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
-from zenml.zen_server.utils import get_active_deployment
+from zenml.zen_server.utils import get_local_server
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -79,19 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.08.29",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.10.10",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.08.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.09.24",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.08.29",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.09.23",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.08.29",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.09.24",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -358,7 +358,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
         )
 
     if yes or confirm:
-        server = get_active_deployment(local=True)
+        server = get_local_server()
 
         if server:
             from zenml.zen_server.deploy.deployer import ServerDeployer

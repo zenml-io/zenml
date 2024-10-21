@@ -8,37 +8,8 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       os: arc-runner-set
-      python-version: '3.8'
+      python-version: '3.9'
     secrets: inherit
-  mlstacks-compatibility-check:
-    needs: setup-and-test
-    runs-on: arc-runner-set
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - name: Set up Python
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: '3.8'
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-      - name: Create virtual environment
-        run: |
-          source $HOME/.cargo/env
-          uv venv
-      - name: Check mlstacks compatibility
-        run: |
-          source .venv/bin/activate
-          source $HOME/.cargo/env
-          uv pip install -e .
-          uv pip install mlstacks
-      - name: Check for broken dependencies
-        run: |
-          source .venv/bin/activate
-          source $HOME/.cargo/env
-          uv pip check
   mysql-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -101,7 +72,6 @@ jobs:
     if: github.repository == 'zenml-io/zenml'
     needs:
       - setup-and-test
-      - mlstacks-compatibility-check
       - sqlite-db-migration-testing
       - mysql-db-migration-testing
       - mariadb-db-migration-testing

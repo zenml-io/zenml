@@ -138,7 +138,7 @@ def artifact_linker(
 
     if model:
         link_artifact_to_model(
-            artifact_version_id=artifact.id,
+            artifact_version=artifact,
             model=model,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
@@ -198,7 +198,7 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_create_model_version_makes_proper_tagging(self):
         """Test if model versions get unique tags."""
@@ -208,14 +208,14 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
             mv = Model(name=mdl_name, tags=["tag3", "tag4"])
             mv = mv._get_or_create_model_version()
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag3", "tag4"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
@@ -301,15 +301,17 @@ class TestModel:
 
                     # run 2 times to first create, next get
                     for _ in range(2):
-                        model = mv._get_or_create_model()
+                        model_version = mv._get_or_create_model_version()
 
-                        assert len(model.tags) == 2
-                        assert {t.name for t in model.tags} == {
+                        assert len(model_version.tags) == 2
+                        assert {t.name for t in model_version.tags} == {
                             green_tag,
                             new_tag,
                         }
                         assert {
-                            t.color for t in model.tags if t.name == green_tag
+                            t.color
+                            for t in model_version.tags
+                            if t.name == green_tag
                         } == {"green"}
 
     def test_tags_properly_updated(self):
@@ -324,10 +326,8 @@ class TestModel:
 
             client.update_model(model_id, add_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 4
+            assert len(model.tags) == 2
             assert {t.name for t in model.tags} == {
-                "foo",
-                "bar",
                 "tag1",
                 "tag2",
             }
@@ -346,8 +346,7 @@ class TestModel:
 
             client.update_model(model_id, remove_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 2
-            assert {t.name for t in model.tags} == {"foo", "bar"}
+            assert len(model.tags) == 0
 
             client.update_model_version(
                 model_id, "1", remove_tags=["tag3", "tag4"]
@@ -479,7 +478,7 @@ class TestModel:
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                pipeline="_inner_pipeline_test_deletion_of_links",
                 sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
@@ -509,7 +508,7 @@ class TestModel:
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                pipeline="_inner_pipeline_test_deletion_of_links",
                 sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
@@ -625,7 +624,7 @@ class TestModel:
                         data="Hello, World!", name=artifact_name
                     )
                     link_artifact_to_model(
-                        artifact_version_id=artifact.id,
+                        artifact_version=artifact,
                         model=Model(name=mdl_name),
                     )
 
@@ -663,13 +662,6 @@ class TestModel:
                 mv_in_pipe = Model(
                     name=mdl_name,
                 )
-
-                # no context, no model
-                with patch("zenml.artifacts.utils.logger.debug") as logger:
-                    _inner_pipeline()
-                    logger.assert_called_once_with(
-                        "Unable to link saved artifact to model."
-                    )
 
                 # use context
                 _inner_pipeline.with_options(model=mv_in_pipe)()

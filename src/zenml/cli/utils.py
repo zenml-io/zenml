@@ -57,8 +57,6 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
-    NOT_INSTALLED_MESSAGE,
-    TERRAFORM_NOT_INSTALLED_MESSAGE,
 )
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
@@ -76,6 +74,7 @@ from zenml.models import (
     StrFilter,
     UUIDFilter,
 )
+from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
@@ -522,43 +521,6 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_outputs(stack: "StackResponse") -> None:
-    """Prints outputs for stacks deployed with mlstacks.
-
-    Args:
-        stack: Instance of a stack model.
-    """
-    verify_mlstacks_prerequisites_installation()
-
-    if not stack.stack_spec_path:
-        declare("No stack spec path is set for this stack.")
-        return
-    stack_caption = f"'{stack.name}' stack"
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title="MLStacks Outputs",
-        caption=stack_caption,
-        show_lines=True,
-    )
-    rich_table.add_column("OUTPUT_KEY", overflow="fold")
-    rich_table.add_column("OUTPUT_VALUE", overflow="fold")
-
-    from mlstacks.utils.terraform_utils import get_stack_outputs
-
-    stack_spec_file = stack.stack_spec_path
-    stack_outputs = get_stack_outputs(stack_path=stack_spec_file)
-
-    for output_key, output_value in stack_outputs.items():
-        rich_table.add_row(output_key, output_value)
-
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
-    console.print(rich_table)
-
-
 def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     """Prints the configuration options of a stack.
 
@@ -607,9 +569,6 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         f"Stack '{stack.name}' with id '{stack.id}' is "
         f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
     )
-
-    if stack.stack_spec_path:
-        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
 def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
@@ -2477,12 +2436,13 @@ def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
     Returns:
         The help text.
     """
-    if filter_model.is_sort_by_field(field):
+    filter_generator = FilterGenerator(filter_model)
+    if filter_generator.is_sort_by_field(field):
         return (
             "[STRING] Example: --sort_by='desc:name' to sort by name in "
             "descending order. "
         )
-    if filter_model.is_datetime_field(field):
+    if filter_generator.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "
             f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
@@ -2491,23 +2451,23 @@ def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
             f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
             f"filter for everything created on or after the given date."
         )
-    elif filter_model.is_uuid_field(field):
+    elif filter_generator.is_uuid_field(field):
         return (
             f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
             f"to filter for all UUIDs starting with that prefix."
         )
-    elif filter_model.is_int_field(field):
+    elif filter_generator.is_int_field(field):
         return (
             f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
             f"filter for all entities where this field has a value greater than "
             f"or equal to the value."
         )
-    elif filter_model.is_bool_field(field):
+    elif filter_generator.is_bool_field(field):
         return (
             f"[BOOL] Example: --{field}='True' to "
             f"filter for all instances where this field is true."
         )
-    elif filter_model.is_str_field(field):
+    elif filter_generator.is_str_field(field):
         return (
             f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
             f"to filter everything that contains the query string somewhere in "
@@ -2529,27 +2489,28 @@ def create_data_type_help_text(
     Returns:
         The help text.
     """
-    if filter_model.is_datetime_field(field):
+    filter_generator = FilterGenerator(filter_model)
+    if filter_generator.is_datetime_field(field):
         return (
             f"[DATETIME] supported filter operators: "
             f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_uuid_field(field):
+    elif filter_generator.is_uuid_field(field):
         return (
             f"[UUID] supported filter operators: "
             f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_int_field(field):
+    elif filter_generator.is_int_field(field):
         return (
             f"[INTEGER] supported filter operators: "
             f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_bool_field(field):
+    elif filter_generator.is_bool_field(field):
         return (
             f"[BOOL] supported filter operators: "
             f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
         )
-    elif filter_model.is_str_field(field):
+    elif filter_generator.is_str_field(field):
         return (
             f"[STRING] supported filter operators: "
             f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
@@ -2761,29 +2722,6 @@ def print_model_url(url: Optional[str]) -> None:
             "You can try it locally, by running `zenml up`, or remotely, "
             "by deploying ZenML on the infrastructure of your choice."
         )
-
-
-def warn_deprecated_example_subcommand() -> None:
-    """Warning for deprecating example subcommand."""
-    warning(
-        "The `example` CLI subcommand has been deprecated and will be removed "
-        "in a future release."
-    )
-
-
-def verify_mlstacks_prerequisites_installation() -> None:
-    """Checks if the `mlstacks` package is installed."""
-    try:
-        import mlstacks  # noqa: F401
-        import python_terraform  # noqa: F401
-
-        subprocess.check_output(
-            ["terraform", "--version"], universal_newlines=True
-        )
-    except ImportError:
-        error(NOT_INSTALLED_MESSAGE)
-    except subprocess.CalledProcessError:
-        error(TERRAFORM_NOT_INSTALLED_MESSAGE)
 
 
 def is_jupyter_installed() -> bool:

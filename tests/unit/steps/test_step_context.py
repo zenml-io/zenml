@@ -42,7 +42,6 @@ def test_get_step_context(step_context_with_no_output):
 def test_initialize_step_context_with_mismatched_keys(
     sample_pipeline_run,
     sample_step_run,
-    sample_step_run_info,
 ):
     """Tests that initializing a step context with mismatched keys for materializers and artifacts raises an Exception."""
     materializers = {"some_output_name": (BaseMaterializer,)}
@@ -54,8 +53,6 @@ def test_initialize_step_context_with_mismatched_keys(
         StepContext(
             pipeline_run=sample_pipeline_run,
             step_run=sample_step_run,
-            step_run_info=sample_step_run_info,
-            cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
             output_artifact_configs=artifact_configs,
@@ -65,7 +62,6 @@ def test_initialize_step_context_with_mismatched_keys(
 def test_initialize_step_context_with_matching_keys(
     sample_pipeline_run,
     sample_step_run,
-    sample_step_run_info,
 ):
     """Tests that initializing a step context with matching keys for materializers and artifacts works."""
     materializers = {"some_output_name": (BaseMaterializer,)}
@@ -77,8 +73,6 @@ def test_initialize_step_context_with_matching_keys(
         StepContext(
             pipeline_run=sample_pipeline_run,
             step_run=sample_step_run,
-            step_run_info=sample_step_run_info,
-            cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
             output_artifact_configs=artifact_configs,

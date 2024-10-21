@@ -328,6 +328,15 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            is_templatable = False
+            if (
+                self.deployment
+                and self.deployment.build
+                and not self.deployment.build.is_local
+                and self.deployment.build.stack
+            ):
+                is_templatable = True
+
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(
@@ -346,6 +355,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 template_id=self.deployment.template_id
                 if self.deployment
                 else None,
+                is_templatable=is_templatable,
             )
 
         resources = None
@@ -402,10 +412,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if (
-            self.orchestrator_run_id
-            or self.status != ExecutionStatus.INITIALIZING
-        ):
+        if not self.is_placeholder_run():
             raise RuntimeError(
                 f"Unable to replace pipeline run {self.id} which is not a "
                 "placeholder run."
@@ -429,3 +436,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
 
         return self
+
+    def is_placeholder_run(self) -> bool:
+        """Whether the pipeline run is a placeholder run.
+
+        Returns:
+            Whether the pipeline run is a placeholder run.
+        """
+        return (
+            self.orchestrator_run_id is None
+            and self.status == ExecutionStatus.INITIALIZING
+        )

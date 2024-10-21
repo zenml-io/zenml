@@ -215,11 +215,18 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
                     )
                     or "No hostname specified for this service"
                 )
+                prediction_apis_urls = (
+                    model_deployer.get_model_server_info(served_models[0]).get(
+                        "PREDICTION_APIS_URLS"
+                    )
+                    or "No prediction APIs URLs specified for this service"
+                )
                 declare(
                     f"  Prediction URL of Served Model {served_model_uuid} "
                     f"is:\n"
                     f"  {prediction_url}\n"
-                    f"  and the hostname is: {prediction_hostname}"
+                    f"  and the hostname is: {prediction_hostname}\n"
+                    f"  and the prediction APIs URLs are: {prediction_apis_urls}\n"
                 )
             except KeyError:
                 warning("The deployed model instance has no 'prediction_url'.")

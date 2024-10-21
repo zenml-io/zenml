@@ -88,16 +88,6 @@ If one or more of the deployments are not in the `Running` state, try increasing
 If you're installing Kubeflow Pipelines manually, make sure the Kubernetes service is called exactly `ml-pipeline`. This is a requirement for ZenML to connect to your Kubeflow Pipelines deployment.
 {% endhint %}
 
-#### Infrastructure Deployment
-
-A Kubeflow orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy kubeflow_orchestrator --flavor=kubeflow --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
-
 ### How to use it
 
 To use the Kubeflow orchestrator, we need:
@@ -177,7 +167,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     Active global stack set to:'aws-kubeflow'
     ```
 
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
 
     ```shell
     zenml orchestrator register <ORCHESTRATOR_NAME> \

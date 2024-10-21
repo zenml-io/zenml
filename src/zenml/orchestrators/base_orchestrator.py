@@ -14,12 +14,18 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
 
 from pydantic import model_validator
 
-from zenml.enums import StackComponentType
+from zenml.constants import (
+    ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
+    handle_bool_env_var,
+)
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
+from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
@@ -27,7 +33,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
 
@@ -124,7 +130,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
-    ) -> Any:
+    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """The method needs to be implemented by the respective orchestrator.
 
         Depending on the type of orchestrator you'll have to perform slightly
@@ -169,28 +175,69 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs a pipeline on a stack.
 
         Args:
             deployment: The pipeline deployment.
             stack: The stack on which to run the pipeline.
-
-        Returns:
-            Orchestrator-specific return value.
+            placeholder_run: An optional placeholder run for the deployment.
+                This will be deleted in case the pipeline deployment failed.
         """
         self._prepare_run(deployment=deployment)
 
         environment = get_config_environment_vars(deployment=deployment)
 
-        try:
-            result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack, environment=environment
+        prevent_client_side_caching = handle_bool_env_var(
+            ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
+        )
+
+        if (
+            placeholder_run
+            and not deployment.schedule
+            and not prevent_client_side_caching
+        ):
+            from zenml.orchestrators import step_run_utils
+
+            cached_invocations = step_run_utils.create_cached_step_runs(
+                deployment=deployment,
+                pipeline_run=placeholder_run,
+                stack=stack,
             )
+
+            for invocation_id in cached_invocations:
+                # Remove the cached step invocations from the deployment so
+                # the orchestrator does not try to run them
+                deployment.step_configurations.pop(invocation_id)
+
+            if len(deployment.step_configurations) == 0:
+                # All steps were cached, we update the pipeline run status and
+                # don't actually use the orchestrator to run the pipeline
+                self._cleanup_run()
+                logger.info("All steps of the pipeline run were cached.")
+                return
+
+        try:
+            if metadata_iterator := self.prepare_or_run_pipeline(
+                deployment=deployment,
+                stack=stack,
+                environment=environment,
+            ):
+                for metadata_dict in metadata_iterator:
+                    try:
+                        if placeholder_run:
+                            publish_pipeline_run_metadata(
+                                pipeline_run_id=placeholder_run.id,
+                                pipeline_run_metadata={self.id: metadata_dict},
+                            )
+                    except Exception as e:
+                        logger.debug(
+                            "Something went went wrong trying to publish the"
+                            f"run metadata: {e}"
+                        )
         finally:
             self._cleanup_run()
-
-        return result
 
     def run_step(self, step: "Step") -> None:
         """Runs the given step.
@@ -238,6 +285,21 @@ class BaseOrchestrator(StackComponent, ABC):
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
+
+    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: A pipeline run response to fetch its status.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+        """
+        raise NotImplementedError(
+            "The fetch status functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
 
 
 class BaseOrchestratorFlavor(Flavor):
