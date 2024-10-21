@@ -198,7 +198,7 @@ Kubeflow comes with its own UI that you can use to find further details about yo
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"]
 ```
 
 #### Additional configuration

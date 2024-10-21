@@ -5435,7 +5435,7 @@ class TestRunMetadata:
                 pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
             )
 
-        rm = client.zen_store.create_run_metadata(
+        client.zen_store.create_run_metadata(
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,

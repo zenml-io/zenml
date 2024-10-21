@@ -482,190 +482,53 @@ def test_listing_pipelines(clean_client):
 def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     """Test creating run metadata linked only to a pipeline run."""
     pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
-    existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
-    )
-
     # Assert that the created metadata is correct
-    new_metadata = clean_client_with_run.create_run_metadata(
+    clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
         resource_id=pipeline_run.id,
         resource_type=MetadataResourceTypes.PIPELINE_RUN,
     )
-    assert isinstance(new_metadata, list)
-    assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == pipeline_run.id
-    assert new_metadata[0].resource_type == MetadataResourceTypes.PIPELINE_RUN
-    assert new_metadata[0].stack_component_id is None
+    rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
 
-    # Assert new metadata is linked to the pipeline run
-    all_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
-    )
-    assert len(all_metadata) == len(existing_metadata) + 1
-
-
-def test_create_run_metadata_for_pipeline_run_and_component(
-    clean_client_with_run: Client,
-):
-    """Test creating metadata linked to a pipeline run and a stack component"""
-    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
-    orchestrator_id = clean_client_with_run.active_stack_model.components[
-        "orchestrator"
-    ][0].id
-    existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
-    )
-    existing_component_metadata = clean_client_with_run.list_run_metadata(
-        stack_component_id=orchestrator_id
-    )
-
-    # Assert that the created metadata is correct
-    new_metadata = clean_client_with_run.create_run_metadata(
-        metadata={"aria": "is awesome too"},
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
-        stack_component_id=orchestrator_id,
-    )
-    assert isinstance(new_metadata, list)
-    assert len(new_metadata) == 1
-    assert new_metadata[0].key == "aria"
-    assert new_metadata[0].value == "is awesome too"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == pipeline_run.id
-    assert new_metadata[0].resource_type == MetadataResourceTypes.PIPELINE_RUN
-    assert new_metadata[0].stack_component_id == orchestrator_id
-
-    # Assert new metadata is linked to the pipeline run
-    registered_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
-    )
-    assert len(registered_metadata) == len(existing_metadata) + 1
-
-    # Assert new metadata is linked to the stack component
-    registered_component_metadata = clean_client_with_run.list_run_metadata(
-        stack_component_id=orchestrator_id
-    )
-    assert (
-        len(registered_component_metadata)
-        == len(existing_component_metadata) + 1
-    )
+    assert isinstance(rm, dict)
+    assert len(rm.values()) == 1
+    assert rm["axel"] == "is_awesome"
 
 
 def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     """Test creating run metadata linked only to a step run."""
     step_run = clean_client_with_run.list_run_steps()[0]
-    existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=step_run.id, resource_type=MetadataResourceTypes.STEP_RUN
-    )
 
     # Assert that the created metadata is correct
-    new_metadata = clean_client_with_run.create_run_metadata(
+    clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
         resource_id=step_run.id,
         resource_type=MetadataResourceTypes.STEP_RUN,
     )
-    assert isinstance(new_metadata, list)
-    assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == step_run.id
-    assert new_metadata[0].resource_type == MetadataResourceTypes.STEP_RUN
-    assert new_metadata[0].stack_component_id is None
+    rm = clean_client_with_run.get_run_step(step_run.id).run_metadata
 
-    # Assert new metadata is linked to the step run
-    registered_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=step_run.id, resource_type=MetadataResourceTypes.STEP_RUN
-    )
-    assert len(registered_metadata) == len(existing_metadata) + 1
+    assert isinstance(rm, dict)
+    assert len(rm.values()) == 1
+    assert rm["axel"] == "is_awesome"
 
-
-def test_create_run_metadata_for_step_run_and_component(
-    clean_client_with_run: Client,
-):
-    """Test creating metadata linked to a step run and a stack component"""
-    step_run = clean_client_with_run.list_run_steps()[0]
-    orchestrator_id = clean_client_with_run.active_stack_model.components[
-        "orchestrator"
-    ][0].id
-    existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=step_run.id, resource_type=MetadataResourceTypes.STEP_RUN
-    )
-    existing_component_metadata = clean_client_with_run.list_run_metadata(
-        stack_component_id=orchestrator_id
-    )
-
-    # Assert that the created metadata is correct
-    new_metadata = clean_client_with_run.create_run_metadata(
-        metadata={"aria": "is awesome too"},
-        resource_id=step_run.id,
-        resource_type=MetadataResourceTypes.STEP_RUN,
-        stack_component_id=orchestrator_id,
-    )
-    assert isinstance(new_metadata, list)
-    assert len(new_metadata) == 1
-    assert new_metadata[0].key == "aria"
-    assert new_metadata[0].value == "is awesome too"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == step_run.id
-    assert new_metadata[0].resource_type == MetadataResourceTypes.STEP_RUN
-    assert new_metadata[0].stack_component_id == orchestrator_id
-
-    # Assert new metadata is linked to the step run
-    registered_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=step_run.id, resource_type=MetadataResourceTypes.STEP_RUN
-    )
-    assert len(registered_metadata) == len(existing_metadata) + 1
-
-    # Assert new metadata is linked to the stack component
-    registered_component_metadata = clean_client_with_run.list_run_metadata(
-        stack_component_id=orchestrator_id
-    )
-    assert (
-        len(registered_component_metadata)
-        == len(existing_component_metadata) + 1
-    )
 
 
 def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     """Test creating run metadata linked to an artifact."""
     artifact_version = clean_client_with_run.list_artifact_versions()[0]
-    existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=artifact_version.id,
-        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-    )
 
     # Assert that the created metadata is correct
-    new_metadata = clean_client_with_run.create_run_metadata(
+    clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
         resource_id=artifact_version.id,
         resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
     )
-    assert isinstance(new_metadata, list)
-    assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == artifact_version.id
-    assert (
-        new_metadata[0].resource_type == MetadataResourceTypes.ARTIFACT_VERSION
-    )
-    assert new_metadata[0].stack_component_id is None
 
-    # Assert new metadata is linked to the artifact
-    registered_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=artifact_version.id,
-        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-    )
-    assert len(registered_metadata) == len(existing_metadata) + 1
+    rm = clean_client_with_run.get_artifact_version(artifact_version.id).run_metadata
+
+    assert isinstance(rm, dict)
+    assert len(rm.values()) == 1
+    assert rm["axel"] == "is_awesome"
 
 
 # .---------.

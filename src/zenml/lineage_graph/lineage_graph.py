@@ -188,8 +188,8 @@ class LineageGraph(BaseModel):
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
                     metadata=[
-                        (m.key, str(m.value), str(m.type))
-                        for m in step.run_metadata.values()
+                        (k, v, str(type(v)))
+                        for k,v in step.run_metadata.items()
                     ],
                 ),
             )
@@ -225,8 +225,8 @@ class LineageGraph(BaseModel):
                 producer_step_id=str(artifact.producer_step_run_id),
                 uri=artifact.uri,
                 metadata=[
-                    (m.key, str(m.value), str(m.type))
-                    for m in artifact.run_metadata.values()
+                    (k, v, str(type(v)))
+                    for k,v in artifact.run_metadata.items()
                 ],
             ),
         )
