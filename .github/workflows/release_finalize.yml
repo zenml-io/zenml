@@ -1,6 +1,7 @@
 ---
 name: release-finalize
 on:
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches: [misc/prepare-release-*]

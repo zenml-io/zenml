@@ -1,6 +1,7 @@
 ---
 name: release-prepare
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened]
     branches: [misc/prepare-release-*]
