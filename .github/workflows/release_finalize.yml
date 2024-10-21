@@ -2,8 +2,7 @@
 name: release-finalize
 on:
   workflow_dispatch:
-  pull_request:
-    types: [closed]
+  delete:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
