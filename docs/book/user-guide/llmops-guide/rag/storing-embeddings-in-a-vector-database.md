@@ -22,7 +22,7 @@ options.
 
 {% hint style="info" %}
 For more information on how to set up a PostgreSQL database to follow along with
-this guide, please <a href="https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide">see the instructions in the repository</a> which show how to set
+this guide, please [see the instructions in the repository](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) which show how to set
 up a PostgreSQL database using Supabase.
 {% endhint %}
 

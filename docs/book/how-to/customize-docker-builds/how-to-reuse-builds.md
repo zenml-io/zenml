@@ -33,7 +33,7 @@ While reusing Docker builds is useful, it can be limited. This is because specif
 
 ## Use the artifact store to upload your code
 
-You can also let ZenML use the artifact store to upload your code. This is the default behaviour if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
+You can also let ZenML use the artifact store to upload your code. This is the default behavior if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
 
 ## Use code repositories to speed up Docker build times
 
