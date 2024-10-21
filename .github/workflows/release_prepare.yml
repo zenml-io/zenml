@@ -155,8 +155,7 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=release-cloudbuild-preparation.yaml \
-            --substitutions=_ZENML_BRANCH=${{ github.ref }} \
-            --substitutions=_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
+            --substitutions=_ZENML_BRANCH=${{ github.ref }},_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
       # Sign in to AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
