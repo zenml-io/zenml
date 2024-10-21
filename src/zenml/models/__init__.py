@@ -559,6 +559,7 @@ __all__ = [
     "ComponentResponse",
     "ComponentResponseBody",
     "ComponentResponseMetadata",
+    "ComponentResponseResources",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",

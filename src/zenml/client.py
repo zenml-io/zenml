@@ -1471,11 +1471,11 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        if stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
+        if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
             if not self._active_stack or self._active_stack.id != UUID(
-                stack_id
+                env_stack_id
             ):
-                self._active_stack = self.get_stack(stack_id)
+                self._active_stack = self.get_stack(env_stack_id)
 
             return self._active_stack
 
