@@ -32,7 +32,7 @@ IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
 IFS='.' read -r P_MAJOR P_MINOR P_PATCH <<< "$PLANNED_VERSION"
 
 # List PRs merged after the latest release date and filter by breaking change label
-PRS=$(gh pr list --search "is:merged merged:>$TAG_DATE label:$LABEL_BREAKING_CHANGE" --json number,title)
+PRS=$(gh pr list --search "is:merged merged:>$TAG_DATE label:$LABEL_BREAKING_CHANGE base:develop" --json number,title)
 
 # Check if the PRs list for breaking changes is empty
 if [ -z "$PRS" ]; then
