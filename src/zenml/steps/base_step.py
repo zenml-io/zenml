@@ -38,8 +38,8 @@ from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
+    CODE_HASH_PARAMETER_NAME,
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
-    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.exceptions import StepInterfaceError
@@ -283,7 +283,7 @@ class BaseStep:
             A dictionary containing the caching parameters
         """
         parameters = {
-            STEP_SOURCE_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
+            CODE_HASH_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
                 self.source_object
             )
         }
@@ -986,9 +986,7 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[str, Dict[str, Union[Source, Tuple[Source, ...]]]] = (
-            defaultdict(dict)
-        )
+        outputs: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
         for (
             output_name,
@@ -997,6 +995,8 @@ To avoid this consider setting step parameters only in one place (config or code
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
+            if artifact_config := output_annotation.artifact_config:
+                outputs[output_name]["artifact_config"] = artifact_config
 
             if output.materializer_source:
                 # The materializer source was configured by the user. We
