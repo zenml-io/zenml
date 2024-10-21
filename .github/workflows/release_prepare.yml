@@ -6,6 +6,7 @@ on:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
     if: github.repository == 'zenml-io/zenml'
@@ -35,8 +36,6 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Extract the old version
       - name: Fetch the old version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: old-version
         run: |
           LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
@@ -57,8 +56,6 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Validate the new version
       - name: Validate new version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           scripts/validate-new-version.sh ${{ needs.fetch-versions.outputs.new_version }}
@@ -103,11 +100,17 @@ jobs:
           git add examples/quickstart
       # Generate and append release notes
       - name: Generate release notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ needs.fetch-versions.outputs.new_version }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ needs.fetch-versions.outputs.old_version }} | jq -r '.body')
-          echo "$RELEASE_NOTES" >> RELEASE_NOTES.md
+          {
+          head -n 1 RELEASE_NOTES.md
+          echo ""
+          echo "# ${{ needs.fetch-versions.outputs.new_version }}"
+          echo ""
+          echo "$RELEASE_NOTES"
+          echo ""
+          tail -n +2 RELEASE_NOTES.md
+          } > RELEASE_NOTES.md.new && mv RELEASE_NOTES.md.new RELEASE_NOTES.md
           git add RELEASE_NOTES.md
       # Push the changes
       - name: Push the changes
@@ -119,8 +122,7 @@ jobs:
         run: |
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
-            --body "This PR prepares the release of version ${{ needs.fetch-versions.outputs.new_version }}." 
-
+            --body "This PR prepares the release of version ${{ needs.fetch-versions.outputs.new_version }}."
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
         run: |
