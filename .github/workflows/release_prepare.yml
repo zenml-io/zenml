@@ -165,12 +165,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests
+      # Extract the new version form the branch name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
       # Deactivate and redeploy the tenant
       - name: Run tenant management script
         env:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
+          ZENML_NEW_VERSION: ${{ env.NEW_VERSION }}
         run: python scripts/redeploy-release-prep-tenant.py
   run_quickstart_pipelines:
     needs: setup-prep-release-tenant
@@ -198,6 +205,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
+      # Extract the new version form the branch name
+      - name: Extract version from branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
       # ZenML Integrations
       - name: Install ZenML and the required integrations
         run: |
