@@ -40,6 +40,7 @@ Understanding the relationship between stacks, models, and pipelines is key to d
 - Models: Represent your machine learning models and their metadata
 - Pipelines: Encapsulate your ML workflows
 - Artifacts: Track your data and model outputs
+
 Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](./stacks-pipelines-models.md).
 
 ### Access Management and Roles
