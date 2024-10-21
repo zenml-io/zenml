@@ -11,8 +11,8 @@ jobs:
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
-      old_version: ${{ steps.new-version.outputs.new_version }}
-      new_version: ${{ steps.old-version.outputs.old_version }}
+      old_version: ${{ steps.old-version.outputs.old_version }}
+      new_version: ${{ steps.new-version.outputs.new_version }}
     steps:
       # Extract the version
       - name: Extract version from branch name
@@ -20,8 +20,7 @@ jobs:
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "::set-output name=new_version::${{ env.NEW_VERSION }}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
       # Checkout main as develop is already changed
       - name: Checkout code
         id: checkout-code
@@ -42,8 +41,7 @@ jobs:
         run: |
           LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
           OLD_VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag)
-          echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
-          echo "::set-output name=old_version::${{ env.OLD_VERSION }}"
+          echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
   create-release-branch:
     needs: fetch-versions
     runs-on: ubuntu-latest
