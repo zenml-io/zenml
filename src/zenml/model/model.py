@@ -568,7 +568,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    tags=self.tags,
                     user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,

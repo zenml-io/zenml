@@ -198,7 +198,7 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_create_model_version_makes_proper_tagging(self):
         """Test if model versions get unique tags."""
@@ -208,14 +208,14 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
             mv = Model(name=mdl_name, tags=["tag3", "tag4"])
             mv = mv._get_or_create_model_version()
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag3", "tag4"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
@@ -301,15 +301,17 @@ class TestModel:
 
                     # run 2 times to first create, next get
                     for _ in range(2):
-                        model = mv._get_or_create_model()
+                        model_version = mv._get_or_create_model_version()
 
-                        assert len(model.tags) == 2
-                        assert {t.name for t in model.tags} == {
+                        assert len(model_version.tags) == 2
+                        assert {t.name for t in model_version.tags} == {
                             green_tag,
                             new_tag,
                         }
                         assert {
-                            t.color for t in model.tags if t.name == green_tag
+                            t.color
+                            for t in model_version.tags
+                            if t.name == green_tag
                         } == {"green"}
 
     def test_tags_properly_updated(self):
@@ -324,10 +326,8 @@ class TestModel:
 
             client.update_model(model_id, add_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 4
+            assert len(model.tags) == 2
             assert {t.name for t in model.tags} == {
-                "foo",
-                "bar",
                 "tag1",
                 "tag2",
             }
@@ -346,8 +346,7 @@ class TestModel:
 
             client.update_model(model_id, remove_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 2
-            assert {t.name for t in model.tags} == {"foo", "bar"}
+            assert len(model.tags) == 0
 
             client.update_model_version(
                 model_id, "1", remove_tags=["tag3", "tag4"]
