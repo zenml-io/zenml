@@ -36,9 +36,13 @@ jobs:
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
         run: |
-          curl -H "Content-Type: application/json" \
-            -d "{\"content\": \"Discord test message!\"}" \
-            ${{ secrets.DISCORD_WEBHOOK }}
+          curl -X POST \
+           -H "Content-Type: application/json" \
+           -d '{
+             "content": "[Prepare Release PR](${{ env.PR_URL }}) opened by @${{ env.PR_AUTHOR }}.\n\n@growth and @product, please do not merge anything to develop until the process is completed.",
+             "thread_name": "Preparing release: ${{ env.NEW_VERSION }}"
+           }' \
+           ${{ secrets.DISCORD_WEBHOOK_RELEASE }}
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
