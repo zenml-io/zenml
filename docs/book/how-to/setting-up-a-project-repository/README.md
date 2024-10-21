@@ -35,6 +35,7 @@ Discover how to connect your Git repository in the [Set up a repository guide](.
 ### Stacks, Pipelines, Models, and Artifacts
 
 Understanding the relationship between stacks, models, and pipelines is key to designing an efficient ZenML project:
+
 - Stacks: Define your infrastructure and tool configurations
 - Models: Represent your machine learning models and their metadata
 - Pipelines: Encapsulate your ML workflows
