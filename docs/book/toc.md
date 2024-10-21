@@ -5,6 +5,7 @@
 * [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
+* [🏛️ System Architecture](getting-started/system-architectures.md)
 * [🤔 Deploying ZenML](getting-started/deploying-zenml/README.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
@@ -13,9 +14,12 @@
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
-  * [System Architectures](getting-started/zenml-pro/system-architectures.md)
-  * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
-  * [User Management](getting-started/zenml-pro/user-management.md)
+  * [Core Concepts](getting-started/zenml-pro/core-concepts.md)
+    * [Organizations](getting-started/zenml-pro/organization.md)
+    * [Tenants](getting-started/zenml-pro/tenants.md)
+    * [Teams](getting-started/zenml-pro/teams.md)
+    * [Roles & Permissions](getting-started/zenml-pro/roles.md)
+  * [Accessing the ZenML Pro API](getting-started/zenml-pro/pro-api.md)
 
 ## User Guide
 
@@ -142,6 +146,8 @@
   * [Get arbitrary artifacts in a step](how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
   * [Handle custom data types](how-to/handle-data-artifacts/handle-custom-data-types.md)
   * [Load artifacts into memory](how-to/handle-data-artifacts/load-artifacts-into-memory.md)
+  * [Datasets in ZenML](how-to/handle-data-artifacts/datasets.md)
+  * [Manage big data](how-to/handle-data-artifacts/manage-big-data.md)
   * [Skipping materialization](how-to/handle-data-artifacts/unmaterialized-artifacts.md)
   * [Passing artifacts between pipelines](how-to/handle-data-artifacts/passing-artifacts-between-pipelines.md)
   * [Register Existing Data as a ZenML Artifact](how-to/handle-data-artifacts/registering-existing-data.md)

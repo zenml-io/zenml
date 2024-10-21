@@ -92,13 +92,6 @@ LOCAL_ZENML_SERVER_NAME = "local"
     default=None,
     help="Specify an ngrok auth token to use for exposing the ZenML server.",
 )
-@click.option(
-    "--legacy",
-    is_flag=True,
-    help="Start the legacy ZenML dashboard instead of the new ZenML dashboard.",
-    default=False,
-    type=click.BOOL,
-)
 def up(
     docker: bool = False,
     ip_address: Union[
@@ -109,7 +102,6 @@ def up(
     connect: bool = False,
     image: Optional[str] = None,
     ngrok_token: Optional[str] = None,
-    legacy: bool = False,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -125,8 +117,6 @@ def up(
         ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
-        legacy: Start the legacy ZenML dashboard instead of the new ZenML
-            dashboard.
     """
     from zenml.zen_server.deploy.deployer import ServerDeployer
 
@@ -198,7 +188,6 @@ def up(
         ServerProviderType.DOCKER,
     ]:
         config_attrs["ip_address"] = ip_address
-    config_attrs["use_legacy_dashboard"] = legacy
 
     from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
