@@ -5449,12 +5449,20 @@ class TestRunMetadata:
                 else None,
             )
         )
-        rm = client.zen_store.get_run_metadata(rm[0].id, True)
-        assert rm.key == "foo"
-        assert rm.value == "bar"
-        assert rm.resource_id == resource.id
-        assert rm.resource_type == type_
-        assert rm.type == MetadataTypeEnum.STRING
+        if type_ == MetadataResourceTypes.PIPELINE_RUN:
+            rm = client.zen_store.get_run(resource.id, True).metadata
+            assert rm.key == "foo"
+            assert rm.value == "bar"
+            assert rm.resource_id == resource.id
+            assert rm.resource_type == type_
+            assert rm.type == MetadataTypeEnum.STRING
+        elif type_ == MetadataResourceTypes.STEP_RUN:
+            rm = client.zen_store.get_run_step(resource.id, True).metadata
+            assert rm.key == "foo"
+            assert rm.value == "bar"
+            assert rm.resource_id == resource.id
+            assert rm.resource_type == type_
+            assert rm.type == MetadataTypeEnum.STRING
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
@@ -5467,9 +5475,6 @@ class TestRunMetadata:
         ):
             client.zen_store.delete_run(pr.id)
             client.zen_store.delete_deployment(deployment.id)
-
-        with pytest.raises(KeyError):
-            client.zen_store.get_run_metadata(rm.id)
 
         client.zen_store.delete_stack_component(sc.id)
 

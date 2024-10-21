@@ -160,10 +160,7 @@ def test_log_artifact_metadata_existing(clean_client):
     assert "str" in artifact_1.run_metadata
     assert artifact_1.run_metadata["str"] == "1.0"
     assert "list_str" in artifact_1.run_metadata
-    assert (
-        len(set(artifact_1.run_metadata["list_str"]) - {"1.0", "2.0"})
-        == 0
-    )
+    assert len(set(artifact_1.run_metadata["list_str"]) - {"1.0", "2.0"}) == 0
     assert "list_floats" in artifact_1.run_metadata
     for each in artifact_1.run_metadata["list_floats"]:
         if 0.99 < each < 1.01:
