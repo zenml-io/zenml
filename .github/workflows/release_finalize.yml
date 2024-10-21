@@ -8,8 +8,7 @@ env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   fetch-versions:
-    if: github.repository == 'zenml-io/zenml' && github.event.pull_request.merged
-      == true
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.new-version.outputs.new_version }}
