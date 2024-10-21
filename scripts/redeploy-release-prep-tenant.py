@@ -73,7 +73,7 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
         },
     }
 
-    response = requests.patch(url, data=data, headers=headers)
+    response = requests.patch(url, json=data, headers=headers)
     if response.status_code != 200:
         raise requests.HTTPError("There was a problem updating the token.")
 
@@ -197,6 +197,7 @@ def main() -> None:
 
     # Update the tenant
     update_tenant(token, tenant_id, new_version)
+    print("Tenant updated.")
 
     # Redeploy the tenant
     redeploy_tenant(token, tenant_id)
