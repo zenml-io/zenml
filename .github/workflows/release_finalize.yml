@@ -6,6 +6,7 @@ on:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
     if: github.repository == 'zenml-io/zenml'
@@ -35,8 +36,6 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Extract the old version
       - name: Fetch the old version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: old-version
         run: |
           LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
