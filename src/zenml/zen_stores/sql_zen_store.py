@@ -2850,6 +2850,8 @@ class SqlZenStore(BaseZenStore):
                         "same name and version already exists."
                     )
 
+        assert artifact_version_id
+
         with Session(self.engine) as session:
             # Save visualizations of the artifact
             if artifact_version.visualizations:
