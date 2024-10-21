@@ -2720,6 +2720,13 @@ class SqlZenStore(BaseZenStore):
                 # just fetch it from the DB now
                 artifact = session.exec(artifact_query).one()
 
+        if artifact.has_custom_name is False and has_custom_name:
+            # If a new version with custom name was created for an artifact
+            # that previously had no custom name, we update it.
+            artifact.has_custom_name = True
+            session.commit()
+            session.refresh(artifact)
+
         return artifact
 
     def _get_next_numeric_version_for_artifact(
