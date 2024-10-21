@@ -32,7 +32,6 @@ You don't need a separate stack for each pipeline; instead, you can run multiple
 
 As for Models, they are independent of the stack used to create them. Models in ZenML help you tie resources from multiple pipelines together, as you will learn in the next section.
 
-
 ## How do I organize my Pipelines, Models, and Artifacts?
 
 Pipelines, Models, and Artifacts form the core of your ML workflow in ZenML. All of your project logic is organized around these concepts and as such, it helps to understand how they interact with each other and how to structure your code to make the most out of them.
