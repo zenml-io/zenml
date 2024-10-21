@@ -18,7 +18,7 @@ steps:
         docker build . \
           --platform linux/amd64 \
           -f docker/zenml-dev.Dockerfile \
-          -t $$USERNAME/prepare-release:base
+          -t $$USERNAME/prepare-release:base-${_NEW_VERSION}
 
     id: build-base
     waitFor: ['-']
@@ -30,7 +30,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
-      - docker push $$USERNAME/prepare-release:base
+      - docker push $$USERNAME/prepare-release:base-${_NEW_VERSION}
     id: push-base
     waitFor:
       - docker-login
@@ -47,7 +47,7 @@ steps:
         docker build . \
           --platform linux/amd64 \
           -f docker/zenml-server-dev.Dockerfile \
-          -t $$USERNAME/prepare-release:server
+          -t $$USERNAME/prepare-release:server-${_NEW_VERSION}
 
     id: build-server
     waitFor: ['-']
@@ -59,7 +59,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
-      - docker push $$USERNAME/prepare-release:server
+      - docker push $$USERNAME/prepare-release:server-${_NEW_VERSION}
     id: push-server
     waitFor:
       - docker-login
@@ -75,11 +75,11 @@ steps:
       - |
         docker build . \
           --platform linux/amd64 \
-          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=gcp \
           --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
-          -t $$USERNAME/prepare-release:quickstart-gcp
+          -t $$USERNAME/prepare-release:quickstart-gcp-${_NEW_VERSION}
 
     id: build-quickstart-gcp
     waitFor:
@@ -95,11 +95,11 @@ steps:
       - |
         docker build . \
           --platform linux/amd64 \
-          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=aws \
           --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
-          -t $$USERNAME/prepare-release:quickstart-aws
+          -t $$USERNAME/prepare-release:quickstart-aws-${_NEW_VERSION}
     id: build-quickstart-aws
     waitFor:
       - push-base
@@ -114,11 +114,11 @@ steps:
       - |
         docker build . \
           --platform linux/amd64 \
-          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base \
+          --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=azure \
           --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
-          -t $$USERNAME/prepare-release:quickstart-azure
+          -t $$USERNAME/prepare-release:quickstart-azure-${_NEW_VERSION}
     id: build-quickstart-azure
     waitFor:
       - push-base
@@ -131,9 +131,9 @@ steps:
     args:
       - '-c'
       - |
-        docker push $$USERNAME/prepare-release:quickstart-aws
-        docker push $$USERNAME/prepare-release:quickstart-azure
-        docker push $$USERNAME/prepare-release:quickstart-gcp
+        docker push $$USERNAME/prepare-release:quickstart-aws-${_NEW_VERSION}
+        docker push $$USERNAME/prepare-release:quickstart-azure-${_NEW_VERSION}
+        docker push $$USERNAME/prepare-release:quickstart-gcp-${_NEW_VERSION}
     id: push-quickstart
     waitFor:
       - docker-login

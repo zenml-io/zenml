@@ -46,6 +46,38 @@ def get_token(client_id: str, client_secret: str) -> str:
     return response.json()["access_token"]
 
 
+def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
+    """Update a specific tenant.
+
+    Args:
+        token: The access token for authentication.
+        tenant_id: The ID of the tenant to update.
+        new_version: New version of ZenML to be released.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
+    url = f"https://staging.cloudapi.zenml.io/tenants/{tenant_id}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "accept": "application/json",
+    }
+
+    data = {
+        "zenml_service": {
+            "admin": {
+                "image_repository": "dockerhub/prepare-release",
+                "image_tag": f"server-{new_version}",
+            },
+        },
+    }
+
+    response = requests.patch(url, data=data, headers=headers)
+    if response.status_code != 200:
+        raise requests.HTTPError("There was a problem updating the token.")
+
+
 def deactivate_tenant(token: str, tenant_id: str) -> None:
     """Deactivate a specific tenant.
 
@@ -135,8 +167,9 @@ def main() -> None:
     client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
     client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
     tenant_id = os.environ.get("RELEASE_TENANT_ID")
+    new_version = os.environ.get("ZENML_NEW_VERSION")
 
-    if not all([client_id, client_secret, tenant_id]):
+    if not all([client_id, client_secret, tenant_id, new_version]):
         raise EnvironmentError("Missing required environment variables")
 
     # Get the token
@@ -161,6 +194,9 @@ def main() -> None:
     if status != "deactivated":
         raise RuntimeError("Tenant deactivation failed.")
     print("Tenant deactivated.")
+
+    # Update the tenant
+    update_tenant(token, tenant_id, new_version)
 
     # Redeploy the tenant
     redeploy_tenant(token, tenant_id)

@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="zenmldocker/prepare-release:base"
+ARG BASE_IMAGE
 
 FROM $BASE_IMAGE AS base
 
