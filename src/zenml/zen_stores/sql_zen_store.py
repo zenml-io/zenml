@@ -20,6 +20,7 @@ import math
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -2687,47 +2688,48 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Artifact Versions --------------------
 
     def _get_or_create_artifact_for_name(
-        self, session: Session, name: str, has_custom_name: bool
+        self, name: str, has_custom_name: bool
     ) -> ArtifactSchema:
         """Get or create an artifact with a specific name.
 
         Args:
-            session: DB session.
             name: The artifact name.
             has_custom_name: Whether the artifact has a custom name.
 
         Returns:
             Schema of the artifact.
         """
-        artifact_query = select(ArtifactSchema).where(
-            ArtifactSchema.name == name
-        )
-        artifact = session.exec(artifact_query).first()
+        with Session(self.engine) as session:
+            artifact_query = select(ArtifactSchema).where(
+                ArtifactSchema.name == name
+            )
+            artifact = session.exec(artifact_query).first()
 
-        if artifact is None:
-            try:
-                with session.begin_nested():
-                    artifact_request = ArtifactRequest(
-                        name=name, has_custom_name=has_custom_name
-                    )
-                    artifact = ArtifactSchema.from_request(artifact_request)
-                    session.add(artifact)
-                    session.commit()
-                session.refresh(artifact)
-            except IntegrityError:
-                # We failed to create the artifact due to the unique constraint
-                # for artifact names -> The artifact was already created, we can
-                # just fetch it from the DB now
-                artifact = session.exec(artifact_query).one()
+            if artifact is None:
+                try:
+                    with session.begin_nested():
+                        artifact_request = ArtifactRequest(
+                            name=name, has_custom_name=has_custom_name
+                        )
+                        artifact = ArtifactSchema.from_request(
+                            artifact_request
+                        )
+                        session.add(artifact)
+                        session.commit()
+                    session.refresh(artifact)
+                except IntegrityError:
+                    # We failed to create the artifact due to the unique constraint
+                    # for artifact names -> The artifact was already created, we can
+                    # just fetch it from the DB now
+                    artifact = session.exec(artifact_query).one()
 
-        if artifact.has_custom_name is False and has_custom_name:
-            # If a new version with custom name was created for an artifact
-            # that previously had no custom name, we update it.
-            artifact.has_custom_name = True
-            session.commit()
-            session.refresh(artifact)
+            if artifact.has_custom_name is False and has_custom_name:
+                # If a new version with custom name was created for an artifact
+                # that previously had no custom name, we update it.
+                artifact.has_custom_name = True
+                session.commit()
 
-        return artifact
+            return artifact
 
     def _get_next_numeric_version_for_artifact(
         self, session: Session, artifact_id: UUID
@@ -2767,70 +2769,84 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created artifact version.
         """
-        with Session(self.engine) as session:
-            if artifact_name := artifact_version.artifact_name:
-                artifact_schema = self._get_or_create_artifact_for_name(
-                    session=session,
-                    name=artifact_name,
-                    has_custom_name=artifact_version.has_custom_name,
-                )
-                artifact_version.artifact_id = artifact_schema.id
+        if artifact_name := artifact_version.artifact_name:
+            artifact_schema = self._get_or_create_artifact_for_name(
+                name=artifact_name,
+                has_custom_name=artifact_version.has_custom_name,
+            )
+            artifact_version.artifact_id = artifact_schema.id
 
-            assert artifact_version.artifact_id
+        assert artifact_version.artifact_id
 
-            if artifact_version.version is None:
-                # No explicit version in the request -> We will try to
-                # auto-increment the numeric version of the artifact version
-                remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
-                while remaining_tries > 0:
-                    remaining_tries -= 1
-                    try:
-                        with session.begin_nested():
-                            artifact_version.version = str(
-                                self._get_next_numeric_version_for_artifact(
-                                    session=session,
-                                    artifact_id=artifact_version.artifact_id,
-                                )
+        if artifact_version.version is None:
+            # No explicit version in the request -> We will try to
+            # auto-increment the numeric version of the artifact version
+            remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+            while remaining_tries > 0:
+                remaining_tries -= 1
+                try:
+                    with Session(self.engine) as session:
+                        artifact_version.version = str(
+                            self._get_next_numeric_version_for_artifact(
+                                session=session,
+                                artifact_id=artifact_version.artifact_id,
                             )
+                        )
 
-                            artifact_version_schema = (
-                                ArtifactVersionSchema.from_request(
-                                    artifact_version
-                                )
+                        artifact_version_schema = (
+                            ArtifactVersionSchema.from_request(
+                                artifact_version
                             )
-                            session.add(artifact_version_schema)
-                            session.commit()
-                    except IntegrityError:
-                        if remaining_tries == 0:
-                            raise EntityExistsError(
-                                f"Failed to create version for artifact "
-                                f"{artifact_schema.name}. This is most likely "
-                                "caused by multiple parallel requests that try "
-                                "to create versions for this artifact in the "
-                                "database."
-                            )
+                        )
+                        session.add(artifact_version_schema)
+                        session.commit()
+                except IntegrityError:
+                    if remaining_tries == 0:
+                        raise EntityExistsError(
+                            f"Failed to create version for artifact "
+                            f"{artifact_schema.name}. This is most likely "
+                            "caused by multiple parallel requests that try "
+                            "to create versions for this artifact in the "
+                            "database."
+                        )
                     else:
-                        break
-                session.refresh(artifact_version_schema)
-            else:
-                # An explicit version was specified for the artifact version.
-                # We don't do any incrementing and fail immediately if the
-                # version already exists.
+                        # Exponential backoff to account for heavy
+                        # parallelization
+                        sleep_duration = 0.05 * 1.5 ** (
+                            MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                            - remaining_tries
+                        )
+                        logger.debug(
+                            "Failed to create artifact version %s "
+                            "(version %s) due to an integrity error. "
+                            "Retrying in %f seconds.",
+                            artifact_schema.name,
+                            artifact_version.version,
+                            sleep_duration,
+                        )
+                        time.sleep(sleep_duration)
+                else:
+                    break
+        else:
+            # An explicit version was specified for the artifact version.
+            # We don't do any incrementing and fail immediately if the
+            # version already exists.
+            with Session(self.engine) as session:
                 try:
                     artifact_version_schema = (
                         ArtifactVersionSchema.from_request(artifact_version)
                     )
                     session.add(artifact_version_schema)
                     session.commit()
-                    session.refresh(artifact_version_schema)
                 except IntegrityError:
                     raise EntityExistsError(
                         f"Unable to create artifact version "
-                        f"{artifact_schema.name}({artifact_version.version}: "
-                        "An artifact with the same name and version already "
-                        "exists."
+                        f"{artifact_schema.name} (version "
+                        f"{artifact_version.version}): An artifact with the "
+                        "same name and version already exists."
                     )
 
+        with Session(self.engine) as session:
             # Save visualizations of the artifact
             if artifact_version.visualizations:
                 for vis in artifact_version.visualizations:
@@ -2863,7 +2879,11 @@ class SqlZenStore(BaseZenStore):
                     session.add(run_metadata_schema)
 
             session.commit()
-            session.refresh(artifact_version_schema)
+            artifact_version_schema = session.exec(
+                select(ArtifactVersionSchema).where(
+                    ArtifactVersionSchema.id == artifact_version_schema.id
+                )
+            ).one()
 
             return artifact_version_schema.to_model(
                 include_metadata=True, include_resources=True
