@@ -1,5 +1,5 @@
 ---
-description: Setting your team up for success with a project repository.
+description: Setting your team up for success with a well-architected ZenML project.
 ---
 
 # 😸 Setting up a Well-Architected ZenML Project
@@ -32,14 +32,14 @@ Integrating your ZenML project with version control systems like Git is crucial 
 
 Discover how to connect your Git repository in the [Set up a repository guide](./best-practices.md).
 
-### Stacks, Models, and Pipelines
+### Stacks, Pipelines, Models, and Artifacts
 
 Understanding the relationship between stacks, models, and pipelines is key to designing an efficient ZenML project:
 - Stacks: Define your infrastructure and tool configurations
 - Models: Represent your machine learning models and their metadata
 - Pipelines: Encapsulate your ML workflows
-
-Learn about organizing these components in the [Organizing Stacks, Pipelines, and Models guide](./stacks-pipelines-models.md).
+- Artifacts: Track your data and model outputs
+Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](./stacks-pipelines-models.md).
 
 ### Access Management and Roles
 
@@ -87,7 +87,5 @@ To begin building your well-architected ZenML project, start by exploring the gu
 Remember, a well-architected project is an ongoing process. Regularly review and refine your project structure, processes, and practices to ensure they continue to meet your team's evolving needs.
 
 By following these guidelines and leveraging ZenML's powerful features, you'll be well on your way to creating a robust, scalable, and collaborative MLOps environment.
-
-<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
