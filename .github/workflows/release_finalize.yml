@@ -28,8 +28,16 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           ref: main
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
       # Extract the old version
       - name: Fetch the old version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: old-version
         run: |
           LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
