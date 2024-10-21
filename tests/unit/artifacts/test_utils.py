@@ -19,7 +19,6 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.artifacts.utils import (
-    _get_new_artifact_version,
     _load_artifact_from_uri,
     load_artifact_from_response,
     load_model_from_metadata,
@@ -190,35 +189,3 @@ def test__load_artifact(builtin_type_file_uri):
     )
     assert artifact is not None
     assert isinstance(artifact, TempClass)
-
-
-def test__get_new_artifact_version(mocker, sample_artifact_version_model):
-    """Unit test for the `_get_new_artifact_version` function."""
-    # If no artifact exists, "1" should be returned
-    mocker.patch(
-        "zenml.client.Client.list_artifact_versions",
-        return_value=Page(
-            index=1,
-            max_size=1,
-            total_pages=1,
-            total=0,
-            items=[],
-        ),
-    )
-    assert _get_new_artifact_version(sample_artifact_version_model.name) == 1
-
-    # If an artifact exists, the next version should be returned
-    mocker.patch(
-        "zenml.client.Client.list_artifact_versions",
-        return_value=Page(
-            index=1,
-            max_size=1,
-            total_pages=1,
-            total=1,
-            items=[sample_artifact_version_model],
-        ),
-    )
-    assert (
-        _get_new_artifact_version(sample_artifact_version_model.name)
-        == int(sample_artifact_version_model.version) + 1
-    )
