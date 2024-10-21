@@ -9,4 +9,4 @@ pandas==1.5.3
 session_info==1.0.0
 scikit-learn==1.5.0
 transformers==4.28.1
-IPython==7.34.0
+IPython==8.10.0

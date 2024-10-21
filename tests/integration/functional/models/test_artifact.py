@@ -27,10 +27,10 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import EntityExistsError
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     ArtifactVersionResponse,
     ArtifactVisualizationResponse,
-    RunMetadataResponse,
 )
 
 if TYPE_CHECKING:
@@ -341,7 +341,7 @@ def _get_visualizations_of_last_run(
 
 def _get_metadata_of_last_run(
     clean_client: "Client",
-) -> Dict[str, "RunMetadataResponse"]:
+) -> Dict[str, MetadataType]:
     """Get the artifact metadata of the last run."""
     return _get_output_of_last_run(clean_client).run_metadata
 
