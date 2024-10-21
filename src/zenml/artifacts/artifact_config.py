@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -52,7 +52,9 @@ class ArtifactConfig(BaseModel):
     """
 
     name: Optional[str] = None
-    version: Optional[str] = Field(default=None)
+    version: Optional[Union[str, int]] = Field(
+        default=None, union_mode="smart"
+    )
     tags: Optional[List[str]] = None
     run_metadata: Optional[Dict[str, MetadataType]] = None
 

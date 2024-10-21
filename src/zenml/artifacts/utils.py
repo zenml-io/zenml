@@ -85,7 +85,7 @@ logger = get_logger(__name__)
 def save_artifact(
     data: Any,
     name: str,
-    version: Optional[str] = None,
+    version: Optional[Union[int, str]] = None,
     tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
@@ -230,7 +230,7 @@ def save_artifact(
 def register_artifact(
     folder_or_file_uri: str,
     name: str,
-    version: Optional[str] = None,
+    version: Optional[Union[int, str]] = None,
     tags: Optional[List[str]] = None,
     has_custom_name: bool = True,
     is_model_artifact: bool = False,
@@ -808,30 +808,6 @@ def _get_artifact_store_from_response_or_from_active_stack(
                 "has the right dependencies."
             )
     return Client().active_stack.artifact_store
-
-
-def _get_new_artifact_version(artifact_name: str) -> int:
-    """Get the next auto-incremented version for an artifact name.
-
-    Args:
-        artifact_name: The name of the artifact.
-
-    Returns:
-        The next auto-incremented version.
-    """
-    artifact_versions = Client().list_artifact_versions(
-        name=artifact_name,
-        sort_by="desc:version_number",
-        size=1,
-    )
-
-    # If a numbered version exists, increment it
-    try:
-        return int(artifact_versions[0].version) + 1
-
-    # If no numbered versions exist yet, start at 1
-    except (IndexError, ValueError):
-        return 1
 
 
 def _load_file_from_artifact_store(

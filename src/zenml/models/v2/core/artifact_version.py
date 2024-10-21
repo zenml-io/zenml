@@ -78,7 +78,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None,
         title="Name of the artifact to which this version belongs.",
     )
-    version: Optional[str] = Field(
+    version: Optional[Union[int, str]] = Field(
         default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
@@ -151,16 +151,6 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
             raise ValueError(
                 "Either artifact_name or artifact_id must be set."
             )
-
-        if self.version:
-            try:
-                int(self.version)
-            except ValueError:
-                pass
-            else:
-                raise ValueError(
-                    "Explicit numeric versions are not allowed for artifact versions."
-                )
 
         return self
 

@@ -511,6 +511,7 @@ def sample_artifact_request_model() -> ArtifactVersionRequest:
     """Return a sample artifact model for testing purposes."""
     return ArtifactVersionRequest(
         name="sample_artifact",
+        version=1,
         uri="sample_uri",
         type=ArtifactType.DATA,
         materializer="sample_materializer",
