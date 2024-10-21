@@ -5450,19 +5450,12 @@ class TestRunMetadata:
             )
         )
         if type_ == MetadataResourceTypes.PIPELINE_RUN:
-            rm = client.zen_store.get_run(resource.id, True).metadata
-            assert rm.key == "foo"
-            assert rm.value == "bar"
-            assert rm.resource_id == resource.id
-            assert rm.resource_type == type_
-            assert rm.type == MetadataTypeEnum.STRING
+            rm = client.zen_store.get_run(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
+
         elif type_ == MetadataResourceTypes.STEP_RUN:
-            rm = client.zen_store.get_run_step(resource.id, True).metadata
-            assert rm.key == "foo"
-            assert rm.value == "bar"
-            assert rm.resource_id == resource.id
-            assert rm.resource_type == type_
-            assert rm.type == MetadataTypeEnum.STRING
+            rm = client.zen_store.get_run_step(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)

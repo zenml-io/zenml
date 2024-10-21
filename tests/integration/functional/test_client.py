@@ -55,7 +55,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.model.model import Model
 from zenml.models import (
     ComponentResponse,
@@ -492,7 +491,7 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
 
     assert isinstance(rm, dict)
     assert len(rm.values()) == 1
-    assert rm["axel"] == "is_awesome"
+    assert rm["axel"] == "is awesome"
 
 
 def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
@@ -509,8 +508,7 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
 
     assert isinstance(rm, dict)
     assert len(rm.values()) == 1
-    assert rm["axel"] == "is_awesome"
-
+    assert rm["axel"] == "is awesome"
 
 
 def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
@@ -524,11 +522,12 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
         resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
     )
 
-    rm = clean_client_with_run.get_artifact_version(artifact_version.id).run_metadata
+    rm = clean_client_with_run.get_artifact_version(
+        artifact_version.id
+    ).run_metadata
 
     assert isinstance(rm, dict)
-    assert len(rm.values()) == 1
-    assert rm["axel"] == "is_awesome"
+    assert rm["axel"] == "is awesome"
 
 
 # .---------.

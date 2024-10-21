@@ -189,7 +189,7 @@ class LineageGraph(BaseModel):
                     outputs={k: v.uri for k, v in step.outputs.items()},
                     metadata=[
                         (k, v, str(type(v)))
-                        for k,v in step.run_metadata.items()
+                        for k, v in step.run_metadata.items()
                     ],
                 ),
             )
@@ -226,7 +226,7 @@ class LineageGraph(BaseModel):
                 uri=artifact.uri,
                 metadata=[
                     (k, v, str(type(v)))
-                    for k,v in artifact.run_metadata.items()
+                    for k, v in artifact.run_metadata.items()
                 ],
             ),
         )

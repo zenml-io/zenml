@@ -214,7 +214,7 @@ class StepRunSchema(NamedSchema, table=True):
                 or a step_configuration.
         """
         run_metadata = {
-            metadata_schema.key: metadata_schema.value
+            metadata_schema.key: json.loads(metadata_schema.value)
             for metadata_schema in self.run_metadata
         }
 
