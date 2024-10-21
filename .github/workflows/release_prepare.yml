@@ -1,8 +1,8 @@
 ---
 name: release-prepare
 on:
-  pull_request:
-    types: [opened]
+  workflow_dispatch:
+  create:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false

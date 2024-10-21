@@ -1,8 +1,8 @@
 ---
 name: release-finalize
 on:
-  pull_request:
-    types: [closed]
+  workflow_dispatch:
+  delete:
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
@@ -33,9 +33,10 @@ jobs:
       - name: Fetch the old version
         id: old-version
         run: |
-          OLD_VERSION=$(cat src/zenml/VERSION)
+          LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
+          OLD_VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag)
           echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
-          echo "::set-output name=ideal_new_version::${{ env.OLD_VERSION }}"
+          echo "::set-output name=old_version::${{ env.OLD_VERSION }}"
   create-release-branch:
     needs: fetch-versions
     runs-on: ubuntu-latest
