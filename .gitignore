@@ -193,8 +193,5 @@ examples/feast_feature_store/feast_feature_repo/data/registry.db
 #generated folder by zenml
 zenml_tutorial/
 
-# script for testing
-mlstacks_reset.sh
-
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow
