@@ -2778,6 +2778,8 @@ class SqlZenStore(BaseZenStore):
 
         assert artifact_version.artifact_id
 
+        artifact_version_id = None
+
         if artifact_version.version is None:
             # No explicit version in the request -> We will try to
             # auto-increment the numeric version of the artifact version
@@ -2800,6 +2802,7 @@ class SqlZenStore(BaseZenStore):
                         )
                         session.add(artifact_version_schema)
                         session.commit()
+                        artifact_version_id = artifact_version_schema.id
                 except IntegrityError:
                     if remaining_tries == 0:
                         raise EntityExistsError(
@@ -2838,6 +2841,7 @@ class SqlZenStore(BaseZenStore):
                     )
                     session.add(artifact_version_schema)
                     session.commit()
+                    artifact_version_id = artifact_version_schema.id
                 except IntegrityError:
                     raise EntityExistsError(
                         f"Unable to create artifact version "
@@ -2852,7 +2856,7 @@ class SqlZenStore(BaseZenStore):
                 for vis in artifact_version.visualizations:
                     vis_schema = ArtifactVisualizationSchema.from_model(
                         artifact_visualization_request=vis,
-                        artifact_version_id=artifact_version_schema.id,
+                        artifact_version_id=artifact_version_id,
                     )
                     session.add(vis_schema)
 
@@ -2860,7 +2864,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version.tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
-                    resource_id=artifact_version_schema.id,
+                    resource_id=artifact_version_id,
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
@@ -2870,7 +2874,7 @@ class SqlZenStore(BaseZenStore):
                     run_metadata_schema = RunMetadataSchema(
                         workspace_id=artifact_version.workspace,
                         user_id=artifact_version.user,
-                        resource_id=artifact_version_schema.id,
+                        resource_id=artifact_version_id,
                         resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
                         key=key,
                         value=json.dumps(value),
@@ -2881,7 +2885,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             artifact_version_schema = session.exec(
                 select(ArtifactVersionSchema).where(
-                    ArtifactVersionSchema.id == artifact_version_schema.id
+                    ArtifactVersionSchema.id == artifact_version_id
                 )
             ).one()
 
