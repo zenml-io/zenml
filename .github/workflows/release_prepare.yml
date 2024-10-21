@@ -1,11 +1,8 @@
 ---
 name: release-prepare
 on:
-  # TODO: Complete the discord message
-  # TODO: Test validate new version errors and warnings
-  # TODO: Test new version might fail if the latest version is 0.42.0rc
   pull_request:
-    types: [ opened ]
+    types: [opened]
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
@@ -41,7 +38,7 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" \
             -d "{\"content\": \"Discord test message!\"}" \
-            ${{ secrets.DISCORD_WEBHOOK_URL }}
+            ${{ secrets.DISCORD_WEBHOOK }}
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5.0.0

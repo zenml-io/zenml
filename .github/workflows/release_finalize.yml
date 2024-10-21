@@ -2,13 +2,14 @@
 name: release-finalize
 on:
   pull_request:
-    types: [ closed ]
+    types: [closed]
     branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   fetch-versions:
-    if: github.repository == 'zenml-io/zenml' && github.event.pull_request.merged == true
+    if: github.repository == 'zenml-io/zenml' && github.event.pull_request.merged
+      == true
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.new-version.outputs.new_version }}
@@ -117,8 +118,8 @@ jobs:
       # Adjust the docs
       - name: Adjust gitbook docs
         env:
-          ZENML_NEW_VERSION:  ${{ needs.fetch-versions.outputs.new_version }
-          ZENML_OLD_VERSION:  ${{ needs.fetch-versions.outputs.old_version }
+          ZENML_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }
+          ZENML_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }
           GITBOOK_API_KEY: ${{secrets.GITBOOK_API_KEY}}
           GITBOOK_ORGANIZATION: ${{secrets.GITBOOK_ORGANIZATION}}
           GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
