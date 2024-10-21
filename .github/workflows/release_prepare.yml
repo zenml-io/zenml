@@ -190,12 +190,11 @@ jobs:
       matrix:
         include:
           - cloud: aws
-            parent_image: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws-${{ env.NEW_VERSION }}
+            parent_image: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           - cloud: azure
-            parent_image: zenmldocker/prepare-release:quickstart-azure${{ env.NEW_VERSION }}-${{
-              env.NEW_VERSION }}
+            parent_image: zenmldocker/prepare-release:quickstart-azure
           - cloud: gcp
-            parent_image: zenmldocker/prepare-release:quickstart-gcp-${{ env.NEW_VERSION }}
+            parent_image: zenmldocker/prepare-release:quickstart-gcp
     steps:
       # Check out the code
       - name: Checkout code
@@ -220,7 +219,7 @@ jobs:
         run: |-
           cd examples/quickstart
           zenml stack set ${{ matrix.cloud }}
-          sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
+          sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}-${{ env.NEW_VERSION }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
           sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.event.pull_request.head.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
           pip install -r requirements_${{ matrix.cloud }}.txt
           zenml integration install ${{ matrix.cloud }} -y
