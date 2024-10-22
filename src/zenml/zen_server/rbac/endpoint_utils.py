@@ -134,7 +134,7 @@ def verify_permissions_and_batch_create_entity(
             "Batch requests are currently not possible with usage-tracked features."
         )
 
-    created = create_method(request_model)
+    created = create_method(batch)
     return created
 
 
