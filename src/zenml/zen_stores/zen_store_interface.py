@@ -664,6 +664,19 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+
+    @abstractmethod
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
     ) -> ArtifactVersionResponse:

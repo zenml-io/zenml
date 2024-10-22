@@ -2896,6 +2896,22 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return [
+            self.create_artifact_version(artifact_version)
+            for artifact_version in artifact_versions
+        ]
+
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
     ) -> ArtifactVersionResponse:
