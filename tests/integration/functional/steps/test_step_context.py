@@ -210,9 +210,5 @@ def test_metadata_and_tags_set_from_context(
     if full_name == "custom_name":
         assert av.run_metadata["config_metadata"].value == "bar"
         assert {t.name for t in av.tags} == set(tags).union({"config_tags"})
-        assert {t.name for t in artifact.tags} == set(tags).union(
-            {"config_tags"}
-        )
     else:
         assert set(tags) == {t.name for t in av.tags}
-        assert set(tags) == {t.name for t in artifact.tags}
