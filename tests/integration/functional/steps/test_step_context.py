@@ -202,7 +202,6 @@ def test_metadata_and_tags_set_from_context(
     _pipeline()
 
     av = clean_client.get_artifact_version(full_name)
-    artifact = clean_client.get_artifact(full_name)
     for k, v in metadata.items():
         assert k in av.run_metadata
         assert av.run_metadata[k].value == v
