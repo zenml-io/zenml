@@ -28,7 +28,6 @@ from typing import (
     Dict,
     Iterator,
     Optional,
-    Set,
     Type,
     Union,
     cast,
@@ -74,7 +73,6 @@ _CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
 _SHARED_TEMPDIR: Optional[str] = None
 _resolved_notebook_sources: Dict[str, str] = {}
 _notebook_modules: Dict[str, UUID] = {}
-_resolved_main_module_sources: Set[str] = set()
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -132,8 +130,8 @@ def load(source: Union[Source, str]) -> Any:
         # root in python path just to be sure
         import_root = get_source_root()
 
-    if source.import_path in _resolved_main_module_sources:
-        # We resolved this source from the __main__ module in this process.
+    if _should_load_from_main_module(source):
+        # This source points to the __main__ module of the current process.
         # If we were to load the module here, we would load the same python
         # file with a different module name, which would rerun all top-level
         # code. To avoid this, we instead load the source from the __main__
@@ -208,84 +206,73 @@ def resolve(
             "holds the object you want to resolve."
         )
 
-    def _resolve_helper() -> Source:
-        module_name = module.__name__
-        if module_name == "__main__":
-            module_name = _resolve_module(module)
+    module_name = module.__name__
+    if module_name == "__main__":
+        module_name = _resolve_module(module)
 
-        source_type = get_source_type(module=module)
+    source_type = get_source_type(module=module)
 
-        if source_type == SourceType.USER:
-            from zenml.utils import code_repository_utils
+    if source_type == SourceType.USER:
+        from zenml.utils import code_repository_utils
 
-            local_repo_context = (
-                code_repository_utils.find_active_code_repository()
-            )
-
-            if local_repo_context and not local_repo_context.has_local_changes:
-                module_name = _resolve_module(module)
-
-                source_root = get_source_root()
-                subdir = PurePath(source_root).relative_to(
-                    local_repo_context.root
-                )
-
-                return CodeRepositorySource(
-                    repository_id=local_repo_context.code_repository_id,
-                    commit=local_repo_context.current_commit,
-                    subdirectory=subdir.as_posix(),
-                    module=module_name,
-                    attribute=attribute_name,
-                    type=SourceType.CODE_REPOSITORY,
-                )
-
-            module_name = _resolve_module(module)
-        elif source_type == SourceType.DISTRIBUTION_PACKAGE:
-            package_name = _get_package_for_module(module_name=module_name)
-            if package_name:
-                package_version = _get_package_version(
-                    package_name=package_name
-                )
-                return DistributionPackageSource(
-                    module=module_name,
-                    attribute=attribute_name,
-                    package_name=package_name,
-                    version=package_version,
-                    type=source_type,
-                )
-            else:
-                # Fallback to an unknown source if we can't find the package
-                source_type = SourceType.UNKNOWN
-        elif source_type == SourceType.NOTEBOOK:
-            source = NotebookSource(
-                module="__main__",
-                attribute=attribute_name,
-                type=source_type,
-            )
-
-            if module_name in _notebook_modules:
-                source.replacement_module = module_name
-                source.artifact_store_id = _notebook_modules[module_name]
-            elif cell_code := notebook_utils.load_notebook_cell_code(obj):
-                replacement_module = (
-                    notebook_utils.compute_cell_replacement_module_name(
-                        cell_code=cell_code
-                    )
-                )
-                source.replacement_module = replacement_module
-                _resolved_notebook_sources[source.import_path] = cell_code
-
-            return source
-
-        return Source(
-            module=module_name, attribute=attribute_name, type=source_type
+        local_repo_context = (
+            code_repository_utils.find_active_code_repository()
         )
 
-    source = _resolve_helper()
-    if module.__name__ == "__main__":
-        _resolved_main_module_sources.add(source.import_path)
+        if local_repo_context and not local_repo_context.has_local_changes:
+            module_name = _resolve_module(module)
 
-    return source
+            source_root = get_source_root()
+            subdir = PurePath(source_root).relative_to(local_repo_context.root)
+
+            return CodeRepositorySource(
+                repository_id=local_repo_context.code_repository_id,
+                commit=local_repo_context.current_commit,
+                subdirectory=subdir.as_posix(),
+                module=module_name,
+                attribute=attribute_name,
+                type=SourceType.CODE_REPOSITORY,
+            )
+
+        module_name = _resolve_module(module)
+    elif source_type == SourceType.DISTRIBUTION_PACKAGE:
+        package_name = _get_package_for_module(module_name=module_name)
+        if package_name:
+            package_version = _get_package_version(package_name=package_name)
+            return DistributionPackageSource(
+                module=module_name,
+                attribute=attribute_name,
+                package_name=package_name,
+                version=package_version,
+                type=source_type,
+            )
+        else:
+            # Fallback to an unknown source if we can't find the package
+            source_type = SourceType.UNKNOWN
+    elif source_type == SourceType.NOTEBOOK:
+        source = NotebookSource(
+            module="__main__",
+            attribute=attribute_name,
+            type=source_type,
+        )
+
+        if module_name in _notebook_modules:
+            source.replacement_module = module_name
+            source.artifact_store_id = _notebook_modules[module_name]
+        elif cell_code := notebook_utils.load_notebook_cell_code(obj):
+            replacement_module = (
+                notebook_utils.compute_cell_replacement_module_name(
+                    cell_code=cell_code
+                )
+            )
+            source.replacement_module = replacement_module
+            _resolved_notebook_sources[source.import_path] = cell_code
+
+        return source
+
+    return Source(
+        module=module_name, attribute=attribute_name, type=source_type
+    )
 
 
 def get_source_root() -> str:
@@ -812,3 +799,21 @@ def get_resolved_notebook_sources() -> Dict[str, str]:
         of their notebook cell.
     """
     return _resolved_notebook_sources.copy()
+
+
+def _should_load_from_main_module(source: Source) -> bool:
+    """Check whether the source should be loaded from the main module.
+
+    Args:
+        source: The source to check.
+
+    Returns:
+        If the source should be loaded from the main module instead of the
+        module defined in the source object.
+    """
+    try:
+        resolved_main_module = _resolve_module(sys.modules["__main__"])
+    except RuntimeError:
+        return False
+
+    return resolved_main_module == source.module
