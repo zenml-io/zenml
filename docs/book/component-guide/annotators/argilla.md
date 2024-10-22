@@ -68,7 +68,7 @@ instance and its visibility is set to private, you must also set the
 `extra_headers` parameter which would include a Hugging Face token. For example:
 
 ```shell
-zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --instance_url="https://[your-owner-name]-[your_space_name].hf.space" --extra_headers="{"Authorization": f"Bearer {<your_hugging_face_token>}"}"
+zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --instance_url="https://[your-owner-name]-[your_space_name].hf.space" --extra_headers='{"Authorization": "Bearer {<your_hugging_face_token>}"}'
 ```
 
 Finally, add all these components to a stack and set it as your active stack.

@@ -52,7 +52,7 @@ class ArgillaAnnotatorSettings(BaseSettings):
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
     api_key: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = "admin"
-    port: Optional[int]
+    port: Optional[int] = None
     extra_headers: Optional[str] = None
     httpx_extra_kwargs: Optional[str] = None
 
