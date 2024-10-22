@@ -2,6 +2,55 @@
 
 # 0.68.0
 
+## Highlights
+
+- **Client-Side Caching:** Implemented client-side computation for cached steps, 
+significantly reducing time and costs associated with remote orchestrator 
+spin-up.
+- **Streamlined Onboarding Process:** Unified the starter and production setup 
+into a single sequential flow, providing a more intuitive user experience.
+- **BentoML Integration:** Updated to version 1.3.5 with enhanced 
+containerization support.
+- **Artifact Management:** Introduced `register_artifact` function enabling 
+direct linking of existing data in the artifact store, particularly useful 
+for tools like PyTorch-Lightning that manage their own checkpoints.
+- **Enhanced Error Handling:** Added Error Boundary to visualization components 
+for improved reliability and user experience.
+
+## Additional Features and Improvements
+
+- Added multiple access points for deleting pipeline runs
+- Improved pipeline detail view functionality
+- Improved service account handling for Kaniko image builder
+
+## Breaking Changes and Deprecations
+
+- Discontinued Python 3.8 support
+- Removed legacy pipeline and step interface
+- Removed legacy post execution workflow
+- Removed legacy dashboard option
+- Removed `zenml stack up/down` CLI commands
+- Removed `zenml deploy` and `zenml <stack-component> deploy`
+- Removed `StepEnvironment` class
+- Removed `ArtifactConfig` class for model version specification
+- Removed `ExternalArtifact` class
+- Deprecated `Client.list_runs` in favor of `Client.list_pipeline_runs`
+- Deprecated `ArtifactVersionResponse.read` in favor of `ArtifactVersionResponse.load`
+
+## Documentation Updates
+
+Added new guides for the following topics:
+
+- Kubernetes per-pod configuration
+- Factory generation of artifact names
+- Common stacks best practices
+- Azure 1-click dashboard deployment
+- ZenML server upgrade best practices
+- Custom Dataset classes and Materializers
+- Comprehensive ZenML Pro documentation
+- Image building optimization during pipeline runs
+- Enhanced BentoML integration documentation
+
 ## What's Changed
 * Release 0.67.0 migration testing by @bcdurak in https://github.com/zenml-io/zenml/pull/3050
 * Prevent too large requests by @avishniakov in https://github.com/zenml-io/zenml/pull/3048
