@@ -27,7 +27,7 @@ from zenml.artifacts.utils import (
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.pydantic_materializer import DEFAULT_FILENAME
-from zenml.models import ArtifactVersionResponse, Page
+from zenml.models import ArtifactVersionResponse
 
 
 @pytest.fixture
