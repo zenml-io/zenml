@@ -290,7 +290,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             issubclass(associated_type, data_type)
             # This next condition is not always correct, but better to have a
             # false positive here instead of failing for cases where it would
-            # have worked. 
+            # have worked.
             or issubclass(data_type, associated_type)
             for associated_type in cls.ASSOCIATED_TYPES
         )
