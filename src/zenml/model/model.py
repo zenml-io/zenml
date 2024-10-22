@@ -43,7 +43,6 @@ if TYPE_CHECKING:
         ModelResponse,
         ModelVersionResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
         StepRunResponse,
     )
 
@@ -350,7 +349,7 @@ class Model(BaseModel):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, "MetadataType"]:
         """Get model version run metadata.
 
         Returns:

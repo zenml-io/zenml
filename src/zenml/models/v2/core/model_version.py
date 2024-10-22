@@ -29,6 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
@@ -49,9 +50,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -193,7 +191,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         description="Metadata linked to the model version",
         default={},
     )
@@ -304,7 +302,7 @@ class ModelVersionResponse(
         return self.get_metadata().description
 
     @property
-    def run_metadata(self) -> Optional[Dict[str, "RunMetadataResponse"]]:
+    def run_metadata(self) -> Optional[Dict[str, MetadataType]]:
         """The `run_metadata` property.
 
         Returns:

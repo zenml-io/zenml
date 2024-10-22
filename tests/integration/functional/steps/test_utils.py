@@ -49,9 +49,9 @@ def test_log_step_metadata_within_step(clean_client):
         "step_metadata_logging_step_inside_run"
     ].run_metadata
     assert "description" in run_metadata
-    assert run_metadata["description"].value == "Aria is great!"
+    assert run_metadata["description"] == "Aria is great!"
     assert "metrics" in run_metadata
-    assert run_metadata["metrics"].value == {"accuracy": 0.9}
+    assert run_metadata["metrics"] == {"accuracy": 0.9}
 
 
 def test_log_step_metadata_using_latest_run(clean_client):
@@ -84,9 +84,9 @@ def test_log_step_metadata_using_latest_run(clean_client):
         "step_metadata_logging_step"
     ].run_metadata
     assert "description" in run_metadata_after_log
-    assert run_metadata_after_log["description"].value == "Axl is great!"
+    assert run_metadata_after_log["description"] == "Axl is great!"
     assert "metrics" in run_metadata_after_log
-    assert run_metadata_after_log["metrics"].value == {"accuracy": 0.9}
+    assert run_metadata_after_log["metrics"] == {"accuracy": 0.9}
 
 
 def test_log_step_metadata_using_specific_params(clean_client):
@@ -124,6 +124,6 @@ def test_log_step_metadata_using_specific_params(clean_client):
         "step_metadata_logging_step"
     ].run_metadata
     assert "description" in run_metadata_after_log
-    assert run_metadata_after_log["description"].value == "Blupus is great!"
+    assert run_metadata_after_log["description"] == "Blupus is great!"
     assert "metrics" in run_metadata_after_log
-    assert run_metadata_after_log["metrics"].value == {"accuracy": 0.9}
+    assert run_metadata_after_log["metrics"] == {"accuracy": 0.9}

@@ -56,9 +56,7 @@ def promote_get_metrics() -> (
 
     # Get current model version metric in current run
     model = get_step_context().model
-    current_metrics = (
-        model.get_model_artifact("model").run_metadata["metrics"].value
-    )
+    current_metrics = model.get_model_artifact("model").run_metadata["metrics"]
     logger.info(f"Current model version metrics are {current_metrics}")
 
     # Get latest saved model version metric in target environment
@@ -72,11 +70,9 @@ def promote_get_metrics() -> (
     except KeyError:
         latest_version = None
     if latest_version:
-        latest_metrics = (
-            latest_version.get_model_artifact("model")
-            .run_metadata["metrics"]
-            .value
-        )
+        latest_metrics = latest_version.get_model_artifact(
+            "model"
+        ).run_metadata["metrics"]
         logger.info(f"Latest model version metrics are {latest_metrics}")
     else:
         logger.info("No currently promoted model version found.")

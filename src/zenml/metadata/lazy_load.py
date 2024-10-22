@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Run Metadata Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-if TYPE_CHECKING:
-    from zenml.models import RunMetadataResponse
+from zenml.metadata.metadata_types import MetadataType
 
 
 class RunMetadataLazyGetter:
@@ -47,7 +46,7 @@ class RunMetadataLazyGetter:
         self._lazy_load_artifact_name = _lazy_load_artifact_name
         self._lazy_load_artifact_version = _lazy_load_artifact_version
 
-    def __getitem__(self, key: str) -> "RunMetadataResponse":
+    def __getitem__(self, key: str) -> MetadataType:
         """Get the metadata for the given key.
 
         Args:

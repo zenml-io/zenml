@@ -13,20 +13,13 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline run metadata tables."""
 
-import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, VARCHAR, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes
-from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.models import (
-    RunMetadataResponse,
-    RunMetadataResponseBody,
-    RunMetadataResponseMetadata,
-)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -111,42 +104,42 @@ class RunMetadataSchema(BaseSchema, table=True):
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str
 
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> "RunMetadataResponse":
-        """Convert a `RunMetadataSchema` to a `RunMetadataResponse`.
-
-        Args:
-            include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the resources will be filled.
-            **kwargs: Keyword arguments to allow schema specific logic
-
-
-        Returns:
-            The created `RunMetadataResponse`.
-        """
-        body = RunMetadataResponseBody(
-            user=self.user.to_model() if self.user else None,
-            key=self.key,
-            created=self.created,
-            updated=self.updated,
-            value=json.loads(self.value),
-            type=MetadataTypeEnum(self.type),
-        )
-        metadata = None
-        if include_metadata:
-            metadata = RunMetadataResponseMetadata(
-                workspace=self.workspace.to_model(),
-                resource_id=self.resource_id,
-                resource_type=MetadataResourceTypes(self.resource_type),
-                stack_component_id=self.stack_component_id,
-            )
-
-        return RunMetadataResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
-        )
+    # def to_model(
+    #     self,
+    #     include_metadata: bool = False,
+    #     include_resources: bool = False,
+    #     **kwargs: Any,
+    # ) -> "RunMetadataResponse":
+    #     """Convert a `RunMetadataSchema` to a `RunMetadataResponse`.
+    #
+    #     Args:
+    #         include_metadata: Whether the metadata will be filled.
+    #         include_resources: Whether the resources will be filled.
+    #         **kwargs: Keyword arguments to allow schema specific logic
+    #
+    #
+    #     Returns:
+    #         The created `RunMetadataResponse`.
+    #     """
+    #     body = RunMetadataResponseBody(
+    #         user=self.user.to_model() if self.user else None,
+    #         key=self.key,
+    #         created=self.created,
+    #         updated=self.updated,
+    #         value=json.loads(self.value),
+    #         type=MetadataTypeEnum(self.type),
+    #     )
+    #     metadata = None
+    #     if include_metadata:
+    #         metadata = RunMetadataResponseMetadata(
+    #             workspace=self.workspace.to_model(),
+    #             resource_id=self.resource_id,
+    #             resource_type=MetadataResourceTypes(self.resource_type),
+    #             stack_component_id=self.stack_component_id,
+    #         )
+    #
+    #     return RunMetadataResponse(
+    #         id=self.id,
+    #         body=body,
+    #         metadata=metadata,
+    #     )

@@ -240,10 +240,6 @@ from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     LazyRunMetadataResponse,
     RunMetadataRequest,
-    RunMetadataFilter,
-    RunMetadataResponse,
-    RunMetadataResponseBody,
-    RunMetadataResponseMetadata,
 )
 from zenml.models.v2.core.schedule import (
     ScheduleRequest,
@@ -416,7 +412,6 @@ EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
-LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
 ModelVersionResponseBody.model_rebuild()
@@ -442,8 +437,6 @@ RunTemplateResponseBody.model_rebuild()
 RunTemplateResponseMetadata.model_rebuild()
 RunTemplateResponseResources.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
-RunMetadataResponseBody.model_rebuild()
-RunMetadataResponseMetadata.model_rebuild()
 ScheduleResponseBody.model_rebuild()
 ScheduleResponseMetadata.model_rebuild()
 SecretResponseBody.model_rebuild()
@@ -634,10 +627,6 @@ __all__ = [
     "RunTemplateResponseResources",
     "RunTemplateFilter",
     "RunMetadataRequest",
-    "RunMetadataFilter",
-    "RunMetadataResponse",
-    "RunMetadataResponseBody",
-    "RunMetadataResponseMetadata",
     "ScheduleRequest",
     "ScheduleUpdate",
     "ScheduleFilter",

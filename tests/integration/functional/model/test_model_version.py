@@ -108,7 +108,7 @@ class TagContext:
 def step_metadata_logging_functional(mdl_name: str):
     """Functional logging using implicit Model from context."""
     log_model_metadata({"foo": "bar"})
-    assert get_step_context().model.run_metadata["foo"].value == "bar"
+    assert get_step_context().model.run_metadata["foo"] == "bar"
     log_model_metadata(
         {"foo": "bar"}, model_name=mdl_name, model_version="other"
     )
@@ -392,13 +392,13 @@ class TestModel:
             mv.log_metadata({"foo": "bar"})
 
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             mv.log_metadata({"bar": "foo"})
 
             assert len(mv.run_metadata) == 2
-            assert mv.run_metadata["foo"].value == "bar"
-            assert mv.run_metadata["bar"].value == "foo"
+            assert mv.run_metadata["foo"] == "bar"
+            assert mv.run_metadata["bar"] == "foo"
 
     def test_metadata_logging_functional(self):
         """Test that model version can be used to track metadata from function."""
@@ -414,7 +414,7 @@ class TestModel:
             )
 
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             with pytest.raises(ValueError):
                 log_model_metadata({"foo": "bar"})
@@ -424,8 +424,8 @@ class TestModel:
             )
 
             assert len(mv.run_metadata) == 2
-            assert mv.run_metadata["foo"].value == "bar"
-            assert mv.run_metadata["bar"].value == "foo"
+            assert mv.run_metadata["foo"] == "bar"
+            assert mv.run_metadata["bar"] == "foo"
 
     def test_metadata_logging_in_steps(self):
         """Test that model version can be used to track metadata from function in steps."""
@@ -448,11 +448,11 @@ class TestModel:
 
             mv = Model(name=mdl_name, version="context")
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             mv = Model(name=mdl_name, version="other")
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
     @pytest.mark.parametrize("delete_artifacts", [False, True])
     def test_deletion_of_links(self, delete_artifacts: bool):
