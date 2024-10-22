@@ -21,9 +21,20 @@ from zenml.exceptions import MaterializerInterfaceError
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class TestMaterializer(BaseMaterializer):
-    __test__ = False
-    ASSOCIATED_TYPES = (int,)
+class Parent:
+    pass
+
+
+class Child(Parent):
+    pass
+
+
+class ParentMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (Parent,)
+
+
+class ChildMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (Child,)
 
 
 def test_materializer_raises_an_exception_if_associated_types_are_no_classes():
@@ -54,9 +65,31 @@ def test_materializer_raises_an_exception_if_associated_artifact_type_wrong():
             ASSOCIATED_ARTIFACT_TYPE = "not_an_artifact_type"
 
 
-def test_validate_type_compatibility():
-    """Unit test for `BaseMaterializer.validate_type_compatibility`."""
-    materializer = TestMaterializer(uri="")
+def test_validate_save_type_compatibility():
+    child_materializer = ChildMaterializer(uri="")
+    parent_materializer = ParentMaterializer(uri="")
 
     with pytest.raises(TypeError):
-        materializer.validate_type_compatibility(data_type=str)
+        child_materializer.validate_save_type_compatibility(data_type=Parent)
+
+    with does_not_raise():
+        child_materializer.validate_save_type_compatibility(data_type=Child)
+
+    with does_not_raise():
+        parent_materializer.validate_save_type_compatibility(data_type=Parent)
+        parent_materializer.validate_save_type_compatibility(data_type=Child)
+
+
+def test_validate_load_type_compatibility():
+    child_materializer = ChildMaterializer(uri="")
+    parent_materializer = ParentMaterializer(uri="")
+
+    with does_not_raise():
+        child_materializer.validate_load_type_compatibility(data_type=Parent)
+        child_materializer.validate_load_type_compatibility(data_type=Child)
+
+    with does_not_raise():
+        parent_materializer.validate_load_type_compatibility(data_type=Parent)
+
+    with pytest.raises(TypeError):
+        parent_materializer.validate_load_type_compatibility(data_type=Child)
