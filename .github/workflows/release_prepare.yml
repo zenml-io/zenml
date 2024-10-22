@@ -3,7 +3,8 @@ name: release-prepare
 on:
   workflow_dispatch:
   create:
-    branches: [misc/prepare-release-*]
+    branches: ["misc/prepare-release-*"]
+    types: [branch]
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

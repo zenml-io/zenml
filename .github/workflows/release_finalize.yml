@@ -3,7 +3,8 @@ name: release-finalize
 on:
   workflow_dispatch:
   delete:
-    branches: [misc/prepare-release-*]
+    branches: ["misc/prepare-release-*"]
+    types: [branch]
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
