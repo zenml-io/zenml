@@ -2,14 +2,15 @@
 name: release-finalize
 on:
   workflow_dispatch:
-  delete:
-    branches: [misc/prepare-release-*]
+  pull_request:
+    types: [closed]
+    branches: ["misc/prepare-release-*"]
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
-    if: github.repository == 'zenml-io/zenml'
+    if: github.repository == 'zenml-io/zenml' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'misc/prepare-release-')
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.old-version.outputs.old_version }}
