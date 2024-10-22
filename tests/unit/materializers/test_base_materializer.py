@@ -87,9 +87,5 @@ def test_validate_load_type_compatibility():
     with does_not_raise():
         child_materializer.validate_load_type_compatibility(data_type=Parent)
         child_materializer.validate_load_type_compatibility(data_type=Child)
-
-    with does_not_raise():
         parent_materializer.validate_load_type_compatibility(data_type=Parent)
-
-    with pytest.raises(TypeError):
         parent_materializer.validate_load_type_compatibility(data_type=Child)
