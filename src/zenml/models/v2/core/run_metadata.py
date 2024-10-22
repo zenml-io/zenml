@@ -47,7 +47,7 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     )
 
 
-class LazyRunMetadataResponse(dict):
+class LazyRunMetadataResponse(dict[str, MetadataType]):
     """Lazy run metadata response.
 
     Used if the run metadata is accessed from the model in
