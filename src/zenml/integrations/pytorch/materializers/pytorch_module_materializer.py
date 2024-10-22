@@ -61,7 +61,10 @@ class PyTorchModuleMaterializer(BasePyTorchMaterializer):
             with fileio.open(
                 os.path.join(self.uri, CHECKPOINT_FILENAME), "wb"
             ) as f:
-                torch.save(model.state_dict(), f, pickle_module=cloudpickle)
+                # NOTE (security): The `torch.save` function uses `cloudpickle` as
+                # the default unpickler, which is NOT secure. This materializer
+                # is intended for use with trusted data sources.
+                torch.save(model.state_dict(), f, pickle_module=cloudpickle)  # nosec
 
     def extract_metadata(self, model: Module) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.

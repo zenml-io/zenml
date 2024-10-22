@@ -50,20 +50,6 @@ Since the Seldon Model Deployer is interacting with the Seldon Core model server
 
 In addition to these parameters, the Seldon Core Model Deployer may also require additional configuration to be set up to allow it to authenticate to the remote artifact store or persistent storage service where model artifacts are located. This is covered in the [Managing Seldon Core Authentication](seldon.md#managing-seldon-core-authentication) section.
 
-{% hint style="info" %}
-Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
-{% endhint %}
-
-### Infrastructure Deployment
-
-The Seldon Model Deployer can be deployed directly from the ZenML CLI:
-
-```shell
-zenml model-deployer deploy seldon_deployer --flavor=seldon --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
-
 ### Seldon Core Installation Example
 
 The following example briefly shows how you can install Seldon in an EKS Kubernetes cluster. It assumes that the EKS cluster itself is already set up and configured with IAM access. For more information or tutorials for other clouds, check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup).
@@ -187,7 +173,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 
 {% code title="Example Command Output" %}
 ```
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨

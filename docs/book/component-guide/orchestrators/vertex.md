@@ -35,8 +35,6 @@ In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
 
-In order to quickly enable APIs, and create other resources necessary for using this integration, you can also consider using [mlstacks](https://mlstacks.zenml.io/vertex), which helps you set up the infrastructure with one click.
-
 ## How to use it
 
 To use the Vertex orchestrator, we need:
@@ -269,7 +267,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )
@@ -279,7 +277,7 @@ def my_pipeline():
 # OR specify settings on step-level
 @step(
     settings={
-        "orchestrator.vertex": vertex_settings,
+        "orchestrator": vertex_settings,
         "resources": resource_settings,
     }
 )

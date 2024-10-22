@@ -421,23 +421,56 @@ class StackComponent:
         else:
             user_id = None
 
-        return flavor.implementation_class(
-            user=user_id,
-            workspace=component_model.workspace.id,
-            name=component_model.name,
-            id=component_model.id,
-            config=configuration,
-            labels=component_model.labels,
-            flavor=component_model.flavor,
-            type=component_model.type,
-            created=component_model.created,
-            updated=component_model.updated,
-            connector_requirements=flavor.service_connector_requirements,
-            connector=component_model.connector.id
-            if component_model.connector
-            else None,
-            connector_resource_id=component_model.connector_resource_id,
-        )
+        try:
+            return flavor.implementation_class(
+                user=user_id,
+                workspace=component_model.workspace.id,
+                name=component_model.name,
+                id=component_model.id,
+                config=configuration,
+                labels=component_model.labels,
+                flavor=component_model.flavor,
+                type=component_model.type,
+                created=component_model.created,
+                updated=component_model.updated,
+                connector_requirements=flavor.service_connector_requirements,
+                connector=component_model.connector.id
+                if component_model.connector
+                else None,
+                connector_resource_id=component_model.connector_resource_id,
+            )
+        except ImportError as e:
+            from zenml.integrations.registry import integration_registry
+
+            integration_requirements = " ".join(
+                integration_registry.select_integration_requirements(
+                    flavor_model.integration
+                )
+            )
+
+            if integration_registry.is_installed(flavor_model.integration):
+                raise ImportError(
+                    f"{e}\n\n"
+                    f"Something went wrong while trying to import from the "
+                    f"`{flavor_model.integration}` integration. Please make "
+                    "sure that all its requirements are installed properly by "
+                    "reinstalling the integration either through our CLI: "
+                    f"`zenml integration install {flavor_model.integration} "
+                    "-y` or by manually installing its requirements: "
+                    f"`pip install {integration_requirements}`. If the error"
+                    "persists, please contact the ZenML team."
+                ) from e
+            else:
+                raise ImportError(
+                    f"{e}\n\n"
+                    f"The `{flavor_model.integration}` integration that you "
+                    "are trying to use is not installed in your current "
+                    "environment. Please make sure that it is installed by "
+                    "either using our CLI: `zenml integration install "
+                    f"{flavor_model.integration}` or by manually installing "
+                    f"its requirements: `pip install "
+                    f"{integration_requirements}`"
+                ) from e
 
     @property
     def config(self) -> StackComponentConfig:
@@ -755,77 +788,6 @@ class StackComponent:
             An optional `StackValidator` instance.
         """
         return None
-
-    @property
-    def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run.
-
-        Returns:
-            True if the component provisioned resources to run.
-        """
-        return True
-
-    @property
-    def is_running(self) -> bool:
-        """If the component is running.
-
-        Returns:
-            True if the component is running.
-        """
-        return True
-
-    @property
-    def is_suspended(self) -> bool:
-        """If the component is suspended.
-
-        Returns:
-            True if the component is suspended.
-        """
-        return not self.is_running
-
-    def provision(self) -> None:
-        """Provisions resources to run the component.
-
-        Raises:
-            NotImplementedError: If the component does not implement this
-                method.
-        """
-        raise NotImplementedError(
-            f"Provisioning resources not implemented for {self}."
-        )
-
-    def deprovision(self) -> None:
-        """Deprovisions all resources of the component.
-
-        Raises:
-            NotImplementedError: If the component does not implement this
-                method.
-        """
-        raise NotImplementedError(
-            f"Deprovisioning resource not implemented for {self}."
-        )
-
-    def resume(self) -> None:
-        """Resumes the provisioned resources of the component.
-
-        Raises:
-            NotImplementedError: If the component does not implement this
-                method.
-        """
-        raise NotImplementedError(
-            f"Resuming provisioned resources not implemented for {self}."
-        )
-
-    def suspend(self) -> None:
-        """Suspends the provisioned resources of the component.
-
-        Raises:
-            NotImplementedError: If the component does not implement this
-                method.
-        """
-        raise NotImplementedError(
-            f"Suspending provisioned resources not implemented for {self}."
-        )
 
     def cleanup(self) -> None:
         """Cleans up the component after it has been used."""

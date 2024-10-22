@@ -49,16 +49,6 @@ To figure out the URI for your registry:
 * Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which you would like to store your container images. Make sure to choose a nearby region for faster access.
 * Once you have both these values, fill in the values in this template `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry URI.
 
-#### Infrastructure Deployment
-
-An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
-
-```shell
-zenml container-registry deploy ecr_container_registry --flavor=aws --provider=aws ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
-
 ### How to use it
 
 To use the AWS container registry, we need:
@@ -143,7 +133,7 @@ zenml service-connector list-resources --connector-type aws --resource-type dock
 
 {% code title="Example Command Output" %}
 ```
-The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
 ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨

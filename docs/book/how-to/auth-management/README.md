@@ -225,13 +225,16 @@ The configured credentials must have at least the following AWS IAM permissions
 associated with the ARNs of S3 buckets that the connector will be allowed to    
 access (e.g. arn:aws:s3:::* and arn:aws:s3:::*/* represent all the available S3 
 buckets).                                                                       
-                                                                                
- • s3:ListBucket                                                                
- • s3:GetObject                                                                 
- • s3:PutObject                                                                 
- • s3:DeleteObject                                                              
- • s3:ListAllMyBuckets                                                          
-                                                                                
+
+ • s3:ListBucket
+ • s3:GetObject
+ • s3:PutObject
+ • s3:DeleteObject
+ • s3:ListAllMyBuckets
+ • s3:GetBucketVersioning
+ • s3:ListBucketVersions
+ • s3:DeleteObjectVersion
+
 If set, the resource name must identify an S3 bucket using one of the following 
 formats:                                                                        
                                                                                 
@@ -400,8 +403,6 @@ Service connector 'aws-s3' of type 'aws' with id '96a92154-4ec7-4722-bc18-21eeea
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ OWNER            │ default                              ┃
 ┠──────────────────┼──────────────────────────────────────┨
-┃ WORKSPACE        │ default                              ┃
-┠──────────────────┼──────────────────────────────────────┨
 ┃ SHARED           │ ➖                                   ┃
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ CREATED_AT       │ 2023-06-15 18:45:17.822337           ┃
@@ -458,8 +459,6 @@ Service connector 'aws-s3 (s3-bucket | s3://zenfiles client)' of type 'aws' with
 ┃ EXPIRES IN       │ 11h59m56s                                 ┃
 ┠──────────────────┼───────────────────────────────────────────┨
 ┃ OWNER            │ default                                   ┃
-┠──────────────────┼───────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                   ┃
 ┠──────────────────┼───────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                        ┃
 ┠──────────────────┼───────────────────────────────────────────┨
@@ -566,7 +565,7 @@ Step simple_step_two has started.
 Hello World!
 Step simple_step_two has finished in 5.681s.
 Pipeline run simple_pipeline-2023_06_15-19_29_42_159831 has finished in 12.522s.
-Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/8267b0bc-9cbd-42ac-9b56-4d18275bdbb4/runs
+Dashboard URL: http://127.0.0.1:8237/default/pipelines/8267b0bc-9cbd-42ac-9b56-4d18275bdbb4/runs
 ```
 {% endcode %}
 

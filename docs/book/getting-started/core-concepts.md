@@ -4,6 +4,8 @@ description: Discovering the core concepts behind ZenML.
 
 # 🪄 Core concepts
 
+![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)
+
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">#1-development</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">#2-execution</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">#3-management</a></td></tr></tbody></table>
@@ -133,7 +135,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/README.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
 
 #### Metadata Tracking
 

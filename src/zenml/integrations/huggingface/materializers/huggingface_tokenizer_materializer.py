@@ -17,8 +17,8 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, ClassVar, Tuple, Type
 
-from transformers import AutoTokenizer  # type: ignore [import-untyped]
-from transformers.tokenization_utils_base import (  # type: ignore [import-untyped]
+from transformers import AutoTokenizer
+from transformers.tokenization_utils_base import (
     PreTrainedTokenizerBase,
 )
 

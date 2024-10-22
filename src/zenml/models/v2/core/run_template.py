@@ -299,7 +299,11 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
-        "build_id" "pipeline_id",
+        "build_id",
+        "pipeline_id",
+        "user",
+        "pipeline",
+        "stack",
     ]
 
     name: Optional[str] = Field(
@@ -336,6 +340,18 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the template.",
+    )
+    pipeline: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the pipeline associated with the template.",
+    )
+    stack: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the stack associated with the template.",
+    )
 
     def get_custom_filters(
         self,
@@ -352,7 +368,10 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
             PipelineDeploymentSchema,
+            PipelineSchema,
             RunTemplateSchema,
+            StackSchema,
+            UserSchema,
         )
 
         if self.code_repository_id:
@@ -389,5 +408,38 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
+
+        if self.user:
+            user_filter = and_(
+                RunTemplateSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user, table=UserSchema
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        if self.pipeline:
+            pipeline_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline,
+                    table=PipelineSchema,
+                ),
+            )
+            custom_filters.append(pipeline_filter)
+
+        if self.stack:
+            stack_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack,
+                    table=StackSchema,
+                ),
+            )
+            custom_filters.append(stack_filter)
 
         return custom_filters

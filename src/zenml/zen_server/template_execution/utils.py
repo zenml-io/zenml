@@ -35,8 +35,8 @@ from zenml.models import (
     RunTemplateResponse,
     StackResponse,
 )
-from zenml.new.pipelines.build_utils import compute_stack_checksum
-from zenml.new.pipelines.run_utils import (
+from zenml.pipelines.build_utils import compute_stack_checksum
+from zenml.pipelines.run_utils import (
     create_placeholder_run,
     get_default_run_name,
     validate_run_config_is_runnable_from_server,
@@ -474,6 +474,7 @@ def deployment_request_from_template(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
+        code_path=deployment.code_path,
         template=template.id,
         pipeline_version_hash=deployment.pipeline_version_hash,
         pipeline_spec=deployment.pipeline_spec,

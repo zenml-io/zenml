@@ -119,6 +119,9 @@ Resources:
                   - 's3:GetObject'
                   - 's3:PutObject'
                   - 's3:DeleteObject'
+                  - 's3:GetBucketVersioning'
+                  - 's3:ListBucketVersions'
+                  - 's3:DeleteObjectVersion'
                 Resource:
                   - !Sub '${S3Bucket.Arn}'
                   - !Sub '${S3Bucket.Arn}/*'
@@ -235,7 +238,7 @@ Resources:
                     send_response(event, context, 'SUCCESS', {'Message': 'Resource updated successfully'})
                     return
 
-                url = os.environ['ZENML_SERVER_URL'].lstrip('/')+'/api/v1/workspaces/default/full-stack'
+                url = os.environ['ZENML_SERVER_URL'].lstrip('/')+'/api/v1/workspaces/default/stacks'
                 api_token = os.environ['ZENML_SERVER_API_TOKEN']
                 payload = event['ResourceProperties']['Payload']
 
@@ -303,31 +306,31 @@ Resources:
             }
           ],
           "components": {
-            "artifact_store": {
+            "artifact_store": [{
               "flavor": "s3",
               "service_connector_index": 0,
               "configuration": {
                 "path": "s3://${S3Bucket}"
               }
-            },
-            "container_registry":{
+            }],
+            "container_registry":[{
               "flavor": "aws",
               "service_connector_index": 0,
               "configuration": {
                 "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
                 "default_repository": "${ECRRepository}"
               }
-            },
-            "orchestrator": {
+            }],
+            "orchestrator": [{
               "flavor": "sagemaker",
               "service_connector_index": 0,
               "configuration": {
                 "execution_role": "${SageMakerRuntimeRole.Arn}"
               }
-            },
-            "image_builder": {
+            }],
+            "image_builder": [{
               "flavor": "local"
-            }
+            }]
           }
         }
 
@@ -375,30 +378,30 @@ Outputs:
           }
         ],
         "components": {
-          "artifact_store": {
+          "artifact_store": [{
             "flavor": "s3",
             "service_connector_index": 0,
             "configuration": {
               "path": "s3://${S3Bucket}"
             }
-          },
-          "container_registry":{
+          }],
+          "container_registry":[{
             "flavor": "aws",
             "service_connector_index": 0,
             "configuration": {
               "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
               "default_repository": "${ECRRepository}"
             }
-          },
-          "orchestrator": {
+          }],
+          "orchestrator": [{
             "flavor": "sagemaker",
             "service_connector_index": 0,
             "configuration": {
               "execution_role": "${SageMakerRuntimeRole.Arn}"
             }
-          },
-          "image_builder": {
+          }],
+          "image_builder": [{
             "flavor": "local"
-          }
+          }]
         }
       }

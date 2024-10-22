@@ -28,7 +28,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+    uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
 }
 
 install_integrations() {
@@ -37,6 +37,11 @@ install_integrations() {
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy"
+
+    # Ignore tensorflow and deepchecks only on Python 3.12
+    if [ "$python_version" = "3.12" ]; then
+        ignore_integrations="$ignore_integrations tensorflow deepchecks"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
@@ -54,7 +59,7 @@ install_integrations() {
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
     echo "pyopenssl" >> integration-requirements.txt
     echo "typing-extensions" >> integration-requirements.txt
-    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]" >> integration-requirements.txt
+    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # TODO: remove after torch 2.3.0+ is released
     # https://github.com/pytorch/pytorch/issues/124897

@@ -44,6 +44,7 @@
     "deepchecks.tabular",
     "deepchecks.tabular.checks",
     "deepchecks.tabular.checks.data_integrity",
+    "deepchecks.tabular.checks.model_evaluation",
     "deepchecks.tabular.suites",
     "deepchecks.vision",
     "deepchecks.vision.checks",
@@ -162,7 +163,9 @@
     "model_archiver.model_packaging_utils",
     "neptune",
     "neuralprophet",
+    "numpy",
     "openai",
+    "pandas",
     "paramiko",
     "polars",
     "pyarrow",
@@ -251,5 +254,6 @@
     "IPython.core",
     "IPython.core.display",
     "IPython.core.display_functions",
-    "ipywidgets"
+    "ipywidgets",
+    "lightning_sdk"
 ]

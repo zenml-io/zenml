@@ -20,15 +20,15 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    GRAPH,
     PIPELINE_CONFIGURATION,
+    REFRESH,
     RUNS,
     STATUS,
     STEPS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus
-from zenml.lineage_graph.lineage_graph import LineageGraph
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     PipelineRunFilter,
@@ -45,7 +45,8 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -57,6 +58,9 @@ router = APIRouter(
     tags=["runs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+logger = get_logger(__name__)
 
 
 @router.get(
@@ -99,6 +103,7 @@ def list_runs(
 def get_run(
     run_id: UUID,
     hydrate: bool = True,
+    refresh_status: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -107,13 +112,47 @@ def get_run(
         run_id: ID of the pipeline run to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        refresh_status: Flag deciding whether we should try to refresh
+            the status of the pipeline run using its orchestrator.
 
     Returns:
         The pipeline run.
+
+    Raises:
+        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
-    return verify_permissions_and_get_entity(
+    run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=hydrate
     )
+    if refresh_status:
+        try:
+            # Check the stack and its orchestrator
+            if run.stack is not None:
+                orchestrators = run.stack.components.get(
+                    StackComponentType.ORCHESTRATOR, []
+                )
+                if orchestrators:
+                    verify_permission_for_model(
+                        model=orchestrators[0], action=Action.READ
+                    )
+                else:
+                    raise RuntimeError(
+                        f"The orchestrator, the run '{run.id}' was executed "
+                        "with, is deleted."
+                    )
+            else:
+                raise RuntimeError(
+                    f"The stack, the run '{run.id}' was executed on, is deleted."
+                )
+
+            run = run.refresh_run_status()
+
+        except Exception as e:
+            logger.warning(
+                "An error occurred while refreshing the status of the "
+                f"pipeline run: {e}"
+            )
+    return run
 
 
 @router.put(
@@ -163,32 +202,6 @@ def delete_run(
         get_method=zen_store().get_run,
         delete_method=zen_store().delete_run,
     )
-
-
-@router.get(
-    "/{run_id}" + GRAPH,
-    response_model=LineageGraph,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_run_dag(
-    run_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> LineageGraph:
-    """Get the DAG for a given pipeline run.
-
-    Args:
-        run_id: ID of the pipeline run to use to get the DAG.
-
-    Returns:
-        The DAG for a given pipeline run.
-    """
-    run = verify_permissions_and_get_entity(
-        id=run_id, get_method=zen_store().get_run, hydrate=True
-    )
-    graph = LineageGraph()
-    graph.generate_run_nodes_and_edges(run)
-    return graph
 
 
 @router.get(
@@ -267,3 +280,48 @@ def get_run_status(
         id=run_id, get_method=zen_store().get_run, hydrate=False
     )
     return run.status
+
+
+@router.get(
+    "/{run_id}" + REFRESH,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def refresh_run_status(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Refreshes the status of a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run to refresh.
+
+    Raises:
+        RuntimeError: If the stack or the orchestrator of the run is deleted.
+    """
+    # Verify access to the run
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=True,
+    )
+
+    # Check the stack and its orchestrator
+    if run.stack is not None:
+        orchestrators = run.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if orchestrators:
+            verify_permission_for_model(
+                model=orchestrators[0], action=Action.READ
+            )
+        else:
+            raise RuntimeError(
+                f"The orchestrator, the run '{run.id}' was executed with, is "
+                "deleted."
+            )
+    else:
+        raise RuntimeError(
+            f"The stack, the run '{run.id}' was executed on, is deleted."
+        )
+    run.refresh_run_status()

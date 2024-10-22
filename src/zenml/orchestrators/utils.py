@@ -13,33 +13,29 @@
 #  permissions and limitations under the License.
 """Utility functions for the orchestrator."""
 
+import os
 import random
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import (
     GlobalConfiguration,
 )
-from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
-from zenml.enums import StoreType
-from zenml.exceptions import StepContextError
-from zenml.model.utils import link_artifact_config_to_model
-from zenml.models.v2.core.step_run import StepRunRequest
-from zenml.new.steps.step_context import get_step_context
+from zenml.enums import StackComponentType, StoreType
+from zenml.logger import get_logger
+from zenml.stack import StackComponent
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
-    from zenml.model.model import Model
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.models import PipelineDeploymentResponse
 
 
@@ -148,10 +144,7 @@ def get_run_name(run_name_template: str) -> str:
     Returns:
         The run name derived from the template.
     """
-    date = datetime.utcnow().strftime("%Y_%m_%d")
-    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-
-    run_name = run_name_template.format(date=date, time=time)
+    run_name = format_name_template(run_name_template)
 
     if run_name == "":
         raise ValueError("Empty run names are not allowed.")
@@ -159,149 +152,99 @@ def get_run_name(run_name_template: str) -> str:
     return run_name
 
 
-def _link_pipeline_run_to_model_from_context(
-    pipeline_run_id: "UUID", model: Optional["Model"] = None
-) -> None:
-    """Links the pipeline run to the model version using artifacts data.
+class register_artifact_store_filesystem:
+    """Context manager for the artifact_store/filesystem_registry dependency.
 
-    Args:
-        pipeline_run_id: The ID of the current pipeline run.
-        model: Model configured in the step
+    Even though it is rare, sometimes we bump into cases where we are trying to
+    load artifacts that belong to an artifact store which is different from
+    the active artifact store.
+
+    In cases like this, we will try to instantiate the target artifact store
+    by creating the corresponding artifact store Python object, which ends up
+    registering the right filesystem in the filesystem registry.
+
+    The problem is, the keys in the filesystem registry are schemes (such as
+    "s3://" or "gcs://"). If we have two artifact stores with the same set of
+    supported schemes, we might end up overwriting the filesystem that belongs
+    to the active artifact store (and its authentication). That's why we have
+    to re-instantiate the active artifact store again, so the correct filesystem
+    will be restored.
     """
-    from zenml.models import ModelVersionPipelineRunRequest
 
-    if not model:
-        model_id, model_version_id = _get_model_versions_from_config()
-    else:
-        model_id, model_version_id = model.model_id, model.id
+    def __init__(self, target_artifact_store_id: Optional[UUID]) -> None:
+        """Initialization of the context manager.
 
-    if model_id and model_version_id:
-        Client().zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                pipeline_run=pipeline_run_id,
-                model=model_id,
-                model_version=model_version_id,
-            )
-        )
+        Args:
+            target_artifact_store_id: the ID of the artifact store to load.
+        """
+        self.target_artifact_store_id = target_artifact_store_id
 
+    def __enter__(self) -> "BaseArtifactStore":
+        """Entering the context manager.
 
-def _get_model_versions_from_config() -> Tuple[Optional[UUID], Optional[UUID]]:
-    """Gets the model versions from the step model version.
+        It creates an instance of the target artifact store to register the
+        correct filesystem in the registry.
 
-    Returns:
-        Tuple of (model_id, model_version_id).
-    """
-    try:
-        mc = get_step_context().model
-        return mc.model_id, mc.id
-    except StepContextError:
-        return None, None
+        Returns:
+            The target artifact store object.
 
-
-def _link_cached_artifacts_to_model(
-    model_from_context: Optional["Model"],
-    step_run: StepRunRequest,
-    step_source: Source,
-) -> None:
-    """Links the output artifacts of the cached step to the model version in Control Plane.
-
-    Args:
-        model_from_context: The model version of the current step.
-        step_run: The step to run.
-        step_source: The source of the step.
-    """
-    from zenml.artifacts.artifact_config import ArtifactConfig
-    from zenml.steps.base_step import BaseStep
-    from zenml.steps.utils import parse_return_type_annotations
-
-    step_instance = BaseStep.load_from_source(step_source)
-    output_annotations = parse_return_type_annotations(
-        step_instance.entrypoint
-    )
-    for output_name_, output_id in step_run.outputs.items():
-        artifact_config_ = None
-        if output_name_ in output_annotations:
-            annotation = output_annotations.get(output_name_, None)
-            if annotation and annotation.artifact_config is not None:
-                artifact_config_ = annotation.artifact_config.model_copy()
-        # no artifact config found or artifact was produced by `save_artifact`
-        # inside the step body, so was never in annotations
-        if artifact_config_ is None:
-            artifact_config_ = ArtifactConfig(name=output_name_)
-
-        link_artifact_config_to_model(
-            artifact_config=artifact_config_,
-            model=model_from_context,
-            artifact_version_id=output_id,
-        )
-
-
-def _link_pipeline_run_to_model_from_artifacts(
-    pipeline_run_id: UUID,
-    artifact_names: List[str],
-    external_artifacts: List["ExternalArtifactConfiguration"],
-) -> None:
-    """Links the pipeline run to the model version using artifacts data.
-
-    Args:
-        pipeline_run_id: The ID of the current pipeline run.
-        artifact_names: The name of the published output artifacts.
-        external_artifacts: The external artifacts of the step.
-    """
-    from zenml.models import ModelVersionPipelineRunRequest
-
-    models = _get_model_versions_from_artifacts(artifact_names)
-    client = Client()
-
-    # Add models from external artifacts
-    for external_artifact in external_artifacts:
-        if external_artifact.model:
-            models.add(
-                (
-                    external_artifact.model.model_id,
-                    external_artifact.model.id,
-                )
-            )
-
-    for model in models:
-        client.zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
-                pipeline_run=pipeline_run_id,
-                model=model[0],
-                model_version=model[1],
-            )
-        )
-
-
-def _get_model_versions_from_artifacts(
-    artifact_names: List[str],
-) -> Set[Tuple[UUID, UUID]]:
-    """Gets the model versions from the artifacts.
-
-    Args:
-        artifact_names: The names of the published output artifacts.
-
-    Returns:
-        Set of tuples of (model_id, model_version_id).
-    """
-    models = set()
-    for artifact_name in artifact_names:
-        artifact_config = (
-            get_step_context()._get_output(artifact_name).artifact_config
-        )
-        if artifact_config is not None:
-            if (model := artifact_config._model) is not None:
-                model_version_response = model._get_or_create_model_version()
-                models.add(
-                    (
-                        model_version_response.model.id,
-                        model_version_response.id,
+        Raises:
+            RuntimeError: If the target artifact store can not be fetched or
+                initiated due to missing dependencies.
+        """
+        try:
+            if self.target_artifact_store_id is not None:
+                if (
+                    Client().active_stack.artifact_store.id
+                    != self.target_artifact_store_id
+                ):
+                    get_logger(__name__).debug(
+                        f"Trying to use the artifact store with ID:"
+                        f"'{self.target_artifact_store_id}'"
+                        f"which is currently not the active artifact store."
                     )
+
+                artifact_store_model_response = Client().get_stack_component(
+                    component_type=StackComponentType.ARTIFACT_STORE,
+                    name_id_or_prefix=self.target_artifact_store_id,
+                )
+                return cast(
+                    "BaseArtifactStore",
+                    StackComponent.from_model(artifact_store_model_response),
                 )
             else:
-                break
-    return models
+                return Client().active_stack.artifact_store
+
+        except KeyError:
+            raise RuntimeError(
+                "Unable to fetch the artifact store with id: "
+                f"'{self.target_artifact_store_id}'. Check whether the "
+                "artifact store still exists and you have the right "
+                "permissions to access it."
+            )
+        except ImportError:
+            raise RuntimeError(
+                "Unable to load the implementation of the artifact store with"
+                f"id: '{self.target_artifact_store_id}'. Please make sure that "
+                "the environment that you are loading this artifact from "
+                "has the right dependencies."
+            )
+
+    def __exit__(
+        self,
+        exc_type: Optional[Any],
+        exc_value: Optional[Any],
+        traceback: Optional[Any],
+    ) -> None:
+        """Set it back to the original state.
+
+        Args:
+            exc_type: The class of the exception
+            exc_value: The instance of the exception
+            traceback: The traceback of the exception
+        """
+        if ENV_ZENML_SERVER not in os.environ:
+            # As we exit the handler, we have to re-register the filesystem
+            # that belongs to the active artifact store as it may have been
+            # overwritten.
+            Client().active_stack.artifact_store._register()

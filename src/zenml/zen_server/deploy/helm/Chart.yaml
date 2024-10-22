@@ -1,6 +1,6 @@
 apiVersion: v2
 name: zenml
-version: "0.64.0"
+version: "0.67.0"
 description: Open source MLOps framework for portable production ready ML pipelines
 keywords:
 - mlops

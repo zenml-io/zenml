@@ -11,7 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.orchestrators.utils import is_setting_enabled
+from unittest import mock
+
+from zenml.enums import StackComponentType
+from zenml.orchestrators.utils import (
+    is_setting_enabled,
+    register_artifact_store_filesystem,
+)
 
 
 def test_is_setting_enabled():
@@ -97,3 +103,26 @@ def test_is_setting_enabled():
         )
         is False
     )
+
+
+def test_register_artifact_store_filesystem(clean_client):
+    """Tests if a new filesystem gets registered with the context manager."""
+    with mock.patch(
+        "zenml.artifact_stores.base_artifact_store.BaseArtifactStore._register"
+    ) as register:
+        # Calling the active artifact store will call register once
+        _ = clean_client.active_stack.artifact_store
+        assert register.call_count == 1
+
+        new_artifact_store_model = clean_client.create_stack_component(
+            name="new_local_artifact_store",
+            flavor="local",
+            component_type=StackComponentType.ARTIFACT_STORE,
+            configuration={"path": ""},
+        )
+        with register_artifact_store_filesystem(new_artifact_store_model.id):
+            # Entering the context manager will register the new filesystem
+            assert register.call_count == 2
+
+        # Exiting the context manager will set it back by calling register again
+        assert register.call_count == 3

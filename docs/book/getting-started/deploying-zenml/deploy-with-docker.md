@@ -54,7 +54,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 > **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
-{% tab title="undefined" %}
+{% tab title="Default" %}
 The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
 
 It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
@@ -291,7 +291,7 @@ If your browser did not open automatically, please open the following URL into y
 http://localhost:8080/devices/verify?device_id=f7a7333a-3ef0-4f39-85a9-f190279456d3&user_code=9375f5cdfdaf36772ce981fe3ee6172c
 
 Successfully logged in.
-Creating default stack for user 'default' in workspace default...
+Creating default stack for user 'default'...
 Updated the global store configuration.
 ```
 

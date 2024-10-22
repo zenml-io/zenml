@@ -15,6 +15,4 @@
 # limitations under the License.
 #
 
-from .feature_engineering import feature_engineering
-from .inference import inference
-from .training import training
+from .training import english_translation_pipeline

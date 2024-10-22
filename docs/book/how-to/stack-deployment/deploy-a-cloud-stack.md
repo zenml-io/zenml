@@ -50,7 +50,9 @@ next page:
 
 ![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
 
-### AWS
+<details>
+
+<summary>AWS</summary>
 
 If you choose `aws` as your provider, you will see a page where you will have 
 to select a region and a name for your new stack:
@@ -70,7 +72,11 @@ pre-filled configuration and create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
-### GCP
+</details>
+
+<details>
+
+<summary>GCP</summary>
 
 If you choose `gcp` as your provider, you will see a page where you will have 
 to select a region and a name for your new stack:
@@ -139,14 +145,39 @@ to the ZenML dashboard to view the newly created stack:
 
 ![GCP Stack dashboard output](../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png)
 
-### Azure
+</details>
 
-{% hint style="warning" %}
-Currently, the 1-click deployment for Azure is only supported in the CLI. We are
-working on bringing support to the dashboard as well. Stay in touch for further
-updates.
-{% endhint %}
+<details>
 
+<summary>Azure</summary>
+
+If you choose `azure` as your provider, you will see a page where you will have to select a location and a name for your new stack:
+
+![Deploy Azure Stack - Step 1](../../.gitbook/assets/deploy_stack_azure_location.png)
+
+You will also find a list of resources that will be deployed as part of the stack:
+
+![Deploy Azure Stack - Step 1 Continued](../../.gitbook/assets/deploy_stack_azure_resources.png)
+
+Once the configuration is finished, you will see a deployment page. Make note of the values in the `main.tf` file that is provided to you.
+
+![Deploy Azure Stack - Step 2](../../.gitbook/assets/deploy_stack_azure_deployment_page.png)
+
+Clicking on the "Deploy in Azure" button will redirect you to a Cloud Shell session on Azure.
+
+![Azure Cloud Shell start page](../../.gitbook/assets/deploy_stack_azure_cloud_shell.png)
+
+You should now paste the content of the `main.tf` file into a file int the Cloud Shell session and run the `terraform init --upgrade` and `terraform apply` commands.
+
+The `main.tf` file uses the `zenml-io/zenml-stack/azure` module hosted on the Terraform registry to deploy the necessary resources for your Azure stack and then automatically registers the stack with your ZenML server. You can check out the module documentation [here](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure).
+
+![Azure Cloud Shell Terraform Outputs](../../.gitbook/assets/deploy_stack_azure_cloud_shell_terraform_outputs.png)
+
+Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML Dashboard to view the newly created stack:
+
+![Azure Stack Dashboard output](../../.gitbook/assets/deploy_stack_azure_dashboard_output.png)
+
+</details>
 {% endtab %}
 {% tab title="CLI" %}
 
@@ -320,6 +351,9 @@ following AWS permissions in your AWS account:
   * s3:GetObject
   * s3:PutObject
   * s3:DeleteObject
+  * s3:GetBucketVersioning
+  * s3:ListBucketVersions
+  * s3:DeleteObjectVersion
 * ECR Repository:
   * ecr:DescribeRepositories
   * ecr:ListRepositories
@@ -379,7 +413,7 @@ following GCP permissions in your GCP project:
 - An Azure Resource Group to contain all the resources required for the ZenML stack
 - An Azure Storage Account and Blob Storage Container that will be used as a ZenML Artifact Store.
 - An Azure Container Registry that will be used as a ZenML Container Registry.
-- An AzureML Workspace that will be used to run pipelines. A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
+- An AzureML Workspace that will be used as a ZenML Orchestrator and ZenML Step Operator. A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
 - An Azure Service Principal with the minimum necessary permissions to access
 the above resources.
 - An Azure Service Principal client secret used to give access to ZenML to

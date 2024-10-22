@@ -39,18 +39,6 @@ In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to 
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is enabling the relevant permissions for your particular role.
 
-In order to quickly enable APIs, and create other resources necessary for to use this integration, we will soon provide a Sagemaker stack recipe via [our `mlstacks` repository](https://github.com/zenml-io/mlstacks), which will help you set up the infrastructure with one click.
-
-### Infrastructure Deployment
-
-A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker --provider=aws ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
-
 ## How to use it
 
 To use the Sagemaker orchestrator, we need:
@@ -92,11 +80,11 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
     --execution_role=<YOUR_IAM_ROLE_ARN> \ 
     --aws_access_key_id=...
     --aws_secret_access_key=...
-    --aws_region=...
+    --region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
-See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_orchestrator\_flavor) for more information on available configuration options.
+See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor.SagemakerOrchestratorSettings) for more information on available configuration options.
 {% endtab %}
 
 {% tab title="Implicit Authentication" %}
@@ -186,24 +174,54 @@ For example, settings can be provided in the following way:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
-    processor_args={
-        "instance_type": "ml.t3.medium",
-        "volume_size_in_gb": 30
-    }
+    instance_type="ml.m5.large",
+    volume_size_in_gb=30,
 )
 ```
 
 They can then be applied to a step as follows:
 
 ```python
-@step(settings={"orchestrator.sagemaker": sagemaker_orchestrator_settings})
+@step(settings={"orchestrator": sagemaker_orchestrator_settings})
 ```
 
-For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
+For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` (for Processing Steps) or `ml.m5.xlarge` (for Training Steps) with 30GB additional storage. See the next section for details on how ZenML decides which Sagemaker Step type to use.
 
 Check out [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings in general.
 
-For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator) .
+For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor.SagemakerOrchestratorSettings) .
+
+### Using Warm Pools for your pipelines
+
+[Warm Pools in SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/train-warm-pools.html) can significantly reduce the startup time of your pipeline steps, leading to faster iterations and improved development efficiency. This feature keeps compute instances in a "warm" state, ready to quickly start new jobs.
+
+To enable Warm Pools, use the [`SagemakerOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor.SagemakerOrchestratorSettings) class:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    keep_alive_period_in_seconds = 300, # 5 minutes, default value
+)
+```
+
+This configuration keeps instances warm for 5 minutes after each job completes, allowing subsequent jobs to start faster if initiated within this timeframe. The reduced startup time can be particularly beneficial for iterative development processes or frequently run pipelines.
+
+If you prefer not to use Warm Pools, you can explicitly disable them:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    keep_alive_period_in_seconds = None,
+)
+```
+
+By default, the SageMaker orchestrator uses Training Steps where possible, which can offer performance benefits and better integration with SageMaker's training capabilities. To disable this behavior:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    use_training_step = False
+)
+```
+
+These settings allow you to fine-tune your SageMaker orchestrator configuration, balancing between faster startup times with Warm Pools and more control over resource usage. By optimizing these settings, you can potentially reduce overall pipeline runtime and improve your development workflow efficiency.
 
 #### S3 data access in ZenML steps
 
@@ -267,6 +285,55 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     }
 )
 ```
+
+{% hint style="warning" %}
+Using multichannel output or output mode except `EndOfJob` will make it impossible to use TrainingStep and also Warm Pools. See corresponding section of this document for details.
+{% endhint %}
+
+### Tagging SageMaker Pipeline Executions and Jobs
+
+The SageMaker orchestrator allows you to add tags to your pipeline executions and individual jobs. Here's how you can apply tags at both the pipeline and step levels:
+
+```python
+from zenml import pipeline, step
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import SagemakerOrchestratorSettings
+
+# Define settings for the pipeline
+pipeline_settings = SagemakerOrchestratorSettings(
+    pipeline_tags={
+        "project": "my-ml-project",
+        "environment": "production",
+    }
+)
+
+# Define settings for a specific step
+step_settings = SagemakerOrchestratorSettings(
+    tags={
+        "step": "data-preprocessing",
+        "owner": "data-team"
+    }
+)
+
+@step(settings={"orchestrator": step_settings})
+def preprocess_data():
+    # Your preprocessing code here
+    pass
+
+@pipeline(settings={"orchestrator": pipeline_settings})
+def my_training_pipeline():
+    preprocess_data()
+    # Other steps...
+
+# Run the pipeline
+my_training_pipeline()
+```
+
+In this example:
+
+- The `pipeline_tags` are applied to the entire SageMaker pipeline object. SageMaker automatically applies the pipeline_tags to all its associated jobs. 
+- The `tags` in `step_settings` are applied to the specific SageMaker job for the `preprocess_data` step.
+
+This approach allows for more granular tagging, giving you flexibility in how you categorize and manage your SageMaker resources. You can view and manage these tags in the AWS Management Console, CLI, or API calls related to your SageMaker resources.
 
 ### Enabling CUDA for GPU-backed hardware
 

@@ -61,7 +61,7 @@ zenml secret create label_studio_secrets --api_key="<your_label_studio_api_key>"
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register label_studio --flavor label_studio --api_key="{{label_studio_secrets.api_key}}"
+zenml annotator register label_studio --flavor label_studio --authentication_secret="label_studio_secrets" --port=8080
 
 # for deployed instances of Label Studio, you can also pass in the URL as follows, for example:
 # zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>" --port=80

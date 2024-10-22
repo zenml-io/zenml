@@ -152,7 +152,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: '3.8'
+          python-version: '3.11'
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -160,11 +160,6 @@ jobs:
       - name: Create virtual environment
         run: |
           uv venv
-      - name: Check mlstacks compatibility
-        run: |
-          source .venv/bin/activate
-          uv pip install -e .
-          uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate
@@ -199,7 +194,7 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -212,7 +207,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -225,14 +220,12 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
-          - {python-version: '3.8', os: macos-latest}
           - {python-version: '3.9', os: macos-latest}
         include:
-          - {python-version: '3.8', os: macos-13}
           - {python-version: '3.9', os: macos-13}
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
@@ -246,7 +239,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -261,14 +254,12 @@ jobs:
     strategy:
       matrix:
         os: [macos-13]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
-          - {python-version: '3.8', os: macos-latest}
           - {python-version: '3.9', os: macos-latest}
         include:
-          - {python-version: '3.8', os: macos-13}
           - {python-version: '3.9', os: macos-13}
         test_environment: [default]
       fail-fast: false
@@ -284,25 +275,25 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
         exclude:
-   # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.9'
+          # docker is time-consuming to run, so we only run it on 3.9
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.11'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.9'
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.11'
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: '3.12'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:

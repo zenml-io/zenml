@@ -18,7 +18,7 @@ import time
 from contextlib import nullcontext
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -26,8 +26,6 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     ENV_ZENML_IGNORE_FAILURE_HOOK,
-    STEP_SOURCE_PARAMETER_NAME,
-    TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -40,15 +38,9 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunRequest,
     PipelineRunResponse,
-    StepRunRequest,
     StepRunResponse,
 )
-from zenml.orchestrators import (
-    cache_utils,
-    input_utils,
-    output_utils,
-    publish_utils,
-)
+from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
@@ -167,7 +159,7 @@ class StepLauncher:
             )
 
             logs_context = step_logging.StepLogsStorageContext(
-                logs_uri=logs_uri
+                logs_uri=logs_uri, artifact_store=self._stack.artifact_store
             )  # type: ignore[assignment]
 
             logs_model = LogsRequest(
@@ -187,61 +179,60 @@ class StepLauncher:
                         pipeline_run_id=pipeline_run.id,
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
-                client = Client()
-                (
-                    docstring,
-                    source_code,
-                ) = self._get_step_docstring_and_source_code()
 
-                code_hash = self._deployment.step_configurations[
-                    self._step_name
-                ].config.caching_parameters.get(STEP_SOURCE_PARAMETER_NAME)
-                step_run = StepRunRequest(
-                    name=self._step_name,
-                    pipeline_run_id=pipeline_run.id,
-                    deployment=self._deployment.id,
-                    code_hash=code_hash,
-                    status=ExecutionStatus.RUNNING,
-                    docstring=docstring,
-                    source_code=source_code,
-                    start_time=datetime.utcnow(),
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
-                    logs=logs_model,
-                )
-                try:
-                    execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                pipeline_model_version, pipeline_run = (
+                    step_run_utils.prepare_pipeline_run_model_version(
+                        pipeline_run
                     )
+                )
+
+                request_factory = step_run_utils.StepRunRequestFactory(
+                    deployment=self._deployment,
+                    pipeline_run=pipeline_run,
+                    stack=self._stack,
+                )
+                step_run_request = request_factory.create_request(
+                    invocation_id=self._step_name
+                )
+                step_run_request.logs = logs_model
+
+                try:
+                    request_factory.populate_request(request=step_run_request)
                 except:
                     logger.exception(
-                        f"Failed preparing run step `{self._step_name}`."
+                        f"Failed preparing step `{self._step_name}`."
                     )
-                    step_run.status = ExecutionStatus.FAILED
-                    step_run.end_time = datetime.utcnow()
+                    step_run_request.status = ExecutionStatus.FAILED
+                    step_run_request.end_time = datetime.utcnow()
                     raise
                 finally:
-                    step_run_response = Client().zen_store.create_run_step(
-                        step_run
+                    step_run = Client().zen_store.create_run_step(
+                        step_run_request
                     )
 
-                logger.info(f"Step `{self._step_name}` has started.")
-                if execution_needed:
+                    step_model_version, step_run = (
+                        step_run_utils.prepare_step_run_model_version(
+                            step_run=step_run, pipeline_run=pipeline_run
+                        )
+                    )
+
+                if not step_run.status.is_finished:
+                    logger.info(f"Step `{self._step_name}` has started.")
                     retries = 0
                     last_retry = True
                     max_retries = (
-                        step_run_response.config.retry.max_retries
-                        if step_run_response.config.retry
+                        step_run.config.retry.max_retries
+                        if step_run.config.retry
                         else 1
                     )
                     delay = (
-                        step_run_response.config.retry.delay
-                        if step_run_response.config.retry
+                        step_run.config.retry.delay
+                        if step_run.config.retry
                         else 0
                     )
                     backoff = (
-                        step_run_response.config.retry.backoff
-                        if step_run_response.config.retry
+                        step_run.config.retry.backoff
+                        if step_run.config.retry
                         else 1
                     )
 
@@ -267,12 +258,9 @@ class StepLauncher:
                                 force_write_logs = _bypass
                             self._run_step(
                                 pipeline_run=pipeline_run,
-                                step_run=step_run_response,
+                                step_run=step_run,
                                 last_retry=last_retry,
                                 force_write_logs=force_write_logs,
-                            )
-                            logger.info(
-                                f"Step `{self._step_name}` completed successfully."
                             )
                             break
                         except BaseException as e:  # noqa: E722
@@ -293,36 +281,27 @@ class StepLauncher:
                                 )
                                 logger.exception(e)
                                 publish_utils.publish_failed_step_run(
-                                    step_run_response.id
+                                    step_run.id
                                 )
                                 raise
+                else:
+                    logger.info(
+                        f"Using cached version of step `{self._step_name}`."
+                    )
+                    if (
+                        model_version := step_model_version
+                        or pipeline_model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            output_configurations=step_run.config.outputs,
+                            model_version=model_version,
+                        )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
-
-    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
-        """Gets the docstring and source code of the step.
-
-        If any of the two is longer than 1000 characters, it will be truncated.
-
-        Returns:
-            The docstring and source code of the step.
-        """
-        from zenml.steps.base_step import BaseStep
-
-        step_instance = BaseStep.load_from_source(self._step.spec.source)
-
-        docstring = step_instance.docstring
-        if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
-            docstring = docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
-
-        source_code = step_instance.source_code
-        if source_code and len(source_code) > TEXT_FIELD_MAX_LENGTH:
-            source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
-
-        return docstring, source_code
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
@@ -354,84 +333,6 @@ class StepLauncher:
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
-
-    def _prepare(
-        self,
-        step_run: StepRunRequest,
-    ) -> Tuple[bool, StepRunRequest]:
-        """Prepares running the step.
-
-        Args:
-            step_run: The step to run.
-
-        Returns:
-            Tuple that specifies whether the step needs to be executed as
-            well as the response model of the registered step run.
-        """
-        model = (
-            self._deployment.step_configurations[step_run.name].config.model
-            or self._deployment.pipeline_configuration.model
-        )
-        input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
-            step=self._step,
-            run_id=step_run.pipeline_run_id,
-        )
-        input_artifact_ids = {
-            input_name: artifact.id
-            for input_name, artifact in input_artifacts.items()
-        }
-
-        cache_key = cache_utils.generate_cache_key(
-            step=self._step,
-            input_artifact_ids=input_artifact_ids,
-            artifact_store=self._stack.artifact_store,
-            workspace_id=Client().active_workspace.id,
-        )
-
-        step_run.inputs = input_artifact_ids
-        step_run.parent_step_ids = parent_step_ids
-        step_run.cache_key = cache_key
-
-        cache_enabled = orchestrator_utils.is_setting_enabled(
-            is_enabled_on_step=self._step.config.enable_cache,
-            is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_cache,
-        )
-
-        step_cache = self._step.config.enable_cache
-        if step_cache is not None:
-            logger.info(
-                f"Caching {'`enabled`' if step_cache else '`disabled`'} "
-                f"explicitly for `{self._step_name}`."
-            )
-
-        execution_needed = True
-        if cache_enabled:
-            cached_step_run = cache_utils.get_cached_step_run(
-                cache_key=cache_key
-            )
-            if cached_step_run:
-                logger.info(f"Using cached version of `{self._step_name}`.")
-                execution_needed = False
-                cached_outputs = cached_step_run.outputs
-                step_run.original_step_run_id = cached_step_run.id
-                step_run.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_outputs.items()
-                }
-                orchestrator_utils._link_cached_artifacts_to_model(
-                    model_from_context=model,
-                    step_run=step_run,
-                    step_source=self._step.spec.source,
-                )
-                if self._step.config.model:
-                    orchestrator_utils._link_pipeline_run_to_model_from_context(
-                        pipeline_run_id=step_run.pipeline_run_id,
-                        model=self._step.config.model,
-                    )
-                step_run.status = ExecutionStatus.CACHED
-                step_run.end_time = step_run.start_time
-
-        return execution_needed, step_run
 
     def _run_step(
         self,

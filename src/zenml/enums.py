@@ -200,9 +200,6 @@ class ServerProviderType(StrEnum):
 
     LOCAL = "local"
     DOCKER = "docker"
-    AWS = "aws"
-    GCP = "gcp"
-    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):
@@ -244,6 +241,7 @@ class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
     EQUALS = "equals"
+    NOT_EQUALS = "notequals"
     CONTAINS = "contains"
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
@@ -251,6 +249,7 @@ class GenericFilterOps(StrEnum):
     GT = "gt"
     LTE = "lte"
     LT = "lt"
+    IN = "in"
 
 
 class SorterOps(StrEnum):
@@ -303,6 +302,8 @@ class EnvironmentType(StrEnum):
     PAPERSPACE = "paperspace"
     WSL = "wsl"
     LIGHTNING_AI_STUDIO = "lightning_ai_studio"
+    GITHUB_CODESPACES = "github_codespaces"
+    VSCODE_REMOTE_CONTAINER = "vscode_remote_container"
 
 
 class ModelStages(StrEnum):

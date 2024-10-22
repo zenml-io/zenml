@@ -29,7 +29,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -40,7 +39,6 @@ from zenml.constants import (
     INFO,
     VERSION_1,
 )
-from zenml.enums import ServerProviderType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
@@ -68,7 +66,6 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional[secure.Secure] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -224,104 +221,6 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> secure.Secure:
-    """Return the secure headers component.
-
-    Returns:
-        The secure headers component.
-
-    Raises:
-        RuntimeError: If the secure headers component is not initialized.
-    """
-    global _secure_headers
-    if _secure_headers is None:
-        raise RuntimeError("Secure headers component not initialized")
-    return _secure_headers
-
-
-def initialize_secure_headers() -> None:
-    """Initialize the secure headers component."""
-    global _secure_headers
-
-    config = server_config()
-
-    # For each of the secure headers supported by the `secure` library, we
-    # check if the corresponding configuration is set in the server
-    # configuration:
-    #
-    # - if set to `True`, we use the default value for the header
-    # - if set to a string, we use the string as the value for the header
-    # - if set to `False`, we don't set the header
-
-    server: Optional[secure.Server] = None
-    if config.secure_headers_server:
-        server = secure.Server()
-        if isinstance(config.secure_headers_server, str):
-            server.set(config.secure_headers_server)
-        else:
-            server.set(str(config.deployment_id))
-
-    hsts: Optional[secure.StrictTransportSecurity] = None
-    if config.secure_headers_hsts:
-        hsts = secure.StrictTransportSecurity()
-        if isinstance(config.secure_headers_hsts, str):
-            hsts.set(config.secure_headers_hsts)
-
-    xfo: Optional[secure.XFrameOptions] = None
-    if config.secure_headers_xfo:
-        xfo = secure.XFrameOptions()
-        if isinstance(config.secure_headers_xfo, str):
-            xfo.set(config.secure_headers_xfo)
-
-    xxp: Optional[secure.XXSSProtection] = None
-    if config.secure_headers_xxp:
-        xxp = secure.XXSSProtection()
-        if isinstance(config.secure_headers_xxp, str):
-            xxp.set(config.secure_headers_xxp)
-
-    csp: Optional[secure.ContentSecurityPolicy] = None
-    if config.secure_headers_csp:
-        csp = secure.ContentSecurityPolicy()
-        if isinstance(config.secure_headers_csp, str):
-            csp.set(config.secure_headers_csp)
-
-    content: Optional[secure.XContentTypeOptions] = None
-    if config.secure_headers_content:
-        content = secure.XContentTypeOptions()
-        if isinstance(config.secure_headers_content, str):
-            content.set(config.secure_headers_content)
-
-    referrer: Optional[secure.ReferrerPolicy] = None
-    if config.secure_headers_referrer:
-        referrer = secure.ReferrerPolicy()
-        if isinstance(config.secure_headers_referrer, str):
-            referrer.set(config.secure_headers_referrer)
-
-    cache: Optional[secure.CacheControl] = None
-    if config.secure_headers_cache:
-        cache = secure.CacheControl()
-        if isinstance(config.secure_headers_cache, str):
-            cache.set(config.secure_headers_cache)
-
-    permissions: Optional[secure.PermissionsPolicy] = None
-    if config.secure_headers_permissions:
-        permissions = secure.PermissionsPolicy()
-        if isinstance(config.secure_headers_permissions, str):
-            permissions.value = config.secure_headers_permissions
-
-    _secure_headers = secure.Secure(
-        server=server,
-        hsts=hsts,
-        xfo=xfo,
-        xxp=xxp,
-        csp=csp,
-        content=content,
-        referrer=referrer,
-        cache=cache,
-        permissions=permissions,
-    )
-
-
 _server_config: Optional[ServerConfiguration] = None
 
 
@@ -337,45 +236,23 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
+def get_local_server() -> Optional["ServerDeployment"]:
+    """Get the active local server.
 
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
+    Call this function to retrieve the local server deployed on this machine.
 
     Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
+        The local server deployment or None, if no local server deployment was
+        found.
     """
     from zenml.zen_server.deploy.deployer import ServerDeployer
 
     deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
+    servers = deployer.list_servers()
     if not servers:
         return None
 
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
-
-    return None
+    return servers[0]
 
 
 def get_active_server_details() -> Tuple[str, Optional[int]]:
@@ -384,8 +261,7 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     When multiple servers are present, the following precedence is used to
     determine which server to use:
     - If the client is connected to a server, that server has precedence.
-    - If no server is connected, a server that was deployed remotely has
-        precedence over a server that was deployed locally.
+    - If no server is connected, the local server is used, if present.
 
     Returns:
         The URL and port of the currently active server.
@@ -399,14 +275,8 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
         logger.debug("Getting URL of connected server.")
         parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
-    # Else, check for deployed servers
-    server = get_active_deployment(local=False)
-    if server:
-        logger.debug("Getting URL of remote server.")
-    else:
-        server = get_active_deployment(local=True)
-        logger.debug("Getting URL of local server.")
-
+    # Else, check for local servers
+    server = get_local_server()
     if server and server.status and server.status.url:
         if isinstance(server.config, LocalServerDeploymentConfig):
             return server.status.url, server.config.port

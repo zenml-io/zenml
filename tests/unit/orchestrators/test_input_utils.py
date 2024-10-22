@@ -18,7 +18,7 @@ import pytest
 
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models import Page
+from zenml.models import Page, PipelineRunResponse
 from zenml.orchestrators import input_utils
 
 
@@ -55,7 +55,7 @@ def test_input_resolution(
     )
 
     input_artifacts, parent_ids = input_utils.resolve_step_inputs(
-        step=step, run_id=uuid4()
+        step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
     )
     assert input_artifacts == {"input_name": sample_artifact_version_model}
     assert parent_ids == [step_run.id]
@@ -86,7 +86,9 @@ def test_input_resolution_with_missing_step_run(mocker):
     )
 
     with pytest.raises(InputResolutionError):
-        input_utils.resolve_step_inputs(step=step, run_id=uuid4())
+        input_utils.resolve_step_inputs(
+            step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+        )
 
 
 def test_input_resolution_with_missing_artifact(mocker, create_step_run):
@@ -119,7 +121,9 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
     )
 
     with pytest.raises(InputResolutionError):
-        input_utils.resolve_step_inputs(step=step, run_id=uuid4())
+        input_utils.resolve_step_inputs(
+            step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+        )
 
 
 def test_input_resolution_fetches_all_run_steps(
@@ -163,7 +167,9 @@ def test_input_resolution_fetches_all_run_steps(
         }
     )
 
-    input_utils.resolve_step_inputs(step=step, run_id=uuid4())
+    input_utils.resolve_step_inputs(
+        step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+    )
 
     # `resolve_step_inputs(...)` depaginates the run steps so we fetch all
     # step runs for the pipeline run

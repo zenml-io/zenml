@@ -108,18 +108,18 @@ settings:
   ...
 
   # Adapt this to vm_gcp accordingly
-  orchestrator.vm_aws:
+  orchestrator:
     memory: 32 # in GB
         
 ...    
 steps:
   model_trainer:
     settings:
-      orchestrator.vm_aws:
+      orchestrator:
         cpus: 8
 ```
 
-Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` if you are using the GCP variant of skypilot.
+Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK.
 
 <details>
 

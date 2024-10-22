@@ -69,16 +69,6 @@ If one or more of the deployments are not in the `Running` state, try increasing
 ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with previous versions.
 {% endhint %}
 
-#### Infrastructure Deployment
-
-A Tekton orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy tekton_orchestrator --flavor=tekton --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
-
 ### How to use it
 
 To use the Tekton orchestrator, we need:
@@ -105,12 +95,11 @@ We can then register the orchestrator and use it in our active stack. This can b
 
     ```
     $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor tekton
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered orchestrator `<ORCHESTRATOR_NAME>`.
 
     $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    The following 'kubernetes-cluster' resources can be accessed by service connectors that you have configured:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
     ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
     ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
@@ -123,7 +112,6 @@ We can then register the orchestrator and use it in our active stack. This can b
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
 
     $ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-iam-multi-us
-    Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resources:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
@@ -219,7 +207,7 @@ These settings can then be specified on either pipeline-level or step-level:
 # Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.tekton": tekton_settings,
+        "orchestrator": tekton_settings,
         "resources": resource_settings,
     }
 )
@@ -229,7 +217,7 @@ def my_pipeline():
 # OR specify settings on step-level
 @step(
     settings={
-        "orchestrator.tekton": tekton_settings,
+        "orchestrator": tekton_settings,
         "resources": resource_settings,
     }
 )

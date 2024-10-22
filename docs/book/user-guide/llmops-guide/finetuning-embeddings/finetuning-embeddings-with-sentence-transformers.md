@@ -16,7 +16,7 @@ following:
 - finetune our model using the [Sentence
   Transformers](https://www.sbert.net/) library
 - evaluate the base and finetuned embeddings
-- visualise the results of the evaluation
+- visualize the results of the evaluation
 
 ![Embeddings finetuning pipeline with Sentence Transformers and
 ZenML](../../../.gitbook/assets/rag-finetuning-embeddings-pipeline.png)
@@ -94,7 +94,7 @@ The finetuning process leverages the capabilities of the Sentence Transformers l
 Our model is finetuned, saved in the Hugging Face Hub for easy access and
 reference in subsequent steps, but also versioned and tracked within ZenML for
 full observability. At this point the pipeline will evaluate the base and
-finetuned embeddings and visualise the results.
+finetuned embeddings and visualize the results.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

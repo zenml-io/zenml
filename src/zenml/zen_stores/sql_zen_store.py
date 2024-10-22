@@ -177,7 +177,6 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
-    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -283,7 +282,6 @@ from zenml.models import (
     WorkspaceUpdate,
 )
 from zenml.models.v2.core.component import InternalComponentRequest
-from zenml.models.v2.core.stack import InternalStackRequest
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -976,6 +974,7 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
+        query = query.distinct()
 
         # Get the total amount of items in the database for a given query
         custom_fetch_result: Optional[Sequence[Any]] = None
@@ -3193,6 +3192,22 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # We have to skip the validation of the default components
+            # as it creates a loop of initialization.
+            if component.name != "default" or (
+                component.type != StackComponentType.ORCHESTRATOR
+                and component.type != StackComponentType.ARTIFACT_STORE
+            ):
+                from zenml.stack.utils import validate_stack_component_config
+
+                validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor_name=component.flavor,
+                    component_type=component.type,
+                    zen_store=self,
+                    validate_custom_flavors=False,
+                )
+
             service_connector: Optional[ServiceConnectorSchema] = None
             if component.connector:
                 service_connector = session.exec(
@@ -3223,10 +3238,12 @@ class SqlZenStore(BaseZenStore):
                     not in skypilot_regions
                 ):
                     logger.warning(
-                        f"Region `{component.configuration['region']}` is not enabled in Skypilot "
-                        f"by default. Supported regions by default are: {skypilot_regions}. "
-                        "Check the Skypilot documentation to learn how to enable regions rather "
-                        "than default ones. (If you have already extended your configuration - "
+                        f"Region `{component.configuration['region']}` is "
+                        "not enabled in Skypilot by default. Supported regions "
+                        f"by default are: {skypilot_regions}. Check the "
+                        "Skypilot documentation to learn how to enable "
+                        "regions rather than default ones. (If you have "
+                        "already extended your configuration - "
                         "simply ignore this warning)"
                     )
 
@@ -3343,6 +3360,17 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update component with id "
                     f"'{component_id}': Found no"
                     f"existing component with this id."
+                )
+
+            if component_update.configuration is not None:
+                from zenml.stack.utils import validate_stack_component_config
+
+                validate_stack_component_config(
+                    configuration_dict=component_update.configuration,
+                    flavor_name=existing_component.flavor,
+                    component_type=StackComponentType(existing_component.type),
+                    zen_store=self,
+                    validate_custom_flavors=False,
                 )
 
             if (
@@ -4079,7 +4107,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
-        query = select(PipelineSchema)
+        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
+        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
 
         column, operand = pipeline_filter_model.sorting_params
         if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
@@ -4112,12 +4141,25 @@ class SqlZenStore(BaseZenStore):
                     sort_clause = asc
 
                 query = (
-                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    # We need to include the subquery in the select here to
+                    # make this query work with the distinct statement. This
+                    # result will be removed in the custom conversion function
+                    # applied later
+                    select(PipelineSchema, max_date_subquery.c.run_or_created)
+                    .where(PipelineSchema.id == max_date_subquery.c.id)
                     .order_by(sort_clause(max_date_subquery.c.run_or_created))
                     # We always add the `id` column as a tiebreaker to ensure a
                     # stable, repeatable order of items, otherwise subsequent
                     # pages might contain the same items.
                     .order_by(col(PipelineSchema.id))
+                )
+
+            def _custom_conversion(row: Any) -> PipelineResponse:
+                return cast(
+                    PipelineResponse,
+                    row[0].to_model(
+                        include_metadata=hydrate, include_resources=True
+                    ),
                 )
 
         with Session(self.engine) as session:
@@ -4127,6 +4169,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
@@ -4937,7 +4980,7 @@ class SqlZenStore(BaseZenStore):
                 # orchestrator_run_id.
                 # Note: This only locks a single row if the where clause of
                 # the query is indexed (we have a unique index due to the
-                # unique constraint on those columns). Otherwise this will lock
+                # unique constraint on those columns). Otherwise, this will lock
                 # multiple rows or even the complete table which we want to
                 # avoid.
                 .with_for_update()
@@ -7194,74 +7237,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequest) -> StackResponse:
-        """Register a new stack.
-
-        Args:
-            stack: The stack to register.
-
-        Returns:
-            The registered stack.
-        """
-        validate_name(stack)
-        with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(
-                stack_name=stack.name,
-                workspace_id=stack.workspace,
-                session=session,
-            )
-
-            # Get the Schemas of all components mentioned
-            component_ids = (
-                [
-                    component_id
-                    for list_of_component_ids in stack.components.values()
-                    for component_id in list_of_component_ids
-                ]
-                if stack.components is not None
-                else []
-            )
-            filters = [
-                (StackComponentSchema.id == component_id)
-                for component_id in component_ids
-            ]
-
-            defined_components = session.exec(
-                select(StackComponentSchema).where(or_(*filters))
-            ).all()
-
-            new_stack_schema = StackSchema(
-                workspace_id=stack.workspace,
-                user_id=stack.user,
-                stack_spec_path=stack.stack_spec_path,
-                name=stack.name,
-                description=stack.description,
-                components=defined_components,
-                labels=base64.b64encode(
-                    json.dumps(stack.labels).encode("utf-8")
-                ),
-            )
-
-            session.add(new_stack_schema)
-            session.commit()
-            session.refresh(new_stack_schema)
-
-            for component in defined_components:
-                if component.type == StackComponentType.ORCHESTRATOR:
-                    if component.flavor not in {"local", "local_docker"}:
-                        self._update_onboarding_state(
-                            completed_steps={
-                                OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
-                            },
-                            session=session,
-                        )
-
-            return new_stack_schema.to_model(include_metadata=True)
-
-    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
         """Register a full stack.
 
         Args:
-            full_stack: The full stack configuration.
+            stack: The full stack configuration.
 
         Returns:
             The registered stack.
@@ -7269,254 +7248,304 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If the full stack creation fails, due to the corrupted
                 input.
-            RuntimeError: If the full stack creation fails, due to unforeseen
+            Exception: If the full stack creation fails, due to unforeseen
                 errors.
         """
-        # For clean-up purposes, each created entity is tracked here
-        service_connectors_created_ids: List[UUID] = []
-        components_created_ids: List[UUID] = []
+        with Session(self.engine) as session:
+            # For clean-up purposes, each created entity is tracked here
+            service_connectors_created_ids: List[UUID] = []
+            components_created_ids: List[UUID] = []
 
-        try:
-            # Validate the name of the new stack
-            validate_name(full_stack)
+            try:
+                # Validate the name of the new stack
+                validate_name(stack)
 
-            if full_stack.labels is None:
-                full_stack.labels = {}
+                if stack.labels is None:
+                    stack.labels = {}
 
-            full_stack.labels.update({"zenml:full_stack": True})
+                # Service Connectors
+                service_connectors: List[ServiceConnectorResponse] = []
 
-            # Service Connectors
-            service_connectors: List[ServiceConnectorResponse] = []
+                orchestrator_components = stack.components[
+                    StackComponentType.ORCHESTRATOR
+                ]
+                for orchestrator_component in orchestrator_components:
+                    if isinstance(orchestrator_component, UUID):
+                        orchestrator = self.get_stack_component(
+                            orchestrator_component,
+                            hydrate=False,
+                        )
+                        need_to_generate_permanent_tokens = (
+                            orchestrator.flavor.startswith("vm_")
+                        )
+                    else:
+                        need_to_generate_permanent_tokens = (
+                            orchestrator_component.flavor.startswith("vm_")
+                        )
 
-            need_to_generate_permanent_tokens = False
-            orchestrator_component = full_stack.components[
-                StackComponentType.ORCHESTRATOR
-            ]
-            if isinstance(orchestrator_component, UUID):
-                orchestrator = self.get_stack_component(
-                    orchestrator_component,
-                    hydrate=False,
-                )
-                need_to_generate_permanent_tokens = (
-                    orchestrator.flavor.startswith("vm_")
-                )
-            else:
-                need_to_generate_permanent_tokens = (
-                    orchestrator_component.flavor.startswith("vm_")
-                )
+                for connector_id_or_info in stack.service_connectors:
+                    # Fetch an existing service connector
+                    if isinstance(connector_id_or_info, UUID):
+                        existing_service_connector = (
+                            self.get_service_connector(connector_id_or_info)
+                        )
+                        if need_to_generate_permanent_tokens:
+                            if (
+                                existing_service_connector.configuration.get(
+                                    "generate_temporary_tokens", None
+                                )
+                                is not False
+                            ):
+                                connector_config = (
+                                    existing_service_connector.configuration
+                                )
+                                connector_config[
+                                    "generate_temporary_tokens"
+                                ] = False
+                                self.update_service_connector(
+                                    existing_service_connector.id,
+                                    ServiceConnectorUpdate(
+                                        configuration=connector_config
+                                    ),
+                                )
+                        service_connectors.append(
+                            self.get_service_connector(connector_id_or_info)
+                        )
+                    # Create a new service connector
+                    else:
+                        connector_name = stack.name
+                        connector_config = connector_id_or_info.configuration
+                        connector_config[
+                            "generate_temporary_tokens"
+                        ] = not need_to_generate_permanent_tokens
 
-            for connector_id_or_info in full_stack.service_connectors:
-                # Fetch an existing service connector
-                if isinstance(connector_id_or_info, UUID):
-                    existing_service_connector = self.get_service_connector(
-                        connector_id_or_info
-                    )
-                    if need_to_generate_permanent_tokens:
-                        if (
-                            existing_service_connector.configuration.get(
-                                "generate_temporary_tokens", None
-                            )
-                            is not False
-                        ):
-                            connector_config = (
-                                existing_service_connector.configuration
-                            )
-                            connector_config["generate_temporary_tokens"] = (
-                                False
-                            )
-                            self.update_service_connector(
-                                existing_service_connector.id,
-                                ServiceConnectorUpdate(
-                                    configuration=connector_config
-                                ),
-                            )
-                    service_connectors.append(
-                        self.get_service_connector(connector_id_or_info)
-                    )
-                # Create a new service connector
-                else:
-                    connector_name = full_stack.name
-                    connector_config = connector_id_or_info.configuration
-                    connector_config[
-                        "generate_temporary_tokens"
-                    ] = not need_to_generate_permanent_tokens
-
-                    while True:
-                        try:
-                            service_connector_request = ServiceConnectorRequest(
-                                name=connector_name,
-                                connector_type=connector_id_or_info.type,
-                                auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_config,
-                                user=full_stack.user,
-                                workspace=full_stack.workspace,
-                                labels={
-                                    k: str(v)
-                                    for k, v in full_stack.labels.items()
-                                },
-                            )
-                            service_connector_response = (
-                                self.create_service_connector(
+                        while True:
+                            try:
+                                service_connector_request = ServiceConnectorRequest(
+                                    name=connector_name,
+                                    connector_type=connector_id_or_info.type,
+                                    auth_method=connector_id_or_info.auth_method,
+                                    configuration=connector_config,
+                                    user=stack.user,
+                                    workspace=stack.workspace,
+                                    labels={
+                                        k: str(v)
+                                        for k, v in stack.labels.items()
+                                    },
+                                )
+                                service_connector_response = self.create_service_connector(
                                     service_connector=service_connector_request
                                 )
-                            )
-                            service_connectors.append(
-                                service_connector_response
-                            )
-                            service_connectors_created_ids.append(
-                                service_connector_response.id
-                            )
-                            break
-                        except EntityExistsError:
-                            connector_name = (
-                                f"{full_stack.name}-{random_str(4)}".lower()
-                            )
-                            continue
+                                service_connectors.append(
+                                    service_connector_response
+                                )
+                                service_connectors_created_ids.append(
+                                    service_connector_response.id
+                                )
+                                break
+                            except EntityExistsError:
+                                connector_name = (
+                                    f"{stack.name}-{random_str(4)}".lower()
+                                )
+                                continue
 
-            # Stack Components
-            components_mapping: Dict[StackComponentType, List[UUID]] = {}
-            for (
-                component_type,
-                component_info,
-            ) in full_stack.components.items():
-                # Fetch an existing component
-                if isinstance(component_info, UUID):
-                    component = self.get_stack_component(
-                        component_id=component_info
-                    )
-                # Create a new component
-                else:
-                    flavor_list = self.list_flavors(
-                        flavor_filter_model=FlavorFilter(
-                            name=component_info.flavor,
-                            type=component_type,
-                        )
-                    )
-                    if not len(flavor_list):
-                        raise ValueError(
-                            f"Flavor '{component_info.flavor}' not found "
-                            f"for component type '{component_type}'."
-                        )
-
-                    flavor_model = flavor_list[0]
-
-                    component_name = full_stack.name
-                    while True:
-                        try:
-                            component_request = ComponentRequest(
-                                name=component_name,
-                                type=component_type,
-                                flavor=component_info.flavor,
-                                configuration=component_info.configuration,
-                                user=full_stack.user,
-                                workspace=full_stack.workspace,
-                                labels=full_stack.labels,
+                # Stack Components
+                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                for (
+                    component_type,
+                    components,
+                ) in stack.components.items():
+                    for component_info in components:
+                        # Fetch an existing component
+                        if isinstance(component_info, UUID):
+                            component = self.get_stack_component(
+                                component_id=component_info
                             )
-                            component = self.create_stack_component(
-                                component=component_request
+                        # Create a new component
+                        else:
+                            flavor_list = self.list_flavors(
+                                flavor_filter_model=FlavorFilter(
+                                    name=component_info.flavor,
+                                    type=component_type,
+                                )
                             )
-                            components_created_ids.append(component.id)
-                            break
-                        except EntityExistsError:
-                            component_name = (
-                                f"{full_stack.name}-{random_str(4)}".lower()
-                            )
-                            continue
+                            if not len(flavor_list):
+                                raise ValueError(
+                                    f"Flavor '{component_info.flavor}' not found "
+                                    f"for component type '{component_type}'."
+                                )
 
-                    if component_info.service_connector_index is not None:
-                        service_connector = service_connectors[
-                            component_info.service_connector_index
+                            flavor_model = flavor_list[0]
+
+                            component_name = stack.name
+                            while True:
+                                try:
+                                    component_request = ComponentRequest(
+                                        name=component_name,
+                                        type=component_type,
+                                        flavor=component_info.flavor,
+                                        configuration=component_info.configuration,
+                                        user=stack.user,
+                                        workspace=stack.workspace,
+                                        labels=stack.labels,
+                                    )
+                                    component = self.create_stack_component(
+                                        component=component_request
+                                    )
+                                    components_created_ids.append(component.id)
+                                    break
+                                except EntityExistsError:
+                                    component_name = (
+                                        f"{stack.name}-{random_str(4)}".lower()
+                                    )
+                                    continue
+
+                            if (
+                                component_info.service_connector_index
+                                is not None
+                            ):
+                                service_connector = service_connectors[
+                                    component_info.service_connector_index
+                                ]
+
+                                requirements = (
+                                    flavor_model.connector_requirements
+                                )
+
+                                if not requirements:
+                                    raise ValueError(
+                                        f"The '{flavor_model.name}' implementation "
+                                        "does not support using a service "
+                                        "connector to connect to resources."
+                                    )
+
+                                if component_info.service_connector_resource_id:
+                                    resource_id = component_info.service_connector_resource_id
+                                else:
+                                    resource_id = None
+                                    resource_type = requirements.resource_type
+                                    if (
+                                        requirements.resource_id_attr
+                                        is not None
+                                    ):
+                                        resource_id = (
+                                            component_info.configuration.get(
+                                                requirements.resource_id_attr
+                                            )
+                                        )
+
+                                satisfied, msg = requirements.is_satisfied_by(
+                                    connector=service_connector,
+                                    component=component,
+                                )
+
+                                if not satisfied:
+                                    raise ValueError(
+                                        "Please pick a connector that is "
+                                        "compatible with the component flavor and "
+                                        "try again.."
+                                    )
+
+                                if not resource_id:
+                                    if service_connector.resource_id:
+                                        resource_id = (
+                                            service_connector.resource_id
+                                        )
+                                    elif service_connector.supports_instances:
+                                        raise ValueError(
+                                            f"Multiple {resource_type} resources "
+                                            "are available for the selected "
+                                            "connector. Please use a `resource_id` "
+                                            "to configure a "
+                                            f"{resource_type} resource."
+                                        )
+
+                                component_update = ComponentUpdate(
+                                    connector=service_connector.id,
+                                    connector_resource_id=resource_id,
+                                )
+                                self.update_stack_component(
+                                    component_id=component.id,
+                                    component_update=component_update,
+                                )
+
+                        components_mapping[component_type] = [
+                            component.id,
                         ]
 
-                        requirements = flavor_model.connector_requirements
+                # Stack
+                assert stack.workspace is not None
 
-                        if not requirements:
-                            raise ValueError(
-                                f"The '{flavor_model.name}' implementation "
-                                "does not support using a service connector to "
-                                "connect to resources."
-                            )
+                self._fail_if_stack_with_name_exists(
+                    stack_name=stack.name,
+                    workspace_id=stack.workspace,
+                    session=session,
+                )
 
-                        if component_info.service_connector_resource_id:
-                            resource_id = (
-                                component_info.service_connector_resource_id
-                            )
-                        else:
-                            resource_id = None
-                            resource_type = requirements.resource_type
-                            if requirements.resource_id_attr is not None:
-                                resource_id = component_info.configuration.get(
-                                    requirements.resource_id_attr
-                                )
-
-                        satisfied, msg = requirements.is_satisfied_by(
-                            connector=service_connector,
-                            component=component,
-                        )
-
-                        if not satisfied:
-                            raise ValueError(
-                                "Please pick a connector that is "
-                                "compatible with the component flavor and "
-                                "try again.."
-                            )
-
-                        if not resource_id:
-                            if service_connector.resource_id:
-                                resource_id = service_connector.resource_id
-                            elif service_connector.supports_instances:
-                                raise ValueError(
-                                    f"Multiple {resource_type} resources "
-                                    "are available for the selected "
-                                    "connector. Please use a `resource_id` "
-                                    "to configure a "
-                                    f"{resource_type} resource."
-                                )
-
-                        component_update = ComponentUpdate(
-                            connector=service_connector.id,
-                            connector_resource_id=resource_id,
-                        )
-                        self.update_stack_component(
-                            component_id=component.id,
-                            component_update=component_update,
-                        )
-
-                components_mapping[component_type] = [
-                    component.id,
+                component_ids = (
+                    [
+                        component_id
+                        for list_of_component_ids in components_mapping.values()
+                        for component_id in list_of_component_ids
+                    ]
+                    if stack.components is not None
+                    else []
+                )
+                filters = [
+                    (StackComponentSchema.id == component_id)
+                    for component_id in component_ids
                 ]
 
-            # Stack
-            stack_name = full_stack.name
-            while True:
-                try:
-                    stack_request = StackRequest(
-                        user=full_stack.user,
-                        workspace=full_stack.workspace,
-                        name=stack_name,
-                        description=full_stack.description,
-                        components=components_mapping,
-                        labels=full_stack.labels,
-                    )
-                    stack_response = self.create_stack(stack_request)
+                defined_components = session.exec(
+                    select(StackComponentSchema).where(or_(*filters))
+                ).all()
 
-                    break
-                except EntityExistsError:
-                    stack_name = f"{full_stack.name}-{random_str(4)}".lower()
-
-            return stack_response
-
-        except Exception as e:
-            for component_id in components_created_ids:
-                self.delete_stack_component(component_id=component_id)
-            for service_connector_id in service_connectors_created_ids:
-                self.delete_service_connector(
-                    service_connector_id=service_connector_id
+                new_stack_schema = StackSchema(
+                    workspace_id=stack.workspace,
+                    user_id=stack.user,
+                    stack_spec_path=stack.stack_spec_path,
+                    name=stack.name,
+                    description=stack.description,
+                    components=defined_components,
+                    labels=base64.b64encode(
+                        json.dumps(stack.labels).encode("utf-8")
+                    ),
                 )
-            raise RuntimeError(
-                f"Full Stack creation has failed {e}. Cleaning up the "
-                f"created entities."
-            ) from e
+
+                session.add(new_stack_schema)
+                session.commit()
+                session.refresh(new_stack_schema)
+
+                for defined_component in defined_components:
+                    if (
+                        defined_component.type
+                        == StackComponentType.ORCHESTRATOR
+                    ):
+                        if defined_component.flavor not in {
+                            "local",
+                            "local_docker",
+                        }:
+                            self._update_onboarding_state(
+                                completed_steps={
+                                    OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                                },
+                                session=session,
+                            )
+
+                return new_stack_schema.to_model(include_metadata=True)
+
+            except Exception:
+                for component_id in components_created_ids:
+                    self.delete_stack_component(component_id=component_id)
+                for service_connector_id in service_connectors_created_ids:
+                    self.delete_service_connector(
+                        service_connector_id=service_connector_id
+                    )
+                logger.error(
+                    "Stack creation has failed. Cleaned up the entities "
+                    "that are created in the process."
+                )
+                raise
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -7731,7 +7760,6 @@ class SqlZenStore(BaseZenStore):
             logger.info(
                 f"Creating default stack in workspace {workspace.name}..."
             )
-
             orchestrator = self.create_stack_component(
                 component=InternalComponentRequest(
                     # Passing `None` for the user here means the orchestrator
@@ -7764,9 +7792,7 @@ class SqlZenStore(BaseZenStore):
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
 
-            stack = InternalStackRequest(
-                # Passing `None` for the user here means the stack is owned by
-                # the server, which for RBAC indicates that everyone can read it
+            stack = StackRequest(
                 user=None,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
@@ -8081,7 +8107,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model(include_metadata=True)
+            return existing_step_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     @staticmethod
     def _set_run_step_parent_step(
@@ -8291,6 +8319,14 @@ class SqlZenStore(BaseZenStore):
             ],
             num_steps=num_steps,
         )
+
+        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
+            # If the pipeline run is a placeholder run, no step has been started
+            # for the run yet. This means the orchestrator hasn't started
+            # running yet, and this method is most likely being called as
+            # part of the creation of some cached steps. In this case, we don't
+            # update the status unless the run is finished.
+            return
 
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
@@ -8736,6 +8772,10 @@ class SqlZenStore(BaseZenStore):
                 # For Python versions <3.9, leave out the third parameter to
                 # _evaluate
                 target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            elif sys.version_info >= (3, 12, 4):
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, recursive_guard=frozenset()
+                )
             else:
                 target_schema = schema_ref._evaluate(
                     vars(zenml_schemas), {}, frozenset()
@@ -9165,7 +9205,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_activate or config.use_legacy_dashboard:
+            if config.auto_activate:
                 return True
 
         else:

@@ -14,6 +14,7 @@
 """Implementation of the MLflow deployment functionality."""
 
 import os
+import sys
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
@@ -21,6 +22,7 @@ import pandas as pd
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
+from pydantic import field_validator
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -109,6 +111,30 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+
+    @field_validator("mlserver")
+    @classmethod
+    def validate_mlserver_python_version(cls, mlserver: bool) -> bool:
+        """Validates the Python version if mlserver is used.
+
+        Args:
+            mlserver: set to True if the MLflow MLServer backend is used,
+                else set to False and MLflow built-in scoring server will be
+                used.
+
+        Returns:
+            the validated value
+
+        Raises:
+            ValueError: if mlserver is set to true on Python 3.12 as it is not
+                yet supported.
+        """
+        if mlserver is True and sys.version_info.minor >= 12:
+            raise ValueError(
+                "The mlserver deployment is not yet supported on Python 3.12 "
+                "or above."
+            )
+        return mlserver
 
 
 class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
@@ -199,7 +225,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             # to run the deploy the model on the local running environment
             if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
-            backend = PyFuncBackend(
+            backend = PyFuncBackend(  # type: ignore[no-untyped-call]
                 config={},
                 no_conda=True,
                 workers=self.config.workers,
@@ -214,7 +240,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                     "stack."
                 )
             experiment_tracker.configure_mlflow()
-            backend.serve(
+            backend.serve(  # type: ignore[no-untyped-call]
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",

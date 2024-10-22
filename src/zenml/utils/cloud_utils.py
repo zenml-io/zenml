@@ -20,21 +20,21 @@ from zenml.utils.dashboard_utils import get_model_version_url
 logger = get_logger(__name__)
 
 
-def is_cloud_model_version(model_version: ModelVersionResponse) -> bool:
-    """Check if a model version is from a ZenML Pro server.
+def try_get_model_version_url(model_version: ModelVersionResponse) -> str:
+    """Check if a model version is from a ZenML Pro server and return its' URL.
 
     Args:
         model_version: The model version to check.
 
     Returns:
-        True if the model version is from a ZenML Pro server, else False.
+        URL if the model version is from a ZenML Pro server, else empty string.
     """
     model_version_url = get_model_version_url(model_version.id)
     if model_version_url:
-        logger.info(
-            f"Dashboard URL for Model Version with name {model_version.name} "
-            f": {model_version_url}"
+        return (
+            "Dashboard URL for created Model Version "
+            f"`{model_version.model.name}::{model_version.name}`:\n"
+            + model_version_url
         )
-        return True
     else:
-        return False
+        return ""
