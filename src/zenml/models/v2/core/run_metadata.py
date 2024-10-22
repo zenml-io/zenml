@@ -16,13 +16,12 @@
 from typing import Dict, Optional
 from uuid import UUID
 
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
 )
 
 # ------------------ Request Model ------------------
