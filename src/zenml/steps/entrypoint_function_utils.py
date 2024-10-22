@@ -26,7 +26,7 @@ from typing import (
     Union,
 )
 
-from pydantic import ConfigDict, ValidationError, create_model
+from pydantic import ValidationError, create_model, ConfigDict
 
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
@@ -197,17 +197,23 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-        config_dict = ConfigDict(arbitrary_types_allowed=False)
+        annotation = parameter.annotation
 
-        # Create a pydantic model with just a single required field with the
-        # type annotation of the parameter to verify the input type including
-        # pydantics type coercion
-        validation_model_class = create_model(
-            "input_validation_model",
-            __config__=config_dict,
-            value=(parameter.annotation, ...),
-        )
-        validation_model_class(value=value)
+        # Use Pydantic for all types to take advantage of its coercion abilities
+        try:
+            config_dict = ConfigDict(arbitrary_types_allowed=True)
+            validation_model_class = create_model(
+                "input_validation_model",
+                __config__=type("Config", (), config_dict),
+                value=(annotation, ...),
+            )
+            validation_model_class(value=value)
+        except Exception:
+            # If Pydantic can't handle it, fall back to isinstance
+            if not isinstance(value, annotation):
+                raise TypeError(
+                    f"Expected {annotation}, but got {type(value)}"
+                )
 
 
 def validate_entrypoint_function(
