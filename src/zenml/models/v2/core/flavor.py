@@ -192,6 +192,10 @@ class FlavorResponseBody(UserScopedResponseBody):
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    source: str = Field(
+        title="The path to the module which contains this Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     logo_url: Optional[str] = Field(
         default=None,
         title="Optionally, a url pointing to a png,"
@@ -223,10 +227,6 @@ class FlavorResponseMetadata(UserScopedResponseMetadata):
         title="The name of an attribute in the stack component configuration "
         "that plays the role of resource ID when linked to a service "
         "connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    source: str = Field(
-        title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     docs_url: Optional[str] = Field(
@@ -320,6 +320,15 @@ class FlavorResponse(
         return self.get_body().integration
 
     @property
+    def source(self) -> str:
+        """The `source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().source
+
+    @property
     def logo_url(self) -> Optional[str]:
         """The `logo_url` property.
 
@@ -372,15 +381,6 @@ class FlavorResponse(
             the value of the property.
         """
         return self.get_metadata().connector_resource_id_attr
-
-    @property
-    def source(self) -> str:
-        """The `source` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().source
 
     @property
     def docs_url(self) -> Optional[str]:

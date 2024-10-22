@@ -127,9 +127,6 @@ class StepContext(metaclass=SingletonMetaClass):
             step_run.model_version or pipeline_run.model_version
         )
 
-        # Get the stack that we are running in
-        self._stack = Client().active_stack
-
         self.step_name = self.step_run.name
 
         # set outputs

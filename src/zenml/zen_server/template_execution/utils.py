@@ -248,7 +248,7 @@ def ensure_async_orchestrator(
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
-        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+        FlavorFilter(name=orchestrator.flavor_name, type=orchestrator.type)
     )
     flavor = Flavor.from_model(flavors[0])
 
@@ -307,7 +307,7 @@ def get_requirements_for_component(
         Tuple of PyPI and APT requirements of the component.
     """
     flavors = zen_store().list_flavors(
-        FlavorFilter(name=component.flavor, type=component.type)
+        FlavorFilter(name=component.flavor_name, type=component.type)
     )
     assert len(flavors) == 1
     flavor_source = flavors[0].source
@@ -512,7 +512,7 @@ def get_pipeline_run_analytics_metadata(
     own_stack = stack_creator and stack_creator.id == deployment.user.id
 
     stack_metadata = {
-        component_type.value: component_list[0].flavor
+        component_type.value: component_list[0].flavor_name
         for component_type, component_list in stack.components.items()
     }
 
