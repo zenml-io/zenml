@@ -54,6 +54,15 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return ArgillaAnnotatorSettings
 
+    def launch(self, **kwargs: Any) -> None:
+        """Launches the annotation interface.
+
+        Args:
+            **kwargs: Additional keyword arguments to pass to the
+                annotation client.
+        """
+        raise NotImplementedError
+
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
 
@@ -118,6 +127,23 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         dataset_id = self.get_dataset(dataset_name=dataset_name).id
         return f"{self.get_url()}/dataset/{dataset_id}/annotation-mode"
+
+    def get_dataset_names(self) -> List[str]:
+        """Gets the names of the datasets currently available for annotation.
+
+        Returns:
+            The names of the datasets currently available for annotation.
+        """
+        old_datasets = self._get_client().list_datasets()
+        new_datasets = rg.FeedbackDataset.list()
+
+        dataset_names = set()
+        for dataset in new_datasets + old_datasets:
+            if dataset.name not in dataset_names:
+                dataset_names.add(dataset.name)
+
+        return list(dataset_names)
+
 
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
