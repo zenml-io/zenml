@@ -16,7 +16,7 @@
 from typing import Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -47,36 +47,15 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     )
 
 
-class LazyRunMetadataResponse(BaseModel):
+class LazyRunMetadataResponse(dict):
     """Lazy run metadata response.
 
     Used if the run metadata is accessed from the model in
     a pipeline context available only during pipeline compilation.
     """
 
-    id: Optional[UUID] = None  # type: ignore[assignment]
     lazy_load_artifact_name: Optional[str] = None
     lazy_load_artifact_version: Optional[str] = None
     lazy_load_metadata_name: Optional[str] = None
     lazy_load_model_name: str
     lazy_load_model_version: Optional[str] = None
-
-    def get_body(self) -> None:
-        """Protects from misuse of the lazy loader.
-
-        Raises:
-            RuntimeError: always
-        """
-        raise RuntimeError(
-            "Cannot access run metadata body before pipeline runs."
-        )
-
-    def get_metadata(self) -> None:
-        """Protects from misuse of the lazy loader.
-
-        Raises:
-            RuntimeError: always
-        """
-        raise RuntimeError(
-            "Cannot access run metadata metadata before pipeline runs."
-        )
