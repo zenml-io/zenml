@@ -4545,16 +4545,14 @@ class RestZenStore(BaseZenStore):
     ) -> List[AnyResponse]:
         """Create a new batch of resources.
 
-        _extended_summary_
-
         Args:
-            resources: _description_
-            response_model: _description_
-            route: _description_
-            params: _description_. Defaults to None.
+            resources: The resources to create.
+            response_model: The response model of an individual resource.
+            route: The resource REST route to use.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
-            _description_
+            List of response models.
         """
         json_data = [
             resource.model_dump(mode="json") for resource in resources
@@ -4565,6 +4563,7 @@ class RestZenStore(BaseZenStore):
             json=json_data,
             params=params,
         )
+        assert isinstance(response, list)
 
         return [
             response_model.model_validate(model_data)

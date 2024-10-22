@@ -167,7 +167,7 @@ def _store_artifact_data_and_prepare_request(
 
         # Update with user metadata to potentially overwrite values coming from
         # the materializer
-        combined_metadata.update(metadata)
+        combined_metadata.update(metadata or {})
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
