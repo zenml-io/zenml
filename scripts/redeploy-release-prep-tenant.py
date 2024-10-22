@@ -66,16 +66,18 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
 
     data = {
         "zenml_service": {
-            "admin": {
-                "image_repository": "dockerhub/prepare-release",
-                "image_tag": f"server-{new_version}",
+            "configuration": {
+                "admin": {
+                    "image_repository": "zenmldocker/prepare-release",
+                    "image_tag": f"server-{new_version}",
+                },
             },
         },
     }
 
     response = requests.patch(url, json=data, headers=headers)
     if response.status_code != 200:
-        raise requests.HTTPError("There was a problem updating the token.")
+        raise requests.HTTPError("There was a problem updating the tenant.")
 
 
 def deactivate_tenant(token: str, tenant_id: str) -> None:
