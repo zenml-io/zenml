@@ -73,34 +73,14 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
                 },
             },
         },
+        "desired_state": "available",
     }
 
-    response = requests.patch(url, json=data, headers=headers)
+    response = requests.patch(
+        url, json=data, headers=headers, params={"force": True}
+    )
     if response.status_code != 200:
         raise requests.HTTPError("There was a problem updating the tenant.")
-
-
-def deactivate_tenant(token: str, tenant_id: str) -> None:
-    """Deactivate a specific tenant.
-
-    Args:
-        token: The access token for authentication.
-        tenant_id: The ID of the tenant to deactivate.
-
-    Raises:
-        requests.HTTPError: If the API request fails.
-    """
-    url = f"https://staging.cloudapi.zenml.io/tenants/{tenant_id}/deactivate"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "accept": "application/json",
-    }
-    response = requests.patch(url, headers=headers)
-
-    if response.status_code != 200:
-        raise requests.HTTPError(
-            "There was a problem deactivating the tenant."
-        )
 
 
 def get_tenant_status(token: str, tenant_id: str) -> str:
@@ -129,27 +109,6 @@ def get_tenant_status(token: str, tenant_id: str) -> str:
     return response.json()["status"]
 
 
-def redeploy_tenant(token: str, tenant_id: str) -> None:
-    """Redeploy a specific tenant.
-
-    Args:
-        token: The access token for authentication.
-        tenant_id: The ID of the tenant to redeploy.
-
-    Raises:
-        requests.HTTPError: If the API request fails.
-    """
-    url = f"https://staging.cloudapi.zenml.io/tenants/{tenant_id}/deploy"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "accept": "application/json",
-    }
-    response = requests.patch(url, headers=headers)
-
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem redeploying the tenant.")
-
-
 def main() -> None:
     """Main function to orchestrate the tenant management process.
 
@@ -165,6 +124,10 @@ def main() -> None:
         EnvironmentError: If required environment variables are missing.
         requests.HTTPError: If any API requests fail.
     """
+    # Constants
+    timeout = 600
+    sleep_period = 20
+
     # Get environment variables
     client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
     client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
@@ -178,45 +141,25 @@ def main() -> None:
     token = get_token(client_id, client_secret)
     print("Fetched the token.")
 
-    # Deactivate the tenant
-    status = get_tenant_status(token, tenant_id)
-    if status == "available":
-        deactivate_tenant(token, tenant_id)
-        print("Tenant deactivation initiated.")
-
-    # Wait until it's deactivated
-    time.sleep(10)
-
-    status = get_tenant_status(token, tenant_id)
-    while status == "pending":
-        print(f"Waiting... Current tenant status: {status}.")
-        time.sleep(20)
-        status = get_tenant_status(token, tenant_id)
-
-    if status != "deactivated":
-        raise RuntimeError("Tenant deactivation failed.")
-    print("Tenant deactivated.")
-
     # Update the tenant
     update_tenant(token, tenant_id, new_version)
     print("Tenant updated.")
 
-    # Redeploy the tenant
-    redeploy_tenant(token, tenant_id)
-    print("Tenant redeployment initiated.")
-
-    # Wait until it's deployed
-    time.sleep(10)
-
+    # Check the status
     status = get_tenant_status(token, tenant_id)
     while status == "pending":
         print(f"Waiting... Current tenant status: {status}.")
-        time.sleep(20)
+        time.sleep(sleep_period)
         status = get_tenant_status(token, tenant_id)
+
+        timeout -= sleep_period
+        if timeout <= 0:
+            raise RuntimeError(
+                "Timed out! The tenant could be stuck in a `pending` state."
+            )
 
     if status != "available":
         raise RuntimeError("Tenant redeployment failed.")
-    print("Tenant redeployed.")
 
 
 if __name__ == "__main__":
