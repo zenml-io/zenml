@@ -2,7 +2,7 @@
 description: Registering Existing Infrastructure with ZenML: A Guide for Terraform Users
 ---
 
-# Registering Existing Infrastructure with ZenML
+# Manage your stacks with Terraform
 
 Terraform is a powerful tool for managing infrastructure as code, and is by far the
 most popular IaC tool. Many companies already have existing Terraform setups,
