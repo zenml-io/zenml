@@ -30,7 +30,7 @@ fi
 
 # checks for yaml formatting errors
 if [ "$SKIP_YAMLFIX" = false ]; then
-    yamlfix --check .github tests --exclude "dependabot.yml"
+    yamlfix --check .github tests -e "dependabot.yml" -e "workflows/release_prepare.yml" -e "workflows/release_finalize.yml"
 fi
 
 # autoflake replacement: checks for unused imports and variables

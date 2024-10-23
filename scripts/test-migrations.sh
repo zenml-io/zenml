@@ -25,12 +25,6 @@ fi
 # List of versions to test
 VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0")
 
-# Include latest release dynamically, if not there already
-CURRENT_VERSION=$(cat src/zenml/VERSION)
-if [[ ! " ${VERSIONS[@]} " =~ " ${CURRENT_VERSION} " ]]; then
-    VERSIONS+=("${CURRENT_VERSION}")
-fi
-
 # Function to compare semantic versions
 function version_compare() {
     local regex="^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
