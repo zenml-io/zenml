@@ -1,5 +1,5 @@
 ---
-description: Registering Existing Infrastructure with ZenML: A Guide for Terraform Users
+description: Registering Existing Infrastructure with ZenML - A Guide for Terraform Users
 ---
 
 # Manage your stacks with Terraform
