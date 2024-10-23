@@ -640,7 +640,7 @@ class BaseFilter(BaseModel):
         )
         conditions.append(filter_.generate_query_conditions(table=table))
 
-        for column in additional_columns:
+        for column in additional_columns or []:
             filter_ = FilterGenerator(table).define_filter(
                 column=column, value=value, operator=operator
             )
