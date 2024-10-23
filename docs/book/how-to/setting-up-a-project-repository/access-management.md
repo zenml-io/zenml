@@ -39,6 +39,10 @@ On the other hand, the `MLOpsPlatformEngineer` role has the permissions to creat
 
 ![MLOps Platform Engineer Permissions](../../.gitbook/assets/platform_engineer_connector_role.png)
 
+{% hint style="info" %}
+Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](../../getting-started/zenml-pro/roles.md).
+{% endhint %}
+
 Learn more about the best practices in managing credentials and recommended roles in our [Managing Stacks and Components guide](../stack-deployment/README.md).
 
 
