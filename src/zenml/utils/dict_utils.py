@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from zenml.utils.json_utils import pydantic_encoder
 
@@ -37,6 +37,12 @@ def recursive_update(
             original_value = original.get(key, None) or {}
             if isinstance(original_value, Dict):
                 original[key] = recursive_update(original_value, value)
+            else:
+                original[key] = value
+        elif isinstance(value, List):
+            original_value = original.get(key, None) or []
+            if isinstance(original_value, List):
+                original[key] = original_value + value
             else:
                 original[key] = value
         else:
