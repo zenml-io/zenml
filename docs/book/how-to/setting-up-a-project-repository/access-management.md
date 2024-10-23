@@ -72,8 +72,6 @@ The Role-Based Access Control (RBAC) and assigning of permissions is only availa
 By following these guidelines, you can ensure a secure and well-managed ZenML environment that supports collaboration while maintaining proper access controls.
 
 
-
-
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
