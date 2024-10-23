@@ -128,6 +128,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -144,7 +145,8 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            settings: Settings for this pipeline.
+            tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -168,6 +170,7 @@ class Pipeline:
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
                 settings=settings,
+                tags=tags,
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
@@ -285,6 +288,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -312,6 +316,7 @@ class Pipeline:
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
             settings: settings for this pipeline.
+            tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -347,6 +352,7 @@ class Pipeline:
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
                 "settings": settings,
+                "tags": tags,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
