@@ -38,12 +38,15 @@ Pipelines, Models, and Artifacts form the core of your ML workflow in ZenML. All
 
 ### Pipelines
 
-A pipeline typically encompasses the entire ML workflow, including data preparation, model training, and evaluation. It's a good practice to have a separate pipeline for different tasks like training and inference. This makes your pipelines more modular and easier to manage.
+A pipeline typically encompasses the entire ML workflow, including data
+preparation, model training, and evaluation. It's a good practice to have a
+separate pipeline for different tasks like training and inference. This makes
+your pipelines more modular and easier to manage. Here's some of the benefits:
 
-- separation of pipelines by the nature of the task allows you to run them independently as needed. For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
-- it becomes easier to manage and update your code as your project grows more complex.
-- different people can work on the code for the pipelines without interfering with each other.
-- it helps you organize your runs better.
+- Separation of pipelines by the nature of the task allows you to [run them independently as needed](../develop-locally/local-prod-pipeline-variants.md). For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
+- It becomes easier to manage and update your code as your project grows more complex.
+- Different people can work on the code for the pipelines without interfering with each other.
+- It helps you organize your runs better.
 
 ### Models
 
@@ -76,7 +79,27 @@ Here's how the workflow would look like with ZenML:
 
 This is a very simple example, but it shows how you can use ZenML to structure your ML workflow. You can use the same principles for more complex workflows. 
 
+## Rules of Thumb
 
+Here are some general guidelines to help you organize your ZenML projects effectively:
+
+### Models
+- Create one Model per distinct machine learning use-case or business problem
+- Use Models to group related pipelines, artifacts, and metadata together
+- Leverage the Model Control Plane to manage model versions and stages (e.g., staging, production)
+
+### Stacks
+- Maintain separate stacks for different environments (development, staging, production)
+- Share production and staging stacks across teams to ensure consistency
+- Keep local development stacks simple for quick iterations
+
+### Organization
+- Use consistent naming conventions for pipelines, artifacts, and models
+- Leverage tags to organize and filter resources (e.g., `environment:production`, `team:fraud-detection`)
+- Document stack configurations and pipeline dependencies
+- Keep pipeline code modular and reusable across different environments
+
+Following these guidelines will help maintain a clean and scalable MLOps workflow as your project grows.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
