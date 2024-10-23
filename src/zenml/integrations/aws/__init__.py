@@ -34,12 +34,13 @@ AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws-generic"
 S3_RESOURCE_TYPE = "s3-bucket"
 
+
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
     REQUIREMENTS = [
-        "sagemaker>=2.117.0",
+        "sagemaker>=2.203.0",
         "kubernetes",
         "aws-profile-manager",
     ]

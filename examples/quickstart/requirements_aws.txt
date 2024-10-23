@@ -7,7 +7,7 @@ transformers[torch]
 torch
 sentencepiece
 protobuf
-sagemaker>=2.117.0
+sagemaker>=2.203.0
 s3
 s3fs
 aws-profile-manager
