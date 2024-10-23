@@ -130,6 +130,8 @@
   * [Register a cloud stack](how-to/stack-deployment/register-a-cloud-stack.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
+* [🦾 Integrate with Infrastructure as Code](how-to/infrastructure-as-code/README.md)
+  * [Integrate with Terraform](how-to/infrastructure-as-code/integrate-with-terraform.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
   * [Distributed Training with 🤗 Accelerate](how-to/training-with-gpus/accelerate-distributed-training.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
