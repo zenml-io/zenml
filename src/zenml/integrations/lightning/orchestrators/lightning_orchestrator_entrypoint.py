@@ -166,7 +166,7 @@ def main() -> None:
         f"uv pip install {pipeline_requirements_to_string}"
     )
     logger.info(output)
-    output = main_studio.run("pip install zenml -y")
+    output = main_studio.run("pip install zenml")
     logger.info(output)
 
     for command in pipeline_settings.custom_commands or []:
@@ -248,7 +248,7 @@ def main() -> None:
                     f"uv pip install {step_requirements_to_string}"
                 )
                 logger.info(output)
-                output = studio.run("pip install zenml -y")
+                output = studio.run("pip install zenml")
                 logger.info(output)
                 for command in step_settings.custom_commands or []:
                     output = studio.run(

@@ -222,16 +222,6 @@ def test_finding_repository_directory_with_explicit_path(
     del os.environ["ZENML_REPOSITORY_PATH"]
 
 
-def test_creating_repository_instance_during_step_execution(mocker):
-    """Tests that creating a Repository instance while a step is being executed does not fail."""
-    mocker.patch(
-        "zenml.environment.Environment.step_is_running",
-        return_value=True,
-    )
-    with does_not_raise():
-        Client()
-
-
 def test_activating_nonexisting_stack_fails(clean_client):
     """Tests that activating a stack name that isn't registered fails."""
     with pytest.raises(KeyError):
@@ -488,7 +478,7 @@ def test_listing_pipelines(clean_client):
 
 def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     """Test creating run metadata linked only to a pipeline run."""
-    pipeline_run = clean_client_with_run.list_runs()[0]
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
     existing_metadata = clean_client_with_run.list_run_metadata(
         resource_id=pipeline_run.id,
         resource_type=MetadataResourceTypes.PIPELINE_RUN,
@@ -521,7 +511,7 @@ def test_create_run_metadata_for_pipeline_run_and_component(
     clean_client_with_run: Client,
 ):
     """Test creating metadata linked to a pipeline run and a stack component"""
-    pipeline_run = clean_client_with_run.list_runs()[0]
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
     orchestrator_id = clean_client_with_run.active_stack_model.components[
         "orchestrator"
     ][0].id
@@ -927,10 +917,10 @@ def test_deleting_deployments(clean_client):
 def test_get_run(clean_client: Client, connected_two_step_pipeline):
     """Test that `get_run()` returns the correct run."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     run_ = clean_client.get_pipeline("connected_two_step_pipeline").runs[0]
     assert clean_client.get_pipeline_run(run_.name) == run_
 
@@ -945,12 +935,12 @@ def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
     """Test that listing unlisted runs works."""
     assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
-    pipeline_instance.run(unlisted=True)
+    pipeline_instance.with_options(unlisted=True)()
     assert len(clean_client.list_pipeline_runs(unlisted=True)) == 1
 
 

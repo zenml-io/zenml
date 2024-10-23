@@ -332,6 +332,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     else None
                 ),
             )
+
             args_for_step_executor.setdefault(
                 "instance_type", step_settings.instance_type
             )
@@ -457,7 +458,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=self.config.execution_role)
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        pipeline.create(
+            role_arn=self.config.execution_role, tags=settings.pipeline_tags
+        )
         execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
@@ -468,7 +475,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         yield from self.compute_metadata(execution=execution)
 
         # mainly for testing purposes, we wait for the pipeline to finish
-        if self.config.synchronous:
+        if settings.synchronous:
             logger.info(
                 "Executing synchronously. Waiting for pipeline to finish... \n"
                 "At this point you can `Ctrl-C` out without cancelling the "

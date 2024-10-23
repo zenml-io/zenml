@@ -31,6 +31,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.s3.utils import split_s3_path
 from zenml.models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 from zenml.utils.networking_utils import (
@@ -70,6 +71,8 @@ class S3ArtifactStoreConfig(
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
 
+    _bucket: Optional[str] = None
+
     @field_validator("client_kwargs")
     @classmethod
     def _validate_client_kwargs(
@@ -105,6 +108,17 @@ class S3ArtifactStoreConfig(
                 url
             )
         return value
+
+    @property
+    def bucket(self) -> str:
+        """The bucket name of the artifact store.
+
+        Returns:
+            The bucket name of the artifact store.
+        """
+        if self._bucket is None:
+            self._bucket, _ = split_s3_path(self.path)
+        return self._bucket
 
 
 class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):

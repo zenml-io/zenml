@@ -286,6 +286,91 @@ Now that you have a functional AWS stack set up with ZenML, you can explore more
 * Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 
-By leveraging the power of AWS and ZenML, you can streamline your machine learning workflows, improve collaboration, and deploy production-ready pipelines with ease. Happy experimenting and building!
+By leveraging the power of AWS and ZenML, you can streamline your machine
+learning workflows, improve collaboration, and deploy production-ready pipelines
+with ease. What follows is a set of best practices for using your AWS stack with ZenML.
+
+## Best Practices for Using an AWS Stack with ZenML
+
+When working with an AWS stack in ZenML, consider the following best practices
+to optimize your workflow, enhance security, and improve cost-efficiency. These
+are all things you might want to do or amend in your own setup once you have
+tried running some pipelines on your AWS stack.
+
+### Use IAM Roles and Least Privilege Principle
+
+Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your [IAM roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) to ensure they remain appropriate and secure.
+
+### Leverage AWS Resource Tagging
+
+Implement a [consistent tagging strategy](https://aws.amazon.com/solutions/guidance/tagging-on-aws/) for all of your AWS resources that you use for your pipelines. For example, if you have S3 as an artifact store in your stack, you should tag it like shown below:
+
+
+```shell
+aws s3api put-bucket-tagging --bucket your-bucket-name --tagging 'TagSet=[{Key=Project,Value=ZenML},{Key=Environment,Value=Production}]'
+```
+
+These tags will help you with billing and cost allocation tracking and also with
+any cleanup efforts.
+
+### Implement Cost Management Strategies
+
+Use [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) and [AWS Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/) to monitor and manage your spending. To create a cost budget:
+
+1. Create a JSON file (e.g., `budget-config.json`) defining the budget:
+
+```json
+{
+  "BudgetLimit": {
+    "Amount": "100",
+    "Unit": "USD"
+  },
+  "BudgetName": "ZenML Monthly Budget",
+  "BudgetType": "COST",
+  "CostFilters": {
+    "TagKeyValue": [
+      "user:Project$ZenML"
+    ]
+  },
+  "CostTypes": {
+    "IncludeTax": true,
+    "IncludeSubscription": true,
+    "UseBlended": false
+  },
+  "TimeUnit": "MONTHLY"
+}
+```
+
+2. Create the cost budget:
+
+```shell
+aws budgets create-budget --account-id your-account-id --budget file://budget-config.json
+```
+
+Set up cost allocation tags to track expenses related to your ZenML projects:
+
+```shell
+aws ce create-cost-category-definition --name ZenML-Projects --rules-version 1 --rules file://rules.json
+```
+
+### Use Warm Pools for your SageMaker Pipelines
+
+[Warm Pools in SageMaker](../../component-guide/orchestrators/sagemaker.md#using-warm-pools-for-your-pipelines) can significantly reduce the startup time of your pipeline steps, leading to faster iterations and improved development efficiency. This feature keeps compute instances in a "warm" state, ready to quickly start new jobs.
+
+To enable Warm Pools, use the `SagemakerOrchestratorSettings` class:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    keep_alive_period_in_seconds = 300, # 5 minutes, default value
+)
+```
+
+This configuration keeps instances warm for 5 minutes after each job completes, allowing subsequent jobs to start faster if initiated within this timeframe. The reduced startup time can be particularly beneficial for iterative development processes or frequently run pipelines.
+
+### Implement a Robust Backup Strategy
+
+Regularly backup your critical data and configurations. For S3, enable versioning and consider using [cross-region replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html) for disaster recovery.
+
+By following these best practices and implementing the provided examples, you can create a more secure, efficient, and cost-effective AWS stack for your ZenML projects. Remember to regularly review and update your practices as your projects evolve and as AWS introduces new features and services.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
