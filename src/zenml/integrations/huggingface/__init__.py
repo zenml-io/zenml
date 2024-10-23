@@ -55,8 +55,8 @@ class HuggingfaceIntegration(Integration):
             # temporary fix for CI issue similar to:
             # - https://github.com/huggingface/datasets/issues/6737
             # - https://github.com/huggingface/datasets/issues/6697
-            # TODO try relaxing it back going forward
-            "fsspec<=2023.12.0",
+            # TODO: try relaxing it back going forward. DONE: I did it :)
+            "fsspec",
             "transformers",
         ]
 
