@@ -2728,6 +2728,7 @@ class SqlZenStore(BaseZenStore):
                 # that previously had no custom name, we update it.
                 artifact.has_custom_name = True
                 session.commit()
+                session.refresh(artifact)
 
             return artifact
 

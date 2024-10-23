@@ -7,6 +7,7 @@ Create Date: 2024-10-17 16:41:25.053677
 """
 
 from collections import defaultdict
+from typing import Dict, Set
 
 import sqlalchemy as sa
 from alembic import op
@@ -35,7 +36,7 @@ def resolve_duplicate_versions() -> None:
         artifact_version_table.c.version,
     )
 
-    versions_per_artifact = defaultdict(set)
+    versions_per_artifact: Dict[str, Set[str]] = defaultdict(set)
 
     for id, artifact_id, version in connection.execute(query).fetchall():
         versions = versions_per_artifact[artifact_id]
