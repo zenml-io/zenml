@@ -13,7 +13,7 @@ You should use vLLM Model Deployer:
 * Deploying Large Language models with state-of-the-art serving throughput creating an OpenAI-compatible API server
 * Continuous batching of incoming requests
 * Quantization: GPTQ, AWQ, INT4, INT8, and FP8
-* Features such as PagedAttention, Speculative decoding, Chunked prefill
+* Features such as PagedAttention, Speculative decoding, Chunked pre-fill
 
 ## How do you deploy it?
 
@@ -33,7 +33,7 @@ The ZenML integration will provision a local vLLM deployment server as a daemon 
 
 ## How do you use it?
 
-If you'd like to see this in action, check out this example of of a [deployment pipeline](https://github.com/zenml-io/zenml-projects/blob/79f67ea52c3908b9b33c9a41eef18cb7d72362e8/llm-vllm-deployer/pipelines/deploy_pipeline.py#L25).
+If you'd like to see this in action, check out this example of a [deployment pipeline](https://github.com/zenml-io/zenml-projects/blob/79f67ea52c3908b9b33c9a41eef18cb7d72362e8/llm-vllm-deployer/pipelines/deploy_pipeline.py#L25).
 
 ### Deploy an LLM
 
