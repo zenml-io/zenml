@@ -14,15 +14,26 @@ Here's an example of how you might set up authentication using environment varia
 
 ```python
 import os
+
+from my_simple_package import important_function
 from zenml.config import DockerSettings
+from zenml import step, pipeline
 
-os.environ['PIP_EXTRA_INDEX_URL'] = f"https://{os.environ['PYPI_USERNAME']}:{os.environ['PYPI_PASSWORD']}@your-private-pypi-server.com/simple"
+docker_settings = DockerSettings(
+    requirements=["my-simple-package==0.1.0"],
+    environment={'PIP_EXTRA_INDEX_URL': f"https://{os.environ.get('PYPI_TOKEN', '')}@my-private-pypi-server.com/{os.environ.get('PYPI_USERNAME', '')}/"}
+)
 
-docker_settings = DockerSettings(requirements=["my-private-package==1.0.0"])
+@step
+def my_step():
+    return important_function()
 
 @pipeline(settings={"docker": docker_settings})
-def my_pipeline(...):
-    ...
+def my_pipeline():
+    my_step()
+
+if __name__ == "__main__":
+    my_pipeline()
 ```
 
 Note: Be cautious with handling credentials. Always use secure methods to manage

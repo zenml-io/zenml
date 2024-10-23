@@ -57,8 +57,8 @@ Using shared private wheels is an effective approach to sharing code within a te
 
 #### Setting Up Shared Private Wheels
 
-1. Create a private PyPI server or use a service like AWS CodeArtifact.
-2. Build your code into wheel format.
+1. Create a private PyPI server or use a service like [AWS CodeArtifact](https://aws.amazon.com/codeartifact/).
+2. [Build your code](https://packaging.python.org/en/latest/tutorials/packaging-projects/) [into wheel format](https://opensource.com/article/23/1/packaging-python-modules-wheels).
 3. Upload the wheel to your private PyPI server.
 4. Configure pip to use the private PyPI server in addition to the public one.
 5. Install the private packages using pip, just like public packages.
