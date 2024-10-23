@@ -60,6 +60,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Args:
             **kwargs: Additional keyword arguments to pass to the
                 annotation client.
+        Raises:
+            NotImplementedError as this method is not implemented.
         """
         raise NotImplementedError
 
