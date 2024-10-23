@@ -604,12 +604,15 @@ class BaseFilter(BaseModel):
         self,
         value: Union[UUID, str],
         table: Type["NamedSchema"],
+        additional_columns: Optional[List[str]] = None,
     ) -> "ColumnElement[bool]":
         """Generate filter conditions for name or id of a table.
 
         Args:
             value: The filter value.
             table: The table to filter.
+            additional_columns: Additional table columns that should also
+                filtered for the given value as part of the or condition.
 
         Returns:
             The query conditions.
@@ -636,6 +639,12 @@ class BaseFilter(BaseModel):
             column="name", value=value, operator=operator
         )
         conditions.append(filter_.generate_query_conditions(table=table))
+
+        for column in additional_columns:
+            filter_ = FilterGenerator(table).define_filter(
+                column=column, value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
 
         return or_(*conditions)
 
