@@ -46,7 +46,7 @@ Note that you can only use the RBAC features in ZenML Pro. Learn more about role
 Learn more about the best practices in managing credentials and recommended roles in our [Managing Stacks and Components guide](../stack-deployment/README.md).
 
 
-## ZenML Server Upgrades
+## Who is responsible for upgrading the ZenML server?
 
 The decision to upgrade your ZenML server is usually taken by your Project Owners after consulting with all the teams using the server. This is because there might be teams with conflicting requirements and moving to a new version of ZenML (that might come with upgrades to certain libraries) can break code for some users.
 
@@ -62,7 +62,7 @@ Performing the upgrade itself is a task that typically falls on the MLOps Platfo
 and more. Read in detail about the best practices for upgrading your ZenML server in the [Best Practices for Upgrading ZenML Servers](../manage-the-zenml-server/best-practices-upgrading-zenml.md) guide.
 
 
-## Pipeline Migration and Maintenance
+## Who is responsible for migrating and maintaining pipelines?
 
 When you upgrade to a new version of ZenML, you might have to test if your code works as expected and if the syntax is up to date with what ZenML expects. Although we do our best to make new releases compatible with older versions, there might be some breaking changes that you might have to address.
 
