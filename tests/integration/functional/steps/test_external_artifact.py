@@ -19,7 +19,6 @@ from uuid import UUID
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 
 ARTIFACT_NAME = "predictions"
@@ -53,16 +52,15 @@ def consumer_pipeline(
     expected_value: int,
     value: Optional[Any] = None,
     id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    version: Optional[str] = None,
 ):
+    artifact = None
+    if value:
+        artifact = value
+    elif id:
+        artifact = Client().get_artifact_version(id)
+
     consumer(
-        ExternalArtifact(
-            value=value,
-            id=id,
-            name=name,
-            version=version,
-        ),
+        artifact,
         expected_value=expected_value,
     )
 
@@ -79,35 +77,3 @@ def test_external_artifact_by_id(clean_client: Client):
         producer_pipeline.model.last_successful_run.artifact_versions[0].id
     )
     consumer_pipeline(id=artifact_version_id, expected_value=42)
-
-
-def test_external_artifact_by_name_only(clean_client: Client):
-    """Test passing external artifact by name only."""
-    producer_pipeline(return_value=42)
-    producer_pipeline(return_value=43)
-
-    # Latest artifact should have value 43
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        expected_value=43,
-    )
-
-
-def test_external_artifact_by_name_and_version(clean_client: Client):
-    """Test passing external artifact by name and version."""
-    producer_pipeline(return_value=42)
-    producer_pipeline(return_value=43)
-
-    # First artifact with value 42 should be version 1
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        version="1",
-        expected_value=42,
-    )
-
-    # Second artifact with value 43 should be version 2
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        version="2",
-        expected_value=43,
-    )

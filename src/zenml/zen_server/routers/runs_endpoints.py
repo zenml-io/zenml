@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    GRAPH,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -29,7 +28,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.lineage_graph.lineage_graph import LineageGraph
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -204,32 +202,6 @@ def delete_run(
         get_method=zen_store().get_run,
         delete_method=zen_store().delete_run,
     )
-
-
-@router.get(
-    "/{run_id}" + GRAPH,
-    response_model=LineageGraph,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_run_dag(
-    run_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> LineageGraph:
-    """Get the DAG for a given pipeline run.
-
-    Args:
-        run_id: ID of the pipeline run to use to get the DAG.
-
-    Returns:
-        The DAG for a given pipeline run.
-    """
-    run = verify_permissions_and_get_entity(
-        id=run_id, get_method=zen_store().get_run, hydrate=True
-    )
-    graph = LineageGraph()
-    graph.generate_run_nodes_and_edges(run)
-    return graph
 
 
 @router.get(

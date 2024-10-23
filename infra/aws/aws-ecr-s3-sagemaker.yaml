@@ -119,6 +119,9 @@ Resources:
                   - 's3:GetObject'
                   - 's3:PutObject'
                   - 's3:DeleteObject'
+                  - 's3:GetBucketVersioning'
+                  - 's3:ListBucketVersions'
+                  - 's3:DeleteObjectVersion'
                 Resource:
                   - !Sub '${S3Bucket.Arn}'
                   - !Sub '${S3Bucket.Arn}/*'

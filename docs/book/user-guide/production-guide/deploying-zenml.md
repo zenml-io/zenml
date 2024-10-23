@@ -26,23 +26,7 @@ On top of the one-click SaaS experience, ZenML Pro also comes built-in with addi
 
 ### Option 2: Self-host ZenML on your cloud provider
 
-As ZenML is open source, it is easy to [self-host it](../../getting-started/deploying-zenml/README.md). There is even a [ZenML CLI](../../getting-started/deploying-zenml/deploy-with-zenml-cli.md) one-liner that deploys ZenML on a Kubernetes cluster, abstracting away all the infrastructure complexity. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
-
-{% hint style="warning" %}
-Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to connect to it.
-{% endhint %}
-
-You're now ready to deploy ZenML! Run the following command:
-
-```bash
-zenml deploy
-```
-
-You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username, password, and email you want to set for the default user — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
-
-{% hint style="info" %}
-In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
-{% endhint %}
+As ZenML is open source, it is easy to [self-host it](../../getting-started/deploying-zenml/README.md) in a Kubernetes cluster. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
 
 To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/README.md).
 
@@ -65,5 +49,16 @@ This command will start a series of steps to validate the device from where you 
 {% hint style="info" %}
 You can always go back to the local zenml experience by using `zenml disconnect`
 {% endhint %}
+
+## Further resources
+
+To learn more about deploying ZenML, check out the following resources:
+
+- [Deploying ZenML](../../getting-started/deploying-zenml.md): an overview of
+  the different options for deploying ZenML and the system architecture of a
+  deployed ZenML instance.
+- [Full how-to guides](../../getting-started/deploying-zenml/README.md): guides on how to
+  deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
+  provider.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
