@@ -72,7 +72,14 @@ When running pipelines with remote orchestrators, ZenML generates a `Dockerfile`
 Here are some ways to include shared libraries using `DockerSettings`. Either specify a list of requirements:
 
 ```python
-docker_settings = DockerSettings(requirements=["my-private-package==1.0.0"])
+import os
+from zenml.config import DockerSettings
+from zenml import pipeline
+
+docker_settings = DockerSettings(
+    requirements=["my-simple-package==0.1.0"],
+    environment={'PIP_EXTRA_INDEX_URL': f"https://{os.environ.get('PYPI_TOKEN', '')}@my-private-pypi-server.com/{os.environ.get('PYPI_USERNAME', '')}/"}
+)
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
@@ -87,6 +94,14 @@ docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
     ...
+```
+
+The `requirements.txt` file would specify the private index URL in the following
+way, for example:
+
+```
+--extra-index-url https://YOURTOKEN@my-private-pypi-server.com/YOURUSERNAME/
+my-simple-package==0.1.0
 ```
 
 For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../customize-docker-builds/how-to-use-a-private-pypi-repository.md).
