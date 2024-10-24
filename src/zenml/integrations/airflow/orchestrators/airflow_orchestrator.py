@@ -50,8 +50,7 @@ if TYPE_CHECKING:
         DagConfiguration,
         TaskConfiguration,
     )
-    from zenml.models import PipelineDeploymentResponse
-    from zenml.pipelines import Schedule
+    from zenml.models import PipelineDeploymentResponse, ScheduleResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -391,7 +390,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     @staticmethod
     def _translate_schedule(
-        schedule: Optional["Schedule"] = None,
+        schedule: Optional["ScheduleResponse"] = None,
     ) -> Dict[str, Any]:
         """Convert ZenML schedule into Airflow schedule.
 

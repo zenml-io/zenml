@@ -40,6 +40,10 @@ class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator.
 
     Attributes:
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`.
         instance_type: The instance type to use for the processing job.
         execution_role: The IAM role to use for the step execution.
         processor_role: DEPRECATED: use `execution_role` instead.
@@ -48,6 +52,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
         tags: Tags to apply to the Processor/Estimator assigned to the step.
+        pipeline_tags: Tags to apply to the pipeline via the
+            sagemaker.workflow.pipeline.Pipeline.create method.
         processor_tags: DEPRECATED: use `tags` instead.
         keep_alive_period_in_seconds: The time in seconds after which the
             provisioned instance will be terminated if not used. This is only
@@ -96,11 +102,14 @@ class SagemakerOrchestratorSettings(BaseSettings):
                     Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
 
+    synchronous: bool = True
+
     instance_type: Optional[str] = None
     execution_role: Optional[str] = None
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     tags: Dict[str, str] = {}
+    pipeline_tags: Dict[str, str] = {}
     keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
     use_training_step: Optional[bool] = None
 
@@ -174,10 +183,6 @@ class SagemakerOrchestratorConfig(
         loaded from the default AWS config.
 
     Attributes:
-        synchronous: If `True`, the client running a pipeline using this
-            orchestrator waits until all steps finish running. If `False`,
-            the client returns immediately and the pipeline is executed
-            asynchronously. Defaults to `True`.
         execution_role: The IAM role ARN to use for the pipeline.
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
@@ -197,7 +202,6 @@ class SagemakerOrchestratorConfig(
             "sagemaker-{region}-{aws-account-id}".
     """
 
-    synchronous: bool = True
     execution_role: str
     aws_access_key_id: Optional[str] = SecretField(default=None)
     aws_secret_access_key: Optional[str] = SecretField(default=None)

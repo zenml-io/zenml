@@ -175,4 +175,78 @@ If you do not want to use any of the created resources in the future, simply del
 gcloud project delete <PROJECT_ID_OR_NUMBER>
 ```
 
+## Best Practices for Using a GCP Stack with ZenML
+
+When working with a GCP stack in ZenML, consider the following best practices to optimize your workflow, enhance security, and improve cost-efficiency. These are all things you might want to do or amend in your own setup once you have tried running some pipelines on your GCP stack.
+
+### Use IAM and Least Privilege Principle
+
+Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your IAM roles to ensure they remain appropriate and secure.
+
+### Leverage GCP Resource Labeling
+
+Implement a consistent labeling strategy for your GCP resources. To label a GCS bucket, for example:
+
+```shell
+gcloud storage buckets update gs://your-bucket-name --update-labels=project=zenml,environment=production
+```
+
+This command adds two labels to the bucket:
+- A label with key "project" and value "zenml"
+- A label with key "environment" and value "production"
+
+You can add or update multiple labels in a single command by separating them with commas.
+
+To remove a label, set its value to null:
+
+```shell
+gcloud storage buckets update gs://your-bucket-name --update-labels=label-to-remove=null
+```
+
+These labels will help you with billing and cost allocation tracking and also with any cleanup efforts.
+
+To view the labels on a bucket:
+
+```shell
+gcloud storage buckets describe gs://your-bucket-name --format="default(labels)"
+```
+
+This will display all labels currently set on the specified bucket.
+
+### Implement Cost Management Strategies
+
+Use Google Cloud's [Cost Management tools](https://cloud.google.com/docs/costs-usage) to monitor and manage your spending. To set up a budget alert:
+
+1. Navigate to the Google Cloud Console
+2. Go to Billing > Budgets & Alerts
+3. Click "Create Budget"
+4. Set your budget amount, scope (project, product, etc.), and alert thresholds
+
+You can also use the `gcloud` CLI to create a budget:
+
+```shell
+gcloud billing budgets create --billing-account=BILLING_ACCOUNT_ID --display-name="ZenML Monthly Budget" --budget-amount=1000 --threshold-rule=percent=90
+```
+
+Set up cost allocation labels to track expenses related to your ZenML projects in the Google Cloud Billing Console.
+
+### Implement a Robust Backup Strategy
+
+Regularly backup your critical data and configurations. For GCS, for example, enable versioning and consider using cross-region replication for disaster recovery.
+
+To enable versioning on a GCS bucket:
+
+```shell
+gsutil versioning set on gs://your-bucket-name
+```
+
+To set up cross-region replication:
+
+```shell
+gsutil rewrite -r gs://source-bucket gs://destination-bucket
+```
+
+By following these best practices and implementing the provided examples, you can create a more secure, efficient, and cost-effective GCP stack for your ZenML projects. Remember to regularly review and update your practices as your projects evolve and as GCP introduces new features and services.
+
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

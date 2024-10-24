@@ -31,6 +31,7 @@ from pydantic import (
     model_validator,
 )
 
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
@@ -59,6 +60,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
     # TODO: This could be moved to the `PipelineDeployment` as it's the same
     # for all steps/outputs
     default_materializer_source: Optional[SourceWithValidator] = None
+    artifact_config: Optional[ArtifactConfig] = None
 
     @model_validator(mode="before")
     @classmethod

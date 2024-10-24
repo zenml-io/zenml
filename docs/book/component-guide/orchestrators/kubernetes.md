@@ -28,19 +28,9 @@ You should use the Kubernetes orchestrator if:
 
 ### How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our cloud guide
+The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
 
 If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/README.md).
-
-#### Infrastructure Deployment
-
-A Kubernetes orchestrator can be deployed directly from the ZenML CLI:
-
-```shell
-zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes --provider=<YOUR_PROVIDER> ...
-```
-
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
 
 ### How to use it
 
@@ -266,6 +256,39 @@ def my_kubernetes_pipeline():
     # Your pipeline steps here
     ...
 ```
+
+#### Define settings on the step level
+
+You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](../../how-to/use-configuration-files/configuration-hierarchy.md).
+
+```python
+k8s_settings = KubernetesOrchestratorSettings(
+    pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-nodepool": "gpu-pool",
+        },
+        "tolerations": [
+            V1Toleration(
+                key="gpu",
+                operator="Equal",
+                value="present",
+                effect="NoSchedule"
+            ),
+        ]
+    }
+)
+
+@step(settings={"orchestrator": k8s_settings})
+def train_model(data: dict) -> None:
+    ...
+
+
+@pipeline() 
+def simple_ml_pipeline(parameter: int):
+    ...
+```
+
+This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
