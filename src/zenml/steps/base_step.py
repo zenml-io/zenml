@@ -344,7 +344,9 @@ class BaseStep:
             ) from e
 
         artifacts = {}
-        external_artifacts = {}
+        external_artifacts: Dict[
+            str, Union["ExternalArtifact", "ArtifactVersionResponse"]
+        ] = {}
         model_artifacts_or_metadata = {}
         client_lazy_loaders = {}
         parameters = {}
