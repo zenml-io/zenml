@@ -1,0 +1,4288 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.68.0/integration_code_docs/integrations-slack/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Slack - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#slack" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Slack
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_code_docs/core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-databricks/" class="md-nav__link">
+        Databricks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-lightning/" class="md-nav__link">
+        Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-numpy/" class="md-nav__link">
+        Numpy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot_kubernetes/" class="md-nav__link">
+        Skypilot Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Slack
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Slack
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.integrations.slack" class="md-nav__link">
+    slack
+  </a>
+  
+    <nav class="md-nav" aria-label="slack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.SlackIntegration" class="md-nav__link">
+    SlackIntegration
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackIntegration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.SlackIntegration.flavors" class="md-nav__link">
+    flavors()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters" class="md-nav__link">
+    alerters
+  </a>
+  
+    <nav class="md-nav" aria-label="alerters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter" class="md-nav__link">
+    slack_alerter
+  </a>
+  
+    <nav class="md-nav" aria-label="slack_alerter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter" class="md-nav__link">
+    SlackAlerter
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.settings_class" class="md-nav__link">
+    settings_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.ask" class="md-nav__link">
+    ask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.post" class="md-nav__link">
+    post()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerterParameters" class="md-nav__link">
+    SlackAlerterParameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerterPayload" class="md-nav__link">
+    SlackAlerterPayload
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors" class="md-nav__link">
+    flavors
+  </a>
+  
+    <nav class="md-nav" aria-label="flavors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor" class="md-nav__link">
+    slack_alerter_flavor
+  </a>
+  
+    <nav class="md-nav" aria-label="slack_alerter_flavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig" class="md-nav__link">
+    SlackAlerterConfig
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerterConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig.is_valid" class="md-nav__link">
+    is_valid
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor" class="md-nav__link">
+    SlackAlerterFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerterFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.docs_url" class="md-nav__link">
+    docs_url
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.logo_url" class="md-nav__link">
+    logo_url
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.name" class="md-nav__link">
+    name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.sdk_docs_url" class="md-nav__link">
+    sdk_docs_url
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterSettings" class="md-nav__link">
+    SlackAlerterSettings
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps" class="md-nav__link">
+    steps
+  </a>
+  
+    <nav class="md-nav" aria-label="steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps.slack_alerter_ask_step" class="md-nav__link">
+    slack_alerter_ask_step
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps.slack_alerter_post_step" class="md-nav__link">
+    slack_alerter_post_step
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.integrations.slack" class="md-nav__link">
+    slack
+  </a>
+  
+    <nav class="md-nav" aria-label="slack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.SlackIntegration" class="md-nav__link">
+    SlackIntegration
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackIntegration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.SlackIntegration.flavors" class="md-nav__link">
+    flavors()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters" class="md-nav__link">
+    alerters
+  </a>
+  
+    <nav class="md-nav" aria-label="alerters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter" class="md-nav__link">
+    slack_alerter
+  </a>
+  
+    <nav class="md-nav" aria-label="slack_alerter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter" class="md-nav__link">
+    SlackAlerter
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.settings_class" class="md-nav__link">
+    settings_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.ask" class="md-nav__link">
+    ask()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.post" class="md-nav__link">
+    post()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerterParameters" class="md-nav__link">
+    SlackAlerterParameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.alerters.slack_alerter.SlackAlerterPayload" class="md-nav__link">
+    SlackAlerterPayload
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors" class="md-nav__link">
+    flavors
+  </a>
+  
+    <nav class="md-nav" aria-label="flavors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor" class="md-nav__link">
+    slack_alerter_flavor
+  </a>
+  
+    <nav class="md-nav" aria-label="slack_alerter_flavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig" class="md-nav__link">
+    SlackAlerterConfig
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerterConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig.is_valid" class="md-nav__link">
+    is_valid
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor" class="md-nav__link">
+    SlackAlerterFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="SlackAlerterFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.docs_url" class="md-nav__link">
+    docs_url
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.logo_url" class="md-nav__link">
+    logo_url
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.name" class="md-nav__link">
+    name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.sdk_docs_url" class="md-nav__link">
+    sdk_docs_url
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterSettings" class="md-nav__link">
+    SlackAlerterSettings
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps" class="md-nav__link">
+    steps
+  </a>
+  
+    <nav class="md-nav" aria-label="steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps.slack_alerter_ask_step" class="md-nav__link">
+    slack_alerter_ask_step
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.slack.steps.slack_alerter_post_step" class="md-nav__link">
+    slack_alerter_post_step
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/integration_code_docs/integrations-slack.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="slack">Slack</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.integrations.slack" class="doc doc-heading">
+        <code>zenml.integrations.slack</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>Slack integration for alerter components.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.integrations.slack.SlackIntegration" class="doc doc-heading">
+        <code>
+SlackIntegration            (<a class="autorefs autorefs-internal" title="zenml.integrations.integration.Integration" href="../integrations-integration/#zenml.integrations.integration.Integration">Integration</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Definition of a Slack integration for ZenML.</p>
+<p>Implemented using <a href="https://pypi.org/project/slack-sdk/">Slack SDK</a>.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/__init__.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of a Slack integration for ZenML.</span>
+
+<span class="sd">    Implemented using [Slack SDK](https://pypi.org/project/slack-sdk/).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">NAME</span> <span class="o">=</span> <span class="n">SLACK</span>
+    <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;slack-sdk&gt;=3.16.1&quot;</span><span class="p">,</span> <span class="s2">&quot;aiohttp&gt;=3.8.1&quot;</span><span class="p">]</span>
+    <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;aiohttp&quot;</span><span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Slack integration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of new flavors defined by the Slack integration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">zenml.integrations.slack.flavors</span> <span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">SlackAlerterFlavor</span><span class="p">]</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.integrations.slack.SlackIntegration.flavors" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">flavors</span><span class="p">()</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Declare the stack component flavors for the Slack integration.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[Type[zenml.stack.flavor.Flavor]]</code></td>
+      <td><p>List of new flavors defined by the Slack integration.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/__init__.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Slack integration.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of new flavors defined by the Slack integration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">zenml.integrations.slack.flavors</span> <span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">SlackAlerterFlavor</span><span class="p">]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.integrations.slack.alerters" class="doc doc-heading">
+        <code>alerters</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Alerter components defined by the Slack integration.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.integrations.slack.alerters.slack_alerter" class="doc doc-heading">
+        <code>slack_alerter</code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Implementation for slack flavor of alerter component.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter" class="doc doc-heading">
+        <code>
+SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.alerter.base_alerter.BaseAlerter" href="../../core_code_docs/core-alerter/#zenml.alerter.base_alerter.BaseAlerter">BaseAlerter</a>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Send messages to Slack channels.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerter</span><span class="p">(</span><span class="n">BaseAlerter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Send messages to Slack channels.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SlackAlerterConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SlackAlerterConfig` config.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SlackAlerterConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterSettings</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Slack alerter.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The settings class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SlackAlerterSettings</span>
+
+    <span class="k">def</span> <span class="nf">_get_channel_id</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Slack channel ID to be used by post/ask.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ID of the Slack channel to be used.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: if config is not of type `BaseAlerterStepConfig`.</span>
+<span class="sd">            ValueError: if a slack channel was neither defined in the config</span>
+<span class="sd">                nor in the slack alerter component.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;The config object must be of type `BaseAlerterStepParameters`.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">params</span>
+            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">SlackAlerterParameters</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;slack_channel_id&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">slack_channel_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">slack_channel_id</span>
+
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="n">SlackAlerterSettings</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_settings</span><span class="p">(</span><span class="n">get_step_context</span><span class="p">()</span><span class="o">.</span><span class="n">step_run</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">slack_channel_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">settings</span><span class="o">.</span><span class="n">slack_channel_id</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_slack_channel_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_slack_channel_id</span>
+
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Neither the `slack_channel_id` in the runtime &quot;</span>
+            <span class="s2">&quot;configuration, nor the `default_slack_channel_id` in the alerter &quot;</span>
+            <span class="s2">&quot;stack component is specified. Please specify at least one.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_approve_msg_options</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to approval during ask().</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Set of messages that lead to approval in alerter.ask().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">SlackAlerterParameters</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;approve_msg_options&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">approve_msg_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">approve_msg_options</span>
+        <span class="k">return</span> <span class="n">DEFAULT_APPROVE_MSG_OPTIONS</span>
+
+    <span class="k">def</span> <span class="nf">_get_disapprove_msg_options</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to disapproval during ask().</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Set of messages that lead to disapproval in alerter.ask().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">SlackAlerterParameters</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;disapprove_msg_options&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">disapprove_msg_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">disapprove_msg_options</span>
+        <span class="k">return</span> <span class="n">DEFAULT_DISAPPROVE_MSG_OPTIONS</span>
+
+    <span class="k">def</span> <span class="nf">_create_blocks</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>  <span class="c1"># type: ignore</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to create slack blocks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: message</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of slack blocks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">SlackAlerterParameters</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;blocks&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">blocks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using custom blocks&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">blocks</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;payload&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">payload</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;No custom blocks set. Using default blocks for Slack alerter&quot;</span>
+                <span class="p">)</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">payload</span>
+                <span class="k">return</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;section&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;mrkdwn&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;:star: *Pipeline:*</span><span class="se">\n</span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;mrkdwn&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;:arrow_forward: *Step:*</span><span class="se">\n</span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;mrkdwn&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;:ring_buoy: *Stack:*</span><span class="se">\n</span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                        <span class="p">],</span>
+                        <span class="s2">&quot;accessory&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;alt_text&quot;</span><span class="p">:</span> <span class="s2">&quot;zenml logo&quot;</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;section&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;mrkdwn&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;:email: *Message:*</span><span class="se">\n</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                        <span class="p">],</span>
+                    <span class="p">},</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;No custom blocks or payload set for Slack alerter.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;params is not of type SlackAlerterParameters. Returning empty blocks.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Message to be posted.</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if operation succeeded, else False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">slack_channel_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_channel_id</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">WebClient</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">slack_token</span><span class="p">)</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_blocks</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">slack_channel_id</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="n">blocks</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="n">SlackApiError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SlackAlerter.post() failed: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel and wait for approval.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Initial message to be posted.</span>
+<span class="sd">            params: Optional parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if a user approved the operation, else False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rtm</span> <span class="o">=</span> <span class="n">RTMClient</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">slack_token</span><span class="p">)</span>
+        <span class="n">slack_channel_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_channel_id</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by handle()</span>
+
+        <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">def</span> <span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Post an initial message in a channel and start listening.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                payload: payload of the received Slack event.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">web_client</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;web_client&quot;</span><span class="p">]</span>
+            <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_blocks</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+            <span class="n">web_client</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">slack_channel_id</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="n">blocks</span>
+            <span class="p">)</span>
+
+        <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;message&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Listen / handle messages posted in the channel.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                payload: payload of the received Slack event.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">slack_channel_id</span><span class="p">:</span>
+                <span class="c1"># approve request (return True)</span>
+                <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_approve_msg_options</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User </span><span class="si">{</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> approved on slack.&quot;</span><span class="p">)</span>
+                    <span class="k">nonlocal</span> <span class="n">approved</span>
+                    <span class="n">approved</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">rtm</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># type: ignore[no-untyped-call]</span>
+
+                <span class="c1"># disapprove request (return False)</span>
+                <span class="k">elif</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_disapprove_msg_options</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User </span><span class="si">{</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> disapproved on slack.&quot;</span><span class="p">)</span>
+                    <span class="n">rtm</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># type: ignore[no-untyped-call]</span>
+
+        <span class="c1"># start another thread until `rtm.stop()` is called in handle()</span>
+        <span class="n">rtm</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">approved</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config</span><span class="p">:</span> <span class="n">SlackAlerterConfig</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the <code>SlackAlerterConfig</code> config.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>SlackAlerterConfig</code></td>
+      <td><p>The configuration.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.settings_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">settings_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">slack</span><span class="o">.</span><span class="n">flavors</span><span class="o">.</span><span class="n">slack_alerter_flavor</span><span class="o">.</span><span class="n">SlackAlerterSettings</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Settings class for the Slack alerter.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterSettings]</code></td>
+      <td><p>The settings class.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h6 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.ask" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Post a message to a Slack channel and wait for approval.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>Initial message to be posted.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>params</code></td>
+        <td><code>Optional[zenml.alerter.base_alerter.BaseAlerterStepParameters]</code></td>
+        <td><p>Optional parameters.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if a user approved the operation, else False</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel and wait for approval.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Initial message to be posted.</span>
+<span class="sd">        params: Optional parameters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if a user approved the operation, else False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rtm</span> <span class="o">=</span> <span class="n">RTMClient</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">slack_token</span><span class="p">)</span>
+    <span class="n">slack_channel_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_channel_id</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by handle()</span>
+
+    <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">def</span> <span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post an initial message in a channel and start listening.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            payload: payload of the received Slack event.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">web_client</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;web_client&quot;</span><span class="p">]</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_blocks</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">web_client</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">slack_channel_id</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="n">blocks</span>
+        <span class="p">)</span>
+
+    <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;message&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Listen / handle messages posted in the channel.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            payload: payload of the received Slack event.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">slack_channel_id</span><span class="p">:</span>
+            <span class="c1"># approve request (return True)</span>
+            <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_approve_msg_options</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User </span><span class="si">{</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> approved on slack.&quot;</span><span class="p">)</span>
+                <span class="k">nonlocal</span> <span class="n">approved</span>
+                <span class="n">approved</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">rtm</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># type: ignore[no-untyped-call]</span>
+
+            <span class="c1"># disapprove request (return False)</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_disapprove_msg_options</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User </span><span class="si">{</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> disapproved on slack.&quot;</span><span class="p">)</span>
+                <span class="n">rtm</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># type: ignore[no-untyped-call]</span>
+
+    <span class="c1"># start another thread until `rtm.stop()` is called in handle()</span>
+    <span class="n">rtm</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">approved</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h6 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter.post" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Post a message to a Slack channel.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Message to be posted.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>params</code></td>
+        <td><code>Optional[zenml.alerter.base_alerter.BaseAlerterStepParameters]</code></td>
+        <td><p>Optional parameters.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if operation succeeded, else False</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Message to be posted.</span>
+<span class="sd">        params: Optional parameters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if operation succeeded, else False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">slack_channel_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_channel_id</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">WebClient</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">slack_token</span><span class="p">)</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_blocks</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">slack_channel_id</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="n">blocks</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="n">SlackApiError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SlackAlerter.post() failed: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerterParameters" class="doc doc-heading">
+        <code>
+SlackAlerterParameters            (<a class="autorefs autorefs-internal" title="zenml.alerter.base_alerter.BaseAlerterStepParameters" href="../../core_code_docs/core-alerter/#zenml.alerter.base_alerter.BaseAlerterStepParameters">BaseAlerterStepParameters</a>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack alerter parameters.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterParameters</span><span class="p">(</span><span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter parameters.&quot;&quot;&quot;</span>
+
+    <span class="c1"># The ID of the Slack channel to use for communication.</span>
+    <span class="n">slack_channel_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Set of messages that lead to approval in alerter.ask()</span>
+    <span class="n">approve_msg_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Set of messages that lead to disapproval in alerter.ask()</span>
+    <span class="n">disapprove_msg_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SlackAlerterPayload</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">include_format_blocks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Allowing user to use their own custom blocks in the slack post message</span>
+    <span class="n">blocks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.alerters.slack_alerter.SlackAlerterPayload" class="doc doc-heading">
+        <code>
+SlackAlerterPayload            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack alerter payload implementation.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter payload implementation.&quot;&quot;&quot;</span>
+
+    <span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stack_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.integrations.slack.flavors" class="doc doc-heading">
+        <code>flavors</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack integration flavors.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.integrations.slack.flavors.slack_alerter_flavor" class="doc doc-heading">
+        <code>slack_alerter_flavor</code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack alerter flavor.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig" class="doc doc-heading">
+        <code>
+SlackAlerterConfig            (<a class="autorefs autorefs-internal" title="zenml.alerter.base_alerter.BaseAlerterConfig" href="../../core_code_docs/core-alerter/#zenml.alerter.base_alerter.BaseAlerterConfig">BaseAlerterConfig</a>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack alerter config.</p>
+
+<p><strong>Attributes:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>slack_token</code></td>
+        <td><code>str</code></td>
+        <td><p>The Slack token tied to the Slack account to be used.</p></td>
+      </tr>
+      <tr>
+        <td><code>default_slack_channel_id</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The ID of the default Slack channel to use for communication.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterConfig</span><span class="p">(</span><span class="n">BaseAlerterConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter config.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        slack_token: The Slack token tied to the Slack account to be used.</span>
+<span class="sd">        default_slack_channel_id: The ID of the default Slack channel to use for communication.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">slack_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SecretField</span><span class="p">()</span>
+    <span class="n">default_slack_channel_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the stack component is valid.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if the stack component is valid, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">slack_sdk</span> <span class="kn">import</span> <span class="n">WebClient</span>
+            <span class="kn">from</span> <span class="nn">slack_sdk.errors</span> <span class="kn">import</span> <span class="n">SlackApiError</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Unable to validate Slack alerter credentials because the Slack integration is not installed.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">WebClient</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">slack_token</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Check slack token validity</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">auth_test</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;ok&quot;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_slack_channel_id</span><span class="p">:</span>
+                <span class="c1"># Check channel validity</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">conversations_info</span><span class="p">(</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_slack_channel_id</span>
+                <span class="p">)</span>
+            <span class="n">valid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;ok&quot;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">valid</span>
+
+        <span class="k">except</span> <span class="n">SlackApiError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Slack API Error:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig.is_valid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_valid</span><span class="p">:</span> <span class="nb">bool</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Check if the stack component is valid.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if the stack component is valid, False otherwise.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor" class="doc doc-heading">
+        <code>
+SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenml.alerter.base_alerter.BaseAlerterFlavor" href="../../core_code_docs/core-alerter/#zenml.alerter.base_alerter.BaseAlerterFlavor">BaseAlerterFlavor</a>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Slack alerter flavor.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterFlavor</span><span class="p">(</span><span class="n">BaseAlerterFlavor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter flavor.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The name of the flavor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SLACK_ALERTER_FLAVOR</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A flavor docs url.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A flavor SDK docs url.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The flavor logo.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack.png&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterConfig</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `SlackAlerterConfig` config class.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">                The config class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SlackAlerterConfig</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SlackAlerter&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The implementation class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">zenml.integrations.slack.alerters</span> <span class="kn">import</span> <span class="n">SlackAlerter</span>
+
+        <span class="k">return</span> <span class="n">SlackAlerter</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.config_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">slack</span><span class="o">.</span><span class="n">flavors</span><span class="o">.</span><span class="n">slack_alerter_flavor</span><span class="o">.</span><span class="n">SlackAlerterConfig</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns <code>SlackAlerterConfig</code> config class.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterConfig]</code></td>
+      <td><p>The config class.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.docs_url" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">docs_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>A url to point at docs explaining this flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[str]</code></td>
+      <td><p>A flavor docs url.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.implementation_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">implementation_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerter</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Implementation class for this flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[SlackAlerter]</code></td>
+      <td><p>The implementation class.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.logo_url" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">logo_url</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>A url to represent the flavor in the dashboard.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>The flavor logo.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.name" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Name of the flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>The name of the flavor.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h6 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterFlavor.sdk_docs_url" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sdk_docs_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>A url to point at SDK docs explaining this flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[str]</code></td>
+      <td><p>A flavor SDK docs url.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.integrations.slack.flavors.slack_alerter_flavor.SlackAlerterSettings" class="doc doc-heading">
+        <code>
+SlackAlerterSettings            (<a class="autorefs autorefs-internal" title="zenml.config.base_settings.BaseSettings" href="../../core_code_docs/core-config/#zenml.config.base_settings.BaseSettings">BaseSettings</a>)
+        </code>
+
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Settings for the Slack alerter.</p>
+
+<p><strong>Attributes:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>slack_channel_id</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The ID of the Slack channel to use for communication.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Slack alerter.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        slack_channel_id: The ID of the Slack channel to use for communication.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">slack_channel_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.integrations.slack.steps" class="doc doc-heading">
+        <code>steps</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Built-in steps for the Slack integration.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.integrations.slack.steps.slack_alerter_ask_step" class="doc doc-heading">
+        <code>slack_alerter_ask_step</code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Step that allows you to send messages to Slack and wait for a response.</p>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.integrations.slack.steps.slack_alerter_post_step" class="doc doc-heading">
+        <code>slack_alerter_post_step</code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Step that allows you to post messages to Slack.</p>
+
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../integrations-skypilot_lambda/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Skypilot Lambda" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Skypilot Lambda
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../integrations-spark/" class="md-footer__link md-footer__link--next" aria-label="Next: Spark" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Spark
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
