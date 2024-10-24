@@ -93,7 +93,7 @@ Here are some general guidelines to help you organize your ZenML projects effect
 - Share production and staging stacks across teams to ensure consistency
 - Keep local development stacks simple for quick iterations
 
-### Organization
+### Naming and Organization
 - Use consistent naming conventions for pipelines, artifacts, and models
 - Leverage tags to organize and filter resources (e.g., `environment:production`, `team:fraud-detection`)
 - Document stack configurations and pipeline dependencies
