@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import sys
 from contextlib import ExitStack as does_not_raise
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pytest
 from pydantic import BaseModel
@@ -790,7 +790,12 @@ def test_configure_pipeline_with_hooks(one_step_pipeline):
 
 
 @step
-def step_with_int_input(input_: int) -> int:
+def step_with_int_input(
+    input_: int, expected_value: Optional[int] = None
+) -> int:
+    if expected_value is not None:
+        assert input_ == expected_value
+
     return input_
 
 
@@ -1035,6 +1040,21 @@ def test_class_based_steps():
     @pipeline
     def test_pipeline():
         step_instance(a=2)
+
+    with does_not_raise():
+        test_pipeline()
+
+
+def test_artifact_version_as_step_input(clean_client):
+    """Test passing an artifact version as step input."""
+    from zenml import save_artifact
+
+    artifact_value = 3
+    artifact = save_artifact(artifact_value, name="test")
+
+    @pipeline
+    def test_pipeline():
+        step_with_int_input(input_=artifact, expected_value=artifact_value)
 
     with does_not_raise():
         test_pipeline()
