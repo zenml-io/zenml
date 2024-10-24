@@ -44,7 +44,6 @@ model:
   trade_offs: Optional[str]
   use_cases: Optional[str]
   version: Union[ModelStages, int, str, NoneType]
-  was_created_in_this_run: bool
 parameters: Optional[Mapping[str, Any]]
 run_name: Optional[str]
 schedule:
@@ -108,7 +107,6 @@ steps:
       trade_offs: Optional[str]
       use_cases: Optional[str]
       version: Union[ModelStages, int, str, NoneType]
-      was_created_in_this_run: bool
     name: Optional[str]
     outputs:
       output:
@@ -175,7 +173,6 @@ steps:
       trade_offs: Optional[str]
       use_cases: Optional[str]
       version: Union[ModelStages, int, str, NoneType]
-      was_created_in_this_run: bool
     name: Optional[str]
     outputs: {}
     parameters: {}
