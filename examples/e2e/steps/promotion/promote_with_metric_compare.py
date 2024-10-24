@@ -61,7 +61,10 @@ def promote_with_metric_compare(
     latest_version = get_step_context().model
     current_version = Model(name=latest_version.name, version=target_env)
 
-    current_version_number = current_version.number
+    try:
+        current_version_number = current_version.number
+    except KeyError:
+        current_version_number = None
 
     if current_version_number is None:
         logger.info("No current model version found - promoting latest")
