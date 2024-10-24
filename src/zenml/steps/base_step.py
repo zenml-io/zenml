@@ -78,6 +78,7 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.models import ArtifactVersionResponse
     from zenml.types import HookSpecification
 
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -307,7 +308,7 @@ class BaseStep:
         self, *args: Any, **kwargs: Any
     ) -> Tuple[
         Dict[str, "StepArtifact"],
-        Dict[str, "ExternalArtifact"],
+        Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, "ClientLazyLoader"],
         Dict[str, Any],
@@ -328,6 +329,7 @@ class BaseStep:
         from zenml.artifacts.external_artifact import ExternalArtifact
         from zenml.model.lazy_load import ModelVersionDataLazyLoader
         from zenml.models.v2.core.artifact_version import (
+            ArtifactVersionResponse,
             LazyArtifactVersionResponse,
         )
         from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
@@ -378,6 +380,8 @@ class BaseStep:
                     artifact_version=value.lazy_load_version,
                     metadata_name=None,
                 )
+            elif isinstance(value, ArtifactVersionResponse):
+                external_artifacts[key] = value
             elif isinstance(value, LazyRunMetadataResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
                     model_name=value.lazy_load_model_name,
