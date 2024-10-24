@@ -331,6 +331,7 @@ class StepLauncher:
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=datetime.utcnow(),
+            tags=self._deployment.pipeline_configuration.tags,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

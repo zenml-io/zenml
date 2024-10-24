@@ -674,3 +674,18 @@ def test_env_var_substitution(clean_client, empty_pipeline):  # noqa: F811
         run = empty_pipeline()
 
         assert run.config.extra["key"] == "1_suffix"
+
+
+def test_run_tagging(clean_client, tmp_path, empty_pipeline):  # noqa: F811
+    """Test run tagging."""
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("tags: [tag_3]")
+
+    empty_pipeline.configure(tags=["tag_1"])
+    p = empty_pipeline.with_options(
+        tags=["tag_2"], config_path=str(config_path)
+    )
+    run = p()
+
+    assert {tag.name for tag in run.tags} == {"tag_1", "tag_2", "tag_3"}

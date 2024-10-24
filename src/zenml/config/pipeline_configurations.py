@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import SerializeAsAny, field_validator
 
@@ -39,6 +39,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    tags: Optional[List[str]] = None
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None

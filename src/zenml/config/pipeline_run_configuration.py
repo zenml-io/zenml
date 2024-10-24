@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline run configuration class."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, SerializeAsAny
@@ -45,6 +45,7 @@ class PipelineRunConfiguration(
     )
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    tags: Optional[List[str]] = None
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
