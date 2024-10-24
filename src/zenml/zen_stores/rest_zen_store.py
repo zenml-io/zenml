@@ -3957,8 +3957,8 @@ class RestZenStore(BaseZenStore):
             The API token.
 
         Raises:
-            ValueError: if the response from the server isn't in the right
-                format.
+            AuthorizationException: if an API token cannot be fetched or
+                generated.
         """
         if self._api_token is None or self._api_token.expired:
             # Check if a valid API token is already in the cache
@@ -3978,7 +3978,7 @@ class RestZenStore(BaseZenStore):
                 )
 
             data: Optional[Dict[str, str]] = None
-            headers: Optional[Dict[str, str]] = {}
+            headers: Dict[str, str] = {}
 
             # Check if an API key is configured:
             #

@@ -248,7 +248,7 @@ def print_table(
                 ):
                     # Display the URL as a hyperlink in a way that doesn't break
                     # the URL when it needs to be wrapped over multiple lines
-                    value = Text(v, style=f"link {v}")
+                    value: Union[str, Text] = Text(v, style=f"link {v}")
                 else:
                     value = str(v)
                     # Escape text when square brackets are used, but allow
@@ -263,12 +263,11 @@ def print_table(
 
 
 def print_pydantic_models(
-    models: Union[Page, List],
+    models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    active_models: Optional[List] = None,
+    active_models: Optional[List[T]] = None,
     show_active: bool = False,
-    show_index: bool = False,
     rename_columns: Dict[str, str] = {},
 ) -> None:
     """Prints the list of Pydantic models in a table.
@@ -282,7 +281,6 @@ def print_pydantic_models(
         active_models: Optional list of active models of the given type T.
         show_active: Flag to decide whether to append the active model on the
             top of the list.
-        show_index: Flag to decide whether to show the index column.
         rename_columns: Optional dictionary to rename columns.
     """
     if exclude_columns is None:
@@ -293,8 +291,6 @@ def print_pydantic_models(
         show_active_column = False
         active_models = list()
 
-    model_index = 0
-
     def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
@@ -304,8 +300,6 @@ def print_pydantic_models(
         Returns:
             Dict of model attributes.
         """
-        nonlocal model_index
-        model_index += 1
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             if isinstance(model, BaseIdentifiedResponse):
@@ -341,10 +335,6 @@ def print_pydantic_models(
             include_columns = columns
 
         items: Dict[str, Any] = {}
-
-        # Add the index column if requested
-        if show_index:
-            items["#"] = str(model_index)
 
         for k in include_columns:
             value = getattr(model, k)

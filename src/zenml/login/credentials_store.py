@@ -38,7 +38,43 @@ TOKEN_STORE_EVICTION_TIME = 60 * 60 * 24 * 7  # 1 week
 class CredentialsStore(metaclass=SingletonMetaClass):
     """Login credentials store.
 
-    Implements a simple store for login credentials backed by a YAML file on disk.
+    This is a singleton object that maintains a cache of all API tokens and API
+    keys that are configured for the ZenML servers that the client connects to
+    throughout its lifetime.
+
+    The cache is persistent and it is backed by a `credentials.yaml` YAML file
+    kept in the global configuration location. The Credentials Store cache is
+    populated mainly in the following ways:
+
+        1. when the user runs `zenml login` to authenticate to a ZenML Pro
+        server, the ZenML Pro API token fetched from the web login flow is
+        stored in the Credentials Store.
+        2. when the user runs `zenml login` to authenticate to a regular ZenML
+        server with the web login flow, the ZenML server API token fetched
+        through the web login flow is stored in the Credentials Store
+        3. when the user runs `zenml login` to authenticate to any ZenML server
+        using an API key, the API key is stored in the Credentials Store
+        4. when the REST zen store is initialized, it starts up not yet
+        authenticated. Then, if/when it needs to authenticate or re-authenticate
+        to the remote server, it will use whatever form of credentials it finds
+        in the Credentials Store, in order of priority:
+
+            * if it finds an API token that is not expired (e.g. authorized
+            device API tokens fetched through the web login flow or short-lived
+            session API tokens fetched through some other means of
+            authentication), it will use that to authenticate
+            * for ZenML servers that use an API key to authenticate, it will use
+            that to fetch a short-lived ZenML Pro server API token that it also
+            stores in the Credentials Store
+            * for ZenML Pro servers, it exchanges the longer-lived ZenML Pro API
+            token into a short lived ZenML Pro server API token
+
+    Alongside credentials, the Credentials Store is also used to store
+    additional server information:
+        * ZenML Pro tenant information populated by the `zenml login` command
+        * ZenML server information populated by the REST zen store by fetching
+        the server's information endpoint after authenticating
+
     """
 
     credentials: Dict[str, ServerCredentials] = {}
@@ -50,9 +86,6 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         CredentialsStore is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
         instance.
-
-        Args:
-            data: Custom configuration options.
         """
         self._load_credentials()
 
@@ -399,6 +432,6 @@ def get_credentials_store() -> CredentialsStore:
     """Get the global credentials store instance.
 
     Returns:
-        APITokenCache: The global credentials store instance.
+        The global credentials store instance.
     """
     return CredentialsStore()

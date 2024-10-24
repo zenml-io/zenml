@@ -57,18 +57,25 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         """
         from zenml.enums import ServerProviderType
         from zenml.zen_server.deploy.deployer import LocalServerDeployer
+        from zenml.zen_server.deploy.exceptions import (
+            ServerDeploymentNotFoundError,
+        )
 
         # Managing the local server deployment is done through a default
         # local deployment with the same config.
         with self.default_deployment.connect():
             deployer = LocalServerDeployer()
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DAEMON
-            )
-            if not servers:
+            try:
+                server = deployer.get_server()
+            except ServerDeploymentNotFoundError:
                 return None
+            if (
+                server is not None
+                and server.config.provider == ServerProviderType.DAEMON
+            ):
+                return server
 
-            return servers[0]
+            return None
 
     @property
     def is_running(self) -> bool:
@@ -125,7 +132,6 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
 
             deployer = LocalServerDeployer()
             server_config = LocalServerDeploymentConfig(
-                name=self.config.name,
                 provider=ServerProviderType.DAEMON,
                 port=port,
             )
@@ -150,7 +156,7 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         # deployment with the same config.
         with self.default_deployment.connect():
             deployer = LocalServerDeployer()
-            deployer.remove_server(server.config.name)
+            deployer.remove_server()
 
         self.default_deployment.down()
 
@@ -164,11 +170,6 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
         Raises:
             RuntimeError: If the deployment is not running.
         """
-        from zenml.constants import (
-            DEFAULT_PASSWORD,
-            DEFAULT_USERNAME,
-        )
-
         if not self.is_running:
             raise RuntimeError(
                 f"The '{self.config.name}' deployment is not running."
@@ -186,8 +187,6 @@ class ServerSQLiteTestDeployment(BaseTestDeployment):
 
         return DeploymentStoreConfig(
             url=server.status.url,
-            username=DEFAULT_USERNAME,
-            password=DEFAULT_PASSWORD,
         )
 
 

@@ -124,9 +124,6 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
         Returns:
             The API token.
-
-        Raises:
-            AuthorizationException: If the API token is not set or has expired.
         """
         return self._api_token.access_token
 
@@ -218,7 +215,6 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             method: The HTTP method to use.
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
-            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:

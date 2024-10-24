@@ -286,21 +286,17 @@ def show_dashboard(
     from zenml.utils.dashboard_utils import show_dashboard
     from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
 
-    url, port = None, None
+    url: Optional[str] = None
     if not local:
         gc = GlobalConfiguration()
         if gc.store_configuration.type == StoreType.REST:
-            parsed_url = urlparse(gc.store_configuration.url)
-            url, port = (
-                f"{parsed_url.scheme}://{parsed_url.hostname}",
-                parsed_url.port,
-            )
+            url = gc.store_configuration.url
 
     if not url:
         # Else, check for local servers
         server = get_local_server()
         if server and server.status and server.status.url:
-            url, port = server.status.url, server.config.port
+            url = server.status.url
 
     if not url:
         raise RuntimeError(
@@ -309,14 +305,15 @@ def show_dashboard(
             "via `zenml login --local`."
         )
 
-    if ngrok_token and port:
+    if ngrok_token:
+        parsed_url = urlparse(url)
+
         ngrok_url = get_or_create_ngrok_tunnel(
-            ngrok_token=ngrok_token, port=port
+            ngrok_token=ngrok_token, port=parsed_url.port or 80
         )
         logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
         url = ngrok_url
 
-    url = f"{url}:{port}" if port else url
     show_dashboard(url)
 
 

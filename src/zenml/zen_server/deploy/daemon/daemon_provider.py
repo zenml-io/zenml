@@ -68,7 +68,7 @@ class DaemonServerProvider(BaseServerProvider):
         except ImportError:
             # Unable to import the ZenML Server dependencies.
             raise RuntimeError(
-                "The local deamon ZenML server provider is unavailable because the "
+                "The local daemon ZenML server provider is unavailable because the "
                 "ZenML server requirements seems to be unavailable on your machine. "
                 "This is probably because ZenML was installed without the optional "
                 "ZenML Server dependencies. To install the missing dependencies "

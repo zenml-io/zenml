@@ -115,7 +115,7 @@ def up(
 
     # Calling the `zenml login` command
     cli_utils.declare("Calling `zenml login --local`...")
-    login.callback(
+    login.callback(  # type: ignore[misc]
         local=True,
         docker=docker,
         ip_address=ip_address,
@@ -174,7 +174,9 @@ def down() -> None:
 
     # Calling the `zenml logout` command
     cli_utils.declare("Calling `zenml logout --local`...")
-    logout.callback(local=True)
+    logout.callback(  # type: ignore[misc]
+        local=True
+    )
 
 
 @cli.command(
@@ -270,26 +272,30 @@ def status() -> None:
     )
 
     cli_utils.declare("\n-----Local ZenML Server Status-----")
-    server = get_local_server()
-    if server:
-        if server.status:
-            if server.status.status == ServiceState.ACTIVE:
+    local_server = get_local_server()
+    if local_server:
+        if local_server.status:
+            if local_server.status.status == ServiceState.ACTIVE:
                 cli_utils.declare(
-                    f"The local {server.config.provider} server is running at: "
-                    f"{server.status.url}"
+                    f"The local {local_server.config.provider} server is "
+                    f"running at: {local_server.status.url}"
                 )
             else:
                 cli_utils.declare(
-                    f"The local {server.config.provider} server is not available."
+                    f"The local {local_server.config.provider} server is not "
+                    "available."
                 )
-                cli_utils.declare(f"  Server state: {server.status.status}")
-                if server.status.status_message:
+                cli_utils.declare(
+                    f"  Server state: {local_server.status.status}"
+                )
+                if local_server.status.status_message:
                     cli_utils.declare(
-                        f"  Status message: {server.status.status_message}"
+                        f"  Status message: {local_server.status.status_message}"
                     )
         else:
             cli_utils.declare(
-                f"The local {server.config.provider} server is not running."
+                f"The local {local_server.config.provider} server is not "
+                "running."
             )
     else:
         cli_utils.declare("The local server has not been started.")
@@ -395,7 +401,7 @@ def connect(
 
     # Calling the `zenml login` command
     cli_utils.declare("Calling `zenml login`...")
-    login.callback(
+    login.callback(  # type: ignore[misc]
         server=url,
         api_key=api_key,
         no_verify_ssl=no_verify_ssl,
@@ -419,7 +425,7 @@ def disconnect_server() -> None:
 
     # Calling the `zenml logout` command
     cli_utils.declare("Calling `zenml logout`...")
-    logout.callback()
+    logout.callback()  # type: ignore[misc]
 
 
 @cli.command("logs", help="Show the logs for the local ZenML server.")
@@ -674,7 +680,7 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
             s for s in all_servers if s.url == current_store_config.url
         ]
 
-    cli_utils.print_pydantic_models(
+    cli_utils.print_pydantic_models(  # type: ignore[type-var]
         all_servers,
         columns=columns,
         rename_columns={

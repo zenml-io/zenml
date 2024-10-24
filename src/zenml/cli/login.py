@@ -178,12 +178,12 @@ def connect_to_server(
             # flow.
             cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
 
-        store_config = RestZenStoreConfiguration(
+        rest_store_config = RestZenStoreConfiguration(
             url=url,
             verify_ssl=verify_ssl,
         )
         try:
-            GlobalConfiguration().set_store(store_config)
+            GlobalConfiguration().set_store(rest_store_config)
         except IllegalOperationError:
             cli_utils.error(
                 f"You do not have sufficient permissions to "
@@ -196,13 +196,13 @@ def connect_to_server(
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         # Connect to a SQL database
-        store_config = SqlZenStoreConfiguration(
+        sql_store_config = SqlZenStoreConfiguration(
             url=url,
         )
         cli_utils.declare(f"Connecting to SQL database '{url}'...")
 
         try:
-            GlobalConfiguration().set_store(store_config)
+            GlobalConfiguration().set_store(sql_store_config)
         except IllegalOperationError:
             cli_utils.warning(
                 f"You do not have sufficient permissions to "
