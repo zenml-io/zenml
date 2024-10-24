@@ -1,6 +1,6 @@
 ---
+icon: arrow-progress
 description: Executing individual steps in specialized environments.
-icon: user-ninja
 ---
 
 # Step Operators
@@ -36,7 +36,7 @@ zenml step-operator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply specify it in the `@step` decorator of your step.
+You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](broken-reference), you can simply specify it in the `@step` decorator of your step.
 
 ```python
 from zenml import step
@@ -49,10 +49,10 @@ def my_step(...) -> ...:
 
 #### Specifying per-step resources
 
-If your steps require additional hardware resources, you can specify them on your steps as described [here](../../how-to/training-with-gpus/training-with-gpus.md).
+If your steps require additional hardware resources, you can specify them on your steps as described [here](broken-reference).
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use step operators to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use step operators to run steps on a GPU, you will need to follow [the instructions on this page](broken-reference) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

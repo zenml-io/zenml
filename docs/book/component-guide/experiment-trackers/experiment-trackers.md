@@ -1,6 +1,6 @@
 ---
+icon: clipboard
 description: Logging and visualizing ML experiments.
-icon: square-poll-vertical
 ---
 
 # Experiment Trackers
@@ -9,7 +9,7 @@ Experiment trackers let you track your ML experiments by logging extended inform
 
 Related concepts:
 
-* the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](../../user-guide/production-guide/understand-stacks.md).
+* the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](broken-reference).
 * ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md).
 
 ### When to use it

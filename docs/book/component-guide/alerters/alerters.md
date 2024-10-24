@@ -1,6 +1,6 @@
 ---
+icon: message-exclamation
 description: Sending automated alerts to chat services.
-icon: bell-ring
 ---
 
 # Alerters

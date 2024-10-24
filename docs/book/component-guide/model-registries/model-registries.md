@@ -1,6 +1,6 @@
 ---
+icon: table-rows
 description: Tracking and managing ML models.
-icon: cubes
 ---
 
 # Model Registries
@@ -46,7 +46,7 @@ zenml model-registry flavor list
 
 ### How to use it
 
-Model registries are an optional component in the ZenML stack that is tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the fetching runs](../../how-to/build-pipelines/fetching-pipelines.md).
+Model registries are an optional component in the ZenML stack that is tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the fetching runs](broken-reference).
 
 To use model registries, you first need to register a model registry in your stack with the same flavor as your experiment tracker. Then, you can register your trained model in the model registry using one of three methods:
 
