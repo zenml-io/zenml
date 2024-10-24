@@ -1,8 +1,9 @@
 ---
 description: A guide to debug common issues and get help.
+icon: bug
 ---
 
-# 🐞 Debug and solve issues
+# Debug and solve issues
 
 If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
@@ -82,10 +83,7 @@ Walk us through how to reproduce the same error you had step-by-step, whenever p
 
 #### 4. Relevant log output
 
-As a general rule of thumb, always attach relevant log outputs and the full
-error traceback to help us understand what happened under the hood. If the full
-error traceback does not fit into a text message, attach a file or use a service
-like [Pastebin](https://pastebin.com/) or [Github's Gist](https://gist.github.com/).
+As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood. If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/) or [Github's Gist](https://gist.github.com/).
 
 Along with the error traceback, we recommend to always share the output of the following commands:
 
@@ -199,6 +197,6 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](../component-guide/README.md).
+This also applies to all other [stack components](../component-guide/).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

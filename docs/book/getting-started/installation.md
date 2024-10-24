@@ -1,8 +1,9 @@
 ---
 description: Installing ZenML and getting started.
+icon: cauldron
 ---
 
-# 🧙 Installation
+# Installation
 
 **ZenML** is a Python package that can be installed directly via `pip`:
 
@@ -16,7 +17,7 @@ Note that ZenML currently supports **Python 3.9, 3.10, 3.11 and 3.12**. Please m
 
 ## Install with the dashboard
 
-ZenML comes bundled with a web dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/README.md). For this, you need to install the optional dependencies for the ZenML Server:
+ZenML comes bundled with a web dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/). For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
 pip install "zenml[server]"
@@ -28,15 +29,13 @@ We highly encourage you to install ZenML in a virtual environment. At ZenML, We 
 
 ## Installing onto MacOS with Apple Silicon (M1, M2)
 
-A change in how forking works on Macs running on Apple Silicon means that you
-should set the following environment variable which will ensure that your
-connections to the server remain unbroken:
+A change in how forking works on Macs running on Apple Silicon means that you should set the following environment variable which will ensure that your connections to the server remain unbroken:
 
 ```bash
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
-You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
+You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C\_and\_fork\_in\_macOS\_1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
 
 ## Nightly builds
 
@@ -89,6 +88,6 @@ pip install "zenml[server]"
 zenml up  # opens the dashboard locally 
 ```
 
-However, advanced ZenML features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](deploying-zenml/README.md).
+However, advanced ZenML features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](deploying-zenml/).
 
-For the deployment of ZenML, you have the option to either [self-host](deploying-zenml/README.md) it or register for a free [ZenML Pro](https://cloud.zenml.io/signup?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) account.
+For the deployment of ZenML, you have the option to either [self-host](deploying-zenml/) it or register for a free [ZenML Pro](https://cloud.zenml.io/signup?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) account.

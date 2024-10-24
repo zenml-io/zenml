@@ -1,12 +1,11 @@
 ---
 description: Setting your team up for success with a project repository.
+icon: paw
 ---
 
-# 😸 Setting up a project repository
+# Set up a project repository
 
-ZenML code typically lives in a `git` repository. Setting this repository up correctly can make a huge impact on collaboration and
-getting the maximum out of your ZenML deployment. This section walks users through some of the options available to create a project
-repository with ZenML.
+ZenML code typically lives in a `git` repository. Setting this repository up correctly can make a huge impact on collaboration and getting the maximum out of your ZenML deployment. This section walks users through some of the options available to create a project repository with ZenML.
 
 <figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 

@@ -1,10 +1,11 @@
 ---
 description: Discovering the core concepts behind ZenML.
+icon: lightbulb
 ---
 
-# 🪄 Core concepts
+# Core concepts
 
-![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)
+![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core\_concepts\_oss.png)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 
@@ -135,7 +136,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/README.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/).
 
 #### Metadata Tracking
 
@@ -157,7 +158,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/README.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### VS Code Extension
 

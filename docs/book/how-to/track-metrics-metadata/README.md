@@ -1,8 +1,9 @@
 ---
 description: Tracking metrics and metadata
+icon: ufo-beam
 ---
 
-# 📈 Track metrics and metadata
+# Track metrics and metadata
 
 Logging metrics and metadata is standardized in ZenML. The most common pattern is to use the `log_xxx` methods, e.g.:
 

@@ -1,8 +1,9 @@
 ---
 description: Registering and using secrets.
+icon: user-secret
 ---
 
-# 🔐 Interact with secrets
+# Interact with secrets
 
 ## What is a ZenML secret?
 
