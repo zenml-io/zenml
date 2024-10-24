@@ -28,14 +28,9 @@ VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0
 # Try to get the latest version using pip index
 version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
 
-# If pip index fails, fall back to pip install --dry-run
-if [ -z "$version" ]; then
-    version=$(pip install --dry-run zenml 2>&1 | grep -oP "(?<=Collecting zenml==)[0-9.]+")
-fi
-
 # Verify we got a version
 if [ -z "$version" ]; then
-    echo "Error: Could not find version for zenml" >&2
+    echo "Error: Could not find the latest version for zenml" >&2
     return 1
 fi
 
