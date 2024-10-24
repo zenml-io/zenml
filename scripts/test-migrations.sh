@@ -25,9 +25,21 @@ fi
 # List of versions to test
 VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0")
 
-# Include latest release dynamically, if not there already
-LATEST_RELEASE=$(gh release view --json tagName -q '{tag: .tagName}')
-LATEST_VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag)
+# Try to get the latest version using pip index
+version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
+
+# If pip index fails, fall back to pip install --dry-run
+if [ -z "$version" ]; then
+    version=$(pip install --dry-run zenml 2>&1 | grep -oP "(?<=Collecting zenml==)[0-9.]+")
+fi
+
+# Verify we got a version
+if [ -z "$version" ]; then
+    echo "Error: Could not find version for zenml" >&2
+    return 1
+fi
+
+LATEST_VERSION=$(echo $version | xargs)
 
 if [[ ! " ${VERSIONS[@]} " =~ " ${LATEST_VERSION} " ]]; then
    VERSIONS+=("${LATEST_VERSION}")
