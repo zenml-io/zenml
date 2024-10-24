@@ -376,6 +376,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
+        "user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -417,6 +418,10 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",
+    )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the component.",
     )
 
     def set_scope_type(self, component_type: str) -> None:
@@ -464,3 +469,31 @@ class ComponentFilter(WorkspaceScopedFilter):
             base_filter = operator(base_filter, stack_filter)
 
         return base_filter
+
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
+            UserSchema,
+        )
+
+        custom_filters = super().get_custom_filters()
+
+        if self.user:
+            user_filter = and_(
+                StackComponentSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
