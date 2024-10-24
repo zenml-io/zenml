@@ -241,4 +241,4 @@ jobs:
           sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
           pip install -r requirements_${{ matrix.cloud }}.txt
           zenml integration install ${{ matrix.cloud }} -y
-          python run.py --model_type=t5-small
+          python run.py --model_type=t5-small --no-cache
