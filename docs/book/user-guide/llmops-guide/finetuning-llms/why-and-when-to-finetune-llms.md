@@ -39,7 +39,7 @@ Here's a flowchart representation of these points:
 
 ```mermaid
 flowchart TD
-    A[Start: Need to use LLM] --> B{Is prompt engineering<br/>sufficient?}
+    A[Should I finetune an LLM?] --> B{Is prompt engineering<br/>sufficient?}
     B -->|Yes| C[Use prompt engineering<br/>No finetuning needed]
     B -->|No| D{Is it primarily a<br/>knowledge retrieval<br/>problem?}
     
