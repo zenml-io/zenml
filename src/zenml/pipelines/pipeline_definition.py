@@ -345,6 +345,10 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
+        if merge and tags and self._configuration.tags:
+            # Merge tags explicitly here as the update_model only merges dicts
+            tags = self._configuration.tags + tags
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
