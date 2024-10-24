@@ -41,7 +41,7 @@ def select_materializer(
         for materializer_class in materializer_classes:
             if class_ in materializer_class.ASSOCIATED_TYPES:
                 return materializer_class
-            elif not fallback and materializer_class.can_handle_type(class_):
+            elif not fallback and materializer_class.can_save_type(class_):
                 fallback = materializer_class
 
     if fallback:

@@ -403,7 +403,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             yaml_utils.write_json(self.metadata_path, metadata)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
-                materializer.validate_type_compatibility(type(element))
+                materializer.validate_save_type_compatibility(type(element))
                 materializer.save(element)
         # If an error occurs, delete all created files.
         except Exception as e:
