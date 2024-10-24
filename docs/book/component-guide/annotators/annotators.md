@@ -1,6 +1,6 @@
 ---
+icon: expand
 description: Annotating the data in your workflow.
-icon: tag
 ---
 
 # Annotators
