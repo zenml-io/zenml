@@ -586,6 +586,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack",
         "code_repository",
         "model",
+        "stack_component",
         "pipeline_name",
         "templatable",
     ]
@@ -688,6 +689,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the model associated with the run.",
     )
+    stack_component: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the stack component associated with the run.",
+    )
     templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
@@ -716,6 +721,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineRunSchema,
             PipelineSchema,
             ScheduleSchema,
+            StackComponentSchema,
+            StackCompositionSchema,
             StackSchema,
             UserSchema,
         )
@@ -820,6 +827,19 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 ),
             )
             custom_filters.append(model_filter)
+
+        if self.stack_component:
+            component_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                StackSchema.id == StackCompositionSchema.stack_id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack_component,
+                    table=StackComponentSchema,
+                ),
+            )
+            custom_filters.append(component_filter)
 
         if self.pipeline_name:
             pipeline_name_filter = and_(
