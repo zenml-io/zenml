@@ -65,7 +65,7 @@
     * [Finetuning with 🤗 Accelerate](user-guide/llmops-guide/finetuning-llms/finetuning-with-accelerate.md)
     * [Evaluation for finetuning](user-guide/llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](user-guide/llmops-guide/finetuning-llms/deploying-finetuned-models.md)
-
+    * [Next steps](user-guide/llmops-guide/finetuning-llms/next-steps.md)
 ## How-To
 
 * [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
