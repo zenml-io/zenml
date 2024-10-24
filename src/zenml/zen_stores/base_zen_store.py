@@ -60,9 +60,6 @@ from zenml.models import (
     WorkspaceResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.zen_stores.secrets_stores.sql_secrets_store import (
-    SqlSecretsStoreConfiguration,
-)
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
@@ -295,6 +292,9 @@ class BaseZenStore(
         Returns:
             The default store configuration.
         """
+        from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+            SqlSecretsStoreConfiguration,
+        )
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(

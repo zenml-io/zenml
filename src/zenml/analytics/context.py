@@ -75,9 +75,18 @@ class AnalyticsContext:
         """
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
+        from zenml.models import ServerDeploymentType
 
         try:
             gc = GlobalConfiguration()
+
+            if not gc.is_initialized:
+                # If the global configuration is not initialized, using the
+                # zen store can lead to multiple initialization issues, because
+                # the analytics are triggered during the initialization of the
+                # zen store.
+                return self
+
             store_info = gc.zen_store.get_store_info()
 
             # For local ZenML servers, we always use the client's analytics
