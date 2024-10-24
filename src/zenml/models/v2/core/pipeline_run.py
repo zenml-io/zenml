@@ -586,7 +586,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack",
         "code_repository",
         "model",
-        "component",
+        "stack_component",
         "pipeline_name",
         "templatable",
     ]
