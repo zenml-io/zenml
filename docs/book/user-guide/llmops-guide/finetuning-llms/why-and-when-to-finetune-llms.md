@@ -9,7 +9,7 @@ finetuning models on your custom data and use cases. Before we dive into the det
 
 - LLM finetuning is not a universal solution or approach: it won't and cannot solve every problem, it might not reach the required levels of accuracy or performance for your use case and you should know that by going the route of finetuning you are taking on a not-inconsiderable amount of technical debt.
 - Chatbot-style interfaces are not the only way LLMs can be used: there are lots of uses for LLMs and this finetuning approach which don't include any kind of chatbot. What's more, these non-chatbot interfaces should often to be considered preferable since the surface area of failure is much lower.
-- The choice to finetune an LLM should probably be the final step in a series of experiments. As with the first point, you shouldn't just jump to it because other people are doing it. Rather, you should probably rule out other approaches (smaller models for more decomposed tasks, [RAG](../rag/understanding-rag.md) if you're working on a retrieval or long-context problem, or a mixture of the above for more complete use cases).
+- The choice to finetune an LLM should probably be the final step in a series of experiments. As with the first point, you shouldn't just jump to it because other people are doing it. Rather, you should probably rule out other approaches (smaller models for more decomposed tasks, [RAG](../rag-with-zenml/understanding-rag.md) if you're working on a retrieval or long-context problem, or a mixture of the above for more complete use cases).
 
 ## When makes sense to finetune an LLM?
 
@@ -74,7 +74,7 @@ flowchart TD
 Before deciding to finetune an LLM, consider these alternatives:
 
 - Prompt engineering: Often, carefully crafted prompts can achieve good results without the need for finetuning.
-- [Retrieval-Augmented Generation (RAG)](../rag/understanding-rag.md): For many use cases involving specific knowledge bases, RAG can be more effective and easier to maintain than finetuning.
+- [Retrieval-Augmented Generation (RAG)](../rag-with-zenml/understanding-rag.md): For many use cases involving specific knowledge bases, RAG can be more effective and easier to maintain than finetuning.
 - Smaller, task-specific models: For narrow tasks, smaller models trained specifically for that task might outperform a finetuned large language model.
 - API-based solutions: If your use case doesn't require handling sensitive data, using API-based solutions from providers like OpenAI or Anthropic might be simpler and more cost-effective.
 

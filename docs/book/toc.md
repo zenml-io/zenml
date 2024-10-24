@@ -60,6 +60,7 @@
     * [Finetuning embeddings with Sentence Transformers](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
     * [Evaluating finetuned embeddings](user-guide/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
+    * [Finetuning in 100 lines of code](user-guide/llmops-guide/finetuning-llms/finetuning-100-loc.md)
     * [Why and when to finetune LLMs](user-guide/llmops-guide/finetuning-llms/why-and-when-to-finetune-llms.md)
     * [Starter choices with finetuning](user-guide/llmops-guide/finetuning-llms/getting-started-with-finetuning.md)
     * [Finetuning with 🤗 Accelerate](user-guide/llmops-guide/finetuning-llms/finetuning-with-accelerate.md)
