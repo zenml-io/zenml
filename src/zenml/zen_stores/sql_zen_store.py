@@ -1584,6 +1584,7 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = settings.server_id
+        model.name = settings.server_name
         model.active = settings.active
         model.last_user_activity = settings.last_user_activity
         model.analytics_enabled = settings.enable_analytics

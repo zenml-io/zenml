@@ -153,6 +153,8 @@ def connect_to_server(
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
+    url = url.rstrip("/")
+
     store_type = BaseZenStore.get_store_type(url)
     if store_type == StoreType.REST:
         from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
@@ -164,7 +166,7 @@ def connect_to_server(
             )
             credentials_store.set_api_key(url, api_key)
         elif not is_zenml_pro_server_url(url):
-            if not credentials_store.has_valid_authentication(url) or refresh:
+            if refresh or not credentials_store.has_valid_authentication(url):
                 cli_utils.declare(
                     f"Authenticating to ZenML server '{url}' using the web "
                     "login..."
@@ -428,7 +430,9 @@ def connect_to_pro_server(
       * if the client is already connected to a ZenML server, the command
         triggers a new web login flow with the same server. This allows you to
         simply call `zenml login` again when your CLI session expires to refresh
-        the current session and continue using the same server.
+        the current session and continue using the same server. The `--pro` flag
+        can be used to launch a ZenML Pro server login regardless of the current
+        client state.
     
     This command accepts an optional SERVER argument. This is meant to
     be used to log in to a specific ZenML server and easily switch between
@@ -471,6 +475,9 @@ def connect_to_pro_server(
 
       * `--restart`: force a restart of the local ZenML server.
 
+    The `--api-key` flag can be used to authenticate with a ZenML server using
+    an API key instead of the web login flow.
+
     Examples:
 
       * connect to a ZenML Pro server using the web login flow:
@@ -494,6 +501,13 @@ def connect_to_pro_server(
     ),
 )
 @click.argument("server", type=str, required=False)
+@click.option(
+    "--pro",
+    is_flag=True,
+    help="Login to ZenML Pro.",
+    default=False,
+    type=click.BOOL,
+)
 @click.option(
     "--refresh",
     is_flag=True,
@@ -588,6 +602,7 @@ def connect_to_pro_server(
 )
 def login(
     server: Optional[str] = None,
+    pro: bool = False,
     refresh: bool = False,
     api_key: bool = False,
     no_verify_ssl: bool = False,
@@ -608,6 +623,7 @@ def login(
     Args:
         server: The URL where the ZenML server is reachable, or a ZenML Pro
             server name or ID.
+        pro: Log in to a ZenML Pro server.
         refresh: Force a new login flow with the ZenML server.
         api_key: Whether to use an API key to authenticate with the ZenML
             server.
@@ -640,6 +656,13 @@ def login(
             image=image,
             ngrok_token=ngrok_token,
             restart=restart,
+        )
+        return
+
+    if pro:
+        connect_to_pro_server(
+            pro_server=server,
+            refresh=True,
         )
         return
 
@@ -679,11 +702,8 @@ def login(
                 url=server,
                 api_key=api_key_value,
                 verify_ssl=verify_ssl,
-                # No need to trigger the login flow if the user is already
-                # authenticated to the server.
-                refresh=False,
+                refresh=refresh,
             )
-            return
 
     elif current_non_local_server:
         # The server argument is not provided, so we default to
@@ -725,7 +745,7 @@ def login(
 
 @cli.command(
     "logout",
-    help="""Log out from a ZenML server.
+    help="""Log out from a ZenML server and optionally clear stored credentials.
     
     Examples:
 
@@ -735,15 +755,22 @@ def login(
     
       * disconnect from the local ZenML server and shut it down, if running:
 
-        zenml logout local
+        zenml logout --local
 
-      * log out from a specific ZenML server:
+      * clear all stored credentials and tokens for a specific ZenML server:
 
-        zenml logout https://zenml.example.com
+        zenml logout https://zenml.example.com --clear
         
 """,
 )
 @click.argument("server", type=str, required=False)
+@click.option(
+    "--clear",
+    is_flag=True,
+    help="Clear all stored credentials and tokens.",
+    default=False,
+    type=click.BOOL,
+)
 @click.option(
     "--local",
     is_flag=True,
@@ -751,21 +778,57 @@ def login(
     default=False,
     type=click.BOOL,
 )
-def logout(server: Optional[str] = None, local: bool = False) -> None:
+@click.option(
+    "--pro",
+    is_flag=True,
+    help="Log out from all ZenML Pro servers.",
+    default=False,
+    type=click.BOOL,
+)
+def logout(
+    server: Optional[str] = None,
+    local: bool = False,
+    clear: bool = False,
+    pro: bool = False,
+) -> None:
     """Disconnect from a ZenML server.
 
     Args:
         server: The URL of the ZenML server to disconnect from.
+        clear: Clear all stored credentials and tokens.
         local: Disconnect from the local ZenML server.
+        pro: Log out from ZenML Pro.
     """
+    from zenml.login.credentials_store import get_credentials_store
+
+    credentials_store = get_credentials_store()
+    gc = GlobalConfiguration()
+    store_cfg = gc.store_configuration
+
+    if pro:
+        if server:
+            cli_utils.error(
+                "The `--pro` flag cannot be used with a specific server URL."
+            )
+
+        if credentials_store.has_valid_pro_authentication():
+            credentials_store.clear_pro_credentials()
+            cli_utils.declare("Logged out from ZenML Pro.")
+        else:
+            cli_utils.declare(
+                "The client is not currently connected to ZenML Pro."
+            )
+
+        if clear:
+            if is_zenml_pro_server_url(store_cfg.url):
+                gc.set_default_store()
+
+            credentials_store.clear_all_pro_tokens()
+            cli_utils.declare("Logged out from all ZenML Pro servers.")
+        return
+
     if server is None:
         # Log out from the current server
-
-        from zenml.login.credentials_store import get_credentials_store
-
-        credentials_store = get_credentials_store()
-        gc = GlobalConfiguration()
-        store_cfg = gc.store_configuration
 
         if gc.uses_default_store():
             cli_utils.declare(
@@ -795,22 +858,46 @@ def logout(server: Optional[str] = None, local: bool = False) -> None:
                 "The local ZenML dashboard has been shut down.\n"
                 "Hint: You can run 'zenml login --local' to start it again."
             )
+        return
 
-    elif is_zenml_pro_server_url(store_cfg.url):
-        cli_utils.declare("Logging out from ZenML Pro...")
+    assert server is not None
+
+    if is_zenml_pro_server_url(server):
         gc.set_default_store()
-        credentials_store.clear_pro_credentials()
-        cli_utils.declare(
-            "Logged out from ZenML Pro.\n"
-            "Hint: You can run 'zenml login' to log in to ZenML Pro again."
-        )
+        credentials = credentials_store.get_credentials(server)
+        if credentials and (clear or store_cfg.url == server):
+            cli_utils.declare(
+                f"Logging out from ZenML Pro server '{credentials.server_name}'."
+            )
+            if clear:
+                credentials_store.clear_token(server_url=server)
+            cli_utils.declare(
+                "Logged out from ZenML Pro.\n"
+                f"Hint: You can run 'zenml login {credentials.server_name}' to "
+                "login again to the same ZenML PRo server or 'zenml server "
+                "list' to view other available servers that you can connect to "
+                "with 'zenml login <server-id-name-or-url>'."
+            )
+        else:
+            cli_utils.declare(
+                f"The client is not currently connected to the ZenML Pro server "
+                f"at '{server}'."
+            )
     else:
-        cli_utils.declare(f"Logging out from {store_cfg.url}.")
         gc.set_default_store()
-        credentials_store.clear_token(server_url=store_cfg.url)
-        cli_utils.declare(
-            f"Logged out from {store_cfg.url}."
-            f"Hint: You can run 'zenml login {store_cfg.url}' to log in again "
-            "to the same server or 'zenml server list' to view other available "
-            "servers that you can connect to with 'zenml login <server-url>'."
-        )
+        credentials = credentials_store.get_credentials(server)
+        if credentials and (clear or store_cfg.url == server):
+            cli_utils.declare(f"Logging out from {server}.")
+            if clear:
+                credentials_store.clear_token(server_url=server)
+            cli_utils.declare(
+                f"Logged out from {server}."
+                f"Hint: You can run 'zenml login {server}' to log in again "
+                "to the same server or 'zenml server list' to view other available "
+                "servers that you can connect to with 'zenml login <server-url>'."
+            )
+        else:
+            cli_utils.declare(
+                f"The client is not currently connected to the ZenML server at "
+                f"'{server}'."
+            )

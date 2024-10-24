@@ -256,6 +256,14 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         """Delete the token from the store for the ZenML Pro API server."""
         self.clear_token(ZENML_PRO_API_URL)
 
+    def clear_all_pro_tokens(self) -> None:
+        """Delete all tokens from the store for ZenML Pro API servers."""
+        for server_url, server in self.credentials.copy().items():
+            if server.type == ServerType.PRO:
+                if server.api_key:
+                    continue
+                self.clear_token(server_url)
+
     def has_valid_authentication(self, url: str) -> bool:
         """Check if a valid authentication credential for the given server URL is stored.
 
@@ -266,6 +274,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             bool: True if a valid token or API key is stored, False otherwise.
         """
         credential = self.credentials.get(url)
+
         if not credential:
             return False
         if credential.api_key:

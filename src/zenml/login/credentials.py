@@ -135,7 +135,9 @@ class ServerCredentials(BaseModel):
             self.server_id = self.server_id or server_info.id
 
             # All other attributes can change during the lifetime of the server
-            server_name = server_info.metadata.get("organization_id")
+            server_name = (
+                server_info.metadata.get("tenant_name") or server_info.name
+            )
             if server_name:
                 self.server_name = server_name
             organization_id = server_info.metadata.get("organization_id")
@@ -187,7 +189,7 @@ class ServerCredentials(BaseModel):
             return "N/A"
         expires_at = self.api_token.expires_at_with_leeway
         if not expires_at:
-            return "valid"
+            return "never expires"
         if expires_at < datetime.now(timezone.utc):
             return "expired at " + self.expires_at
 

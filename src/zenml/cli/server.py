@@ -552,6 +552,10 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
     pro_servers = credentials_store.list_credentials(type=ServerType.PRO)
     # The list of regular remote ZenML servers kept in the credentials store
     servers = list(credentials_store.list_credentials(type=ServerType.REMOTE))
+    # The list of local ZenML servers kept in the credentials store
+    local_servers = list(
+        credentials_store.list_credentials(type=ServerType.LOCAL)
+    )
 
     if pro_token and not pro_token.expired:
         # If the ZenML Pro authentication is still valid, we include all ZenML
@@ -619,7 +623,6 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
         )
 
     # We add the local server to the list of servers, if it is running
-    local_servers: List[ServerCredentials] = []
     local_server = get_local_server()
     if local_server:
         url = (
@@ -647,7 +650,7 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
             "type",
             "server_id_hyperlink",
             "server_name_hyperlink",
-            "organization_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
             "version",
             "status",
             "dashboard_url",
@@ -659,18 +662,23 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
             "type",
             "server_id_hyperlink",
             "server_name_hyperlink",
-            "organization_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
             "version",
             "status",
+            "api_hyperlink",
         ]
     else:
         columns = [
             "type",
-            "server_id_hyperlink",
+            "server_id_hyperlink" if pro_servers else "",
             "server_name_hyperlink",
-            "organization_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
             "version",
+            "api_hyperlink" if servers else "",
         ]
+
+    # Remove empty columns
+    columns = [c for c in columns if c]
 
     # Figure out if the client is already connected to one of the
     # servers in the list

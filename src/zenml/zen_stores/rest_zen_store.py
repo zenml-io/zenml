@@ -3963,9 +3963,23 @@ class RestZenStore(BaseZenStore):
         if self._api_token is None or self._api_token.expired:
             # Check if a valid API token is already in the cache
             credentials_store = get_credentials_store()
-            token = credentials_store.get_token(self.url, allow_expired=True)
-            if token and not token.expired:
+            credentials = credentials_store.get_credentials(self.url)
+            token = credentials.api_token if credentials else None
+            if credentials and token and not token.expired:
                 self._api_token = token
+
+                # Populate the server info in the credentials store if it is
+                # not already present
+                if not credentials.server_id:
+                    try:
+                        server_info = self.get_store_info()
+                    except Exception as e:
+                        logger.warning(f"Failed to get server info: {e}.")
+                    else:
+                        credentials_store.update_server_info(
+                            self.url, server_info
+                        )
+
                 return self._api_token.access_token
 
             # Token is expired or not found in the cache. Time to get a new one.
