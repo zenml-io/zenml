@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 import pathlib
+import subprocess
 import sys
 from contextlib import ExitStack as does_not_raise
 from types import BuiltinFunctionType, FunctionType
@@ -349,4 +351,13 @@ def test_package_utility_functions():
     assert (
         source_utils._get_package_version(package_name="non_existent_package")
         is None
+    )
+
+
+def test_resolving_and_loading_main_module_sources():
+    """Test resolving and loading a main source in the same process."""
+
+    subprocess.check_call(
+        [sys.executable, "source_utils_test_helper.py"],
+        cwd=os.path.dirname(__file__),
     )
