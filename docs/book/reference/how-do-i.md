@@ -1,8 +1,9 @@
 ---
 description: Links to common use cases, workflows and tasks using ZenML.
+icon: face-thinking
 ---
 
-# 📚 How do I...?
+# How do I...?
 
 **Last Updated**: December 13, 2023
 
@@ -28,7 +29,7 @@ ZenML is designed to be stack-agnostic, so you can use it with any cloud infrast
 
 * **deploy ZenML** on my internal company cluster?
 
-Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/README.md) in which several options are presented.
+Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/) in which several options are presented.
 
 * **hyperparameter tuning**?
 
@@ -52,6 +53,6 @@ Upgrading your ZenML client package is as simple as running `pip install --upgra
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
-For information on how to use a specific stack component, please refer to [the component guide](../component-guide/README.md) which contains all our tips and advice on how to use each integration and component with ZenML.
+For information on how to use a specific stack component, please refer to [the component guide](../component-guide/) which contains all our tips and advice on how to use each integration and component with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

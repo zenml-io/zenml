@@ -1,8 +1,9 @@
 ---
 description: Understanding the global settings of your ZenML installation.
+icon: gear
 ---
 
-# 📼 Global settings
+# Global settings
 
 The information about the global settings of ZenML on a machine is kept in a folder commonly referred to as the **ZenML Global Config Directory** or the **ZenML Config Path**. The location of this folder depends on the operating system type and the current system user, but is usually located in the following locations:
 
@@ -63,10 +64,7 @@ The following is an example of the layout of the global config directory immedia
 
 As shown above, the global config directory stores the following information:
 
-1.  The `config.yaml` file stores the global configuration settings: the unique
-    ZenML client ID, the active database configuration, the analytics-related
-    options, and the active Stack. This is an example of the `config.yaml` file
-    contents immediately after initialization:
+1.  The `config.yaml` file stores the global configuration settings: the unique ZenML client ID, the active database configuration, the analytics-related options, and the active Stack. This is an example of the `config.yaml` file contents immediately after initialization:
 
     ```yaml
     active_stack_id: ...

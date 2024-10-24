@@ -1,8 +1,9 @@
 ---
 description: How to control ZenML behavior with environmental variables.
+icon: earth-africa
 ---
 
-# 🌎 Environment Variables
+# Environment Variables
 
 There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:
 
@@ -80,7 +81,7 @@ If you wish to disable colorful logging, set the following environment variable:
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](../how-to/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
+Note that setting this on the [client environment](../how-to/configure-python-environments/#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})

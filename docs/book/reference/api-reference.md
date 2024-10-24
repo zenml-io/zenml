@@ -1,25 +1,23 @@
 ---
 description: See the ZenML API reference.
+icon: ruler
 ---
 
-# 👀 API reference
+# API reference
 
-The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc`
-of your ZenML server:
+The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc` of your ZenML server:
 
 {% hint style="info" %}
 In the local case (i.e. using `zenml up`, the docs are available on `http://127.0.0.1:8237/docs`)
 {% endhint %}
 
-![ZenML API docs](../.gitbook/assets/zenml_api_docs.png)
+![ZenML API docs](../.gitbook/assets/zenml\_api\_docs.png)
 
-![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png)
+![ZenML API Redoc](../.gitbook/assets/zenml\_api\_redoc.png)
 
 ## Using a bearer token to access the API programmatically
 
-If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML
-account in the same browser session. However, in order to do this programmatically, the following steps
-need to be followed:
+If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, the following steps need to be followed:
 
 1. Create a [service account](../how-to/connecting-to-zenml/connect-with-a-service-account.md):
 
