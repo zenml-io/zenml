@@ -65,7 +65,7 @@ Using shared private wheels is an effective approach to sharing code within a te
 
 ### Using Shared Libraries with `DockerSettings`
 
-When running pipelines with remote orchestrators, ZenML generates a Dockerfile at runtime. You can use the `DockerSettings` class to specify how to include your shared libraries in this Docker image.
+When running pipelines with remote orchestrators, ZenML generates a `Dockerfile` at runtime. You can use the `DockerSettings` class to specify how to include your shared libraries in this Docker image.
 
 #### Installing Shared Libraries
 
