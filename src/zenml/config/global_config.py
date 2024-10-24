@@ -690,6 +690,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         logger.info("Updated the global store configuration.")
 
     @property
+    def is_initialized(self) -> bool:
+        """Check if the global configuration is initialized.
+
+        Returns:
+            `True` if the global configuration is initialized.
+        """
+        return self._zen_store is not None
+
+    @property
     def zen_store(self) -> "BaseZenStore":
         """Initialize and/or return the global zen store.
 

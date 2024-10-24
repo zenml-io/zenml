@@ -22,16 +22,18 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LOCAL_STORES_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
-from zenml.enums import StoreType
+from zenml.enums import AuthScheme, StoreType
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
 from zenml.services import (
@@ -46,7 +48,7 @@ from zenml.services.container.container_service import (
     SERVICE_CONTAINER_PATH,
 )
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+from zenml.zen_server.deploy.deployment import LocalServerDeploymentConfig
 
 logger = get_logger(__name__)
 
@@ -57,7 +59,7 @@ DOCKER_ZENML_SERVER_DEFAULT_IMAGE = (
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
-class DockerServerDeploymentConfig(ServerDeploymentConfig):
+class DockerServerDeploymentConfig(LocalServerDeploymentConfig):
     """Docker server deployment configuration.
 
     Attributes:
@@ -68,6 +70,15 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
     store: Optional[StoreConfiguration] = None
+
+    @property
+    def url(self) -> Optional[str]:
+        """Get the configured server URL.
+
+        Returns:
+            The configured server URL.
+        """
+        return f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{self.port}"
 
     model_config = ConfigDict(extra="forbid")
 
@@ -159,6 +170,7 @@ class DockerZenServer(ContainerService):
             SERVICE_CONTAINER_PATH,
             SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
         )
+        env[ENV_ZENML_SERVER_AUTH_SCHEME] = AuthScheme.NO_AUTH.value
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
         env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
 

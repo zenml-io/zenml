@@ -23,7 +23,7 @@ from zenml.cli.cli import cli
 from zenml.cli.server import LOCAL_ZENML_SERVER_NAME
 from zenml.config.global_config import GlobalConfiguration
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_server.deploy import ServerDeployer
+from zenml.zen_server.deploy import LocalServerDeployer
 
 SERVER_START_STOP_TIMEOUT = 30
 
@@ -53,7 +53,7 @@ def test_server_cli_up_down(clean_client, mocker):
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health", timeout=16).status_code == 200
 
-    deployer = ServerDeployer()
+    deployer = LocalServerDeployer()
     server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)
     gc = GlobalConfiguration()
     assert gc.store.url == server.status.url
@@ -68,5 +68,5 @@ def test_server_cli_up_down(clean_client, mocker):
     # sleep for a bit to let the server stop
     time.sleep(5)
 
-    deployer = ServerDeployer()
+    deployer = LocalServerDeployer()
     assert deployer.list_servers() == []

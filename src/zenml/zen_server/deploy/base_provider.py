@@ -14,7 +14,7 @@
 """Base ZenML server provider class."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Generator, List, Optional, Tuple, Type
+from typing import ClassVar, Generator, Optional, Tuple, Type
 
 from pydantic import ValidationError
 
@@ -28,9 +28,9 @@ from zenml.services import (
     ServiceEndpointHealthMonitorConfig,
 )
 from zenml.zen_server.deploy.deployment import (
-    ServerDeployment,
-    ServerDeploymentConfig,
-    ServerDeploymentStatus,
+    LocalServerDeployment,
+    LocalServerDeploymentConfig,
+    LocalServerDeploymentStatus,
 )
 from zenml.zen_server.deploy.exceptions import (
     ServerDeploymentConfigurationError,
@@ -48,21 +48,21 @@ class BaseServerProvider(ABC):
     """
 
     TYPE: ClassVar[ServerProviderType]
-    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
-        ServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[LocalServerDeploymentConfig]] = (
+        LocalServerDeploymentConfig
     )
 
     @classmethod
     def register_as_provider(cls) -> None:
         """Register the class as a server provider."""
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
-        ServerDeployer.register_provider(cls)
+        LocalServerDeployer.register_provider(cls)
 
     @classmethod
     def _convert_config(
-        cls, config: ServerDeploymentConfig
-    ) -> ServerDeploymentConfig:
+        cls, config: LocalServerDeploymentConfig
+    ) -> LocalServerDeploymentConfig:
         """Convert a generic server deployment config into a provider specific config.
 
         Args:
@@ -86,9 +86,9 @@ class BaseServerProvider(ABC):
 
     def deploy_server(
         self,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         timeout: Optional[int] = None,
-    ) -> ServerDeployment:
+    ) -> LocalServerDeployment:
         """Deploy a new ZenML server.
 
         Args:
@@ -101,17 +101,15 @@ class BaseServerProvider(ABC):
             The newly created server deployment.
 
         Raises:
-            ServerDeploymentExistsError: If a deployment with the same name
-                already exists.
+            ServerDeploymentExistsError: If a deployment already exists.
         """
         try:
-            self._get_service(config.name)
+            self._get_service()
         except KeyError:
             pass
         else:
             raise ServerDeploymentExistsError(
-                f"ZenML server deployment with name '{config.name}' already "
-                f"exists"
+                f"Local {self.TYPE.value} ZenML server deployment already exists"
             )
 
         # convert the generic deployment config to a provider specific
@@ -122,9 +120,9 @@ class BaseServerProvider(ABC):
 
     def update_server(
         self,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         timeout: Optional[int] = None,
-    ) -> ServerDeployment:
+    ) -> LocalServerDeployment:
         """Update an existing ZenML server deployment.
 
         Args:
@@ -137,14 +135,13 @@ class BaseServerProvider(ABC):
             The updated server deployment.
 
         Raises:
-            ServerDeploymentNotFoundError: If a deployment with the given name
-                doesn't exist.
+            ServerDeploymentNotFoundError: If a deployment doesn't exist.
         """
         try:
-            service = self._get_service(config.name)
+            service = self._get_service()
         except KeyError:
             raise ServerDeploymentNotFoundError(
-                f"ZenML server deployment with name '{config.name}' was not "
+                f"The local {self.TYPE.value} ZenML server deployment was not "
                 f"found"
             )
 
@@ -155,19 +152,19 @@ class BaseServerProvider(ABC):
 
         if old_config == config:
             logger.info(
-                f"The {config.name} ZenML server is already configured with "
-                f"the same parameters."
+                f"The local {self.TYPE.value} ZenML server is already "
+                "configured with the same parameters."
             )
             service = self._start_service(service, timeout)
         else:
-            logger.info(f"Updating the {config.name} ZenML server.")
+            logger.info(f"Updating the local {self.TYPE.value} ZenML server.")
             service = self._update_service(service, config, timeout)
 
         return self._get_deployment(service)
 
     def remove_server(
         self,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         timeout: Optional[int] = None,
     ) -> None:
         """Tears down and removes all resources and files associated with a ZenML server deployment.
@@ -179,24 +176,23 @@ class BaseServerProvider(ABC):
                 by the provider is used.
 
         Raises:
-            ServerDeploymentNotFoundError: If a deployment with the given name
-                doesn't exist.
+            ServerDeploymentNotFoundError: If a deployment doesn't exist.
         """
         try:
-            service = self._get_service(config.name)
+            service = self._get_service()
         except KeyError:
             raise ServerDeploymentNotFoundError(
-                f"ZenML server deployment with name '{config.name}' was not "
+                f"The local {self.TYPE.value} ZenML server deployment was not "
                 f"found"
             )
 
-        logger.info(f"Removing the {config.name} ZenML server.")
+        logger.info(f"Shutting down the local {self.TYPE.value} ZenML server.")
         self._delete_service(service, timeout)
 
     def get_server(
         self,
-        config: ServerDeploymentConfig,
-    ) -> ServerDeployment:
+        config: LocalServerDeploymentConfig,
+    ) -> LocalServerDeployment:
         """Retrieve information about a ZenML server deployment.
 
         Args:
@@ -206,32 +202,21 @@ class BaseServerProvider(ABC):
             The server deployment.
 
         Raises:
-            ServerDeploymentNotFoundError: If a deployment with the given name
-                doesn't exist.
+            ServerDeploymentNotFoundError: If a deployment doesn't exist.
         """
         try:
-            service = self._get_service(config.name)
+            service = self._get_service()
         except KeyError:
             raise ServerDeploymentNotFoundError(
-                f"ZenML server deployment with name '{config.name}' was not "
+                f"The local {self.TYPE.value} ZenML server deployment was not "
                 f"found"
             )
 
         return self._get_deployment(service)
 
-    def list_servers(self) -> List[ServerDeployment]:
-        """List all server deployments managed by this provider.
-
-        Returns:
-            The list of server deployments.
-        """
-        return [
-            self._get_deployment(service) for service in self._list_services()
-        ]
-
     def get_server_logs(
         self,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
@@ -246,14 +231,13 @@ class BaseServerProvider(ABC):
             A generator that can be accessed to get the service logs.
 
         Raises:
-            ServerDeploymentNotFoundError: If a deployment with the given name
-                doesn't exist.
+            ServerDeploymentNotFoundError: If a deployment doesn't exist.
         """
         try:
-            service = self._get_service(config.name)
+            service = self._get_service()
         except KeyError:
             raise ServerDeploymentNotFoundError(
-                f"ZenML server deployment with name '{config.name}' was not "
+                f"The local {self.TYPE.value} ZenML server deployment was not "
                 f"found"
             )
 
@@ -261,7 +245,7 @@ class BaseServerProvider(ABC):
 
     def _get_deployment_status(
         self, service: BaseService
-    ) -> ServerDeploymentStatus:
+    ) -> LocalServerDeploymentStatus:
         """Get the status of a server deployment from its service.
 
         Args:
@@ -279,14 +263,14 @@ class BaseServerProvider(ABC):
             url = service.endpoint.status.uri
         connected = url is not None and gc.store_configuration.url == url
 
-        return ServerDeploymentStatus(
+        return LocalServerDeploymentStatus(
             url=url,
             status=service.status.state,
             status_message=service.status.last_error,
             connected=connected,
         )
 
-    def _get_deployment(self, service: BaseService) -> ServerDeployment:
+    def _get_deployment(self, service: BaseService) -> LocalServerDeployment:
         """Get the server deployment associated with a service.
 
         Args:
@@ -297,7 +281,7 @@ class BaseServerProvider(ABC):
         """
         config = self._get_deployment_config(service)
 
-        return ServerDeployment(
+        return LocalServerDeployment(
             config=config,
             status=self._get_deployment_status(service),
         )
@@ -306,7 +290,7 @@ class BaseServerProvider(ABC):
     @abstractmethod
     def _get_service_configuration(
         cls,
-        server_config: ServerDeploymentConfig,
+        server_config: LocalServerDeploymentConfig,
     ) -> Tuple[
         ServiceConfig,
         ServiceEndpointConfig,
@@ -324,7 +308,7 @@ class BaseServerProvider(ABC):
     @abstractmethod
     def _create_service(
         self,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         timeout: Optional[int] = None,
     ) -> BaseService:
         """Create, start and return a service instance for a ZenML server deployment.
@@ -343,7 +327,7 @@ class BaseServerProvider(ABC):
     def _update_service(
         self,
         service: BaseService,
-        config: ServerDeploymentConfig,
+        config: LocalServerDeploymentConfig,
         timeout: Optional[int] = None,
     ) -> BaseService:
         """Update an existing service instance for a ZenML server deployment.
@@ -411,11 +395,8 @@ class BaseServerProvider(ABC):
         """
 
     @abstractmethod
-    def _get_service(self, server_name: str) -> BaseService:
+    def _get_service(self) -> BaseService:
         """Get the service instance associated with a ZenML server deployment.
-
-        Args:
-            server_name: The server deployment name.
 
         Returns:
             The service instance.
@@ -425,17 +406,9 @@ class BaseServerProvider(ABC):
         """
 
     @abstractmethod
-    def _list_services(self) -> List[BaseService]:
-        """Get all service instances for all deployed ZenML servers.
-
-        Returns:
-            A list of service instances.
-        """
-
-    @abstractmethod
     def _get_deployment_config(
         self, service: BaseService
-    ) -> ServerDeploymentConfig:
+    ) -> LocalServerDeploymentConfig:
         """Recreate the server deployment config from a service instance.
 
         Args:

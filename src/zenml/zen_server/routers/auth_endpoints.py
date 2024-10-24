@@ -116,6 +116,8 @@ class OAuthLoginRequestForm:
         Raises:
             HTTPException: If the request is invalid.
         """
+        config = server_config()
+
         if not grant_type:
             # Detect the grant type from the form data
             if username is not None:
@@ -124,8 +126,21 @@ class OAuthLoginRequestForm:
                 self.grant_type = OAuthGrantTypes.ZENML_API_KEY
             elif device_code:
                 self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
-            else:
+            elif config.auth_scheme == AuthScheme.EXTERNAL:
                 self.grant_type = OAuthGrantTypes.ZENML_EXTERNAL
+            elif config.auth_scheme in [
+                AuthScheme.OAUTH2_PASSWORD_BEARER,
+                AuthScheme.NO_AUTH,
+                AuthScheme.HTTP_BASIC,
+            ]:
+                # For no auth and basic HTTP auth schemes, we also allow the
+                # password grant type to be used for backwards compatibility
+                self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request: grant type is required.",
+                )
         else:
             if grant_type not in OAuthGrantTypes.values():
                 logger.info(
@@ -137,10 +152,15 @@ class OAuthLoginRequestForm:
                 )
             self.grant_type = OAuthGrantTypes(grant_type)
 
-        config = server_config()
-
         if self.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
-            if config.auth_scheme != AuthScheme.OAUTH2_PASSWORD_BEARER:
+            # For the no auth and basic HTTP auth schemes, we also allow the
+            # password grant type to be used for compatibility with other
+            # auth schemes
+            if config.auth_scheme not in [
+                AuthScheme.OAUTH2_PASSWORD_BEARER,
+                AuthScheme.NO_AUTH,
+                AuthScheme.HTTP_BASIC,
+            ]:
                 logger.info(
                     f"Request with unsupported grant type: {self.grant_type}"
                 )
@@ -280,6 +300,7 @@ def token(
     Raises:
         ValueError: If the grant type is invalid.
     """
+    config = server_config()
     if auth_form_data.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
         auth_context = authenticate_credentials(
             user_name_or_id=auth_form_data.username,
@@ -297,8 +318,6 @@ def token(
         )
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
-        config = server_config()
-
         assert config.external_cookie_name is not None
         assert config.external_login_url is not None
 
@@ -399,8 +418,11 @@ def device_authorization(
     config = server_config()
     store = zen_store()
 
-    # Use this opportunity to delete expired devices
-    store.delete_expired_authorized_devices()
+    try:
+        # Use this opportunity to delete expired devices
+        store.delete_expired_authorized_devices()
+    except Exception:
+        logger.exception("Failed to delete expired devices")
 
     # Fetch additional details about the client from the user-agent header
     user_agent_header = request.headers.get("User-Agent")
