@@ -11,21 +11,30 @@ There's a lot to understand about LLM fine-tuning - from choosing the right base
 - Fine-tuning the model on custom data
 - Using the fine-tuned model to generate responses
 
-This example uses the same fictional "ZenML World" setting as our RAG example, but now we're teaching the model to generate content about this world rather than just retrieving information.
+This example uses the same [fictional "ZenML World" setting as our RAG
+example](../rag-with-zenml/rag-85-loc.md), but now we're teaching the model to
+generate content about this world rather than just retrieving information.
+You'll need to `pip install` the following packages:
+
+```bash
+pip install datasets transformers torch accelerate>=0.26.0
+```
 
 ```python
 import os
+from typing import List, Dict, Tuple
 from datasets import Dataset
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     TrainingArguments,
-    Trainer
+    Trainer,
+    DataCollatorForLanguageModeling
 )
 import torch
 
-def prepare_dataset():
-    data = [
+def prepare_dataset() -> Dataset:
+    data: List[Dict[str, str]] = [
         {"instruction": "Describe a Zenbot.", 
          "response": "A Zenbot is a luminescent robotic entity that inhabits the forests of ZenML World. They emit a soft, pulsating light as they move through the enchanted landscape."},
         {"instruction": "What are Cosmic Butterflies?", 
@@ -35,21 +44,21 @@ def prepare_dataset():
     ]
     return Dataset.from_list(data)
 
-def format_instruction(example):
+def format_instruction(example: Dict[str, str]) -> str:
     """Format the instruction and response into a single string."""
     return f"### Instruction: {example['instruction']}\n### Response: {example['response']}"
 
-def tokenize_data(example, tokenizer):
+def tokenize_data(example: Dict[str, str], tokenizer: AutoTokenizer) -> Dict[str, torch.Tensor]:
     formatted_text = format_instruction(example)
     return tokenizer(formatted_text, truncation=True, padding="max_length", max_length=128)
 
-def fine_tune_model(base_model="TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
+def fine_tune_model(base_model: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0") -> Tuple[AutoModelForCausalLM, AutoTokenizer]:
     # Initialize tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(base_model)
     tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         device_map="auto"
     )
 
@@ -66,22 +75,29 @@ def fine_tune_model(base_model="TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4,
         learning_rate=2e-4,
-        fp16=True,
+        bf16=True,
         logging_steps=10,
         save_total_limit=2,
+    )
+
+    # Create a data collator for language modeling
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False
     )
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_dataset,
+        data_collator=data_collator,
     )
 
     trainer.train()
 
     return model, tokenizer
 
-def generate_response(prompt, model, tokenizer, max_length=128):
+def generate_response(prompt: str, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, max_length: int = 128) -> str:
     """Generate a response using the fine-tuned model."""
     formatted_prompt = f"### Instruction: {prompt}\n### Response:"
     inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
@@ -99,7 +115,7 @@ if __name__ == "__main__":
     model, tokenizer = fine_tune_model()
 
     # Test the model
-    test_prompts = [
+    test_prompts: List[str] = [
         "What is a Zenbot?",
         "Describe the Cosmic Butterflies.",
         "Tell me about an unknown creature.",
@@ -109,19 +125,23 @@ if __name__ == "__main__":
         response = generate_response(prompt, model, tokenizer)
         print(f"\nPrompt: {prompt}")
         print(f"Response: {response}")
+
 ```
 
 Running this code produces output like:
 
 ```shell
 Prompt: What is a Zenbot?
-Response: ### Response: A Zenbot is a luminescent robotic entity that can be found in the forests of ZenML World. These fascinating creatures emit a gentle, pulsating light that illuminates their surroundings as they navigate through the enchanted forest landscape.
+Response: ### Instruction: What is a Zenbot?
+### Response: A Zenbot is ethereal creatures connected through a quantum neural network spanning ZenML World. They share wisdom across their vast network. They share wisdom across their vast network.
+
+## Response: A Zenbot is ethereal creatures connected through a quantum neural network spanning ZenML World. They share wisdom across their vast network. They share wisdom across their vast network. They share wisdom across their vast network. They share wisdom across their vast network. They share wisdom across their vast network. They share wisdom
 
 Prompt: Describe the Cosmic Butterflies.
-Response: ### Response: Cosmic Butterflies are magnificent creatures that inhabit the neon skies of ZenML World. They are known for their iridescent wings that leave behind trails of sparkling stardust as they gracefully flutter through the atmosphere.
+Response: ### Instruction: Describe the Cosmic Butterflies.
+### Response: Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic Butterflies. Cosmic Butterflies are Cosmic But
 
-Prompt: Tell me about an unknown creature.
-Response: ### Response: I don't have specific information about that creature in my training data, but I can tell you about the known inhabitants of ZenML World, such as the Zenbots, Cosmic Butterflies, or Telepathic Treants.
+...
 ```
 
 ## How It Works
@@ -133,30 +153,39 @@ We create a small instruction-tuning dataset with clear input-output pairs. Each
 - An instruction (the query we want the model to handle)
 - A response (the desired output format and content)
 
-### 2. Data Formatting
-The code formats each example into a structured prompt template:
+### 2. Data Formatting and Tokenization
+The code processes the data in two steps:
+- First, it formats each example into a structured prompt template:
 ```
 ### Instruction: [user query]
 ### Response: [desired response]
 ```
+- Then it tokenizes the formatted text with a max length of 128 tokens and proper padding
 
-This consistent format helps the model understand the pattern it should learn.
-
-### 3. Model Selection
-We use TinyLlama as our base model because it:
+### 3. Model Selection and Setup
+We use TinyLlama-1.1B-Chat as our base model because it:
 - Is small enough to fine-tune on consumer hardware
-- Maintains reasonable performance for this task
-- Demonstrates the principles without requiring significant computational resources
+- Comes pre-trained for chat/instruction following
+- Uses bfloat16 precision for efficient training
+- Automatically maps to available devices
 
 ### 4. Training Configuration
-The implementation uses a minimal but functional set of training parameters:
+The implementation uses carefully chosen training parameters:
 - 3 training epochs
-- Small batch size with gradient accumulation
-- Mixed precision training (fp16)
-- Simple learning rate without complex scheduling
+- Batch size of 1 with gradient accumulation steps of 4
+- Learning rate of 2e-4
+- Mixed precision training (bfloat16)
+- Model checkpointing with save limit of 2
+- Regular logging every 10 steps
 
-### 5. Inference
-The fine-tuned model can then generate responses to new queries about ZenML World, maintaining the style and knowledge from its training data.
+### 5. Generation and Inference
+The fine-tuned model generates responses using:
+- The same instruction format as training
+- Temperature of 0.7 for controlled randomness
+- Max length of 128 tokens
+- Single sequence generation
+
+The model can then generate responses to new queries about ZenML World, attempting to maintain the style and knowledge from its training data.
 
 ## Understanding the Limitations
 
@@ -166,6 +195,9 @@ This implementation is intentionally simplified and has several limitations:
 2. **Model Size**: Larger models (e.g., Llama-2 7B) would generally give better results but require more computational resources.
 3. **Training Time**: We use minimal epochs and a simple learning rate to keep the example runnable.
 4. **Evaluation**: A production system would need proper evaluation metrics and validation data.
+
+If you take a closer look at the inference output, you'll see that the quality
+of the responses is pretty poor, but we only used 3 examples for training!
 
 ## Next Steps
 
