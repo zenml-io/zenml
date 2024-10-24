@@ -346,7 +346,8 @@ class Pipeline:
             success_hook_source = resolve_and_validate_hook(on_success)
 
         if merge and tags and self._configuration.tags:
-            # Merge tags explicitly here as the update_model only merges dicts
+            # Merge tags explicitly here as the recursive update later only
+            # merges dicts
             tags = self._configuration.tags + tags
 
         values = dict_utils.remove_none_values(
