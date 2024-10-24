@@ -140,6 +140,11 @@ def resolve_step_inputs(
             )
     for name, cll_ in step.config.client_lazy_loaders.items():
         value_ = cll_.evaluate()
+        # TODO: If we pass something as parameter here, the result is not stored
+        # anywhere. This means the user can not see what value was being passed
+        # into their step, and also not see where exactly this was coming from
+        # (e.g. which artifact/model version). Same thing applies to the model
+        # lazy loaders above
         if isinstance(value_, ArtifactVersionResponse):
             input_artifacts[name] = value_
         elif isinstance(value_, RunMetadataResponse):

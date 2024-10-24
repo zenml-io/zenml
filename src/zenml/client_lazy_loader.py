@@ -208,6 +208,9 @@ def evaluate_all_lazy_load_args_in_client_methods(
                     with contextlib.suppress(ValueError):
                         kwargs[k] = ClientLazyLoader(**v).evaluate()
 
+                # Why do we check for `isinstance(v, ClientLazyLoader)` for the
+                # args but not for `kwargs`
+
             return func(*args_, **kwargs)
 
         return _inner
