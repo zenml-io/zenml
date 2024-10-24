@@ -332,14 +332,20 @@ def test_update_of_has_custom_name(clean_client: "Client"):
     def pipeline_2():
         custom_name_producer()
 
-    # run 2 times to see both ways switching
-    for i in range(2):
-        pipeline_()
-        assert not clean_client.get_artifact(
-            "pipeline_::standard_name_producer::output"
-        ).has_custom_name, f"Standard name validation failed in {i+1} run"
+    # Run once -> no custom name
+    pipeline_()
+    assert not clean_client.get_artifact(
+        "pipeline_::standard_name_producer::output"
+    ).has_custom_name, "Standard name validation failed"
 
-        pipeline_2()
-        assert clean_client.get_artifact(
-            "pipeline_::standard_name_producer::output"
-        ).has_custom_name, f"Custom name validation failed in {i+1} run"
+    # Run with custom name -> gets set to true
+    pipeline_2()
+    assert clean_client.get_artifact(
+        "pipeline_::standard_name_producer::output"
+    ).has_custom_name, "Custom name validation failed"
+
+    # Run again with standard name -> custom name stays true
+    pipeline_()
+    assert clean_client.get_artifact(
+        "pipeline_::standard_name_producer::output"
+    ).has_custom_name, "Custom name validation failed"
