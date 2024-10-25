@@ -402,7 +402,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     @classmethod
     @before_validator_handler
     def _move_credentials(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Moves credentials (API keys, API tokens) from the config to the credentials store.
+        """Moves credentials (API keys, API tokens, passwords) from the config to the credentials store.
 
         Args:
             data: The values dict used to instantiate the model.
@@ -417,6 +417,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if api_token := data.pop("api_token", None):
             credentials_store = get_credentials_store()
             credentials_store.set_bare_token(data["url"], api_token)
+
+        username = data.pop("username", None)
+        password = data.pop("password", None)
+        if username is not None and password is not None:
+            credentials_store = get_credentials_store()
+            credentials_store.set_password(data["url"], username, password)
 
         return data
 
@@ -4071,6 +4077,9 @@ class RestZenStore(BaseZenStore):
             # Check if an API key is configured
             api_key = credentials_store.get_api_key(self.url)
 
+            # Check if username and password are configured
+            username, password = credentials_store.get_password(self.url)
+
             api_key_hint = (
                 "\nHint: If you're getting this error in an automated, "
                 "non-interactive workload like a pipeline run or a CI/CD job, "
@@ -4086,6 +4095,13 @@ class RestZenStore(BaseZenStore):
                 data = {
                     "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
                     "password": api_key,
+                }
+            elif username is not None and password is not None:
+                # Username and password are configured. Use them to authenticate.
+                data = {
+                    "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
+                    "username": username,
+                    "password": password,
                 }
             elif is_zenml_pro_server_url(self.url):
                 # ZenML Pro tenants use a proprietary authorization grant

@@ -15,7 +15,7 @@
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -150,8 +150,10 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             )
             for server_url, credential in self.credentials.items()
             # Evict tokens that have expired past the eviction time
-            # and have no API key to fall back on
+            # and have no API key or username/password to fall back on
             if credential.api_key
+            or credential.username
+            and credential.password is not None
             or credential.api_token
             and (
                 not credential.api_token.expires_at
@@ -178,6 +180,24 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             return
         if last_modified_time != self.last_modified_time:
             self._load_credentials()
+
+    def get_password(
+        self, server_url: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Retrieve the username and password from the credentials store for a specific server URL.
+
+        Args:
+            server_url: The server URL for which to retrieve the username and
+                password.
+
+        Returns:
+            The stored username and password if they exist, None otherwise.
+        """
+        self.check_and_reload_from_file()
+        credential = self.credentials.get(server_url)
+        if credential:
+            return credential.username, credential.password
+        return None, None
 
     def get_api_key(self, server_url: str) -> Optional[str]:
         """Retrieve an API key from the credentials store for a specific server URL.
@@ -288,7 +308,9 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
         if not credential:
             return False
-        if credential.api_key:
+        if credential.api_key or (
+            credential.username and credential.password is not None
+        ):
             return True
         token = credential.api_token
         return token is not None and not token.expired
@@ -308,8 +330,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
     ) -> None:
         """Store an API key in the credentials store for a specific server URL.
 
-        If an API token is already stored for the server URL, it will be
-        replaced by the API key.
+        If an API token or a password is already stored for the server URL, they
+        will be replaced by the API key.
 
         Args:
             server_url: The server URL for which the token is to be stored.
@@ -321,9 +343,44 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             # the current token might have been issued for a different account
             credential.api_token = None
             credential.api_key = api_key
+            credential.username = None
+            credential.password = None
         else:
             self.credentials[server_url] = ServerCredentials(
                 url=server_url, api_key=api_key
+            )
+
+        self._save_credentials()
+
+    def set_password(
+        self,
+        server_url: str,
+        username: str,
+        password: str,
+    ) -> None:
+        """Store a username and password in the credentials store for a specific server URL.
+
+        If an API token is already stored for the server URL, it will be
+        replaced by the username and password.
+
+        Args:
+            server_url: The server URL for which the token is to be stored.
+            username: The username to store.
+            password: The password to store.
+        """
+        credential = self.credentials.get(server_url)
+        if credential and (
+            credential.username != username or credential.password != password
+        ):
+            # Reset the API token if a new or updated password is set, because
+            # the current token might have been issued for a different account
+            credential.api_token = None
+            credential.username = username
+            credential.password = password
+            credential.api_key = None
+        else:
+            self.credentials[server_url] = ServerCredentials(
+                url=server_url, username=username, password=password
             )
 
         self._save_credentials()
@@ -441,9 +498,13 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         """
         if server_url in self.credentials:
             credential = self.credentials[server_url]
-            if not credential.api_key:
-                # Only delete the credential entry if there is no API key to
-                # fall back on
+            if (
+                not credential.api_key
+                and not credential.username
+                and not credential.password is not None
+            ):
+                # Only delete the credential entry if there is no API key or
+                # username/password to fall back on
                 del self.credentials[server_url]
             else:
                 credential.api_token = None

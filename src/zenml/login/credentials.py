@@ -85,6 +85,8 @@ class ServerCredentials(BaseModel):
     url: str
     api_key: Optional[str] = None
     api_token: Optional[APIToken] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
 
     # Extra server attributes
     server_id: Optional[UUID] = None
@@ -167,6 +169,8 @@ class ServerCredentials(BaseModel):
         if (
             self.api_key
             or self.api_token
+            or self.username
+            and self.password is not None
             or self.type in [ServerType.PRO, ServerType.LOCAL]
         ):
             return True
@@ -185,6 +189,8 @@ class ServerCredentials(BaseModel):
             return "no authentication required"
         if self.api_key:
             return "API key"
+        if self.username and self.password is not None:
+            return "password"
         if not self.api_token:
             return "N/A"
         expires_at = self.api_token.expires_at_with_leeway
