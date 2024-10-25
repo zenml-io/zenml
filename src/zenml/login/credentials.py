@@ -160,7 +160,7 @@ class ServerCredentials(BaseModel):
         """Check if the server is available (running and authenticated).
 
         Returns:
-            bool: True if the server is available, False otherwise.
+            True if the server is available, False otherwise.
         """
         if self.status not in [TenantStatus.AVAILABLE, ServiceState.ACTIVE]:
             return False
@@ -179,7 +179,7 @@ class ServerCredentials(BaseModel):
         """Get the authentication status.
 
         Returns:
-            str: The authentication status.
+            The authentication status.
         """
         if self.type == ServerType.LOCAL:
             return "no authentication required"
@@ -200,7 +200,7 @@ class ServerCredentials(BaseModel):
         """Get the expiration time of the token as a string.
 
         Returns:
-            str: The expiration time of the token as a string.
+            The expiration time of the token as a string.
         """
         if not self.api_token:
             return "N/A"
@@ -217,7 +217,7 @@ class ServerCredentials(BaseModel):
         """Get the time remaining until the token expires.
 
         Returns:
-            str: The time remaining until the token expires.
+            The time remaining until the token expires.
         """
         if not self.api_token:
             return "N/A"
