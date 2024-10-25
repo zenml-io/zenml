@@ -314,7 +314,7 @@ def status() -> None:
 
         zenml connect
 
-      * to log in to a self-hosted ZenML server:
+      * to log in to a particular ZenML server:
 
         zenml connect --url=http://zenml.example.com:8080
     """

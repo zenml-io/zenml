@@ -24,12 +24,14 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    ENV_ZENML_USER_ID,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import AuthScheme, StoreType
@@ -157,8 +159,12 @@ class DaemonZenServer(LocalDaemonService):
             The command to start the daemon and the environment variables to
             set for the command.
         """
+        gc = GlobalConfiguration()
+
         cmd, env = super()._get_daemon_cmd()
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+        env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+        env[ENV_ZENML_USER_ID] = str(gc.user_id)
         # Disable authentication for the local server
         env[ENV_ZENML_SERVER_AUTH_SCHEME] = AuthScheme.NO_AUTH.value
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL

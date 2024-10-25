@@ -30,6 +30,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    ENV_ZENML_USER_ID,
     LOCAL_STORES_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
@@ -173,6 +174,7 @@ class DockerZenServer(ContainerService):
         env[ENV_ZENML_SERVER_AUTH_SCHEME] = AuthScheme.NO_AUTH.value
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
         env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+        env[ENV_ZENML_USER_ID] = str(gc.user_id)
 
         # Set the local stores path to the same path used by the client (mounted
         # in the container by the super class). This ensures that the server's

@@ -1868,50 +1868,25 @@ zenml up --port 9000 --ip-address 172.17.0.1
 Connecting to a ZenML Server
 ----------------------------
 
-The ZenML client can be [configured to connect to a remote database or ZenML
-server](https://docs.zenml.io/how-to/connecting-to-zenml)
-with the `zenml connect` command.
+The ZenML client can be [configured to connect to a local ZenML server, a remote
+database or a remote ZenML server](https://docs.zenml.io/how-to/connecting-to-zenml)
+with the `zenml login` command.
 
-To connect to a ZenML server, you can either pass the configuration as command
-line arguments or as a YAML file:
-
-```bash
-zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
-```
-
-or
+To connect to a ZenML server, you can run:
 
 ```bash
-zenml connect --config=/path/to/zenml_server_config.yaml
+zenml connect --url=https://zenml.example.com:8080
 ```
 
-The YAML file should have the following structure when connecting to a ZenML
-server:
-
-```yaml
-url: <The URL of the ZenML server>
-verify_ssl: |
-   <Either a boolean, in which case it controls whether the
-   server's TLS certificate is verified, or a string, in which case it
-   must be a path to a CA certificate bundle to use or the CA bundle
-   value itself>
-```
-
-Both options can be combined, in which case the command line arguments will
-override the values in the YAML file. For example:
-
-```bash
-zenml connect --no-verify-ssl --config=/path/to/zenml_server_config.yaml
-```
 
 You can open the ZenML dashboard of your currently connected ZenML server using
 the following command:
 
 ```bash
-zenml show
+zenml server show
 ```
 
-If you would like to take a look at the logs for the ZenML server:
+If you would like to take a look at the logs for the local ZenML server:
 
 ```bash
 zenml logs
@@ -1923,7 +1898,7 @@ To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 
 ```bash
-zenml disconnect
+zenml logout
 ```
 
 You can inspect the current ZenML configuration at any given time using the
@@ -1936,48 +1911,22 @@ zenml status
 Example output:
 
 ```
- zenml status
-Running without an active repository root.
-Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
-The current user is: 'default'
-The active workspace is: 'default' (global)
-The active stack is: 'default' (global)
-The status of the local dashboard:
-              ZenML server 'local'
-┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ URL            │ http://172.17.0.1:9000      ┃
-┠────────────────┼─────────────────────────────┨
-┃ STATUS         │ ✅                          ┃
-┠────────────────┼─────────────────────────────┨
-┃ STATUS_MESSAGE │ Docker container is running ┃
-┠────────────────┼─────────────────────────────┨
-┃ CONNECTED      │                             ┃
-┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+$ zenml status
+-----ZenML Client Status-----
+Connected to a ZenML Pro server: `test-zenml-login` [16f8a35d-5c2f-44aa-a564-b34186fbf6d6]
+  ZenML Pro Organization: My Organization
+  ZenML Pro authentication: valid until 2024-10-26 10:18:51 CEST (in 20h37m9s)
+  Dashboard: https://cloud.zenml.io/organizations/bf873af9-aaf9-4ad1-a08e-3dc6d920d590/tenants/16f8336d-5c2f-44aa-a534-b34186fbf6d6
+  API: https://6784e58f-zenml.staging.cloudinfra.zenml.io
+  Server status: 'available'
+  Server authentication: never expires
+  The active user is: 'user'
+  The active stack is: 'default' (global)
+Using configuration from: '/home/user/.config/zenml'
+Local store files are located at: '/home/user/.config/zenml/local_stores'
 
-The ``zenml connect`` command can also be used to configure your client with
-more advanced options, such as connecting directly to a local or remote SQL
-database. In this case, the `--raw-config` flag must be passed to instruct the
-CLI to not validate or fill in the missing configuration fields. For example,
-to connect to a remote MySQL database, run:
-
-```bash
-zenml connect --raw-config --config=/path/to/mysql_config.yaml
-```
-
-with a YAML configuration file that looks like this:
-
-```yaml
-type: sql
-url: mysql://<username>:<password>@mysql.database.com/<database_name>
-ssl_ca: |
-   -----BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE-----
-
-ssl_cert: null
-ssl_key: null
-ssl_verify_server_cert: false
+-----Local ZenML Server Status-----
+The local daemon server is running at: http://127.0.0.1:8237
 ```
 
 Keep in mind, while connecting to a ZenML server, you will be provided with the
