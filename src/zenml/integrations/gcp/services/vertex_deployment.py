@@ -20,6 +20,7 @@ from google.api_core import exceptions
 from google.cloud import aiplatform
 from pydantic import BaseModel, Field
 
+from zenml.client import Client
 from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
     VertexBaseConfig,
 )
@@ -70,8 +71,6 @@ class VertexAIDeploymentConfig(VertexBaseConfig, ServiceConfig):
             labels["zenml_pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
             labels["zenml_model_name"] = self.model_name
-        if self.model_uri:
-            labels["zenml_model_uri"] = self.model_uri
         sanitize_labels(labels)
         return labels
 
@@ -117,7 +116,6 @@ class VertexDeploymentService(BaseDeploymentService):
             attrs: additional attributes to set on the service
         """
         super().__init__(config=config, **attrs)
-        aiplatform.init(project=config.project, location=config.location)
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -145,17 +143,28 @@ class VertexDeploymentService(BaseDeploymentService):
 
     def provision(self) -> None:
         """Provision or update remote Vertex AI deployment instance."""
+        from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
+            VertexModelDeployer,
+        )
+
+        zenml_client = Client()
+        model_deployer = zenml_client.active_stack.model_deployer
+        if isinstance(model_deployer, VertexModelDeployer):
+            model_deployer.setup_aiplatform()
+        else:
+            raise ValueError("Model deployer is not VertexModelDeployer")
         try:
+            breakpoint()
             model = aiplatform.Model(
                 model_name=self.config.model_name,
                 version=self.config.model_version,
             )
-
+            breakpoint()
             endpoint = aiplatform.Endpoint.create(
                 display_name=self._generate_endpoint_name()
             )
-
-            deployment = endpoint.deploy(
+            breakpoint()
+            endpoint.deploy(
                 model=model,
                 machine_type=self.config.machine_type,
                 min_replica_count=self.config.min_replica_count,
@@ -169,7 +178,7 @@ class VertexDeploymentService(BaseDeploymentService):
                 explanation_parameters=self.config.explanation_parameters,
                 sync=True,
             )
-
+            breakpoint()
             self.status.endpoint = VertexPredictionServiceEndpoint(
                 endpoint_name=endpoint.resource_name,
                 endpoint_url=endpoint.resource_name,
@@ -315,13 +324,3 @@ class VertexDeploymentService(BaseDeploymentService):
         """
         state, _ = self.check_status()
         return state == ServiceState.ACTIVE
-
-    def start(self) -> None:
-        """Start the Vertex AI deployment service."""
-        if not self.is_running:
-            self.provision()
-
-    def stop(self) -> None:
-        """Stop the Vertex AI deployment service."""
-        if self.is_running:
-            self.deprovision()

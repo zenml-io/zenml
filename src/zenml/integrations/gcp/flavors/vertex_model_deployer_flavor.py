@@ -17,10 +17,19 @@ from typing import TYPE_CHECKING, Dict, Optional, Sequence, Type
 
 from pydantic import BaseModel
 
-from zenml.integrations.gcp import VERTEX_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_RESOURCE_TYPE,
+    VERTEX_MODEL_DEPLOYER_FLAVOR,
+)
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsConfigMixin,
+)
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
+)
+from zenml.models.v2.misc.service_connector_type import (
+    ServiceConnectorRequirements,
 )
 
 if TYPE_CHECKING:
@@ -61,20 +70,14 @@ class VertexBaseConfig(BaseModel):
     autoscaling_target_accelerator_duty_cycle: Optional[float] = None
     enable_access_logging: Optional[bool] = None
     disable_container_logging: Optional[bool] = None
+    explanation_metadata: Optional[Dict[str, str]] = None
+    explanation_parameters: Optional[Dict[str, str]] = None
 
 
-class VertexModelDeployerConfig(BaseModelDeployerConfig, VertexBaseConfig):
-    """Configuration for the Vertex AI model deployer.
-
-    Attributes:
-        project_id: The project ID.
-        location: The location of the model.
-    """
-
-    # The namespace to list endpoints for. Set to `"*"` to list all endpoints
-    # from all namespaces (i.e. personal namespace and all orgs the user belongs to).
-    project_id: str
-    location: Optional[str] = None
+class VertexModelDeployerConfig(
+    BaseModelDeployerConfig, VertexBaseConfig, GoogleCredentialsConfigMixin
+):
+    """Configuration for the Vertex AI model deployer."""
 
 
 class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -88,6 +91,23 @@ class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
             The name of the flavor.
         """
         return VERTEX_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=GCP_RESOURCE_TYPE,
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

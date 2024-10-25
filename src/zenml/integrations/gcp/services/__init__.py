@@ -14,8 +14,8 @@
 """Initialization of the MLflow Service."""
 
 from zenml.integrations.gcp.services.vertex_deployment import (  # noqa
-    VertexServiceConfig,
+    VertexAIDeploymentConfig,
     VertexDeploymentService,
 )
 
-__all__ = ["VertexServiceConfig", "VertexDeploymentService"]
+__all__ = ["VertexAIDeploymentConfig", "VertexDeploymentService"]

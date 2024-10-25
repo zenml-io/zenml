@@ -109,7 +109,8 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
         """List models in the Vertex AI model registry."""
-        filter_expr = 'labels.managed_by="ZenML"'
+        self.setup_aiplatform()
+        filter_expr = 'labels.managed_by="zenml"'
         if name:
             filter_expr = filter_expr + f' AND  display_name="{name}"'
         if metadata:
@@ -138,6 +139,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         **kwargs: Any,
     ) -> RegistryModelVersion:
         """Register a model version to the Vertex AI model registry."""
+        self.setup_aiplatform()
         metadata_dict = metadata.model_dump() if metadata else {}
         serving_container_image_uri = metadata_dict.get(
             "serving_container_image_uri",
@@ -145,7 +147,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             or "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
         )
         is_default_version = metadata_dict.get("is_default_version", False)
-        self.setup_aiplatform()
+        metadata_dict["managed_by"] = "zenml"
         try:
             version_info = aiplatform.Model.upload(
                 artifact_uri=model_source_uri,
@@ -175,6 +177,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         version: str,
     ) -> None:
         """Delete a model version from the Vertex AI model registry."""
+        self.setup_aiplatform()
         try:
             model_version = aiplatform.ModelVersion(
                 model_name=f"{name}@{version}"
@@ -193,6 +196,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         stage: Optional[ModelVersionStage] = None,
     ) -> RegistryModelVersion:
         """Update a model version in the Vertex AI model registry."""
+        self.setup_aiplatform()
         try:
             model_version = aiplatform.Model(model_name=f"{name}@{version}")
             labels = model_version.labels
@@ -212,6 +216,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         self, name: str, version: str
     ) -> RegistryModelVersion:
         """Get a model version from the Vertex AI model registry."""
+        self.setup_aiplatform()
         try:
             model_version = aiplatform.Model(model_name=f"{name}@{version}")
             return RegistryModelVersion(
@@ -241,6 +246,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         **kwargs: Any,
     ) -> List[RegistryModelVersion]:
         """List model versions from the Vertex AI model registry."""
+        self.setup_aiplatform()
         filter_expr = []
         if name:
             filter_expr.append(f"display_name={name}")

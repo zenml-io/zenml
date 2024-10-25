@@ -13,20 +13,31 @@
 #  permissions and limitations under the License.
 """Implementation of the Vertex AI Model Deployer."""
 
-from typing import ClassVar, Dict, List, Optional, Tuple, Type, cast
+from typing import ClassVar, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
+
+from google.cloud import aiplatform
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
-from zenml.integrations.gcp import VERTEX_SERVICE_ARTIFACT
+from zenml.enums import StackComponentType
+from zenml.integrations.gcp import (
+    VERTEX_SERVICE_ARTIFACT,
+)
 from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
     VertexModelDeployerConfig,
     VertexModelDeployerFlavor,
 )
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
+from zenml.integrations.gcp.model_registries.vertex_model_registry import (
+    VertexAIModelRegistry,
+)
 from zenml.integrations.gcp.services.vertex_deployment import (
+    VertexAIDeploymentConfig,
     VertexDeploymentService,
-    VertexServiceConfig,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer
@@ -41,7 +52,7 @@ from zenml.stack.stack_validator import StackValidator
 logger = get_logger(__name__)
 
 
-class VertexModelDeployer(BaseModelDeployer):
+class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
     """Vertex AI endpoint model deployer."""
 
     NAME: ClassVar[str] = "Vertex AI"
@@ -58,35 +69,72 @@ class VertexModelDeployer(BaseModelDeployer):
         """
         return cast(VertexModelDeployerConfig, self._config)
 
+    def setup_aiplatform(self) -> None:
+        """Setup the Vertex AI platform."""
+        credentials, project_id = self._get_authentication()
+        aiplatform.init(
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
+        )
+
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates the stack.
+        """Validates that the stack contains a model registry.
+
+        Also validates that the artifact store is not local.
 
         Returns:
-            A validator that checks that the stack contains required GCP components.
+            A StackValidator instance.
         """
 
-        def _validate_gcp_stack(
-            stack: "Stack",
-        ) -> Tuple[bool, str]:
-            """Check if GCP components are properly configured in the stack.
+        def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
+            """Validates that all the stack components are not local.
 
             Args:
                 stack: The stack to validate.
 
             Returns:
-                A tuple with a boolean indicating whether the stack is valid
-                and a message describing the validation result.
+                A tuple of (is_valid, error_message).
             """
-            if not self.config.project_id or not self.config.location:
+            # Validate that the container registry is not local.
+            model_registry = stack.model_registry
+            if not model_registry and isinstance(
+                model_registry, VertexAIModelRegistry
+            ):
                 return False, (
-                    "The Vertex AI model deployer requires a GCP project and "
-                    "location to be specified in the configuration."
+                    "The Vertex AI model deployer requires a Vertex AI model "
+                    "registry to be present in the stack. Please add a Vertex AI "
+                    "model registry to the stack."
                 )
-            return True, "Stack is valid for Vertex AI model deployment."
+
+            # Validate that the rest of the components are not local.
+            for stack_comp in stack.components.values():
+                # For Forward compatibility a list of components is returned,
+                # but only the first item is relevant for now
+                # TODO: [server] make sure the ComponentModel actually has
+                #  a local_path property or implement similar check
+                local_path = stack_comp.local_path
+                if not local_path:
+                    continue
+                return False, (
+                    f"The '{stack_comp.name}' {stack_comp.type.value} is a "
+                    f"local stack component. The Vertex AI Pipelines "
+                    f"orchestrator requires that all the components in the "
+                    f"stack used to execute the pipeline have to be not local, "
+                    f"because there is no way for Vertex to connect to your "
+                    f"local machine. You should use a flavor of "
+                    f"{stack_comp.type.value} other than '"
+                    f"{stack_comp.flavor}'."
+                )
+
+            return True, ""
 
         return StackValidator(
-            custom_validation_function=_validate_gcp_stack,
+            required_components={
+                StackComponentType.MODEL_REGISTRY,
+            },
+            custom_validation_function=_validate_stack_requirements,
         )
 
     def _create_deployment_service(
@@ -130,8 +178,10 @@ class VertexModelDeployer(BaseModelDeployer):
             The ZenML Vertex AI deployment service object.
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
-            config = cast(VertexServiceConfig, config)
-            service = self._create_deployment_service(id=id, config=config)
+            config = cast(VertexAIDeploymentConfig, config)
+            service = self._create_deployment_service(
+                id=id, config=config, timeout=timeout
+            )
             logger.info(
                 f"Creating a new Vertex AI deployment service: {service}"
             )
@@ -226,47 +276,3 @@ class VertexModelDeployer(BaseModelDeployer):
             "PREDICTION_URL": service_instance.prediction_url,
             "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
         }
-
-    def find_model_server(
-        self,
-        running: Optional[bool] = None,
-        service_uuid: Optional[UUID] = None,
-        pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_version: Optional[str] = None,
-    ) -> List[BaseService]:
-        """Find deployed model servers in Vertex AI.
-
-        Args:
-            running: Filter by running status.
-            service_uuid: Filter by service UUID.
-            pipeline_name: Filter by pipeline name.
-            run_name: Filter by run name.
-            pipeline_step_name: Filter by pipeline step name.
-            model_name: Filter by model name.
-            model_uri: Filter by model URI.
-            model_version: Filter by model version.
-
-        Returns:
-            A list of services matching the given criteria.
-        """
-        client = Client()
-        services = client.list_services(
-            service_type=VertexDeploymentService.SERVICE_TYPE,
-            running=running,
-            service_uuid=service_uuid,
-            pipeline_name=pipeline_name,
-            run_name=run_name,
-            pipeline_step_name=pipeline_step_name,
-            model_name=model_name,
-            model_uri=model_uri,
-            model_version=model_version,
-        )
-
-        return [
-            VertexDeploymentService.from_model(service_model)
-            for service_model in services
-        ]
