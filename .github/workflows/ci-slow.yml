@@ -183,7 +183,7 @@ jobs:
         # excluded from the `ci-slow` workflow.
         exclude:
           - os: arc-runner-set
-            node: '3.10'
+            python-version: '3.10'
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
