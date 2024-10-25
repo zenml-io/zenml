@@ -25,6 +25,7 @@ from zenml.config.global_config import (
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
@@ -137,6 +138,10 @@ def get_config_environment_vars(
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 api_token.access_token
             )
+
+    # Disable credentials caching to avoid storing sensitive information
+    # in the pipeline run environment
+    environment_vars[ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING] = "true"
 
     # Make sure to use the correct active stack/workspace which might come
     # from a .zen repository and not the global config

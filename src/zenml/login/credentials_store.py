@@ -18,6 +18,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import (
+    ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
+    handle_bool_env_var,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken, ServerCredentials, ServerType
@@ -101,6 +105,9 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def _load_credentials(self) -> None:
         """Load the credentials from the YAML file if it exists."""
+        if handle_bool_env_var(ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING):
+            return
+
         credentials_file = self._credentials_file
         credentials_store = {}
 
@@ -134,6 +141,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def _save_credentials(self) -> None:
         """Dump the current credentials store to the YAML file."""
+        if handle_bool_env_var(ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING):
+            return
         credentials_file = self._credentials_file
         credentials_store = {
             server_url: credential.model_dump(
@@ -156,6 +165,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def check_and_reload_from_file(self) -> None:
         """Check if the credentials file has been modified and reload it if necessary."""
+        if handle_bool_env_var(ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING):
+            return
         if not self.last_modified_time:
             return
         credentials_file = self._credentials_file

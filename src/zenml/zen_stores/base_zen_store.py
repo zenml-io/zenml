@@ -129,11 +129,6 @@ class BaseZenStore(
                 stack and user in the store will be skipped.
             **kwargs: Additional keyword arguments to pass to the Pydantic
                 constructor.
-
-        Raises:
-            RuntimeError: If the store cannot be initialized.
-            AuthorizationException: If the store cannot be initialized due to
-                authentication errors.
         """
         super().__init__(**kwargs)
 

@@ -27,6 +27,7 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
@@ -167,6 +168,7 @@ class DockerZenServer(ContainerService):
         gc = GlobalConfiguration()
 
         cmd, env = super()._get_container_cmd()
+        env[ENV_ZENML_SERVER] = "true"
         env[ENV_ZENML_CONFIG_PATH] = os.path.join(
             SERVICE_CONTAINER_PATH,
             SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,

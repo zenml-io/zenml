@@ -448,7 +448,13 @@ class RestZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the REST store."""
+        """Initialize the REST store.
+
+        Raises:
+            RuntimeError: If the store cannot be initialized.
+            AuthorizationException: If the store cannot be initialized due to
+                authentication errors.
+        """
         try:
             client_version = zenml.__version__
             server_version = self.get_store_info().version

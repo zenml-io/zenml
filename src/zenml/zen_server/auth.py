@@ -671,8 +671,7 @@ def http_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    Raises:
-        HTTPException: If the credentials are invalid.
+    # noqa: DAR401
     """
     try:
         return authenticate_credentials(
@@ -727,8 +726,7 @@ def oauth2_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    Raises:
-        HTTPException: If the JWT token could not be authorized.
+    # noqa: DAR401
     """
     try:
         auth_context = authenticate_credentials(access_token=token)

@@ -28,6 +28,7 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
@@ -162,6 +163,7 @@ class DaemonZenServer(LocalDaemonService):
         gc = GlobalConfiguration()
 
         cmd, env = super()._get_daemon_cmd()
+        env[ENV_ZENML_SERVER] = "true"
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
         env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
         env[ENV_ZENML_USER_ID] = str(gc.user_id)
@@ -194,6 +196,8 @@ class DaemonZenServer(LocalDaemonService):
         if not self.config.blocking:
             super().start(timeout)
         else:
+            gc = GlobalConfiguration()
+
             # In the blocking mode, we need to temporarily set the environment
             # variables for the running process to make it look like the server
             # is running in a separate environment (i.e. using a different
@@ -203,7 +207,10 @@ class DaemonZenServer(LocalDaemonService):
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             original_config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
+            os.environ[ENV_ZENML_SERVER] = "true"
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+            os.environ[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+            os.environ[ENV_ZENML_USER_ID] = str(gc.user_id)
             # Set the local stores path to the same path used by the client.
             # This ensures that the server's default store configuration is
             # initialized to point at the same local SQLite database as the
@@ -214,6 +221,7 @@ class DaemonZenServer(LocalDaemonService):
                 self.run()
             finally:
                 # Restore the original client environment variables
+                del os.environ[ENV_ZENML_SERVER]
                 if original_config_path:
                     os.environ[ENV_ZENML_CONFIG_PATH] = original_config_path
                 else:
