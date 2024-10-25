@@ -2,6 +2,11 @@
 description: Add reranking to your RAG inference for better retrieval performance.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Rerankers are a crucial component of retrieval systems that use LLMs. They help
 improve the quality of the retrieved documents by reordering them based on
 additional features or scores. In this section, we'll explore how to add a
