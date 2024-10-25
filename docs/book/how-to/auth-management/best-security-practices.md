@@ -4,6 +4,11 @@ description: >-
   Service Connectors.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Security best practices
 
 Service Connector Types, especially those targeted at cloud providers, offer a plethora of authentication methods matching those supported by remote cloud platforms. While there is no single authentication standard that unifies this process, there are some patterns that are easily identifiable and can be used as guidelines when deciding which authentication method to use to configure a Service Connector.

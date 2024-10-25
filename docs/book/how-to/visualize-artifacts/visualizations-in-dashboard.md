@@ -2,6 +2,11 @@
 description: Displaying visualizations in the dashboard.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Giving the ZenML Server Access to Visualizations
 
 In order for the visualizations to show up on the dashboard, the following must be true:
