@@ -17,4 +17,4 @@ redirects:
   how-to/stack-deployment/implement-a-custom-integration.md: how-to/contribute-to-zenml/implement-a-custom-integration.md
 
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
-  how-to/build-pipelines/name-your-pipeline-and-runs.md: how-to/build-pipelines/name-your-pipeline-runs.md
+  how-to/build-pipelines/name-your-pipeline-and-runs: how-to/build-pipelines/name-your-pipeline-runs.md
