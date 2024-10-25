@@ -68,7 +68,7 @@ class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://raw.githubusercontent.com/vllm-project/vllm/main/docs/source/assets/logos/vllm-logo-text-dark.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/vllm.png"
 
     @property
     def config_class(self) -> Type[VLLMModelDeployerConfig]:

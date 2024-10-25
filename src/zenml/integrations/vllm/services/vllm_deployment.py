@@ -13,12 +13,19 @@
 #  permissions and limitations under the License.
 """Implementation of the vLLM Inference Server Service."""
 
+import os
 from typing import Any, List, Optional, Union
 
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
 from zenml.services import (
+    HTTPEndpointHealthMonitor,
+    HTTPEndpointHealthMonitorConfig,
     LocalDaemonService,
     LocalDaemonServiceConfig,
+    LocalDaemonServiceEndpoint,
+    LocalDaemonServiceEndpointConfig,
+    ServiceEndpointProtocol,
     ServiceType,
 )
 from zenml.services.service import BaseDeploymentService
@@ -26,9 +33,48 @@ from zenml.services.service import BaseDeploymentService
 logger = get_logger(__name__)
 
 
+VLLM_PREDICTION_URL_PATH = "v1"
+VLLM_HEALTHCHECK_URL_PATH = "health"
+
+
+class VLLMDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
+    """vLLM deployment service configuration.
+
+    Attributes:
+        prediction_url_path: URI subpath for prediction requests
+    """
+
+    prediction_url_path: str
+
+
+class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
+    """A service endpoint exposed by the vLLM deployment daemon.
+
+    Attributes:
+        config: service endpoint configuration
+    """
+
+    config: VLLMDeploymentEndpointConfig
+    monitor: HTTPEndpointHealthMonitor
+
+    @property
+    def prediction_url(self) -> Optional[str]:
+        """Gets the prediction URL for the endpoint.
+
+        Returns:
+            the prediction URL for the endpoint
+        """
+        uri = self.status.uri
+        if not uri:
+            return None
+        return os.path.join(uri, self.config.prediction_url_path)
+
+
 class VLLMServiceConfig(LocalDaemonServiceConfig):
     """vLLM service configurations."""
 
+    port: int
+    host: str
     blocking: bool = True
     model: Optional[str] = None
     # If unspecified, model name or path will be used.
@@ -55,6 +101,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         description="vLLM Inference prediction service",
     )
     config: VLLMServiceConfig
+    endpoint: VLLMDeploymentEndpointConfig
 
     def __init__(self, config: VLLMServiceConfig, **attrs: Any):
         """Initialize the vLLM deployment service.
@@ -63,6 +110,21 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             config: service configuration
             attrs: additional attributes to set on the service
         """
+        if isinstance(config, VLLMServiceConfig) and "endpoint" not in attrs:
+            endpoint = BentoMLDeploymentEndpoint(
+                config=VLLMDeploymentEndpointConfig(
+                    protocol=ServiceEndpointProtocol.HTTP,
+                    port=config.port,
+                    ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    prediction_url_path=VLLM_PREDICTION_URL_PATH,
+                ),
+                monitor=HTTPEndpointHealthMonitor(
+                    config=HTTPEndpointHealthMonitorConfig(
+                        healthcheck_uri_path=VLLM_HEALTHCHECK_URL_PATH,
+                    )
+                ),
+            )
+            attrs["endpoint"] = endpoint
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
@@ -77,9 +139,13 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         from vllm.entrypoints.openai.cli_args import make_arg_parser
         from vllm.utils import FlexibleArgumentParser
 
+        self.endpoint.prepare_for_start()
+
         try:
             parser = make_arg_parser(FlexibleArgumentParser())
             args = parser.parse_args()
+            # Override port with the available port
+            self.config.port = self.endpoint.status.port
             # Update the arguments in place
             args.__dict__.update(self.config.model_dump())
             uvloop.run(run_server(args=args))
@@ -95,18 +161,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         """
         if not self.is_running:
             return None
-        return "http://localhost:8000/v1"
-
-    @property
-    def healthcheck_url(self) -> Optional[str]:
-        """Gets the healthcheck URL for the endpoint.
-
-        Returns:
-            the healthcheck URL for the endpoint
-        """
-        if not self.is_running:
-            return None
-        return "http://localhost:8000/health"
+        return self.endpoint.prediction_url_path
 
     def predict(self, data: "Any") -> "Any":
         """Make a prediction using the service.
@@ -126,7 +181,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
                 "vLLM Inference service is not running. "
                 "Please start the service before making predictions."
             )
-        if self.prediction_url is not None:
+        if self.endpoint.prediction_url is not None:
             from openai import OpenAI
 
             client = OpenAI(
