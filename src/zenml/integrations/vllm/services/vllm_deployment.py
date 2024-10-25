@@ -73,10 +73,10 @@ class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
 class VLLMServiceConfig(LocalDaemonServiceConfig):
     """vLLM service configurations."""
 
+    model: str
     port: int
-    host: str
+    host: Optional[str] = None
     blocking: bool = True
-    model: Optional[str] = None
     # If unspecified, model name or path will be used.
     tokenizer: Optional[str] = None
     served_model_name: Optional[Union[str, List[str]]] = None
@@ -101,7 +101,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         description="vLLM Inference prediction service",
     )
     config: VLLMServiceConfig
-    endpoint: VLLMDeploymentEndpointConfig
+    endpoint: BentoMLDeploymentEndpoint
 
     def __init__(self, config: VLLMServiceConfig, **attrs: Any):
         """Initialize the vLLM deployment service.
@@ -134,12 +134,12 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             "process... press CTRL+C once to stop it."
         )
 
+        self.endpoint.prepare_for_start()
+
         import uvloop
         from vllm.entrypoints.openai.api_server import run_server
         from vllm.entrypoints.openai.cli_args import make_arg_parser
         from vllm.utils import FlexibleArgumentParser
-
-        self.endpoint.prepare_for_start()
 
         try:
             parser = make_arg_parser(FlexibleArgumentParser())
