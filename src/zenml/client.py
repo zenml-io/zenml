@@ -7260,7 +7260,7 @@ class Client(metaclass=ClientMetaClass):
 
         # Force a re-authentication to start using the new API key
         # right away.
-        zen_store.authenticate(client_triggered=True)
+        zen_store.authenticate(force=True)
 
     def list_api_keys(
         self,

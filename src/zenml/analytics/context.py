@@ -75,7 +75,6 @@ class AnalyticsContext:
         """
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
-        from zenml.models import ServerDeploymentType
 
         try:
             gc = GlobalConfiguration()
@@ -91,10 +90,7 @@ class AnalyticsContext:
 
             # For local ZenML servers, we always use the client's analytics
             # opt-in configuration.
-            if (
-                self.in_server
-                and store_info.deployment_type != ServerDeploymentType.LOCAL
-            ):
+            if self.in_server and store_info.is_local():
                 self.analytics_opt_in = store_info.analytics_enabled
             else:
                 self.analytics_opt_in = gc.analytics_opt_in

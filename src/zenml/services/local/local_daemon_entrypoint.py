@@ -24,9 +24,9 @@ import click
 
 from zenml.utils.daemon import daemonize
 
-# Try to import the LocalZenServer here because it needs to be registered in the
+# Try to import the DaemonZenServer here because it needs to be registered in the
 # service registry early on in order to be available for use in other modules.
-# If the LocalZenServer dependencies aren't installed, there is no need to register
+# If the DaemonZenServer dependencies aren't installed, there is no need to register
 # it anywhere so we simply pass.
 try:
     from zenml.zen_server.deploy.daemon.daemon_zen_server import (  # noqa

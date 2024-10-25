@@ -372,6 +372,36 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
         return api_token
 
+    def set_bare_token(
+        self,
+        server_url: str,
+        token: str,
+    ) -> APIToken:
+        """Store a bare API token.
+
+        Args:
+            server_url: The server URL for which the token is to be stored.
+            token: The token to store.
+
+        Returns:
+            APIToken: The stored token.
+        """
+        api_token = APIToken(
+            access_token=token,
+        )
+
+        credential = self.credentials.get(server_url)
+        if credential:
+            credential.api_token = api_token
+        else:
+            self.credentials[server_url] = ServerCredentials(
+                url=server_url, api_token=api_token
+            )
+
+        self._save_credentials()
+
+        return api_token
+
     def update_server_info(
         self,
         server_url: str,

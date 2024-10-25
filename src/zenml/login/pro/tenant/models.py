@@ -53,23 +53,6 @@ class TenantStatus(StrEnum):
     DELETED = "deleted"
 
 
-class TenantStatusReason(StrEnum):
-    """Enum that represents the reason for the status of a tenant.
-
-    Sometimes, tenants are put in a certain state because of a specific internal
-    reason and not because the user explicitly requested it. This enum
-    represents those reasons.
-    """
-
-    # The tenant was put in this state because of a direct user action
-    USER_ACTION = "user_action"
-    # Tenant is deactivated because it was inactive for too long
-    INACTIVE = "inactive"
-    # Tenant is deactivated because the subscription has expired or was
-    # cancelled
-    SUBSCRIPTION_ENDED = "subscription_ended"
-
-
 class ZenMLServiceConfiguration(BaseRestAPIModel):
     """ZenML service configuration."""
 

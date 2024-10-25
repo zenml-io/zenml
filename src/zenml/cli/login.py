@@ -27,7 +27,11 @@ from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import ServerProviderType, StoreType
-from zenml.exceptions import AuthorizationException, IllegalOperationError
+from zenml.exceptions import (
+    AuthorizationException,
+    CredentialsNotValid,
+    IllegalOperationError,
+)
 from zenml.logger import get_logger
 from zenml.login.pro.utils import is_zenml_pro_server_url
 from zenml.login.web_login import web_login
@@ -191,7 +195,7 @@ def connect_to_server(
                 f"You do not have sufficient permissions to "
                 f"access the server at '{url}'."
             )
-        except AuthorizationException as e:
+        except CredentialsNotValid as e:
             cli_utils.error(f"Authorization error: {e}")
 
     else:
@@ -210,7 +214,7 @@ def connect_to_server(
                 f"You do not have sufficient permissions to "
                 f"access the SQL database at '{url}'."
             )
-        except AuthorizationException as e:
+        except CredentialsNotValid as e:
             cli_utils.warning(f"Authorization error: {e}")
 
         cli_utils.declare(f"Connected to SQL database '{url}'")
@@ -746,6 +750,10 @@ def login(
 @cli.command(
     "logout",
     help="""Log out from a ZenML server and optionally clear stored credentials.
+
+    When called without any arguments, the command will log out from the ZenML
+    server that the client is currently connected to. If the client is connected
+    to a local ZenML server, the command will also shut down the local server.
     
     Examples:
 
@@ -757,9 +765,15 @@ def login(
 
         zenml logout --local
 
-      * clear all stored credentials and tokens for a specific ZenML server:
+      * clear all stored credentials (API keys and tokens) for a specific ZenML
+        server:
 
         zenml logout https://zenml.example.com --clear
+
+      * log out from all ZenML Pro servers and clear all stored ZenML Pro
+        credentials with the exception of API keys:
+
+        zenml logout --pro --clear
         
 """,
 )
@@ -767,7 +781,7 @@ def login(
 @click.option(
     "--clear",
     is_flag=True,
-    help="Clear all stored credentials and tokens.",
+    help="Clear all stored credentials for the specified server(s).",
     default=False,
     type=click.BOOL,
 )
@@ -781,7 +795,8 @@ def login(
 @click.option(
     "--pro",
     is_flag=True,
-    help="Log out from all ZenML Pro servers.",
+    help="Log out from ZenML Pro. Use this with the --clear flag to clear all "
+    "stored ZenML Pro credentials with the exception of API keys.",
     default=False,
     type=click.BOOL,
 )
@@ -870,11 +885,11 @@ def logout(
                 f"Logging out from ZenML Pro server '{credentials.server_name}'."
             )
             if clear:
-                credentials_store.clear_token(server_url=server)
+                credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 "Logged out from ZenML Pro.\n"
                 f"Hint: You can run 'zenml login {credentials.server_name}' to "
-                "login again to the same ZenML PRo server or 'zenml server "
+                "login again to the same ZenML Pro server or 'zenml server "
                 "list' to view other available servers that you can connect to "
                 "with 'zenml login <server-id-name-or-url>'."
             )
@@ -889,7 +904,7 @@ def logout(
         if credentials and (clear or store_cfg.url == server):
             cli_utils.declare(f"Logging out from {server}.")
             if clear:
-                credentials_store.clear_token(server_url=server)
+                credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 f"Logged out from {server}."
                 f"Hint: You can run 'zenml login {server}' to log in again "

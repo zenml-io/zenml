@@ -24,11 +24,9 @@ from typing import (
     Type,
     Union,
 )
-from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
-from requests import ConnectionError
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -44,12 +42,7 @@ from zenml.enums import (
     SecretsStoreType,
     StoreType,
 )
-from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.login.pro.utils import (
-    get_troubleshooting_instructions,
-    is_zenml_pro_server_url,
-)
 from zenml.models import (
     ServerDatabaseType,
     ServerModel,
@@ -144,42 +137,7 @@ class BaseZenStore(
         """
         super().__init__(**kwargs)
 
-        try:
-            self._initialize()
-
-        # Handle cases where the ZenML server is not available
-        except ConnectionError as e:
-            error_message = (
-                f"Cannot connect to the ZenML server at {self.url}."
-            )
-            if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
-                recommendation = (
-                    "Please run `zenml login --local --restart` to restart the "
-                    "server."
-                )
-            else:
-                recommendation = (
-                    f"Please run `zenml login {self.url}` to reconnect to the "
-                    "server."
-                )
-            raise RuntimeError(f"{error_message}\n{recommendation}") from e
-
-        except AuthorizationException as e:
-            raise AuthorizationException(
-                f"Authorization failed for store at '{self.url}'. Please check "
-                f"your credentials: {str(e)}"
-            )
-
-        except Exception as e:
-            zenml_pro_extra = ""
-            if is_zenml_pro_server_url(self.url):
-                zenml_pro_extra = (
-                    "\nHINT: " + get_troubleshooting_instructions(self.url)
-                )
-            raise RuntimeError(
-                f"Error connecting to URL "
-                f"'{self.url}': {str(e)}" + zenml_pro_extra
-            ) from e
+        self._initialize()
 
         if not skip_default_registrations:
             logger.debug("Initializing database")

@@ -39,6 +39,7 @@ from pydantic import (
     Field,
     ValidationError,
     field_validator,
+    model_validator,
 )
 from requests.adapters import HTTPAdapter, Retry
 
@@ -112,12 +113,19 @@ from zenml.enums import (
     StackDeploymentProvider,
     StoreType,
 )
-from zenml.exceptions import AuthorizationException, MethodNotAllowedError
+from zenml.exceptions import (
+    AuthorizationException,
+    CredentialsNotValid,
+    MethodNotAllowedError,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
-from zenml.login.pro.utils import is_zenml_pro_server_url
+from zenml.login.pro.utils import (
+    get_troubleshooting_instructions,
+    is_zenml_pro_server_url,
+)
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -260,6 +268,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -298,7 +307,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    api_key: Optional[str] = None
     verify_ssl: Union[bool, str] = Field(
         default=True, union_mode="left_to_right"
     )
@@ -390,6 +398,28 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _move_credentials(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Moves credentials (API keys, API tokens) from the config to the credentials store.
+
+        Args:
+            data: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict without credentials.
+        """
+        if api_key := data.pop("api_key", None):
+            credentials_store = get_credentials_store()
+            credentials_store.set_api_key(data["url"], api_key)
+
+        if api_token := data.pop("api_token", None):
+            credentials_store = get_credentials_store()
+            credentials_store.set_bare_token(data["url"], api_token)
+
+        return data
+
     model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the `verify_ssl` attribute can be expanded to the contents
@@ -419,8 +449,47 @@ class RestZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the REST store."""
-        client_version = zenml.__version__
-        server_version = self.get_store_info().version
+        try:
+            client_version = zenml.__version__
+            server_version = self.get_store_info().version
+
+        # Handle cases where the ZenML server is not available
+        except ConnectionError as e:
+            error_message = (
+                f"Cannot connect to the ZenML server at {self.url}."
+            )
+            if urlparse(self.url).hostname in [
+                "localhost",
+                "127.0.0.1",
+                "host.docker.internal",
+            ]:
+                recommendation = (
+                    "Please run `zenml login --local --restart` to restart the "
+                    "server."
+                )
+            else:
+                recommendation = (
+                    f"Please run `zenml login {self.url}` to reconnect to the "
+                    "server."
+                )
+            raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
+        except AuthorizationException as e:
+            raise AuthorizationException(
+                f"Authorization failed for store at '{self.url}'. Please check "
+                f"your credentials: {str(e)}"
+            )
+
+        except Exception as e:
+            zenml_pro_extra = ""
+            if is_zenml_pro_server_url(self.url):
+                zenml_pro_extra = (
+                    "\nHINT: " + get_troubleshooting_instructions(self.url)
+                )
+            raise RuntimeError(
+                f"Error connecting to URL "
+                f"'{self.url}': {str(e)}" + zenml_pro_extra
+            ) from e
 
         if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
             server_version != client_version
@@ -3949,16 +4018,15 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
-    @property
-    def api_token(self) -> str:
+    def get_or_generate_api_token(self) -> str:
         """Get or generate an API token.
 
         Returns:
             The API token.
 
         Raises:
-            AuthorizationException: if an API token cannot be fetched or
-                generated.
+            CredentialsNotValid: if an API token cannot be fetched or
+                generated because the client credentials are not valid.
         """
         if self._api_token is None or self._api_token.expired:
             # Check if a valid API token is already in the cache
@@ -3994,16 +4062,8 @@ class RestZenStore(BaseZenStore):
             data: Optional[Dict[str, str]] = None
             headers: Dict[str, str] = {}
 
-            # Check if an API key is configured:
-            #
-            # 1. If an API key is configured in the REST store configuration
-            # (i.e. via environment variables or the ZenML global configuration
-            # file), it has precedence.
-            # 2. If an API key is kept in the credentials store, it is used
-            # as a fallback.
-            api_key = self.config.api_key or credentials_store.get_api_key(
-                self.url
-            )
+            # Check if an API key is configured
+            api_key = credentials_store.get_api_key(self.url)
 
             api_key_hint = (
                 "\nHint: If you're getting this error in an automated, "
@@ -4029,7 +4089,7 @@ class RestZenStore(BaseZenStore):
                 # Get the ZenML Pro API session token, if cached and valid
                 pro_token = credentials_store.get_pro_token(allow_expired=True)
                 if not pro_token:
-                    raise AuthorizationException(
+                    raise CredentialsNotValid(
                         "You need to be logged in to ZenML Pro in order to "
                         f"access the ZenML Pro server '{self.url}'. Please run "
                         "'zenml login' to log in or choose a different server."
@@ -4037,7 +4097,7 @@ class RestZenStore(BaseZenStore):
                     )
 
                 elif pro_token.expired:
-                    raise AuthorizationException(
+                    raise CredentialsNotValid(
                         "Your ZenML Pro login session has expired. "
                         "Please log in again using 'zenml login'."
                         + api_key_hint
@@ -4051,13 +4111,13 @@ class RestZenStore(BaseZenStore):
                 )
             else:
                 if not token:
-                    raise AuthorizationException(
+                    raise CredentialsNotValid(
                         "No valid credentials found. Please run 'zenml login "
                         f"--url {self.url}' to connect to the current server."
                         + api_key_hint
                     )
                 elif token.expired:
-                    raise AuthorizationException(
+                    raise CredentialsNotValid(
                         "Your authentication to the current server has expired. "
                         "Please log in again using 'zenml login --url "
                         f"{self.url}'." + api_key_hint
@@ -4075,7 +4135,7 @@ class RestZenStore(BaseZenStore):
             try:
                 token_response = OAuthTokenResponse.model_validate(response)
             except ValidationError as e:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Unexpected response received while authenticating to "
                     f"the server {e}"
                 ) from e
@@ -4124,12 +4184,13 @@ class RestZenStore(BaseZenStore):
         # needed.
         return self._session
 
-    def authenticate(self, client_triggered: bool = False) -> None:
+    def authenticate(self, force: bool = False) -> None:
         """Authenticate or re-authenticate to the ZenML server.
 
         Args:
-            client_triggered: Whether the authentication was triggered by the
-                client or by the server
+            force: If True, force a re-authentication even if a valid API token
+                is currently cached. This is useful when the current API token
+                is known to be invalid or expired.
         """
         # This is called to trigger an authentication flow, either because
         # the current API token is expired or no longer valid, or because
@@ -4137,14 +4198,14 @@ class RestZenStore(BaseZenStore):
         # authentication was never attempted before.
         #
         # 1. Drop the API token currently being used, if any.
-        # 2. Clear the current API token from the credentials store, if any,
-        # otherwise it will just be re-used on the next call.
+        # 2. If force=True, clear the current API token from the credentials
+        # store, if any, otherwise it will just be re-used on the next call.
         # 3. Get a new API token
 
         # The authentication token could have expired or invalidated through
         # other means; refresh it and try again. This will clear any cached
         # token and trigger a new authentication flow.
-        if self._api_token and not client_triggered:
+        if self._api_token and not force:
             if self._api_token.expired:
                 logger.info(
                     "Authentication session expired; attempting to "
@@ -4159,15 +4220,21 @@ class RestZenStore(BaseZenStore):
                     "re-authenticate."
                 )
         else:
-            # Never authenticated since the client was created or the client
-            # was explicitly triggered to authenticate.
+            if force:
+                # Clear the current API token from the credentials store, if
+                # any, to force a new authentication flow.
+                get_credentials_store().clear_token(self.url)
+            # Never authenticated since the client was created or the API token
+            # was explicitly cleared.
             logger.debug(f"Authenticating to {self.url}...")
 
         self._api_token = None
 
+        new_api_token = self.get_or_generate_api_token()
+
         # Set or refresh the authentication token
         self.session.headers.update(
-            {"Authorization": "Bearer " + self.api_token}
+            {"Authorization": "Bearer " + new_api_token}
         )
         logger.debug(f"Authenticated to {self.url}")
 
@@ -4233,8 +4300,8 @@ class RestZenStore(BaseZenStore):
             The parsed response.
 
         Raises:
-            AuthorizationException: if the request fails due to an expired
-                authentication token.
+            CredentialsNotValid: if the request fails due to invalid
+                client credentials.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
 
@@ -4253,15 +4320,18 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException:
-            # TODO: we MUST differentiate between authentication errors that need
-            #  to be handled by re-authenticating and other authorization errors
-            #  like the ones coming from using service connectors. Otherwise, any
-            #  authorization error will invalidate the current API token.
+        except CredentialsNotValid:
+            # NOTE: CredentialsNotValid is raised only when the server
+            # explicitly indicates that the credentials are not valid and they
+            # can be thrown away.
 
             # We authenticate or re-authenticate here and then try the request
-            # again, this time with an API token in the header.
-            self.authenticate()
+            # again, this time with a valid API token in the header.
+            self.authenticate(
+                # If the last request was authenticated with an API token,
+                # we force a re-authentication to get a fresh token.
+                force=self._api_token is not None
+            )
 
         try:
             return self._handle_response(
@@ -4274,10 +4344,10 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException as e:
-            raise AuthorizationException(
-                "Authorization failed. Please check your credentials and your "
-                f"permissions and try again: {e}"
+        except CredentialsNotValid as e:
+            raise CredentialsNotValid(
+                "The current credentials are no longer valid. Please log in "
+                "again using 'zenml login'."
             ) from e
 
     def get(
