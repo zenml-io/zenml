@@ -42,7 +42,7 @@ ZenML Pro comes with multi-tenancy which makes it easy for you to have multiple 
 
 ## Upgrading your code
 
-Sometimes, you might have to upgrade your code to work with a new version of ZenML. This is true especially when you are moving from a really old version to a new major version. The following tips might help, in addition to everything you've learnt in this document so far.
+Sometimes, you might have to upgrade your code to work with a new version of ZenML. This is true especially when you are moving from a really old version to a new major version. The following tips might help, in addition to everything you've learned in this document so far.
 
 ### Testing and Compatibility
 
