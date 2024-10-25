@@ -186,7 +186,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
 
             client = OpenAI(
                 api_key="EMPTY",
-                base_url=self.prediction_url,
+                base_url=self.endpoint.prediction_url,
             )
             models = client.models.list()
             model = models.data[0].id
