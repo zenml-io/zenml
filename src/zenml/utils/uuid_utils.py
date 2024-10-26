@@ -17,9 +17,9 @@ import hashlib
 from typing import Any, Optional, Union
 from uuid import UUID
 
-UUID_VERSION = 4
+DEFAULT_UUID_VERSION = 4
 
-def is_valid_uuid(value: Any, version: int = UUID_VERSION) -> bool:
+def is_valid_uuid(value: Any, version: int = DEFAULT_UUID_VERSION) -> bool:
     """Checks if a string is a valid UUID.
 
     Args:
@@ -53,7 +53,7 @@ def parse_name_or_uuid(
     """
     if name_or_id:
         try:
-            return UUID(name_or_id)
+            return UUID(name_or_id, version=DEFAULT_UUID_VERSION)
         except ValueError:
             return name_or_id
     else:
@@ -71,4 +71,4 @@ def generate_uuid_from_string(value: str) -> UUID:
     """
     hash_ = hashlib.md5()  # nosec
     hash_.update(value.encode("utf-8"))
-    return UUID(hex=hash_.hexdigest(), version=UUID_VERSION)
+    return UUID(hex=hash_.hexdigest(), version=DEFAULT_UUID_VERSION)
