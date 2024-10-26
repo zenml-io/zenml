@@ -49,7 +49,7 @@ The `run_with_accelerate` decorator accepts various arguments to configure your 
 3. If `run_with_accelerate` is misused, it will raise a `RuntimeError` with a helpful message explaining the correct usage.
 
 {% hint style="info" %}
-To see a full example where Accelerate is used within a ZenML pipeline, check out our <a href="https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md">llm-lora-finetuning</a> project which leverages the distributed training functionalities while finetuning an LLM.
+To see a full example where Accelerate is used within a ZenML pipeline, check out our [llm-lora-finetuning](https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md) project which leverages the distributed training functionalities while finetuning an LLM.
 {% endhint %}
 
 ## Ensure your container is Accelerate-ready
