@@ -181,13 +181,11 @@ ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
     f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
 )
-ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD = (
-    f"{ENV_ZENML_SERVER_PREFIX}USE_LEGACY_DASHBOARD"
-)
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK = (
     "ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK"
 )
+ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING = "ZENML_PREVENT_CLIENT_SIDE_CACHING"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -253,7 +251,7 @@ DEFAULT_SERVICE_START_STOP_TIMEOUT = 60
 DEFAULT_LOCAL_SERVICE_IP_ADDRESS = "127.0.0.1"
 ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
-STEP_SOURCE_PARAMETER_NAME = "step_source"
+CODE_HASH_PARAMETER_NAME = "step_source"
 
 # Server settings
 DEFAULT_ZENML_SERVER_NAME = "default"
@@ -315,8 +313,8 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
     "payment=(), sync-xhr=(), usb=()"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
-DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
+DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES = 256 * 1024 * 1024
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
@@ -352,7 +350,6 @@ EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
 GET_OR_CREATE = "/get-or-create"
-GRAPH = "/graph"
 HEALTH = "/health"
 INFO = "/info"
 LOGIN = "/login"
@@ -445,33 +442,6 @@ KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
-ALPHA_MESSAGE = (
-    "The mlstacks tool/package is in alpha and actively being developed. "
-    "Please avoid running mission-critical workloads on resources deployed "
-    "through these commands. If you encounter any problems, create an issue "
-    f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
-)
-NOT_INSTALLED_MESSAGE = (
-    "The prerequisites for using `mlstacks` (the `mlstacks` and "
-    "`python-terraform` packages seem to be unavailable on your machine "
-    "and/or in your environment. To install the missing dependencies: \n\n"
-    "`pip install mlstacks`"
-)
-TERRAFORM_NOT_INSTALLED_MESSAGE = (
-    "Terraform appears not to be installed on your machine and/or in your "
-    "environment. Please install Terraform and try again."
-)
-STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
-MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
-    "artifact_store",
-    "container_registry",
-    "experiment_tracker",
-    "orchestrator",
-    "model_deployer",
-    "mlops_platform",
-    "step_operator",
-]
-
 
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535

@@ -15,14 +15,13 @@
 
 import os
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import (
     GlobalConfiguration,
 )
-from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
@@ -31,20 +30,12 @@ from zenml.constants import (
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
-from zenml.model.utils import link_artifact_config_to_model
-from zenml.models.v2.core.step_run import StepRunRequest
-from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
 from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
-    from zenml.model.model import Model
     from zenml.models import PipelineDeploymentResponse
 
 
@@ -159,154 +150,6 @@ def get_run_name(run_name_template: str) -> str:
         raise ValueError("Empty run names are not allowed.")
 
     return run_name
-
-
-def _link_pipeline_run_to_model_from_context(
-    pipeline_run_id: "UUID", model: Optional["Model"] = None
-) -> None:
-    """Links the pipeline run to the model version using artifacts data.
-
-    Args:
-        pipeline_run_id: The ID of the current pipeline run.
-        model: Model configured in the step
-    """
-    from zenml.models import ModelVersionPipelineRunRequest
-
-    if not model:
-        model_id, model_version_id = _get_model_versions_from_config()
-    else:
-        model_id, model_version_id = model.model_id, model.id
-
-    if model_id and model_version_id:
-        Client().zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                pipeline_run=pipeline_run_id,
-                model=model_id,
-                model_version=model_version_id,
-            )
-        )
-
-
-def _get_model_versions_from_config() -> Tuple[Optional[UUID], Optional[UUID]]:
-    """Gets the model versions from the step model version.
-
-    Returns:
-        Tuple of (model_id, model_version_id).
-    """
-    try:
-        mc = get_step_context().model
-        return mc.model_id, mc.id
-    except StepContextError:
-        return None, None
-
-
-def _link_cached_artifacts_to_model(
-    model_from_context: Optional["Model"],
-    step_run: StepRunRequest,
-    step_source: Source,
-) -> None:
-    """Links the output artifacts of the cached step to the model version in Control Plane.
-
-    Args:
-        model_from_context: The model version of the current step.
-        step_run: The step to run.
-        step_source: The source of the step.
-    """
-    from zenml.artifacts.artifact_config import ArtifactConfig
-    from zenml.steps.base_step import BaseStep
-    from zenml.steps.utils import parse_return_type_annotations
-
-    step_instance = BaseStep.load_from_source(step_source)
-    output_annotations = parse_return_type_annotations(
-        step_instance.entrypoint
-    )
-    for output_name_, output_id in step_run.outputs.items():
-        artifact_config_ = None
-        if output_name_ in output_annotations:
-            annotation = output_annotations.get(output_name_, None)
-            if annotation and annotation.artifact_config is not None:
-                artifact_config_ = annotation.artifact_config.model_copy()
-        # no artifact config found or artifact was produced by `save_artifact`
-        # inside the step body, so was never in annotations
-        if artifact_config_ is None:
-            artifact_config_ = ArtifactConfig(name=output_name_)
-
-        link_artifact_config_to_model(
-            artifact_config=artifact_config_,
-            model=model_from_context,
-            artifact_version_id=output_id,
-        )
-
-
-def _link_pipeline_run_to_model_from_artifacts(
-    pipeline_run_id: UUID,
-    artifact_names: List[str],
-    external_artifacts: List["ExternalArtifactConfiguration"],
-) -> None:
-    """Links the pipeline run to the model version using artifacts data.
-
-    Args:
-        pipeline_run_id: The ID of the current pipeline run.
-        artifact_names: The name of the published output artifacts.
-        external_artifacts: The external artifacts of the step.
-    """
-    from zenml.models import ModelVersionPipelineRunRequest
-
-    models = _get_model_versions_from_artifacts(artifact_names)
-    client = Client()
-
-    # Add models from external artifacts
-    for external_artifact in external_artifacts:
-        if external_artifact.model:
-            models.add(
-                (
-                    external_artifact.model.model_id,
-                    external_artifact.model.id,
-                )
-            )
-
-    for model in models:
-        client.zen_store.create_model_version_pipeline_run_link(
-            ModelVersionPipelineRunRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
-                pipeline_run=pipeline_run_id,
-                model=model[0],
-                model_version=model[1],
-            )
-        )
-
-
-def _get_model_versions_from_artifacts(
-    artifact_names: List[str],
-) -> Set[Tuple[UUID, UUID]]:
-    """Gets the model versions from the artifacts.
-
-    Args:
-        artifact_names: The names of the published output artifacts.
-
-    Returns:
-        Set of tuples of (model_id, model_version_id).
-    """
-    models = set()
-    for artifact_name in artifact_names:
-        artifact_config = (
-            get_step_context()._get_output(artifact_name).artifact_config
-        )
-        if artifact_config is not None:
-            if (model := artifact_config._model) is not None:
-                model_version_response = model._get_or_create_model_version()
-                models.add(
-                    (
-                        model_version_response.model.id,
-                        model_version_response.id,
-                    )
-                )
-            else:
-                break
-    return models
 
 
 class register_artifact_store_filesystem:

@@ -129,7 +129,6 @@ class TestConfig(BaseTestConfigModel):
         Raises:
             RuntimeError: If the stack requirements are not met or if multiple
                 stack components of the same type are specified as requirements.
-            Exception: The exception raised while provisioning the stack.
         """
         from zenml.enums import StackComponentType
         from zenml.utils.string_utils import random_str
@@ -194,16 +193,7 @@ class TestConfig(BaseTestConfigModel):
         current_active_stack = client.active_stack_model.id
         client.activate_stack(stack.id)
 
-        # Provision the stack
         active_stack = client.active_stack
-        try:
-            active_stack.provision()
-            active_stack.resume()
-        except Exception:
-            if cleanup:
-                client.zen_store.delete_stack(stack.id)
-            raise
-
         logging.info(f"Using active stack '{stack.name}'")
 
         # Yield the stack

@@ -973,7 +973,6 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
-        query = query.distinct()
         query = filter_model.apply_filter(query=query, table=table)
         query = query.distinct()
 
@@ -4108,7 +4107,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
-        query = select(PipelineSchema)
+        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
+        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
 
         column, operand = pipeline_filter_model.sorting_params
         if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
@@ -4141,12 +4141,25 @@ class SqlZenStore(BaseZenStore):
                     sort_clause = asc
 
                 query = (
-                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    # We need to include the subquery in the select here to
+                    # make this query work with the distinct statement. This
+                    # result will be removed in the custom conversion function
+                    # applied later
+                    select(PipelineSchema, max_date_subquery.c.run_or_created)
+                    .where(PipelineSchema.id == max_date_subquery.c.id)
                     .order_by(sort_clause(max_date_subquery.c.run_or_created))
                     # We always add the `id` column as a tiebreaker to ensure a
                     # stable, repeatable order of items, otherwise subsequent
                     # pages might contain the same items.
                     .order_by(col(PipelineSchema.id))
+                )
+
+            def _custom_conversion(row: Any) -> PipelineResponse:
+                return cast(
+                    PipelineResponse,
+                    row[0].to_model(
+                        include_metadata=hydrate, include_resources=True
+                    ),
                 )
 
         with Session(self.engine) as session:
@@ -4156,6 +4169,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
@@ -8093,7 +8107,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model(include_metadata=True)
+            return existing_step_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     @staticmethod
     def _set_run_step_parent_step(
@@ -8303,6 +8319,14 @@ class SqlZenStore(BaseZenStore):
             ],
             num_steps=num_steps,
         )
+
+        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
+            # If the pipeline run is a placeholder run, no step has been started
+            # for the run yet. This means the orchestrator hasn't started
+            # running yet, and this method is most likely being called as
+            # part of the creation of some cached steps. In this case, we don't
+            # update the status unless the run is finished.
+            return
 
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
@@ -9181,7 +9205,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_activate or config.use_legacy_dashboard:
+            if config.auto_activate:
                 return True
 
         else:

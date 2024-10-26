@@ -135,16 +135,8 @@ def int_plus_one_test_step(
 
 
 @pipeline(name="connected_two_step_pipeline")
-def connected_two_step_pipeline(step_1, step_2):
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-    step_2(step_1())
-
-
-pipeline_instance = connected_two_step_pipeline(
-    step_1=constant_int_output_test_step(),
-    step_2=int_plus_one_test_step(),
-)
+def pipeline_instance():
+    int_plus_one_test_step(constant_int_output_test_step())
 
 
 class PipelineRunContext:
@@ -159,11 +151,11 @@ class PipelineRunContext:
     def __enter__(self):
         self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
-            pipeline_instance.run(
+            pipeline_instance.with_options(
                 run_name=f"{self.pipeline_name}_{i}",
                 unlisted=True,
                 enable_step_logs=self.enable_step_logs,
-            )
+            )()
 
         # persist which runs, steps and artifact versions were produced.
         # In case the test ends up deleting some or all of these, this allows

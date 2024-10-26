@@ -31,6 +31,7 @@ from zenml.materializers.structured_string_materializer import (
 )
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
+from zenml.materializers.uuid_materializer import UUIDMaterializer
 
 __all__ = [
     "BuiltInContainerMaterializer",
@@ -40,4 +41,5 @@ __all__ = [
     "StructuredStringMaterializer",
     "PydanticMaterializer",
     "ServiceMaterializer",
+    "UUIDMaterializer",
 ]
