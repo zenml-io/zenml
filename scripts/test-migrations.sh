@@ -251,7 +251,12 @@ function test_upgrade_to_version() {
     fi
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
-        zenml login mysql://root:password@127.0.0.1/zenml
+
+        if [ "$(version_compare "$VERSION" "0.68.0")" == ">" ]; then
+            zenml login mysql://root:password@127.0.0.1/zenml
+        else
+            zenml connect --url mysql://root:password@127.0.0.1/zenml --username root --password password
+        fi
     fi
 
     # Run the tests for this version

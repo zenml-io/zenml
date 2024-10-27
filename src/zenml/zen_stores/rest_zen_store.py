@@ -410,19 +410,25 @@ class RestZenStoreConfiguration(StoreConfiguration):
         Returns:
             The values dict without credentials.
         """
+        url = data.get("url")
+        if not url:
+            return data
+
+        url = replace_localhost_with_internal_hostname(url)
+
         if api_token := data.pop("api_token", None):
             credentials_store = get_credentials_store()
-            credentials_store.set_bare_token(data["url"], api_token)
+            credentials_store.set_bare_token(url, api_token)
 
         username = data.pop("username", None)
         password = data.pop("password", None)
         if username is not None and password is not None:
             credentials_store = get_credentials_store()
-            credentials_store.set_password(data["url"], username, password)
+            credentials_store.set_password(url, username, password)
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            credentials_store.set_api_key(data["url"], api_key)
+            credentials_store.set_api_key(url, api_key)
 
         return data
 
