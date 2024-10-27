@@ -14,6 +14,7 @@
 """CLI for managing ZenML server deployments."""
 
 import ipaddress
+import re
 from typing import List, Optional, Union
 
 import click
@@ -196,11 +197,15 @@ def status() -> None:
     cli_utils.declare("-----ZenML Client Status-----")
     if gc.uses_default_store():
         cli_utils.declare(
-            f"Connected to a local ZenML database: ('{store_cfg.url}')"
+            f"Connected to the local ZenML database: '{store_cfg.url}'"
         )
     elif connected_to_local_server():
         cli_utils.declare(
             f"Connected to the local ZenML server: {store_cfg.url}"
+        )
+    elif re.match(r"^mysql://", store_cfg.url):
+        cli_utils.declare(
+            f"Connected directly to a SQL database: '{store_cfg.url}'"
         )
     else:
         credentials_store = get_credentials_store()

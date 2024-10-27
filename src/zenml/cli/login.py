@@ -692,8 +692,10 @@ def login(
     )
 
     if server is not None:
+        breakpoint()
+
         if is_zenml_pro_server_url(server) or not re.match(
-            r"^https?://", server
+            r"^(https?|mysql)://", server
         ):
             # The server argument is a ZenML Pro server URL, server name or UUID
             connect_to_pro_server(
