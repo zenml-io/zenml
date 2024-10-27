@@ -15,7 +15,7 @@
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -93,6 +93,36 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         """
         self._load_credentials()
 
+    @classmethod
+    def reset_instance(
+        cls, store: Optional["CredentialsStore"] = None
+    ) -> None:
+        """Reset the singleton instance of the CredentialsStore.
+
+        Args:
+            store: Optional instance of the CredentialsStore to set as the
+                singleton instance. If None, a new instance will be created.
+        """
+        current_store = cls.get_instance()
+        if current_store is not None and current_store is not store:
+            # Delete the credentials file from disk if it exists, otherwise
+            # the credentials will be reloaded from the file when the new
+            # instance is created and this call will have no effect
+            current_store._delete_credentials_file()
+
+        cls._clear(store)  # type: ignore[arg-type]
+        if store:
+            store._save_credentials()
+
+    @classmethod
+    def get_instance(cls) -> Optional["CredentialsStore"]:
+        """Get the singleton instance of the CredentialsStore.
+
+        Returns:
+            The singleton instance of the CredentialsStore.
+        """
+        return cast(CredentialsStore, cls._instance())
+
     @property
     def _credentials_file(self) -> str:
         """Path to the file where the credentials are stored.
@@ -164,6 +194,15 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         }
         yaml_utils.write_yaml(credentials_file, credentials_store)
         self.last_modified_time = os.path.getmtime(credentials_file)
+
+    def _delete_credentials_file(self) -> None:
+        """Delete the credentials file."""
+        if handle_bool_env_var(ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING):
+            return
+        credentials_file = self._credentials_file
+        if fileio.exists(credentials_file):
+            fileio.remove(credentials_file)
+            self.last_modified_time = None
 
     def check_and_reload_from_file(self) -> None:
         """Check if the credentials file has been modified and reload it if necessary."""

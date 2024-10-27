@@ -42,6 +42,7 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
+from zenml.login.credentials_store import CredentialsStore
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -237,9 +238,11 @@ class UserContext:
         if self.login or self.existing_user:
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
+            CredentialsStore.reset_instance()
             self.client = Client()
             store_config = StoreConfiguration(
                 url=self.original_config.store.url,
@@ -255,6 +258,7 @@ class UserContext:
         if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if not self.existing_user and self.delete:
             try:
@@ -309,9 +313,11 @@ class ServiceAccountContext:
             )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
+            CredentialsStore.reset_instance()
             self.client = Client()
             store_config = StoreConfiguration(
                 url=self.original_config.store.url,
@@ -326,6 +332,7 @@ class ServiceAccountContext:
         if self.login or self.existing_account:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
@@ -355,9 +362,11 @@ class LoginContext:
     def __enter__(self):
         self.original_config = GlobalConfiguration.get_instance()
         self.original_client = Client.get_instance()
+        self.original_credentials = CredentialsStore.get_instance()
 
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
+        CredentialsStore.reset_instance()
         store_config = StoreConfiguration(
             url=self.original_config.store.url,
             type=self.original_config.store.type,
@@ -371,6 +380,7 @@ class LoginContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         GlobalConfiguration._reset_instance(self.original_config)
         Client._reset_instance(self.original_client)
+        CredentialsStore.reset_instance(self.original_credentials)
         _ = Client().zen_store
 
 
