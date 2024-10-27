@@ -25,6 +25,7 @@ from zenml.zen_server.deploy import (
     LocalServerDeployer,
     LocalServerDeploymentConfig,
 )
+from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 from zenml.zen_server.utils import server_config
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -45,8 +46,7 @@ def test_server_up_down(clean_client, mocker):
     )
     port = scan_for_available_port(start=8003, stop=9000)
     deployment_config = LocalServerDeploymentConfig(
-        name="test_server",
-        provider="local",
+        provider="daemon",
         port=port,
     )
     endpoint = f"http://127.0.0.1:{port}"
@@ -63,24 +63,19 @@ def test_server_up_down(clean_client, mocker):
         )
     except RuntimeError:
         print("ZenServer failed to start. Pulling logs...")
-        for line in deployer.get_server_logs(
-            server_name="test_server", tail=200
-        ):
+        for line in deployer.get_server_logs(tail=200):
             print(line)
         raise
     finally:
         try:
-            deployer.remove_server(
-                server_name="test_server", timeout=SERVER_START_STOP_TIMEOUT
-            )
+            deployer.remove_server(timeout=SERVER_START_STOP_TIMEOUT)
         except RuntimeError:
             print("ZenServer failed to start. Pulling logs...")
-            for line in deployer.get_server_logs(
-                server_name="test_server", tail=200
-            ):
+            for line in deployer.get_server_logs(tail=200):
                 print(line)
             raise
-    assert deployer.list_servers() == []
+    with pytest.raises(ServerDeploymentNotFoundError):
+        assert deployer.get_server()
 
 
 def test_rate_limit_is_not_impacted_by_successful_requests():
