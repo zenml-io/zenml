@@ -1,5 +1,4 @@
 ---
-icon: chart-scatter
 description: Configuring ZenML to display data visualizations in the dashboard.
 ---
 
