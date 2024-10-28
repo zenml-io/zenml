@@ -208,6 +208,7 @@ class Compiler:
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 settings=config.settings,
+                tags=config.tags,
                 extra=config.extra,
                 model=config.model,
                 parameters=config.parameters,
