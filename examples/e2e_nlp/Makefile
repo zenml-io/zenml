@@ -11,4 +11,4 @@ install-local-stack:
 	zenml stack register -a default -o default -r mlflow_local_$${stack_name} \
     -e mlflow_local_$${stack_name} $${stack_name} && \
 	zenml stack set $${stack_name} && \
-	zenml login --local
+	zenml up
