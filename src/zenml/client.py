@@ -1545,6 +1545,8 @@ class Client(metaclass=ClientMetaClass):
         remote_components: List[str] = []
         assert stack.components is not None
         for component_type, components in stack.components.items():
+            component_flavor: Union[FlavorResponse, str]
+
             for component in components:
                 if isinstance(component, UUID):
                     component_response = self.get_stack_component(
@@ -1552,7 +1554,7 @@ class Client(metaclass=ClientMetaClass):
                         component_type=component_type,
                     )
                     component_config = component_response.configuration
-                    component_flavor = component_response.flavor_name
+                    component_flavor = component_response.flavor
                 else:
                     component_config = component.configuration
                     component_flavor = component.flavor
@@ -1565,7 +1567,7 @@ class Client(metaclass=ClientMetaClass):
 
                 configuration = validate_stack_component_config(
                     configuration_dict=component_config,
-                    flavor_name=component_flavor,
+                    flavor=component_flavor,
                     component_type=component_type,
                     # Always enforce validation of custom flavors
                     validate_custom_flavors=True,
@@ -1574,13 +1576,18 @@ class Client(metaclass=ClientMetaClass):
                 # `validate_custom_flavors=True` above
                 assert configuration is not None
                 warn_if_config_server_mismatch(configuration)
+                flavor_name = (
+                    component_flavor.name
+                    if isinstance(component_flavor, FlavorResponse)
+                    else component_flavor
+                )
                 if configuration.is_local:
                     local_components.append(
-                        f"{component_type.value}: {component_flavor}"
+                        f"{component_type.value}: {flavor_name}"
                     )
                 elif configuration.is_remote:
                     remote_components.append(
-                        f"{component_type.value}: {component_flavor}"
+                        f"{component_type.value}: {flavor_name}"
                     )
 
         if local_components and remote_components:
@@ -1993,7 +2000,7 @@ class Client(metaclass=ClientMetaClass):
 
         validated_config = validate_stack_component_config(
             configuration_dict=configuration,
-            flavor_name=flavor,
+            flavor=flavor,
             component_type=component_type,
             # Always enforce validation of custom flavors
             validate_custom_flavors=True,
@@ -2094,7 +2101,7 @@ class Client(metaclass=ClientMetaClass):
 
             validated_config = validate_stack_component_config(
                 configuration_dict=existing_configuration,
-                flavor_name=component.flavor_name,
+                flavor=component.flavor,
                 component_type=component.type,
                 # Always enforce validation of custom flavors
                 validate_custom_flavors=True,

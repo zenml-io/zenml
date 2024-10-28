@@ -3236,7 +3236,7 @@ class SqlZenStore(BaseZenStore):
 
                 validate_stack_component_config(
                     configuration_dict=component.configuration,
-                    flavor_name=component.flavor,
+                    flavor=component.flavor,
                     component_type=component.type,
                     zen_store=self,
                     validate_custom_flavors=False,
@@ -3405,7 +3405,7 @@ class SqlZenStore(BaseZenStore):
 
                 validate_stack_component_config(
                     configuration_dict=component_update.configuration,
-                    flavor_name=existing_component.flavor,
+                    flavor=existing_component.flavor,
                     component_type=StackComponentType(existing_component.type),
                     zen_store=self,
                     validate_custom_flavors=False,

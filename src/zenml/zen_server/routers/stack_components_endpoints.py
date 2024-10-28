@@ -141,7 +141,7 @@ def update_stack_component(
         existing_component = zen_store().get_stack_component(component_id)
         validate_stack_component_config(
             configuration_dict=component_update.configuration,
-            flavor_name=existing_component.flavor_name,
+            flavor=existing_component.flavor_name,
             component_type=existing_component.type,
             zen_store=zen_store(),
             # We allow custom flavors to fail import on the server side.

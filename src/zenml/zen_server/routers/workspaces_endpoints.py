@@ -453,7 +453,7 @@ def create_stack_component(
 
     validate_stack_component_config(
         configuration_dict=component.configuration,
-        flavor_name=component.flavor,
+        flavor=component.flavor,
         component_type=component.type,
         zen_store=zen_store(),
         # We allow custom flavors to fail import on the server side.
