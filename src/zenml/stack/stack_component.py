@@ -396,14 +396,9 @@ class StackComponent:
             The created StackComponent.
 
         Raises:
-            ValueError: If the component model does not have an associated
-                flavor.
             ImportError: If the flavor can't be imported.
         """
         flavor_model = component_model.flavor
-
-        if not flavor_model:
-            raise ValueError("Missing flavor for component.")
 
         try:
             from zenml.stack import Flavor

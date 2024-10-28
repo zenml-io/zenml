@@ -137,10 +137,9 @@ def generate_stack_component_describe_command(
                 active_component_id = active_components[0].id
 
             if component_.connector:
-                # We also need the flavor to get the connector requirements
-                connector_requirements = client.get_flavor_by_name_and_type(
-                    name=component_.flavor_name, component_type=component_type
-                ).connector_requirements
+                connector_requirements = (
+                    component_.flavor.connector_requirements
+                )
             else:
                 connector_requirements = None
 
@@ -1772,17 +1771,7 @@ def connect_stack_component_with_service_connector(
     except KeyError as err:
         cli_utils.error(str(err))
 
-    try:
-        flavor_model = client.get_flavor_by_name_and_type(
-            name=component_model.flavor_name, component_type=component_type
-        )
-    except KeyError as err:
-        cli_utils.error(
-            f"Could not find flavor '{component_model.flavor_name}' for "
-            f"{display_name} '{name_id_or_prefix}': {str(err)}"
-        )
-
-    requirements = flavor_model.connector_requirements
+    requirements = component_model.flavor.connector_requirements
 
     if not requirements:
         cli_utils.error(

@@ -230,8 +230,7 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
 class ComponentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the component entity."""
 
-    flavor: Optional["FlavorResponse"] = Field(
-        default=None,
+    flavor: "FlavorResponse" = Field(
         title="The flavor of this stack component.",
     )
 
@@ -363,7 +362,7 @@ class ComponentResponse(
         return self.get_metadata().connector
 
     @property
-    def flavor(self) -> Optional["FlavorResponse"]:
+    def flavor(self) -> "FlavorResponse":
         """The `flavor` property.
 
         Returns:

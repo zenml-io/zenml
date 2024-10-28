@@ -160,6 +160,8 @@ class StackComponentSchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
+        Raises:
+            RuntimeError: If the flavor for the component is missing in the DB.
 
         Returns:
             A `ComponentModel`
@@ -195,10 +197,13 @@ class StackComponentSchema(NamedSchema, table=True):
             )
         resources = None
         if include_resources:
+            if not self.flavor_schema:
+                raise RuntimeError(
+                    f"Missing flavor {self.flavor} for component {self.name}."
+                )
+
             resources = ComponentResponseResources(
                 flavor=self.flavor_schema.to_model()
-                if self.flavor_schema
-                else None
             )
         return ComponentResponse(
             id=self.id,
