@@ -161,7 +161,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             )
             credentials_store = {}
 
-        self.credentials_store = {}
+        self.credentials = {}
         for server_url, token_data in credentials_store.items():
             try:
                 self.credentials[server_url] = ServerCredentials(**token_data)
