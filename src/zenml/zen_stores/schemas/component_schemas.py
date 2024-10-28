@@ -23,6 +23,7 @@ from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models import (
+    ComponentRequest,
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
@@ -113,6 +114,39 @@ class StackComponentSchema(NamedSchema, table=True):
     )
 
     connector_resource_id: Optional[str]
+
+    @classmethod
+    def from_request(
+        cls,
+        request: "ComponentRequest",
+        service_connector: Optional[ServiceConnectorSchema] = None,
+    ) -> "StackComponentSchema":
+        """Create a component schema from a request.
+
+        Args:
+            request: The request from which to create the component.
+            service_connector: Optional service connector to link to the
+                component.
+
+        Returns:
+            The component schema.
+        """
+        return cls(
+            name=request.name,
+            workspace_id=request.workspace,
+            user_id=request.user,
+            component_spec_path=request.component_spec_path,
+            type=request.type,
+            flavor=request.flavor,
+            configuration=base64.b64encode(
+                json.dumps(request.configuration).encode("utf-8")
+            ),
+            labels=base64.b64encode(
+                json.dumps(request.labels).encode("utf-8")
+            ),
+            connector=service_connector,
+            connector_resource_id=request.connector_resource_id,
+        )
 
     def update(
         self, component_update: "ComponentUpdate"

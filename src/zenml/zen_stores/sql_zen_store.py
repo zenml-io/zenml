@@ -3226,12 +3226,17 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            is_default_stack_component = (
+                component.name == DEFAULT_STACK_AND_COMPONENT_NAME
+                and component.type
+                in {
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                }
+            )
             # We have to skip the validation of the default components
             # as it creates a loop of initialization.
-            if component.name != "default" or (
-                component.type != StackComponentType.ORCHESTRATOR
-                and component.type != StackComponentType.ARTIFACT_STORE
-            ):
+            if not is_default_stack_component:
                 from zenml.stack.utils import validate_stack_component_config
 
                 validate_stack_component_config(
@@ -3282,21 +3287,8 @@ class SqlZenStore(BaseZenStore):
                     )
 
             # Create the component
-            new_component = StackComponentSchema(
-                name=component.name,
-                workspace_id=component.workspace,
-                user_id=component.user,
-                component_spec_path=component.component_spec_path,
-                type=component.type,
-                flavor=component.flavor,
-                configuration=base64.b64encode(
-                    json.dumps(component.configuration).encode("utf-8")
-                ),
-                labels=base64.b64encode(
-                    json.dumps(component.labels).encode("utf-8")
-                ),
-                connector=service_connector,
-                connector_resource_id=component.connector_resource_id,
+            new_component = StackComponentSchema.from_request(
+                request=component, service_connector=service_connector
             )
 
             session.add(new_component)

@@ -25,6 +25,7 @@ from uuid import UUID
 
 from zenml import __version__
 from zenml.analytics.client import default_client
+from zenml.analytics.utils import is_analytics_disabled_internally
 from zenml.constants import (
     ENV_ZENML_SERVER,
     handle_bool_env_var,
@@ -73,6 +74,10 @@ class AnalyticsContext:
         Returns:
             The analytics context.
         """
+        if is_analytics_disabled_internally():
+            self.analytics_opt_in = False
+            return self
+
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
 
