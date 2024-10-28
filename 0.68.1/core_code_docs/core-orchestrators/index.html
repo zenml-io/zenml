@@ -4245,6 +4245,11 @@ the pipeline to some remote infrastructure.</p>
                 <span class="c1"># the orchestrator does not try to run them</span>
                 <span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">invocation_id</span><span class="p">)</span>
 
+            <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">invocation_id</span> <span class="ow">in</span> <span class="n">cached_invocations</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">invocation_id</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="p">:</span>
+                        <span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">invocation_id</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="c1"># All steps were cached, we update the pipeline run status and</span>
                 <span class="c1"># don&#39;t actually use the orchestrator to run the pipeline</span>
@@ -4818,6 +4823,11 @@ This will be deleted in case the pipeline deployment failed.</p></td>
             <span class="c1"># Remove the cached step invocations from the deployment so</span>
             <span class="c1"># the orchestrator does not try to run them</span>
             <span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">invocation_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">invocation_id</span> <span class="ow">in</span> <span class="n">cached_invocations</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">invocation_id</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="p">:</span>
+                    <span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">invocation_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deployment</span><span class="o">.</span><span class="n">step_configurations</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="c1"># All steps were cached, we update the pipeline run status and</span>
