@@ -57,7 +57,7 @@ zenml integration install sklearn pandas -y
 zenml init
 
 # Start the ZenServer to enable dashboard access
-zenml login --local
+zenml up
 
 # Run the feature engineering pipeline
 python run.py --feature-pipeline
