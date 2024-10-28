@@ -1,6 +1,7 @@
 ---
 icon: python
 description: Interacting with your ZenML instance through the ZenML Client.
+icon: python
 ---
 
 # Python Client
@@ -43,7 +44,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
 * **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../how-to/build-pipelines/schedule-a-pipeline.md).
-* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](../how-to/customize-docker-builds/README.md).
+* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](../how-to/customize-docker-builds/).
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
@@ -60,7 +61,7 @@ Checkout the [documentation on fetching runs](../how-to/build-pipelines/fetching
   * Custom flavors that you have [created yourself](../how-to/stack-deployment/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
 * **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../how-to/interact-with-secrets.md).
-* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../how-to/auth-management/README.md).
+* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../how-to/auth-management/).
 
 ### Client Methods
 

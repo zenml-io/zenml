@@ -15,7 +15,7 @@ Not really! An orchestrator in MLOps is the system component that is responsible
 
 #### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
-Take a look at our [documentation](https://docs.zenml.io) (in particular the [component guide](../component-guide/README.md)), which contains instructions and sample code to support each integration that ZenML supports out-of-the-box. You can also check out [our integration test code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to see active examples of many of our integrations in action.
+Take a look at our [documentation](https://docs.zenml.io) (in particular the [component guide](../component-guide/)), which contains instructions and sample code to support each integration that ZenML supports out-of-the-box. You can also check out [our integration test code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to see active examples of many of our integrations in action.
 
 The ZenML team and community are constantly working to include more tools and integrations to the above list (check out the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add your ideas to the roadmap.
 
@@ -23,10 +23,7 @@ Most importantly, ZenML is extensible, and we encourage you to use it with whate
 
 #### Do you support Windows?
 
-ZenML officially supports Windows if you're using WSL. Much of ZenML will also
-work on Windows outside a WSL environment, but we don't officially support it
-and some features don't work (notably anything that requires spinning up a
-server process).
+ZenML officially supports Windows if you're using WSL. Much of ZenML will also work on Windows outside a WSL environment, but we don't officially support it and some features don't work (notably anything that requires spinning up a server process).
 
 #### Do you support Macs running on Apple Silicon?
 
@@ -36,8 +33,7 @@ Yes, ZenML does support Macs running on Apple Silicon. You just need to make sur
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
-This is a known issue with how forking works on Macs running on Apple Silicon
-and it will enable you to use ZenML and the server. This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
+This is a known issue with how forking works on Macs running on Apple Silicon and it will enable you to use ZenML and the server. This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 

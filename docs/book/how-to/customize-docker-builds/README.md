@@ -1,6 +1,7 @@
 ---
 icon: docker
 description: Using Docker images to run your pipeline.
+icon: docker
 ---
 
 # Customize Docker Builds

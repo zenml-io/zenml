@@ -1,9 +1,10 @@
 ---
 icon: microchip-ai
 description: Ensuring your pipelines or steps run on GPU-backed hardware.
+icon: microchip-ai
 ---
 
-# Specify cloud resources
+# Train with GPUs
 
 There are several reasons why you may want to scale your machine learning pipelines to the cloud, such as utilizing more powerful hardware or distributing tasks across multiple nodes. In order to achieve this with ZenML you'll need to run your steps on GPU-backed hardware using `ResourceSettings` to allocate greater resources on an orchestrator node and/or make some adjustments to the container environment.
 
@@ -56,7 +57,7 @@ All steps running on GPU-backed hardware will be executed within a containerized
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](../customize-docker-builds/README.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](../customize-docker-builds/) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 from zenml import pipeline
@@ -98,18 +99,11 @@ The core cloud operators offer prebuilt Docker images that fit with their hardwa
 * [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
 * [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
 
-Not all of these images are available on DockerHub, so ensure that the
-orchestrator environment your pipeline runs in has sufficient permissions to
-pull images from registries if you are using one of those.
+Not all of these images are available on DockerHub, so ensure that the orchestrator environment your pipeline runs in has sufficient permissions to pull images from registries if you are using one of those.
 
 ### Reset the CUDA cache in between steps
 
-Your use case will determine whether this is necessary or makes sense to do, but
-we have seen that resetting the CUDA cache in between steps can help avoid issues
-with the GPU cache. This is particularly necessary if your training jobs are
-pushing the boundaries of the GPU cache. Doing so is simple; just use a helper
-function to reset the cache at the beginning of any GPU-enabled steps. For
-example, something as simple as this might suffice:
+Your use case will determine whether this is necessary or makes sense to do, but we have seen that resetting the CUDA cache in between steps can help avoid issues with the GPU cache. This is particularly necessary if your training jobs are pushing the boundaries of the GPU cache. Doing so is simple; just use a helper function to reset the cache at the beginning of any GPU-enabled steps. For example, something as simple as this might suffice:
 
 ```python
 import gc
@@ -131,29 +125,17 @@ def training_step(...):
     # train a model
 ```
 
-Note that resetting the memory cache will potentially affect others using the
-same GPU, so use this judiciously.
+Note that resetting the memory cache will potentially affect others using the same GPU, so use this judiciously.
 
 ## Train across multiple GPUs
 
-ZenML supports training your models with multiple GPUs on a single node. This is
-useful if you have a large dataset and want to train your model in parallel. The
-most important thing that you'll have to handle is preventing multiple ZenML
-instances from being spawned as you split the work among multiple GPUs.
+ZenML supports training your models with multiple GPUs on a single node. This is useful if you have a large dataset and want to train your model in parallel. The most important thing that you'll have to handle is preventing multiple ZenML instances from being spawned as you split the work among multiple GPUs.
 
 In practice this will probably involve:
 
-- creating a script / Python function that contains the logic of training your
-  model (with the specification that this should run in parallel across multiple
-  GPUs)
-- calling that script / external function from within the step, possibly with
-  some wrapper or helper code to dynamically configure or update the external
-  script function
+* creating a script / Python function that contains the logic of training your model (with the specification that this should run in parallel across multiple GPUs)
+* calling that script / external function from within the step, possibly with some wrapper or helper code to dynamically configure or update the external script function
 
-We're aware that this is not the most elegant solution and we're at work to
-implement a better option with some inbuilt support for this task. If this is
-something you're struggling with and need support getting the step code working,
-please do [connect with us on Slack](https://zenml.io/slack) and we'll do our best
-to help you out.
+We're aware that this is not the most elegant solution and we're at work to implement a better option with some inbuilt support for this task. If this is something you're struggling with and need support getting the step code working, please do [connect with us on Slack](https://zenml.io/slack) and we'll do our best to help you out.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

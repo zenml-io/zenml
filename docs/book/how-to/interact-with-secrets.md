@@ -1,6 +1,7 @@
 ---
 icon: user-secret
 description: Registering and using secrets.
+icon: user-secret
 ---
 
 # Interact with secrets

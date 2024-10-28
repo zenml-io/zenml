@@ -1,6 +1,7 @@
 ---
 icon: bell-concierge
 description: There are numerous ways to trigger a pipeline
+icon: bell-concierge
 ---
 
 # Trigger a pipeline
@@ -41,23 +42,18 @@ if __name__ == "__main__":
     simple_ml_pipeline()
 ```
 
-However, there are other ways to trigger a pipeline, specifically a pipeline 
-with a remote stack (remote orchestrator, artifact store, and container 
-registry).
+However, there are other ways to trigger a pipeline, specifically a pipeline with a remote stack (remote orchestrator, artifact store, and container registry).
 
-## Run Templates
+### Run Templates
 
-**Run Templates** are pre-defined, parameterized configurations for your ZenML 
-pipelines that can be easily executed from the ZenML dashboard or via our 
-Client/REST API. Think of them as blueprints for your pipeline runs, ready 
-to be customized on the fly.
+**Run Templates** are pre-defined, parameterized configurations for your ZenML pipelines that can be easily executed from the ZenML dashboard or via our Client/REST API. Think of them as blueprints for your pipeline runs, ready to be customized on the fly.
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 ![Working with Templates](../../.gitbook/assets/run-templates.gif)
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Use templates: Python SDK</td><td></td><td></td><td><a href="use-templates-python.md">use-templates-python.md</a></td></tr><tr><td>Use templates: Dashboard</td><td></td><td></td><td><a href="use-templates-dashboard.md">use-templates-dashboard.md</a></td></tr><tr><td>Use templates: Rest API</td><td></td><td></td><td><a href="use-templates-rest-api.md">use-templates-rest-api.md</a></td></tr></tbody></table>
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

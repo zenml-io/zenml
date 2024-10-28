@@ -1,6 +1,7 @@
 ---
 icon: ufo-beam
 description: Tracking metrics and metadata
+icon: ufo-beam
 ---
 
 # Track metrics and metadata

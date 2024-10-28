@@ -4,7 +4,7 @@ icon: tower-control
 
 # Use the Model Control Plane
 
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp\_walkthrough.gif)
 
 A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. A ZenML Model is a concept that more broadly encapsulates your ML products business logic. You may even think of a ZenML Model as a "project" or a "workspace"
 
