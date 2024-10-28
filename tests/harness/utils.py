@@ -241,9 +241,9 @@ def clean_default_client_session(
     orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
     original_credentials = CredentialsStore.get_instance()
 
+    CredentialsStore.reset_instance()
     GlobalConfiguration._reset_instance()
     Client._reset_instance()
-    CredentialsStore.reset_instance()
 
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("pytest-clean-client")

@@ -240,9 +240,9 @@ class UserContext:
             self.original_client = Client.get_instance()
             self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            CredentialsStore.reset_instance()
             self.client = Client()
             store_config = StoreConfiguration(
                 url=self.original_config.store.url,
@@ -315,9 +315,9 @@ class ServiceAccountContext:
             self.original_client = Client.get_instance()
             self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            CredentialsStore.reset_instance()
             self.client = Client()
             store_config = StoreConfiguration(
                 url=self.original_config.store.url,
@@ -364,9 +364,9 @@ class LoginContext:
         self.original_client = Client.get_instance()
         self.original_credentials = CredentialsStore.get_instance()
 
+        CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        CredentialsStore.reset_instance()
         store_config = StoreConfiguration(
             url=self.original_config.store.url,
             type=self.original_config.store.type,

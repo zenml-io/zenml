@@ -312,9 +312,9 @@ class BaseTestDeployment(ABC):
         orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
         original_credentials = CredentialsStore.get_instance()
 
+        CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        CredentialsStore.reset_instance()
 
         os.environ[ENV_ZENML_CONFIG_PATH] = str(config_path)
         os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
