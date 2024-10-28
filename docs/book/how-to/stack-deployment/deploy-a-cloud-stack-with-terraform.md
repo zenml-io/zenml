@@ -33,9 +33,11 @@ you can also use [the stack wizard to seamlessly register your stack](../../how-
 
 To use this feature, you need a deployed ZenML server instance that is reachable
 from the cloud provider where you wish to have the stack provisioned (this can't
-be a local server started via `zenml up`). If you do not already have one set up,
-you [can register for a free ZenML Pro account](https://cloud.zenml.io/signup)
-or you can learn about self-hosting a ZenML server [here](../../getting-started/deploying-zenml/README.md).
+be a local server started via `zenml login --local`). If you do not already have
+one set up, you can fast-track to trying out a ZenML Pro server by simply
+running `zenml login --pro` or [register for a free ZenML Pro account](https://cloud.zenml.io/signup).
+If you prefer to host your own, you can learn about self-hosting a ZenML server
+[here](../../getting-started/deploying-zenml/README.md).
 
 Once you are connected to your deployed ZenML server, you need to create
 a service account and an API key for it. You will use the API key to give the
@@ -58,8 +60,10 @@ The API key value is: 'ZENKEY_...'
 Please store it safely as it will not be shown again.
 To configure a ZenML client to use this API key, run:
 
-zenml connect --url https://842ed6a9-zenml.staging.cloudinfra.zenml.io --api-key \
-    'ZENKEY_...'
+zenml login https://842ed6a9-zenml.staging.cloudinfra.zenml.io --api-key
+
+and enter the following API key when prompted:
+ZENKEY_...
 ```
 
 Finally, you will need the following on the machine where you will be running

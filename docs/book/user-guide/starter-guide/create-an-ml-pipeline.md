@@ -15,7 +15,7 @@ Before starting this guide, make sure you have [installed ZenML](../../getting-s
 
 ```shell
 pip install "zenml[server]"
-zenml up  # Will launch the dashboard locally
+zenml login --local  # Will launch the dashboard locally
 ```
 {% endhint %}
 
@@ -81,13 +81,13 @@ Step train_model has started.
 Trained model using 3 data points. Feature sum is 21, label sum is 1
 Step train_model has finished in 0.265s.
 Run simple_ml_pipeline-2023_11_23-10_51_59_657489 has finished in 1.612s.
-Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
+Pipeline visualization can be seen in the ZenML Dashboard. Run zenml login --local to see your pipeline!
 ```
 {% endcode %}
 
 ### Explore the dashboard
 
-Once the pipeline has finished its execution, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
+Once the pipeline has finished its execution, use the `zenml login --local` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 

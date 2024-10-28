@@ -161,6 +161,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             )
             credentials_store = {}
 
+        self.credentials_store = {}
         for server_url, token_data in credentials_store.items():
             try:
                 self.credentials[server_url] = ServerCredentials(**token_data)
@@ -344,6 +345,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             bool: True if a valid token or API key is stored, False otherwise.
         """
+        self.check_and_reload_from_file()
         credential = self.credentials.get(url)
 
         if not credential:
@@ -377,6 +379,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             server_url: The server URL for which the token is to be stored.
             api_key: The API key to store.
         """
+        self.check_and_reload_from_file()
         credential = self.credentials.get(server_url)
         if credential and credential.api_key != api_key:
             # Reset the API token if a new or updated API key is set, because
@@ -408,6 +411,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             username: The username to store.
             password: The password to store.
         """
+        self.check_and_reload_from_file()
         credential = self.credentials.get(server_url)
         if credential and (
             credential.username != username or credential.password != password
@@ -439,6 +443,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             APIToken: The stored token.
         """
+        self.check_and_reload_from_file()
         if token_response.expires_in:
             expires_at = datetime.now(timezone.utc) + timedelta(
                 seconds=token_response.expires_in
@@ -494,6 +499,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             APIToken: The stored token.
         """
+        self.check_and_reload_from_file()
+
         api_token = APIToken(
             access_token=token,
         )
@@ -522,6 +529,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
                 updated.
             server_info: Updated server information.
         """
+        self.check_and_reload_from_file()
+
         credential = self.credentials.get(server_url)
         if not credential:
             # No credentials stored for this server URL, nothing to update
@@ -536,6 +545,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Args:
             server_url: The server URL for which to delete the token.
         """
+        self.check_and_reload_from_file()
+
         if server_url in self.credentials:
             credential = self.credentials[server_url]
             if (
@@ -556,6 +567,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Args:
             server_url: The server URL for which to delete the credentials.
         """
+        self.check_and_reload_from_file()
+
         if server_url in self.credentials:
             del self.credentials[server_url]
             self._save_credentials()
@@ -571,6 +584,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             A list of all credentials stored in the credentials store.
         """
+        self.check_and_reload_from_file()
+
         credentials = list(self.credentials.values())
 
         if type is not None:

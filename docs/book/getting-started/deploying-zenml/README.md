@@ -62,8 +62,8 @@ This default setup allows you to get started and try out the core features but
 you won't be able to use cloud-based components like serverless orchestrators
 and so on.
 
-Users can run the `zenml up` command to spin up a local ZenML OSS server to serve the
-dashboard. For the local OSS server option, the `zenml up` command implicitly
+Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the
+dashboard. For the local OSS server option, the `zenml login --local` command implicitly
 connects the client to the server. The diagram for this looks as follows:
 
 ![ZenML with a local ZenML OSS Server](../../.gitbook/assets/Scenario2.png)

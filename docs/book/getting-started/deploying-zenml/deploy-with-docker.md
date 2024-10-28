@@ -11,10 +11,10 @@ The ZenML server container image is available at [`zenmldocker/zenml-server`](ht
 If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like Docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
 
 ```bash
-zenml up --docker
+zenml login --local --docker
 ```
 
-This command deploys a ZenML server locally in a Docker container, then connects your client to it. Similar to running plain `zenml up`, the server and the local ZenML client share the same SQLite database.
+This command deploys a ZenML server locally in a Docker container, then connects your client to it. Similar to running plain `zenml login --local`, the server and the local ZenML client share the same SQLite database.
 
 The rest of this guide is addressed to advanced users who are looking to manually deploy and manage a containerized ZenML server.
 
@@ -493,7 +493,7 @@ You can check the logs of the container to verify if the server is up and, depen
 
 ### CLI Docker deployments
 
-If you used the `zenml up --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the command:
+If you used the `zenml login --local --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the command:
 
 ```shell
 zenml logs -f

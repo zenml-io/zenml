@@ -95,8 +95,8 @@ jobs:
   run-staging-workflow:
     runs-on: run-zenml-pipeline
     env:
-      ZENML_HOST: ${{ secrets.ZENML_HOST }}  # Put your server url here
-      ZENML_API_KEY: ${{ secrets.ZENML_API_KEY }}  # Retrieves the api key for use  
+      ZENML_STORE_URL: ${{ secrets.ZENML_HOST }}  # Put your server url here
+      ZENML_STORE_API_KEY: ${{ secrets.ZENML_API_KEY }}  # Retrieves the api key for use  
       ZENML_STACK: stack_name  #  Use this to decide which stack is used for staging
       ZENML_GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
       ZENML_GITHUB_URL_PR: ${{ github.event.pull_request._links.html.href }}
@@ -119,9 +119,9 @@ steps:
     run: |
       pip3 install -r requirements.txt
 
-  - name: Connect to ZenML server
+  - name: Confirm ZenML client is connected to ZenML server
     run: |
-      zenml connect --url $ZENML_HOST --api-key $ZENML_API_KEY
+      zenml status
 
   - name: Set stack
     run: |

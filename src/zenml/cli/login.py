@@ -706,7 +706,7 @@ def login(
     if api_key:
         # Read the API key from the user
         api_key_value = click.prompt(
-            "Please enter the API key for the ZenML server: ",
+            "Please enter the API key for the ZenML server",
             type=str,
             hide_input=True,
         )
