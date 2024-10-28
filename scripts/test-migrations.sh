@@ -23,7 +23,22 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3" "0.56.4" "0.57.0" "0.57.1" "0.58.0" "0.58.1" "0.58.2" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.66.0" "0.67.0")
+VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0")
+
+# Try to get the latest version using pip index
+version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
+
+# Verify we got a version
+if [ -z "$version" ]; then
+    echo "Error: Could not find the latest version for zenml" >&2
+    return 1
+fi
+
+LATEST_VERSION=$(echo $version | xargs)
+
+if [[ ! " ${VERSIONS[@]} " =~ " ${LATEST_VERSION} " ]]; then
+   VERSIONS+=("${LATEST_VERSION}")
+fi
 
 # Function to compare semantic versions
 function version_compare() {

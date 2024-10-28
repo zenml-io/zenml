@@ -1,4 +1,5 @@
 ---
+icon: screwdriver-wrench
 description: >
   Stacks represent the infrastructure and tooling that defines where and how a pipeline executes.
 ---
@@ -97,11 +98,6 @@ This docs section consists of information that makes it easier to provision, con
       <td><mark style="color:purple;"><strong>Deploy a cloud stack with Terraform</strong></mark></td>
       <td>Description of deploying a cloud stack with Terraform.</td>
       <td><a href="./deploy-a-cloud-stack-with-terraform.md">./deploy-a-cloud-stack-with-terraform.md</a></td>
-    </tr>
-    <tr>
-      <td><mark style="color:purple;"><strong>Deploy stack/components using mlstacks</strong></mark></td>
-      <td>Deploying an entire stack with ZenML's `mlstacks` package.</td>
-      <td><a href="./deploy-a-stack-using-mlstacks.md">./deploy-a-stack-using-mlstacks.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Reference secrets in stack configuration</strong></mark></td>

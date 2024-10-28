@@ -165,7 +165,7 @@ def save_artifact(
 
     # Save the artifact to the artifact store
     data_type = type(data)
-    materializer_object.validate_type_compatibility(data_type)
+    materializer_object.validate_save_type_compatibility(data_type)
     materializer_object.save(data)
 
     # Save visualizations of the artifact

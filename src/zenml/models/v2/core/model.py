@@ -82,6 +82,7 @@ class ModelRequest(WorkspaceScopedRequest):
     )
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
+        default=None,
     )
     save_models_to_registry: bool = Field(
         title="Whether to save all ModelArtifacts to Model Registry",

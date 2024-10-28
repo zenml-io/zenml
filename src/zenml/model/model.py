@@ -85,7 +85,6 @@ class Model(BaseModel):
     # technical attributes
     model_version_id: Optional[UUID] = None
     suppress_class_validation_warnings: bool = False
-    was_created_in_this_run: bool = False
     _model_id: UUID = PrivateAttr(None)
     _number: Optional[int] = PrivateAttr(None)
     _created_model_version: bool = PrivateAttr(False)
@@ -569,7 +568,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    tags=self.tags,
                     user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,
@@ -692,42 +690,6 @@ class Model(BaseModel):
         )
         mv_request = ModelVersionRequest.model_validate(model_version_request)
         try:
-            if not self.version:
-                try:
-                    from zenml import get_step_context
-
-                    context = get_step_context()
-                except RuntimeError:
-                    pass
-                else:
-                    # if inside a step context we loop over all
-                    # model version configuration to find, if the
-                    # model version for current model was already
-                    # created in the current run, not to create
-                    # new model versions
-                    pipeline_mv = context.pipeline_run.config.model
-                    if (
-                        pipeline_mv
-                        and pipeline_mv.was_created_in_this_run
-                        and pipeline_mv.name == self.name
-                        and pipeline_mv.version is not None
-                    ):
-                        self.version = pipeline_mv.version
-                        self.model_version_id = pipeline_mv.model_version_id
-                    else:
-                        for step in context.pipeline_run.steps.values():
-                            step_mv = step.config.model
-                            if (
-                                step_mv
-                                and step_mv.was_created_in_this_run
-                                and step_mv.name == self.name
-                                and step_mv.version is not None
-                            ):
-                                self.version = step_mv.version
-                                self.model_version_id = (
-                                    step_mv.model_version_id
-                                )
-                                break
             if self.version or self.model_version_id:
                 model_version = self._get_model_version()
             else:
@@ -784,7 +746,6 @@ class Model(BaseModel):
                     time.sleep(sleep)
                     retries_made += 1
             self.version = model_version.name
-            self.was_created_in_this_run = True
             self._created_model_version = True
 
             logger.info(

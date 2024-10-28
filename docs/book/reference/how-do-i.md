@@ -1,8 +1,9 @@
 ---
+icon: face-thinking
 description: Links to common use cases, workflows and tasks using ZenML.
 ---
 
-# 📚 How do I...?
+# How do I...?
 
 **Last Updated**: December 13, 2023
 
@@ -25,8 +26,6 @@ Check out [our dedicated documentation page](../how-to/configure-python-environm
 * **deploy cloud infrastructure** and/or MLOps stacks?
 
 ZenML is designed to be stack-agnostic, so you can use it with any cloud infrastructure or MLOps stack. Each of the documentation pages for stack components explain how to deploy these components on the most popular cloud providers.
-
-We also build and maintain [the `mlstacks` package](https://mlstacks.zenml.io/) and library which offers a dedicated way to spin up infrastructure for your ZenML pipelines. It's fully integrated into ZenML's CLI and is a great way to get started with deploying your infrastructure. ZenML also [publishes and maintains modules on the Terraform Registry](https://registry.terraform.io/namespaces/zenml-io) (which are used by `mlstacks` under the hood) which you can also use as a standalone solution if you are familiar with Terraform.
 
 * **deploy ZenML** on my internal company cluster?
 

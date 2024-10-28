@@ -1,0 +1,125 @@
+---
+name: release-finalize
+on:
+  workflow_dispatch:
+    inputs:
+      latest_version:
+        description: "The latest version of ZenML"
+        required: true
+        type: string
+      new_version:
+        description: "The new version of ZenML"
+        required: true
+        type: string
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      # Create the release branch
+      - name: Release branch
+        run: |
+          git pull
+          git checkout -b release/${{ github.event.inputs.latest_version }}
+          git push --set-upstream origin release/${{ github.event.inputs.new_version }}
+  add-docs-warning-header:
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out the previous release branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: release/${{ github.event.inputs.latest_version }}
+      # Create the docs update PR
+      - name: Create docs update PR
+        shell: bash
+        run: |
+          git pull
+          bash scripts/add-docs-warning.sh ${{ github.event.inputs.latest_version }}
+  add-new-version-to-migration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      # Create the migration test version if necessary
+      - name: Create docs update PR
+        shell: bash
+        run: |-
+          git pull
+          bash scripts/add-migration-test-version.sh ${{ github.event.inputs.latest_version }} ${{ github.event.inputs.new_version }}
+  order-gitbook-release-spaces:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out develop
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      # Setting up the Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      # Install requests
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      # Adjust the docs
+      - name: Adjust gitbook docs
+        env:
+          ZENML_NEW_VERSION: ${{ github.event.inputs.new_version }}
+          ZENML_OLD_VERSION: ${{ github.event.inputs.latest_version }}
+          GITBOOK_API_KEY: ${{secrets.GITBOOK_API_KEY}}
+          GITBOOK_ORGANIZATION: ${{secrets.GITBOOK_ORGANIZATION}}
+          GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
+          GITBOOK_LEGACY_COLLECTION: ${{secrets.GITBOOK_LEGACY_COLLECTION}}
+        run: python scripts/sync-gitbook-release-spaces.py
+  deprecate-docs-gitbook-legacy:
+    needs: order-gitbook-release-spaces
+    runs-on: ubuntu-latest
+    steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
+      # Check out legacy docs branch
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: docs/legacy-docs-page
+      # Append new version to the legacy docs table
+      - name: Update legacy docs file
+        shell: bash
+        run: |-
+          bash scripts/deprecate-previous-docs-to-legacy.sh ${{ github.event.inputs.latest_version }}
