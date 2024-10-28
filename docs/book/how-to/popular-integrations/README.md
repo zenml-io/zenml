@@ -1,8 +1,9 @@
 ---
+icon: puzzle-piece
 description: Use your favorite tools with ZenML.
 ---
 
-# 👨‍🎤 Popular integrations
+# Popular integrations
 
 ZenML is designed to work seamlessly with your favorite tools. This guide will
 show you how to integrate ZenML with some of the most popular tools in the data

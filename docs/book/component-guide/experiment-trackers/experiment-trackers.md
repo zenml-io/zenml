@@ -1,5 +1,6 @@
 ---
 description: Logging and visualizing ML experiments.
+icon: clipboard
 ---
 
 # Experiment Trackers

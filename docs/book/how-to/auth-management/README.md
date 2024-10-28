@@ -1,10 +1,11 @@
 ---
+icon: plug
 description: >-
   Connect your ZenML deployment to a cloud provider and other infrastructure
   services and resources.
 ---
 
-# 🔌 Connect services (AWS, GCP, Azure, K8s etc)
+# Connect services (AWS, GCP, Azure, K8s etc)
 
 A production-grade MLOps platform involves interactions between a diverse combination of third-party libraries and external services sourced from various different vendors. One of the most daunting hurdles in building and operating an MLOps platform composed of multiple components is configuring and maintaining uninterrupted and secured access to the infrastructure resources and services that it consumes.
 

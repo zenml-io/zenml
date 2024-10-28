@@ -413,7 +413,7 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=target_artifact_store
             )
-            materializer.validate_type_compatibility(data_type)
+            materializer.validate_load_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
 
     def _validate_outputs(
