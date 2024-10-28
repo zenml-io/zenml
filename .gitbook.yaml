@@ -18,3 +18,13 @@ redirects:
   how-to/setting-up-a-project-repository/best-practices: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
+
+  # Project Setup redirects
+  how-to/setting-up-a-project-repository/README: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
+  how-to/setting-up-a-project-repository/set-up-repository: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
+  how-to/setting-up-a-project-repository/connect-your-git-repository: how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md
+  how-to/setting-up-a-project-repository/using-project-templates: how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md
+  how-to/setting-up-a-project-repository/create-your-own-template: how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template.md
+  how-to/setting-up-a-project-repository/shared-components-for-teams: how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams.md
+  how-to/setting-up-a-project-repository/stacks-pipelines-models: how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models.md
+  how-to/setting-up-a-project-repository/access-management: how-to/project-setup-and-management/setting-up-a-project-repository/access-management.md
