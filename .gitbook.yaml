@@ -60,16 +60,3 @@ redirects:
   how-to/build-pipelines/run-an-individual-step: how-to/pipeline-development/build-pipelines/run-an-individual-step.md
   how-to/build-pipelines/fetching-pipelines: how-to/pipeline-development/build-pipelines/fetching-pipelines.md
   how-to/build-pipelines/get-past-pipeline-step-runs: how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs.md
-
-  how-to/trigger-pipelines/README: how-to/pipeline-development/trigger-pipelines/README.md
-  how-to/trigger-pipelines/use-templates-python: how-to/pipeline-development/trigger-pipelines/use-templates-python.md
-  how-to/trigger-pipelines/use-templates-dashboard: how-to/pipeline-development/trigger-pipelines/use-templates-dashboard.md
-  how-to/trigger-pipelines/use-templates-rest-api: how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md
-
-  how-to/use-configuration-files/README: how-to/pipeline-development/use-configuration-files/README.md
-  how-to/use-configuration-files/how-to-use-config: how-to/pipeline-development/use-configuration-files/how-to-use-config.md
-  how-to/use-configuration-files/what-can-be-configured: how-to/pipeline-development/use-configuration-files/what-can-be-configured.md
-  how-to/use-configuration-files/runtime-configuration: how-to/pipeline-development/use-configuration-files/runtime-configuration.md
-  how-to/use-configuration-files/configuration-hierarchy: how-to/pipeline-development/use-configuration-files/configuration-hierarchy.md
-  how-to/use-configuration-files/retrieve-used-configuration-of-a-run: how-to/pipeline-development/use-configuration-files/retrieve-used-configuration-of-a-run.md
-  how-to/use-configuration-files/autogenerate-a-template-yaml-file: how-to/pipeline-development/use-configuration-files/autogenerate-a-template-yaml-file.md
