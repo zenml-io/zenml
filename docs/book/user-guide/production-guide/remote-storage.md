@@ -130,7 +130,7 @@ this process:
 
 {% tabs %}
 {% tab title="AWS" %}
-There are [many ways to create an AWS service connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../how-to/auth-management/aws-service-connector.md#aws-iam-role).
+There are [many ways to create an AWS service connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#aws-iam-role).
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
@@ -138,7 +138,7 @@ AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --typ
 {% endtab %}
 
 {% tab title="GCP" %}
-There are [many ways to create a GCP service connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../how-to/auth-management/gcp-service-connector.md#gcp-service-account).
+There are [many ways to create a GCP service connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#gcp-service-account).
 
 ```shell
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
@@ -146,7 +146,7 @@ zenml service-connector register cloud_connector --type gcp --auth-method servic
 {% endtab %}
 
 {% tab title="Azure" %}
-There are [many ways to create an Azure service connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../how-to/auth-management/azure-service-connector.md#azure-service-principal).
+There are [many ways to create an Azure service connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#azure-service-principal).
 
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>

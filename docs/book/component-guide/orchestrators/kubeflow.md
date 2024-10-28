@@ -33,7 +33,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
     aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
     ```
 * [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up an AWS Service Connector](../../how-to/auth-management/aws-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
+* ( optional) [set up an AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
 {% endtab %}
 
 {% tab title="GCP" %}
@@ -45,7 +45,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
     gcloud container clusters get-credentials CLUSTER_NAME
     ```
 * [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up a GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
+* ( optional) [set up a GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
 {% endtab %}
 
 {% tab title="Azure" %}
@@ -75,7 +75,7 @@ kubectl edit configmap CONFIGMAP_NAME -n kubeflow
 * Have an existing Kubernetes cluster set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your Kubernetes cluster.
 * [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-* ( optional) [set up a Kubernetes Service Connector](../../how-to/auth-management/kubernetes-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
+* ( optional) [set up a Kubernetes Service Connector](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
 {% endtab %}
 
 {% endtabs %}
@@ -103,16 +103,16 @@ To use the Kubeflow orchestrator, we need:
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed (optional, see below)
 
 {% hint style="info" %}
-If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](../../how-to/auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
-* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector](../../how-to/auth-management/service-connectors-guide.md) to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
+* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../how-to/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../how-to/auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1.  If you have [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
 
     ```shell
     # List all available Kubernetes clusters that can be accessed by service connectors
@@ -167,7 +167,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     Active global stack set to:'aws-kubeflow'
     ```
 
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
 
     ```shell
     zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -181,7 +181,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes all required software dependencies and use it to run your pipeline steps in Kubeflow. Check out [this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
@@ -260,7 +260,7 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Important Note for Multi-Tenancy Deployments
 

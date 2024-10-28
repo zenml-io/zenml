@@ -37,7 +37,7 @@ There are two ways you can authenticate your orchestrator to AWS to be able to r
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](../../how-to/auth-management/aws-service-connector.md) and connecting it to your SageMaker step operator. The credentials configured for the connector must have permissions to create and manage SageMaker runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
+The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker step operator. The credentials configured for the connector must have permissions to create and manage SageMaker runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -84,7 +84,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in SageMaker. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in SageMaker. Check out [this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration
@@ -95,6 +95,6 @@ For more information and a full list of configurable attributes of the SageMaker
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

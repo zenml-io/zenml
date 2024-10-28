@@ -159,7 +159,7 @@ of your Airflow deployment.
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Airflow. Check
-out [this page](/docs/book/how-to/customize-docker-builds/README.md) if you want to learn
+out [this page](/docs/book/how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -210,7 +210,7 @@ more information on how to specify settings.
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/how-to/training-with-gpus/training-with-gpus.md) to ensure that it
+follow [the instructions on this page](/docs/book/how-to/advanced-topics/training-with-gpus/README.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

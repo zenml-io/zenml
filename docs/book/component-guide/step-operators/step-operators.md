@@ -61,12 +61,12 @@ def my_step(...) -> ...:
 #### Specifying per-step resources
 
 If your steps require additional hardware resources, you can specify them on your steps as
-described [here](../../how-to/training-with-gpus/training-with-gpus.md).
+described [here](../../how-to/advanced-topics/training-with-gpus/README.md).
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to
-follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure 
+follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

@@ -69,7 +69,7 @@ Azure hosting environments and credentials used in local development.
 of service principals on Azure to allow you to connect your cloud components 
 with proper authentication. For this method, you will need to [create a service 
 principal on Azure](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal), 
-assign it the correct permissions and use it to [register a ZenML Azure Service Connector](../../how-to/auth-management/azure-service-connector.md).
+assign it the correct permissions and use it to [register a ZenML Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md).
     ```bash
     zenml service-connector register <CONNECTOR_NAME> --type azure -i
     zenml orchestrator connect <ORCHESTRATOR_NAME> -c <CONNECTOR_NAME>
@@ -80,7 +80,7 @@ assign it the correct permissions and use it to [register a ZenML Azure Service 
 For each pipeline run, ZenML will build a Docker image called 
 `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code 
 and use it to run your pipeline steps in AzureML. Check out 
-[this page](../../how-to/customize-docker-builds/README.md) if you want to 
+[this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to 
 learn more about how ZenML builds these images and how you can customize them.
 
 ## AzureML UI

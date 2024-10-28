@@ -92,7 +92,7 @@ assign the role accordingly.
 ## 4. Create a service connector
 
 Now you have everything set up, you can go ahead and create [a ZenML Azure 
-Service Connector](../../how-to/auth-management/azure-service-connector.md).
+Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md).
 
 ```bash
 zenml service-connector register azure_connector --type azure \

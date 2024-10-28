@@ -56,7 +56,7 @@ You have three different options to provide GCP credentials to the step operator
         --service_account_path=<SERVICE_ACCOUNT_PATH> \
     #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
     ```
-*   (recommended) configure [a GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+*   (recommended) configure [a GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
 
     ```shell
     zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@<SERVICE_ACCOUNT_PATH> --resource-type gcp-generic
@@ -92,7 +92,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration
@@ -133,6 +133,6 @@ For more information and a full list of configurable attributes of the Vertex st
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
