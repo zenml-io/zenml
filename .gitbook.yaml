@@ -113,7 +113,7 @@ redirects:
   how-to/track-metrics-metadata/grouping-metadata: how-to/model-management-metrics/track-metrics-metadata/grouping-metadata.md
   how-to/track-metrics-metadata/logging-metadata: how-to/model-management-metrics/track-metrics-metadata/logging-metadata.md
   how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md
-    how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md
+  how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md
 
   # Infrastructure redirects
   how-to/stack-deployment/README: how-to/infrastructure-deployment/stack-deployment/README.md
@@ -122,4 +122,3 @@ redirects:
   how-to/stack-deployment/register-a-cloud-stack: how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md
   how-to/stack-deployment/reference-secrets-in-stack-configuration: how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md
   how-to/stack-deployment/implement-a-custom-stack-component: how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md
-  
