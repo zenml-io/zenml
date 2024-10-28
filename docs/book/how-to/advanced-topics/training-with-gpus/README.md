@@ -1,4 +1,5 @@
 ---
+icon: microchip-ai
 description: Ensuring your pipelines or steps run on GPU-backed hardware.
 ---
 

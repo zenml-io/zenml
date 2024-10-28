@@ -1,8 +1,9 @@
 ---
+icon: torii-gate
 description: Welcome to ZenML!
 ---
 
-# ⭐ Introduction
+# Introduction
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 

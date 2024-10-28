@@ -1,4 +1,9 @@
-# ☁️ ZenML Pro
+---
+icon: cloud
+description: Learn about the ZenML Pro features and deployment scenarios.
+---
+
+# ZenML Pro
 
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
 

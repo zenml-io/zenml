@@ -1,11 +1,12 @@
 ---
+icon: box-archive
 description: >-
   Step outputs in ZenML are stored in the artifact store. This enables caching,
   lineage and auditability. Using type annotations helps with transparency, 
   passing data between steps, and serializing/deserializing the data.
 ---
 
-# 🗄️ Handle Data/Artifacts
+# Handle Data/Artifacts
 
 For best results, use type annotations for your outputs. This is good coding practice for transparency, helps ZenML handle passing data between steps, and also enables ZenML to serialize and deserialize (referred to as 'materialize' in ZenML) the data.
 

@@ -1,8 +1,9 @@
 ---
+icon: earth-africa
 description: How to control ZenML behavior with environmental variables.
 ---
 
-# 🌎 Environment Variables
+# Environment Variables
 
 There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:
 

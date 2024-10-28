@@ -1,8 +1,9 @@
 ---
+icon: python
 description: Navigating multiple development environments.
 ---
 
-# 🐍 Configure python environments
+# Configure python environments
 
 ZenML deployments often involve multiple environments. This guide helps you manage dependencies and configurations across these environments.
 

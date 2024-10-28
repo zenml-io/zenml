@@ -1,8 +1,9 @@
 ---
+icon: building-columns
 description: Different variations of the ZenML architecture depending on your needs.
 ---
 
-# 🏛️ System Architecture
+# System Architecture
 
 This guide walks through the various ways that ZenML can be deployed, from self-hosted OSS, to
 SaaS, to self-hosted ZenML Pro!

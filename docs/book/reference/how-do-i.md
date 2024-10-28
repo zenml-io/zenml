@@ -1,8 +1,9 @@
 ---
+icon: face-thinking
 description: Links to common use cases, workflows and tasks using ZenML.
 ---
 
-# 📚 How do I...?
+# How do I...?
 
 **Last Updated**: December 13, 2023
 

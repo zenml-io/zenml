@@ -1,8 +1,9 @@
 ---
+icon: python
 description: Interacting with your ZenML instance through the ZenML Client.
 ---
 
-# 🐍 Python Client
+# Python Client
 
 Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML Python `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
 

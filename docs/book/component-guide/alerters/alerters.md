@@ -1,5 +1,6 @@
 ---
 description: Sending automated alerts to chat services.
+icon: message-exclamation
 ---
 
 # Alerters
