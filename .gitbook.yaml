@@ -20,7 +20,7 @@ redirects:
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
 
   # Project Setup redirects
-  how-to/setting-up-a-project-repository: how-to/project-setup-and-management/setting-up-a-project-repository
+  how-to/setting-up-a-project-repository/: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
   how-to/setting-up-a-project-repository/set-up-repository: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
   how-to/setting-up-a-project-repository/connect-your-git-repository: how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md
   how-to/setting-up-a-project-repository/using-project-templates: how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md
