@@ -1,4 +1,5 @@
 ---
+icon: box
 description: Setting up a storage for Docker images.
 ---
 
