@@ -35,28 +35,4 @@ redirects:
 
   how-to/connecting-to-zenml/README: how-to/project-setup-and-management/connecting-to-zenml/README.md
   how-to/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive.md
-  how-to/connecting-to-zenml/connect-with-a-service-account: how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md
-
-  # Pipeline Development redirects
-  how-to/build-pipelines/README: how-to/pipeline-development/build-pipelines/README.md
-  how-to/build-pipelines/use-pipeline-step-parameters: how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md
-  how-to/build-pipelines/configuring-a-pipeline-at-runtime: how-to/pipeline-development/build-pipelines/configuring-a-pipeline-at-runtime.md
-  how-to/build-pipelines/reference-environment-variables-in-configurations: how-to/pipeline-development/build-pipelines/reference-environment-variables-in-configurations.md
-  how-to/build-pipelines/step-output-typing-and-annotation: how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation.md
-  how-to/build-pipelines/control-caching-behavior: how-to/pipeline-development/build-pipelines/control-caching-behavior.md
-  how-to/build-pipelines/schedule-a-pipeline: how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md
-  how-to/build-pipelines/delete-a-pipeline: how-to/pipeline-development/build-pipelines/delete-a-pipeline.md
-  how-to/build-pipelines/compose-pipelines: how-to/pipeline-development/build-pipelines/compose-pipelines.md
-  how-to/build-pipelines/dynamically-assign-artifact-names: how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names.md
-  how-to/build-pipelines/retry-steps: how-to/pipeline-development/build-pipelines/retry-steps.md
-  how-to/build-pipelines/run-pipelines-asynchronously: how-to/pipeline-development/build-pipelines/run-pipelines-asynchronously.md
-  how-to/build-pipelines/control-execution-order-of-steps: how-to/pipeline-development/build-pipelines/control-execution-order-of-steps.md
-  how-to/build-pipelines/using-a-custom-step-invocation-id: how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md
-  how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
-  how-to/build-pipelines/tag-your-pipeline-runs: how-to/pipeline-development/build-pipelines/tag-your-pipeline-runs.md
-  how-to/build-pipelines/use-failure-success-hooks: how-to/pipeline-development/build-pipelines/use-failure-success-hooks.md
-  how-to/build-pipelines/hyper-parameter-tuning: how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md
-  how-to/build-pipelines/access-secrets-in-a-step: how-to/pipeline-development/build-pipelines/access-secrets-in-a-step.md
-  how-to/build-pipelines/run-an-individual-step: how-to/pipeline-development/build-pipelines/run-an-individual-step.md
-  how-to/build-pipelines/fetching-pipelines: how-to/pipeline-development/build-pipelines/fetching-pipelines.md
-  how-to/build-pipelines/get-past-pipeline-step-runs: how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs.md
+  how-to/connecting-to-zenml/connect-with-a-service-account: how-to/project-shahaetup-and-management/connecting-to-zenml/connect-with-a-service-account.md
