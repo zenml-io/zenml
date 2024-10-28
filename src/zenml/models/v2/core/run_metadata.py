@@ -45,17 +45,3 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
-
-
-class LazyRunMetadataResponse(dict[str, MetadataType]):
-    """Lazy run metadata response.
-
-    Used if the run metadata is accessed from the model in
-    a pipeline context available only during pipeline compilation.
-    """
-
-    lazy_load_artifact_name: Optional[str] = None
-    lazy_load_artifact_version: Optional[str] = None
-    lazy_load_metadata_name: Optional[str] = None
-    lazy_load_model_name: str
-    lazy_load_model_version: Optional[str] = None

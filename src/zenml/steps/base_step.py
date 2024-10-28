@@ -326,11 +326,11 @@ class BaseStep:
             The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.metadata.lazy_load import LazyRunMetadataResponse
         from zenml.model.lazy_load import ModelVersionDataLazyLoader
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,
         )
-        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 

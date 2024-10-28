@@ -238,7 +238,6 @@ from zenml.models.v2.core.run_template import (
 )
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
-    LazyRunMetadataResponse,
     RunMetadataRequest,
 )
 from zenml.models.v2.core.schedule import (
