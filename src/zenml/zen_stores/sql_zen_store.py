@@ -9183,7 +9183,6 @@ class SqlZenStore(BaseZenStore):
             with `zenml login --local`
             * local ZenML docker deployments: the server is deployed locally
             with `zenml login --local --docker`
-        * legacy dashboard deployments
 
         For all other cases, or if the external authentication scheme is used,
         no default admin user is created. The user must activate the server and

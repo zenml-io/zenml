@@ -243,18 +243,23 @@ class UserContext:
             CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                username=self.user_name,
-                password=self.password,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    username=self.user_name,
+                    password=self.password,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_user
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
@@ -265,6 +270,9 @@ class UserContext:
                 self.store.delete_user(self.created_user.id)
             except (KeyError, IllegalOperationError):
                 pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class ServiceAccountContext:
@@ -318,17 +326,21 @@ class ServiceAccountContext:
             CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                api_key=self.api_key.key,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    api_key=self.api_key.key,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_service_account
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_account:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
@@ -347,6 +359,9 @@ class ServiceAccountContext:
             except (KeyError, IllegalOperationError):
                 pass
 
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
+
 
 class LoginContext:
     def __init__(
@@ -363,26 +378,32 @@ class LoginContext:
         self.original_config = GlobalConfiguration.get_instance()
         self.original_client = Client.get_instance()
         self.original_credentials = CredentialsStore.get_instance()
-
         CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        store_config = StoreConfiguration(
-            url=self.original_config.store.url,
-            type=self.original_config.store.type,
-            api_key=self.api_key,
-            username=self.user_name,
-            password=self.password,
-            secrets_store=self.original_config.store.secrets_store,
-        )
-        GlobalConfiguration().set_store(config=store_config)
+        try:
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                api_key=self.api_key,
+                username=self.user_name,
+                password=self.password,
+                secrets_store=self.original_config.store.secrets_store,
+            )
+            GlobalConfiguration().set_store(config=store_config)
+        except Exception:
+            self.cleanup()
+            raise
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         GlobalConfiguration._reset_instance(self.original_config)
         Client._reset_instance(self.original_client)
         CredentialsStore.reset_instance(self.original_credentials)
 
         _ = Client().zen_store
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class StackContext:

@@ -584,7 +584,7 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
         accessible_pro_servers: List[TenantRead] = []
         try:
             client = ZenMLProClient()
-            accessible_pro_servers = client.tenant.list(member_only=all)
+            accessible_pro_servers = client.tenant.list(member_only=not all)
         except AuthorizationException as e:
             cli_utils.warning(f"ZenML Pro authorization error: {e}")
         else:
