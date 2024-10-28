@@ -1,6 +1,6 @@
 ---
+icon: rocket
 description: Deploying your models and serve real-time predictions.
-icon: space-awesome
 ---
 
 # Model Deployers

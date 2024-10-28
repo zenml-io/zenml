@@ -1,6 +1,6 @@
 ---
+icon: folder-closed
 description: Setting up a persistent storage for your artifacts.
-icon: store
 ---
 
 # Artifact Stores

@@ -1,8 +1,8 @@
 ---
+icon: chart-column
 description: >-
   How to enhance and maintain the quality of your data and the performance of
   your models with data profiling and validation
-icon: vial
 ---
 
 # Data Validators

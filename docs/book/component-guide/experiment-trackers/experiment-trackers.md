@@ -1,6 +1,6 @@
 ---
+icon: clipboard
 description: Logging and visualizing ML experiments.
-icon: square-poll-vertical
 ---
 
 # Experiment Trackers

@@ -1,6 +1,6 @@
 ---
+icon: arrow-progress
 description: Executing individual steps in specialized environments.
-icon: user-ninja
 ---
 
 # Step Operators

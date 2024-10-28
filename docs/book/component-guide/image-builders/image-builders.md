@@ -1,6 +1,6 @@
 ---
+icon: box-open
 description: Building container images for your ML workflow.
-icon: image
 ---
 
 # Image Builders

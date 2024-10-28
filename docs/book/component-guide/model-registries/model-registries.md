@@ -1,6 +1,6 @@
 ---
+icon: table-rows
 description: Tracking and managing ML models.
-icon: cubes
 ---
 
 # Model Registries

@@ -1,6 +1,6 @@
 ---
+icon: database
 description: Managing data in feature stores.
-icon: table-list
 ---
 
 # Feature Stores
