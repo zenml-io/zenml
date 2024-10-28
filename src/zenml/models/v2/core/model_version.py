@@ -302,7 +302,7 @@ class ModelVersionResponse(
         return self.get_metadata().description
 
     @property
-    def run_metadata(self) -> Optional[Dict[str, MetadataType]]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:

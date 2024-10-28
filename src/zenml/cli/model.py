@@ -59,9 +59,6 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
 def _model_version_to_print(
     model_version: ModelVersionResponse,
 ) -> Dict[str, Any]:
-    run_metadata = None
-    if model_version.run_metadata:
-        run_metadata = {k: v for k, v in model_version.run_metadata.items()}
     return {
         "id": model_version.id,
         "model": model_version.model.name,
@@ -69,7 +66,7 @@ def _model_version_to_print(
         "number": model_version.number,
         "description": model_version.description,
         "stage": model_version.stage,
-        "run_metadata": run_metadata,
+        "run_metadata": model_version.run_metadata,
         "tags": [t.name for t in model_version.tags],
         "data_artifacts_count": len(model_version.data_artifact_ids),
         "model_artifacts_count": len(model_version.model_artifact_ids),
