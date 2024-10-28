@@ -19,107 +19,107 @@ redirects:
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
 
   # Project Setup redirects
-  how-to/setting-up-a-project-repository/README.md: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
-  how-to/setting-up-a-project-repository/set-up-repository.md: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
-  how-to/setting-up-a-project-repository/connect-your-git-repository.md: how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md
-  how-to/setting-up-a-project-repository/using-project-templates.md: how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md
-  how-to/setting-up-a-project-repository/create-your-own-template.md: how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template.md
-  how-to/setting-up-a-project-repository/shared-components-for-teams.md: how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams.md
-  how-to/setting-up-a-project-repository/stacks-pipelines-models.md: how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models.md
-  how-to/setting-up-a-project-repository/access-management.md: how-to/project-setup-and-management/setting-up-a-project-repository/access-management.md
+  how-to/setting-up-a-project-repository/README: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
+  how-to/setting-up-a-project-repository/set-up-repository: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
+  how-to/setting-up-a-project-repository/connect-your-git-repository: how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md
+  how-to/setting-up-a-project-repository/using-project-templates: how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md
+  how-to/setting-up-a-project-repository/create-your-own-template: how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template.md
+  how-to/setting-up-a-project-repository/shared-components-for-teams: how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams.md
+  how-to/setting-up-a-project-repository/stacks-pipelines-models: how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models.md
+  how-to/setting-up-a-project-repository/access-management: how-to/project-setup-and-management/setting-up-a-project-repository/access-management.md
 
-  how-to/develop-locally/README.md: how-to/project-setup-and-management/develop-locally/README.md
-  how-to/develop-locally/local-prod-pipeline-variants.md: how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants.md
-  how-to/develop-locally/keep-your-dashboard-server-clean.md: how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean.md
+  how-to/develop-locally/README: how-to/project-setup-and-management/develop-locally/README.md
+  how-to/develop-locally/local-prod-pipeline-variants: how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants.md
+  how-to/develop-locally/keep-your-dashboard-server-clean: how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean.md
 
-  how-to/connecting-to-zenml/README.md: how-to/project-setup-and-management/connecting-to-zenml/README.md
-  how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md: how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive.md
-  how-to/connecting-to-zenml/connect-with-a-service-account.md: how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md
+  how-to/connecting-to-zenml/README: how-to/project-setup-and-management/connecting-to-zenml/README.md
+  how-to/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive.md
+  how-to/connecting-to-zenml/connect-with-a-service-account: how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md
 
   # Pipeline Development redirects
-  how-to/build-pipelines/README.md: how-to/pipeline-development/build-pipelines/README.md
-  how-to/build-pipelines/use-pipeline-step-parameters.md: how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md
-  how-to/build-pipelines/configuring-a-pipeline-at-runtime.md: how-to/pipeline-development/build-pipelines/configuring-a-pipeline-at-runtime.md
-  how-to/build-pipelines/reference-environment-variables-in-configurations.md: how-to/pipeline-development/build-pipelines/reference-environment-variables-in-configurations.md
-  how-to/build-pipelines/step-output-typing-and-annotation.md: how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation.md
-  how-to/build-pipelines/control-caching-behavior.md: how-to/pipeline-development/build-pipelines/control-caching-behavior.md
-  how-to/build-pipelines/schedule-a-pipeline.md: how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md
-  how-to/build-pipelines/delete-a-pipeline.md: how-to/pipeline-development/build-pipelines/delete-a-pipeline.md
-  how-to/build-pipelines/compose-pipelines.md: how-to/pipeline-development/build-pipelines/compose-pipelines.md
-  how-to/build-pipelines/dynamically-assign-artifact-names.md: how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names.md
-  how-to/build-pipelines/retry-steps.md: how-to/pipeline-development/build-pipelines/retry-steps.md
-  how-to/build-pipelines/run-pipelines-asynchronously.md: how-to/pipeline-development/build-pipelines/run-pipelines-asynchronously.md
-  how-to/build-pipelines/control-execution-order-of-steps.md: how-to/pipeline-development/build-pipelines/control-execution-order-of-steps.md
-  how-to/build-pipelines/using-a-custom-step-invocation-id.md: how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md
+  how-to/build-pipelines/README: how-to/pipeline-development/build-pipelines/README.md
+  how-to/build-pipelines/use-pipeline-step-parameters: how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md
+  how-to/build-pipelines/configuring-a-pipeline-at-runtime: how-to/pipeline-development/build-pipelines/configuring-a-pipeline-at-runtime.md
+  how-to/build-pipelines/reference-environment-variables-in-configurations: how-to/pipeline-development/build-pipelines/reference-environment-variables-in-configurations.md
+  how-to/build-pipelines/step-output-typing-and-annotation: how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation.md
+  how-to/build-pipelines/control-caching-behavior: how-to/pipeline-development/build-pipelines/control-caching-behavior.md
+  how-to/build-pipelines/schedule-a-pipeline: how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md
+  how-to/build-pipelines/delete-a-pipeline: how-to/pipeline-development/build-pipelines/delete-a-pipeline.md
+  how-to/build-pipelines/compose-pipelines: how-to/pipeline-development/build-pipelines/compose-pipelines.md
+  how-to/build-pipelines/dynamically-assign-artifact-names: how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names.md
+  how-to/build-pipelines/retry-steps: how-to/pipeline-development/build-pipelines/retry-steps.md
+  how-to/build-pipelines/run-pipelines-asynchronously: how-to/pipeline-development/build-pipelines/run-pipelines-asynchronously.md
+  how-to/build-pipelines/control-execution-order-of-steps: how-to/pipeline-development/build-pipelines/control-execution-order-of-steps.md
+  how-to/build-pipelines/using-a-custom-step-invocation-id: how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
-  how-to/build-pipelines/tag-your-pipeline-runs.md: how-to/pipeline-development/build-pipelines/tag-your-pipeline-runs.md
-  how-to/build-pipelines/use-failure-success-hooks.md: how-to/pipeline-development/build-pipelines/use-failure-success-hooks.md
-  how-to/build-pipelines/hyper-parameter-tuning.md: how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md
-  how-to/build-pipelines/access-secrets-in-a-step.md: how-to/pipeline-development/build-pipelines/access-secrets-in-a-step.md
-  how-to/build-pipelines/run-an-individual-step.md: how-to/pipeline-development/build-pipelines/run-an-individual-step.md
-  how-to/build-pipelines/fetching-pipelines.md: how-to/pipeline-development/build-pipelines/fetching-pipelines.md
-  how-to/build-pipelines/get-past-pipeline-step-runs.md: how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs.md
+  how-to/build-pipelines/tag-your-pipeline-runs: how-to/pipeline-development/build-pipelines/tag-your-pipeline-runs.md
+  how-to/build-pipelines/use-failure-success-hooks: how-to/pipeline-development/build-pipelines/use-failure-success-hooks.md
+  how-to/build-pipelines/hyper-parameter-tuning: how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md
+  how-to/build-pipelines/access-secrets-in-a-step: how-to/pipeline-development/build-pipelines/access-secrets-in-a-step.md
+  how-to/build-pipelines/run-an-individual-step: how-to/pipeline-development/build-pipelines/run-an-individual-step.md
+  how-to/build-pipelines/fetching-pipelines: how-to/pipeline-development/build-pipelines/fetching-pipelines.md
+  how-to/build-pipelines/get-past-pipeline-step-runs: how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs.md
 
-  how-to/trigger-pipelines/README.md: how-to/pipeline-development/trigger-pipelines/README.md
-  how-to/trigger-pipelines/use-templates-python.md: how-to/pipeline-development/trigger-pipelines/use-templates-python.md
-  how-to/trigger-pipelines/use-templates-dashboard.md: how-to/pipeline-development/trigger-pipelines/use-templates-dashboard.md
-  how-to/trigger-pipelines/use-templates-rest-api.md: how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md
+  how-to/trigger-pipelines/README: how-to/pipeline-development/trigger-pipelines/README.md
+  how-to/trigger-pipelines/use-templates-python: how-to/pipeline-development/trigger-pipelines/use-templates-python.md
+  how-to/trigger-pipelines/use-templates-dashboard: how-to/pipeline-development/trigger-pipelines/use-templates-dashboard.md
+  how-to/trigger-pipelines/use-templates-rest-api: how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md
 
-  how-to/use-configuration-files/README.md: how-to/pipeline-development/use-configuration-files/README.md
-  how-to/use-configuration-files/how-to-use-config.md: how-to/pipeline-development/use-configuration-files/how-to-use-config.md
-  how-to/use-configuration-files/what-can-be-configured.md: how-to/pipeline-development/use-configuration-files/what-can-be-configured.md
-  how-to/use-configuration-files/runtime-configuration.md: how-to/pipeline-development/use-configuration-files/runtime-configuration.md
-  how-to/use-configuration-files/configuration-hierarchy.md: how-to/pipeline-development/use-configuration-files/configuration-hierarchy.md
-  how-to/use-configuration-files/retrieve-used-configuration-of-a-run.md: how-to/pipeline-development/use-configuration-files/retrieve-used-configuration-of-a-run.md
-  how-to/use-configuration-files/autogenerate-a-template-yaml-file.md: how-to/pipeline-development/use-configuration-files/autogenerate-a-template-yaml-file.md
+  how-to/use-configuration-files/README: how-to/pipeline-development/use-configuration-files/README.md
+  how-to/use-configuration-files/how-to-use-config: how-to/pipeline-development/use-configuration-files/how-to-use-config.md
+  how-to/use-configuration-files/what-can-be-configured: how-to/pipeline-development/use-configuration-files/what-can-be-configured.md
+  how-to/use-configuration-files/runtime-configuration: how-to/pipeline-development/use-configuration-files/runtime-configuration.md
+  how-to/use-configuration-files/configuration-hierarchy: how-to/pipeline-development/use-configuration-files/configuration-hierarchy.md
+  how-to/use-configuration-files/retrieve-used-configuration-of-a-run: how-to/pipeline-development/use-configuration-files/retrieve-used-configuration-of-a-run.md
+  how-to/use-configuration-files/autogenerate-a-template-yaml-file: how-to/pipeline-development/use-configuration-files/autogenerate-a-template-yaml-file.md
 
   # Data and Artifact Management redirects
-  how-to/handle-data-artifacts/README.md: how-to/data-artifact-management/handle-data-artifacts/README.md
-  how-to/handle-data-artifacts/artifact-versioning.md: how-to/data-artifact-management/handle-data-artifacts/artifact-versioning.md
-  how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md: how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step.md
-  how-to/handle-data-artifacts/delete-an-artifact.md: how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact.md
-  how-to/handle-data-artifacts/tagging.md: how-to/data-artifact-management/handle-data-artifacts/tagging.md
-  how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md: how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md
-  how-to/handle-data-artifacts/handle-custom-data-types.md: how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md
-  how-to/handle-data-artifacts/load-artifacts-into-memory.md: how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md
-  how-to/handle-data-artifacts/datasets.md: how-to/data-artifact-management/handle-data-artifacts/datasets.md
-  how-to/handle-data-artifacts/manage-big-data.md: how-to/data-artifact-management/handle-data-artifacts/manage-big-data.md
-  how-to/handle-data-artifacts/unmaterialized-artifacts.md: how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts.md
-  how-to/handle-data-artifacts/passing-artifacts-between-pipelines.md: how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines.md
-  how-to/handle-data-artifacts/registering-existing-data.md: how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md
+  how-to/handle-data-artifacts/README: how-to/data-artifact-management/handle-data-artifacts/README.md
+  how-to/handle-data-artifacts/artifact-versioning: how-to/data-artifact-management/handle-data-artifacts/artifact-versioning.md
+  how-to/handle-data-artifacts/return-multiple-outputs-from-a-step: how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step.md
+  how-to/handle-data-artifacts/delete-an-artifact: how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact.md
+  how-to/handle-data-artifacts/tagging: how-to/data-artifact-management/handle-data-artifacts/tagging.md
+  how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md
+  how-to/handle-data-artifacts/handle-custom-data-types: how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md
+  how-to/handle-data-artifacts/load-artifacts-into-memory: how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md
+  how-to/handle-data-artifacts/datasets: how-to/data-artifact-management/handle-data-artifacts/datasets.md
+  how-to/handle-data-artifacts/manage-big-data: how-to/data-artifact-management/handle-data-artifacts/manage-big-data.md
+  how-to/handle-data-artifacts/unmaterialized-artifacts: how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts.md
+  how-to/handle-data-artifacts/passing-artifacts-between-pipelines: how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines.md
+  how-to/handle-data-artifacts/registering-existing-data: how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md
 
-  how-to/visualize-artifacts/README.md: how-to/data-artifact-management/visualize-artifacts/README.md
-  how-to/visualize-artifacts/types-of-visualizations.md: how-to/data-artifact-management/visualize-artifacts/types-of-visualizations.md
-  how-to/visualize-artifacts/creating-custom-visualizations.md: how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations.md
-  how-to/visualize-artifacts/visualizations-in-dashboard.md: how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard.md
-  how-to/visualize-artifacts/disabling-visualizations.md: how-to/data-artifact-management/visualize-artifacts/disabling-visualizations.md
+  how-to/visualize-artifacts/README: how-to/data-artifact-management/visualize-artifacts/README.md
+  how-to/visualize-artifacts/types-of-visualizations: how-to/data-artifact-management/visualize-artifacts/types-of-visualizations.md
+  how-to/visualize-artifacts/creating-custom-visualizations: how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations.md
+  how-to/visualize-artifacts/visualizations-in-dashboard: how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard.md
+  how-to/visualize-artifacts/disabling-visualizations: how-to/data-artifact-management/visualize-artifacts/disabling-visualizations.md
 
   # Model Management redirects
-  how-to/use-the-model-control-plane/README.md: how-to/model-management-metrics/model-control-plane/README.md
-  how-to/use-the-model-control-plane/register-a-model.md: how-to/model-management-metrics/model-control-plane/register-a-model.md
-  how-to/use-the-model-control-plane/delete-a-model.md: how-to/model-management-metrics/model-control-plane/delete-a-model.md
-  how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md: how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model.md
-  how-to/use-the-model-control-plane/connecting-artifacts-via-a-model.md: how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model.md
-  how-to/use-the-model-control-plane/model-versions.md: how-to/model-management-metrics/model-control-plane/model-versions.md
-  how-to/use-the-model-control-plane/load-a-model-in-code.md: how-to/model-management-metrics/model-control-plane/load-a-model-in-code.md
-  how-to/use-the-model-control-plane/promote-a-model.md: how-to/model-management-metrics/model-control-plane/promote-a-model.md
-  how-to/use-the-model-control-plane/linking-model-binaries-data-to-models.md: how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models.md
-  how-to/use-the-model-control-plane/load-artifacts-from-model.md: how-to/model-management-metrics/model-control-plane/load-artifacts-from-model.md
+  how-to/use-the-model-control-plane/README: how-to/model-management-metrics/model-control-plane/README.md
+  how-to/use-the-model-control-plane/register-a-model: how-to/model-management-metrics/model-control-plane/register-a-model.md
+  how-to/use-the-model-control-plane/delete-a-model: how-to/model-management-metrics/model-control-plane/delete-a-model.md
+  how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model: how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model.md
+  how-to/use-the-model-control-plane/connecting-artifacts-via-a-model: how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model.md
+  how-to/use-the-model-control-plane/model-versions: how-to/model-management-metrics/model-control-plane/model-versions.md
+  how-to/use-the-model-control-plane/load-a-model-in-code: how-to/model-management-metrics/model-control-plane/load-a-model-in-code.md
+  how-to/use-the-model-control-plane/promote-a-model: how-to/model-management-metrics/model-control-plane/promote-a-model.md
+  how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models.md
+  how-to/use-the-model-control-plane/load-artifacts-from-model: how-to/model-management-metrics/model-control-plane/load-artifacts-from-model.md
 
-  how-to/track-metrics-metadata/README.md: how-to/model-management-metrics/track-metrics-metadata/README.md
-  how-to/track-metrics-metadata/attach-metadata-to-a-model.md: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model.md
-  how-to/track-metrics-metadata/attach-metadata-to-an-artifact.md: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact.md
-  how-to/track-metrics-metadata/attach-metadata-to-steps.md: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps.md
-  how-to/track-metrics-metadata/grouping-metadata.md: how-to/model-management-metrics/track-metrics-metadata/grouping-metadata.md
-  how-to/track-metrics-metadata/logging-metadata.md: how-to/model-management-metrics/track-metrics-metadata/logging-metadata.md
-  how-to/track-metrics-metadata/fetch-metadata-within-steps.md: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md
-  how-to/track-metrics-metadata/fetch-metadata-within-pipeline.md: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md
+  how-to/track-metrics-metadata/README: how-to/model-management-metrics/track-metrics-metadata/README.md
+  how-to/track-metrics-metadata/attach-metadata-to-a-model: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model.md
+  how-to/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact.md
+  how-to/track-metrics-metadata/attach-metadata-to-steps: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps.md
+  how-to/track-metrics-metadata/grouping-metadata: how-to/model-management-metrics/track-metrics-metadata/grouping-metadata.md
+  how-to/track-metrics-metadata/logging-metadata: how-to/model-management-metrics/track-metrics-metadata/logging-metadata.md
+  how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md
+    how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md
 
   # Infrastructure redirects
-  how-to/stack-deployment/README.md: how-to/infrastructure-deployment/stack-deployment/README.md
-  how-to/stack-deployment/deploy-a-cloud-stack.md: how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md
-  how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md: how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md
-  how-to/stack-deployment/register-a-cloud-stack.md: how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md
-  how-to/stack-deployment/reference-secrets-in-stack-configuration.md: how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md
-  how-to/stack-deployment/implement-a-custom-stack-component.md: how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md
+  how-to/stack-deployment/README: how-to/infrastructure-deployment/stack-deployment/README.md
+  how-to/stack-deployment/deploy-a-cloud-stack: how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md
+  how-to/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md
+  how-to/stack-deployment/register-a-cloud-stack: how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md
+  how-to/stack-deployment/reference-secrets-in-stack-configuration: how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md
+  how-to/stack-deployment/implement-a-custom-stack-component: how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md
   
