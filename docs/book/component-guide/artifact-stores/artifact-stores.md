@@ -60,7 +60,7 @@ The Artifact Store provides low-level object storage services for other ZenML me
 
 You will probably need to interact with the [low-level Artifact Store API](artifact-stores.md#the-artifact-store-api) directly:
 
-* if you implement custom [Materializers](../../how-to/handle-data-artifacts/handle-custom-data-types.md) for your artifact data types
+* if you implement custom [Materializers](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) for your artifact data types
 * if you want to store custom objects in the Artifact Store
 
 #### The Artifact Store API

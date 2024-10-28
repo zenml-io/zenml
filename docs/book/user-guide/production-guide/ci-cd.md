@@ -68,7 +68,7 @@ You might not necessarily want to use the same stack with the same resources for
 This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact
 storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
 for the respective environments. You can also use different [configuration files](../../how-to/configuring-zenml/configuring-zenml.md)
-for the different environments to configure the [Model](../../how-to/use-the-model-control-plane/README.md), the 
+for the different environments to configure the [Model](../../how-to/model-management-metrics/model-control-plane/README.md), the 
 [DockerSettings](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
 accelerators](../../how-to/training-with-gpus/training-with-gpus.md) differently for the different environments.
 

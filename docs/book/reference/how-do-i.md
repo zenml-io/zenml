@@ -32,7 +32,7 @@ Read [the documentation on self-hosted ZenML deployments](../getting-started/dep
 
 * **hyperparameter tuning**?
 
-[Our dedicated documentation guide](../how-to/build-pipelines/hyper-parameter-tuning.md) on implementing this is the place to learn more.
+[Our dedicated documentation guide](../how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md) on implementing this is the place to learn more.
 
 * **reset** things when something goes wrong?
 
@@ -40,7 +40,7 @@ To reset your ZenML client, you can run `zenml clean` which will wipe your local
 
 * **steps that create other steps AKA dynamic pipelines and steps**?
 
-Please read our [general information on how to compose steps + pipelines together](../user-guide/starter-guide/create-an-ml-pipeline.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/build-pipelines/hyper-parameter-tuning.md) which is related to this topic.
+Please read our [general information on how to compose steps + pipelines together](../user-guide/starter-guide/create-an-ml-pipeline.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md) which is related to this topic.
 
 * **templates**: using starter code with ZenML?
 

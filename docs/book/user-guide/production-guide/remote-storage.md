@@ -16,9 +16,9 @@ When using a stack with remote storage, nothing changes except the fact that the
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
 Check out the
-[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Terraform modules](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
@@ -105,7 +105,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% tab title="Other" %}
 You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../component-guide/artifact-stores/artifact-stores.md).
 
-It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
+It is also relatively simple to create a [custom stack component flavor](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
 {% endtabs %}
 

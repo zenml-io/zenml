@@ -74,7 +74,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 #### Specifying per-step resources
 
 If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps
-as described [here](../../how-to/use-configuration-files/runtime-configuration.md).
+as described [here](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look
 at [step operators](../step-operators/step-operators.md).

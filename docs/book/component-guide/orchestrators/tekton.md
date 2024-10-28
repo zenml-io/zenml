@@ -225,7 +225,7 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Tekton orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton\_orchestrator.TektonOrchestrator) .
 

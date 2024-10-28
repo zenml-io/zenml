@@ -22,7 +22,7 @@ in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-w
 to manage your infrastructure as code yourself.
 
 If you have the required infrastructure pieces already deployed on your cloud, 
-you can also use [the stack wizard to seamlessly register your stack](../../how-to/stack-deployment/register-a-cloud-stack.md).
+you can also use [the stack wizard to seamlessly register your stack](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md).
 {% endhint %}
 
 ## How to use the 1-click deployment tool?

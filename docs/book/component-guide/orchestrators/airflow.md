@@ -30,7 +30,7 @@ setup is necessary.
 
 There are many options to use a deployed Airflow server:
 
-* Use [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+* Use [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
   which includes a [Google Cloud Composer](https://cloud.google.com/composer) component.
 * Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer)
   , [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/),
@@ -165,7 +165,7 @@ more about how ZenML builds these images and how you can customize them.
 
 #### Scheduling
 
-You can [schedule pipeline runs](../../how-to/build-pipelines/schedule-a-pipeline.md)
+You can [schedule pipeline runs](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md)
 on Airflow similarly to other orchestrators. However, note that 
 **Airflow schedules always need to be set in the past**, e.g.,:
 
@@ -204,7 +204,7 @@ The username will always be `admin`.
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/how-to/use-configuration-files/README.md) for
+for a full list of available attributes and [this docs page](/docs/book/how-to/pipeline-development/use-configuration-files/README.md) for
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
@@ -287,7 +287,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your
-pipelines [here](/docs/book/how-to/use-configuration-files/README.md).
+pipelines [here](/docs/book/how-to/pipeline-development/use-configuration-files/README.md).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator) .
 
