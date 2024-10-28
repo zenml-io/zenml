@@ -284,7 +284,7 @@ The above command will start a containerized ZenML server running on your machin
 You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
-$ zenml connect --url http://localhost:8080
+$ zenml login http://localhost:8080
 Connecting to: 'http://localhost:8080'...
 If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:
 
@@ -364,7 +364,7 @@ docker run -it -d -p 8080:8080 --name zenml \
 You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080
+zenml login http://localhost:8080
 ```
 
 ### Direct MySQL database connection
@@ -377,10 +377,10 @@ As previously covered, the containerized MySQL database service can be started w
 docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
 ```
 
-The ZenML client on the host machine can then be configured to connect directly to the database with a slightly different `zenml connect` command:
+The ZenML client on the host machine can then be configured to connect directly to the database with a slightly different `zenml login` command:
 
 ```shell
-zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+zenml login mysql://root:password@127.0.0.1/zenml
 ```
 
 > **Note** The `localhost` hostname will not work with MySQL databases. You need to use the `127.0.0.1` IP address instead.
@@ -438,7 +438,7 @@ docker compose -f /path/to/docker-compose.yml -p zenml up -d
 You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080
+zenml login http://localhost:8080
 ```
 
 Tearing down the installation is as simple as running:

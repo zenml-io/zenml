@@ -72,7 +72,7 @@ In order to move into production, the ZenML server needs to be deployed somewher
 
 ![ZenML centrally deployed for multiple users](../../.gitbook/assets/Scenario3.2.png)
 
-You connect to your deployed ZenML server using the `zenml connect` command and
+You connect to your deployed ZenML server using the `zenml login` command and
 then you have the full benefits and power of ZenML. You can use all the
 cloud-based components, your metadata will be stored and synchronized across all
 the users of the server and you can leverage features like centralized logs
