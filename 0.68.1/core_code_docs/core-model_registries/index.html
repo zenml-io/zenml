@@ -1,0 +1,5210 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.68.1/core_code_docs/core-model_registries/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Model Registries - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#model-registries" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Model Registries
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Model Registries
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Model Registries
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.model_registries" class="md-nav__link">
+    model_registries
+  </a>
+  
+    <nav class="md-nav" aria-label="model_registries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry" class="md-nav__link">
+    base_model_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="base_model_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry" class="md-nav__link">
+    BaseModelRegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseModelRegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model" class="md-nav__link">
+    delete_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model_version" class="md-nav__link">
+    delete_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_latest_model_version" class="md-nav__link">
+    get_latest_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model" class="md-nav__link">
+    get_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_uri_artifact_store" class="md-nav__link">
+    get_model_uri_artifact_store()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_version" class="md-nav__link">
+    get_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.list_model_versions" class="md-nav__link">
+    list_model_versions()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.list_models" class="md-nav__link">
+    list_models()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.load_model_version" class="md-nav__link">
+    load_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.register_model" class="md-nav__link">
+    register_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.register_model_version" class="md-nav__link">
+    register_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.update_model" class="md-nav__link">
+    update_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.update_model_version" class="md-nav__link">
+    update_model_version()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryConfig" class="md-nav__link">
+    BaseModelRegistryConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor" class="md-nav__link">
+    BaseModelRegistryFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseModelRegistryFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata" class="md-nav__link">
+    ModelRegistryModelMetadata
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelRegistryModelMetadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.custom_attributes" class="md-nav__link">
+    custom_attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.model_dump" class="md-nav__link">
+    model_dump()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelVersionStage" class="md-nav__link">
+    ModelVersionStage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.RegisteredModel" class="md-nav__link">
+    RegisteredModel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.RegistryModelVersion" class="md-nav__link">
+    RegistryModelVersion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-databricks/" class="md-nav__link">
+        Databricks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightning/" class="md-nav__link">
+        Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-numpy/" class="md-nav__link">
+        Numpy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pandas/" class="md-nav__link">
+        Pandas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_kubernetes/" class="md-nav__link">
+        Skypilot Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.model_registries" class="md-nav__link">
+    model_registries
+  </a>
+  
+    <nav class="md-nav" aria-label="model_registries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry" class="md-nav__link">
+    base_model_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="base_model_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry" class="md-nav__link">
+    BaseModelRegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseModelRegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.config" class="md-nav__link">
+    config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model" class="md-nav__link">
+    delete_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model_version" class="md-nav__link">
+    delete_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_latest_model_version" class="md-nav__link">
+    get_latest_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model" class="md-nav__link">
+    get_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_uri_artifact_store" class="md-nav__link">
+    get_model_uri_artifact_store()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_version" class="md-nav__link">
+    get_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.list_model_versions" class="md-nav__link">
+    list_model_versions()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.list_models" class="md-nav__link">
+    list_models()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.load_model_version" class="md-nav__link">
+    load_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.register_model" class="md-nav__link">
+    register_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.register_model_version" class="md-nav__link">
+    register_model_version()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.update_model" class="md-nav__link">
+    update_model()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistry.update_model_version" class="md-nav__link">
+    update_model_version()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryConfig" class="md-nav__link">
+    BaseModelRegistryConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor" class="md-nav__link">
+    BaseModelRegistryFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseModelRegistryFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.implementation_class" class="md-nav__link">
+    implementation_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata" class="md-nav__link">
+    ModelRegistryModelMetadata
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelRegistryModelMetadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.custom_attributes" class="md-nav__link">
+    custom_attributes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.model_dump" class="md-nav__link">
+    model_dump()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.ModelVersionStage" class="md-nav__link">
+    ModelVersionStage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.RegisteredModel" class="md-nav__link">
+    RegisteredModel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.model_registries.base_model_registry.RegistryModelVersion" class="md-nav__link">
+    RegistryModelVersion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/core_code_docs/core-model_registries.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="model-registries">Model Registries</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.model_registries" class="doc doc-heading">
+        <code>zenml.model_registries</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the MLflow Service.</p>
+<p>Model registries are centralized repositories that facilitate the collaboration
+and management of machine learning models. They provide functionalities such as
+version control, metadata tracking, and storage of model artifacts, enabling 
+data scientists to efficiently share and keep track of their models within
+a team or organization.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.model_registries.base_model_registry" class="doc doc-heading">
+        <code>base_model_registry</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML model registries.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.BaseModelRegistry" class="doc doc-heading">
+        <code>
+BaseModelRegistry            (<a class="autorefs autorefs-internal" title="zenml.stack.stack_component.StackComponent" href="../core-stack/#zenml.stack.stack_component.StackComponent">StackComponent</a>, <span title="abc.ABC">ABC</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML model registries.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelRegistry</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model registries.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModelRegistryConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config of the model registries.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The config of the model registries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseModelRegistryConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
+
+    <span class="c1"># ---------</span>
+    <span class="c1"># Model Registration Methods</span>
+    <span class="c1"># ---------</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">register_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a model in the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            description: The description of the registered model.</span>
+<span class="sd">            metadata: The metadata associated with the registered model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The registered model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            zenml.exceptions.EntityExistsError: If a model with the same name already exists.</span>
+<span class="sd">            RuntimeError: If registration fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">delete_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a registered model from the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model does not exist.</span>
+<span class="sd">            RuntimeError: If deletion fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">remove_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a registered model in the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            description: The description of the registered model.</span>
+<span class="sd">            metadata: The metadata associated with the registered model.</span>
+<span class="sd">            remove_metadata: The metadata to remove from the registered model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model does not exist.</span>
+<span class="sd">            RuntimeError: If update fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a registered model from the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The registered model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            zenml.exceptions.EntityExistsError: If the model does not exist.</span>
+<span class="sd">            RuntimeError: If retrieval fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RegisteredModel</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lists all registered models in the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            metadata: The metadata associated with the registered model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of registered models.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="c1"># ---------</span>
+    <span class="c1"># Model Version Methods</span>
+    <span class="c1"># ---------</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">register_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_source_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a model version in the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            model_source_uri: The source URI of the model.</span>
+<span class="sd">            version: The version of the model version.</span>
+<span class="sd">            description: The description of the model version.</span>
+<span class="sd">            metadata: The metadata associated with the model</span>
+<span class="sd">                version.</span>
+<span class="sd">            **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The registered model version.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If registration fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">delete_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a model version from the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            version: The version of the model version to delete.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model version does not exist.</span>
+<span class="sd">            RuntimeError: If deletion fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">update_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">remove_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a model version in the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            version: The version of the model version to update.</span>
+<span class="sd">            description: The description of the model version.</span>
+<span class="sd">            metadata: Metadata associated with this model version.</span>
+<span class="sd">            remove_metadata: The metadata to remove from the model version.</span>
+<span class="sd">            stage: The stage of the model version.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The updated model version.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model version does not exist.</span>
+<span class="sd">            RuntimeError: If update fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">list_model_versions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_source_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">created_after</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">created_before</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">order_by_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">RegistryModelVersion</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lists all model versions for a registered model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            model_source_uri: The model source URI of the registered model.</span>
+<span class="sd">            metadata: Metadata associated with this model version.</span>
+<span class="sd">            stage: The stage of the model version.</span>
+<span class="sd">            count: The number of model versions to return.</span>
+<span class="sd">            created_after: The timestamp after which to list model versions.</span>
+<span class="sd">            created_before: The timestamp before which to list model versions.</span>
+<span class="sd">            order_by_date: Whether to sort by creation time, this can</span>
+<span class="sd">                be &quot;asc&quot; or &quot;desc&quot;.</span>
+<span class="sd">            kwargs: Additional keyword arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of model versions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_latest_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegistryModelVersion</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the latest model version for a registered model.</span>
+
+<span class="sd">        This method is used to get the latest model version for a registered</span>
+<span class="sd">        model. If no stage is provided, the latest model version across all</span>
+<span class="sd">        stages is returned. If a stage is provided, the latest model version</span>
+<span class="sd">        for that stage is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            stage: The stage of the model version.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The latest model version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_versions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_model_versions</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">order_by_date</span><span class="o">=</span><span class="s2">&quot;desc&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_versions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">model_versions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a model version for a registered model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            version: The version of the model version to get.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The model version.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model version does not exist.</span>
+<span class="sd">            RuntimeError: If retrieval fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">load_model_version</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a model version from the model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the registered model.</span>
+<span class="sd">            version: The version of the model version to load.</span>
+<span class="sd">            **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The loaded model version.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the model version does not exist.</span>
+<span class="sd">            RuntimeError: If loading fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_model_uri_artifact_store</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_version</span><span class="p">:</span> <span class="n">RegistryModelVersion</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the URI artifact store for a model version.</span>
+
+<span class="sd">        This method retrieves the URI of the artifact store for a specific model</span>
+<span class="sd">        version. Its purpose is to ensure that the URI is in the correct format</span>
+<span class="sd">        for the specific artifact store being used. This is essential for the</span>
+<span class="sd">        model serving component, which relies on the URI to serve the model</span>
+<span class="sd">        version. In some cases, the URI may be stored in a different format by</span>
+<span class="sd">        certain model registry integrations. This method allows us to obtain the</span>
+<span class="sd">        URI in the correct format, regardless of the integration being used.</span>
+
+<span class="sd">        Note: In some cases the URI artifact store may not be available to the</span>
+<span class="sd">        user, the method should save the target model in one of the other</span>
+<span class="sd">        artifact stores supported by ZenML and return the URI of that artifact</span>
+<span class="sd">        store.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_version: The model version for which to get the URI artifact</span>
+<span class="sd">                store.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The URI artifact store for the model version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config</span><span class="p">:</span> <span class="n">BaseModelRegistryConfig</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the config of the model registries.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BaseModelRegistryConfig</code></td>
+      <td><p>The config of the model registries.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">delete_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Deletes a registered model from the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If deletion fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">delete_model</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a registered model from the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model does not exist.</span>
+<span class="sd">        RuntimeError: If deletion fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.delete_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">delete_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Deletes a model version from the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>The version of the model version to delete.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model version does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If deletion fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">delete_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a model version from the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        version: The version of the model version to delete.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model version does not exist.</span>
+<span class="sd">        RuntimeError: If deletion fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.get_latest_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_latest_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets the latest model version for a registered model.</p>
+<p>This method is used to get the latest model version for a registered
+model. If no stage is provided, the latest model version across all
+stages is returned. If a stage is provided, the latest model version
+for that stage is returned.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>stage</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelVersionStage]</code></td>
+        <td><p>The stage of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[zenml.model_registries.base_model_registry.RegistryModelVersion]</code></td>
+      <td><p>The latest model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_latest_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegistryModelVersion</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the latest model version for a registered model.</span>
+
+<span class="sd">    This method is used to get the latest model version for a registered</span>
+<span class="sd">    model. If no stage is provided, the latest model version across all</span>
+<span class="sd">    stages is returned. If a stage is provided, the latest model version</span>
+<span class="sd">    for that stage is returned.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        stage: The stage of the model version.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The latest model version.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model_versions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_model_versions</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">order_by_date</span><span class="o">=</span><span class="s2">&quot;desc&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">model_versions</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">model_versions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.get_model" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets a registered model from the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RegisteredModel</code></td>
+      <td><p>The registered model.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>zenml.exceptions.EntityExistsError</code></td>
+        <td><p>If the model does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If retrieval fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a registered model from the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The registered model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        zenml.exceptions.EntityExistsError: If the model does not exist.</span>
+<span class="sd">        RuntimeError: If retrieval fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_uri_artifact_store" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_model_uri_artifact_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_version</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets the URI artifact store for a model version.</p>
+<p>This method retrieves the URI of the artifact store for a specific model
+version. Its purpose is to ensure that the URI is in the correct format
+for the specific artifact store being used. This is essential for the
+model serving component, which relies on the URI to serve the model
+version. In some cases, the URI may be stored in a different format by
+certain model registry integrations. This method allows us to obtain the
+URI in the correct format, regardless of the integration being used.</p>
+<p>Note: In some cases the URI artifact store may not be available to the
+user, the method should save the target model in one of the other
+artifact stores supported by ZenML and return the URI of that artifact
+store.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>model_version</code></td>
+        <td><code>RegistryModelVersion</code></td>
+        <td><p>The model version for which to get the URI artifact
+store.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>The URI artifact store for the model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">get_model_uri_artifact_store</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">model_version</span><span class="p">:</span> <span class="n">RegistryModelVersion</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the URI artifact store for a model version.</span>
+
+<span class="sd">    This method retrieves the URI of the artifact store for a specific model</span>
+<span class="sd">    version. Its purpose is to ensure that the URI is in the correct format</span>
+<span class="sd">    for the specific artifact store being used. This is essential for the</span>
+<span class="sd">    model serving component, which relies on the URI to serve the model</span>
+<span class="sd">    version. In some cases, the URI may be stored in a different format by</span>
+<span class="sd">    certain model registry integrations. This method allows us to obtain the</span>
+<span class="sd">    URI in the correct format, regardless of the integration being used.</span>
+
+<span class="sd">    Note: In some cases the URI artifact store may not be available to the</span>
+<span class="sd">    user, the method should save the target model in one of the other</span>
+<span class="sd">    artifact stores supported by ZenML and return the URI of that artifact</span>
+<span class="sd">    store.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_version: The model version for which to get the URI artifact</span>
+<span class="sd">            store.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The URI artifact store for the model version.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.get_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets a model version for a registered model.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>The version of the model version to get.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RegistryModelVersion</code></td>
+      <td><p>The model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model version does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If retrieval fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">get_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a model version for a registered model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        version: The version of the model version to get.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The model version.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model version does not exist.</span>
+<span class="sd">        RuntimeError: If retrieval fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.list_model_versions" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_model_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_source_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">created_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">created_before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order_by_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Lists all model versions for a registered model.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>model_source_uri</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The model source URI of the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelRegistryModelMetadata]</code></td>
+        <td><p>Metadata associated with this model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>stage</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelVersionStage]</code></td>
+        <td><p>The stage of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>count</code></td>
+        <td><code>Optional[int]</code></td>
+        <td><p>The number of model versions to return.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>created_after</code></td>
+        <td><code>Optional[datetime.datetime]</code></td>
+        <td><p>The timestamp after which to list model versions.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>created_before</code></td>
+        <td><code>Optional[datetime.datetime]</code></td>
+        <td><p>The timestamp before which to list model versions.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>order_by_date</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Whether to sort by creation time, this can
+be "asc" or "desc".</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Additional keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[List[zenml.model_registries.base_model_registry.RegistryModelVersion]]</code></td>
+      <td><p>A list of model versions.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">list_model_versions</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">model_source_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">created_after</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">created_before</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">order_by_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">RegistryModelVersion</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all model versions for a registered model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        model_source_uri: The model source URI of the registered model.</span>
+<span class="sd">        metadata: Metadata associated with this model version.</span>
+<span class="sd">        stage: The stage of the model version.</span>
+<span class="sd">        count: The number of model versions to return.</span>
+<span class="sd">        created_after: The timestamp after which to list model versions.</span>
+<span class="sd">        created_before: The timestamp before which to list model versions.</span>
+<span class="sd">        order_by_date: Whether to sort by creation time, this can</span>
+<span class="sd">            be &quot;asc&quot; or &quot;desc&quot;.</span>
+<span class="sd">        kwargs: Additional keyword arguments.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of model versions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.list_models" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Lists all registered models in the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[Dict[str, str]]</code></td>
+        <td><p>The metadata associated with the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[zenml.model_registries.base_model_registry.RegisteredModel]</code></td>
+      <td><p>A list of registered models.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RegisteredModel</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all registered models in the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        metadata: The metadata associated with the registered model.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of registered models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.load_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">load_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Loads a model version from the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>The version of the model version to load.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Additional keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Any</code></td>
+      <td><p>The loaded model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model version does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If loading fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">load_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a model version from the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        version: The version of the model version to load.</span>
+<span class="sd">        **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The loaded model version.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model version does not exist.</span>
+<span class="sd">        RuntimeError: If loading fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.register_model" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Registers a model in the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The description of the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[Dict[str, str]]</code></td>
+        <td><p>The metadata associated with the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RegisteredModel</code></td>
+      <td><p>The registered model.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>zenml.exceptions.EntityExistsError</code></td>
+        <td><p>If a model with the same name already exists.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If registration fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">register_model</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a model in the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        description: The description of the registered model.</span>
+<span class="sd">        metadata: The metadata associated with the registered model.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The registered model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        zenml.exceptions.EntityExistsError: If a model with the same name already exists.</span>
+<span class="sd">        RuntimeError: If registration fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.register_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_source_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Registers a model version in the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>model_source_uri</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The source URI of the model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The version of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The description of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelRegistryModelMetadata]</code></td>
+        <td><p>The metadata associated with the model
+version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Additional keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RegistryModelVersion</code></td>
+      <td><p>The registered model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If registration fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">register_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">model_source_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a model version in the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        model_source_uri: The source URI of the model.</span>
+<span class="sd">        version: The version of the model version.</span>
+<span class="sd">        description: The description of the model version.</span>
+<span class="sd">        metadata: The metadata associated with the model</span>
+<span class="sd">            version.</span>
+<span class="sd">        **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The registered model version.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If registration fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.update_model" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Updates a registered model in the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The description of the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[Dict[str, str]]</code></td>
+        <td><p>The metadata associated with the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>remove_metadata</code></td>
+        <td><code>Optional[List[str]]</code></td>
+        <td><p>The metadata to remove from the registered model.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If update fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">remove_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisteredModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates a registered model in the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        description: The description of the registered model.</span>
+<span class="sd">        metadata: The metadata associated with the registered model.</span>
+<span class="sd">        remove_metadata: The metadata to remove from the registered model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model does not exist.</span>
+<span class="sd">        RuntimeError: If update fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistry.update_model_version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">update_model_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Updates a model version in the model registry.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the registered model.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>The version of the model version to update.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The description of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelRegistryModelMetadata]</code></td>
+        <td><p>Metadata associated with this model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>remove_metadata</code></td>
+        <td><code>Optional[List[str]]</code></td>
+        <td><p>The metadata to remove from the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>stage</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelVersionStage]</code></td>
+        <td><p>The stage of the model version.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RegistryModelVersion</code></td>
+      <td><p>The updated model version.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If the model version does not exist.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If update fails.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">update_model_version</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">remove_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelVersionStage</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryModelVersion</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates a model version in the model registry.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the registered model.</span>
+<span class="sd">        version: The version of the model version to update.</span>
+<span class="sd">        description: The description of the model version.</span>
+<span class="sd">        metadata: Metadata associated with this model version.</span>
+<span class="sd">        remove_metadata: The metadata to remove from the model version.</span>
+<span class="sd">        stage: The stage of the model version.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The updated model version.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the model version does not exist.</span>
+<span class="sd">        RuntimeError: If update fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.BaseModelRegistryConfig" class="doc doc-heading">
+        <code>
+BaseModelRegistryConfig            (<a class="autorefs autorefs-internal" title="zenml.stack.stack_component.StackComponentConfig" href="../core-stack/#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base config for model registries.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelRegistryConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for model registries.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.BaseModelRegistryFlavor" class="doc doc-heading">
+        <code>
+BaseModelRegistryFlavor            (<a class="autorefs autorefs-internal" title="zenml.stack.flavor.Flavor" href="../core-stack/#zenml.stack.flavor.Flavor">Flavor</a>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML model registry flavors.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelRegistryFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model registry flavors.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Type of the flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            StackComponentType: The type of the flavor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">MODEL_REGISTRY</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelRegistryConfig</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The config class for this flavor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">BaseModelRegistryConfig</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StackComponent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the implementation class for this flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The implementation class for this flavor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">BaseModelRegistry</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.config_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">model_registries</span><span class="o">.</span><span class="n">base_model_registry</span><span class="o">.</span><span class="n">BaseModelRegistryConfig</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Config class for this flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.model_registries.base_model_registry.BaseModelRegistryConfig]</code></td>
+      <td><p>The config class for this flavor.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.implementation_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">implementation_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">stack_component</span><span class="o">.</span><span class="n">StackComponent</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the implementation class for this flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.stack.stack_component.StackComponent]</code></td>
+      <td><p>The implementation class for this flavor.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.BaseModelRegistryFlavor.type" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">type</span><span class="p">:</span> <span class="n">StackComponentType</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Type of the flavor.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>StackComponentType</code></td>
+      <td><p>The type of the flavor.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.ModelRegistryModelMetadata" class="doc doc-heading">
+        <code>
+ModelRegistryModelMetadata            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML model registry model metadata.</p>
+<p>The <code>ModelRegistryModelMetadata</code> class represents metadata associated with
+a registered model version, including information such as the associated
+pipeline name, pipeline run ID, step name, ZenML version, and custom
+attributes. It serves as a blueprint for creating concrete model metadata
+implementations in a registry, and provides a record of the history of a
+model and its development process.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ModelRegistryModelMetadata</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model registry model metadata.</span>
+
+<span class="sd">    The `ModelRegistryModelMetadata` class represents metadata associated with</span>
+<span class="sd">    a registered model version, including information such as the associated</span>
+<span class="sd">    pipeline name, pipeline run ID, step name, ZenML version, and custom</span>
+<span class="sd">    attributes. It serves as a blueprint for creating concrete model metadata</span>
+<span class="sd">    implementations in a registry, and provides a record of the history of a</span>
+<span class="sd">    model and its development process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">zenml_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_pipeline_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_pipeline_uuid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_pipeline_run_uuid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">zenml_workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">custom_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a dictionary of custom attributes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary of custom attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return all attributes that are not explicitly defined as Pydantic</span>
+        <span class="c1"># fields in this class</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_extra</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_extra</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">model_dump</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">exclude_unset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">exclude_none</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a dictionary representation of the metadata.</span>
+
+<span class="sd">        This method overrides the default Pydantic `model_dump` method to allow</span>
+<span class="sd">        for the exclusion of fields with a value of None.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            exclude_unset: Whether to exclude unset attributes.</span>
+<span class="sd">            exclude_none: Whether to exclude None attributes.</span>
+<span class="sd">            **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary representation of the metadata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">exclude_none</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="n">exclude_unset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="n">exclude_unset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.custom_attributes" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">custom_attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a dictionary of custom attributes.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Dict[str, str]</code></td>
+      <td><p>A dictionary of custom attributes.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.model_registries.base_model_registry.ModelRegistryModelMetadata.model_dump" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">model_dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exclude_unset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a dictionary representation of the metadata.</p>
+<p>This method overrides the default Pydantic <code>model_dump</code> method to allow
+for the exclusion of fields with a value of None.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>exclude_unset</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to exclude unset attributes.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>exclude_none</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to exclude None attributes.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td><code>Any</code></td>
+        <td><p>Additional keyword arguments.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Dict[str, str]</code></td>
+      <td><p>A dictionary representation of the metadata.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">model_dump</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">exclude_unset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">exclude_none</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary representation of the metadata.</span>
+
+<span class="sd">    This method overrides the default Pydantic `model_dump` method to allow</span>
+<span class="sd">    for the exclusion of fields with a value of None.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        exclude_unset: Whether to exclude unset attributes.</span>
+<span class="sd">        exclude_none: Whether to exclude None attributes.</span>
+<span class="sd">        **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary representation of the metadata.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">exclude_none</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="n">exclude_unset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="n">exclude_unset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.ModelVersionStage" class="doc doc-heading">
+        <code>
+ModelVersionStage            (<span title="enum.Enum">Enum</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Enum of the possible stages of a registered model.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ModelVersionStage</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum of the possible stages of a registered model.&quot;&quot;&quot;</span>
+
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
+    <span class="n">STAGING</span> <span class="o">=</span> <span class="s2">&quot;Staging&quot;</span>
+    <span class="n">PRODUCTION</span> <span class="o">=</span> <span class="s2">&quot;Production&quot;</span>
+    <span class="n">ARCHIVED</span> <span class="o">=</span> <span class="s2">&quot;Archived&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.RegisteredModel" class="doc doc-heading">
+        <code>
+RegisteredModel            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML registered models.</p>
+<p>Model Registration are the top-level entities in the model registry.
+They serve as a container for all the versions of a model.</p>
+
+<p><strong>Attributes:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the registered model.</p></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Description of the registered model.</p></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[Dict[str, str]]</code></td>
+        <td><p>metadata associated with the registered model.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RegisteredModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML registered models.</span>
+
+<span class="sd">    Model Registration are the top-level entities in the model registry.</span>
+<span class="sd">    They serve as a container for all the versions of a model.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name: Name of the registered model.</span>
+<span class="sd">        description: Description of the registered model.</span>
+<span class="sd">        metadata: metadata associated with the registered model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.model_registries.base_model_registry.RegistryModelVersion" class="doc doc-heading">
+        <code>
+RegistryModelVersion            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML model versions.</p>
+<p>The <code>RegistryModelVersion</code> class represents a version or snapshot of a registered
+model, including information such as the associated <code>ModelBundle</code>, version
+number, creation time, pipeline run information, and metadata. It serves as
+a blueprint for creating concrete model version implementations in a registry,
+and provides a record of the history of a model and its development process.</p>
+<p>All model registries must extend this class with their own specific fields.</p>
+
+<p><strong>Attributes:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>registered_model</code></td>
+        <td><code>RegisteredModel</code></td>
+        <td><p>The registered model associated with this model</p></td>
+      </tr>
+      <tr>
+        <td><code>model_source_uri</code></td>
+        <td><code>str</code></td>
+        <td><p>The URI of the model bundle associated with this model,
+The model source can not be changed after the model version is created.
+If the model source is changed, a new model version must be created.</p></td>
+      </tr>
+      <tr>
+        <td><code>model_format</code></td>
+        <td><code>str</code></td>
+        <td><p>The format of the model bundle associated with this model,
+The model format is set automatically by the model registry integration
+and can not be changed after the model version is created.</p></td>
+      </tr>
+      <tr>
+        <td><code>model_library</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The library used to create the model bundle associated with
+this model, The model library refers to the library used to create the
+model source, e.g. TensorFlow, PyTorch, etc. For some model registries,
+the model library is set retrieved automatically by the model registry.</p></td>
+      </tr>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>The version number of this model version</p></td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>The description of this model version</p></td>
+      </tr>
+      <tr>
+        <td><code>created_at</code></td>
+        <td><code>Optional[datetime.datetime]</code></td>
+        <td><p>The creation time of this model version</p></td>
+      </tr>
+      <tr>
+        <td><code>last_updated_at</code></td>
+        <td><code>Optional[datetime.datetime]</code></td>
+        <td><p>The last updated time of this model version</p></td>
+      </tr>
+      <tr>
+        <td><code>stage</code></td>
+        <td><code>ModelVersionStage</code></td>
+        <td><p>The current stage of this model version</p></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[zenml.model_registries.base_model_registry.ModelRegistryModelMetadata]</code></td>
+        <td><p>Metadata associated with this model version</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/model_registries/base_model_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RegistryModelVersion</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model versions.</span>
+
+<span class="sd">    The `RegistryModelVersion` class represents a version or snapshot of a registered</span>
+<span class="sd">    model, including information such as the associated `ModelBundle`, version</span>
+<span class="sd">    number, creation time, pipeline run information, and metadata. It serves as</span>
+<span class="sd">    a blueprint for creating concrete model version implementations in a registry,</span>
+<span class="sd">    and provides a record of the history of a model and its development process.</span>
+
+<span class="sd">    All model registries must extend this class with their own specific fields.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        registered_model: The registered model associated with this model</span>
+<span class="sd">        model_source_uri: The URI of the model bundle associated with this model,</span>
+<span class="sd">            The model source can not be changed after the model version is created.</span>
+<span class="sd">            If the model source is changed, a new model version must be created.</span>
+<span class="sd">        model_format: The format of the model bundle associated with this model,</span>
+<span class="sd">            The model format is set automatically by the model registry integration</span>
+<span class="sd">            and can not be changed after the model version is created.</span>
+<span class="sd">        model_library: The library used to create the model bundle associated with</span>
+<span class="sd">            this model, The model library refers to the library used to create the</span>
+<span class="sd">            model source, e.g. TensorFlow, PyTorch, etc. For some model registries,</span>
+<span class="sd">            the model library is set retrieved automatically by the model registry.</span>
+<span class="sd">        version: The version number of this model version</span>
+<span class="sd">        description: The description of this model version</span>
+<span class="sd">        created_at: The creation time of this model version</span>
+<span class="sd">        last_updated_at: The last updated time of this model version</span>
+<span class="sd">        stage: The current stage of this model version</span>
+<span class="sd">        metadata: Metadata associated with this model version</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model_source_uri</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model_format</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model_library</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">registered_model</span><span class="p">:</span> <span class="n">RegisteredModel</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_updated_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stage</span><span class="p">:</span> <span class="n">ModelVersionStage</span> <span class="o">=</span> <span class="n">ModelVersionStage</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelRegistryModelMetadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># TODO: In Pydantic v2, the `model_` is a protected namespaces for all</span>
+    <span class="c1">#  fields defined under base models. If not handled, this raises a warning.</span>
+    <span class="c1">#  It is possible to suppress this warning message with the following</span>
+    <span class="c1">#  configuration, however the ultimate solution is to rename these fields.</span>
+    <span class="c1">#  Even though they do not cause any problems right now, if we are not</span>
+    <span class="c1">#  careful we might overwrite some fields protected by pydantic.</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">protected_namespaces</span><span class="o">=</span><span class="p">())</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../core-model_deployers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Model Deployers" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Model Deployers
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core-models/" class="md-footer__link md-footer__link--next" aria-label="Next: Models" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Models
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
