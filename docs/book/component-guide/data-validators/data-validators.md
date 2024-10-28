@@ -47,7 +47,7 @@ Every Data Validator has different data profiling and testing capabilities and u
 
 * first, you have to configure and add a Data Validator to your ZenML stack
 * every integration includes one or more builtin data validation steps that you can add to your pipelines. Of course, you can also use the libraries directly in your own custom pipeline steps and simply return the results (e.g. data profiles, test reports) as artifacts that are versioned and stored by ZenML in its Artifact Store.
-* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../how-to/handle-data-artifacts/load-artifacts-into-memory.md) to process them or visualize them as needed.
+* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](data-validators.md#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
 

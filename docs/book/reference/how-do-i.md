@@ -14,7 +14,7 @@ Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main
 
 * **custom components**: adding them to ZenML?
 
-Please start by [reading the general documentation page](../how-to/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
+Please start by [reading the general documentation page](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
 
 From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../component-guide/orchestrators/custom.md).
 

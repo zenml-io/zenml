@@ -40,7 +40,7 @@ and it will enable you to use ZenML and the server. This environment variable is
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
-This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../how-to/stack-deployment/implement-a-custom-stack-component.md)!
+This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md)!
 
 #### How can I contribute?
 
