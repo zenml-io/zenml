@@ -1,4 +1,8 @@
-# 🪆 Use the Model Control Plane
+---
+icon: tower-control
+---
+
+# Use the Model Control Plane
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp_walkthrough.gif)
 

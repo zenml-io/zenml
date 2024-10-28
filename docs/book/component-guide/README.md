@@ -1,8 +1,9 @@
 ---
+icon: scroll
 description: Overview of categories of MLOps components and third-party integrations.
 ---
 
-# 📜 Overview
+# Overview
 
 If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your toolchain in a more precise manner.
 

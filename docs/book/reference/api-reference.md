@@ -1,8 +1,9 @@
 ---
+icon: ruler
 description: See the ZenML API reference.
 ---
 
-# 👀 API reference
+# API reference
 
 The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc`
 of your ZenML server:
