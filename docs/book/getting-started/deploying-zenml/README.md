@@ -1,8 +1,9 @@
 ---
+icon: rocket-launch
 description: Why do we need to deploy ZenML?
 ---
 
-# 🤔 Deploying ZenML
+# Deploying ZenML
 
 ![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
 

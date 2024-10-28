@@ -1,8 +1,9 @@
 ---
+icon: notebook
 description: Use Jupyter Notebooks to run remote steps or pipelines
 ---
 
-# 📔 Run remote pipelines from notebooks
+# Run remote pipelines from notebooks
 
 ZenML steps and pipelines can be defined in a Jupyter notebook and executed remotely. To do so, ZenML will extract the code from your notebook cells and run them as Python modules inside the Docker containers that execute your pipeline steps remotely. For this to work, the notebook cells in which you define your steps need to meet certain conditions.
 

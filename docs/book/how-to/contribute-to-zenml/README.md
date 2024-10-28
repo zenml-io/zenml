@@ -1,3 +1,8 @@
+---
+icon: handshake-simple
+description: Contributing to ZenML.
+---
+
 # Contribute to ZenML
 
 Thank you for considering contributing to ZenML!
