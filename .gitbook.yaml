@@ -5,7 +5,7 @@ structure:
   summary: toc.md
 
 redirects:
-  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/customize-docker-builds/how-to-reuse-builds.md
+  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md
   reference/migration-guide: how-to/manage-the-zenml-server/migration-guide/migration-guide.md
   reference/migration-guide/migration-zero-twenty: how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty.md
   reference/migration-guide/migration-zero-thirty: how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty.md
@@ -15,7 +15,7 @@ redirects:
   getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server: how-to/manage-the-zenml-server/upgrade-zenml-server.md
   getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server: how-to/manage-the-zenml-server/troubleshoot-your-deployed-server.md
   how-to/stack-deployment/implement-a-custom-integration: how-to/contribute-to-zenml/implement-a-custom-integration.md
-  how-to/setting-up-a-project-repository/best-practices: how-to/setting-up-a-project-repository/set-up-repository.md
+  how-to/setting-up-a-project-repository/best-practices: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
 
   # Project Setup redirects
@@ -122,3 +122,54 @@ redirects:
   how-to/stack-deployment/register-a-cloud-stack: how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md
   how-to/stack-deployment/reference-secrets-in-stack-configuration: how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md
   how-to/stack-deployment/implement-a-custom-stack-component: how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md
+
+  how-to/customize-docker-builds/README: how-to/infrastructure-deployment/customize-docker-builds/README.md
+  how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline.md
+  how-to/customize-docker-builds/docker-settings-on-a-step: how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step.md
+  how-to/customize-docker-builds/use-a-prebuilt-image: how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image.md
+  how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md
+  how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository.md
+  how-to/customize-docker-builds/use-your-own-docker-files: how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files.md
+  how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image.md
+  how-to/customize-docker-builds/how-to-reuse-builds: how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md
+  how-to/customize-docker-builds/define-where-an-image-is-built: how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built.md
+
+  how-to/auth-management/README: how-to/infrastructure-deployment/auth-management/README.md
+  how-to/auth-management/service-connectors-guide: how-to/infrastructure-deployment/auth-management/service-connectors-guide.md
+  how-to/auth-management/best-security-practices: how-to/infrastructure-deployment/auth-management/best-security-practices.md
+  how-to/auth-management/docker-service-connector: how-to/infrastructure-deployment/auth-management/docker-service-connector.md
+  how-to/auth-management/kubernetes-service-connector: how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md
+  how-to/auth-management/aws-service-connector: how-to/infrastructure-deployment/auth-management/aws-service-connector.md
+  how-to/auth-management/gcp-service-connector: how-to/infrastructure-deployment/auth-management/gcp-service-connector.md
+  how-to/auth-management/azure-service-connector: how-to/infrastructure-deployment/auth-management/azure-service-connector.md
+  how-to/auth-management/hyperai-service-connector: how-to/infrastructure-deployment/auth-management/hyperai-service-connector.md
+
+  how-to/configure-python-environments/README: how-to/infrastructure-deployment/configure-python-environments/README.md
+  how-to/configure-python-environments/handling-dependencies: how-to/infrastructure-deployment/configure-python-environments/handling-dependencies.md
+  how-to/configure-python-environments/configure-the-server-environment: how-to/infrastructure-deployment/configure-python-environments/configure-the-server-environment.md
+
+  # Advanced Topics redirects
+  how-to/training-with-gpus/training-with-gpus: how-to/advanced-topics/training-with-gpus/README.md
+  how-to/training-with-gpus/accelerate-distributed-training: how-to/advanced-topics/training-with-gpus/accelerate-distributed-training.md
+
+  how-to/run-remote-steps-and-pipelines-from-notebooks/README: how-to/advanced-topics/run-remote-notebooks/README.md
+  how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells: how-to/advanced-topics/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells.md
+  how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook: how-to/advanced-topics/run-remote-notebooks/run-a-single-step-from-a-notebook.md
+
+  how-to/manage-the-zenml-server/README: how-to/advanced-topics/manage-zenml-server/README.md
+  how-to/manage-the-zenml-server/best-practices-upgrading-zenml: how-to/advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md
+  how-to/manage-the-zenml-server/upgrade-zenml-server: how-to/advanced-topics/manage-zenml-server/upgrade-zenml-server.md
+  how-to/manage-the-zenml-server/using-zenml-server-in-prod: how-to/advanced-topics/manage-zenml-server/using-zenml-server-in-prod.md
+  how-to/manage-the-zenml-server/troubleshoot-your-deployed-server: how-to/advanced-topics/manage-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/manage-the-zenml-server/migration-guide/migration-guide: how-to/advanced-topics/manage-zenml-server/migration-guide/migration-guide.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty: how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-twenty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty: how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-thirty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-forty: how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-forty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-sixty: how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-sixty.md
+
+  how-to/control-logging/README: how-to/advanced-topics/control-logging/README.md
+  how-to/control-logging/view-logs-on-the-dasbhoard: how-to/advanced-topics/control-logging/view-logs-on-the-dasbhoard.md
+  how-to/control-logging/enable-or-disable-logs-storing: how-to/advanced-topics/control-logging/enable-or-disable-logs-storing.md
+  how-to/control-logging/set-logging-verbosity: how-to/advanced-topics/control-logging/set-logging-verbosity.md
+  how-to/control-logging/disable-rich-traceback: how-to/advanced-topics/control-logging/disable-rich-traceback.md
+  how-to/control-logging/disable-colorful-logging: how-to/advanced-topics/control-logging/disable-colorful-logging.md
