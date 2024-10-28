@@ -233,7 +233,7 @@ class ComponentResponse(
 ):
     """Response model for components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type"]
 
     name: str = Field(
         title="The name of the stack component.",
@@ -256,6 +256,8 @@ class ComponentResponse(
                     if label.startswith("zenml:")
                 }
             )
+        metadata["flavor"] = self.flavor_name
+
         return metadata
 
     def get_hydrated_version(self) -> "ComponentResponse":
