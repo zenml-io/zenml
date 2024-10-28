@@ -2,6 +2,11 @@
 description: Different variations of the ZenML architecture depending on your needs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🏛️ System Architecture
 
 This guide walks through the various ways that ZenML can be deployed, from self-hosted OSS, to

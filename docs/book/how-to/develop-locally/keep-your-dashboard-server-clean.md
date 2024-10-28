@@ -2,6 +2,11 @@
 description: Learn how to keep your pipeline runs clean during development.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Keep your dashboard and server clean
 
 When developing pipelines, it's common to run and debug them multiple times. To
