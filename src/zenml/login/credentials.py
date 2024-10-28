@@ -120,7 +120,11 @@ class ServerCredentials(BaseModel):
             return ServerType.PRO_API
         if self.organization_id or is_zenml_pro_server_url(self.url):
             return ServerType.PRO
-        if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
+        if urlparse(self.url).hostname in [
+            "localhost",
+            "127.0.0.1",
+            "host.docker.internal",
+        ]:
             return ServerType.LOCAL
         return ServerType.REMOTE
 
