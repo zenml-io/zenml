@@ -1,8 +1,9 @@
 ---
+icon: memo-circle-info
 description: Configuring ZenML's default logging behavior
 ---
 
-# 🌲 Control logging
+# Control logging
 
 ZenML produces various kinds of logs:
 

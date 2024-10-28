@@ -1,4 +1,5 @@
 ---
+icon: expand
 description: Annotating the data in your workflow.
 ---
 
@@ -55,7 +56,7 @@ The core parts of the annotation workflow include:
 ### List of available annotators
 
 For production use cases, some more flavors can be found in specific `integrations` modules. In terms of annotators,
-ZenML features integrations with `label_studio` and `pigeon`.
+ZenML features integrations with the following tools.
 
 | Annotator                               | Flavor         | Integration    | Notes                                                                |
 |-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|

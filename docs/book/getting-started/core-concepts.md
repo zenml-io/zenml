@@ -1,8 +1,9 @@
 ---
+icon: lightbulb
 description: Discovering the core concepts behind ZenML.
 ---
 
-# 🪄 Core concepts
+# Core concepts
 
 ![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)
 

@@ -3781,6 +3781,7 @@ class Client(metaclass=ClientMetaClass):
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         stack: Optional[Union[UUID, str]] = None,
+        stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3819,6 +3820,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository: Filter by code repository name/ID.
             model: Filter by model name/ID.
             stack: Filter by stack name/ID.
+            stack_component: Filter by stack component name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3857,6 +3859,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository=code_repository,
             stack=stack,
             model=model,
+            stack_component=stack_component,
             templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
