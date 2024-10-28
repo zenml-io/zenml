@@ -81,7 +81,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     """
 
-    credentials: Dict[str, ServerCredentials] = {}
+    credentials: Dict[str, ServerCredentials]
     last_modified_time: Optional[float] = None
 
     def __init__(self) -> None:
@@ -91,6 +91,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Calling this constructor multiple times will always yield the same
         instance.
         """
+        self.credentials = {}
         self._load_credentials()
 
     @classmethod

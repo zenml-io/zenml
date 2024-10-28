@@ -381,6 +381,7 @@ class LoginContext:
         GlobalConfiguration._reset_instance(self.original_config)
         Client._reset_instance(self.original_client)
         CredentialsStore.reset_instance(self.original_credentials)
+
         _ = Client().zen_store
 
 

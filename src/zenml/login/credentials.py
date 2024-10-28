@@ -185,13 +185,13 @@ class ServerCredentials(BaseModel):
         Returns:
             The authentication status.
         """
-        if self.type == ServerType.LOCAL:
-            return "no authentication required"
         if self.api_key:
             return "API key"
         if self.username and self.password is not None:
             return "password"
         if not self.api_token:
+            if self.type == ServerType.LOCAL:
+                return "no authentication required"
             return "N/A"
         expires_at = self.api_token.expires_at_with_leeway
         if not expires_at:

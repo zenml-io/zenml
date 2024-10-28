@@ -508,21 +508,34 @@ def server() -> None:
 @server.command(
     "list",
     help="""List all ZenML servers that this client is authenticated to.
-    
-    This list includes the following:
 
-      * ZenML Pro servers that the authenticated user is a member of. The client
-        needs to be logged to ZenML Pro via `zenml login` to access these servers.
+    The CLI can be authenticated to multiple ZenML servers at the same time,
+    even though it can only be connected to one server at a time. You can list
+    all the ZenML servers that the client is currently authenticated to by
+    using this command.
 
-      * ZenML servers that the client has authenticated to to via
-        `zenml login --url`.
+    When logged in to ZenML Pro, this list will also include all ZenML Pro
+    servers that the authenticated user can access or could potentially access,
+    including details such as their current state and the organization they
+    belong to.
+
+    The complete list of servers displayed by this command includes the
+    following:
+
+      * ZenML Pro servers that the authenticated ZenML Pro user can or could
+        access. The client needs to be logged to ZenML Pro via
+        `zenml login --pro` to access these servers.
+
+      * ZenML servers that the client has logged in to via
+        `zenml login --url` in the past.
 
       * the local ZenML server started with `zenml login --local`, if one is
         running.
 
-    This list does not include ZenML servers that are not accessible: servers
-    that are not running, or are no longer accessible due to an expired
-    authentication. To include these servers in the list, use the `--all` flag.
+    By default, this command does not display ZenML servers that are not
+    accessible: servers that are not running, are no longer accessible due to
+    an expired authentication and ZenML Pro servers where the user is not a
+    member. To include these servers in the list, use the `--all` flag.
     """,
 )
 @click.option(

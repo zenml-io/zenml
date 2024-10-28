@@ -52,8 +52,7 @@ make setup
 # Optionally, provision default local stack
 make install-stack-local
 # Start the ZenML UI locally (recommended, but optional);
-# the default username is "admin" with an empty password
-zenml up
+zenml login --local
 # Run the pipeline included in the project
 python run.py
 ```

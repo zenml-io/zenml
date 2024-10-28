@@ -9180,9 +9180,9 @@ class SqlZenStore(BaseZenStore):
         * server deployments that set the `auto_activate` server
         setting explicitly to `True`. This includes:
             * local ZenML server deployments: the server is deployed locally
-            with `zenml up`
+            with `zenml login --local`
             * local ZenML docker deployments: the server is deployed locally
-            with `zenml up --docker`
+            with `zenml login --local --docker`
         * legacy dashboard deployments
 
         For all other cases, or if the external authentication scheme is used,

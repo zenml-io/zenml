@@ -424,6 +424,18 @@ def connect_to_pro_server(
     local ZenML server deployment running on your machine and managed by the
     ZenML CLI.
 
+    Quick start:
+
+      * To connect to a ZenML Pro server, simply run: `zenml login`. This
+        also works if you have never signed up for ZenML Pro before and is a
+        great way to get started with the ZenML Pro trial in less than 2 minutes
+        hassle-free.
+        
+      * To connect to any remote ZenML server, run: `zenml login <server-url>`
+
+      * To start a local ZenML server and connect to it, run:
+        `zenml login --local`
+
     When used without any arguments, the command has a different behavior based
     on the current client state:
 
@@ -431,12 +443,12 @@ def connect_to_pro_server(
         will take the user to the ZenML Pro login / signup page to authenticate
         and connect to a ZenML Pro server.
 
-      * if the client is already connected to a ZenML server, the command
-        triggers a new web login flow with the same server. This allows you to
-        simply call `zenml login` again when your CLI session expires to refresh
-        the current session and continue using the same server. The `--pro` flag
-        can be used to launch a ZenML Pro server login regardless of the current
-        client state.
+      * if the client is already connected to a non-local ZenML server, the
+        command triggers a new web login flow with the same server. This allows
+        you to simply call `zenml login` again when your CLI session expires to
+        refresh the current session and continue using the same server. The
+        `--pro` flag can be used to launch a ZenML Pro server login regardless
+        of the current client state.
     
     This command accepts an optional SERVER argument. This is meant to
     be used to log in to a specific ZenML server and easily switch between
@@ -449,10 +461,18 @@ def connect_to_pro_server(
 
       * a ZenML Pro server UUID
 
+      * a SQL database URL in the format `mysql://<username>:<password>@<host>:<port>/<database>`
+
     NOTE: Passing a SERVER argument will not trigger a web login flow if the
     current session is still valid. To force a new login flow to be triggered
     to re-authenticate with the target server regardless of the current CLI
     session state, you can pass the `--refresh` flag.
+
+    The CLI can be authenticated to multiple ZenML servers at the same time,
+    even though it can only be connected to one server at a time. You can list
+    all the ZenML servers that the client is currently authenticated to by
+    running `zenml server list`. Any of these servers can be used as the SERVER
+    argument to connect to them.
 
     When the `--local` flag is used, the command will start a local ZenML
     server running as a daemon process or a Docker container on your machine.
@@ -501,6 +521,10 @@ def connect_to_pro_server(
         connect to it:
 
         zenml login --local --docker
+
+      * login and connect to a ZenML server with an API key:
+
+        zenml login https://zenml.example.com --api-key
     """
     ),
 )
@@ -717,7 +741,9 @@ def login(
         if is_zenml_pro_server_url(server):
             cli_utils.declare(
                 "No server argument was provided. Re-authenticating to "
-                "ZenML Pro..."
+                "ZenML Pro...\n"
+                "Hint: You can run 'zenml login <server-url-id-or-name>' to "
+                "connect to a specific ZenML Pro server."
             )
             connect_to_pro_server(
                 pro_server=server,
@@ -727,7 +753,10 @@ def login(
         else:
             cli_utils.declare(
                 "No server argument was provided. Re-authenticating to "
-                f"the current ZenML server at '{server}'..."
+                f"the current ZenML server at '{server}'...\n"
+                "Hint: You can run zenml login <server-url>' to connect "
+                "to a specific ZenML server. If you wish to login to a ZenML Pro "
+                "server, you can run 'zenml login --pro'."
             )
             connect_to_server(
                 url=server,
@@ -740,7 +769,11 @@ def login(
         # connected to any non-local server, we default to logging in to ZenML
         # Pro.
         cli_utils.declare(
-            "No server argument was provided. Logging to ZenML Pro..."
+            "No server argument was provided. Logging to ZenML Pro...\n"
+            "Hint: You can run 'zenml login --local' to start a local ZenML "
+            "server and connect to it or 'zenml login <server-url>' to connect "
+            "to a specific ZenML server. If you wish to login to a ZenML Pro "
+            "server, you can run 'zenml login --pro'."
         )
         connect_to_pro_server(
             api_key=api_key_value,

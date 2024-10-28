@@ -766,7 +766,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
                         "Dashboard`. In order to try it locally, please run "
-                        "`zenml up`."
+                        "`zenml login --local`."
                     )
 
             deploy_pipeline(

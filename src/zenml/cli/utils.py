@@ -2666,8 +2666,8 @@ def print_model_url(url: Optional[str]) -> None:
         warning(
             "You can display various ZenML entities including pipelines, "
             "runs, stacks and much more on the ZenML Dashboard. "
-            "You can try it locally, by running `zenml up`, or remotely, "
-            "by deploying ZenML on the infrastructure of your choice."
+            "You can try it locally, by running `zenml local --local`, or "
+            "remotely, by deploying ZenML on the infrastructure of your choice."
         )
 
 

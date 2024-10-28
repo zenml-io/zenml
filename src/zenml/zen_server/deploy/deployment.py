@@ -58,7 +58,7 @@ class LocalServerDeploymentStatus(BaseModel):
     Ideally this should convey the following information:
 
     * whether the server's deployment is managed by this client (i.e. if
-    the server was deployed with `zenml up`)
+    the server was deployed with `zenml login --local`)
     * for a managed deployment, the status of the deployment/tear-down, e.g.
     not deployed, deploying, running, deleting, deployment timeout/error,
     tear-down timeout/error etc.
