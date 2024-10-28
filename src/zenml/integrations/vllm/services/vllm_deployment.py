@@ -47,7 +47,7 @@ class VLLMDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
     prediction_url_path: str
 
 
-class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
+class VLLMDeploymentEndpoint(LocalDaemonServiceEndpoint):
     """A service endpoint exposed by the vLLM deployment daemon.
 
     Attributes:
@@ -101,7 +101,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         description="vLLM Inference prediction service",
     )
     config: VLLMServiceConfig
-    endpoint: BentoMLDeploymentEndpoint
+    endpoint: VLLMDeploymentEndpoint
 
     def __init__(self, config: VLLMServiceConfig, **attrs: Any):
         """Initialize the vLLM deployment service.
@@ -111,7 +111,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             attrs: additional attributes to set on the service
         """
         if isinstance(config, VLLMServiceConfig) and "endpoint" not in attrs:
-            endpoint = BentoMLDeploymentEndpoint(
+            endpoint = VLLMDeploymentEndpoint(
                 config=VLLMDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
                     port=config.port,
