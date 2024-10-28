@@ -63,10 +63,14 @@
 
 ## How-To
 
-* [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
+* [😸 Set up a ZenML project](how-to/setting-up-a-project-repository/README.md)
+  * [Set up a repository](how-to/setting-up-a-project-repository/set-up-repository.md)
   * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
   * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
-  * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
+  * [Create your own template](how-to/setting-up-a-project-repository/create-your-own-template.md)
+  * [Shared components for teams](how-to/setting-up-a-project-repository/shared-components-for-teams.md)
+  * [Stacks, pipelines and models](how-to/setting-up-a-project-repository/stacks-pipelines-models.md)
+  * [Access management](how-to/setting-up-a-project-repository/access-management.md)
 * [⛓️ Build a pipeline](how-to/build-pipelines/README.md)
   * [Use pipeline/step parameters](how-to/build-pipelines/use-pipeline-step-parameters.md)
   * [Configuring a pipeline at runtime](how-to/build-pipelines/configuring-a-pipeline-at-runtime.md)
@@ -104,6 +108,7 @@
   * [Docker settings on a step](how-to/customize-docker-builds/docker-settings-on-a-step.md)
   * [Use a prebuilt image for pipeline execution](how-to/customize-docker-builds/use-a-prebuilt-image.md)
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
+  * [How to use a private PyPI repository](how-to/customize-docker-builds/how-to-use-a-private-pypi-repository.md)
   * [Use your own Dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Which files are built into the image](how-to/customize-docker-builds/which-files-are-built-into-the-image.md)
   * [How to reuse builds](how-to/customize-docker-builds/how-to-reuse-builds.md)

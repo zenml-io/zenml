@@ -463,7 +463,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         pipeline.create(
-            role_arn=self.config.execution_role, tags=settings.pipeline_tags
+            role_arn=self.config.execution_role,
+            tags=[
+                {"Key": key, "Value": value}
+                for key, value in settings.pipeline_tags.items()
+            ]
+            if settings.pipeline_tags
+            else None,
         )
         execution = pipeline.start()
         logger.warning(
