@@ -137,19 +137,8 @@ class InternalComponentRequest(ComponentRequest):
 class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
-
     name: Optional[str] = Field(
         title="The name of the stack component.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    type: Optional[StackComponentType] = Field(
-        title="The type of the stack component.",
-        default=None,
-    )
-    flavor: Optional[str] = Field(
-        title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
