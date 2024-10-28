@@ -411,7 +411,7 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_type_compatibility(data_type)
+            materializer.validate_load_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:

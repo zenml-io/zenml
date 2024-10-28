@@ -3796,6 +3796,7 @@ class Client(metaclass=ClientMetaClass):
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         stack: Optional[Union[UUID, str]] = None,
+        stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3834,6 +3835,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository: Filter by code repository name/ID.
             model: Filter by model name/ID.
             stack: Filter by stack name/ID.
+            stack_component: Filter by stack component name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3872,6 +3874,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository=code_repository,
             stack=stack,
             model=model,
+            stack_component=stack_component,
             templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
@@ -3927,6 +3930,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         cache_key: Optional[str] = None,
+        code_hash: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
@@ -3959,7 +3963,8 @@ class Client(metaclass=ClientMetaClass):
             model_version_id: The ID of the model version to filter by.
             model: Filter by model name/ID.
             name: The name of the step run to filter by.
-            cache_key: The cache_key of the run to filter by.
+            cache_key: The cache key of the step run to filter by.
+            code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3974,6 +3979,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             id=id,
             cache_key=cache_key,
+            code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
             deployment_id=deployment_id,
             original_step_run_id=original_step_run_id,

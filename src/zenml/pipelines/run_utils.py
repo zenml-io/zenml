@@ -81,6 +81,7 @@ def create_placeholder_run(
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
+        tags=deployment.pipeline_configuration.tags,
     )
     return Client().zen_store.create_run(run_request)
 

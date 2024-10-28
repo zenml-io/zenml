@@ -158,6 +158,14 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
+    start_time: Optional[datetime] = Field(
+        title="The start time of the step run.",
+        default=None,
+    )
+    end_time: Optional[datetime] = Field(
+        title="The end time of the step run.",
+        default=None,
+    )
     inputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The input artifact versions of the step run.",
         default={},
@@ -201,16 +209,6 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The source code of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-
-    # Timestamps
-    start_time: Optional[datetime] = Field(
-        title="The start time of the step run.",
-        default=None,
-    )
-    end_time: Optional[datetime] = Field(
-        title="The end time of the step run.",
-        default=None,
     )
 
     # References
@@ -411,7 +409,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().start_time
+        return self.get_body().start_time
 
     @property
     def end_time(self) -> Optional[datetime]:
@@ -420,7 +418,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().end_time
+        return self.get_body().end_time
 
     @property
     def logs(self) -> Optional["LogsResponse"]:
