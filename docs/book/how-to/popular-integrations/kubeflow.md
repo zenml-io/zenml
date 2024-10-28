@@ -22,7 +22,7 @@ To use the Kubeflow Orchestrator, you'll need:
 
 There are two ways to configure the orchestrator:
 
-1. Using a [Service Connector](../../how-to/auth-management/service-connectors-guide.md) to connect to the remote cluster (recommended for cloud-managed clusters). No local `kubectl` context needed.
+1. Using a [Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) to connect to the remote cluster (recommended for cloud-managed clusters). No local `kubectl` context needed.
 
 ```bash
 zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubeflow

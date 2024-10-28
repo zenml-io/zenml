@@ -48,7 +48,7 @@ Sometimes, you might have to upgrade your code to work with a new version of Zen
 
 - **Local Testing**: It's a good idea to test it locally first after you upgrade (`pip install zenml --upgrade`) and run some old pipelines to check for compatibility issues between the old and new versions.
 - **End-to-End Testing**: You can also develop simple end-to-end tests to ensure that the new version works with your pipeline code and your stack. ZenML already has an [extensive test suite](https://github.com/zenml-io/zenml/tree/main/tests) that we use for releases and you can use it as an example.
-- **Artifact Compatibility**: Be cautious with pickle-based [materializers](../../how-to/handle-data-artifacts/handle-custom-data-types.md), as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts. You can try to load older artifacts with the new version of ZenML to see if they are compatible. Every artifact has an ID which you can use to load it in the following way:
+- **Artifact Compatibility**: Be cautious with pickle-based [materializers](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md), as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts. You can try to load older artifacts with the new version of ZenML to see if they are compatible. Every artifact has an ID which you can use to load it in the following way:
 
 ```python
 from zenml.client import Client
@@ -67,7 +67,7 @@ loaded_artifact = artifact.load()
 While ZenML strives for backward compatibility, be prepared for occasional breaking changes (e.g., [the Pydantic 2 upgrade](https://github.com/zenml-io/zenml/releases/tag/0.60.0)).
 
 - **Changelog Review**: Always review the [changelog from new releases](https://github.com/zenml-io/zenml/releases) for new syntax, instructions, or breaking changes.
-- **Migration Scripts**: Use provided [migration scripts](../../how-to/manage-the-zenml-server/migration-guide/migration-guide.md) when available to handle database schema changes.
+- **Migration Scripts**: Use provided [migration scripts](migration-guide/migration-guide.md) when available to handle database schema changes.
 
 By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
 <!-- For scarf -->

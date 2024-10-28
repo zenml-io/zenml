@@ -27,7 +27,7 @@ You can use the options to specify the configuration file and the stack to use f
 
 ## Reusing builds
 
-As already mentioned, ZenML will find an existing build if it matches your pipeline and stack, by itself. However, you can also force it to use a specific build by [passing the build ID](../../how-to/use-configuration-files/what-can-be-configured.md#build-id) to the `build` parameter of the pipeline configuration.
+As already mentioned, ZenML will find an existing build if it matches your pipeline and stack, by itself. However, you can also force it to use a specific build by [passing the build ID](../../how-to/pipeline-development/use-configuration-files/what-can-be-configured.md#build-id) to the `build` parameter of the pipeline configuration.
 
 While reusing Docker builds is useful, it can be limited. This is because specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a Docker build AND make sure your local code changes are also downloaded into the image, you need to disconnect your code from the build. You can do this either by registering a code repository or by letting ZenML use the artifact store to upload your code.
 

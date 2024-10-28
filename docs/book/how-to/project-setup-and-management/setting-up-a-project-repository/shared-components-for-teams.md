@@ -36,7 +36,7 @@ Custom steps can be created and shared via a separate repository. Team members c
 Custom materializers are common components that teams often need to share. To implement and share a custom materializer:
 
 1. Create the materializer in a shared repository.
-2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types).
+2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 3. Team members can import and use the shared materializer in their projects.
 
 ## How to Distribute Shared Components

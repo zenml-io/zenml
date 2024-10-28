@@ -59,7 +59,7 @@ Performing the upgrade itself is a task that typically falls on the MLOps Platfo
 - ensure that all data is backed up before performing the upgrade
 - no service disruption or downtime happens during the upgrade
 
-and more. Read in detail about the best practices for upgrading your ZenML server in the [Best Practices for Upgrading ZenML Servers](../manage-the-zenml-server/best-practices-upgrading-zenml.md) guide.
+and more. Read in detail about the best practices for upgrading your ZenML server in the [Best Practices for Upgrading ZenML Servers](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
 
 
 ## Who is responsible for migrating and maintaining pipelines?

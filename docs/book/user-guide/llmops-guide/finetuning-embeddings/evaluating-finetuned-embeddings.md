@@ -55,7 +55,7 @@ def evaluate_base_model(
 
 We log the results for our core Matryoshka dimensions as model metadata to ZenML
 within our evaluation step. This will allow us to inspect these results from
-within [the Model Control Plane](../../../how-to/use-the-model-control-plane/README.md) (see
+within [the Model Control Plane](../../../how-to/model-management-metrics/model-control-plane/README.md) (see
 below for more details). Our results come in the form of a dictionary of string
 keys and float values which will, like all step inputs and outputs, be
 versioned, tracked and saved in your artifact store.
@@ -65,7 +65,7 @@ versioned, tracked and saved in your artifact store.
 It's possible to visualize results in a few different ways in ZenML, but one
 easy option is just to output your chart as an `PIL.Image` object. (See our
 [documentation on more ways to visualize your
-results](../../../how-to/visualize-artifacts/README.md).) The rest the
+results](../../../how-to/data-artifact-management/visualize-artifacts/README.md).) The rest the
 implementation of our `visualize_results` step is just simple `matplotlib` code
 to plot out the base model evaluation against the finetuned model evaluation. We
 represent the results as percentage values and horizontally stack the two sets
@@ -107,7 +107,7 @@ well as compare the actual values of our evals or inspect the hardware or
 hyperparameters used for training.
 
 This one-stop-shop interface is available on ZenML Pro and you can learn more
-about it in the [Model Control Plane documentation](../../../how-to/use-the-model-control-plane/README.md).
+about it in the [Model Control Plane documentation](../../../how-to/model-management-metrics/model-control-plane/README.md).
 
 ## Next Steps
 

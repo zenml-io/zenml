@@ -135,7 +135,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/build-pipelines/use-pipeline-step-parameters.md) for more information on how to parameterize your steps.
+Check out [this page](../../how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md) for more information on how to parameterize your steps.
 
 ## Calling a step outside of a pipeline
 
@@ -316,7 +316,7 @@ my_pipeline()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/build-pipelines/schedule-a-pipeline.md) for more information on how to schedule your pipelines.
+Check out [this page](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md) for more information on how to schedule your pipelines.
 
 ## Fetching pipelines after execution
 
@@ -353,7 +353,7 @@ loaded_model = model.load()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
+Check out [this page](../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
 
 ## Controlling the step execution order
 
@@ -385,7 +385,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/build-pipelines/control-execution-order-of-steps.md) for more information on how to control the step execution order.
+Check out [this page](../../how-to/pipeline-development/build-pipelines/control-execution-order-of-steps.md) for more information on how to control the step execution order.
 
 ## Defining steps with multiple outputs
 
@@ -424,7 +424,7 @@ def my_step() -> Tuple[
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/build-pipelines/step-output-typing-and-annotation.md) for more information on how to annotate your step outputs.
+Check out [this page](../../how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation.md) for more information on how to annotate your step outputs.
 
 ## Accessing run information inside steps
 
@@ -457,6 +457,6 @@ def my_step() -> Any:  # New: StepContext is no longer an argument of the step
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to fetch run information inside your steps using `get_step_context()`.
+Check out [this page](../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to fetch run information inside your steps using `get_step_context()`.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

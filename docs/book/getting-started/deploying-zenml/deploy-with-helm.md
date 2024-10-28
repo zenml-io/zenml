@@ -336,7 +336,7 @@ openssl rand -hex 32
 {% tab title="AWS" %}
 **Using the AWS Secrets Manager as a secrets store backend**
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -398,7 +398,7 @@ Example configuration for the AWS Secrets Store:
 {% tab title="GCP" %}
 **Using the GCP Secrets Manager as a secrets store backend**
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -492,7 +492,7 @@ Example configuration for the GCP Secrets Store:
 {% tab title="Azure" %}
 **Using the Azure Key Vault as a secrets store backend**
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API.
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API.
 
 Example configuration for the Azure Key Vault Secrets Store:
 
