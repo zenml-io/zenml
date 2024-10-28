@@ -1,4 +1,5 @@
 ---
+icon: screwdriver-wrench
 description: >
   Stacks represent the infrastructure and tooling that defines where and how a pipeline executes.
 ---

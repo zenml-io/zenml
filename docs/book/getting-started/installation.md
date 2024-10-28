@@ -1,8 +1,9 @@
 ---
+icon: cauldron
 description: Installing ZenML and getting started.
 ---
 
-# 🧙 Installation
+# Installation
 
 **ZenML** is a Python package that can be installed directly via `pip`:
 

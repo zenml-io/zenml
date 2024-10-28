@@ -1,8 +1,9 @@
 ---
+icon: globe-pointer
 description: Various means of connecting to ZenML.
 ---
 
-# 🔌 Connect to a server
+# Connect to a server
 
 Once [ZenML is deployed](../../user-guide/production-guide/deploying-zenml.md), there are various ways to connect to it.&#x20;
 

@@ -1,4 +1,5 @@
 ---
+icon: box-open
 description: Building container images for your ML workflow.
 ---
 

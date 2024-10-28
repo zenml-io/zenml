@@ -1,8 +1,9 @@
 ---
+icon: bug
 description: A guide to debug common issues and get help.
 ---
 
-# 🐞 Debug and solve issues
+#  Debug and solve issues
 
 If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 

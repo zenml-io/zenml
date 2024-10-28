@@ -1,4 +1,5 @@
 ---
+icon: house
 description: Learn how to develop your pipelines locally.
 ---
 

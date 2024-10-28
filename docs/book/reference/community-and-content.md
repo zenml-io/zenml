@@ -1,8 +1,9 @@
 ---
+icon: heart
 description: All possible ways for our community to get in touch with ZenML.
 ---
 
-# 💜 Community & content
+# Community & content
 
 The ZenML team and community have put together a list of references that can be used to get in touch with the
 development team of ZenML and develop a deeper understanding of the framework.
