@@ -170,11 +170,6 @@ class StackComponentSchema(NamedSchema, table=True):
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
                 )
-            elif field == "type":
-                component_type = component_update.type
-
-                if component_type is not None:
-                    self.type = component_type
             else:
                 setattr(self, field, value)
 
