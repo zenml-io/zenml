@@ -26,6 +26,7 @@ from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
@@ -119,6 +120,8 @@ class ServerConfiguration(BaseModel):
             time of the JWT tokens issued to clients after they have
             authenticated with the ZenML server using an OAuth 2.0 device
             that has been marked as trusted.
+        generic_api_token_lifetime: The lifetime in seconds that generic
+            short-lived API tokens issued for automation purposes are valid.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
@@ -256,6 +259,10 @@ class ServerConfiguration(BaseModel):
     )
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
+
+    generic_api_token_lifetime: int = (
+        DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME
+    )
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None

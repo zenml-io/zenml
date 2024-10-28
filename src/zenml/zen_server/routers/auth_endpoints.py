@@ -193,9 +193,12 @@ class OAuthLoginRequestForm:
 
 def generate_access_token(
     user_id: UUID,
-    response: Response,
+    response: Optional[Response] = None,
     device: Optional[OAuthDeviceInternalResponse] = None,
     api_key: Optional[APIKeyInternalResponse] = None,
+    expires_in: Optional[int] = None,
+    pipeline_id: Optional[UUID] = None,
+    schedule_id: Optional[UUID] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -204,18 +207,22 @@ def generate_access_token(
         response: The FastAPI response object.
         device: The device used for authentication.
         api_key: The service account API key used for authentication.
+        expires_in: The number of seconds until the token expires.
+        pipeline_id: The ID of the pipeline to scope the token to.
+        schedule_id: The ID of the schedule to scope the token to.
 
     Returns:
         An authentication response with an access token.
     """
     config = server_config()
 
-    # The JWT tokens are set to expire according to the values configured
-    # in the server config. Device tokens are handled separately from regular
-    # user tokens.
+    # If the expiration time is not supplied, the JWT tokens are set to expire
+    # according to the values configured in the server config. Device tokens are
+    # handled separately from regular user tokens.
     expires: Optional[datetime] = None
-    expires_in: Optional[int] = None
-    if device:
+    if expires_in:
+        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+    elif device:
         # If a device was used for authentication, the token will expire
         # at the same time as the device.
         expires = device.expires
@@ -235,7 +242,7 @@ def generate_access_token(
         api_key_id=api_key.id if api_key else None,
     ).encode(expires=expires)
 
-    if not device:
+    if not device and response:
         # Also set the access token as an HTTP only cookie in the response
         response.set_cookie(
             key=config.get_auth_cookie_name(),
@@ -522,6 +529,20 @@ def api_token(
             detail="Not authenticated.",
         )
 
+    if not token.device_id and not token.api_key_id:
+        config = server_config()
+
+        # If not authenticated with a device or a service account, then a
+        # short-lived generic API token is returned.
+        return generate_access_token(
+            user_id=token.user_id,
+            expires_in=config.generic_api_token_lifetime,
+        ).access_token
+
+    # Issuing workload tokens is only supported for device authenticated users
+    # and service accounts, because device tokens can be revoked at any time and
+    # service accounts can be disabled.
+
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
@@ -540,21 +561,9 @@ def api_token(
             f"schedule {token.schedule_id}."
         )
 
-    if not token.device_id and not token.api_key_id:
-        # If not authenticated with a device or a service account, the current
-        # API token is returned as is, without any modifications. Issuing
-        # workload tokens is only supported for device authenticated users and
-        # service accounts, because device tokens can be revoked at any time and
-        # service accounts can be disabled.
-        return auth_context.encoded_access_token
-
-    # If authenticated with a device, a new API token is generated for the
-    # pipeline and/or schedule.
-    if pipeline_id:
-        token.pipeline_id = pipeline_id
-    if schedule_id:
-        token.schedule_id = schedule_id
-    expires: Optional[datetime] = None
-    if expires_minutes:
-        expires = datetime.utcnow() + timedelta(minutes=expires_minutes)
-    return token.encode(expires=expires)
+    return generate_access_token(
+        user_id=token.user_id,
+        expires_in=expires_minutes * 60 if expires_minutes else None,
+        pipeline_id=pipeline_id,
+        schedule_id=schedule_id,
+    ).access_token

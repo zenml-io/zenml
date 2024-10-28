@@ -34,6 +34,8 @@ from zenml.logger import get_logger
 from zenml.stack import StackComponent
 from zenml.utils.string_utils import format_name_template
 
+logger = get_logger(__name__)
+
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.models import PipelineDeploymentResponse
@@ -113,6 +115,17 @@ def get_config_environment_vars(
             # If a schedule is given, this is a long running pipeline that
             # should not have an API token that expires.
             expires_minutes = None
+            logger.warning(
+                "An API token without an expiration time will be generated "
+                "and used to run this pipeline on a schedule. This is very "
+                "insecure because the API token cannot be revoked in case "
+                "of potential theft without disabling the entire user "
+                "accountWhen deploying a pipeline on a schedule, it is "
+                "strongly advised to use a service account API key to "
+                "authenticate to the ZenML server instead of your regular "
+                "user account. For more information, see "
+                "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+            )
         api_token = global_config.zen_store.get_api_token(
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
