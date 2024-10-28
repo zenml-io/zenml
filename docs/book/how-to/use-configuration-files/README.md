@@ -2,6 +2,11 @@
 description: ZenML makes it easy to configure and run a pipeline with configuration files.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 📃 Use configuration files
 
 ZenML pipelines can be configured at runtime with a simple YAML file that can help you set [parameters](../build-pipelines/use-pipeline-step-parameters.md), control [caching behavior](../build-pipelines/control-caching-behavior.md) or even configure different stack components.

@@ -2,6 +2,11 @@
 description: How to fetch metadata during pipeline composition.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Fetch metadata during pipeline composition
 
 ### Pipeline configuration using the `PipelineContext`

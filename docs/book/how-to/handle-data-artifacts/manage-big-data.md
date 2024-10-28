@@ -2,6 +2,11 @@
 description: Learn about how to manage big data with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Scaling Strategies for Big Data in ZenML
 
 As your machine learning projects grow, you'll often encounter datasets that challenge your existing data processing pipelines. This section explores strategies for scaling your ZenML pipelines to handle increasingly large datasets. For information on creating custom Dataset classes and managing complex data flows, refer to [custom dataset classes](datasets.md).

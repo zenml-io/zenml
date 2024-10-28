@@ -2,6 +2,11 @@
 description: Learn how to develop your pipelines locally.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Develop locally
 
 This section contains information around best practices for developing your

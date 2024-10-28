@@ -2,6 +2,11 @@
 description: Tracking metrics and metadata
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 📈 Track metrics and metadata
 
 Logging metrics and metadata is standardized in ZenML. The most common pattern is to use the `log_xxx` methods, e.g.:

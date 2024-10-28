@@ -2,6 +2,11 @@
 description: Setting your team up for success with a well-architected ZenML project.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 😸 Setting up a Well-Architected ZenML Project
 
 Welcome to the guide on setting up a well-architected ZenML project. This section will provide you with a comprehensive overview of best practices, strategies, and considerations for structuring your ZenML projects to ensure scalability, maintainability, and collaboration within your team.
