@@ -211,6 +211,11 @@ class BaseOrchestrator(StackComponent, ABC):
                 # the orchestrator does not try to run them
                 deployment.step_configurations.pop(invocation_id)
 
+            for step in deployment.step_configurations.values():
+                for invocation_id in cached_invocations:
+                    if invocation_id in step.spec.upstream_steps:
+                        step.spec.upstream_steps.remove(invocation_id)
+
             if len(deployment.step_configurations) == 0:
                 # All steps were cached, we update the pipeline run status and
                 # don't actually use the orchestrator to run the pipeline
