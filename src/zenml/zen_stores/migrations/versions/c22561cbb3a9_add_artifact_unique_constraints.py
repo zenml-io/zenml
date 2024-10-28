@@ -1,7 +1,7 @@
 """Add artifact unique constraints [c22561cbb3a9].
 
 Revision ID: c22561cbb3a9
-Revises: 1d8f30c54477
+Revises: 0.68.1
 Create Date: 2024-10-17 16:41:25.053677
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c22561cbb3a9"
-down_revision = "1d8f30c54477"
+down_revision = "0.68.1"
 branch_labels = None
 depends_on = None
 
