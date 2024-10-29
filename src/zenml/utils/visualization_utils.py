@@ -41,7 +41,7 @@ def visualize_artifact(
         raise RuntimeError(
             "The `output.visualize()` method is only available in Jupyter "
             "notebooks. In all other runtime environments, please open "
-            "your ZenML dashboard using `zenml up` and view the "
+            "your ZenML dashboard using `zenml login --local` and view the "
             "visualizations by clicking on the respective artifacts in the "
             "pipeline run DAG instead."
         )

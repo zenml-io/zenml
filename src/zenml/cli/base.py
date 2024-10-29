@@ -361,10 +361,10 @@ def clean(yes: bool = False, local: bool = False) -> None:
         server = get_local_server()
 
         if server:
-            from zenml.zen_server.deploy.deployer import ServerDeployer
+            from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
-            deployer = ServerDeployer()
-            deployer.remove_server(server.config.name)
+            deployer = LocalServerDeployer()
+            deployer.remove_server()
             cli_utils.declare("The local ZenML dashboard has been shut down.")
 
         # delete the .zen folder

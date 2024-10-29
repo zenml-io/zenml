@@ -14,34 +14,36 @@
 """CLI for managing ZenML server deployments."""
 
 import ipaddress
-import os
-import sys
-from typing import Any, Dict, Optional, Union
+import re
+from typing import List, Optional, Union
 
 import click
-import yaml
 from rich.errors import MarkupError
 
 import zenml
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
-from zenml.cli.web_login import web_login
+from zenml.cli.cli import TagGroup, cli
+from zenml.cli.login import login, logout
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import ENV_ZENML_LOCAL_SERVER
-from zenml.enums import ServerProviderType, StoreType
-from zenml.exceptions import AuthorizationException, IllegalOperationError
+from zenml.enums import CliCategories, StoreType
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
-from zenml.zen_server.utils import get_local_server
+from zenml.login.credentials import ServerCredentials, ServerType
+from zenml.services.service_status import ServiceState
+from zenml.zen_server.utils import connected_to_local_server, get_local_server
 
 logger = get_logger(__name__)
 
-LOCAL_ZENML_SERVER_NAME = "local"
 
+@cli.command(
+    "up",
+    help="""Start the ZenML dashboard locally.
 
-@cli.command("up", help="Start the ZenML dashboard locally.")
+DEPRECATED: Please use `zenml login --local` instead.             
+""",
+)
 @click.option(
     "--docker",
     is_flag=True,
@@ -72,14 +74,6 @@ LOCAL_ZENML_SERVER_NAME = "local"
     type=click.BOOL,
 )
 @click.option(
-    "--connect",
-    is_flag=True,
-    help="Connect the client to the local server even when already connected "
-    "to a remote ZenML server.",
-    default=False,
-    type=click.BOOL,
-)
-@click.option(
     "--image",
     type=str,
     default=None,
@@ -99,7 +93,6 @@ def up(
     ] = None,
     port: Optional[int] = None,
     blocking: bool = False,
-    connect: bool = False,
     image: Optional[str] = None,
     ngrok_token: Optional[str] = None,
 ) -> None:
@@ -110,133 +103,44 @@ def up(
         ip_address: The IP address to bind the server to.
         port: The port to bind the server to.
         blocking: Block the CLI while the server is running.
-        connect: Connect the client to the local server even when already
-            connected to a remote ZenML server.
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
         ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
     """
-    from zenml.zen_server.deploy.deployer import ServerDeployer
-
-    if connect:
-        logger.warning(
-            "The `--connect` flag is deprecated, has no effect, and will be "
-            "removed in a future release."
-        )
-
-    gc = GlobalConfiguration()
-
-    # Raise an error if the client is already connected to a remote server.
-    if gc.store_configuration.type == StoreType.REST:
-        if not gc.zen_store.is_local_store():
-            cli_utils.error(
-                "Your ZenML client is already connected to a remote server. If "
-                "you want to spin up a local ZenML server, please disconnect "
-                "from the remote server first by running `zenml disconnect`."
-            )
-
-    if docker:
-        from zenml.utils.docker_utils import check_docker
-
-        if not check_docker():
-            cli_utils.error(
-                "Docker does not seem to be installed on your system. Please "
-                "install Docker to use the Docker ZenML server local "
-                "deployment or use one of the other deployment options."
-            )
-        provider = ServerProviderType.DOCKER
-    else:
-        if sys.platform == "win32" and not blocking:
-            cli_utils.error(
-                "Running the ZenML server locally as a background process is "
-                "not supported on Windows. Please use the `--blocking` flag "
-                "to run the server in blocking mode, or run the server in "
-                "a Docker container by setting `--docker` instead."
-            )
-        else:
-            pass
-        provider = ServerProviderType.LOCAL
-    if cli_utils.requires_mac_env_var_warning():
-        cli_utils.error(
-            "The `OBJC_DISABLE_INITIALIZE_FORK_SAFETY` environment variable "
-            "is recommended to run the ZenML server locally on a Mac. "
-            "Please set it to `YES` and try again."
-        )
-
-    os.environ[ENV_ZENML_LOCAL_SERVER] = str(True)
-
-    deployer = ServerDeployer()
-
-    server = get_local_server()
-    if server and server.config.provider != provider:
-        deployer.remove_server(LOCAL_ZENML_SERVER_NAME)
-
-    config_attrs: Dict[str, Any] = dict(
-        name=LOCAL_ZENML_SERVER_NAME,
-        provider=provider,
+    cli_utils.warning(
+        "The `zenml up` command is deprecated and will be removed in a "
+        "future release. Please use the `zenml login --local` command instead."
     )
-    if not docker:
-        config_attrs["blocking"] = blocking
-    elif image:
-        config_attrs["image"] = image
-    if port is not None:
-        config_attrs["port"] = port
-    if ip_address is not None and provider in [
-        ServerProviderType.LOCAL,
-        ServerProviderType.DOCKER,
-    ]:
-        config_attrs["ip_address"] = ip_address
 
-    from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-
-    server_config = ServerDeploymentConfig(**config_attrs)
-    if blocking:
-        from zenml.constants import (
-            DEFAULT_USERNAME,
-        )
-
-        cli_utils.declare(
-            "The local ZenML dashboard is about to deploy in a "
-            "blocking process. You can connect to it using the "
-            f"'{DEFAULT_USERNAME}' username and an empty password."
-        )
-    server = deployer.deploy_server(server_config)
-
-    if not blocking:
-        from zenml.constants import (
-            DEFAULT_PASSWORD,
-            DEFAULT_USERNAME,
-        )
-
-        deployer.connect_to_server(
-            LOCAL_ZENML_SERVER_NAME,
-            DEFAULT_USERNAME,
-            DEFAULT_PASSWORD,
-        )
-
-        if server.status and server.status.url:
-            cli_utils.declare(
-                f"The local ZenML dashboard is available at "
-                f"'{server.status.url}'. You can connect to it using the "
-                f"'{DEFAULT_USERNAME}' username and an empty password. "
-            )
-            zenml.show(
-                ngrok_token=ngrok_token,
-                username=DEFAULT_USERNAME,
-                password=DEFAULT_PASSWORD,
-            )
+    # Calling the `zenml login` command
+    cli_utils.declare("Calling `zenml login --local`...")
+    login.callback(  # type: ignore[misc]
+        local=True,
+        docker=docker,
+        ip_address=ip_address,
+        port=port,
+        blocking=blocking,
+        image=image,
+        ngrok_token=ngrok_token,
+    )
 
 
+@cli.command(
+    "show",
+    help="""Show the ZenML dashboard.
+
+DEPRECATED: Please use `zenml server show` instead.             
+""",
+)
 @click.option(
     "--ngrok-token",
     type=str,
     default=None,
     help="Specify an ngrok auth token to use for exposing the ZenML server.",
 )
-@cli.command("show", help="Show the ZenML dashboard.")
-def show(ngrok_token: Optional[str] = None) -> None:
+def legacy_show(ngrok_token: Optional[str] = None) -> None:
     """Show the ZenML dashboard.
 
     Args:
@@ -244,31 +148,36 @@ def show(ngrok_token: Optional[str] = None) -> None:
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
     """
-    try:
-        zenml.show(ngrok_token=ngrok_token)
-    except RuntimeError as e:
-        cli_utils.error(str(e))
+    cli_utils.warning(
+        "The `zenml show` command is deprecated and will be removed in a "
+        "future release. Please use the `zenml server show` command "
+        "instead."
+    )
+
+    # Calling the `zenml server show` command
+    cli_utils.declare("Calling `zenml server show`...")
+    show(local=False, ngrok_token=ngrok_token)
 
 
-@cli.command("down", help="Shut down the local ZenML dashboard.")
+@cli.command(
+    "down",
+    help="""Shut down the local ZenML dashboard.
+
+DEPRECATED: Please use `zenml logout local` instead.
+""",
+)
 def down() -> None:
     """Shut down the local ZenML dashboard."""
-    server = get_local_server()
+    cli_utils.warning(
+        "The `zenml down` command is deprecated and will be removed in a "
+        "future release. Please use the `zenml logout --local` command instead."
+    )
 
-    if not server:
-        cli_utils.declare("The local ZenML dashboard is not running.")
-
-    else:
-        from zenml.zen_server.deploy.deployer import ServerDeployer
-
-        deployer = ServerDeployer()
-        deployer.remove_server(server.config.name)
-        cli_utils.declare("The local ZenML dashboard has been shut down.")
-
-        os.environ[ENV_ZENML_LOCAL_SERVER] = str(False)
-
-        gc = GlobalConfiguration()
-        gc.set_default_store()
+    # Calling the `zenml logout` command
+    cli_utils.declare("Calling `zenml logout --local`...")
+    logout.callback(  # type: ignore[misc]
+        local=True
+    )
 
 
 @cli.command(
@@ -276,30 +185,87 @@ def down() -> None:
 )
 def status() -> None:
     """Show details about the current configuration."""
+    from zenml.login.credentials_store import get_credentials_store
+    from zenml.login.pro.client import ZenMLProClient
+
     gc = GlobalConfiguration()
     client = Client()
 
     store_cfg = gc.store_configuration
 
-    # Write about the current ZenML server
-    cli_utils.declare("-----ZenML Server Status-----")
+    # Write about the current ZenML client
+    cli_utils.declare("-----ZenML Client Status-----")
     if gc.uses_default_store():
         cli_utils.declare(
-            f"Connected to a local ZenML database: ('{store_cfg.url}')"
+            f"Connected to the local ZenML database: '{store_cfg.url}'"
+        )
+    elif connected_to_local_server():
+        cli_utils.declare(
+            f"Connected to the local ZenML server: {store_cfg.url}"
+        )
+    elif re.match(r"^mysql://", store_cfg.url):
+        cli_utils.declare(
+            f"Connected directly to a SQL database: '{store_cfg.url}'"
         )
     else:
-        cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
+        credentials_store = get_credentials_store()
+        server = credentials_store.get_credentials(store_cfg.url)
+        if server:
+            if server.type == ServerType.PRO:
+                # If connected to a ZenML Pro server, refresh the server info
+                pro_credentials = credentials_store.get_pro_credentials(
+                    allow_expired=False
+                )
+                if pro_credentials:
+                    pro_client = ZenMLProClient()
+                    pro_servers = pro_client.tenant.list(
+                        url=store_cfg.url, member_only=True
+                    )
+                    if pro_servers:
+                        credentials_store.update_server_info(
+                            server_url=store_cfg.url,
+                            server_info=pro_servers[0],
+                        )
 
-    # Write about the active entities
-    scope = "repository" if client.uses_local_configuration else "global"
-    cli_utils.declare(f"  The active user is: '{client.active_user.name}'")
-    cli_utils.declare(
-        f"  The active workspace is: '{client.active_workspace.name}' "
-        f"({scope})"
-    )
-    cli_utils.declare(
-        f"  The active stack is: '{client.active_stack_model.name}' ({scope})"
-    )
+                cli_utils.declare(
+                    f"Connected to a ZenML Pro server: `{server.server_name_hyperlink}`"
+                    f" [{server.server_id_hyperlink}]"
+                )
+
+                cli_utils.declare(
+                    f"  ZenML Pro Organization: {server.organization_hyperlink}"
+                )
+                if pro_credentials:
+                    cli_utils.declare(
+                        f"  ZenML Pro authentication: {pro_credentials.auth_status}"
+                    )
+            else:
+                cli_utils.declare(
+                    f"Connected to a remote ZenML server: `{server.dashboard_hyperlink}`"
+                )
+
+            cli_utils.declare(f"  Dashboard: {server.dashboard_hyperlink}")
+            cli_utils.declare(f"  API: {server.api_hyperlink}")
+            cli_utils.declare(f"  Server status: '{server.status}'")
+            cli_utils.declare(f"  Server authentication: {server.auth_status}")
+
+        else:
+            cli_utils.declare(
+                f"Connected to a remote ZenML server: [link={store_cfg.url}]"
+                f"{store_cfg.url}[/link]"
+            )
+
+    try:
+        client.zen_store.get_store_info()
+    except Exception as e:
+        cli_utils.warning(f"Error while initializing client: {e}")
+    else:
+        # Write about the active entities
+        scope = "repository" if client.uses_local_configuration else "global"
+        cli_utils.declare(f"  The active user is: '{client.active_user.name}'")
+        cli_utils.declare(
+            f"  The active stack is: '{client.active_stack_model.name}' ({scope})"
+        )
 
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
@@ -310,10 +276,34 @@ def status() -> None:
         f"Local store files are located at: '{gc.local_stores_path}'"
     )
 
-    server = get_local_server()
-    if server:
-        cli_utils.declare("The status of the local dashboard:")
-        cli_utils.print_server_deployment(server)
+    cli_utils.declare("\n-----Local ZenML Server Status-----")
+    local_server = get_local_server()
+    if local_server:
+        if local_server.status:
+            if local_server.status.status == ServiceState.ACTIVE:
+                cli_utils.declare(
+                    f"The local {local_server.config.provider} server is "
+                    f"running at: {local_server.status.url}"
+                )
+            else:
+                cli_utils.declare(
+                    f"The local {local_server.config.provider} server is not "
+                    "available."
+                )
+                cli_utils.declare(
+                    f"  Server state: {local_server.status.status}"
+                )
+                if local_server.status.status_message:
+                    cli_utils.declare(
+                        f"  Status message: {local_server.status.status_message}"
+                    )
+        else:
+            cli_utils.declare(
+                f"The local {local_server.config.provider} server is not "
+                "running."
+            )
+    else:
+        cli_utils.declare("The local server has not been started.")
 
 
 @cli.command(
@@ -321,57 +311,17 @@ def status() -> None:
     help=(
         """Connect to a remote ZenML server.
 
+    DEPRECATED: Please use `zenml login` instead.
+
     Examples:
 
-      * to connect to a ZenML deployment using web login:
+      * to re-login to the current ZenML server or connect to a ZenML Pro server:
+
+        zenml connect
+
+      * to log in to a particular ZenML server:
 
         zenml connect --url=http://zenml.example.com:8080
-
-      * to connect to a ZenML deployment using command line arguments:
-
-        zenml connect --url=http://zenml.example.com:8080 --username=admin
-
-      * to use a configuration file:
-
-        zenml connect --config=/path/to/zenml_config.yaml
-
-      * when no arguments are supplied, ZenML will attempt to connect to the
-        last ZenML server deployed from the local host using the 'zenml deploy'
-        command.
-
-    The configuration file must be a YAML or JSON file with the following
-    attributes:
-
-        url: The URL of the ZenML server.
-
-        username: The username to use for authentication.
-
-        password: The password to use for authentication.
-
-        verify_ssl: Either a boolean, in which case it controls whether the
-            server's TLS certificate is verified, or a string, in which case it
-            must be a path to a CA certificate bundle to use or the CA bundle
-            value itself.
-
-        http_timeout: The number of seconds to wait for HTTP requests to the
-            ZenML server to be successful before issuing a timeout error
-            (default: 5).
-
-    Example configuration:
-
-        url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml\n
-        username: admin\n
-        password: Pa$$word123\n
-        verify_ssl: |\n
-        -----BEGIN CERTIFICATE-----
-        MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
-        MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3\n
-        ...\n
-        ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
-        1aZ/0iYnGKCu7rLJzxeguliMf69E\n
-        -----END CERTIFICATE-----
-        http_timeout: 10
-
     """
     ),
 )
@@ -384,15 +334,15 @@ def status() -> None:
 )
 @click.option(
     "--username",
-    help="The username that is used to authenticate with a ZenML server. If "
-    "omitted, the web login will be used.",
+    help="(Deprecated) The username that is used to authenticate with a ZenML "
+    "server. If omitted, the web login will be used.",
     required=False,
     type=str,
 )
 @click.option(
     "--password",
-    help="The password that is used to authenticate with a ZenML server. If "
-    "omitted, a prompt will be shown to enter the password.",
+    help="(Deprecated) The password that is used to authenticate with a ZenML "
+    "server. If omitted, a prompt will be shown to enter the password.",
     required=False,
     type=str,
 )
@@ -416,19 +366,6 @@ def status() -> None:
     required=False,
     type=str,
 )
-@click.option(
-    "--config",
-    help="Use a YAML or JSON configuration or configuration file.",
-    required=False,
-    type=str,
-)
-@click.option(
-    "--raw-config",
-    is_flag=True,
-    help="Whether to use the configuration without prompting for missing "
-    "fields.",
-    default=False,
-)
 def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
@@ -436,8 +373,6 @@ def connect(
     api_key: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
-    config: Optional[str] = None,
-    raw_config: bool = False,
 ) -> None:
     """Connect to a remote ZenML server.
 
@@ -452,132 +387,50 @@ def connect(
         no_verify_ssl: Whether to verify the server's TLS certificate.
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
             certificate or the CA bundle value itself.
-        config: A YAML or JSON configuration or configuration file to use.
-        raw_config: Whether to use the configuration without prompting for
-            missing fields.
     """
-    from zenml.config.store_config import StoreConfiguration
-    from zenml.zen_stores.base_zen_store import BaseZenStore
-
-    if password is not None:
-        cli_utils.warning(
-            "Supplying password values in the command line is not safe. "
-            "Please consider using the prompt option."
-        )
-
-    # Raise an error if a local server is running when trying to connect to
-    # another server
-    active_deployment = get_local_server()
-    if (
-        active_deployment
-        and active_deployment.status
-        and active_deployment.status.url != url
-    ):
-        cli_utils.error(
-            "You're trying to connect to a remote ZenML server but already "
-            "have a local server running. This can lead to unexpected "
-            "behavior. Please shut down the local server by running "
-            "`zenml down` before connecting to a remote server."
-        )
-
-    store_dict: Dict[str, Any] = {}
-    verify_ssl: Union[str, bool] = (
-        ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+    cli_utils.warning(
+        "The `zenml connect` command is deprecated and will be removed in a "
+        "future release. Please use the `zenml login` command instead. "
     )
 
-    if config:
-        if os.path.isfile(config):
-            store_dict = yaml_utils.read_yaml(config)
-        else:
-            store_dict = yaml.safe_load(config)
-        if not isinstance(store_dict, dict):
-            cli_utils.error(
-                "The configuration argument must be JSON/YAML content or "
-                "point to a valid configuration file."
-            )
-
-        if raw_config:
-            store_config = StoreConfiguration.model_validate(store_dict)
-            GlobalConfiguration().set_store(store_config)
-            return
-
-        url = store_dict.get("url", url)
-        username = username or store_dict.get("username")
-        password = password or store_dict.get("password")
-        api_key = api_key or store_dict.get("api_key")
-        verify_ssl = store_dict.get("verify_ssl", verify_ssl)
-
-    if not url:
-        url = click.prompt("ZenML server URL", type=str)
-    else:
-        cli_utils.declare(f"Connecting to: '{url}'...")
-    assert url is not None
-
-    store_dict["url"] = url
-    store_type = BaseZenStore.get_store_type(url)
-    if store_type == StoreType.REST:
-        store_dict["verify_ssl"] = verify_ssl
-
-    if not username and not api_key:
-        if store_type == StoreType.REST:
-            store_dict["api_token"] = web_login(url=url, verify_ssl=verify_ssl)
-        else:
-            username = click.prompt("Username", type=str)
-
-    if username:
+    if password is not None or username is not None:
         cli_utils.warning(
             "Connecting to a ZenML server using a username and password is "
-            "not recommended because the password is locally stored on your "
-            "filesystem. You should consider using the web login workflow by "
-            "omitting the `--username` and `--password` flags. An alternative "
-            "for non-interactive environments is to create and use a service "
-            "account API key (see https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
+            "insecure because the password is locally stored on your "
+            "filesystem and is no longer supported. The web login workflow will "
+            "be used instead. An alternative for non-interactive environments "
+            "is to create and use a service account API key (see "
+            "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 
-        store_dict["username"] = username
-
-        if password is None:
-            password = click.prompt(
-                f"Password for user {username} (press ENTER for empty password)",
-                default="",
-                hide_input=True,
-            )
-        store_dict["password"] = password
-    elif api_key:
-        store_dict["api_key"] = api_key
-
-    store_config_class = BaseZenStore.get_store_config_class(store_type)
-    assert store_config_class is not None
-
-    store_config = store_config_class.model_validate(store_dict)
-    try:
-        GlobalConfiguration().set_store(store_config)
-    except IllegalOperationError:
-        cli_utils.warning(
-            f"User '{username}' does not have sufficient permissions to "
-            f"access the server at '{url}'."
-        )
-    except AuthorizationException as e:
-        cli_utils.warning(f"Authorization error: {e}")
+    # Calling the `zenml login` command
+    cli_utils.declare("Calling `zenml login`...")
+    login.callback(  # type: ignore[misc]
+        server=url,
+        api_key=api_key,
+        no_verify_ssl=no_verify_ssl,
+        ssl_ca_cert=ssl_ca_cert,
+    )
 
 
-@cli.command("disconnect", help="Disconnect from a ZenML server.")
+@cli.command(
+    "disconnect",
+    help="""Disconnect from a ZenML server.
+
+DEPRECATED: Please use `zenml logout` instead.
+""",
+)
 def disconnect_server() -> None:
     """Disconnect from a ZenML server."""
-    from zenml.zen_server.deploy.deployer import ServerDeployer
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    cli_utils.warning(
+        "The `zenml disconnect` command is deprecated and will be removed in a "
+        "future release. Please use the `zenml logout` command instead."
+    )
 
-    gc = GlobalConfiguration()
-
-    url = gc.store_configuration.url
-    store_type = BaseZenStore.get_store_type(url)
-    if store_type == StoreType.REST:
-        deployer = ServerDeployer()
-        deployer.disconnect_from_server()
-    else:
-        gc.set_default_store()
-        cli_utils.declare("Restored default store configuration.")
+    # Calling the `zenml logout` command
+    cli_utils.declare("Calling `zenml logout`...")
+    logout.callback()  # type: ignore[misc]
 
 
 @cli.command("logs", help="Show the logs for the local ZenML server.")
@@ -619,20 +472,20 @@ def logs(
             "up` first to start the ZenML dashboard locally."
         )
 
-    server_name = server.config.name
+    from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
-    from zenml.zen_server.deploy.deployer import ServerDeployer
+    deployer = LocalServerDeployer()
 
-    deployer = ServerDeployer()
-
-    cli_utils.declare(f"Showing logs for server: {server_name}")
+    cli_utils.declare(
+        f"Showing logs for the local {server.config.provider} server"
+    )
 
     from zenml.zen_server.deploy.exceptions import (
         ServerDeploymentNotFoundError,
     )
 
     try:
-        logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)
+        logs = deployer.get_server_logs(follow=follow, tail=tail)
     except ServerDeploymentNotFoundError as e:
         cli_utils.error(f"Server not found: {e}")
 
@@ -645,3 +498,259 @@ def logs(
                 console.print(line)
             except MarkupError:
                 console.print(line, markup=False)
+
+
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+def server() -> None:
+    """Commands for managing ZenML servers."""
+
+
+@server.command(
+    "list",
+    help="""List all ZenML servers that this client is authenticated to.
+
+    The CLI can be authenticated to multiple ZenML servers at the same time,
+    even though it can only be connected to one server at a time. You can list
+    all the ZenML servers that the client is currently authenticated to by
+    using this command.
+
+    When logged in to ZenML Pro, this list will also include all ZenML Pro
+    servers that the authenticated user can access or could potentially access,
+    including details such as their current state and the organization they
+    belong to.
+
+    The complete list of servers displayed by this command includes the
+    following:
+
+      * ZenML Pro servers that the authenticated ZenML Pro user can or could
+        access. The client needs to be logged to ZenML Pro via
+        `zenml login --pro` to access these servers.
+
+      * ZenML servers that the client has logged in to via
+        `zenml login --url` in the past.
+
+      * the local ZenML server started with `zenml login --local`, if one is
+        running.
+
+    By default, this command does not display ZenML servers that are not
+    accessible: servers that are not running, are no longer accessible due to
+    an expired authentication and ZenML Pro servers where the user is not a
+    member. To include these servers in the list, use the `--all` flag.
+    """,
+)
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show verbose output.",
+)
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    help="Show all ZenML servers, including those that are not running "
+    "and those with an expired authentication.",
+)
+def server_list(verbose: bool = False, all: bool = False) -> None:
+    """List all ZenML servers that this client is authorized to access.
+
+    Args:
+        verbose: Whether to show verbose output.
+        all: Whether to show all ZenML servers.
+    """
+    from zenml.login.credentials_store import get_credentials_store
+    from zenml.login.pro.client import ZenMLProClient
+    from zenml.login.pro.tenant.models import TenantRead, TenantStatus
+
+    credentials_store = get_credentials_store()
+    pro_token = credentials_store.get_pro_token(allow_expired=True)
+    current_store_config = GlobalConfiguration().store_configuration
+
+    # The list of ZenML Pro servers kept in the credentials store
+    pro_servers = credentials_store.list_credentials(type=ServerType.PRO)
+    # The list of regular remote ZenML servers kept in the credentials store
+    servers = list(credentials_store.list_credentials(type=ServerType.REMOTE))
+    # The list of local ZenML servers kept in the credentials store
+    local_servers = list(
+        credentials_store.list_credentials(type=ServerType.LOCAL)
+    )
+
+    if pro_token and not pro_token.expired:
+        # If the ZenML Pro authentication is still valid, we include all ZenML
+        # Pro servers that the current ZenML Pro user can access, even those
+        # that the user has never connected to (and are therefore not stored in
+        # the credentials store).
+
+        accessible_pro_servers: List[TenantRead] = []
+        try:
+            client = ZenMLProClient()
+            accessible_pro_servers = client.tenant.list(member_only=not all)
+        except AuthorizationException as e:
+            cli_utils.warning(f"ZenML Pro authorization error: {e}")
+        else:
+            if not all:
+                accessible_pro_servers = [
+                    s
+                    for s in accessible_pro_servers
+                    if s.status == TenantStatus.AVAILABLE
+                ]
+
+            if not accessible_pro_servers:
+                cli_utils.declare(
+                    "No ZenML Pro servers that are accessible to the current "
+                    "user could be found."
+                )
+                if not all:
+                    cli_utils.declare(
+                        "Hint: use the `--all` flag to show all ZenML servers, "
+                        "including those that the client is not currently "
+                        "authorized to access or are not running."
+                    )
+
+        # We update the list of stored ZenML Pro servers with the ones that the
+        # client is a member of
+        for accessible_server in accessible_pro_servers:
+            for idx, stored_server in enumerate(pro_servers):
+                if stored_server.server_id == accessible_server.id:
+                    # All ZenML Pro servers accessible by the current ZenML Pro
+                    # user have an authentication that is valid at least until
+                    # the current ZenML Pro authentication token expires.
+                    stored_server.update_server_info(
+                        accessible_server,
+                    )
+                    updated_server = stored_server.model_copy()
+                    # Replace the current server API token with the current
+                    # ZenML Pro API token to reflect the current authentication
+                    # status.
+                    updated_server.api_token = pro_token
+                    pro_servers[idx] = updated_server
+                    break
+            else:
+                stored_server = ServerCredentials(
+                    url=accessible_server.url or "",
+                    api_token=pro_token,
+                )
+                stored_server.update_server_info(accessible_server)
+                pro_servers.append(stored_server)
+
+    elif pro_servers:
+        cli_utils.warning(
+            "The ZenML Pro authentication has expired. Please re-login "
+            "to ZenML Pro using `zenml login` to include all ZenML Pro servers "
+            "that you are a member of in the list."
+        )
+
+    # We add the local server to the list of servers, if it is running
+    local_server = get_local_server()
+    if local_server:
+        url = (
+            local_server.status.url if local_server.status else None
+        ) or local_server.config.url
+        status = local_server.status.status if local_server.status else ""
+        local_servers.append(
+            ServerCredentials(
+                url=url or "",
+                status=status,
+                version=zenml.__version__,
+                server_id=GlobalConfiguration().user_id,
+                server_name=f"local {local_server.config.provider} server",
+            )
+        )
+
+    all_servers = pro_servers + local_servers + servers
+
+    if not all:
+        # Filter out servers that are expired or not running
+        all_servers = [s for s in all_servers if s.is_available]
+
+    if verbose:
+        columns = [
+            "type",
+            "server_id_hyperlink",
+            "server_name_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
+            "version",
+            "status",
+            "dashboard_url",
+            "api_hyperlink",
+            "auth_status",
+        ]
+    elif all:
+        columns = [
+            "type",
+            "server_id_hyperlink",
+            "server_name_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
+            "version",
+            "status",
+            "api_hyperlink",
+        ]
+    else:
+        columns = [
+            "type",
+            "server_id_hyperlink" if pro_servers else "",
+            "server_name_hyperlink",
+            "organization_hyperlink" if pro_servers else "",
+            "version",
+            "api_hyperlink" if servers else "",
+        ]
+
+    # Remove empty columns
+    columns = [c for c in columns if c]
+
+    # Figure out if the client is already connected to one of the
+    # servers in the list
+    current_server: List[ServerCredentials] = []
+    if current_store_config.type == StoreType.REST:
+        current_server = [
+            s for s in all_servers if s.url == current_store_config.url
+        ]
+
+    cli_utils.print_pydantic_models(  # type: ignore[type-var]
+        all_servers,
+        columns=columns,
+        rename_columns={
+            "server_name_hyperlink": "name",
+            "server_id_hyperlink": "ID",
+            "organization_hyperlink": "organization",
+            "dashboard_url": "dashboard URL",
+            "api_hyperlink": "API URL",
+            "auth_status": "auth status",
+        },
+        active_models=current_server,
+        show_active=True,
+    )
+
+
+@server.command(
+    "show",
+    help="Show the ZenML dashboard for the server that the client is connected to.",
+)
+@click.option(
+    "--local",
+    is_flag=True,
+    help="Show the ZenML dashboard for the local server.",
+    default=False,
+    type=click.BOOL,
+)
+@click.option(
+    "--ngrok-token",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the local ZenML "
+    "server. Only used when `--local` is set. Primarily used for accessing the "
+    "local dashboard in Colab.",
+)
+def show(local: bool = False, ngrok_token: Optional[str] = None) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        local: Whether to show the ZenML dashboard for the local server.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the local dashboard
+            in Colab.
+    """
+    try:
+        zenml.show(ngrok_token=ngrok_token)
+    except RuntimeError as e:
+        cli_utils.error(str(e))

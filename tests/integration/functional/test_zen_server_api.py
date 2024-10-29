@@ -34,7 +34,7 @@ def rest_api_auth_token() -> Tuple[str, str]:
     zen_store = Client().zen_store
     assert isinstance(zen_store, RestZenStore)
 
-    yield zen_store.url, zen_store._get_auth_token()
+    yield zen_store.url, zen_store.get_or_generate_api_token()
 
 
 def test_list_stacks_endpoint(rest_api_auth_token):

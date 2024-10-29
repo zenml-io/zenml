@@ -78,9 +78,19 @@ class AnalyticsContext:
 
         try:
             gc = GlobalConfiguration()
+
+            if not gc.is_initialized:
+                # If the global configuration is not initialized, using the
+                # zen store can lead to multiple initialization issues, because
+                # the analytics are triggered during the initialization of the
+                # zen store.
+                return self
+
             store_info = gc.zen_store.get_store_info()
 
-            if self.in_server:
+            # For local ZenML servers, we always use the client's analytics
+            # opt-in configuration.
+            if self.in_server and not store_info.is_local():
                 self.analytics_opt_in = store_info.analytics_enabled
             else:
                 self.analytics_opt_in = gc.analytics_opt_in

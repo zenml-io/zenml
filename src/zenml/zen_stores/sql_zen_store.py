@@ -93,7 +93,6 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
-    ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     SORT_PIPELINES_BY_LATEST_RUN_KEY,
@@ -1585,10 +1584,10 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = settings.server_id
+        model.name = settings.server_name
         model.active = settings.active
         model.last_user_activity = settings.last_user_activity
-        if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
-            model.analytics_enabled = settings.enable_analytics
+        model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -9181,10 +9180,9 @@ class SqlZenStore(BaseZenStore):
         * server deployments that set the `auto_activate` server
         setting explicitly to `True`. This includes:
             * local ZenML server deployments: the server is deployed locally
-            with `zenml up`
+            with `zenml login --local`
             * local ZenML docker deployments: the server is deployed locally
-            with `zenml up --docker`
-        * legacy dashboard deployments
+            with `zenml login --local --docker`
 
         For all other cases, or if the external authentication scheme is used,
         no default admin user is created. The user must activate the server and

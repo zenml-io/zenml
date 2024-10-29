@@ -260,7 +260,7 @@ output.visualize()
 ![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
 {% hint style="info" %}
-If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](../visualize-artifacts/README.md) to learn more about how to build and view artifact visualizations in ZenML!
+If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](../visualize-artifacts/README.md) to learn more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
 
 ## Fetching information during run execution

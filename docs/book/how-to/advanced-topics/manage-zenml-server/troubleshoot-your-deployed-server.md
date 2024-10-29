@@ -44,7 +44,7 @@ real-time.
 {% tab title="Docker" %}
 If you are using Docker, you can view the logs of the ZenML server using the following method:
 
-* If you used the `zenml up --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the
+* If you used the `zenml login --local --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the
   command:
 
   ```shell

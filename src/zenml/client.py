@@ -7249,6 +7249,7 @@ class Client(metaclass=ClientMetaClass):
             NotImplementedError: If the client is not connected to a ZenML
                 server.
         """
+        from zenml.login.credentials_store import get_credentials_store
         from zenml.zen_stores.rest_zen_store import RestZenStore
 
         zen_store = self.zen_store
@@ -7257,8 +7258,15 @@ class Client(metaclass=ClientMetaClass):
                 "API key configuration is only supported if connected to a "
                 "ZenML server."
             )
+
+        credentials_store = get_credentials_store()
         assert isinstance(zen_store, RestZenStore)
-        zen_store.set_api_key(api_key=key)
+
+        credentials_store.set_api_key(server_url=zen_store.url, api_key=key)
+
+        # Force a re-authentication to start using the new API key
+        # right away.
+        zen_store.authenticate(force=True)
 
     def list_api_keys(
         self,

@@ -103,11 +103,19 @@ def warn_if_config_server_mismatch(
     """
     zen_store = Client().zen_store
     if configuration.is_remote and zen_store.is_local_store():
-        if zen_store.type != StoreType.REST:
+        if zen_store.type == StoreType.REST:
             logger.warning(
                 "You are configuring a stack component that is running "
                 "remotely while using a local ZenML server. The component "
                 "may not be able to reach the local ZenML server and will "
+                "therefore not be functional. Please consider deploying "
+                "and/or using a remote ZenML server instead."
+            )
+        else:
+            logger.warning(
+                "You are configuring a stack component that is running "
+                "remotely while connected to the local database. The component "
+                "will not be able to reach the local database and will "
                 "therefore not be functional. Please consider deploying "
                 "and/or using a remote ZenML server instead."
             )
