@@ -628,7 +628,7 @@ def print_stack_component_configuration(
 
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
-        f"'{component.flavor}' with id '{component.id}' is owned by "
+        f"'{component.flavor_name}' with id '{component.id}' is owned by "
         f"user '{user_name}'."
     )
 
@@ -1579,7 +1579,7 @@ def print_components_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
             "COMPONENT ID": component.id,
-            "FLAVOR": component.flavor,
+            "FLAVOR": component.flavor_name,
             "OWNER": f"{component.user.name if component.user else '-'}",
         }
         configurations.append(component_config)

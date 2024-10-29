@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 def validate_stack_component_config(
     configuration_dict: Dict[str, Any],
-    flavor_name: str,
+    flavor: Union[FlavorResponse, str],
     component_type: StackComponentType,
     zen_store: Optional[BaseZenStore] = None,
     validate_custom_flavors: bool = True,
@@ -37,7 +37,7 @@ def validate_stack_component_config(
 
     Args:
         configuration_dict: The stack component configuration to validate.
-        flavor_name: The name of the flavor of the stack component.
+        flavor: The model or name of the flavor of the stack component.
         component_type: The type of the stack component.
         zen_store: An optional ZenStore in which to look for the flavor. If not
             provided, the flavor will be fetched via the regular ZenML Client.
@@ -56,17 +56,21 @@ def validate_stack_component_config(
         ImportError: If the flavor class could not be imported.
         ModuleNotFoundError: If the flavor class could not be imported.
     """
-    if zen_store:
-        flavor_model = get_flavor_by_name_and_type_from_zen_store(
-            zen_store=zen_store,
-            flavor_name=flavor_name,
-            component_type=component_type,
-        )
+    if isinstance(flavor, FlavorResponse):
+        flavor_model = flavor
     else:
-        flavor_model = Client().get_flavor_by_name_and_type(
-            name=flavor_name,
-            component_type=component_type,
-        )
+        if zen_store:
+            flavor_model = get_flavor_by_name_and_type_from_zen_store(
+                zen_store=zen_store,
+                flavor_name=flavor,
+                component_type=component_type,
+            )
+        else:
+            flavor_model = Client().get_flavor_by_name_and_type(
+                name=flavor,
+                component_type=component_type,
+            )
+
     try:
         flavor_class = Flavor.from_model(flavor_model)
     except (ImportError, ModuleNotFoundError):

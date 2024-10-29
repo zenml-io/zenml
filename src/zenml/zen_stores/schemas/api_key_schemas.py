@@ -155,20 +155,25 @@ class APIKeySchema(NamedSchema, table=True):
         )
 
     def to_internal_model(
-        self, hydrate: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
     ) -> APIKeyInternalResponse:
         """Convert a `APIKeySchema` to an `APIKeyInternalResponse`.
 
         The internal response model includes the hashed key values.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created APIKeyInternalResponse.
         """
-        model = self.to_model(include_metadata=hydrate)
+        model = self.to_model(
+            include_metadata=include_metadata,
+            include_resources=include_resources,
+        )
         model.get_body().key = self.key
 
         return APIKeyInternalResponse(
