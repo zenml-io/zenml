@@ -1904,6 +1904,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
@@ -1923,6 +1924,7 @@ class Client(metaclass=ClientMetaClass):
             connector_id: The id of the connector to filter by.
             stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
+            user: The ID of name of the user to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1944,6 +1946,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
+            user=user,
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
 
@@ -3776,6 +3779,7 @@ class Client(metaclass=ClientMetaClass):
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         stack: Optional[Union[UUID, str]] = None,
+        stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3814,6 +3818,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository: Filter by code repository name/ID.
             model: Filter by model name/ID.
             stack: Filter by stack name/ID.
+            stack_component: Filter by stack component name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3852,6 +3857,7 @@ class Client(metaclass=ClientMetaClass):
             code_repository=code_repository,
             stack=stack,
             model=model,
+            stack_component=stack_component,
             templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)

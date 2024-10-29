@@ -60,6 +60,6 @@ At the end, don't forget to share the [ZenML e2e template](https://github.com/ze
 
 ## Conclusion and next steps
 
-The production guide has now hopefully landed you with an end-to-end MLOps project, powered by a ZenML server connected to your cloud infrastructure. You are now ready to dive deep into writing your own pipelines and stacks. If you are looking to learn more advanced concepts, the [how-to section](../../how-to/build-pipelines/README.md) is for you. Until then, we wish you the best of luck chasing your MLOps dreams!
+The production guide has now hopefully landed you with an end-to-end MLOps project, powered by a ZenML server connected to your cloud infrastructure. You are now ready to dive deep into writing your own pipelines and stacks. If you are looking to learn more advanced concepts, the [how-to section](../../how-to/pipeline-development/build-pipelines/README.md) is for you. Until then, we wish you the best of luck chasing your MLOps dreams!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -554,7 +554,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             user_filter = and_(
                 ArtifactVersionSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)
