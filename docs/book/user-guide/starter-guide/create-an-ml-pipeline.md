@@ -268,7 +268,7 @@ If you are unsure how to format this config file, you can generate a template co
 training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this section](../../how-to/use-configuration-files/README.md) for advanced configuration options.
+Check out [this section](../../how-to/pipeline-development/use-configuration-files/README.md) for advanced configuration options.
 
 ## Full Code Example
 

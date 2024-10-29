@@ -30,7 +30,7 @@ Having separate stacks for these environments helps:
 
 Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
 
-The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
+The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/infrastructure-deployment/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
 
 ![Service Connectors abstract away complexity and implement security best practices](../../.gitbook/assets/ConnectorsDiagram.png)
 

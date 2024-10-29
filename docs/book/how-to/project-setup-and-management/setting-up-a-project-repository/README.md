@@ -27,7 +27,7 @@ Learn more about setting up your repository in the [Set up repository guide](./b
 
 Integrating your ZenML project with version control systems like Git is crucial for team collaboration and code management. This allows for:
 
-- Makes creating pipeline builds faster, as you can leverage the same image and [have ZenML download code from your repository](../../how-to/customize-docker-builds/how-to-reuse-builds.md#use-code-repositories-to-speed-up-docker-build-times).
+- Makes creating pipeline builds faster, as you can leverage the same image and [have ZenML download code from your repository](../../infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md#use-code-repositories-to-speed-up-docker-build-times).
 - Easy tracking of changes
 - Collaboration among team members
 
@@ -81,7 +81,7 @@ As your project evolves, you may need to migrate existing codebases or upgrade y
 - Strategies for migrating legacy code to newer ZenML versions
 - Best practices for upgrading ZenML servers
 
-Discover migration strategies and maintenance best practices in the [Migration and Maintenance guide](../../how-to/manage-the-zenml-server/best-practices-upgrading-zenml.md#upgrading-your-code).
+Discover migration strategies and maintenance best practices in the [Migration and Maintenance guide](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md#upgrading-your-code).
 
 ## Getting Started
 
