@@ -37,6 +37,7 @@ from uuid import UUID
 
 import yaml
 from pydantic import ConfigDict, ValidationError
+from typing_extensions import Self
 
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
@@ -109,7 +110,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound="Pipeline")
 F = TypeVar("F", bound=Callable[..., None])
 
 
@@ -284,7 +284,7 @@ class Pipeline:
         self.__suppress_warnings_flag__ = False
 
     def configure(
-        self: T,
+        self,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -297,7 +297,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
-    ) -> T:
+    ) -> Self:
         """Configures the pipeline.
 
         Configuration merging example:
@@ -748,8 +748,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """Runs the pipeline on the active stack.
 
         Returns:
-            The pipeline run if running without a schedule, `None` if
-            running with a schedule.
+            The pipeline run or `None` if running with a schedule.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -1204,7 +1203,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         raise RuntimeError("Unable to find step ID")
 
-    def __enter__(self: T) -> T:
+    def __enter__(self) -> Self:
         """Activate the pipeline context.
 
         Raises:
@@ -1339,7 +1338,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         return copy.deepcopy(self)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> Optional[PipelineRunResponse]:
         """Handle a call of the pipeline.
 
         This method does one of two things:
@@ -1354,7 +1355,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **kwargs: Entrypoint function keyword arguments.
 
         Returns:
-            The outputs of the entrypoint function call.
+            If called within another pipeline, returns the outputs of the
+            `entrypoint` method. Otherwise, returns the pipeline run or `None`
+            if running with a schedule.
         """
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
