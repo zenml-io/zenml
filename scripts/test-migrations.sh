@@ -252,7 +252,7 @@ function test_upgrade_to_version() {
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 
-        if [ "$(version_compare "$VERSION" "0.68.0")" == ">" ]; then
+        if [ "$(version_compare "$VERSION" "0.68.1")" == ">" ]; then
             zenml login mysql://root:password@127.0.0.1/zenml
         else
             zenml connect --url mysql://root:password@127.0.0.1/zenml --username root --password password
