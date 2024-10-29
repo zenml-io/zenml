@@ -20,7 +20,15 @@ While there are many options on how to [deploy ZenML](../../getting-started/depl
 
 ### Option 1: Sign up for a free ZenML Pro Trial
 
-[ZenML Pro](https://zenml.io/pro) comes as a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
+[ZenML Pro](https://zenml.io/pro) comes as a managed SaaS solution that offers a one-click deployment for your ZenML server.
+
+If you have the ZenML Python client already installed, you can fast-track to connecting to a trial ZenML Pro instance by simply running:
+
+```bash
+zenml login --pro
+```
+
+Alternatively, click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
 
 On top of the one-click SaaS experience, ZenML Pro also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 
@@ -35,10 +43,8 @@ To learn more about different options for [deploying ZenML, visit the deployment
 You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web-based login. This can be executed with the command:
 
 ```bash
-zenml connect --url <SERVER_URL>
+zenml login <server-url>
 ```
-
-where SERVER\_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
 
 {% hint style="info" %}
 Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/connecting-to-zenml/README.md) for more details.
@@ -47,7 +53,7 @@ Having trouble connecting with a browser? There are other ways to connect. Read 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.
 
 {% hint style="info" %}
-You can always go back to the local zenml experience by using `zenml disconnect`
+You can always go back to the local zenml experience by using `zenml logout`
 {% endhint %}
 
 ## Further resources

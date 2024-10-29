@@ -1803,7 +1803,7 @@ other things. You can start the ZenML dashboard locally by running the following
 command:
 
 ```bash
-zenml up
+zenml login --local
 ```
 
 This will start the dashboard on your local machine where you can access it at
@@ -1819,18 +1819,18 @@ zenml show
 If you want to stop the dashboard, simply run:
 
 ```bash
-zenml down
+zenml logout --local
 ```
 
-The `zenml up` command has a few additional options that you can use to
-customize how the ZenML dashboard is running.
+The `zenml login --local` command has a few additional options that you can use
+to customize how the ZenML dashboard is running.
 
 By default, the dashboard is started as a background process. On some operating
 systems, this capability is not available. In this case, you can use the
 `--blocking` flag to start the dashboard in the foreground:
 
 ```bash
-zenml up --blocking
+zenml login --local --blocking
 ```
 
 This will block the terminal until you stop the dashboard with CTRL-C.
@@ -1840,7 +1840,7 @@ run the dashboard in a Docker container. This is useful if you don't want to
 install all the Zenml server dependencies on your machine. To do so, simply run:
 
 ```bash
-zenml up --docker
+zenml login --local --docker
 ```
 
 The TCP port and the host address that the dashboard uses to listen for
@@ -1853,7 +1853,7 @@ For example, to start the dashboard on port 9000 and have it listen
 on all locally available interfaces on your machine, run:
 
 ```bash
-zenml up --port 9000 --ip-address 0.0.0.0
+zenml login --local --port 9000 --ip-address 0.0.0.0
 ```
 
 Note that the above 0.0.0.0 IP address also exposes your ZenML dashboard
@@ -1862,68 +1862,58 @@ explicit IP address that is configured on one of your local interfaces, such as
 the Docker bridge interface, which usually has the IP address `172.17.0.1`:
 
 ```bash
-zenml up --port 9000 --ip-address 172.17.0.1
+zenml login --local --port 9000 --ip-address 172.17.0.1
 ```
 
-Connecting to a ZenML Server
-----------------------------
-
-The ZenML client can be [configured to connect to a remote database or ZenML
-server](https://docs.zenml.io/how-to/connecting-to-zenml)
-with the `zenml connect` command.
-
-To connect to a ZenML server, you can either pass the configuration as command
-line arguments or as a YAML file:
-
-```bash
-zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
-```
-
-or
-
-```bash
-zenml connect --config=/path/to/zenml_server_config.yaml
-```
-
-The YAML file should have the following structure when connecting to a ZenML
-server:
-
-```yaml
-url: <The URL of the ZenML server>
-verify_ssl: |
-   <Either a boolean, in which case it controls whether the
-   server's TLS certificate is verified, or a string, in which case it
-   must be a path to a CA certificate bundle to use or the CA bundle
-   value itself>
-```
-
-Both options can be combined, in which case the command line arguments will
-override the values in the YAML file. For example:
-
-```bash
-zenml connect --no-verify-ssl --config=/path/to/zenml_server_config.yaml
-```
-
-You can open the ZenML dashboard of your currently connected ZenML server using
-the following command:
-
-```bash
-zenml show
-```
-
-If you would like to take a look at the logs for the ZenML server:
+If you would like to take a look at the logs for the local ZenML server:
 
 ```bash
 zenml logs
 ```
 
+Connecting to a ZenML Server
+----------------------------
+
+The ZenML client can be [configured to connect to a local ZenML server, a remote
+database or a remote ZenML server](https://docs.zenml.io/how-to/connecting-to-zenml)
+with the `zenml login` command.
+
+To connect or re-connect to any ZenML server, if you know its URL, you can
+simply run:
+
+```bash
+zenml login https://zenml.example.com:8080
+```
+
+Running `zenml login` without any arguments will check if your current ZenML
+server session is still valid. If it is not, you will be prompted to log in
+again. This is useful if you quickly want to refresh your CLI session when
+the current session expires.
+
+You can open the ZenML dashboard of your currently connected ZenML server using
+the following command:
+
+```bash
+zenml server show
+```
+
 Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to
 `false` then this will not open the dashboard until you set it back to `true`.
+
+The CLI can be authenticated to multiple ZenML servers at the same time,
+even though it can only be connected to one server at a time. You can list
+all the ZenML servers that the client is currently authenticated to by
+running:
+
+```bash
+zenml server list
+```
+
 To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 
 ```bash
-zenml disconnect
+zenml logout
 ```
 
 You can inspect the current ZenML configuration at any given time using the
@@ -1936,53 +1926,28 @@ zenml status
 Example output:
 
 ```
- zenml status
-Running without an active repository root.
-Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
-The current user is: 'default'
-The active workspace is: 'default' (global)
-The active stack is: 'default' (global)
-The status of the local dashboard:
-              ZenML server 'local'
-┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ URL            │ http://172.17.0.1:9000      ┃
-┠────────────────┼─────────────────────────────┨
-┃ STATUS         │ ✅                          ┃
-┠────────────────┼─────────────────────────────┨
-┃ STATUS_MESSAGE │ Docker container is running ┃
-┠────────────────┼─────────────────────────────┨
-┃ CONNECTED      │                             ┃
-┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+$ zenml status
+-----ZenML Client Status-----
+Connected to a ZenML Pro server: `test-zenml-login` [16f8a35d-5c2f-44aa-a564-b34186fbf6d6]
+  ZenML Pro Organization: My Organization
+  ZenML Pro authentication: valid until 2024-10-26 10:18:51 CEST (in 20h37m9s)
+  Dashboard: https://cloud.zenml.io/organizations/bf873af9-aaf9-4ad1-a08e-3dc6d920d590/tenants/16f8336d-5c2f-44aa-a534-b34186fbf6d6
+  API: https://6784e58f-zenml.staging.cloudinfra.zenml.io
+  Server status: 'available'
+  Server authentication: never expires
+  The active user is: 'user'
+  The active stack is: 'default' (global)
+Using configuration from: '/home/user/.config/zenml'
+Local store files are located at: '/home/user/.config/zenml/local_stores'
+
+-----Local ZenML Server Status-----
+The local daemon server is running at: http://127.0.0.1:8237
 ```
 
-The ``zenml connect`` command can also be used to configure your client with
-more advanced options, such as connecting directly to a local or remote SQL
-database. In this case, the `--raw-config` flag must be passed to instruct the
-CLI to not validate or fill in the missing configuration fields. For example,
-to connect to a remote MySQL database, run:
-
-```bash
-zenml connect --raw-config --config=/path/to/mysql_config.yaml
-```
-
-with a YAML configuration file that looks like this:
-
-```yaml
-type: sql
-url: mysql://<username>:<password>@mysql.database.com/<database_name>
-ssl_ca: |
-   -----BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE-----
-
-ssl_cert: null
-ssl_key: null
-ssl_verify_server_cert: false
-```
-
-Keep in mind, while connecting to a ZenML server, you will be provided with the
-option to `Trust this device`. If you opt out of it a 24-hour token will be
-issued for the authentication service. If you opt-in, you will be issued a 30-day token instead.
+When connecting to a ZenML server using the web login flow, you will be provided
+with the option to `Trust this device`. If you opt out of it a 24-hour token
+will be issued for the authentication service. If you opt-in, you will be
+issued a 30-day token instead.
 
 If you would like to see a list of all trusted devices, you can use:
 
@@ -2024,8 +1989,8 @@ Depending on how you set up and deployed ZenML, the secrets store keeps secrets
 in the local database or uses the ZenML server your client is connected to:
 
 * if you are using the default ZenML client settings, or if you connect your
-ZenML client to a local ZenML server started with `zenml up`, the secrets store
-is using the same local SQLite database as the rest of ZenML
+ZenML client to a local ZenML server started with `zenml login --local`, the
+secrets store is using the same local SQLite database as the rest of ZenML
 * if you connect your ZenML client to a remote ZenML server, the
 secrets are no longer managed on your local machine, but through the remote
 server instead. Secrets are stored in whatever secrets store back-end the
@@ -2259,7 +2224,7 @@ then use the issued API key to connect your ZenML client to the server with the
 CLI:
 
 ```bash
-zenml connect --url https://... --api-key <API_KEY>
+zenml login https://... --api-key
 ```
 
 or by setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
@@ -2523,6 +2488,7 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.login import *
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa

@@ -198,7 +198,7 @@ class SecretValidationLevel(StrEnum):
 class ServerProviderType(StrEnum):
     """ZenML server providers."""
 
-    LOCAL = "local"
+    DAEMON = "daemon"
     DOCKER = "docker"
 
 

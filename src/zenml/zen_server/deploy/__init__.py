@@ -15,15 +15,15 @@
 
 # DO NOT REMOVE THESE IMPORTS. They are needed so the ZenML server deployment
 # providers get registered.
-from zenml.zen_server.deploy import docker, local  # noqa
-from zenml.zen_server.deploy.deployer import ServerDeployer
+from zenml.zen_server.deploy import daemon, docker   # noqa
+from zenml.zen_server.deploy.deployer import LocalServerDeployer
 from zenml.zen_server.deploy.deployment import (
-    ServerDeployment,
-    ServerDeploymentConfig,
+    LocalServerDeployment,
+    LocalServerDeploymentConfig,
 )
 
 __all__ = [
-    "ServerDeployer",
-    "ServerDeployment",
-    "ServerDeploymentConfig",
+    "LocalServerDeployer",
+    "LocalServerDeployment",
+    "LocalServerDeploymentConfig",
 ]

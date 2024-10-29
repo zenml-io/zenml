@@ -34,6 +34,7 @@ from tests.harness.harness import TestHarness
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
+from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
 
 
@@ -238,7 +239,9 @@ def clean_default_client_session(
     original_config = GlobalConfiguration.get_instance()
     original_client = Client.get_instance()
     orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    original_credentials = CredentialsStore.get_instance()
 
+    CredentialsStore.reset_instance()
     GlobalConfiguration._reset_instance()
     Client._reset_instance()
 
@@ -265,9 +268,10 @@ def clean_default_client_session(
     else:
         del os.environ[ENV_ZENML_CONFIG_PATH]
 
-    # restore the global configuration and the client
+    # restore the global configuration, the client and the credentials store
     GlobalConfiguration._reset_instance(original_config)
     Client._reset_instance(original_client)
+    CredentialsStore.reset_instance(original_credentials)
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
