@@ -30,7 +30,7 @@ from tests.harness.model import (
 )
 
 if TYPE_CHECKING:
-    from zenml.zen_server.deploy.deployment import ServerDeployment
+    from zenml.zen_server.deploy.deployment import LocalServerDeployment
 
 
 class ServerDockerTestDeployment(BaseTestDeployment):
@@ -49,26 +49,33 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         self.default_deployment = ClientSQLiteTestDeployment(config)
 
     @property
-    def server(self) -> Optional["ServerDeployment"]:
+    def server(self) -> Optional["LocalServerDeployment"]:
         """Returns the ZenML server corresponding to this configuration.
 
         Returns:
             The server for the deployment if it exists, None otherwise.
         """
         from zenml.enums import ServerProviderType
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
+        from zenml.zen_server.deploy.exceptions import (
+            ServerDeploymentNotFoundError,
+        )
 
         # Managing the local server deployment is done through a default
         # local deployment with the same config.
         with self.default_deployment.connect():
-            deployer = ServerDeployer()
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-            if not servers:
+            deployer = LocalServerDeployer()
+            try:
+                server = deployer.get_server()
+            except ServerDeploymentNotFoundError:
                 return None
+            if (
+                server is not None
+                and server.config.provider == ServerProviderType.DOCKER
+            ):
+                return server
 
-            return servers[0]
+            return None
 
     @property
     def is_running(self) -> bool:
@@ -91,8 +98,10 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         """
         from zenml.enums import ServerProviderType
         from zenml.utils.networking_utils import scan_for_available_port
-        from zenml.zen_server.deploy.deployer import ServerDeployer
-        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
+        from zenml.zen_server.deploy.deployment import (
+            LocalServerDeploymentConfig,
+        )
 
         if self.is_running:
             logging.info(
@@ -115,9 +124,8 @@ class ServerDockerTestDeployment(BaseTestDeployment):
                     "Could not find an available port for the ZenML server."
                 )
 
-            deployer = ServerDeployer()
-            server_config = ServerDeploymentConfig(
-                name=self.config.name,
+            deployer = LocalServerDeployer()
+            server_config = LocalServerDeploymentConfig(
                 provider=ServerProviderType.DOCKER,
                 port=port,
                 image=ZENML_SERVER_IMAGE_NAME,
@@ -130,15 +138,15 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
     def down(self) -> None:
         """Tears down the deployment."""
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+        from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
         server = self.server
         if server is not None:
             # Managing the local server deployment is done through the default
             # deployment with the same config.
             with self.default_deployment.connect():
-                deployer = ServerDeployer()
-                deployer.remove_server(server.config.name)
+                deployer = LocalServerDeployer()
+                deployer.remove_server()
 
         self.default_deployment.down()
 
@@ -152,11 +160,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         Raises:
             RuntimeError: If the deployment is not running.
         """
-        from zenml.constants import (
-            DEFAULT_PASSWORD,
-            DEFAULT_USERNAME,
-        )
-
         if not self.is_running:
             raise RuntimeError(
                 f"The {self.config.name} deployment is not running."
@@ -174,8 +177,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
         return DeploymentStoreConfig(
             url=server.status.url,
-            username=DEFAULT_USERNAME,
-            password=DEFAULT_PASSWORD,
         )
 
 

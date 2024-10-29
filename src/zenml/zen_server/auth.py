@@ -20,7 +20,7 @@ from urllib.parse import urlencode
 from uuid import UUID
 
 import requests
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
@@ -38,7 +38,11 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import AuthScheme, OAuthDeviceStatus
-from zenml.exceptions import AuthorizationException, OAuthError
+from zenml.exceptions import (
+    AuthorizationException,
+    CredentialsNotValid,
+    OAuthError,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
@@ -52,6 +56,7 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
 
@@ -109,7 +114,7 @@ def _fetch_and_verify_api_key(
         The fetched API key.
 
     Raises:
-        AuthorizationException: If the API key could not be found, is not
+        CredentialsNotValid: If the API key could not be found, is not
             active, if it could not be verified against the supplied key value
             or if the associated service account is not active.
     """
@@ -122,7 +127,7 @@ def _fetch_and_verify_api_key(
             f"Authentication error: error retrieving API key " f"{api_key_id}"
         )
         logger.error(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     if not api_key.service_account.active:
         error = (
@@ -131,7 +136,7 @@ def _fetch_and_verify_api_key(
             f"associated with API key {api_key.name} is not active"
         )
         logger.exception(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     if not api_key.active:
         error = (
@@ -141,7 +146,7 @@ def _fetch_and_verify_api_key(
             f"{api_key.service_account.name} is not active"
         )
         logger.error(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     if key_to_verify and not api_key.verify_key(key_to_verify):
         error = (
@@ -149,7 +154,7 @@ def _fetch_and_verify_api_key(
             f"{api_key.name}"
         )
         logger.exception(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     # Update the "last used" timestamp of the API key
     store.update_internal_api_key(
@@ -188,7 +193,7 @@ def authenticate_credentials(
         The authenticated account details.
 
     Raises:
-        AuthorizationException: If the credentials are invalid.
+        CredentialsNotValid: If the credentials are invalid.
     """
     user: Optional[UserAuthModel] = None
     auth_context: Optional[AuthContext] = None
@@ -218,11 +223,11 @@ def authenticate_credentials(
         if not UserAuthModel.verify_password(password, user):
             error = "Authentication error: invalid username or password"
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
         if user and not user.active:
             error = f"Authentication error: user {user.name} is not active"
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
     elif activation_token is not None:
         if not UserAuthModel.verify_activation_token(activation_token, user):
@@ -231,17 +236,17 @@ def authenticate_credentials(
                 f"{user_name_or_id}"
             )
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
                 token=access_token,
             )
-        except AuthorizationException as e:
+        except CredentialsNotValid as e:
             error = f"Authentication error: error decoding access token: {e}."
             logger.exception(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
         try:
             user_model = zen_store().get_user(
@@ -253,7 +258,7 @@ def authenticate_credentials(
                 f"{decoded_token.user_id}"
             )
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
         if not user_model.active:
             error = (
@@ -261,7 +266,7 @@ def authenticate_credentials(
                 f"active"
             )
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
@@ -285,7 +290,7 @@ def authenticate_credentials(
                     f"{decoded_token.device_id}"
                 )
                 logger.error(error)
-                raise AuthorizationException(error)
+                raise CredentialsNotValid(error)
 
             if (
                 device_model.user is None
@@ -296,7 +301,7 @@ def authenticate_credentials(
                     f"does not belong to user {user_model.name}"
                 )
                 logger.error(error)
-                raise AuthorizationException(error)
+                raise CredentialsNotValid(error)
 
             if device_model.status != OAuthDeviceStatus.ACTIVE:
                 error = (
@@ -304,7 +309,7 @@ def authenticate_credentials(
                     f"is not active"
                 )
                 logger.error(error)
-                raise AuthorizationException(error)
+                raise CredentialsNotValid(error)
 
             if (
                 device_model.expires
@@ -315,7 +320,7 @@ def authenticate_credentials(
                     "has expired"
                 )
                 logger.error(error)
-                raise AuthorizationException(error)
+                raise CredentialsNotValid(error)
 
             zen_store().update_internal_authorized_device(
                 device_id=device_model.id,
@@ -340,12 +345,12 @@ def authenticate_credentials(
         if server_config().auth_scheme != AuthScheme.NO_AUTH:
             error = "Authentication error: no credentials provided"
             logger.error(error)
-            raise AuthorizationException(error)
+            raise CredentialsNotValid(error)
 
     if not auth_context:
         error = "Authentication error: invalid credentials"
         logger.error(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     return auth_context
 
@@ -634,14 +639,14 @@ def authenticate_api_key(
         The authentication context reflecting the authenticated service account.
 
     Raises:
-        AuthorizationException: If the service account could not be authorized.
+        CredentialsNotValid: If the service account could not be authorized.
     """
     try:
         decoded_api_key = APIKey.decode_api_key(api_key)
     except ValueError:
         error = "Authentication error: error decoding API key"
         logger.exception(error)
-        raise AuthorizationException(error)
+        raise CredentialsNotValid(error)
 
     internal_api_key = _fetch_and_verify_api_key(
         api_key_id=decoded_api_key.id, key_to_verify=decoded_api_key.key
@@ -666,19 +671,19 @@ def http_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    Raises:
-        HTTPException: If the credentials are invalid.
+    # noqa: DAR401
     """
     try:
         return authenticate_credentials(
             user_name_or_id=credentials.username, password=credentials.password
         )
-    except AuthorizationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Basic"},
-        )
+    except CredentialsNotValid as e:
+        # We want to be very explicit here and return a CredentialsNotValid
+        # exception encoded as a 401 Unauthorized error encoded, so that the
+        # client can distinguish between a 401 error due to invalid credentials
+        # and other 401 errors and handle them accordingly by throwing away the
+        # current access token and re-authenticating.
+        raise http_exception_from_error(e)
 
 
 class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
@@ -721,17 +726,17 @@ def oauth2_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    Raises:
-        HTTPException: If the JWT token could not be authorized.
+    # noqa: DAR401
     """
     try:
         auth_context = authenticate_credentials(access_token=token)
-    except AuthorizationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    except CredentialsNotValid as e:
+        # We want to be very explicit here and return a CredentialsNotValid
+        # exception encoded as a 401 Unauthorized error encoded, so that the
+        # client can distinguish between a 401 error due to invalid credentials
+        # and other 401 errors and handle them accordingly by throwing away the
+        # current access token and re-authenticating.
+        raise http_exception_from_error(e)
 
     return auth_context
 

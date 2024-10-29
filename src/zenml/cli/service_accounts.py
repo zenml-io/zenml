@@ -86,8 +86,8 @@ def _create_api_key(
             f"The API key value is: '{api_key.key}'\nPlease store it safely as "
             "it will not be shown again.\nTo configure a ZenML client to use "
             "this API key, run:\n\n"
-            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-            f"    '{api_key.key}'\n"
+            f"zenml login {zen_store.config.url} --api-key \n\n"
+            f"and enter the following API key when prompted: {api_key.key}\n"
         )
 
 
@@ -543,8 +543,8 @@ def rotate_api_key(
             f"The new API key value is: '{api_key.key}'\nPlease store it "
             "safely as it will not be shown again.\nTo configure a ZenML "
             "client to use this API key, run:\n\n"
-            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-            f"    '{api_key.key}'\n"
+            f"zenml login {zen_store.config.url} --api-key \n\n"
+            f"and enter the following API key when prompted: {api_key.key}\n"
         )
 
 

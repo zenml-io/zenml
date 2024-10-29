@@ -398,12 +398,7 @@ class StackComponent:
         Raises:
             ImportError: If the flavor can't be imported.
         """
-        from zenml.client import Client
-
-        flavor_model = Client().get_flavor_by_name_and_type(
-            name=component_model.flavor,
-            component_type=component_model.type,
-        )
+        flavor_model = component_model.flavor
 
         try:
             from zenml.stack import Flavor
@@ -429,7 +424,7 @@ class StackComponent:
                 id=component_model.id,
                 config=configuration,
                 labels=component_model.labels,
-                flavor=component_model.flavor,
+                flavor=component_model.flavor_name,
                 type=component_model.type,
                 created=component_model.created,
                 updated=component_model.updated,

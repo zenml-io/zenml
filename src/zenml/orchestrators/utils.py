@@ -25,11 +25,12 @@ from zenml.config.global_config import (
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
 from zenml.utils.string_utils import format_name_template
@@ -95,43 +96,65 @@ def get_config_environment_vars(
     Returns:
         Environment variable dict.
     """
+    from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.rest_zen_store import RestZenStore
 
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
 
-    if deployment and global_config.store_configuration.type == StoreType.REST:
-        # When connected to a ZenML server, if a pipeline deployment is
-        # supplied, we need to fetch an API token that will be valid for the
-        # duration of the pipeline run.
-        assert isinstance(global_config.zen_store, RestZenStore)
-        pipeline_id: Optional[UUID] = None
-        if deployment.pipeline:
-            pipeline_id = deployment.pipeline.id
-        schedule_id: Optional[UUID] = None
-        expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
-        if deployment.schedule:
-            schedule_id = deployment.schedule.id
-            # If a schedule is given, this is a long running pipeline that
-            # should not have an API token that expires.
-            expires_minutes = None
-            logger.warning(
-                "An API token without an expiration time will be generated "
-                "and used to run this pipeline on a schedule. This is very "
-                "insecure because the API token cannot be revoked in case "
-                "of potential theft without disabling the entire user "
-                "account. When deploying a pipeline on a schedule, it is "
-                "strongly advised to use a service account API key to "
-                "authenticate to the ZenML server instead of your regular "
-                "user account. For more information, see "
-                "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+    if (
+        global_config.store_configuration.type == StoreType.REST
+        and global_config.zen_store.get_store_info().auth_scheme
+        != AuthScheme.NO_AUTH
+    ):
+        credentials_store = get_credentials_store()
+        url = global_config.store_configuration.url
+        api_key = credentials_store.get_api_key(url)
+        api_token = credentials_store.get_token(url, allow_expired=False)
+        if api_key:
+            environment_vars[ENV_ZENML_STORE_PREFIX + "API_KEY"] = api_key
+        elif deployment:
+            # When connected to an authenticated ZenML server, if a pipeline
+            # deployment is supplied, we need to fetch an API token that will be
+            # valid for the duration of the pipeline run.
+            assert isinstance(global_config.zen_store, RestZenStore)
+            pipeline_id: Optional[UUID] = None
+            if deployment.pipeline:
+                pipeline_id = deployment.pipeline.id
+            schedule_id: Optional[UUID] = None
+            expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
+            if deployment.schedule:
+                schedule_id = deployment.schedule.id
+                # If a schedule is given, this is a long running pipeline that
+                # should not have an API token that expires.
+                expires_minutes = None
+                logger.warning(
+                    "An API token without an expiration time will be generated "
+                    "and used to run this pipeline on a schedule. This is very "
+                    "insecure because the API token cannot be revoked in case "
+                    "of potential theft without disabling the entire user "
+                    "account. When deploying a pipeline on a schedule, it is "
+                    "strongly advised to use a service account API key to "
+                    "authenticate to the ZenML server instead of your regular "
+                    "user account. For more information, see "
+                    "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+                )
+            new_api_token = global_config.zen_store.get_api_token(
+                pipeline_id=pipeline_id,
+                schedule_id=schedule_id,
+                expires_minutes=expires_minutes,
             )
-        api_token = global_config.zen_store.get_api_token(
-            pipeline_id=pipeline_id,
-            schedule_id=schedule_id,
-            expires_minutes=expires_minutes,
-        )
-        environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = api_token
+            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
+                new_api_token
+            )
+        elif api_token:
+            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
+                api_token.access_token
+            )
+
+    # Disable credentials caching to avoid storing sensitive information
+    # in the pipeline run environment
+    environment_vars[ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING] = "true"
 
     # Make sure to use the correct active stack/workspace which might come
     # from a .zen repository and not the global config

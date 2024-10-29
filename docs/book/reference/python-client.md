@@ -42,12 +42,12 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Run Templates**: Templates to run pipelines from the server or dashboard.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
-* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../how-to/build-pipelines/schedule-a-pipeline.md).
-* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](../how-to/customize-docker-builds/README.md).
+* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md).
+* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](../how-to/infrastructure-deployment/customize-docker-builds/README.md).
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../how-to/build-pipelines/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](../how-to/pipeline-development/build-pipelines/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication
@@ -57,10 +57,10 @@ Checkout the [documentation on fetching runs](../how-to/build-pipelines/fetching
 * **Flavors**: The [stack component flavors](../getting-started/core-concepts.md#flavor) available to you, including:
   * Built-in flavors like the [local orchestrator](../component-guide/orchestrators/local.md),
   * Integration-enabled flavors like the [Kubeflow orchestrator](../component-guide/orchestrators/kubeflow.md),
-  * Custom flavors that you have [created yourself](../how-to/stack-deployment/implement-a-custom-stack-component.md).
+  * Custom flavors that you have [created yourself](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
 * **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../how-to/interact-with-secrets.md).
-* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../how-to/auth-management/README.md).
+* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../how-to/infrastructure-deployment/auth-management/README.md).
 
 ### Client Methods
 

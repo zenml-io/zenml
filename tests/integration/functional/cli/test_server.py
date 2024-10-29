@@ -20,10 +20,10 @@ import requests
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
-from zenml.cli.server import LOCAL_ZENML_SERVER_NAME
 from zenml.config.global_config import GlobalConfiguration
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_server.deploy import ServerDeployer
+from zenml.zen_server.deploy import LocalServerDeployer
+from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 
 SERVER_START_STOP_TIMEOUT = 30
 
@@ -38,14 +38,14 @@ def test_server_cli_up_down(clean_client, mocker):
         os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
     )
     mocker.patch(
-        "zenml.zen_server.deploy.local.local_provider.LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT",
+        "zenml.zen_server.deploy.daemon.daemon_zen_server.DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT",
         60,
     )
     cli_runner = CliRunner()
 
     port = scan_for_available_port(start=8003, stop=9000)
-    up_command = cli.commands["up"]
-    cli_runner.invoke(up_command, ["--port", port])
+    login_command = cli.commands["login"]
+    cli_runner.invoke(login_command, ["--local", "--port", port])
 
     # sleep for a bit to let the server start
     time.sleep(5)
@@ -53,8 +53,8 @@ def test_server_cli_up_down(clean_client, mocker):
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health", timeout=16).status_code == 200
 
-    deployer = ServerDeployer()
-    server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)
+    deployer = LocalServerDeployer()
+    server = deployer.get_server()
     gc = GlobalConfiguration()
     assert gc.store.url == server.status.url
 
@@ -62,11 +62,12 @@ def test_server_cli_up_down(clean_client, mocker):
     mocker.patch.object(
         GlobalConfiguration, "set_default_store", return_value=None
     )
-    down_command = cli.commands["down"]
-    cli_runner.invoke(down_command)
+    logout_command = cli.commands["logout"]
+    cli_runner.invoke(logout_command)
 
     # sleep for a bit to let the server stop
     time.sleep(5)
 
-    deployer = ServerDeployer()
-    assert deployer.list_servers() == []
+    deployer = LocalServerDeployer()
+    with pytest.raises(ServerDeploymentNotFoundError):
+        server = deployer.get_server()

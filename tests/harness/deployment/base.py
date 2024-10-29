@@ -290,6 +290,7 @@ class BaseTestDeployment(ABC):
         from zenml.client import Client
         from zenml.config.global_config import GlobalConfiguration
         from zenml.config.store_config import StoreConfiguration
+        from zenml.login.credentials_store import CredentialsStore
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
         if self.config.disabled:
@@ -309,7 +310,9 @@ class BaseTestDeployment(ABC):
         original_config = GlobalConfiguration.get_instance()
         original_client = Client.get_instance()
         orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+        original_credentials = CredentialsStore.get_instance()
 
+        CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
 
@@ -346,6 +349,7 @@ class BaseTestDeployment(ABC):
         else:
             del os.environ[ENV_ZENML_CONFIG_PATH]
 
-        # restore the global configuration and the client
+        # restore the global configuration, the client and the credentials store
         GlobalConfiguration._reset_instance(original_config)
         Client._reset_instance(original_client)
+        CredentialsStore.reset_instance(original_credentials)

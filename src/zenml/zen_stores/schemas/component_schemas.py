@@ -23,9 +23,11 @@ from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models import (
+    ComponentRequest,
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+    ComponentResponseResources,
     ComponentUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -113,6 +115,39 @@ class StackComponentSchema(NamedSchema, table=True):
 
     connector_resource_id: Optional[str]
 
+    @classmethod
+    def from_request(
+        cls,
+        request: "ComponentRequest",
+        service_connector: Optional[ServiceConnectorSchema] = None,
+    ) -> "StackComponentSchema":
+        """Create a component schema from a request.
+
+        Args:
+            request: The request from which to create the component.
+            service_connector: Optional service connector to link to the
+                component.
+
+        Returns:
+            The component schema.
+        """
+        return cls(
+            name=request.name,
+            workspace_id=request.workspace,
+            user_id=request.user,
+            component_spec_path=request.component_spec_path,
+            type=request.type,
+            flavor=request.flavor,
+            configuration=base64.b64encode(
+                json.dumps(request.configuration).encode("utf-8")
+            ),
+            labels=base64.b64encode(
+                json.dumps(request.labels).encode("utf-8")
+            ),
+            connector=service_connector,
+            connector_resource_id=request.connector_resource_id,
+        )
+
     def update(
         self, component_update: "ComponentUpdate"
     ) -> "StackComponentSchema":
@@ -135,11 +170,6 @@ class StackComponentSchema(NamedSchema, table=True):
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
                 )
-            elif field == "type":
-                component_type = component_update.type
-
-                if component_type is not None:
-                    self.type = component_type
             else:
                 setattr(self, field, value)
 
@@ -159,13 +189,15 @@ class StackComponentSchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
+        Raises:
+            RuntimeError: If the flavor for the component is missing in the DB.
 
         Returns:
             A `ComponentModel`
         """
         body = ComponentResponseBody(
             type=StackComponentType(self.type),
-            flavor=self.flavor,
+            flavor_name=self.flavor,
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
@@ -192,9 +224,20 @@ class StackComponentSchema(NamedSchema, table=True):
                 if self.connector
                 else None,
             )
+        resources = None
+        if include_resources:
+            if not self.flavor_schema:
+                raise RuntimeError(
+                    f"Missing flavor {self.flavor} for component {self.name}."
+                )
+
+            resources = ComponentResponseResources(
+                flavor=self.flavor_schema.to_model()
+            )
         return ComponentResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
