@@ -240,6 +240,8 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         api_key_id=api_key.id if api_key else None,
+        pipeline_id=pipeline_id,
+        schedule_id=schedule_id
     ).encode(expires=expires)
 
     if not device and response:
