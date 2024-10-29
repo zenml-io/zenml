@@ -120,7 +120,7 @@ def get_config_environment_vars(
                 "and used to run this pipeline on a schedule. This is very "
                 "insecure because the API token cannot be revoked in case "
                 "of potential theft without disabling the entire user "
-                "accountWhen deploying a pipeline on a schedule, it is "
+                "account. When deploying a pipeline on a schedule, it is "
                 "strongly advised to use a service account API key to "
                 "authenticate to the ZenML server instead of your regular "
                 "user account. For more information, see "
