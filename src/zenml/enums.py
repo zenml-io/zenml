@@ -202,11 +202,8 @@ class SecretValidationLevel(StrEnum):
 class ServerProviderType(StrEnum):
     """ZenML server providers."""
 
-    LOCAL = "local"
+    DAEMON = "daemon"
     DOCKER = "docker"
-    AWS = "aws"
-    GCP = "gcp"
-    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):

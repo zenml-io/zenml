@@ -78,9 +78,9 @@ def update_service_status(
             if pre_status:
                 self.status.update_state(pre_status, "")
             try:
-                logger.info(f"Calling {func.__name__} method...")
+                logger.debug(f"Calling {func.__name__} method...")
                 result = func(self, *args, **kwargs)
-                logger.info(f"{func.__name__} method executed successfully.")
+                logger.debug(f"{func.__name__} method executed successfully.")
                 if post_status:
                     self.status.update_state(post_status, "")
                 return result

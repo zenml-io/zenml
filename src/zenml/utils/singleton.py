@@ -64,9 +64,21 @@ class SingletonMetaClass(type):
 
         return cls.__singleton_instance
 
-    def _clear(cls) -> None:
-        """Clear the singleton instance."""
-        cls.__singleton_instance = None
+    def _clear(cls, instance: Optional["SingletonMetaClass"] = None) -> None:
+        """Clear or replace the singleton instance.
+
+        Args:
+            instance: The new singleton instance.
+        """
+        cls.__singleton_instance = instance
+
+    def _instance(cls) -> Optional["SingletonMetaClass"]:
+        """Get the singleton instance.
+
+        Returns:
+            The singleton instance.
+        """
+        return cls.__singleton_instance
 
     def _exists(cls) -> bool:
         """Check if the singleton instance exists.
