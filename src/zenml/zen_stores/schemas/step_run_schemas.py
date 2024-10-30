@@ -229,9 +229,7 @@ class StepRunSchema(NamedSchema, table=True):
             if artifact.name not in output_artifacts:
                 output_artifacts[artifact.name] = []
             output_artifacts[artifact.name].append(
-                artifact.artifact_version.to_model(
-                    pipeline_run_id_in_context=self.pipeline_run_id
-                )
+                artifact.artifact_version.to_model()
             )
 
         full_step_config = None
