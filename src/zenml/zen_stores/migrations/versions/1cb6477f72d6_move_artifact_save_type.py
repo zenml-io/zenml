@@ -25,9 +25,11 @@ def upgrade() -> None:
     # Step 2: Move data from step_run_output_artifact.type to artifact_version.save_type
     op.execute("""
         UPDATE artifact_version
-        SET save_type = step_run_output_artifact.type
-        FROM step_run_output_artifact
-        WHERE artifact_version.id = step_run_output_artifact.artifact_id
+        SET save_type = (
+            SELECT step_run_output_artifact.type
+            FROM step_run_output_artifact
+            WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        )
     """)
     op.execute("""
         UPDATE artifact_version
@@ -68,9 +70,11 @@ def downgrade() -> None:
     # Move data back from artifact_version.save_type to step_run_output_artifact.type
     op.execute("""
         UPDATE step_run_output_artifact
-        SET type = artifact_version.save_type
-        FROM artifact_version
-        WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        SET type = (
+            SELECT artifact_version.save_type
+            FROM artifact_version
+            WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        )
     """)
     op.execute("""
         UPDATE step_run_output_artifact
