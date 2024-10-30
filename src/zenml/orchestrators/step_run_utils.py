@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -557,7 +557,9 @@ def link_output_artifacts_to_model_version(
     for output_name, output_artifacts in artifacts.items():
         for output_artifact in output_artifacts:
             artifact_config = None
-            if output_config := output_configurations.get(output_name, None):
+            if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT and (
+                output_config := output_configurations.get(output_name, None)
+            ):
                 artifact_config = output_config.artifact_config
 
             link_artifact_version_to_model_version(
