@@ -19,7 +19,11 @@ from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactSaveType, ExecutionStatus, StepRunInputArtifactType
+from zenml.enums import (
+    ArtifactSaveType,
+    ExecutionStatus,
+    StepRunInputArtifactType,
+)
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
