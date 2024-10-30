@@ -1,8 +1,9 @@
 ---
+icon: bug
 description: A guide to debug common issues and get help.
 ---
 
-# 🐞 Debug and solve issues
+#  Debug and solve issues
 
 If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
@@ -148,7 +149,7 @@ RuntimeError: Error initializing rest store with URL 'http://127.0.0.1:8237': HT
 NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9abb198550>: Failed to establish a new connection: [Errno 61] Connection refused'))
 ```
 
-If you restarted your machine after deploying ZenML then you have to run `zenml up` again after each restart. Local ZenML deployments don't survive machine restarts.
+If you restarted your machine after starting the local ZenML server with `zenml login --local`, then you have to run `zenml login --local` again after each restart. Local ZenML deployments don't survive machine restarts.
 
 #### Column 'step\_configuration' cannot be null
 

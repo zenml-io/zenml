@@ -134,6 +134,7 @@ APP_NAME = "zenml"
 # Environment variables
 ENV_ZENML_LOGGING_COLORS_DISABLED = "ZENML_LOGGING_COLORS_DISABLED"
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
+ENV_ZENML_USER_ID = "ZENML_USER_ID"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
@@ -163,7 +164,6 @@ ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING = (
 ENV_ZENML_DISABLE_WORKSPACE_WARNINGS = "ZENML_DISABLE_WORKSPACE_WARNINGS"
 ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT = "ZENML_SKIP_IMAGE_BUILDER_DEFAULT"
 ENV_ZENML_SERVER = "ZENML_SERVER"
-ENV_ZENML_LOCAL_SERVER = "ZENML_LOCAL_SERVER"
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
@@ -181,14 +181,12 @@ ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
     f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
 )
-ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD = (
-    f"{ENV_ZENML_SERVER_PREFIX}USE_LEGACY_DASHBOARD"
-)
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK = (
     "ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK"
 )
 ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING = "ZENML_PREVENT_CLIENT_SIDE_CACHING"
+ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING = "DISABLE_CREDENTIALS_DISK_CACHING"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -316,7 +314,6 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
     "payment=(), sync-xhr=(), usb=()"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
-DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
 DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES = 256 * 1024 * 1024
 
@@ -340,6 +337,7 @@ API_TOKEN = "/api_token"
 ARTIFACTS = "/artifacts"
 ARTIFACT_VERSIONS = "/artifact_versions"
 ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
+AUTH = "/auth"
 CODE_REFERENCES = "/code_references"
 CODE_REPOSITORIES = "/code_repositories"
 COMPONENT_TYPES = "/component-types"
@@ -354,7 +352,6 @@ EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
 GET_OR_CREATE = "/get-or-create"
-GRAPH = "/graph"
 HEALTH = "/health"
 INFO = "/info"
 LOGIN = "/login"
@@ -447,33 +444,6 @@ KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
-ALPHA_MESSAGE = (
-    "The mlstacks tool/package is in alpha and actively being developed. "
-    "Please avoid running mission-critical workloads on resources deployed "
-    "through these commands. If you encounter any problems, create an issue "
-    f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
-)
-NOT_INSTALLED_MESSAGE = (
-    "The prerequisites for using `mlstacks` (the `mlstacks` and "
-    "`python-terraform` packages seem to be unavailable on your machine "
-    "and/or in your environment. To install the missing dependencies: \n\n"
-    "`pip install mlstacks`"
-)
-TERRAFORM_NOT_INSTALLED_MESSAGE = (
-    "Terraform appears not to be installed on your machine and/or in your "
-    "environment. Please install Terraform and try again."
-)
-STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
-MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
-    "artifact_store",
-    "container_registry",
-    "experiment_tracker",
-    "orchestrator",
-    "model_deployer",
-    "mlops_platform",
-    "step_operator",
-]
-
 
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535
@@ -500,11 +470,3 @@ BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
 
 
 STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours
-
-# ZenML Pro
-ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT = (
-    "\nHINT: Since you are trying to communicate with the ZenML Pro Tenant, "
-    "please make sure that your tenant is in RUNNING state on your "
-    "Organization page. If the tenant is PAUSED you can `Resume` it via UI "
-    "and try again."
-)

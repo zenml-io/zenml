@@ -1,8 +1,9 @@
 ---
+icon: face-thinking
 description: Links to common use cases, workflows and tasks using ZenML.
 ---
 
-# 📚 How do I...?
+# How do I...?
 
 **Last Updated**: December 13, 2023
 
@@ -14,19 +15,17 @@ Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main
 
 * **custom components**: adding them to ZenML?
 
-Please start by [reading the general documentation page](../how-to/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
+Please start by [reading the general documentation page](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
 
 From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../component-guide/orchestrators/custom.md).
 
 * **dependency clashes** mitigation with ZenML?
 
-Check out [our dedicated documentation page](../how-to/configure-python-environments/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
+Check out [our dedicated documentation page](../how-to/infrastructure-deployment/configure-python-environments/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
 
 * **deploy cloud infrastructure** and/or MLOps stacks?
 
 ZenML is designed to be stack-agnostic, so you can use it with any cloud infrastructure or MLOps stack. Each of the documentation pages for stack components explain how to deploy these components on the most popular cloud providers.
-
-We also build and maintain [the `mlstacks` package](https://mlstacks.zenml.io/) and library which offers a dedicated way to spin up infrastructure for your ZenML pipelines. It's fully integrated into ZenML's CLI and is a great way to get started with deploying your infrastructure. ZenML also [publishes and maintains modules on the Terraform Registry](https://registry.terraform.io/namespaces/zenml-io) (which are used by `mlstacks` under the hood) which you can also use as a standalone solution if you are familiar with Terraform.
 
 * **deploy ZenML** on my internal company cluster?
 
@@ -34,7 +33,7 @@ Read [the documentation on self-hosted ZenML deployments](../getting-started/dep
 
 * **hyperparameter tuning**?
 
-[Our dedicated documentation guide](../how-to/build-pipelines/hyper-parameter-tuning.md) on implementing this is the place to learn more.
+[Our dedicated documentation guide](../how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md) on implementing this is the place to learn more.
 
 * **reset** things when something goes wrong?
 
@@ -42,7 +41,7 @@ To reset your ZenML client, you can run `zenml clean` which will wipe your local
 
 * **steps that create other steps AKA dynamic pipelines and steps**?
 
-Please read our [general information on how to compose steps + pipelines together](../user-guide/starter-guide/create-an-ml-pipeline.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/build-pipelines/hyper-parameter-tuning.md) which is related to this topic.
+Please read our [general information on how to compose steps + pipelines together](../user-guide/starter-guide/create-an-ml-pipeline.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md) which is related to this topic.
 
 * **templates**: using starter code with ZenML?
 

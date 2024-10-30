@@ -19,10 +19,7 @@ from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import (
-    ExecutionStatus,
-    StepRunInputArtifactType,
-)
+from zenml.enums import ArtifactSaveType, ExecutionStatus, StepRunInputArtifactType
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -38,7 +35,7 @@ from zenml.models import (
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
-from zenml.utils import string_utils
+from zenml.utils import pagination_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
@@ -459,7 +456,15 @@ def get_model_version_created_by_pipeline_run(
         ):
             return pipeline_run.model_version
 
-    for step_run in pipeline_run.steps.values():
+    # We fetch a list of hydrated step runs here in order to avoid hydration
+    # calls for each step separately.
+    candidate_step_runs = pagination_utils.depaginate(
+        Client().list_run_steps,
+        pipeline_run_id=pipeline_run.id,
+        model=model_name,
+        hydrate=True,
+    )
+    for step_run in candidate_step_runs:
         if step_run.config.model and step_run.model_version:
             if (
                 step_run.config.model.name == model_name
@@ -592,7 +597,9 @@ def link_output_artifacts_to_model_version(
     for output_name, output_artifacts in artifacts.items():
         for output_artifact in output_artifacts:
             artifact_config = None
-            if output_config := output_configurations.get(output_name, None):
+            if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT and (
+                output_config := output_configurations.get(output_name, None)
+            ):
                 artifact_config = output_config.artifact_config
 
             link_artifact_version_to_model_version(

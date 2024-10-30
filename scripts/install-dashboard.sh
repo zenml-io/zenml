@@ -5,7 +5,6 @@ REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"
 : "${INSTALL_DIR:=dashboard}"
-: "${LEGACY_INSTALL_DIR:=dashboard_legacy}"
 : "${VERIFY_CHECKSUM:=true}"
 # : "${DESIRED_VERSION:=latest}"
 
@@ -29,8 +28,8 @@ verifySupported() {
 # checkGitIgnore checks if the dashboard directories are ignored by Git
 checkGitIgnore() {
   if [ -f ".gitignore" ]; then
-    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)dashboard-legacy($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard-legacy($|\/)" ".gitignore"; then
-      echo "Error: The '/dashboard', '/dashboard-legacy', 'src/zenml/zen_server/dashboard-legacy' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
+    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore"; then
+      echo "Error: The '/dashboard' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
       echo "Please remove the corresponding entries from the .gitignore file to proceed with the installation."
       exit 1
     fi
@@ -167,9 +166,5 @@ if [[ -n "$TAG" ]]; then
   downloadFile "zenml-dashboard.tar.gz"
   verifyFile "zenml-dashboard.tar.gz"
   installFile "$INSTALL_DIR"
-
-  downloadFile "zenml-dashboard-legacy.tar.gz"
-  verifyFile "zenml-dashboard-legacy.tar.gz"
-  installFile "$LEGACY_INSTALL_DIR"
 fi
 cleanup

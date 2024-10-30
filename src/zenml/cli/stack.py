@@ -14,12 +14,10 @@
 """CLI for manipulating ZenML local and global config file."""
 
 import getpass
-import os
 import re
 import time
 import webbrowser
 from datetime import datetime
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -46,23 +44,14 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
-    confirmation,
-    declare,
-    error,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
     print_page_info,
     print_stacks_table,
-    verify_mlstacks_prerequisites_installation,
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.constants import (
-    ALPHA_MESSAGE,
-    MLSTACKS_SUPPORTED_STACK_COMPONENTS,
-    STACK_RECIPE_MODULAR_RECIPES,
-)
 from zenml.enums import (
     CliCategories,
     StackComponentType,
@@ -71,7 +60,6 @@ from zenml.enums import (
 from zenml.exceptions import (
     IllegalOperationError,
 )
-from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentInfo,
@@ -88,16 +76,6 @@ from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,
 )
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
-from zenml.utils.io_utils import create_dir_recursive_if_not_exists
-from zenml.utils.mlstacks_utils import (
-    convert_click_params_to_mlstacks_primitives,
-    convert_mlstacks_primitives_to_dicts,
-    deploy_mlstacks_stack,
-    get_stack_spec_file_path,
-    stack_exists,
-    stack_spec_exists,
-    verify_spec_and_tf_files_exist,
-)
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -450,7 +428,7 @@ def register_stack(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
                                 [
-                                    component.flavor,
+                                    component.flavor_name,
                                     component.name,
                                     component.configuration or "",
                                     component.connector_resource_id,
@@ -989,21 +967,11 @@ def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     type=click.STRING,
     required=False,
 )
-@click.option(
-    "--outputs",
-    "-o",
-    is_flag=True,
-    default=False,
-    help="Include the outputs from mlstacks deployments.",
-)
-def describe_stack(
-    stack_name_or_id: Optional[str] = None, outputs: bool = False
-) -> None:
+def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
         stack_name_or_id: Name of the stack to describe.
-        outputs: Include the outputs from mlstacks deployments.
     """
     client = Client()
 
@@ -1019,8 +987,6 @@ def describe_stack(
             stack=stack_,
             active=stack_.id == client.active_stack_model.id,
         )
-        if outputs:
-            cli_utils.print_stack_outputs(stack_)
 
     print_model_url(get_stack_url(stack_))
 
@@ -1441,105 +1407,6 @@ def register_secrets(
         client.update_secret(secret_name, add_or_update_values=secret_values)
 
 
-def _get_deployment_params_interactively(
-    click_params: Dict[str, Any],
-) -> Dict[str, Any]:
-    """Get deployment values from command line arguments.
-
-    Args:
-        click_params: Required and pre-existing values.
-
-    Returns:
-        Full deployment arguments.
-    """
-    deployment_values = {
-        "provider": click_params["provider"],
-        "stack_name": click_params["stack_name"],
-        "region": click_params["region"],
-    }
-    for component_type in MLSTACKS_SUPPORTED_STACK_COMPONENTS:
-        verify_mlstacks_prerequisites_installation()
-        from mlstacks.constants import ALLOWED_FLAVORS
-
-        if (
-            click.prompt(
-                f"Enable {component_type}?",
-                type=click.Choice(["y", "n"]),
-                default="n",
-            )
-            == "y"
-        ):
-            component_flavor = click.prompt(
-                f"  Enter {component_type} flavor",
-                type=click.Choice(ALLOWED_FLAVORS[component_type]),
-            )
-            deployment_values[component_type] = component_flavor
-
-    if (
-        click.prompt(
-            "Deploy using debug_mode?",
-            type=click.Choice(["y", "n"]),
-            default="n",
-        )
-        == "y"
-    ):
-        deployment_values["debug_mode"] = True
-
-    extra_config = []
-    # use click.prompt to populate extra_config until someone just hits enter
-    while True:
-        declare(
-            "\nAdd to extra_config for stack deployment -->\n",
-            bold=True,
-        )
-        key = click.prompt(
-            "Enter `extra_config` key or hit enter to skip",
-            type=str,
-            default="",
-        )
-        if key == "":
-            break
-        value = click.prompt(
-            f"Enter value for '{key}'",
-            type=str,
-        )
-        extra_config.append(f"{key}={value}")
-
-    # get mandatory GCP project_id if provider is GCP
-    # skip if project_id already specified in extra_config
-    if click_params["provider"] == "gcp" and not any(
-        s.startswith("project_id=") for s in extra_config
-    ):
-        project_id = click.prompt("What is your GCP project_id?", type=str)
-        extra_config.append(f"project_id={project_id}")
-        declare(f"Project ID '{project_id}' added to extra_config.")
-
-    deployment_values["extra_config"] = extra_config
-
-    tags = []
-    # use click.prompt to populate tags until someone just hits enter
-    while True:
-        declare(
-            "\nAdd to tags for stack deployment -->\n",
-            bold=True,
-        )
-        tag = click.prompt(
-            "Enter `tags` key or hit enter to skip",
-            type=str,
-            default="",
-        )
-        if tag == "":
-            break
-        value = click.prompt(
-            f"Enter value for '{tag}'",
-            type=str,
-        )
-        tags.append(f"{tag}={value}")
-    deployment_values["tags"] = tags
-
-    return deployment_values
-
-
 def validate_name(ctx: click.Context, param: str, value: str) -> str:
     """Validate the name of the stack.
 
@@ -1757,7 +1624,7 @@ Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
         if components:
             component = components[0]
             stack_desc += (
-                f" * `{component.flavor}` {component_type.value}: "
+                f" * `{component.flavor_name}` {component_type.value}: "
                 f"[{component.name}]({get_component_url(component)})\n"
             )
 
@@ -1790,393 +1657,6 @@ To use the `{deployed_stack.stack.name}` stack to run pipelines:
     console.print(
         Markdown(follow_up),
     )
-
-
-@stack.command(help="[DEPRECATED] Deploy a stack using mlstacks.")
-@click.option(
-    "--provider",
-    "-p",
-    "provider",
-    required=True,
-    type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
-)
-@click.option(
-    "--name",
-    "-n",
-    "stack_name",
-    type=click.STRING,
-    required=True,
-    help="Set a name for the ZenML stack that will be imported from the YAML "
-    "configuration file which gets generated after deploying the stack recipe. "
-    "Defaults to the name of the stack recipe being deployed.",
-)
-@click.option(
-    "--region",
-    "-r",
-    "region",
-    type=click.STRING,
-    required=True,
-    help="The region to deploy the stack to.",
-)
-@click.option(
-    "--no-import",
-    "-ni",
-    "no_import_stack_flag",
-    is_flag=True,
-    help="If you don't want the stack to be imported automatically.",
-)
-@click.option(
-    "--artifact-store",
-    "-a",
-    "artifact_store",
-    required=False,
-    is_flag=True,
-    help="Whether to deploy an artifact store.",
-)
-@click.option(
-    "--container-registry",
-    "-c",
-    "container_registry",
-    required=False,
-    is_flag=True,
-    help="Whether to deploy a container registry.",
-)
-@click.option(
-    "--mlops-platform",
-    "-m",
-    "mlops_platform",
-    type=click.Choice(["zenml"]),
-    required=False,
-    help="The flavor of MLOps platform to use."
-    "If not specified, the default MLOps platform will be used.",
-)
-@click.option(
-    "--orchestrator",
-    "-o",
-    required=False,
-    type=click.Choice(
-        [
-            "kubernetes",
-            "kubeflow",
-            "tekton",
-            "sagemaker",
-            "skypilot",
-            "vertex",
-        ]
-    ),
-    help="The flavor of orchestrator to use. "
-    "If not specified, the default orchestrator will be used.",
-)
-@click.option(
-    "--model-deployer",
-    "-md",
-    "model_deployer",
-    required=False,
-    type=click.Choice(["mlflow", "seldon"]),
-    help="The flavor of model deployer to use. ",
-)
-@click.option(
-    "--experiment-tracker",
-    "-e",
-    "experiment_tracker",
-    required=False,
-    type=click.Choice(["mlflow"]),
-    help="The flavor of experiment tracker to use.",
-)
-@click.option(
-    "--step-operator",
-    "-s",
-    "step_operator",
-    required=False,
-    type=click.Choice(["sagemaker"]),
-    help="The flavor of step operator to use.",
-)
-@click.option(
-    "--file",
-    "-f",
-    "file",
-    required=False,
-    type=click.Path(exists=True, dir_okay=False, readable=True),
-    help="Use a YAML specification file as the basis of the stack deployment.",
-)
-@click.option(
-    "--debug-mode",
-    "-d",
-    "debug_mode",
-    is_flag=True,
-    default=False,
-    help="Whether to run the stack deployment in debug mode.",
-)
-@click.option(
-    "--extra-config",
-    "-x",
-    "extra_config",
-    multiple=True,
-    help="Extra configurations as key=value pairs. This option can be used multiple times.",
-)
-@click.option(
-    "--tags",
-    "-t",
-    "tags",
-    required=False,
-    type=click.STRING,
-    help="Pass one or more tags.",
-    multiple=True,
-)
-@click.option(
-    "--interactive",
-    "-i",
-    "interactive",
-    is_flag=True,
-    default=False,
-    help="Deploy the stack interactively.",
-)
-@click.pass_context
-def deploy_mlstack(
-    ctx: click.Context,
-    provider: str,
-    stack_name: str,
-    region: str,
-    mlops_platform: Optional[str] = None,
-    orchestrator: Optional[str] = None,
-    model_deployer: Optional[str] = None,
-    experiment_tracker: Optional[str] = None,
-    step_operator: Optional[str] = None,
-    no_import_stack_flag: bool = False,
-    artifact_store: Optional[bool] = None,
-    container_registry: Optional[bool] = None,
-    file: Optional[str] = None,
-    debug_mode: bool = False,
-    tags: Optional[List[str]] = None,
-    extra_config: Optional[List[str]] = None,
-    interactive: bool = False,
-) -> None:
-    """Deploy a stack with mlstacks.
-
-    `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
-    same relative path before the `deploy` command.
-
-    Args:
-        ctx: The click context.
-        provider: The cloud provider to deploy the stack to.
-        stack_name: A name for the ZenML stack that gets imported as a result
-            of the recipe deployment.
-        no_import_stack_flag: If you don't want the stack to be imported into
-            ZenML after deployment.
-        artifact_store: The flavor of artifact store to deploy. In the case of
-            the artifact store, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
-        orchestrator: The flavor of orchestrator to use.
-        container_registry: The flavor of container registry to deploy. In the case of
-            the container registry, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
-        model_deployer: The flavor of model deployer to deploy.
-        experiment_tracker: The flavor of experiment tracker to deploy.
-        step_operator: The flavor of step operator to deploy.
-        extra_config: Extra configurations as key=value pairs.
-        tags: Pass one or more tags.
-        debug_mode: Whether to run the stack deployment in debug mode.
-        file: Use a YAML specification file as the basis of the stack
-            deployment.
-        mlops_platform: The flavor of MLOps platform to use.
-        region: The region to deploy the stack to.
-        interactive: Deploy the stack interactively.
-    """
-    cli_utils.warning(
-        "The `zenml stack deploy-mlstack` (former `zenml stack deploy`) CLI "
-        "command has been deprecated and will be removed in a future release. "
-        "Please use `zenml stack deploy` instead for a simplified "
-        "experience."
-    )
-
-    with track_handler(
-        event=AnalyticsEvent.DEPLOY_STACK,
-    ) as analytics_handler:
-        if stack_exists(stack_name):
-            cli_utils.error(
-                f"Stack with name '{stack_name}' already exists. Please choose a "
-                "different name."
-            )
-        elif stack_spec_exists(stack_name):
-            cli_utils.error(
-                f"Stack spec for stack named '{stack_name}' already exists. "
-                "Please choose a different name."
-            )
-
-        cli_utils.declare("Checking prerequisites are installed...")
-        cli_utils.verify_mlstacks_prerequisites_installation()
-        cli_utils.warning(ALPHA_MESSAGE)
-
-        if not file:
-            cli_params: Dict[str, Any] = ctx.params
-            if interactive:
-                cli_params = _get_deployment_params_interactively(cli_params)
-            stack, components = convert_click_params_to_mlstacks_primitives(
-                cli_params
-            )
-
-            from mlstacks.utils import zenml_utils
-
-            cli_utils.declare("Checking flavor compatibility...")
-            if not zenml_utils.has_valid_flavor_combinations(
-                stack, components
-            ):
-                cli_utils.error(
-                    "The specified stack and component flavors are not compatible "
-                    "with the provider or with one another. Please try again."
-                )
-
-            stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
-                stack, components
-            )
-            # write the stack and component yaml files
-            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
-
-            spec_dir = os.path.join(
-                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
-                "stack_specs",
-                stack.name,
-            )
-            cli_utils.declare(f"Writing spec files to {spec_dir}...")
-            create_dir_recursive_if_not_exists(spec_dir)
-
-            stack_file_path = os.path.join(
-                spec_dir, f"stack-{stack.name}.yaml"
-            )
-            write_yaml(file_path=stack_file_path, contents=stack_dict)
-            for component in component_dicts:
-                write_yaml(
-                    file_path=os.path.join(
-                        spec_dir, f"{component['name']}.yaml"
-                    ),
-                    contents=component,
-                )
-        else:
-            declare("Importing from stack specification file...")
-            stack_file_path = file
-
-            from mlstacks.utils.yaml_utils import load_stack_yaml
-
-            stack = load_stack_yaml(stack_file_path)
-
-        analytics_handler.metadata = {
-            "stack_provider": stack.provider,
-            "debug_mode": debug_mode,
-            "no_import_stack_flag": no_import_stack_flag,
-            "user_created_spec": bool(file),
-            "mlops_platform": mlops_platform,
-            "orchestrator": orchestrator,
-            "model_deployer": model_deployer,
-            "experiment_tracker": experiment_tracker,
-            "step_operator": step_operator,
-            "artifact_store": artifact_store,
-            "container_registry": container_registry,
-        }
-
-        deploy_mlstacks_stack(
-            spec_file_path=stack_file_path,
-            stack_name=stack.name,
-            stack_provider=stack.provider,
-            debug_mode=debug_mode,
-            no_import_stack_flag=no_import_stack_flag,
-            user_created_spec=bool(file),
-        )
-
-
-@stack.command(
-    help="Destroy stack components created previously with "
-    "`zenml stack deploy`"
-)
-@click.argument("stack_name", required=True)
-@click.option(
-    "--debug",
-    "-d",
-    "debug_mode",
-    is_flag=True,
-    default=False,
-    help="Whether to run Terraform in debug mode.",
-)
-def destroy(
-    stack_name: str,
-    debug_mode: bool = False,
-) -> None:
-    """Destroy all resources previously created with `zenml stack deploy`.
-
-    Args:
-        stack_name: Name of the stack
-        debug_mode: Whether to run Terraform in debug mode.
-    """
-    if not confirmation(
-        f"Are you sure you want to destroy stack '{stack_name}' and all "
-        "associated infrastructure?"
-    ):
-        error("Aborting stack destroy...")
-
-    with track_handler(
-        event=AnalyticsEvent.DESTROY_STACK,
-    ) as analytics_handler:
-        analytics_handler.metadata["debug_mode"] = debug_mode
-        cli_utils.verify_mlstacks_prerequisites_installation()
-        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
-
-        # check the stack actually exists
-        if not stack_exists(stack_name):
-            cli_utils.error(
-                f"Stack with name '{stack_name}' does not exist. Please check and "
-                "try again."
-            )
-
-        spec_file_path = get_stack_spec_file_path(stack_name)
-        spec_files_dir: str = os.path.join(
-            click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
-        )
-        user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
-
-        provider = read_yaml(file_path=spec_file_path).get("provider")
-        tf_definitions_path: str = os.path.join(
-            click.get_app_dir(MLSTACKS_PACKAGE_NAME),
-            "terraform",
-            f"{provider}-modular",
-        )
-
-        cli_utils.declare(
-            "Checking Terraform definitions and spec files are present..."
-        )
-        verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
-
-        from mlstacks.utils import terraform_utils
-
-        cli_utils.declare(
-            f"Destroying stack '{stack_name}' using Terraform..."
-        )
-        terraform_utils.destroy_stack(
-            stack_path=spec_file_path, debug_mode=debug_mode
-        )
-        cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
-
-        if cli_utils.confirmation(
-            f"Would you like to recursively delete the associated ZenML "
-            f"stack '{stack_name}'?\nThis will delete the stack and any "
-            "underlying stack components."
-        ):
-            from zenml.client import Client
-
-            client = Client()
-            client.delete_stack(name_id_or_prefix=stack_name, recursive=True)
-            cli_utils.declare(
-                f"Stack '{stack_name}' successfully deleted from ZenML."
-            )
-
-        spec_dir = os.path.dirname(spec_file_path)
-        if not user_created_spec and cli_utils.confirmation(
-            f"Would you like to delete the `mlstacks` spec directory for "
-            f"this stack, located at {spec_dir}?"
-        ):
-            rmtree(spec_files_dir)
-            cli_utils.declare(
-                f"Spec directory for stack '{stack_name}' successfully deleted."
-            )
-        cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
 
 
 @stack.command(

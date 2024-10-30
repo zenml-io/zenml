@@ -35,6 +35,6 @@ def test_stack_component_validation_prevents_extras():
     with pytest.raises(ValidationError):
         validate_stack_component_config(
             config_dict,
-            flavor_name="local_docker",
+            flavor="local_docker",
             component_type=StackComponentType.ORCHESTRATOR,
         )

@@ -45,7 +45,7 @@ class StepRunInputArtifactType(StrEnum):
 class ArtifactSaveType(StrEnum):
     """All possible method types of how artifact versions can be saved."""
 
-    STEP_OUTPUT = "default"  # output of the current step
+    STEP_OUTPUT = "step_output"  # output of the current step
     MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
     PREEXISTING = "preexisting"  # register via `zenml.register_artifact()`
     EXTERNAL = (
@@ -206,11 +206,8 @@ class SecretValidationLevel(StrEnum):
 class ServerProviderType(StrEnum):
     """ZenML server providers."""
 
-    LOCAL = "local"
+    DAEMON = "daemon"
     DOCKER = "docker"
-    AWS = "aws"
-    GCP = "gcp"
-    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):

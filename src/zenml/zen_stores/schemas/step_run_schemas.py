@@ -99,7 +99,7 @@ class StepRunSchema(NamedSchema, table=True):
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
+        target=PipelineRunSchema.__tablename__,  # type: ignore[has-type]
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",
@@ -234,9 +234,7 @@ class StepRunSchema(NamedSchema, table=True):
             if artifact.name not in output_artifacts:
                 output_artifacts[artifact.name] = []
             output_artifacts[artifact.name].append(
-                artifact.artifact_version.to_model(
-                    pipeline_run_id_in_context=self.pipeline_run_id
-                )
+                artifact.artifact_version.to_model()
             )
 
         full_step_config = None
@@ -271,6 +269,8 @@ class StepRunSchema(NamedSchema, table=True):
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
             status=ExecutionStatus(self.status),
+            start_time=self.start_time,
+            end_time=self.end_time,
             inputs=input_artifacts,
             input_types=input_artifact_types,
             outputs=output_artifacts,
@@ -288,8 +288,6 @@ class StepRunSchema(NamedSchema, table=True):
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
-                start_time=self.start_time,
-                end_time=self.end_time,
                 logs=self.logs.to_model() if self.logs else None,
                 deployment_id=self.deployment_id,
                 pipeline_run_id=self.pipeline_run_id,

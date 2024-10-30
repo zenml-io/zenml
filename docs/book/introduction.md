@@ -1,8 +1,9 @@
 ---
+icon: torii-gate
 description: Welcome to ZenML!
 ---
 
-# ⭐ Introduction
+# Introduction
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
@@ -12,15 +13,12 @@ description: Welcome to ZenML!
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
-*   <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro/zenml-pro.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
+*   <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro/README.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
 
     <figure><img src=".gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption></figcaption></figure>
 *   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
 
     ```bash
-    # Deploy ZenML to any cloud
-    zenml deploy --provider aws
-
     # Connect cloud resources with a simple wizard
     zenml stack register <STACK_NAME> --provider aws
 
@@ -129,7 +127,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>How To</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td><a href="./how-to/build-pipelines/README.md">./how-to/build-pipelines/README.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑‍🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td><a href="https://github.com/zenml-io/zenml-projects">https://github.com/zenml-io/zenml-projects</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>How To</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td><a href="./how-to/pipeline-development/build-pipelines/README.md">./how-to/pipeline-development/build-pipelines/README.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑‍🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td><a href="https://github.com/zenml-io/zenml-projects">https://github.com/zenml-io/zenml-projects</a></td></tr></tbody></table>
 {% endtab %}
 {% endtabs %}
 

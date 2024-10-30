@@ -345,6 +345,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             tags=[t.tag.to_model() for t in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
             save_type=ArtifactSaveType(self.save_type),
+            artifact_store_id=self.artifact_store_id,
         )
 
         # Create the metadata of the model
@@ -352,7 +353,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
-                artifact_store_id=self.artifact_store_id,
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},

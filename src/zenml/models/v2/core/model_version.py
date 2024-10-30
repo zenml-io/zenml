@@ -325,14 +325,11 @@ class ModelVersionResponse(
     # Helper functions
     def to_model_class(
         self,
-        was_created_in_this_run: bool = False,
         suppress_class_validation_warnings: bool = True,
     ) -> "Model":
         """Convert response model to Model object.
 
         Args:
-            was_created_in_this_run: Whether model version was created during
-                the current run.
             suppress_class_validation_warnings: internally used to suppress
                 repeated warnings.
 
@@ -352,7 +349,6 @@ class ModelVersionResponse(
             ethics=self.model.ethics,
             tags=[t.name for t in self.tags],
             version=self.name,
-            was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
             model_version_id=self.id,
         )
@@ -664,7 +660,9 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
             user_filter = and_(
                 ModelVersionSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)

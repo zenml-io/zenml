@@ -77,7 +77,7 @@ class TriggerSchema(NamedSchema, table=True):
 
     event_source_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=EventSourceSchema.__tablename__,
+        target=EventSourceSchema.__tablename__,  # type: ignore[has-type]
         source_column="event_source_id",
         target_column="id",
         # This won't happen because the SQL zen store prevents an event source

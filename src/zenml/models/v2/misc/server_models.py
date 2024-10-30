@@ -52,6 +52,8 @@ class ServerModel(BaseModel):
 
     id: UUID = Field(default_factory=uuid4, title="The unique server id.")
 
+    name: Optional[str] = Field(None, title="The name of the ZenML server.")
+
     version: str = Field(
         title="The ZenML version that the server is running.",
     )
@@ -98,10 +100,6 @@ class ServerModel(BaseModel):
     metadata: Dict[str, str] = Field(
         {},
         title="The metadata associated with the server.",
-    )
-    use_legacy_dashboard: bool = Field(
-        False,
-        title="Flag to indicate whether the server is using the legacy dashboard.",
     )
 
     last_user_activity: Optional[datetime] = Field(

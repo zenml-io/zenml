@@ -1,7 +1,7 @@
 """move artifact save type [1cb6477f72d6].
 
 Revision ID: 1cb6477f72d6
-Revises: 1d8f30c54477
+Revises: 0.68.1
 Create Date: 2024-10-10 15:44:09.465210
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1cb6477f72d6"
-down_revision = "1d8f30c54477"
+down_revision = "0.68.1"
 branch_labels = None
 depends_on = None
 
@@ -25,9 +25,16 @@ def upgrade() -> None:
     # Step 2: Move data from step_run_output_artifact.type to artifact_version.save_type
     op.execute("""
         UPDATE artifact_version
-        SET save_type = step_run_output_artifact.type
-        FROM step_run_output_artifact
-        WHERE artifact_version.id = step_run_output_artifact.artifact_id
+        SET save_type = (
+            SELECT step_run_output_artifact.type
+            FROM step_run_output_artifact
+            WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        )
+    """)
+    op.execute("""
+        UPDATE artifact_version
+        SET save_type = 'step_output'
+        WHERE artifact_version.save_type = 'default'
     """)
     op.execute("""
         UPDATE artifact_version
@@ -63,9 +70,16 @@ def downgrade() -> None:
     # Move data back from artifact_version.save_type to step_run_output_artifact.type
     op.execute("""
         UPDATE step_run_output_artifact
-        SET type = artifact_version.save_type
-        FROM artifact_version
-        WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        SET type = (
+            SELECT artifact_version.save_type
+            FROM artifact_version
+            WHERE step_run_output_artifact.artifact_id = artifact_version.id
+        )
+    """)
+    op.execute("""
+        UPDATE step_run_output_artifact
+        SET type = 'default'
+        WHERE step_run_output_artifact.type = 'step_output'
     """)
 
     # Set type to non-nullable
