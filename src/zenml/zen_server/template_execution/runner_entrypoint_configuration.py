@@ -35,11 +35,8 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         assert deployment.stack and stack.id == deployment.stack.id
 
         placeholder_run = get_placeholder_run(deployment_id=deployment.id)
-        # We don't want to cleanup the placeholder run here, as that contains
-        # the logs that help the user see what happened/why it might have failed
         deploy_pipeline(
             deployment=deployment,
             stack=stack,
             placeholder_run=placeholder_run,
-            cleanup_placeholder_run=False,
         )

@@ -120,40 +120,18 @@ def deploy_pipeline(
     deployment: "PipelineDeploymentResponse",
     stack: "Stack",
     placeholder_run: Optional["PipelineRunResponse"] = None,
-    cleanup_placeholder_run: bool = False,
 ) -> None:
     """Run a deployment.
 
     Args:
         deployment: The deployment to run.
         stack: The stack on which to run the deployment.
-        placeholder_run: An optional placeholder run for the deployment. This
-            will be deleted in case the pipeline deployment failed and
-            `cleanup_placeholder_run` is set to True.
-        cleanup_placeholder_run: If True, the placeholder run will be deleted
-            in case the pipeline deployment failed.
+        placeholder_run: An optional placeholder run for the deployment.
 
     Raises:
         Exception: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
-
-    def _cleanup_after_failure() -> None:
-        if not placeholder_run:
-            return
-
-        refreshed_run = Client().get_pipeline_run(
-            placeholder_run.id, hydrate=False
-        )
-        if refreshed_run.status != ExecutionStatus.INITIALIZING:
-            # The run is failed or some steps have already started
-            return
-
-        if cleanup_placeholder_run:
-            Client().delete_pipeline_run(placeholder_run.id)
-        else:
-            publish_failed_pipeline_run(placeholder_run.id)
-
     # Prevent execution of nested pipelines which might lead to
     # unexpected behavior
     previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
@@ -165,8 +143,17 @@ def deploy_pipeline(
             placeholder_run=placeholder_run,
         )
     except Exception as e:
-        # TODO: Ideally this would not run if the orchestrator already created a run on their end?
-        _cleanup_after_failure()
+        if (
+            placeholder_run
+            and Client()
+            .get_pipeline_run(placeholder_run.id, hydrate=False)
+            .status
+            == ExecutionStatus.INITIALIZING
+        ):
+            # The run failed during the initialization phase -> We change it's
+            # status to `Failed`
+            publish_failed_pipeline_run(placeholder_run.id)
+
         raise e
     finally:
         constants.SHOULD_PREVENT_PIPELINE_EXECUTION = previous_value
