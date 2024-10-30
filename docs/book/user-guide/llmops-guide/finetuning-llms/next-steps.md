@@ -1,6 +1,6 @@
 # Next Steps
 
-At this point, hopefully you've gone through the suggested stages of iteration -- starting small with the ultra quickstart and then using the step-by-step approach, and then finally using iterations to improve and learn more about how to improve the finetuned model. You'll have accumulated a sense of what the important areas of focus are:
+At this point, hopefully you've gone through the suggested stages of iteration to improve and learn more about how to improve the finetuned model. You'll have accumulated a sense of what the important areas of focus are:
 
 - what is it that makes your model better?
 - what is it that makes your model worse?
@@ -13,7 +13,5 @@ All of this will put you in a good position to lean into the next stages of your
 - dealing with questions of scale (more users perhaps, or realtime scenarios)
 - dealing with critical accuracy requirements, possibly requiring the finetuning of a larger model
 - dealing with the system / production requirements of having this LLM finetuning component as part of your business system(s). This notably includes monitoring, logging and continued evaluation.
-
-To use a larger base model, you'll first need to get some beefier infrastructure. At this point it's probably worth considering something beyond Google Colab so you have more choice of what infrastructure to use. The on-demand instances available are very competitive on price and you can likely snag some generous credits (like using [Modal](https://modal.com), for example) but you might also just choose serverless compute from whatever cloud platform your company already uses (AWS, GCP or Azure, i.e.). If your model is big enough, you might require training in parallel across multiple GPUs, but there are technical solutions that help you with these kinds of things, notably [Hugging Face `accelerate`](https://github.com/huggingface/accelerate). Using larger models will also have implications for inference (and you'll likely need custom infrastructure to handle your specific requirements) but a lot of the details of this will depend on your specific use case and whether it's intended for batch jobs or realtime, to take one of the most obvious possible alternative set of options.
 
 You might be tempted to just continue escalating the ladder of larger and larger models, but don't forget that iterating on your data is probably one of the highest leverage things you can do. This is especially true if you started out with only a few hundred (or dozen) examples which were used for finetuning. You still have much further you can go by adding data (either through a [flywheel approach](https://www.sh-reya.com/blog/ai-engineering-flywheel/) or by generating synthetic data) and just jumping to a more powerful model doesn't really make sense until you have the fundamentals of sufficient high-quality data addressed first.
