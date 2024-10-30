@@ -65,17 +65,32 @@ def resolve_step_inputs(
             )
 
         try:
-            os_ = step_run.outputs[input_.output_name]
-            artifact = [
-                o for o in os_ if o.save_type == ArtifactSaveType.STEP_OUTPUT
-            ].pop()
+            outputs = step_run.outputs[input_.output_name]
         except KeyError:
             raise InputResolutionError(
                 f"No step output `{input_.output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
-        input_artifacts[name] = artifact
+        step_outputs = [
+            output
+            for output in outputs
+            if output.save_type == ArtifactSaveType.STEP_OUTPUT
+        ]
+        if len(step_outputs) > 2:
+            # This should never happen, there can only be a single regular step
+            # output for a name
+            raise InputResolutionError(
+                f"Too many step outputs for output `{input_.output_name}` of "
+                f"step `{input_.step_name}`."
+            )
+        elif len(step_outputs) == 0:
+            raise InputResolutionError(
+                f"No step output `{input_.output_name}` found for step "
+                f"`{input_.step_name}`."
+            )
+
+        input_artifacts[name] = step_outputs[0]
 
     for (
         name,
