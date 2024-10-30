@@ -31,6 +31,11 @@ def upgrade() -> None:
     """)
     op.execute("""
         UPDATE artifact_version
+        SET save_type = 'step_output'
+        WHERE artifact_version.save_type = 'default'
+    """)
+    op.execute("""
+        UPDATE artifact_version
         SET save_type = 'external'
         WHERE save_type is NULL
     """)
@@ -66,6 +71,11 @@ def downgrade() -> None:
         SET type = artifact_version.save_type
         FROM artifact_version
         WHERE step_run_output_artifact.artifact_id = artifact_version.id
+    """)
+    op.execute("""
+        UPDATE step_run_output_artifact
+        SET type = 'default'
+        WHERE step_run_output_artifact.type = 'step_output'
     """)
 
     # Set type to non-nullable
