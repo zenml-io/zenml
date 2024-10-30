@@ -4,65 +4,135 @@ description: "Finetuning an LLM with Accelerate and PEFT"
 
 # Finetuning an LLM with Accelerate and PEFT
 
-This stage exists as something separate since we believe it's important to validate your use case and the chance that finetuning an LLM is the right solution. Anything which allows you to do this as quickly as possible is the way forward in our eyes, hence the Ultra Quickstart notebook.
+We're finally ready to get our hands on the code and see how it works. In this
+example we'll be finetuning models on [the Viggo
+dataset](https://huggingface.co/datasets/GEM/viggo). This is a dataset that
+contains pairs of meaning representations and their corresponding natural language
+descriptions for video game dialogues. The dataset was created to help train
+models that can generate natural language responses from structured meaning
+representations in the video game domain. It contains over 5,000 examples with
+both the structured input and the target natural language output. We'll be
+finetuning a model to learn this mapping and generate fluent responses from the
+structured meaning representations.
+
+{% hint style="info" %}
+For a
+full walkthrough of how to run the LLM finetuning yourself, visit [the LLM Lora
+Finetuning
+project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning)
+where you'll find instructions and the code.
+{% endhint %}
+
+## The Finetuning Pipeline
+
+Our finetuning pipeline combines the actual model finetuning with some
+evaluation steps to check the performance of the finetuned model.
+
+![](../../../.gitbook/assets/finetuning-pipeline.png)
+
+As you can see in the DAG visualization, the pipeline consists of the following
+steps:
+
+- **prepare_data**: we load and preprocess the Viggo dataset.
+- **finetune**: we finetune the model on the Viggo dataset.
+- **evaluate_base**: we evaluate the base model (i.e. the model before finetuning) on the Viggo dataset.
+- **evaluate_finetuned**: we evaluate the finetuned model on the Viggo dataset.
+- **promote**: we promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/use-the-model-control-plane/README.md).
+
+If you adapt the code to your own use case, the specific logic in each step
+might differ but the overall structure should remain the same. When you're
+starting out with this pipeline, you'll probably want to start with model with
+smaller size (e.g. one of the Llama 3.1 family at the ~8B parameter mark) and
+then iterate on that. This will allow you to quickly run through a number of
+experiments and see how the model performs on your use case.
 
 In this early stage, experimentation is important. Accordingly, any way you can maximise the number of experiments you can run will help increase the amount you can learn. So we want to minimise the amount of time it takes to iterate to a new experiment. Depending on the precise details of what you do, you might iterate on your data, on some hyperparameters of the finetuning process, or you might even try out different use case options.
 
-Using a high-level library like `unsloth` means that it's much harder to 'get things wrong'. So much is taken care of for you along the way that you can just focus on the places where you can intervene with the greatest value.
+## Implementation details
 
-So this ultra quickstart is all about:
+Our `prepare_data` step is very minimalistic. It loads the data from the Hugging
+Face hub and tokenizes it with the model tokenizer. Potentially for your use
+case you might want to do some more sophisticated filtering or formatting of the
+data. Make sure to be especially careful about the format of your input data,
+particularly when using instruction tuned models, since a mismatch here can
+easily lead to unexpected results. It's a good rule of thumb to log inputs and
+outputs for the finetuning step and to inspect these to make sure they look
+correct.
 
-- getting some quick vibes when using your data and seeing the results
-- seeing whether the **data <-> model <-> use case** connections are there
-- trying out some experiments:
-	- perhaps getting some intuition around which hyperparameters are most important
-	- starting to understand some of the edges and limits of what the LLM can do
-	- trying out different data
-	- 'playing' with your use case
-	- trying out inference quickly and iteratively
+For finetuning we use the `accelerate` library. This allows us to easily run the
+finetuning on multiple GPUs should you choose to do so. After setting up the
+parameters, the actual finetuning step is set up quite concisely:
 
-## Caveats
+```python
+model = load_base_model(
+        base_model_id,
+        use_accelerate=use_accelerate,
+        should_print=should_print,
+        load_in_4bit=load_in_4bit,
+        load_in_8bit=load_in_8bit,
+    )
 
-Note that the results you get from this ultra quickstart notebook will not be the absolute best results you might get. This is in part because the base models used are 4-bit versions which on the one hand allows you to work with them quickly but on the other hand compromises accuracy and sensitivity to certain tasks and/or behaviours.
+    trainer = transformers.Trainer(
+        model=model,
+        train_dataset=tokenized_train_dataset,
+        eval_dataset=tokenized_val_dataset,
+        args=transformers.TrainingArguments(
+            output_dir=output_dir,
+            warmup_steps=warmup_steps,
+            per_device_train_batch_size=per_device_train_batch_size,
+            gradient_checkpointing=False,
+            gradient_checkpointing_kwargs={'use_reentrant':False} if use_accelerate else {},
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            max_steps=max_steps,
+            learning_rate=lr,
+            logging_steps=(
+                min(logging_steps, max_steps) if max_steps >= 0 else logging_steps
+            ),
+            bf16=bf16,
+            optim=optimizer,
+            logging_dir="./logs",
+            save_strategy="steps",
+            save_steps=min(save_steps, max_steps) if max_steps >= 0 else save_steps,
+            evaluation_strategy="steps",
+            eval_steps=eval_steps,
+            do_eval=True,
+            label_names=["input_ids"],
+            ddp_find_unused_parameters=False,
+        ),
+        data_collator=transformers.DataCollatorForLanguageModeling(
+            tokenizer, mlm=False
+        ),
+        callbacks=[ZenMLCallback(accelerator=accelerator)],
+    )
+```
 
-Similarly with inference latency: there are lots of tricks which you can iterate over at a later stage once you've proved out the base fact that this LLM finetuning can solve the problem you've identified. But while experimenting at this stage the speed at which you get responses back shouldn't be taken as too much of a signal to determine whether to continue working on the problem. Of course, if your use case has you passing tens of thousands of tokens into the LLM prompt, you might want to reconsider the use case and see how you can scope it down and reduce this input token count as it *will* affect performance.
+Here are some things to note:
 
-Also bear in mind that there is a lot of complexity hidden under the hood of `unsloth` (and libraries like it, e.g. [`axolotl`](https://github.com/axolotl-ai-cloud/axolotl)). This isn't so important right now at this stage, but you shouldn't be lulled into complacency that LLM finetuning doesn't bring technical complexity and challenges into your system.
+- The `ZenMLCallback` is used to log the training and evaluation metrics to
+  ZenML.
+- The `gradient_checkpointing_kwargs` are used to enable gradient checkpointing
+  when using Accelerate.
+- All the other significant parameters are parameterised in the configuration file that is
+  used to run the pipeline. This means that you can easily swap out different
+  values to try out different configurations without having to edit the code.
 
-## Next Steps
+For the evaluation steps, we use [the `evaluate` library](https://github.com/huggingface/evaluate) to compute the ROUGE
+scores. ROUGE (Recall-Oriented Understudy for Gisting Evaluation) is a set of metrics for evaluating automatic summarization and machine translation. It works by comparing generated text against reference texts by measuring:
 
-The most important thing is to make the connection between the ultra quickstart notebook and your own data. Update the notebook as instructed and try to get your use case working.
+- ROUGE-N: Overlap of n-grams (sequences of n consecutive words) between generated and reference texts
+- ROUGE-L: Longest Common Subsequence between generated and reference texts
+- ROUGE-W: Weighted Longest Common Subsequence that favors consecutive matches
+- ROUGE-S: Skip-bigram co-occurrence statistics between generated and reference texts
 
-Once you've spent a bit of time here and have experimented to the extent that
-you have more of an understanding of some of the points raised above, then you
-will want to shift to more production-grade libraries which offer you more
-control. At this point not only can you start to see just how good you can get
-your finetuned model for your use case, but you can also start to get a sense of
-what putting this all into production will mean. This relates to both the
-workflows within your company as well as the actual architectural and procedural
-decisions being made.
+These metrics help quantify how well the generated text captures the key
+information and phrasing from the reference text, making them useful for
+evaluating model outputs.
 
+It is a generic evaluation that can be used for a wide range of tasks beyond
+just finetuning LLMs. We use it here as a placeholder for a more sophisticated
+evaluation step. See the next [evaluation section](./evaluation-for-finetuning.md) for more.
 
-At a high level, the process of finetuning an LLM remains the same no matter whether you're choosing [the ultra quickstart version](ultra-quickstart.md) or this step-by-step version.
-
-The difference emerges in the implementation and how much of the details you can change. In reality, you'll probably not need to fiddle *too* much with these details but in order to eke out those final percentage points of performance you might need that level of control.
-
-Moreover, in this notebook you can step up the precision of the models in a more clear way, allowing you to see what the maximum possible accuracy on your use case might be. (Note that using larger models at higher degrees of precision might mean you might require a more powerful compute instance than just a free Colab with a T4 accelerator.)
-
-The implementation uses some industry-standard libraries from Hugging Face (like [`transformers`](https://github.com/huggingface/transformers) and [`PEFT`](https://github.com/huggingface/peft)) as well as performance optimisers like [`bitsandbytes`](https://github.com/bitsandbytes-foundation/bitsandbytes). The specific implementation in the notebook is itself heavily derived from [this notebook](https://github.com/brevdev/notebooks/blob/main/mistral-finetune.ipynb) and updated for the purposes of this guide.
-
-More control and customisation options mean — in turn — that you have more ways to mess things up. There are fewer guardrails here and fewer clear blockers preventing you from doing things that may not make sense and/or may harm your performance. This is another reason why we offered the ultra quickstart since this allows you to build up intuition around how your use case might work in a general sense. Once you have that intuition then when you fiddle around in the guts of the finetuning process and something goes wrong you might be better placed to notice that something is off.
-
-## What to do
-
-The main parts of this step-by-step workflow are as follows:
-
-- **data ingestion and processing**: we load and transform our custom data such that it is in the right format for LLM finetuning
-- **model initialisation**: we load our model in whatever configuration allows it to a) load in the Colab environment with a T4 GPU and b) gives the performance and results we need. This stage uses `bitsandbytes` to support 4-bit loading. We also tokenise our data and prompt at this stage such that it's ready for finetuning (which is implemented across tokens, after all, and not words themselves).
-- **initial testing**: we try out our specific use case using the base (i.e. not-yet finetuned) model to see how well it performs
-- **LoRA setup**: we specific some of the parameters for our LoRA adapter. This allows us to spend significantly less time and compute (and memory) finetuning our model.
-- **train model**: this is the point where we actually finetune the model.
-- **inference**: this is where we use the finetuned model in the same scenario as tested prior to finetuning to see if we got any improved performance.
+## Dataset iteration
 
 While these stages offer lots of surface area for intervention and customisation, the most significant thing to be careful with is the data that you input into the model. If you find that your finetuned model offers worse performance than the base, or if you get garbled output post-fine tuning, this would be a strong indicator that you have not correctly formatted your input data, or something is mismatched with the tokeniser and so on. To combat this, be sure to inspect your data at all stages of the process!
 
@@ -77,8 +147,7 @@ evaluations up and running, you can then start thinking through all the optimal
 parameters and measuring whether these updates are actually doing what you think
 they will.
 
-
-Most of the work of iterating to see how well a finetuned LLM can address your use case will happen using the step by step guide and notebook. You'll be figuring out the extent to which the LLM can solve your problem and trying to put some actual numbers to how good you can make it work. At a certain point, your mind will start to think beyond the details of what data you use as inputs and what hyperparameters or base models to experiment with. At that point you'll start to turn to the following:
+At a certain point, your mind will start to think beyond the details of what data you use as inputs and what hyperparameters or base models to experiment with. At that point you'll start to turn to the following:
 
 - [better evaluations](./evaluation-for-finetuning.md)
 - [how the model will be served (inference)](./deploying-finetuned-models.md)
