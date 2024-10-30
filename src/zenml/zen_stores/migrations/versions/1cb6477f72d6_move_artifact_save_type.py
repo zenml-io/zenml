@@ -1,7 +1,7 @@
 """move artifact save type [1cb6477f72d6].
 
 Revision ID: 1cb6477f72d6
-Revises: 1d8f30c54477
+Revises: 0.68.1
 Create Date: 2024-10-10 15:44:09.465210
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1cb6477f72d6"
-down_revision = "1d8f30c54477"
+down_revision = "0.68.1"
 branch_labels = None
 depends_on = None
 
