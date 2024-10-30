@@ -12,8 +12,7 @@ different options available to you.
 Before diving into specific deployment options, you should understand the
 various factors that influence the deployment process. One of the primary
 considerations is the memory and machine requirements for your finetuned model.
-As we've already seen in the sections where we worked on [the
-actual](ultra-quickstart.md) [finetuning process](step-by-step-guide.md), LLMs
+LLMs
 are typically resource-intensive, requiring substantial RAM, processing power
 and specialised hardware. This choice of hardware can significantly impact both
 performance and cost, so it's crucial to strike the right balance based on your
@@ -30,7 +29,7 @@ latency and resource utilisation.
 Optimisation techniques, such as quantisation, can help reduce the resource
 footprint of your model. However, these optimisations often come with additional
 steps in your workflow and require careful evaluation to ensure they don't
-negatively impact model performance. [Rigorous evaluation](evaluation.md)
+negatively impact model performance. [Rigorous evaluation](./evaluation-for-finetuning.md)
 becomes crucial in quantifying the extent to which you can optimise without
 compromising accuracy or functionality.
 
@@ -41,7 +40,7 @@ each with its own set of advantages and challenges:
 
 1. **Roll Your Own**: This approach involves setting up and managing your own
    infrastructure. While it offers the most control and customisation, it also
-   requires significant expertise and resources to maintain. For this, you'd
+   requires expertise and resources to maintain. For this, you'd
    usually create some kind of Docker-based service (a FastAPI endpoint, for
    example) and deploy this on your infrastructure, with you taking care of all
    of the steps along the way.
@@ -63,18 +62,14 @@ requirements like speed, throughput, and accuracy needs.
 
 ## Cloud-Specific Deployment Options
 
-Given your production workloads are predominantly hosted on AWS, with some teams
-using GCP, it's important to explore cloud-specific deployment architectures
-that cater to real-time customer engagement. 
-
 For AWS deployments, Amazon SageMaker stands out as a fully managed machine
-learning platform that offers seamless deployment of LLMs with options for
+learning platform that offers deployment of LLMs with options for
 real-time inference endpoints and automatic scaling. If you prefer a serverless
 approach, combining AWS Lambda with API Gateway can host your model and trigger
 it for real-time responses, though be mindful of potential cold start issues.
 For teams seeking more control over the runtime environment while still
 leveraging AWS's managed infrastructure, Amazon ECS or EKS with Fargate provides
-an excellent container orchestration solution, though do note that wich all of
+an excellent container orchestration solution, though do note that with all of
 these options you're taking on a level of complexity that might become costly to
 manage in-house.
 
@@ -87,7 +82,7 @@ Engine (GKE) for deploying containerized models.
 
 ## Architectures for Real-Time Customer Engagement
 
-Ensuring your system can engage with customers in real-time requires careful
+Ensuring your system can engage with customers in real-time, for example, requires careful
 architectural consideration. One effective approach is to deploy your model
 across multiple instances behind a load balancer, using auto-scaling to
 dynamically adjust the number of instances based on incoming traffic. This setup
@@ -100,8 +95,8 @@ that may take longer to process, an asynchronous architecture using message
 queues (such as Amazon SQS or Google Cloud Pub/Sub) can manage request backlogs
 and prevent timeouts, ensuring a smooth user experience even under heavy load.
 
-For global deployments, edge computing services like AWS Lambda@Edge or
-CloudFront Functions can be invaluable. These allow you to deploy lighter
+For global deployments, edge computing services like [AWS Lambda@Edge](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-at-the-edge.html?tag=soumet-20) or
+[CloudFront Functions](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions.html?tag=soumet-20) can be invaluable. These allow you to deploy lighter
 versions of your model closer to end-users, significantly reducing latency for
 initial responses and improving the overall user experience.
 
@@ -109,8 +104,7 @@ initial responses and improving the overall user experience.
 
 Optimizing your deployment for low latency and high throughput is crucial for
 real-time engagement. Start by focusing on model optimization techniques such as
-quantization to reduce model size and inference time. You'll note that we
-already did this a little in the guides and notebooks. You might also explore
+quantization to reduce model size and inference time. You might also explore
 distillation techniques to create smaller, faster models that approximate the
 performance of larger ones without sacrificing too much accuracy.
 
@@ -123,7 +117,7 @@ forward pass, increasing overall throughput. This can be particularly effective
 when combined with parallel processing techniques, utilizing multi-threading or
 multi-processing to handle multiple requests concurrently. This would make sense
 if you were operating at serious scale, but this is probably unlikely in the
-short-term.
+short-term when you are just getting started.
 
 Finally, implement detailed monitoring and use profiling tools to identify
 bottlenecks in your inference pipeline. This ongoing process of measurement and

@@ -20,6 +20,9 @@ By implementing a robust evaluation strategy, you can develop more reliable, per
 
 ## Types of Evaluations
 
+Please note that the approach taken for these evaluations is similar to that
+used and [showcased in the RAG guide](../evaluation/README.md).
+
 ### Custom Evals
 
 Custom evals are tailored to your specific use case and can be categorised into two main types:
