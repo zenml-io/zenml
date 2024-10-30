@@ -85,6 +85,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
+from zenml.config.step_configurations import Step
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -8035,13 +8036,23 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            deployment_model = step_schema.deployment.to_model(
+                include_metadata=True
+            )
+
             # Save input artifact IDs into the database.
             for input_name, artifact_version_id in step_run.inputs.items():
+                input_type = self._get_step_run_input_type(
+                    input_name=input_name,
+                    step_config=deployment_model.step_configurations[
+                        step_run.name
+                    ],
+                )
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
                     artifact_version_id=artifact_version_id,
                     name=input_name,
-                    input_type=step_run.input_types[input_name],
+                    input_type=input_type,
                     session=session,
                 )
 
@@ -8185,6 +8196,37 @@ class SqlZenStore(BaseZenStore):
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
+            )
+
+    def _get_step_run_input_type(
+        self,
+        input_name: str,
+        step: Step,
+    ) -> StepRunInputArtifactType:
+        """Get the input type of an artifact.
+
+        Args:
+            input_name: The name of the input artifact.
+            step: The step.
+
+        Raises:
+            ValueError: If the input name does not refer to a valid step input.
+
+        Returns:
+            The input type of the artifact.
+        """
+        if input_name in step.spec.inputs:
+            return StepRunInputArtifactType.STEP_OUTPUT
+        if input_name in step.config.external_input_artifacts:
+            return StepRunInputArtifactType.EXTERNAL
+        elif (
+            input_name in step.config.model_artifacts_or_metadata
+            or input_name in step.config.client_lazy_loaders
+        ):
+            return StepRunInputArtifactType.LAZY_LOADED
+        else:
+            raise ValueError(
+                f"Unable to get input type for input {input_name}"
             )
 
     @staticmethod

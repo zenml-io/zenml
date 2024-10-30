@@ -22,7 +22,6 @@ from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
-    StepRunInputArtifactType,
 )
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
@@ -108,14 +107,8 @@ class StepRunRequestFactory:
             input_name: artifact.id
             for input_name, artifact in input_artifacts.items()
         }
-        input_types = {}
-        for input_name in input_artifacts:
-            input_types[input_name] = self._define_input_type(
-                input_name=input_name, step=step
-            )
 
         request.inputs = input_artifact_ids
-        request.input_types = input_types
         request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(
@@ -150,7 +143,6 @@ class StepRunRequestFactory:
                     input_name: artifact.id
                     for input_name, artifact in cached_step_run.inputs.items()
                 }
-                request.input_types = cached_step_run.input_types.copy()
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
@@ -247,30 +239,6 @@ class StepRunRequestFactory:
                     return step.docstring, step.source_code
 
         return None, None
-
-    def _define_input_type(
-        self, input_name: str, step: Step
-    ) -> StepRunInputArtifactType:
-        """Define the input type of an artifact.
-
-        Args:
-            input_name: The name of the input artifact.
-            step: The step instance.
-
-        Returns:
-            The input type of the artifact.
-        """
-        if input_name in step.spec.inputs:
-            return StepRunInputArtifactType.STEP_OUTPUT
-        elif input_name in step.config.external_input_artifacts:
-            return StepRunInputArtifactType.EXTERNAL
-        elif (
-            input_name in step.config.model_artifacts_or_metadata
-            or input_name in step.config.client_lazy_loaders
-        ):
-            return StepRunInputArtifactType.LAZY_LOADED
-        else:
-            return StepRunInputArtifactType.MANUAL
 
 
 def find_cacheable_invocation_candidates(

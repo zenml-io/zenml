@@ -99,10 +99,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="The IDs of the input artifact versions of the step run.",
         default_factory=dict,
     )
-    input_types: Dict[str, StepRunInputArtifactType] = Field(
-        title="The types of the input artifacts of the step run.",
-        default_factory=dict,
-    )
     outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
