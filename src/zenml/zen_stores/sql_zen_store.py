@@ -8212,9 +8212,6 @@ class SqlZenStore(BaseZenStore):
             step_config: The step config.
             step_spec: The step spec.
 
-        Raises:
-            ValueError: If the input name does not refer to a valid step input.
-
         Returns:
             The input type of the artifact.
         """
@@ -8228,9 +8225,7 @@ class SqlZenStore(BaseZenStore):
         ):
             return StepRunInputArtifactType.LAZY_LOADED
         else:
-            raise ValueError(
-                f"Unable to get input type for input {input_name}"
-            )
+            return StepRunInputArtifactType.MANUAL
 
     @staticmethod
     def _set_run_step_parent_step(
