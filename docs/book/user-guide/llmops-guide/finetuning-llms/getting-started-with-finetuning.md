@@ -59,6 +59,6 @@ For structured data extraction, you might measure:
 
 Now that you have a clear understanding of how to scope your finetuning project,
 select appropriate data, and evaluate results, you're ready to dive into the
-technical implementation. In the next section, we'll walk through [a practical
-example of finetuning using the Accelerate library](user-guide/llmops-guide/finetuning-llms/finetuning-with-accelerate.md), showing you how to implement
+technical implementation. In the next section, we'll walk through [a practical example of finetuning using the Accelerate library](./finetuning-with-accelerate.md),
+showing you how to implement
 these concepts in code.
