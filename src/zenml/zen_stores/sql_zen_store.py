@@ -4564,7 +4564,7 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"Unable to create run template in workspace "
                     f"'{existing_template.workspace.name}': A run template "
-                    "with this name already exists."
+                    f"with the name '{template.name}' already exists."
                 )
 
             deployment = session.exec(
