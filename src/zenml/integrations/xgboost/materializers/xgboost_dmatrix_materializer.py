@@ -64,10 +64,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
 
         with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
-
-            with open(temp_file, "wb"):
-                matrix.save_binary(temp_file)
-
+            matrix.save_binary(temp_file)
             fileio.copy(temp_file, filepath)
 
     def extract_metadata(
