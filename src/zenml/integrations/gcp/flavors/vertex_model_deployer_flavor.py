@@ -58,13 +58,13 @@ class VertexBaseConfig(BaseModel):
     machine_type: Optional[str] = None
     accelerator_type: Optional[str] = None
     accelerator_count: Optional[int] = None
-    min_replica_count: Optional[int] = None
-    max_replica_count: Optional[int] = None
+    min_replica_count: Optional[int] = 1
+    max_replica_count: Optional[int] = 1
     service_account: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
     network: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
-    sync: Optional[bool] = True
+    sync: Optional[bool] = False
     deploy_request_timeout: Optional[int] = None
     autoscaling_target_cpu_utilization: Optional[float] = None
     autoscaling_target_accelerator_duty_cycle: Optional[float] = None
@@ -72,6 +72,7 @@ class VertexBaseConfig(BaseModel):
     disable_container_logging: Optional[bool] = None
     explanation_metadata: Optional[Dict[str, str]] = None
     explanation_parameters: Optional[Dict[str, str]] = None
+    existing_endpoint: Optional[str] = None
 
 
 class VertexModelDeployerConfig(

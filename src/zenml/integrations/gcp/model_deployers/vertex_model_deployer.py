@@ -138,19 +138,19 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         )
 
     def _create_deployment_service(
-        self, id: UUID, timeout: int, config: VertexModelDeployerConfig
+        self, id: UUID, timeout: int, config: VertexAIDeploymentConfig
     ) -> VertexDeploymentService:
-        """Creates a new DatabricksDeploymentService.
+        """Creates a new VertexAIDeploymentService.
 
         Args:
-            id: the UUID of the model to be deployed with Databricks model deployer.
-            timeout: the timeout in seconds to wait for the Databricks inference endpoint
+            id: the UUID of the model to be deployed with Vertex model deployer.
+            timeout: the timeout in seconds to wait for the Vertex inference endpoint
                 to be provisioned and successfully started or updated.
-            config: the configuration of the model to be deployed with Databricks model deployer.
+            config: the configuration of the model to be deployed with Vertex model deployer.
 
         Returns:
             The VertexModelDeployerConfig object that can be used to interact
-            with the Databricks inference endpoint.
+            with the Vertex inference endpoint.
         """
         # create a new service for the new model
         service = VertexDeploymentService(uuid=id, config=config)
@@ -197,14 +197,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
                 "store_type": client.zen_store.type.value,
                 **stack_metadata,
             }
-
-            # Create a service artifact
-            client.create_artifact(
-                name=VERTEX_SERVICE_ARTIFACT,
-                artifact_store_id=client.active_stack.artifact_store.id,
-                producer=service,
-            )
-
         return service
 
     def perform_stop_model(
@@ -258,10 +250,10 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """
         service = cast(VertexDeploymentService, service)
         service.stop(timeout=timeout, force=force)
-        service.delete()
+        service.stop()
 
     @staticmethod
-    def get_model_server_info(
+    def get_model_server_info(  # type: ignore[override]
         service_instance: "VertexDeploymentService",
     ) -> Dict[str, Optional[str]]:
         """Get information about the deployed model server.

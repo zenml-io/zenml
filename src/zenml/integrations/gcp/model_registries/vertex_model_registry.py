@@ -159,7 +159,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             )
             return RegistryModelVersion(
                 version=version_info.version_id,
-                model_source_uri=model_source_uri,
+                model_source_uri=version_info.resource_name,
                 model_format="Custom",  # Vertex AI doesn't provide this info directly
                 registered_model=self.get_model(version_info.name),
                 description=description,
