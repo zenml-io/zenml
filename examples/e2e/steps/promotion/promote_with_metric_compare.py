@@ -18,7 +18,6 @@
 from utils import promote_in_model_registry
 
 from zenml import Model, get_step_context, step
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,7 +29,6 @@ def promote_with_metric_compare(
     current_metric: float,
     mlflow_model_name: str,
     target_env: str,
-    uri: str,
 ) -> None:
     """Try to promote trained model.
 
@@ -58,18 +56,6 @@ def promote_with_metric_compare(
 
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     should_promote = True
-
-    model_registry = Client().active_stack.model_registry
-
-    # Register model version
-    model_version = model_registry.register_model_version(
-        name=mlflow_model_name,
-        version="1",
-        model_source_uri=uri,
-        description="test_register_model_version",
-    )
-
-    breakpoint()
 
     # Get model version numbers from Model Control Plane
     latest_version = get_step_context().model
