@@ -810,18 +810,14 @@ class Stack:
         self,
         deployment: "PipelineDeploymentResponse",
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> None:
         """Deploys a pipeline on this stack.
 
         Args:
             deployment: The pipeline deployment.
             placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
-
-        Returns:
-            The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        return self.orchestrator.run(
+        self.orchestrator.run(
             deployment=deployment, stack=self, placeholder_run=placeholder_run
         )
 

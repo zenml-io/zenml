@@ -1525,6 +1525,13 @@ If you wish to rename your stack, use the following command:
 zenml stack rename STACK_NAME NEW_STACK_NAME
 ```
 
+If you would like to export the requirements of your stack, you can
+use the command:
+
+```bash
+zenml stack export-requirements <STACK_NAME>
+```
+
 If you want to copy a stack component, run the following command:
 ```bash
 zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
