@@ -149,7 +149,7 @@ def _store_artifact_data_and_prepare_request(
     materializer.uri = materializer.uri.replace("\\", "/")
 
     data_type = type(data)
-    materializer.validate_type_compatibility(data_type)
+    materializer.validate_save_type_compatibility(data_type)
     materializer.save(data)
 
     visualizations = (
