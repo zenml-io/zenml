@@ -237,9 +237,7 @@ And finally, here are some other examples and use cases for inspiration:
   <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
     <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
   </a>
-
-  <p><strong>LLM Engineer's Handbook</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>Machine Learning Engineering with Python</strong><br>
-  by Paul Iusztin & Maxime Labonne &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; by Andrew McMahon</p>
+  </br></br>
 </div>
 
 ZenML is featured in these comprehensive guides to modern MLOps and LLM engineering. Learn how to build production-ready machine learning systems with real-world examples and best practices.
