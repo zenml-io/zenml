@@ -86,33 +86,33 @@ This docs section consists of information that makes it easier to provision, con
   <tbody>
     <tr>
       <td><mark style="color:purple;"><strong>Deploy a cloud stack with ZenML</strong></mark></td>
-      <td>Description of deploying a cloud stack with ZenML.</td>
+      <td>Deploy a cloud stack with ZenML</td>
       <td><a href="./deploy-a-cloud-stack.md">./deploy-a-cloud-stack.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Register a cloud stack</strong></mark></td>
-      <td>Description of registering a cloud stack.</td>
+      <td>Register a cloud stack</td>
       <td><a href="./register-a-cloud-stack.md">./register-a-cloud-stack.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Deploy a cloud stack with Terraform</strong></mark></td>
-      <td>Description of deploying a cloud stack with Terraform.</td>
+      <td>Deploy a cloud stack with Terraform</td>
       <td><a href="./deploy-a-cloud-stack-with-terraform.md">./deploy-a-cloud-stack-with-terraform.md</a></td>
     </tr>
     <tr>
+      <td><mark style="color:purple;"><strong>Export and install stack requirements</strong></mark></td>
+      <td>Export and install stack requirements</td>
+      <td><a href="./export-stack-requirements.md">./export-stack-requirements.md</a></td>
+    </tr>
+    <tr>
       <td><mark style="color:purple;"><strong>Reference secrets in stack configuration</strong></mark></td>
-      <td>Description of referencing secrets in stack configuration.</td>
+      <td>Reference secrets in stack configuration</td>
       <td><a href="./reference-secrets-in-stack-configuration.md">./reference-secrets-in-stack-configuration.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Implement a custom stack component</strong></mark></td>
       <td>Creating your custom stack component solutions.</td>
       <td><a href="./implement-a-custom-stack-component.md">./implement-a-custom-stack-component.md</a></td>
-    </tr>
-    <tr>
-      <td><mark style="color:purple;"><strong>Implement a custom integration</strong></mark></td>
-      <td>Description of implementing a custom integration.</td>
-      <td><a href="./implement-a-custom-integration.md">./implement-a-custom-integration.md</a></td>
     </tr>
   </tbody>
 </table>

@@ -53,6 +53,8 @@ As you can see a stack can be **active** on your **client**. This simply means t
 {% endtab %}
 {% endtabs %}
 
+You can get the `pip` requirements of your stack by running the `zenml stack export-requirements <STACK-NAME>` CLI command.
+
 ## Components of a stack
 
 As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.
