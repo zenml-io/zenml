@@ -15,7 +15,7 @@
 
 import io
 import sys
-from typing import NoReturn, Optional
+from typing import Optional
 
 from openai import OpenAI
 from rich.console import Console
@@ -51,7 +51,9 @@ def openai_alerter_failure_hook_helper(
         openai_secret = client.get_secret(
             "openai", allow_partial_name_match=False
         )
-        openai_api_key: Optional[str] = openai_secret.secret_values.get("api_key")
+        openai_api_key: Optional[str] = openai_secret.secret_values.get(
+            "api_key"
+        )
     except (KeyError, NotImplementedError):
         openai_api_key = None
 
@@ -71,7 +73,7 @@ def openai_alerter_failure_hook_helper(
         openai_client = OpenAI(
             api_key=openai_api_key,
             max_retries=3,  # Will retry 3 times with exponential backoff
-            timeout=60.0,   # 60 second timeout
+            timeout=60.0,  # 60 second timeout
         )
 
         # Create chat completion using the new client pattern
@@ -81,28 +83,30 @@ def openai_alerter_failure_hook_helper(
                 {
                     "role": "user",
                     "content": f"This is an error message (following an exception of type '{type(exception)}') "
-                              f"I encountered while executing a ZenML step. Please suggest ways I might fix the problem. "
-                              f"Feel free to give code snippets as examples, and note that your response will be piped "
-                              f"to a Slack bot so make sure the formatting is appropriate: {exception} -- {rich_traceback}. "
-                              f"Thank you!",
+                    f"I encountered while executing a ZenML step. Please suggest ways I might fix the problem. "
+                    f"Feel free to give code snippets as examples, and note that your response will be piped "
+                    f"to a Slack bot so make sure the formatting is appropriate: {exception} -- {rich_traceback}. "
+                    f"Thank you!",
                 }
             ],
         )
-        
+
         suggestion = response.choices[0].message.content
 
         # Format the alert message
-        message = "\n".join([
-            "*Failure Hook Notification! Step failed!*",
-            "",
-            f"Run name: `{context.pipeline_run.name}`",
-            f"Step name: `{context.step_run.name}`",
-            f"Parameters: `{context.step_run.config.parameters}`",
-            f"Exception: `({type(exception)}) {exception}`",
-            "",
-            f"*OpenAI ChatGPT's suggestion (model = `{model_name}`) on how to fix it:*\n `{suggestion}`",
-        ])
-        
+        message = "\n".join(
+            [
+                "*Failure Hook Notification! Step failed!*",
+                "",
+                f"Run name: `{context.pipeline_run.name}`",
+                f"Step name: `{context.step_run.name}`",
+                f"Parameters: `{context.step_run.config.parameters}`",
+                f"Exception: `({type(exception)}) {exception}`",
+                "",
+                f"*OpenAI ChatGPT's suggestion (model = `{model_name}`) on how to fix it:*\n `{suggestion}`",
+            ]
+        )
+
         alerter.post(message)
     elif not openai_api_key:
         logger.warning(
