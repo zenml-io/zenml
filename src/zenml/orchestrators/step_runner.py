@@ -163,6 +163,10 @@ class StepRunner:
                 },
             )
 
+            from zenml.materializers import base_materializer
+            base_materializer._ACTIVE_CLEANUP_REGISTRY = base_materializer.CleanupRegistry()
+
+
             # Parse the inputs for the entrypoint function.
             function_params = self._parse_inputs(
                 args=spec.args,
@@ -246,6 +250,8 @@ class StepRunner:
                                 model_version=model_version,
                             )
                 finally:
+                    base_materializer._ACTIVE_CLEANUP_REGISTRY.cleanup()
+                    base_materializer._ACTIVE_CLEANUP_REGISTRY = None
                     StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.

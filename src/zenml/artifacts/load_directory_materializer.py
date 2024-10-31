@@ -47,6 +47,7 @@ class PreexistingDataMaterializer(BaseMaterializer):
             Path to the local directory that contains the artifact files.
         """
         directory = tempfile.mkdtemp(prefix="zenml-artifact")
+        self.register_local_directory_cleanup(directory)
         if fileio.isdir(self.uri):
             self._copy_directory(src=self.uri, dst=directory)
             return Path(directory)

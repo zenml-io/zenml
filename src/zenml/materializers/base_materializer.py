@@ -326,3 +326,47 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
+    
+    def register_local_directory_cleanup(self, directory: str) -> None:
+        cleanup_registry = get_cleanup_registry()
+        if not cleanup_registry:
+            return
+        
+        def _handler() -> None:
+            shutil.rmtree(directory)
+            logger.warning("Cleaned up materializer directory %s", directory)
+
+        cleanup_registry.register_cleanup_handler(_handler)
+
+
+from typing import Callable, Any, List, Tuple, Dict
+import atexit
+import shutil
+from typing_extensions import ParamSpec
+
+P = ParamSpec("P")
+
+class CleanupRegistry:
+    def __init__(self) -> None:
+        self._handlers: List[Tuple[Callable[P, Any]], Tuple[Any], Dict[str, Any]] = []
+    
+    def register_cleanup_handler(self, handler: Callable[P, Any], *args: P.args, **kwargs: P.kwargs) -> None:
+        self._handlers.append((handler, args, kwargs))
+
+    def reset(self) -> None:
+        self._handlers = []
+
+    def cleanup(self) -> None:
+        for handler, args, kwargs in self._handlers:
+            try:
+                handler(*args, **kwargs)
+            except Exception as e:
+                logger.debug("Failed to run cleanup handler: %s", str(e))
+
+        self.reset()
+
+
+_ACTIVE_CLEANUP_REGISTRY = None
+
+def get_cleanup_registry() -> Optional[CleanupRegistry]:
+    return _ACTIVE_CLEANUP_REGISTRY
