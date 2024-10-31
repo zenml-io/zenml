@@ -30,7 +30,7 @@ class CallbackRegistry:
     def __init__(self) -> None:
         """Initializes the callback registry."""
         self._callbacks: List[
-            Tuple[Callable[P, Any]], Tuple[Any], Dict[str, Any]
+            Tuple[Callable[P, Any], Tuple[Any], Dict[str, Any]]
         ] = []
 
     def register_callback(
@@ -43,7 +43,7 @@ class CallbackRegistry:
             *args: Arguments to call the callback with.
             **kwargs: Keyword arguments to call the callback with.
         """
-        self._callbacks.append((callback, args, kwargs))
+        self._callbacks.append((callback, args, kwargs))  # type: ignore[arg-type]
 
     def reset(self) -> None:
         """Reset the callbacks."""

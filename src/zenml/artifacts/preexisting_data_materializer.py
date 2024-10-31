@@ -46,7 +46,6 @@ class PreexistingDataMaterializer(BaseMaterializer):
             Path to the local directory that contains the artifact files.
         """
         with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
-            self.register_local_directory_for_cleanup(temp_dir)
             if fileio.isdir(self.uri):
                 self._copy_directory(src=self.uri, dst=temp_dir)
                 return Path(temp_dir)

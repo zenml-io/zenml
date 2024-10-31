@@ -153,7 +153,7 @@ class StepRunner:
 
             # Initialize the step context singleton
             StepContext._clear()
-            StepContext(
+            step_context = StepContext(
                 pipeline_run=pipeline_run,
                 step_run=step_run,
                 output_materializers=output_materializers,
@@ -246,7 +246,7 @@ class StepRunner:
                                 model_version=model_version,
                             )
                 finally:
-                    StepContext()._cleanup_registry.execute_callbacks(
+                    step_context._cleanup_registry.execute_callbacks(
                         raise_on_exception=False
                     )
                     StepContext._clear()  # Remove the step context singleton

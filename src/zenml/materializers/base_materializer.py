@@ -390,6 +390,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
         def _callback() -> None:
             shutil.rmtree(directory)
-            logger.warning("Cleaned up materializer directory %s", directory)
+            logger.debug("Cleaned up materializer directory %s", directory)
 
         step_context._cleanup_registry.register_callback(_callback)
