@@ -28,7 +28,7 @@ You need to select **a pipeline run that was executed on a remote stack**
 {% endhint %}
 
 
-You can also create a template directly from your pipeline definition, by running the
+You can also create a template directly from your pipeline definition by running the
 following code while having a **remote stack** active:
 ```python
 from zenml import pipeline
