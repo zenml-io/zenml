@@ -249,6 +249,8 @@ enable collaborative features as the central MLOps interface for teams.
 
 Read more about various deployment options [here](https://docs.zenml.io/getting-started/deploying-zenml).
 
+Or, sign up for [ZenML Pro to get a fully managed server on a free trial](https://cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
+
 ## Use ZenML with VS Code
 
 ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to inspect your stacks and pipeline runs directly from your editor. The extension also allows you to switch your stacks without needing to type any CLI commands.
