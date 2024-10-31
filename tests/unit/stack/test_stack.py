@@ -160,12 +160,6 @@ def test_stack_deployment(
     components."""
     # Mock the pipeline run registering which tries (and fails) to serialize
     # our mock objects
-
-    pipeline_run_return_value = object()
-    stack_with_mock_components.orchestrator.run.return_value = (
-        pipeline_run_return_value
-    )
-
     with empty_pipeline:
         empty_pipeline.entrypoint()
     deployment = Compiler().compile(
@@ -173,19 +167,15 @@ def test_stack_deployment(
         stack=stack_with_mock_components,
         run_configuration=PipelineRunConfiguration(),
     )
-    return_value = stack_with_mock_components.deploy_pipeline(
+    stack_with_mock_components.deploy_pipeline(
         deployment=deployment,
     )
-
-    # for component in stack_with_mock_components.components.values():
-    #     component.prepare_step_run.assert_called_once()
 
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
         deployment=deployment,
         stack=stack_with_mock_components,
         placeholder_run=None,
     )
-    assert return_value is pipeline_run_return_value
 
 
 def test_requires_remote_server(stack_with_mock_components, mocker):

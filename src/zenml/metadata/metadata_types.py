@@ -13,12 +13,17 @@
 #  permissions and limitations under the License.
 """Custom types that can be used as metadata of ZenML artifacts."""
 
+import json
 from typing import Any, Dict, List, Set, Tuple, Union
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
+
+logger = get_logger(__name__)
 
 
 class Uri(str):
@@ -203,3 +208,47 @@ def cast_to_metadata_type(
     metadata_type = metadata_enum_to_type_mapping[type_]
     typed_value = metadata_type(value)
     return typed_value  # type: ignore[no-any-return]
+
+
+def validate_metadata(
+    metadata: Dict[str, MetadataType],
+) -> Dict[str, MetadataType]:
+    """Validate metadata.
+
+    This function excludes and warns about metadata values that are too long
+    or of an unsupported type.
+
+    Args:
+        metadata: The metadata to validate.
+
+    Returns:
+        The validated metadata.
+    """
+    validated_metadata = {}
+
+    for key, value in metadata.items():
+        if len(key) > STR_FIELD_MAX_LENGTH:
+            logger.warning(
+                f"Metadata key '{key}' is too large to be "
+                "stored in the database. Skipping."
+            )
+            continue
+
+        if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                f"Metadata value for key '{key}' is too large to be "
+                "stored in the database. Skipping."
+            )
+            continue
+
+        try:
+            get_metadata_type(value)
+        except ValueError as e:
+            logger.warning(
+                f"Metadata value for key '{key}' is not of a supported "
+                f"type. Skipping. Full error: {e}"
+            )
+
+        validated_metadata[key] = value
+
+    return validated_metadata
