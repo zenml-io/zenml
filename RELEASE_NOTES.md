@@ -1,5 +1,14 @@
 <!-- markdown-link-check-disable -->
 
+# 0.68.1
+
+Fixes an issue with some partially cached pipelines running on remote orchestrators.
+
+## What's Changed
+* Remove unavailable upstream steps during cache precomputation by @schustmi in https://github.com/zenml-io/zenml/pull/3146
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.68.0...0.68.1
+
 # 0.68.0
 
 ## Highlights

@@ -1,4 +1,5 @@
 ---
+icon: database
 description: Managing data in feature stores.
 ---
 

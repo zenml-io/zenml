@@ -57,6 +57,7 @@ from zenml.utils import materializer_utils, source_utils
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
@@ -190,61 +191,62 @@ class StepRunner:
                         )
                 raise
             finally:
-                step_run_metadata = self._stack.get_step_run_metadata(
-                    info=step_run_info,
-                )
-                publish_step_run_metadata(
-                    step_run_id=step_run_info.step_run_id,
-                    step_run_metadata=step_run_metadata,
-                )
-                self._stack.cleanup_step_run(
-                    info=step_run_info, step_failed=step_failed
-                )
-                if not step_failed:
-                    if (
-                        success_hook_source
-                        := self.configuration.success_hook_source
-                    ):
-                        logger.info("Detected success hook. Running...")
-                        self.load_and_run_hook(
-                            success_hook_source,
-                            step_exception=None,
+                try:
+                    step_run_metadata = self._stack.get_step_run_metadata(
+                        info=step_run_info,
+                    )
+                    publish_step_run_metadata(
+                        step_run_id=step_run_info.step_run_id,
+                        step_run_metadata=step_run_metadata,
+                    )
+                    self._stack.cleanup_step_run(
+                        info=step_run_info, step_failed=step_failed
+                    )
+                    if not step_failed:
+                        if (
+                            success_hook_source
+                            := self.configuration.success_hook_source
+                        ):
+                            logger.info("Detected success hook. Running...")
+                            self.load_and_run_hook(
+                                success_hook_source,
+                                step_exception=None,
+                            )
+
+                        # Store and publish the output artifacts of the step function.
+                        output_data = self._validate_outputs(
+                            return_values, output_annotations
+                        )
+                        artifact_metadata_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                        )
+                        artifact_visualization_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                        )
+                        output_artifacts = self._store_output_artifacts(
+                            output_data=output_data,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                            output_annotations=output_annotations,
+                            artifact_metadata_enabled=artifact_metadata_enabled,
+                            artifact_visualization_enabled=artifact_visualization_enabled,
                         )
 
-                    # Store and publish the output artifacts of the step function.
-                    output_data = self._validate_outputs(
-                        return_values, output_annotations
-                    )
-                    artifact_metadata_enabled = is_setting_enabled(
-                        is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                    )
-                    artifact_visualization_enabled = is_setting_enabled(
-                        is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                    )
-                    output_artifacts = self._store_output_artifacts(
-                        output_data=output_data,
-                        output_artifact_uris=output_artifact_uris,
-                        output_materializers=output_materializers,
-                        output_annotations=output_annotations,
-                        artifact_metadata_enabled=artifact_metadata_enabled,
-                        artifact_visualization_enabled=artifact_visualization_enabled,
-                    )
+                        if (
+                            model_version := step_run.model_version
+                            or pipeline_run.model_version
+                        ):
+                            from zenml.orchestrators import step_run_utils
 
-                    if (
-                        model_version := step_run.model_version
-                        or pipeline_run.model_version
-                    ):
-                        from zenml.orchestrators import step_run_utils
-
-                        step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=output_artifacts,
-                            output_configurations=step_run.config.outputs,
-                            model_version=model_version,
-                        )
-
-                StepContext._clear()  # Remove the step context singleton
+                            step_run_utils.link_output_artifacts_to_model_version(
+                                artifacts=output_artifacts,
+                                output_configurations=step_run.config.outputs,
+                                model_version=model_version,
+                            )
+                finally:
+                    StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             output_artifact_ids = {
@@ -406,14 +408,24 @@ class StepRunner:
             )
         )
 
-        with register_artifact_store_filesystem(
-            artifact.artifact_store_id
-        ) as target_artifact_store:
+        def _load_artifact(artifact_store: "BaseArtifactStore") -> Any:
             materializer: BaseMaterializer = materializer_class(
-                uri=artifact.uri, artifact_store=target_artifact_store
+                uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_type_compatibility(data_type)
+            materializer.validate_load_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
+
+        if artifact.artifact_store_id == self._stack.artifact_store.id:
+            # Register the artifact store of the active stack here to avoid
+            # unnecessary component/flavor calls when using
+            # `register_artifact_store_filesystem(...)`
+            self._stack.artifact_store._register()
+            return _load_artifact(artifact_store=self._stack.artifact_store)
+        else:
+            with register_artifact_store_filesystem(
+                artifact.artifact_store_id
+            ) as target_artifact_store:
+                return _load_artifact(artifact_store=target_artifact_store)
 
     def _validate_outputs(
         self,

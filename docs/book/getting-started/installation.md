@@ -1,8 +1,9 @@
 ---
+icon: cauldron
 description: Installing ZenML and getting started.
 ---
 
-# 🧙 Installation
+# Installation
 
 **ZenML** is a Python package that can be installed directly via `pip`:
 
@@ -86,7 +87,7 @@ Though ZenML can run entirely as a pip package on a local system, complete with 
 
 ```shell
 pip install "zenml[server]"
-zenml up  # opens the dashboard locally 
+zenml login --local  # opens the dashboard locally 
 ```
 
 However, advanced ZenML features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](deploying-zenml/README.md).

@@ -228,7 +228,7 @@ class StackResponse(
             component_dict = dict(
                 name=component.name,
                 type=str(component.type),
-                flavor=component.flavor,
+                flavor=component.flavor_name,
             )
             configuration = json.loads(
                 component.get_metadata().model_dump_json(
@@ -255,7 +255,9 @@ class StackResponse(
             Dict of analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
+        metadata.update(
+            {ct: c[0].flavor_name for ct, c in self.components.items()}
+        )
 
         if self.labels is not None:
             metadata.update(
@@ -381,7 +383,9 @@ class StackFilter(WorkspaceScopedFilter):
             user_filter = and_(
                 StackSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)
