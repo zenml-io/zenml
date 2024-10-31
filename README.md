@@ -227,7 +227,6 @@ And finally, here are some other examples and use cases for inspiration:
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
-## 📚 Learn from Books
 
 ## 📚 Learn from Books
 
