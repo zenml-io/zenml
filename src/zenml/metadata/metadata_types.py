@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Set, Tuple, Union
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -227,6 +227,13 @@ def validate_metadata(
     validated_metadata = {}
 
     for key, value in metadata.items():
+        if len(key) > STR_FIELD_MAX_LENGTH:
+            logger.warning(
+                f"Metadata key '{key}' is too large to be "
+                "stored in the database. Skipping."
+            )
+            continue
+
         if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
             logger.warning(
                 f"Metadata value for key '{key}' is too large to be "
