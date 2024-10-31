@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       latest_version:
-        description: "The latest version of ZenML"
+        description: The latest version of ZenML
         required: true
         type: string
       new_version:
-        description: "The new version of ZenML"
+        description: The new version of ZenML
         required: true
         type: string
 env:
