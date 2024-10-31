@@ -63,7 +63,7 @@ class HFTFModelMaterializer(BaseMaterializer):
         Args:
             model: The TF Model to write.
         """
-        with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             model.save_pretrained(temp_dir)
             io_utils.copy_dir(
                 temp_dir,
