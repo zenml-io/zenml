@@ -227,6 +227,29 @@ And finally, here are some other examples and use cases for inspiration:
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
+## 📚 Learn from Books
+
+<div align="center">
+  <div style="display: inline-block; margin: 20px;">
+    <img src="docs/book/.gitbook/assets/llm_engineering_handbook_cover.jpg" alt="LLM Engineer's Handbook Cover" width="200"/>
+    <p><strong>LLM Engineer's Handbook</strong><br/>
+    by Paul Iusztin & Maxime Labonne<br/>
+    <a href="https://www.amazon.com/LLM-Engineers-Handbook-engineering-production/dp/1836200072">Learn more on Amazon</a></p>
+  </div>
+  <div style="display: inline-block; margin: 20px;">
+    <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
+    <p><strong>Machine Learning Engineering with Python</strong><br/>
+    by Andrew McMahon<br/>
+    <a href="https://www.amazon.de/-/en/Andrew-McMahon/dp/1837631964">Learn more on Amazon</a></p>
+  </div>
+</div>
+
+Deepen your MLOps knowledge with these comprehensive guides featuring ZenML! These books offer practical insights into building production-ready ML systems:
+
+- **LLM Engineer's Handbook** provides a complete guide to developing and deploying LLM applications, featuring ZenML for MLOps pipeline management
+- **Machine Learning Engineering with Python** demonstrates how to build and scale ML solutions using modern MLOps practices, with ZenML as a key tool for pipeline orchestration
+
+Both books offer hands-on examples and best practices for implementing ZenML in real-world ML projects.
 
 ## 🔋 Deploy ZenML
 
