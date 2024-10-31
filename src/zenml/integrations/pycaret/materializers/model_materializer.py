@@ -143,5 +143,5 @@ class PyCaretMaterializer(BaseMaterializer):
             model: Any of the supported models.
         """
         with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
-            save_model(model, temp_dir.name)
-            io_utils.copy_dir(temp_dir.name, self.uri)
+            save_model(model, temp_dir)
+            io_utils.copy_dir(temp_dir, self.uri)

@@ -48,14 +48,12 @@ class BentoMaterializer(BaseMaterializer):
             An bento.Bento object.
         """
         with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
-            self.register_local_directory_for_cleanup(temp_dir)
-
             # Copy from artifact store to temporary directory
-            io_utils.copy_dir(self.uri, temp_dir.name)
+            io_utils.copy_dir(self.uri, temp_dir)
 
             # Load the Bento from the temporary directory
             imported_bento = Bento.import_from(
-                os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
+                os.path.join(temp_dir, DEFAULT_BENTO_FILENAME)
             )
 
             # Try save the Bento to the local BentoML store
@@ -72,11 +70,9 @@ class BentoMaterializer(BaseMaterializer):
             bento: An bento.Bento object.
         """
         with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
-            temp_bento_path = os.path.join(
-                temp_dir.name, DEFAULT_BENTO_FILENAME
-            )
+            temp_bento_path = os.path.join(temp_dir, DEFAULT_BENTO_FILENAME)
             bentoml.export_bento(bento.tag, temp_bento_path)
-            io_utils.copy_dir(temp_dir.name, self.uri)
+            io_utils.copy_dir(temp_dir, self.uri)
 
     def extract_metadata(
         self, bento: bento.Bento

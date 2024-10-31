@@ -62,7 +62,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
 
         with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
-            with open(temp_file, "w") as f:
-                booster.save_model(f)
+            with open(temp_file, "w"):
+                booster.save_model(temp_file)
 
-            fileio.copy(f, filepath)
+            fileio.copy(temp_file, filepath)
