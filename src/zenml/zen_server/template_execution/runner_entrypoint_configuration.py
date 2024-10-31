@@ -17,9 +17,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import (
-    deploy_pipeline,
-)
+from zenml.pipelines.run_utils import deploy_pipeline, get_placeholder_run
 
 
 class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -36,4 +34,9 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         stack = Client().active_stack
         assert deployment.stack and stack.id == deployment.stack.id
 
-        deploy_pipeline(deployment=deployment, stack=stack)
+        placeholder_run = get_placeholder_run(deployment_id=deployment.id)
+        deploy_pipeline(
+            deployment=deployment,
+            stack=stack,
+            placeholder_run=placeholder_run,
+        )
