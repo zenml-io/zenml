@@ -345,7 +345,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 this is set to True, the temporary directory will be deleted
                 after the step finished executing. If a materializer is being
                 used outside of the context of a step execution, the temporary
-                directory will not be deleted and the user is reponsible for
+                directory will not be deleted and the user is responsible for
                 deleting it themselves.
 
         Yields:
