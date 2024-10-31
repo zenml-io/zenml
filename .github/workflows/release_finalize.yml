@@ -2,47 +2,20 @@
 name: release-finalize
 on:
   workflow_dispatch:
-  delete:
-    branches: [misc/prepare-release-*]
+    inputs:
+      latest_version:
+        description: "The latest version of ZenML"
+        required: true
+        type: string
+      new_version:
+        description: "The new version of ZenML"
+        required: true
+        type: string
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
-  fetch-versions:
-    if: github.repository == 'zenml-io/zenml'
-    runs-on: ubuntu-latest
-    outputs:
-      old_version: ${{ steps.old-version.outputs.old_version }}
-      new_version: ${{ steps.new-version.outputs.new_version }}
-    steps:
-      # Extract the version
-      - name: Extract version from branch name
-        id: new-version
-        run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          NEW_VERSION=${BRANCH_NAME#misc/prepare-release-}
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-      # Checkout main as develop is already changed
-      - name: Checkout code
-        id: checkout-code
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: main
-      # Configure Git
-      - name: Configure git
-        shell: bash
-        run: |
-          git config --global user.email "info@zenml.io"
-          git config --global user.name "ZenML GmbH"
-      # Extract the old version
-      - name: Fetch the old version
-        id: old-version
-        run: |
-          LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
-          OLD_VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag)
-          echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
   create-release-branch:
-    needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
       # Configure Git
@@ -59,10 +32,10 @@ jobs:
       # Create the release branch
       - name: Release branch
         run: |
-          git checkout -b release/${{ needs.fetch-versions.outputs.new_version }}
-          git push --set-upstream origin release/${{ needs.fetch-versions.outputs.new_version }}
+          git pull
+          git checkout -b release/${{ github.event.inputs.latest_version }}
+          git push --set-upstream origin release/${{ github.event.inputs.new_version }}
   add-docs-warning-header:
-    needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
       # Configure Git
@@ -75,14 +48,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
         with:
-          ref: release/${{ needs.fetch-versions.outputs.old_version }}
+          ref: release/${{ github.event.inputs.latest_version }}
       # Create the docs update PR
       - name: Create docs update PR
         shell: bash
         run: |
-          bash scripts/add-docs-warning.sh ${{ needs.fetch-versions.outputs.old_version }}
+          git pull
+          bash scripts/add-docs-warning.sh ${{ github.event.inputs.latest_version }}
   add-new-version-to-migration-tests:
-    needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
       # Configure Git
@@ -100,9 +73,9 @@ jobs:
       - name: Create docs update PR
         shell: bash
         run: |-
-          bash scripts/add-migration-test-version.sh ${{ needs.fetch-versions.outputs.old_version }} ${{ needs.fetch-versions.outputs.new_version }}
+          git pull
+          bash scripts/add-migration-test-version.sh ${{ github.event.inputs.latest_version }} ${{ github.event.inputs.new_version }}
   order-gitbook-release-spaces:
-    needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
       # Check out develop
@@ -123,15 +96,15 @@ jobs:
       # Adjust the docs
       - name: Adjust gitbook docs
         env:
-          ZENML_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }
-          ZENML_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }
+          ZENML_NEW_VERSION: ${{ github.event.inputs.new_version }}
+          ZENML_OLD_VERSION: ${{ github.event.inputs.latest_version }}
           GITBOOK_API_KEY: ${{secrets.GITBOOK_API_KEY}}
           GITBOOK_ORGANIZATION: ${{secrets.GITBOOK_ORGANIZATION}}
           GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
           GITBOOK_LEGACY_COLLECTION: ${{secrets.GITBOOK_LEGACY_COLLECTION}}
         run: python scripts/sync-gitbook-release-spaces.py
   deprecate-docs-gitbook-legacy:
-    needs: [fetch-versions, order-gitbook-release-spaces]
+    needs: order-gitbook-release-spaces
     runs-on: ubuntu-latest
     steps:
       # Configure Git
@@ -149,4 +122,4 @@ jobs:
       - name: Update legacy docs file
         shell: bash
         run: |-
-          bash scripts/deprecate-previous-docs-to-legacy.sh ${{ needs.fetch-versions.outputs.old_version }}
+          bash scripts/deprecate-previous-docs-to-legacy.sh ${{ github.event.inputs.latest_version }}

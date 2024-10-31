@@ -14,6 +14,12 @@ fi
 # Input: new planned version
 PLANNED_VERSION="$1"
 
+# Check if the version fits the SemVer formatting
+if [[ ! "$PLANNED_VERSION" =~ ^[0-9]+(\.[0-9]+){2}$ ]]; then
+  echo "::error::Error: Invalid version format '$PLANNED_VERSION'. The version must be in the format X.X.X (e.g., 0.4.0, 1.21.51)."
+  exit 1
+fi
+
 # Get the latest release information
 LATEST_RELEASE=$(gh release view --json tagName,publishedAt -q '{tag: .tagName, date: .publishedAt}')
 

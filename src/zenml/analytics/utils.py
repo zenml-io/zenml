@@ -14,7 +14,6 @@
 """Utility functions and classes for ZenML analytics."""
 
 import json
-import os
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar, cast
 from uuid import UUID
@@ -22,11 +21,13 @@ from uuid import UUID
 from zenml.analytics import identify, track
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.models import AnalyticsTrackedModelMixin
-from zenml.constants import ENV_ZENML_ANALYTICS_OPT_IN
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+_INTERNAL_DISABLE_ANALYTICS = False
 
 
 class AnalyticsEncoder(json.JSONEncoder):
@@ -101,11 +102,13 @@ class analytics_disabler:
 
     def __init__(self) -> None:
         """Initialization of the context manager."""
-        self.original_value = os.environ.get(ENV_ZENML_ANALYTICS_OPT_IN)
+        self.original_value: Optional[bool] = None
 
     def __enter__(self) -> None:
         """Disable the analytics."""
-        os.environ[ENV_ZENML_ANALYTICS_OPT_IN] = str(False)
+        global _INTERNAL_DISABLE_ANALYTICS
+        self.original_value = _INTERNAL_DISABLE_ANALYTICS
+        _INTERNAL_DISABLE_ANALYTICS = True
 
     def __exit__(
         self,
@@ -120,10 +123,18 @@ class analytics_disabler:
             exc_value: The instance of the exception
             traceback: The traceback of the exception
         """
+        global _INTERNAL_DISABLE_ANALYTICS
         if self.original_value is not None:
-            os.environ[ENV_ZENML_ANALYTICS_OPT_IN] = self.original_value
-        else:
-            del os.environ[ENV_ZENML_ANALYTICS_OPT_IN]
+            _INTERNAL_DISABLE_ANALYTICS = self.original_value
+
+
+def is_analytics_disabled_internally() -> bool:
+    """Whether analytics are disabled by an internal helper function.
+
+    Returns:
+        Whether analytics are disabled by an internal helper function.
+    """
+    return _INTERNAL_DISABLE_ANALYTICS
 
 
 def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:

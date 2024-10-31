@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.67.0"
+version = "0.68.1"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]

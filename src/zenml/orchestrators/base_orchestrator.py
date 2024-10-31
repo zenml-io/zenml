@@ -166,9 +166,8 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
 
-        Returns:
-            The optional return value from this method will be returned by the
-            `pipeline_instance.run()` call when someone is running a pipeline.
+        Yields:
+            Metadata for the pipeline run.
         """
 
     def run(
@@ -176,7 +175,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> None:
         """Runs a pipeline on a stack.
 
         Args:
@@ -210,6 +209,11 @@ class BaseOrchestrator(StackComponent, ABC):
                 # Remove the cached step invocations from the deployment so
                 # the orchestrator does not try to run them
                 deployment.step_configurations.pop(invocation_id)
+
+            for step in deployment.step_configurations.values():
+                for invocation_id in cached_invocations:
+                    if invocation_id in step.spec.upstream_steps:
+                        step.spec.upstream_steps.remove(invocation_id)
 
             if len(deployment.step_configurations) == 0:
                 # All steps were cached, we update the pipeline run status and
