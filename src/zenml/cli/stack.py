@@ -75,6 +75,7 @@ from zenml.models.v2.core.service_connector import (
 from zenml.service_connectors.service_connector_utils import (
     get_resources_options_from_resource_model_for_full_stack,
 )
+from zenml.utils import requirements_utils
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -1987,7 +1988,6 @@ def export_requirements(
         overwrite: Overwrite the output file if it already exists. This option
             is only valid if the output file is provided.
     """
-    from zenml.stack import Stack
 
     try:
         stack_model: "StackResponse" = Client().get_stack(
@@ -1996,11 +1996,12 @@ def export_requirements(
     except KeyError as err:
         cli_utils.error(str(err))
 
-    stack_ = Stack.from_model(stack_model)
-    requirements = list(stack_.requirements())
+    requirements, _ = requirements_utils.get_requirements_for_stack(
+        stack_model
+    )
 
     if not requirements:
-        cli_utils.declare(f"Stack `{stack_.name}` has no requirements.")
+        cli_utils.declare(f"Stack `{stack_model.name}` has no requirements.")
         return
 
     if output_file:
@@ -2015,8 +2016,7 @@ def export_requirements(
                 with open(output_file, "w") as f:
                     f.write("\n".join(requirements))
         cli_utils.declare(
-            f"Requirements for stack `{stack_.name}` exported to {output_file}."
+            f"Requirements for stack `{stack_model.name}` exported to {output_file}."
         )
     else:
-        cli_utils.declare(f"Requirements for stack `{stack_.name}`:")
         click.echo(" ".join(requirements), nl=False)
