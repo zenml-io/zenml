@@ -164,7 +164,7 @@ class GitHubCodeRepository(BaseCodeRepository):
                 try:
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
-                except (GithubException, IOError) as e:
+                except (GithubException, IOError, AssertionError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
 
     def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
