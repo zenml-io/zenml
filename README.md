@@ -247,17 +247,7 @@ ZenML is featured in these comprehensive guides to modern MLOps and LLM engineer
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-Currently, there are two main ways to deploy ZenML:
-
-- **ZenML Pro**: [ZenML Pro](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
-offers a SaaS version which comes with a control plane to create and manage multiple ZenML servers.
-These servers are managed and maintained by ZenML’s dedicated team, alleviating
-the burden of server management from your end. They also come with additional features like RBAC, a Model Control Plane
-and [much more](https://zenml-io.gitbook.io/zenml-documentation/getting-started/zenml-pro.
-- **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
-ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
-This can be achieved through various methods, including using our CLI, Docker,
-Helm, or HuggingFace Spaces.
+Read more about various deployment options [here](https://docs.zenml.io/getting-started/deploying-zenml).
 
 ## Use ZenML with VS Code
 
