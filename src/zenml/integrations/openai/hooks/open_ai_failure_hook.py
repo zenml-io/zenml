@@ -40,8 +40,7 @@ def openai_alerter_failure_hook_helper(
         exception: The exception that was raised.
         model_name: The OpenAI model to use for the chatbot.
 
-    Note:
-        This implementation uses the OpenAI v1 SDK with automatic retries and backoff.
+    This implementation uses the OpenAI v1 SDK with automatic retries and backoff.
     """
     client = Client()
     context = get_step_context()
