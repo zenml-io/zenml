@@ -204,7 +204,7 @@ def validate_stack_is_runnable_from_server(
         assert len(component_list) == 1
         component = component_list[0]
         flavors = zen_store.list_flavors(
-            FlavorFilter(name=component.flavor, type=component.type)
+            FlavorFilter(name=component.flavor_name, type=component.type)
         )
         assert len(flavors) == 1
         flavor_model = flavors[0]

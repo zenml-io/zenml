@@ -11,7 +11,7 @@ The local Artifact Store is a built-in ZenML [Artifact Store](./artifact-stores.
 The local Artifact Store is a great way to get started with ZenML, as it doesn't require you to provision additional local resources or to interact with managed object-store services like Amazon S3 and Google Cloud Storage. All you need is the local filesystem. You should use the local Artifact Store if you're just evaluating or getting started with ZenML, or if you are still in the experimental phase and don't need to share your pipeline artifacts (dataset, models, etc.) with others.
 
 {% hint style="warning" %}
-The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and the artifacts stored in it cannot be accessed from other machines. This also means that [artifact visualizations](../../how-to/visualize-artifacts/README.md) will not be available when using a local Artifact Store through a [ZenML instance deployed in the cloud](../../getting-started/deploying-zenml/README.md).
+The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and the artifacts stored in it cannot be accessed from other machines. This also means that [artifact visualizations](../../how-to/data-artifact-management/visualize-artifacts/README.md) will not be available when using a local Artifact Store through a [ZenML instance deployed in the cloud](../../getting-started/deploying-zenml/README.md).
 
 Furthermore, the local Artifact Store doesn't cover services like high-availability, scalability, backup and restore and other features that are expected from a production grade MLOps system.
 

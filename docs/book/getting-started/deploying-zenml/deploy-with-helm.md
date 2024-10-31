@@ -113,43 +113,16 @@ Immediately after deployment, the ZenML server needs to be activated before it c
 
 The Helm chart should print out a message with the URL of the deployed ZenML server. You can use the URL to open the ZenML UI in your browser.
 
-To connect your local client to the ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
+To connect your local client to the ZenML server, you can run:
 
 ```bash
-zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
-```
-
-or
-
-```bash
-zenml connect --config=/path/to/zenml_server_config.yaml
-```
-
-The YAML file should have the following structure when connecting to a ZenML server:
-
-```yaml
-url: <The URL of the ZenML server>
-verify_ssl: |
-  <Either a boolean, in which case it controls whether the
-  server's TLS certificate is verified, or a string, in which case it
-  must be a path to a CA certificate bundle to use or the CA bundle
-  value itself>
-```
-
-Example of a ZenML server YAML configuration file:
-
-```yaml
-url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
-verify_ssl: |
-  -----BEGIN CERTIFICATE-----
-...
-  -----END CERTIFICATE-----
+zenml login https://zenml.example.com:8080 --no-verify-ssl
 ```
 
 To disconnect from the current ZenML server and revert to using the local default database, use the following command:
 
 ```bash
-zenml disconnect
+zenml logout
 ```
 
 ## ZenML Helm Deployment Scenarios
@@ -171,7 +144,7 @@ Once deployed, you have to use port-forwarding to access the ZenML server and to
 
 ```bash
 kubectl -n zenml-server port-forward svc/zenml-server 8080:8080
-zenml connect --url=http://localhost:8080
+zenml login http://localhost:8080
 ```
 
 This is just a simple example only fit for testing and evaluation purposes. For production deployments, you should use an external database and an Ingress service with TLS certificates to secure and expose the ZenML server to the internet.
@@ -336,7 +309,7 @@ openssl rand -hex 32
 {% tab title="AWS" %}
 **Using the AWS Secrets Manager as a secrets store backend**
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -398,7 +371,7 @@ Example configuration for the AWS Secrets Store:
 {% tab title="GCP" %}
 **Using the GCP Secrets Manager as a secrets store backend**
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -492,7 +465,7 @@ Example configuration for the GCP Secrets Store:
 {% tab title="Azure" %}
 **Using the Azure Key Vault as a secrets store backend**
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API.
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API.
 
 Example configuration for the Azure Key Vault Secrets Store:
 

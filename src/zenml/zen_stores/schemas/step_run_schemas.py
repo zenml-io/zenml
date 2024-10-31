@@ -97,7 +97,7 @@ class StepRunSchema(NamedSchema, table=True):
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
+        target=PipelineRunSchema.__tablename__,  # type: ignore[has-type]
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",

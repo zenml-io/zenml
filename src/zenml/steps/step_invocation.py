@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Step invocation class definition."""
 
-from typing import TYPE_CHECKING, Any, Dict, Set
+from typing import TYPE_CHECKING, Any, Dict, Set, Union
+
+from zenml.models import ArtifactVersionResponse
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -33,7 +35,9 @@ class StepInvocation:
         id: str,
         step: "BaseStep",
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifact"],
+        external_artifacts: Dict[
+            str, Union["ExternalArtifact", "ArtifactVersionResponse"]
+        ],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
         parameters: Dict[str, Any],
@@ -101,9 +105,14 @@ class StepInvocation:
 
         external_artifacts: Dict[str, ExternalArtifactConfiguration] = {}
         for key, artifact in self.external_artifacts.items():
-            if artifact.value is not None:
-                artifact.upload_by_value()
-            external_artifacts[key] = artifact.config
+            if isinstance(artifact, ArtifactVersionResponse):
+                external_artifacts[key] = ExternalArtifactConfiguration(
+                    id=artifact.id
+                )
+            else:
+                if artifact.value is not None:
+                    artifact.upload_by_value()
+                external_artifacts[key] = artifact.config
 
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts,

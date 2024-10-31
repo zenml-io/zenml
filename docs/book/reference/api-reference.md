@@ -9,7 +9,7 @@ The ZenML server is a FastAPI application, therefore the OpenAPI-compliant docs 
 of your ZenML server:
 
 {% hint style="info" %}
-In the local case (i.e. using `zenml up`, the docs are available on `http://127.0.0.1:8237/docs`)
+In the local case (i.e. using `zenml login --local`, the docs are available on `http://127.0.0.1:8237/docs`)
 {% endhint %}
 
 ![ZenML API docs](../.gitbook/assets/zenml_api_docs.png)

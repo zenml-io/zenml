@@ -99,6 +99,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.models import ArtifactVersionResponse
     from zenml.types import HookSpecification
 
     StepConfigurationUpdateOrDict = Union[
@@ -777,7 +778,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
                         "Dashboard`. In order to try it locally, please run "
-                        "`zenml up`."
+                        "`zenml login --local`."
                     )
 
             deploy_pipeline(
@@ -1091,7 +1092,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
-        external_artifacts: Dict[str, "ExternalArtifact"],
+        external_artifacts: Dict[
+            str, Union["ExternalArtifact", "ArtifactVersionResponse"]
+        ],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
         parameters: Dict[str, Any],
