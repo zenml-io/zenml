@@ -14,7 +14,6 @@
 """Materializer for BentoML Bento objects."""
 
 import os
-import tempfile
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import bentoml
@@ -23,7 +22,6 @@ from bentoml.exceptions import BentoMLException
 
 from zenml.enums import ArtifactType
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
@@ -49,23 +47,23 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             An bento.Bento object.
         """
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
+        with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
+            self.register_local_directory_for_cleanup(temp_dir)
 
-        # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.uri, temp_dir.name)
+            # Copy from artifact store to temporary directory
+            io_utils.copy_dir(self.uri, temp_dir.name)
 
-        # Load the Bento from the temporary directory
-        imported_bento = Bento.import_from(
-            os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
-        )
+            # Load the Bento from the temporary directory
+            imported_bento = Bento.import_from(
+                os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
+            )
 
-        # Try save the Bento to the local BentoML store
-        try:
-            _ = bentoml.get(imported_bento.tag)
-        except BentoMLException:
-            imported_bento.save()
-        return imported_bento
+            # Try save the Bento to the local BentoML store
+            try:
+                _ = bentoml.get(imported_bento.tag)
+            except BentoMLException:
+                imported_bento.save()
+            return imported_bento
 
     def save(self, bento: bento.Bento) -> None:
         """Write to artifact store.
@@ -73,18 +71,12 @@ class BentoMaterializer(BaseMaterializer):
         Args:
             bento: An bento.Bento object.
         """
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
-        temp_bento_path = os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
-
-        # save the image in a temporary directory
-        bentoml.export_bento(bento.tag, temp_bento_path)
-
-        # copy the saved image to the artifact store
-        io_utils.copy_dir(temp_dir.name, self.uri)
-
-        # Remove the temporary directory
-        fileio.rmtree(temp_dir.name)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_bento_path = os.path.join(
+                temp_dir.name, DEFAULT_BENTO_FILENAME
+            )
+            bentoml.export_bento(bento.tag, temp_bento_path)
+            io_utils.copy_dir(temp_dir.name, self.uri)
 
     def extract_metadata(
         self, bento: bento.Bento

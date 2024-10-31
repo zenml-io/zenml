@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
+import contextlib
 import inspect
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+import shutil
+import tempfile
+from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
@@ -326,12 +329,31 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
-    
-    def register_local_directory_cleanup(self, directory: str) -> None:
+
+    @contextlib.contextmanager
+    def get_temporary_directory(
+        self,
+        delete_at_exit: bool,
+        delete_after_step_execution: bool = True,
+    ) -> Iterator[str]:
+        temp_dir = tempfile.mkdtemp(prefix="zenml-")
+
+        if delete_after_step_execution and not delete_at_exit:
+            # We should not delete the directory when the context manager
+            # exists, but cleanup once the step has finished executing.
+            self._register_local_directory_for_cleanup(temp_dir)
+
+        try:
+            yield temp_dir
+        finally:
+            if delete_at_exit:
+                shutil.rmtree(temp_dir)
+
+    def _register_local_directory_for_cleanup(self, directory: str) -> None:
         cleanup_registry = get_cleanup_registry()
         if not cleanup_registry:
             return
-        
+
         def _handler() -> None:
             shutil.rmtree(directory)
             logger.warning("Cleaned up materializer directory %s", directory)
@@ -339,18 +361,23 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         cleanup_registry.register_cleanup_handler(_handler)
 
 
-from typing import Callable, Any, List, Tuple, Dict
-import atexit
 import shutil
+from typing import Any, Callable, Dict, List, Tuple
+
 from typing_extensions import ParamSpec
 
 P = ParamSpec("P")
 
+
 class CleanupRegistry:
     def __init__(self) -> None:
-        self._handlers: List[Tuple[Callable[P, Any]], Tuple[Any], Dict[str, Any]] = []
-    
-    def register_cleanup_handler(self, handler: Callable[P, Any], *args: P.args, **kwargs: P.kwargs) -> None:
+        self._handlers: List[
+            Tuple[Callable[P, Any]], Tuple[Any], Dict[str, Any]
+        ] = []
+
+    def register_cleanup_handler(
+        self, handler: Callable[P, Any], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
         self._handlers.append((handler, args, kwargs))
 
     def reset(self) -> None:
@@ -367,6 +394,7 @@ class CleanupRegistry:
 
 
 _ACTIVE_CLEANUP_REGISTRY = None
+
 
 def get_cleanup_registry() -> Optional[CleanupRegistry]:
     return _ACTIVE_CLEANUP_REGISTRY

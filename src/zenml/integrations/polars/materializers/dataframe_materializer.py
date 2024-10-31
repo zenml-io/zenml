@@ -14,7 +14,6 @@
 """Polars materializer."""
 
 import os
-import tempfile
 from typing import Any, ClassVar, Tuple, Type, Union
 
 import polars as pl
@@ -22,7 +21,6 @@ import pyarrow as pa  # type: ignore
 import pyarrow.parquet as pq  # type: ignore
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -45,35 +43,29 @@ class PolarsMaterializer(BaseMaterializer):
         Returns:
             A Polars data frame or series.
         """
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            io_utils.copy_dir(self.uri, temp_dir)
 
-        # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.uri, temp_dir.name)
+            # Load the data from the temporary directory
+            table = pq.read_table(
+                os.path.join(temp_dir, "dataframe.parquet").replace("\\", "/")
+            )
 
-        # Load the data from the temporary directory
-        table = pq.read_table(
-            os.path.join(temp_dir.name, "dataframe.parquet").replace("\\", "/")
-        )
+            # If the data is of type pl.Series, convert it back to a pyarrow array
+            # instead of a table.
+            if (
+                table.schema.metadata
+                and b"zenml_is_pl_series" in table.schema.metadata
+            ):
+                isinstance_bytes = table.schema.metadata[b"zenml_is_pl_series"]
+                isinstance_series = bool.from_bytes(isinstance_bytes, "big")
+                if isinstance_series:
+                    table = table.column(0)
 
-        # If the data is of type pl.Series, convert it back to a pyarrow array
-        # instead of a table.
-        if (
-            table.schema.metadata
-            and b"zenml_is_pl_series" in table.schema.metadata
-        ):
-            isinstance_bytes = table.schema.metadata[b"zenml_is_pl_series"]
-            isinstance_series = bool.from_bytes(isinstance_bytes, "big")
-            if isinstance_series:
-                table = table.column(0)
+            # Convert the table to a Polars data frame or series
+            data = pl.from_arrow(table)
 
-        # Convert the table to a Polars data frame or series
-        data = pl.from_arrow(table)
-
-        # Cleanup and return
-        fileio.rmtree(temp_dir.name)
-
-        return data
+            return data
 
     def save(self, data: Union[pl.DataFrame, pl.Series]) -> None:
         """Writes Polars data to the artifact store.
@@ -107,15 +99,10 @@ class PolarsMaterializer(BaseMaterializer):
             {b"zenml_is_pl_series": isinstance_bytes}
         )
 
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
-
-        # Write the table to a Parquet file
-        path = os.path.join(temp_dir.name, "dataframe.parquet").replace(
-            "\\", "/"
-        )
-        pq.write_table(table, path)  # Uses lz4 compression by default
-        io_utils.copy_dir(temp_dir.name, self.uri)
-
-        # Remove the temporary directory
-        fileio.rmtree(temp_dir.name)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            # Write the table to a Parquet file
+            path = os.path.join(temp_dir, "dataframe.parquet").replace(
+                "\\", "/"
+            )
+            pq.write_table(table, path)  # Uses lz4 compression by default
+            io_utils.copy_dir(temp_dir, self.uri)

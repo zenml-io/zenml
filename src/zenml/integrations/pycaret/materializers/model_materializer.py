@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """PyCaret materializer."""
 
-import tempfile
 from typing import (
     Any,
     Type,
@@ -65,7 +64,6 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from xgboost import XGBClassifier, XGBRegressor
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -133,19 +131,10 @@ class PyCaretMaterializer(BaseMaterializer):
         Returns:
             A PyCaret model.
         """
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
-
-        # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.uri, temp_dir.name)
-
-        # Load the model from the temporary directory
-        model = load_model(temp_dir.name)
-
-        # Cleanup and return
-        fileio.rmtree(temp_dir.name)
-
-        return model
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            io_utils.copy_dir(self.uri, temp_dir)
+            model = load_model(temp_dir)
+            return model
 
     def save(self, model: Any) -> None:
         """Writes a PyCaret model to the artifact store.
@@ -153,10 +142,6 @@ class PyCaretMaterializer(BaseMaterializer):
         Args:
             model: Any of the supported models.
         """
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
-        save_model(model, temp_dir.name)
-        io_utils.copy_dir(temp_dir.name, self.uri)
-
-        # Remove the temporary directory
-        fileio.rmtree(temp_dir.name)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            save_model(model, temp_dir.name)
+            io_utils.copy_dir(temp_dir.name, self.uri)

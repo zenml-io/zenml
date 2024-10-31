@@ -164,8 +164,10 @@ class StepRunner:
             )
 
             from zenml.materializers import base_materializer
-            base_materializer._ACTIVE_CLEANUP_REGISTRY = base_materializer.CleanupRegistry()
 
+            base_materializer._ACTIVE_CLEANUP_REGISTRY = (
+                base_materializer.CleanupRegistry()
+            )
 
             # Parse the inputs for the entrypoint function.
             function_params = self._parse_inputs(

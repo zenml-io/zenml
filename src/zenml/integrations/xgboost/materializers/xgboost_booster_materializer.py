@@ -14,7 +14,6 @@
 """Implementation of an XGBoost booster materializer."""
 
 import os
-import tempfile
 from typing import Any, ClassVar, Tuple, Type
 
 import xgboost as xgb
@@ -43,18 +42,15 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        booster = xgb.Booster()
-        booster.load_model(temp_file)
+            # Copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            booster = xgb.Booster()
+            booster.load_model(temp_file)
 
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
-        return booster
+            return booster
 
     def save(self, booster: xgb.Booster) -> None:
         """Creates a JSON serialization for a xgboost Booster model.
@@ -64,14 +60,9 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
-            booster.save_model(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+            with open(temp_file, "w") as f:
+                booster.save_model(f)
 
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+            fileio.copy(f, filepath)

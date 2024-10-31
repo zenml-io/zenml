@@ -14,7 +14,6 @@
 """Implementation of the XGBoost dmatrix materializer."""
 
 import os
-import tempfile
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import xgboost as xgb
@@ -46,17 +45,14 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        matrix = xgb.DMatrix(temp_file)
+            # Copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            matrix = xgb.DMatrix(temp_file)
 
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
-        return matrix
+            return matrix
 
     def save(self, matrix: xgb.DMatrix) -> None:
         """Creates a binary serialization for a xgboost.DMatrix object.
@@ -66,15 +62,13 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
-            matrix.save_binary(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
 
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+            with open(temp_file, "wb") as f:
+                matrix.save_binary(f)
+
+            fileio.copy(f, filepath)
 
     def extract_metadata(
         self, dataset: xgb.DMatrix

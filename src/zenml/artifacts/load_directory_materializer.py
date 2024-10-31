@@ -14,7 +14,6 @@
 """Only-load materializer for directories."""
 
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, ClassVar, Tuple, Type
 
@@ -46,15 +45,15 @@ class PreexistingDataMaterializer(BaseMaterializer):
         Returns:
             Path to the local directory that contains the artifact files.
         """
-        directory = tempfile.mkdtemp(prefix="zenml-artifact")
-        self.register_local_directory_cleanup(directory)
-        if fileio.isdir(self.uri):
-            self._copy_directory(src=self.uri, dst=directory)
-            return Path(directory)
-        else:
-            dst = os.path.join(directory, os.path.split(self.uri)[-1])
-            fileio.copy(src=self.uri, dst=dst)
-            return Path(dst)
+        with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
+            self.register_local_directory_for_cleanup(temp_dir)
+            if fileio.isdir(self.uri):
+                self._copy_directory(src=self.uri, dst=temp_dir)
+                return Path(temp_dir)
+            else:
+                dst = os.path.join(temp_dir, os.path.split(self.uri)[-1])
+                fileio.copy(src=self.uri, dst=dst)
+                return Path(dst)
 
     def save(self, data: Any) -> None:
         """Store the directory in the artifact store.
