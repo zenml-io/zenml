@@ -336,12 +336,29 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         delete_at_exit: bool,
         delete_after_step_execution: bool = True,
     ) -> Iterator[str]:
+        """Context manager to get a temporary directory.
+
+        Args:
+            delete_at_exit: If set to True, the temporary directory will be
+                deleted after the context manager exits.
+            delete_after_step_execution: If `delete_at_exit` is set to False and
+                this is set to True, the temporary directory will be deleted
+                after the step finished executing. If a materializer is being
+                used outside of the context of a step execution, the temporary
+                directory will not be deleted and the user is reponsible for
+                deleting it themselves.
+
+        Yields:
+            Path to the temporary directory.
+        """
         temp_dir = tempfile.mkdtemp(prefix="zenml-")
 
         if delete_after_step_execution and not delete_at_exit:
             # We should not delete the directory when the context manager
-            # exists, but cleanup once the step has finished executing.
-            self._register_local_directory_for_cleanup(temp_dir)
+            # exits, but cleanup once the step has finished executing.
+            self._register_directory_for_deletion_after_step_execution(
+                temp_dir
+            )
 
         try:
             yield temp_dir
@@ -349,52 +366,30 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             if delete_at_exit:
                 shutil.rmtree(temp_dir)
 
-    def _register_local_directory_for_cleanup(self, directory: str) -> None:
-        cleanup_registry = get_cleanup_registry()
-        if not cleanup_registry:
+    def _register_directory_for_deletion_after_step_execution(
+        self, directory: str
+    ) -> None:
+        """Register directory to be deleted after the current step finishes.
+
+        If no step is currently being executed, this method does nothing.
+
+        Args:
+            directory: The directory to register for deletion.
+        """
+        from zenml import get_step_context
+
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            logger.debug(
+                "Materializer called outside of step execution, not cleaning "
+                "up directory %s",
+                directory,
+            )
             return
 
-        def _handler() -> None:
+        def _callback() -> None:
             shutil.rmtree(directory)
             logger.warning("Cleaned up materializer directory %s", directory)
 
-        cleanup_registry.register_cleanup_handler(_handler)
-
-
-import shutil
-from typing import Any, Callable, Dict, List, Tuple
-
-from typing_extensions import ParamSpec
-
-P = ParamSpec("P")
-
-
-class CleanupRegistry:
-    def __init__(self) -> None:
-        self._handlers: List[
-            Tuple[Callable[P, Any]], Tuple[Any], Dict[str, Any]
-        ] = []
-
-    def register_cleanup_handler(
-        self, handler: Callable[P, Any], *args: P.args, **kwargs: P.kwargs
-    ) -> None:
-        self._handlers.append((handler, args, kwargs))
-
-    def reset(self) -> None:
-        self._handlers = []
-
-    def cleanup(self) -> None:
-        for handler, args, kwargs in self._handlers:
-            try:
-                handler(*args, **kwargs)
-            except Exception as e:
-                logger.debug("Failed to run cleanup handler: %s", str(e))
-
-        self.reset()
-
-
-_ACTIVE_CLEANUP_REGISTRY = None
-
-
-def get_cleanup_registry() -> Optional[CleanupRegistry]:
-    return _ACTIVE_CLEANUP_REGISTRY
+        step_context._cleanup_registry.register_callback(_callback)
