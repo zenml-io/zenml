@@ -1988,7 +1988,6 @@ def export_requirements(
         overwrite: Overwrite the output file if it already exists. This option
             is only valid if the output file is provided.
     """
-
     try:
         stack_model: "StackResponse" = Client().get_stack(
             name_id_or_prefix=stack_name_or_id
