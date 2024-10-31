@@ -1944,3 +1944,79 @@ def _get_stack_component_info(
         service_connector_index=service_connector_index,
         service_connector_resource_id=service_connector_resource_id,
     )
+
+
+@stack.command(
+    name="export-requirements", help="Export the stack requirements."
+)
+@click.argument(
+    "stack_name_or_id",
+    type=click.STRING,
+    required=False,
+)
+@click.option(
+    "--output-file",
+    "-o",
+    "output_file",
+    type=str,
+    required=False,
+    help="File to which to export the stack requirements. If not "
+    "provided, the requirements will be printed to stdout instead.",
+)
+@click.option(
+    "--overwrite",
+    "-ov",
+    "overwrite",
+    type=bool,
+    required=False,
+    is_flag=True,
+    help="Overwrite the output file if it already exists. This option is "
+    "only valid if the output file is provided.",
+)
+def export_requirements(
+    stack_name_or_id: Optional[str] = None,
+    output_file: Optional[str] = None,
+    overwrite: bool = False,
+) -> None:
+    """Exports stack requirements so they can be installed using pip.
+
+    Args:
+        stack_name_or_id: Stack name or ID. If not given, the active stack will
+            be used.
+        output_file: Optional path to the requirements output file.
+        overwrite: Overwrite the output file if it already exists. This option
+            is only valid if the output file is provided.
+    """
+    from zenml.stack import Stack
+
+    try:
+        stack_model: "StackResponse" = Client().get_stack(
+            name_id_or_prefix=stack_name_or_id
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    stack_ = Stack.from_model(stack_model)
+    requirements = list(stack_.requirements())
+
+    if not requirements:
+        cli_utils.declare(f"Stack `{stack_.name}` has no requirements.")
+        return
+
+    if output_file:
+        try:
+            with open(output_file, "x") as f:
+                f.write("\n".join(requirements))
+        except FileExistsError:
+            if overwrite or cli_utils.confirmation(
+                "A file already exists at the specified path. "
+                "Would you like to overwrite it?"
+            ):
+                with open(output_file, "w") as f:
+                    f.write("\n".join(requirements))
+        cli_utils.declare(
+            f"Requirements for stack `{stack_.name}` exported to {output_file}."
+        )
+    else:
+        cli_utils.declare(f"Requirements for stack `{stack_.name}`:")
+        click.echo(" ".join(requirements), nl=False)
