@@ -166,9 +166,8 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
 
-        Returns:
-            The optional return value from this method will be returned by the
-            `pipeline_instance.run()` call when someone is running a pipeline.
+        Yields:
+            Metadata for the pipeline run.
         """
 
     def run(
@@ -176,7 +175,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> None:
         """Runs a pipeline on a stack.
 
         Args:
