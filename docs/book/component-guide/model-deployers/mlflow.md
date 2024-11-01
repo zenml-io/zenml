@@ -98,7 +98,7 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
     experiment_tracker.configure_mlflow()
     client = MlflowClient()
     model_name = "model" # set the model name that was logged
-    model_uri = artifact_utils.get_artifact_uri(
+    model_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call]
         run_id=mlflow_run_id, artifact_path=model_name
     )
     mlflow_deployment_config = MLFlowDeploymentConfig(

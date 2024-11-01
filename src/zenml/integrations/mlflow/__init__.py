@@ -58,7 +58,7 @@ class MlflowIntegration(Integration):
         from zenml.integrations.pandas import PandasIntegration
 
         reqs = [
-            "mlflow>=2.1.1,<2.17.0",
+            "mlflow>=2.1.1,<3",
             # TODO: remove this requirement once rapidjson is fixed
             "python-rapidjson<1.15",
             # When you do:
