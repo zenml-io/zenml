@@ -27,6 +27,7 @@ class LangchainIntegration(Integration):
     NAME = LANGCHAIN
     REQUIREMENTS = [
         "langchain==0.3.0",
+        "langchain-community"
         "pyyaml>=6.0.1",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
