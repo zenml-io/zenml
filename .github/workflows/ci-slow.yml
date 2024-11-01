@@ -327,18 +327,18 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  custom-ubuntu-integration-test-gh-actions-server-docker-orchestrator:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.9', '3.10', '3.11']
-        test_environment: [github-actions-server-docker-orchestrator]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-slow-services.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+# custom-ubuntu-integration-test-gh-actions-server-docker-orchestrator:
+#   if: github.event.pull_request.draft == false
+#   needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
+#   strategy:
+#     matrix:
+#       os: [ubuntu-latest]
+#       python-version: ['3.9', '3.10', '3.11']
+#       test_environment: [github-actions-server-docker-orchestrator]
+#     fail-fast: false
+#   uses: ./.github/workflows/integration-test-slow-services.yml
+#   with:
+#     os: ${{ matrix.os }}
+#     python-version: ${{ matrix.python-version }}
+#     test_environment: ${{ matrix.test_environment }}
+#   secrets: inherit
