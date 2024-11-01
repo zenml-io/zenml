@@ -3,7 +3,7 @@
 import copy
 import hashlib
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks
@@ -22,11 +22,9 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.integrations.utils import get_integration_for_module
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
-    ComponentResponse,
     FlavorFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
@@ -43,7 +41,7 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, settings_utils
+from zenml.utils import dict_utils, requirements_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -151,8 +149,8 @@ def run_template(
     assert placeholder_run
 
     def _task() -> None:
-        pypi_requirements, apt_packages = get_requirements_for_stack(
-            stack=stack
+        pypi_requirements, apt_packages = (
+            requirements_utils.get_requirements_for_stack(stack=stack)
         )
 
         if build.python_version:
@@ -264,59 +262,6 @@ def ensure_async_orchestrator(
         deployment.pipeline_configuration.settings[key] = (
             BaseSettings.model_validate(settings_dict)
         )
-
-
-def get_requirements_for_stack(
-    stack: StackResponse,
-) -> Tuple[List[str], List[str]]:
-    """Get requirements for a stack model.
-
-    Args:
-        stack: The stack for which to get the requirements.
-
-    Returns:
-        Tuple of PyPI and APT requirements of the stack.
-    """
-    pypi_requirements: Set[str] = set()
-    apt_packages: Set[str] = set()
-
-    for component_list in stack.components.values():
-        assert len(component_list) == 1
-        component = component_list[0]
-        (
-            component_pypi_requirements,
-            component_apt_packages,
-        ) = get_requirements_for_component(component=component)
-        pypi_requirements = pypi_requirements.union(
-            component_pypi_requirements
-        )
-        apt_packages = apt_packages.union(component_apt_packages)
-
-    return sorted(pypi_requirements), sorted(apt_packages)
-
-
-def get_requirements_for_component(
-    component: ComponentResponse,
-) -> Tuple[List[str], List[str]]:
-    """Get requirements for a component model.
-
-    Args:
-        component: The component for which to get the requirements.
-
-    Returns:
-        Tuple of PyPI and APT requirements of the component.
-    """
-    flavors = zen_store().list_flavors(
-        FlavorFilter(name=component.flavor_name, type=component.type)
-    )
-    assert len(flavors) == 1
-    flavor_source = flavors[0].source
-    integration = get_integration_for_module(module_name=flavor_source)
-
-    if integration:
-        return integration.get_requirements(), integration.APT_PACKAGES
-    else:
-        return [], []
 
 
 def generate_image_hash(dockerfile: str) -> str:
