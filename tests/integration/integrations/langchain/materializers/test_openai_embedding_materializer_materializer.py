@@ -18,7 +18,9 @@ from tests.unit.test_general import _test_materializer
 
 def test_langchain_openai_embedding_materializer(clean_client):
     """Tests the Langchain OpenAI Embeddings materializer."""
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain_community.embeddings import (  # type: ignore[import-untyped]
+        OpenAIEmbeddings,
+    )
 
     from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
         LangchainOpenaiEmbeddingMaterializer,

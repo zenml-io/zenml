@@ -24,7 +24,9 @@ from zenml.materializers.cloudpickle_materializer import (
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
 else:
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain_community.embeddings import (  # type: ignore[import-untyped]
+        OpenAIEmbeddings,
+    )
 
 
 class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
