@@ -194,7 +194,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
@@ -202,7 +202,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
 {% endhint %}
 
 If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
@@ -344,11 +344,11 @@ The artifact produced from the preexisting data will have a `pathlib.Path` type,
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
-For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/handle-data-artifacts/registering-existing-data.md).
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md).
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
@@ -411,7 +411,7 @@ def model_finetuner_step(
     return model
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](../../how-to/model-management-metrics/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
 
 Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](../../how-to/handle-data-artifacts/) for more information.
 

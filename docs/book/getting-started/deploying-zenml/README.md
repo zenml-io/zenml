@@ -1,8 +1,9 @@
 ---
+icon: rocket-launch
 description: Why do we need to deploy ZenML?
 ---
 
-# 🤔 Deploying ZenML
+# Deploying ZenML
 
 ![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
 
@@ -61,8 +62,8 @@ This default setup allows you to get started and try out the core features but
 you won't be able to use cloud-based components like serverless orchestrators
 and so on.
 
-Users can run the `zenml up` command to spin up a local ZenML OSS server to serve the
-dashboard. For the local OSS server option, the `zenml up` command implicitly
+Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the
+dashboard. For the local OSS server option, the `zenml login --local` command implicitly
 connects the client to the server. The diagram for this looks as follows:
 
 ![ZenML with a local ZenML OSS Server](../../.gitbook/assets/Scenario2.png)
@@ -71,7 +72,7 @@ In order to move into production, the ZenML server needs to be deployed somewher
 
 ![ZenML centrally deployed for multiple users](../../.gitbook/assets/Scenario3.2.png)
 
-You connect to your deployed ZenML server using the `zenml connect` command and
+You connect to your deployed ZenML server using the `zenml login` command and
 then you have the full benefits and power of ZenML. You can use all the
 cloud-based components, your metadata will be stored and synchronized across all
 the users of the server and you can leverage features like centralized logs

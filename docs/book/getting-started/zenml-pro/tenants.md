@@ -102,10 +102,10 @@ As previously mentioned, a tenant is a supercharged ZenML server that you can us
 
 Some Pro-only features that you can leverage in your tenant are as follows:
 
-- [Model Control Plane](../../../../docs/book/how-to/use-the-model-control-plane/register-a-model.md)
-- [Artifact Control Plane](../../how-to/handle-data-artifacts/README.md)
-- [Ability to run pipelines from the Dashboard](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md), 
-- [Create templates out of your pipeline runs](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md)
+- [Model Control Plane](../../../../docs/book/how-to/model-management-metrics/model-control-plane/register-a-model.md)
+- [Artifact Control Plane](../../how-to/data-artifact-management/handle-data-artifacts/README.md)
+- [Ability to run pipelines from the Dashboard](../../../../docs/book/how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md), 
+- [Create templates out of your pipeline runs](../../../../docs/book/how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md)
 
 and [more](https://zenml.io/pro)!
 

@@ -44,9 +44,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
     from sqlmodel import SQLModel
 
-    from zenml.models.v2.core.service_connector import (
-        ServiceConnectorResponse,
-    )
+    from zenml.models import FlavorResponse, ServiceConnectorResponse
 
 # ------------------ Base Model ------------------
 
@@ -139,19 +137,8 @@ class InternalComponentRequest(ComponentRequest):
 class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
-
     name: Optional[str] = Field(
         title="The name of the stack component.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    type: Optional[StackComponentType] = Field(
-        title="The type of the stack component.",
-        default=None,
-    )
-    flavor: Optional[str] = Field(
-        title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
@@ -187,7 +174,7 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
     type: StackComponentType = Field(
         title="The type of the stack component.",
     )
-    flavor: str = Field(
+    flavor_name: str = Field(
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -232,6 +219,10 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
 class ComponentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the component entity."""
 
+    flavor: "FlavorResponse" = Field(
+        title="The flavor of this stack component.",
+    )
+
 
 class ComponentResponse(
     WorkspaceScopedResponse[
@@ -242,7 +233,7 @@ class ComponentResponse(
 ):
     """Response model for components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type"]
 
     name: str = Field(
         title="The name of the stack component.",
@@ -265,6 +256,8 @@ class ComponentResponse(
                     if label.startswith("zenml:")
                 }
             )
+        metadata["flavor"] = self.flavor_name
+
         return metadata
 
     def get_hydrated_version(self) -> "ComponentResponse":
@@ -288,13 +281,13 @@ class ComponentResponse(
         return self.get_body().type
 
     @property
-    def flavor(self) -> str:
-        """The `flavor` property.
+    def flavor_name(self) -> str:
+        """The `flavor_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().flavor
+        return self.get_body().flavor_name
 
     @property
     def integration(self) -> Optional[str]:
@@ -359,6 +352,15 @@ class ComponentResponse(
         """
         return self.get_metadata().connector
 
+    @property
+    def flavor(self) -> "FlavorResponse":
+        """The `flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().flavor
+
 
 # ------------------ Filter Model ------------------
 
@@ -376,6 +378,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
+        "user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -417,6 +420,10 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",
+    )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the component.",
     )
 
     def set_scope_type(self, component_type: str) -> None:
@@ -464,3 +471,31 @@ class ComponentFilter(WorkspaceScopedFilter):
             base_filter = operator(base_filter, stack_filter)
 
         return base_filter
+
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
+            UserSchema,
+        )
+
+        custom_filters = super().get_custom_filters()
+
+        if self.user:
+            user_filter = and_(
+                StackComponentSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
