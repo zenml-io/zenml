@@ -46,6 +46,61 @@ with open(os.path.join(temp_artifact_folder_path,test_file_name),"r") as f:
 The artifact produced from the preexisting data will have a `pathlib.Path` type, once loaded or passed as input to another step. The path will be pointing to a temporary location in the executing environment and ready for use as a normal local `Path` (passed into `from_pretrained` or `open` functions to name a few examples).
 {% endhint %}
 
+## Register Existing folder as a ZenML Artifact and use in Pipeline
+
+For datasets in a folder structure, that you don't want to materialize in the pipeline, you can register the folder as a ZenML Artifact and use it in subsequent steps or other pipelines.
+
+```python
+import os
+import shutil
+
+from zenml import register_artifact, load_artifact
+from zenml import step, pipeline
+from zenml.client import Client
+
+DATSET_NAME = "v1_nnunet_dataset"
+
+
+@step(enable_cache=True)
+def load_v1():
+    """Loads dataset from outside artifact store bounds into artifact store."""
+    client = Client()
+    dataset_rel_path = "v1data"
+    as_path = client.active_stack.artifact_store.path
+    # Define path within artifact store bounds
+    dataset_path_in_as = os.path.join(as_path, DATSET_NAME)
+
+    # copy dataset into artifact store
+    shutil.copytree(dataset_rel_path, dataset_path_in_as, dirs_exist_ok=True)
+
+    try:
+        # create artifact from the preexisting folder
+        registered_artifact = register_artifact(
+            folder_or_file_uri=dataset_path_in_as,
+            name=DATSET_NAME
+        )
+    except RuntimeError:
+        # In case the artifact already existed
+        registered_artifact = client.get_artifact_version(DATSET_NAME)
+
+    return str(registered_artifact.name)
+
+
+@step(enable_cache=True)
+def process_data(input_artifact_name: str):
+    # load dataset
+    source_dataset = load_artifact(name_or_id=input_artifact_name)
+    
+    ...
+
+
+@pipeline
+def example_pipeline():
+    v1_dataset = load_v1()
+    process_data(v1_dataset)
+```
+
+
 ## Register Existing File as a ZenML Artifact
 
 If the data created externally is a file you can register it as a ZenML Artifact and later make use of it in subsequent steps or other pipelines.
