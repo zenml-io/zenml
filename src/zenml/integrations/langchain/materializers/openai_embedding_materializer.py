@@ -16,6 +16,7 @@
 import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type
 
+from zenml.enums import ArtifactType
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
@@ -23,7 +24,7 @@ from zenml.materializers.cloudpickle_materializer import (
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
 else:
-    from langchain_community.embeddings import (  # type: ignore[import-untyped]
+    from langchain_community.embeddings import (
         OpenAIEmbeddings,
     )
 
@@ -31,7 +32,7 @@ else:
 class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
     """Materializer for Langchain OpenAI Embeddings."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
 
     def save(self, embeddings: Any) -> None:
