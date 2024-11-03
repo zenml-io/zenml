@@ -36,7 +36,11 @@ class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
 
     def save(self, embeddings: Any) -> None:
-        """Saves the embeddings model after clearing non-picklable clients."""
+        """Saves the embeddings model after clearing non-picklable clients.
+
+        Args:
+            embeddings: The embeddings model to save.
+        """
         # Clear the clients which will be recreated on load
         embeddings.client = None
         embeddings.async_client = None
@@ -45,5 +49,12 @@ class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
         super().save(embeddings)
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Loads the embeddings model and lets it recreate clients when needed."""
+        """Loads the embeddings model and lets it recreate clients when needed.
+
+        Args:
+            data_type: The type of the data to load.
+
+        Returns:
+            The loaded embeddings model.
+        """
         return super().load(data_type)
