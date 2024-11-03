@@ -24,11 +24,37 @@ from zenml.materializers.cloudpickle_materializer import (
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
 else:
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain_community.embeddings import (
+        OpenAIEmbeddings,
+    )
 
 
 class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
-    """Handle langchain OpenAI embedding objects."""
+    """Materializer for Langchain OpenAI Embeddings."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
+
+    def save(self, embeddings: Any) -> None:
+        """Saves the embeddings model after clearing non-picklable clients.
+
+        Args:
+            embeddings: The embeddings model to save.
+        """
+        # Clear the clients which will be recreated on load
+        embeddings.client = None
+        embeddings.async_client = None
+
+        # Use the parent class's save implementation which uses cloudpickle
+        super().save(embeddings)
+
+    def load(self, data_type: Type[Any]) -> Any:
+        """Loads the embeddings model and lets it recreate clients when needed.
+
+        Args:
+            data_type: The type of the data to load.
+
+        Returns:
+            The loaded embeddings model.
+        """
+        return super().load(data_type)
