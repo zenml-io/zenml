@@ -716,7 +716,7 @@ class Model(BaseModel):
 
             logger.info(
                 "Created new model version `%s` for model `%s`.",
-                self.version,
+                model_version.name,
                 self.name,
             )
 
