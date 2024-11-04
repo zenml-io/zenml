@@ -268,6 +268,7 @@
   * [BentoML](component-guide/model-deployers/bentoml.md)
   * [Hugging Face](component-guide/model-deployers/huggingface.md)
   * [Databricks](component-guide/model-deployers/databricks.md)
+  * [vLLM](component-guide/model-deployers/vllm.md)
   * [Develop a Custom Model Deployer](component-guide/model-deployers/custom.md)
 * [Step Operators](component-guide/step-operators/step-operators.md)
   * [Amazon SageMaker](component-guide/step-operators/sagemaker.md)
