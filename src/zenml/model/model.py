@@ -528,14 +528,6 @@ class Model(BaseModel):
         data["suppress_class_validation_warnings"] = True
         return data
 
-    def _validate_config_in_runtime(self) -> "ModelVersionResponse":
-        """Validate that config doesn't conflict with runtime environment.
-
-        Returns:
-            The model version based on configuration.
-        """
-        return self._get_or_create_model_version()
-
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
 
@@ -758,19 +750,6 @@ class Model(BaseModel):
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version
-
-    def _merge(self, model: "Model") -> None:
-        self.license = self.license or model.license
-        self.description = self.description or model.description
-        self.audience = self.audience or model.audience
-        self.use_cases = self.use_cases or model.use_cases
-        self.limitations = self.limitations or model.limitations
-        self.trade_offs = self.trade_offs or model.trade_offs
-        self.ethics = self.ethics or model.ethics
-        if model.tags is not None:
-            self.tags = list(
-                {t for t in self.tags or []}.union(set(model.tags))
-            )
 
     def __hash__(self) -> int:
         """Get hash of the `Model`.
