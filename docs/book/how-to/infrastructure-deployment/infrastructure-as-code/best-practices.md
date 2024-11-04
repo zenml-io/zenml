@@ -14,7 +14,7 @@ You're a system architect tasked with setting up a scalable ML infrastructure th
 
 ## The ZenML Approach
 
-ZenML introduces stack components as abstractions over cloud resources. Let's explore how to architect this effectively with Terraform using the official ZenML provider.
+ZenML introduces [stack components](../../../component-guide/README.md) as abstractions over infrastructure resources. Let's explore how to architect this effectively with Terraform using the official ZenML provider.
 
 ## Part 1: Foundation - Stack Component Architecture
 
@@ -172,28 +172,44 @@ resource "zenml_stack" "training_stack" {
 }
 ```
 
-## Part 2: Authentication and Access Control
+## Part 2: Environment Management and Authentication
 
 ### The Problem
-Different environments require different authentication methods, and you need to maintain security without complexity.
+Different environments (dev, staging, prod) require:
+- Different authentication methods and security levels
+- Environment-specific resource configurations
+- Isolation between environments to prevent cross-environment impacts
+- Consistent management patterns while maintaining flexibility
 
-### The Solution: Smart Service Connector Pattern
+### The Solution: Environment Configuration Pattern with Smart Authentication
 
-Create a flexible service connector setup that adapts to your environment:
+Create a flexible [service connector](../auth-management/README.md) setup that adapts to your environment. For example,
+in development, a service account might be the more flexible pattern, while in production we go through
+workload identity. Combine environment-specific configurations with appropriate authentication methods:
 
 ```hcl
 locals {
-  # Define authentication patterns per environment
-  auth_config = {
+  # Define configurations per environment
+  env_config = {
     dev = {
+      # Resource configuration
+      machine_type = "n1-standard-4"
+      gpu_enabled  = false
+      
+      # Authentication configuration
       auth_method = "service-account"
-      secrets = {
+      auth_secrets = {
         service_account_json = file("dev-sa.json")
       }
     }
     prod = {
+      # Resource configuration
+      machine_type = "n1-standard-8"
+      gpu_enabled  = true
+      
+      # Authentication configuration
       auth_method = "workload-identity"
-      configuration = {
+      auth_configuration = {
         workload_identity_pool = var.workload_identity_pool_id
         service_account       = var.prod_service_account_email
       }
@@ -205,7 +221,7 @@ locals {
 resource "zenml_service_connector" "env_connector" {
   name        = "${var.environment}-connector"
   type        = "gcp"
-  auth_method = local.auth_config[var.environment].auth_method
+  auth_method = local.env_config[var.environment].auth_method
 
   resource_types = [
     "artifact-store",
@@ -214,7 +230,7 @@ resource "zenml_service_connector" "env_connector" {
   ]
 
   dynamic "configuration" {
-    for_each = try(local.auth_config[var.environment].configuration, {})
+    for_each = try(local.env_config[var.environment].auth_configuration, {})
     content {
       key   = configuration.key
       value = configuration.value
@@ -222,11 +238,30 @@ resource "zenml_service_connector" "env_connector" {
   }
 
   dynamic "secrets" {
-    for_each = try(local.auth_config[var.environment].secrets, {})
+    for_each = try(local.env_config[var.environment].auth_secrets, {})
     content {
       key   = secrets.key
       value = secrets.value
     }
+  }
+}
+
+# Create environment-specific orchestrator
+resource "zenml_stack_component" "env_orchestrator" {
+  name   = "${var.environment}-orchestrator"
+  type   = "orchestrator"
+  flavor = "vertex"
+  
+  configuration = {
+    location     = var.region
+    machine_type = local.env_config[var.environment].machine_type
+    gpu_enabled  = local.env_config[var.environment].gpu_enabled
+  }
+  
+  connector_id = zenml_service_connector.env_connector.id
+  
+  labels = {
+    environment = var.environment
   }
 }
 ```
@@ -234,7 +269,7 @@ resource "zenml_service_connector" "env_connector" {
 ## Part 3: Resource Sharing and Isolation
 
 ### The Problem
-Different ML projects need to share some resources while maintaining isolation for others.
+Different ML projects often require strict isolation of data and security to prevent unauthorized access and ensure compliance with security policies. Ensuring that each project has its own isolated resources, such as artifact stores or orchestrators, is crucial to prevent data leakage and maintain the integrity of each project's environment. This focus on data and security isolation is essential for managing multiple ML projects securely and effectively.
 
 ### The Solution: Resource Scoping Pattern
 
@@ -268,7 +303,25 @@ resource "zenml_stack_component" "project_artifact_stores" {
   }
 }
 
-# Create project-specific stacks
+# The orchestrator is shared across all stacks
+resource "zenml_stack_component" "project_orchestrator" {
+  name   = "shared-orchestrator"
+  type   = "orchestrator"
+  flavor = "vertex"
+  
+  configuration = {
+    location = var.region
+    project  = var.project_id
+  }
+  
+  connector_id = zenml_service_connector.env_connector.id
+  
+  labels = {
+    environment = var.environment
+  }
+}
+
+# Create project-specific stacks seperated by artifact stores
 resource "zenml_stack" "project_stacks" {
   for_each = local.project_paths
   
@@ -276,6 +329,7 @@ resource "zenml_stack" "project_stacks" {
   
   components = {
     artifact_store = zenml_stack_component.project_artifact_stores[each.key].id
+    orchestrator   = zenml_stack_component.project_orchestrator.id
   }
   
   labels = {
@@ -285,48 +339,7 @@ resource "zenml_stack" "project_stacks" {
 }
 ```
 
-## Part 4: Environment Management
-
-### The Solution: Environment Configuration Pattern
-
-Use environment-specific configurations:
-
-```hcl
-locals {
-  env_config = {
-    dev = {
-      machine_type = "n1-standard-4"
-      gpu_enabled  = false
-    }
-    prod = {
-      machine_type = "n1-standard-8"
-      gpu_enabled  = true
-    }
-  }
-}
-
-# Create environment-specific orchestrator
-resource "zenml_stack_component" "env_orchestrator" {
-  name   = "${var.environment}-orchestrator"
-  type   = "orchestrator"
-  flavor = "vertex"
-  
-  configuration = merge(
-    {
-      location = var.region
-    },
-    local.env_config[var.environment]
-  )
-  
-  connector_id = zenml_service_connector.env_connector.id
-  
-  labels = {
-    environment = var.environment
-  }
-}
-```
-
-## Best Practices and Lessons Learned
+## Part 4: Advanced Stack Management Practices
 
 1. **Stack Component Versioning**
 ```hcl
@@ -461,8 +474,8 @@ These practices help maintain a clean, scalable, and maintainable infrastructure
 - Document all required configuration fields
 - Consider component dependencies when organizing stacks
 - Separate infrastructure and ZenML registration state
-- Use workspaces for different environments
-- Keep registration state with the ML operations team
+- Use [Terraform workspaces](https://www.terraform.io/docs/language/state/workspaces.html) for different environments
+- Ensure that the ML operations team manages the registration state to maintain control over the ZenML stack components and their configurations. This helps in keeping the infrastructure and ML operations aligned and allows for better tracking and auditing of changes.
 
 ## Conclusion
 
