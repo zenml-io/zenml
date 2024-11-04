@@ -14,7 +14,8 @@ is a great solution for quickly getting started, it might not always be suitable
 your use case.
 
 This guide is for advanced users who want to manage their own custom Terraform code but
-want to use ZenML to manage their stacks.
+want to use ZenML to manage their stacks. For this, the
+[ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest) is a better choice.
 
 ## Understanding the Two-Phase Approach
 
@@ -45,7 +46,7 @@ resource "google_artifact_registry_repository" "ml_containers" {
 
 ### Setup the ZenML Provider
 
-First, configure the ZenML provider to communicate with your ZenML server:
+First, configure the [ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest) to communicate with your ZenML server:
 
 ```hcl
 terraform {
@@ -63,9 +64,19 @@ provider "zenml" {
 }
 ```
 
-### Service Connector Pattern
+To generate a API key, use the command:
 
-The key to successful registration is proper authentication. Service connectors are ZenML's way of managing this:
+```bash
+zenml service-account create <SERVICE_ACCOUNT_NAME>
+```
+
+You can learn more about how to generate a ZENML_API_KEY via service accounts
+[here](../../project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md).
+
+### Create the service connectors
+
+The key to successful registration is proper authentication between the components.
+[Service connectors](../auth-management/README.md) are ZenML's way of managing this:
 
 ```hcl
 # First, create a service connector
@@ -99,57 +110,9 @@ resource "zenml_stack_component" "artifact_store" {
 }
 ```
 
-### Authentication Patterns
+### Register the stack components
 
-Different environments might need different authentication approaches:
-
-```hcl
-locals {
-  auth_methods = {
-    # Dev uses service account keys
-    dev = {
-      auth_method = "service-account"
-      secrets = {
-        service_account_json = file("dev-sa.json")
-      }
-    }
-    # Prod uses workload identity
-    prod = {
-      auth_method = "workload-identity"
-      configuration = {
-        workload_identity_pool = var.workload_identity_pool_id
-        service_account       = var.prod_service_account_email
-      }
-    }
-  }
-}
-
-resource "zenml_service_connector" "env_connector" {
-  name        = "${var.environment}-connector"
-  type        = "gcp"  # or aws/azure
-  auth_method = local.auth_methods[var.environment].auth_method
-  
-  dynamic "configuration" {
-    for_each = try(local.auth_methods[var.environment].configuration, {})
-    content {
-      key   = configuration.key
-      value = configuration.value
-    }
-  }
-  
-  dynamic "secrets" {
-    for_each = try(local.auth_methods[var.environment].secrets, {})
-    content {
-      key   = secrets.key
-      value = secrets.value
-    }
-  }
-}
-```
-
-### Component Registration Patterns
-
-Register different types of components:
+Register different types of [components](../../../component-guide/README.md):
 
 ```hcl
 # Generic component registration pattern
@@ -193,7 +156,7 @@ resource "zenml_stack_component" "components" {
 }
 ```
 
-### Creating the Stack
+### Assemble the stack
 
 Finally, assemble the components into a stack:
 
@@ -206,28 +169,6 @@ resource "zenml_stack" "ml_stack" {
   }
 }
 ```
-
-## Best Practices
-
-1. **Service Connector Management**
-   - Create one connector per environment/authentication method
-   - Use workload identity in production when possible
-   - Consider connector reuse across components
-
-2. **Component Configuration**
-   - Keep configurations DRY using locals
-   - Use variables for environment-specific values
-   - Document required configuration fields
-
-3. **Stack Organization**
-   - Group related components logically
-   - Use consistent naming conventions
-   - Consider component dependencies
-
-4. **State Management**
-   - Use separate state files for infrastructure and ZenML registration
-   - Consider using workspaces for different environments
-   - Keep registration state with the team that manages ML operations
 
 ## Practical Walkthrough: Registering Existing GCP Infrastructure
 
