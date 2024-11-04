@@ -24,12 +24,19 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -63,11 +70,16 @@ logger = get_logger(__name__)
 class ArtifactVersionRequest(WorkspaceScopedRequest):
     """Request model for artifact versions."""
 
-    artifact_id: UUID = Field(
+    artifact_id: Optional[UUID] = Field(
+        default=None,
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.", union_mode="left_to_right"
+    artifact_name: Optional[str] = Field(
+        default=None,
+        title="Name of the artifact to which this version belongs.",
+    )
+    version: Optional[Union[int, str]] = Field(
+        default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
@@ -95,6 +107,9 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
+    metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, title="Metadata of the artifact version."
+    )
 
     @field_validator("version")
     @classmethod
@@ -116,6 +131,28 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
         return value
+
+    @model_validator(mode="after")
+    def _validate_request(self) -> "ArtifactVersionRequest":
+        """Validate the request values.
+
+        Raises:
+            ValueError: If the request is invalid.
+
+        Returns:
+            The validated request.
+        """
+        if self.artifact_id and self.artifact_name:
+            raise ValueError(
+                "Only one of artifact_name and artifact_id can be set."
+            )
+
+        if not (self.artifact_id or self.artifact_name):
+            raise ValueError(
+                "Either artifact_name or artifact_id must be set."
+            )
+
+        return self
 
 
 # ------------------ Update Model ------------------

@@ -18,8 +18,8 @@ from tests.unit.test_general import _test_materializer
 
 def test_langchain_vectorstore_materializer(clean_client):
     """Tests the Langchain Vector Store materializer."""
-    from langchain.embeddings import FakeEmbeddings
-    from langchain.vectorstores import SKLearnVectorStore
+    from langchain_community.embeddings import FakeEmbeddings
+    from langchain_community.vectorstores import SKLearnVectorStore
 
     from zenml.integrations.langchain.materializers.vector_store_materializer import (
         LangchainVectorStoreMaterializer,
