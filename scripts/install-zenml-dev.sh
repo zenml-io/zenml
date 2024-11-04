@@ -61,10 +61,6 @@ install_integrations() {
     echo "typing-extensions" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
-    # TODO: remove after torch 2.3.0+ is released
-    # https://github.com/pytorch/pytorch/issues/124897
-    echo "torch<2.3.0" >> integration-requirements.txt
-
     # workaround to make yamlfix work
     echo "maison<2" >> integration-requirements.txt
 
