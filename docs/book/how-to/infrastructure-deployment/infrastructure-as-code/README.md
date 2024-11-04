@@ -1,4 +1,5 @@
 ---
+icon: docker
 description: >
   Leverage Infrastructure as Code to manage your ZenML stacks and components.
 ---

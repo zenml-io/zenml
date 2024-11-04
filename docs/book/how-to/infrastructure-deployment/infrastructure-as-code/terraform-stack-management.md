@@ -175,11 +175,11 @@ resource "zenml_stack" "ml_stack" {
 Let's see a complete example of registering an existing GCP infrastructure stack with ZenML.
 
 ### Prerequisites
+
 - A GCS bucket for artifacts
 - An Artifact Registry repository
 - A service account for ML operations
 - Vertex AI enabled for orchestration
-
 
 ### Step 1: Variables Configuration
 

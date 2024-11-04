@@ -345,45 +345,124 @@ resource "zenml_stack" "versioned_stack" {
 }
 ```
 
-2. **Resource Organization**
+2. **Service Connector Management**
 ```hcl
-# Group related components
-resource "zenml_stack_component" "training_components" {
-  for_each = {
+# Create environment-specific connectors with clear purposes
+resource "zenml_service_connector" "env_connector" {
+  name        = "${var.environment}-${var.purpose}-connector"
+  type        = var.connector_type
+  
+  # Use workload identity for production
+  auth_method = var.environment == "prod" ? "workload-identity" : "service-account"
+  
+  # Enable connector reuse across components
+  resource_types = var.supported_resources
+  
+  labels = merge(local.common_labels, {
+    purpose = var.purpose
+  })
+}
+```
+
+3. **Component Configuration Management**
+```hcl
+# Define reusable configurations
+locals {
+  base_configs = {
     orchestrator = {
-      type   = "orchestrator"
-      flavor = "vertex"
+      location = var.region
+      project  = var.project_id
     }
-    experiment_tracker = {
-      type   = "experiment_tracker"
-      flavor = "mlflow"
+    artifact_store = {
+      path_prefix = "gs://${var.bucket_name}"
     }
   }
-
-  name          = "${var.environment}-${each.key}"
-  type          = each.value.type
-  flavor        = each.value.flavor
-  connector_id  = zenml_service_connector.env_connector.id
   
-  labels = local.common_labels
+  # Environment-specific overrides
+  env_configs = {
+    dev = {
+      orchestrator = {
+        machine_type = "n1-standard-4"
+      }
+    }
+    prod = {
+      orchestrator = {
+        machine_type = "n1-standard-8"
+      }
+    }
+  }
+}
+
+resource "zenml_stack_component" "configured_component" {
+  name   = "${var.environment}-${var.component_type}"
+  type   = var.component_type
+  
+  # Merge configurations
+  configuration = merge(
+    local.base_configs[var.component_type],
+    try(local.env_configs[var.environment][var.component_type], {})
+  )
 }
 ```
 
-3. **Stack Evolution**
+4. **Stack Organization and Dependencies**
 ```hcl
-resource "zenml_stack" "evolvable_stack" {
-  name = "${var.environment}-stack"
+# Group related components with clear dependency chains
+module "ml_stack" {
+  source = "./modules/ml_stack"
   
-  lifecycle {
-    create_before_destroy = true
-    # Only ignore metadata that doesn't affect functionality
-    ignore_changes = [
-      labels["last_modified"],
-      labels["created_by"]
-    ]
+  depends_on = [
+    module.base_infrastructure,
+    module.security
+  ]
+  
+  components = {
+    # Core components
+    artifact_store     = module.storage.artifact_store_id
+    container_registry = module.container.registry_id
+    
+    # Optional components based on team needs
+    orchestrator       = var.needs_orchestrator ? module.compute.orchestrator_id : null
+    experiment_tracker = var.needs_tracking ? module.mlflow.tracker_id : null
+  }
+  
+  labels = merge(local.common_labels, {
+    stack_type = "ml-platform"
+  })
+}
+```
+
+5. **State Management**
+```hcl
+terraform {
+  backend "gcs" {
+    prefix = "terraform/state"
+  }
+  
+  # Separate state files for infrastructure and ZenML
+  workspace_prefix = "zenml-"
+}
+
+# Use data sources to reference infrastructure state
+data "terraform_remote_state" "infrastructure" {
+  backend = "gcs"
+  
+  config = {
+    bucket = var.state_bucket
+    prefix = "terraform/infrastructure"
   }
 }
 ```
+
+These practices help maintain a clean, scalable, and maintainable infrastructure codebase while following infrastructure-as-code best practices. Remember to:
+
+- Keep configurations DRY using locals and variables
+- Use consistent naming conventions across resources
+- Document all required configuration fields
+- Consider component dependencies when organizing stacks
+- Separate infrastructure and ZenML registration state
+- Use workspaces for different environments
+- Keep registration state with the ML operations team
 
 ## Conclusion
 
