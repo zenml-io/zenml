@@ -10230,35 +10230,36 @@ class SqlZenStore(BaseZenStore):
             raise ValueError(
                 "`number` field  must be None during model version creation."
             )
-        model_version_ = model_version.model_copy()
-        model = self.get_model(model_version_.model)
 
-        if model_version_.name is not None:
-            validate_name(model_version_)
+        model = self.get_model(model_version.model)
+
+        has_custom_name = model_version.name is not None
+        if has_custom_name:
+            validate_name(model_version)
 
         remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
         while remaining_tries > 0:
             remaining_tries -= 1
             try:
                 with Session(self.engine) as session:
-                    model_version_.number = (
+                    model_version.number = (
                         self._get_next_numeric_version_for_model(
                             session=session,
                             model_id=model.id,
                         )
                     )
-                    if not model_version_.name:
-                        model_version_.name = str(model_version_.number)
+                    if not has_custom_name:
+                        model_version.name = str(model_version.number)
 
                     model_version_schema = ModelVersionSchema.from_request(
-                        model_version_
+                        model_version
                     )
                     session.add(model_version_schema)
                     session.commit()
 
-                    if model_version_.tags:
+                    if model_version.tags:
                         self._attach_tags_to_resource(
-                            tag_names=model_version_.tags,
+                            tag_names=model_version.tags,
                             resource_id=model_version_schema.id,
                             resource_type=TaggableResourceTypes.MODEL_VERSION,
                         )
@@ -10266,8 +10267,19 @@ class SqlZenStore(BaseZenStore):
                     return model_version_schema.to_model(
                         include_metadata=True, include_resources=True
                     )
-            except IntegrityError:
-                if remaining_tries == 0:
+            except IntegrityError as e:
+                if has_custom_name and "name" in str(e):
+                    # We failed not because of a version number conflict,
+                    # but because the user requested a version name that
+                    # is already taken -> We don't retry anymore but fail
+                    # immediately.
+                    raise EntityExistsError(
+                        f"Unable to create model version "
+                        f"{model.name} (version "
+                        f"{model_version.name}): A model with the "
+                        "same name and version already exists."
+                    )
+                elif remaining_tries == 0:
                     raise EntityExistsError(
                         f"Failed to create version for model "
                         f"{model.name}. This is most likely "
@@ -10283,11 +10295,11 @@ class SqlZenStore(BaseZenStore):
                         - remaining_tries
                     )
                     logger.debug(
-                        "Failed to create artifact version %s "
+                        "Failed to create model version %s "
                         "(version %s) due to an integrity error. "
                         "Retrying in %f seconds.",
                         model.name,
-                        model_version_.number,
+                        model_version.number,
                         sleep_duration,
                     )
                     time.sleep(sleep_duration)

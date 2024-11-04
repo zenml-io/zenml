@@ -226,6 +226,16 @@ class ModelVersionSchema(NamedSchema, table=True):
 
     __tablename__ = MODEL_VERSION_TABLENAME
     __table_args__ = (
+        # We need two unique constraints here:
+        # - The first to ensure that each model version for a
+        #   model has a unique version number
+        # - The second one to ensure that explicit names given by
+        #   users are unique
+        UniqueConstraint(
+            "number",
+            "model_id",
+            name="unique_version_number_for_model_id",
+        ),
         UniqueConstraint(
             "name",
             "model_id",
