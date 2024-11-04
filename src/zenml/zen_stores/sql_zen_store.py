@@ -126,6 +126,7 @@ from zenml.exceptions import (
     ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
+    EntityCreationError,
     EntityExistsError,
     EventSourceExistsError,
     IllegalOperationError,
@@ -2784,7 +2785,9 @@ class SqlZenStore(BaseZenStore):
             artifact_version: The artifact version to create.
 
         Raises:
-            EntityExistsError: If the artifact version already exists.
+            EntityExistsError: If an artifact version with the same name
+                already exists.
+            EntityCreationError: If the artifact version creation failed.
 
         Returns:
             The created artifact version.
@@ -2825,7 +2828,7 @@ class SqlZenStore(BaseZenStore):
                         artifact_version_id = artifact_version_schema.id
                 except IntegrityError:
                     if remaining_tries == 0:
-                        raise EntityExistsError(
+                        raise EntityCreationError(
                             f"Failed to create version for artifact "
                             f"{artifact_schema.name}. This is most likely "
                             "caused by multiple parallel requests that try "
@@ -10224,7 +10227,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model version with the given name already exists.
+            EntityCreationError: If the model version creation failed.
         """
         if model_version.number is not None:
             raise ValueError(
@@ -10280,7 +10284,7 @@ class SqlZenStore(BaseZenStore):
                         "same name and version already exists."
                     )
                 elif remaining_tries == 0:
-                    raise EntityExistsError(
+                    raise EntityCreationError(
                         f"Failed to create version for model "
                         f"{model.name}. This is most likely "
                         "caused by multiple parallel requests that try "
