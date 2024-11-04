@@ -444,3 +444,6 @@ Remember to:
 - Consider using Terraform workspaces for managing multiple environments
 - Regular backup of your Terraform state files
 - Version control your Terraform configurations (excluding sensitive files)
+
+To learn more about the ZenML terraform provider, visit the
+[ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest).
