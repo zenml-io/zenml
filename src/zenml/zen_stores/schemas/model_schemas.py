@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
+from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
@@ -61,6 +61,12 @@ class ModelSchema(NamedSchema, table=True):
     """SQL Model for model."""
 
     __tablename__ = "model"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_model_name",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

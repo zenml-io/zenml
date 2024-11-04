@@ -10027,19 +10027,11 @@ class SqlZenStore(BaseZenStore):
             The newly created model.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model with the given name already exists.
+            IntegrityError: If creating the model violated a DB unique constraint.
         """
         validate_name(model)
         with Session(self.engine) as session:
-            existing_model = session.exec(
-                select(ModelSchema).where(ModelSchema.name == model.name)
-            ).first()
-            if existing_model is not None:
-                raise EntityExistsError(
-                    f"Unable to create model {model.name}: "
-                    "A model with this name already exists."
-                )
-
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -10049,7 +10041,16 @@ class SqlZenStore(BaseZenStore):
                     resource_id=model_schema.id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError as e:
+                if "name" in str(e):
+                    raise EntityExistsError(
+                        f"Unable to create model {model.name}: "
+                        "A model with this name already exists."
+                    )
+                raise
+
             return model_schema.to_model(
                 include_metadata=True, include_resources=True
             )
