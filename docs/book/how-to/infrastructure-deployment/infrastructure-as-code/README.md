@@ -1,5 +1,5 @@
 ---
-icon: docker
+icon: network-wired
 description: >
   Leverage Infrastructure as Code to manage your ZenML stacks and components.
 ---
