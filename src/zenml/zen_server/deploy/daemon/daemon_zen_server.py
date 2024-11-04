@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Local ZenML server deployment service implementation."""
+"""Local daemon ZenML server deployment service implementation."""
 
 import ipaddress
 import os
@@ -24,14 +24,18 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    ENV_ZENML_USER_ID,
     ZEN_SERVER_ENTRYPOINT,
 )
-from zenml.enums import StoreType
+from zenml.enums import AuthScheme, StoreType
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
 from zenml.services import (
@@ -41,16 +45,16 @@ from zenml.services import (
     ServiceType,
 )
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+from zenml.zen_server.deploy.deployment import LocalServerDeploymentConfig
 
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT = 30
+DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT = 30
 
 
-class LocalServerDeploymentConfig(ServerDeploymentConfig):
-    """Local server deployment configuration.
+class DaemonServerDeploymentConfig(LocalServerDeploymentConfig):
+    """Daemon server deployment configuration.
 
     Attributes:
         port: The TCP port number where the server is accepting connections.
@@ -67,21 +71,30 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
 
+    @property
+    def url(self) -> Optional[str]:
+        """Get the configured server URL.
+
+        Returns:
+            The configured server URL.
+        """
+        return f"http://{self.ip_address}:{self.port}"
+
     model_config = ConfigDict(extra="forbid")
 
 
-class LocalZenServerConfig(LocalDaemonServiceConfig):
-    """Local Zen server configuration.
+class DaemonZenServerConfig(LocalDaemonServiceConfig):
+    """Local daemon Zen server configuration.
 
     Attributes:
         server: The deployment configuration.
     """
 
-    server: LocalServerDeploymentConfig
+    server: DaemonServerDeploymentConfig
 
 
-class LocalZenServer(LocalDaemonService):
-    """Service daemon that can be used to start a local ZenML Server.
+class DaemonZenServer(LocalDaemonService):
+    """Service daemon that can be used to start a local daemon ZenML server.
 
     Attributes:
         config: service configuration
@@ -89,26 +102,26 @@ class LocalZenServer(LocalDaemonService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="local_zenml_server",
+        name="daemon_zenml_server",
         type="zen_server",
-        flavor="local",
-        description="Local ZenML server deployment",
+        flavor="daemon",
+        description="local daemon ZenML server deployment",
     )
 
-    config: LocalZenServerConfig
+    config: DaemonZenServerConfig
     endpoint: LocalDaemonServiceEndpoint
 
     @classmethod
     def config_path(cls) -> str:
-        """Path to the directory where the local ZenML server files are located.
+        """Path to the directory where the local daemon ZenML server files are located.
 
         Returns:
-            Path to the local ZenML server runtime directory.
+            Path to the local daemon ZenML server runtime directory.
         """
         return os.path.join(
             get_global_config_directory(),
             "zen_server",
-            "local",
+            "daemon",
         )
 
     @property
@@ -121,18 +134,18 @@ class LocalZenServer(LocalDaemonService):
         return os.path.join(self.config_path(), ".zenconfig")
 
     @classmethod
-    def get_service(cls) -> Optional["LocalZenServer"]:
-        """Load and return the local ZenML server service, if present.
+    def get_service(cls) -> Optional["DaemonZenServer"]:
+        """Load and return the local daemon ZenML server service, if present.
 
         Returns:
-            The local ZenML server service or None, if the local server
+            The local daemon ZenML server service or None, if the local server
             deployment is not found.
         """
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
             with open(config_filename, "r") as f:
                 return cast(
-                    "LocalZenServer", LocalZenServer.from_json(f.read())
+                    "DaemonZenServer", DaemonZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
@@ -147,8 +160,15 @@ class LocalZenServer(LocalDaemonService):
             The command to start the daemon and the environment variables to
             set for the command.
         """
+        gc = GlobalConfiguration()
+
         cmd, env = super()._get_daemon_cmd()
+        env[ENV_ZENML_SERVER] = "true"
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+        env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+        env[ENV_ZENML_USER_ID] = str(gc.user_id)
+        # Disable authentication for the local server
+        env[ENV_ZENML_SERVER_AUTH_SCHEME] = AuthScheme.NO_AUTH.value
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL
         # Set the local stores path to the same path used by the client. This
         # ensures that the server's default store configuration is initialized
@@ -176,6 +196,8 @@ class LocalZenServer(LocalDaemonService):
         if not self.config.blocking:
             super().start(timeout)
         else:
+            gc = GlobalConfiguration()
+
             # In the blocking mode, we need to temporarily set the environment
             # variables for the running process to make it look like the server
             # is running in a separate environment (i.e. using a different
@@ -185,21 +207,27 @@ class LocalZenServer(LocalDaemonService):
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             original_config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
+            os.environ[ENV_ZENML_SERVER] = "true"
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+            os.environ[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+            os.environ[ENV_ZENML_USER_ID] = str(gc.user_id)
             # Set the local stores path to the same path used by the client.
             # This ensures that the server's default store configuration is
             # initialized to point at the same local SQLite database as the
             # client.
             os.environ[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
+            os.environ[ENV_ZENML_SERVER_AUTH_SCHEME] = AuthScheme.NO_AUTH.value
             try:
                 self.run()
             finally:
                 # Restore the original client environment variables
+                del os.environ[ENV_ZENML_SERVER]
                 if original_config_path:
                     os.environ[ENV_ZENML_CONFIG_PATH] = original_config_path
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
                 del os.environ[ENV_ZENML_LOCAL_STORES_PATH]
+                del os.environ[ENV_ZENML_SERVER_AUTH_SCHEME]
                 GlobalConfiguration._reset_instance()
                 Client._reset_instance()
 

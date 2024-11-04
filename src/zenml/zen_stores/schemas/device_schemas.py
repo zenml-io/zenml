@@ -247,18 +247,23 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         )
 
     def to_internal_model(
-        self, hydrate: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
     ) -> OAuthDeviceInternalResponse:
         """Convert a device schema to an internal device response model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The converted internal device response model.
         """
-        device_model = self.to_model(include_metadata=hydrate)
+        device_model = self.to_model(
+            include_metadata=include_metadata,
+            include_resources=include_resources,
+        )
         return OAuthDeviceInternalResponse(
             id=device_model.id,
             body=device_model.body,

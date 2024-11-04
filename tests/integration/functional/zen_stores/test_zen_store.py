@@ -2371,7 +2371,6 @@ def test_login_rotate_api_key_retain_period():
             service_account_id=service_account.id,
             api_key=api_key_request,
         )
-
         with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()

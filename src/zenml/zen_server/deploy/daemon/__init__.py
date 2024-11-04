@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Server Local Deployment."""
+"""ZenML Server Local Daemon Deployment."""
 
-from zenml.zen_server.deploy.local.local_provider import LocalServerProvider
+from zenml.zen_server.deploy.daemon.daemon_provider import DaemonServerProvider
 
 __all__ = [
-    "LocalServerProvider",
+    "DaemonServerProvider",
 ]

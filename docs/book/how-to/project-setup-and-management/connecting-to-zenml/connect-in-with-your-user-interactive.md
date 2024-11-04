@@ -3,7 +3,7 @@
 You can authenticate your clients with the ZenML Server using the ZenML CLI and the web based login. This can be executed with the command:
 
 ```bash
-zenml connect --url https://...
+zenml login https://...
 ```
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to mark your respective device as trusted or not. If you choose not to click `Trust this device`, a 24-hour token will be issued for authentication services. Choosing to trust the device will issue a 30-day token instead.
@@ -28,7 +28,7 @@ zenml authorized-device lock <DEVICE_ID>
 
 To keep things simple, we can summarize the steps:
 
-1. Use the `zenml connect --url` command to start a device flow and connect to a zenml server.
+1. Use the `zenml login <URL>` command to start a device flow and connect to a zenml server.
 2. Choose whether to trust the device when prompted.
 3. Check permitted devices with `zenml devices list`.
 4. Invalidate a token with `zenml device lock ...`.

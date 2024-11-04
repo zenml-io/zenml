@@ -16,7 +16,7 @@ def my_step() -> None:
 These logs are stored within the respective artifact store of your stack. This means that you can only view these logs in the dashboard
 *if the deployed ZenML server has direct access to the underlying artifact store*. There are two cases in which this will be true:
 
-* In case of a local ZenML server (via `zenml up`), both local and remote artifact stores may be accessible, depending on configuration of the client.
+* In case of a local ZenML server (via `zenml login --local`), both local and remote artifact stores may be accessible, depending on configuration of the client.
 * In case of a deployed ZenML server, logs for runs on a [local artifact store](../../component-guide/artifact-stores/local.md) will not be accessible. Logs
 for runs using a [remote artifact store](../../user-guide/production-guide/remote-storage.md) **may be** accessible, if the artifact store has been configured
 with a [service connector](../auth-management/service-connectors-guide.md). Please read [this chapter](../../user-guide/production-guide/remote-storage.md) of

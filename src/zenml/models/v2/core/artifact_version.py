@@ -24,7 +24,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -61,11 +67,16 @@ logger = get_logger(__name__)
 class ArtifactVersionRequest(WorkspaceScopedRequest):
     """Request model for artifact versions."""
 
-    artifact_id: UUID = Field(
+    artifact_id: Optional[UUID] = Field(
+        default=None,
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.", union_mode="left_to_right"
+    artifact_name: Optional[str] = Field(
+        default=None,
+        title="Name of the artifact to which this version belongs.",
+    )
+    version: Optional[Union[int, str]] = Field(
+        default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
@@ -93,6 +104,9 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
+    metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, title="Metadata of the artifact version."
+    )
 
     @field_validator("version")
     @classmethod
@@ -114,6 +128,28 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
         return value
+
+    @model_validator(mode="after")
+    def _validate_request(self) -> "ArtifactVersionRequest":
+        """Validate the request values.
+
+        Raises:
+            ValueError: If the request is invalid.
+
+        Returns:
+            The validated request.
+        """
+        if self.artifact_id and self.artifact_name:
+            raise ValueError(
+                "Only one of artifact_name and artifact_id can be set."
+            )
+
+        if not (self.artifact_id or self.artifact_name):
+            raise ValueError(
+                "Either artifact_name or artifact_id must be set."
+            )
+
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -154,6 +190,10 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
+    artifact_store_id: Optional[UUID] = Field(
+        title="ID of the artifact store in which this artifact is stored.",
+        default=None,
+    )
 
     @field_validator("version")
     @classmethod
@@ -180,10 +220,6 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    artifact_store_id: Optional[UUID] = Field(
-        title="ID of the artifact store in which this artifact is stored.",
-        default=None,
-    )
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
@@ -281,7 +317,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_store_id
+        return self.get_body().artifact_store_id
 
     @property
     def producer_step_run_id(self) -> Optional[UUID]:

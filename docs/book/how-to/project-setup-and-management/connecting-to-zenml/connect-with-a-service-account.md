@@ -11,7 +11,8 @@ This command creates a service account and an API key for it. The API key is dis
 * using the CLI:
 
 ```bash
-zenml connect --url https://... --api-key <API_KEY>
+# This command will prompt you to enter the API key
+zenml login https://... --api-key
 ```
 
 * setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment variables when you set up your ZenML client for the first time. This method is particularly useful when you are using the ZenML client in an automated CI/CD workload environment like GitHub Actions or GitLab CI or in a containerized environment like Docker or Kubernetes:
@@ -63,7 +64,7 @@ Deactivating a service account or an API key will prevent it from being used to 
 To keep things simple, we can summarize the steps:
 
 1. Use the `zenml service-account create` command to create a service account and an API key.
-2. Use the `zenml connect --url <url> --api-key <api-key>` command to connect your ZenML client to the server using the API key.
+2. Use the `zenml login <url> --api-key` command to connect your ZenML client to the server using the API key.
 3. Check configured service accounts with `zenml service-account list`.
 4. Check configured API keys with `zenml service-account api-key <SERVICE_ACCOUNT_NAME> list`.
 5. Regularly rotate API keys with `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate`.

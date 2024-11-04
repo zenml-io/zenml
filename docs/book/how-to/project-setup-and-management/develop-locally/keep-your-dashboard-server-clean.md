@@ -11,18 +11,17 @@ options:
 ## Run locally
 
 One of the easiest ways to avoid cluttering a shared server / dashboard is to
-disconnect from the server and simply spin up a local server:
+disconnect your client from the remote server and simply spin up a local server:
 
 ```bash
-zenml disconnect
-zenml up
+zenml login --local
 ```
 
 Note that there are some limitations to this approach, particularly if you want
 to use remote infrastructure, but if there are local runs that you can do
 without the need for remote infrastructure, this can be a quick and easy way to
 keep things clean. When you're ready to reconnect to the server to continue with
-your shared runs, you can simply run `zenml connect ...` again.
+your shared runs, you can simply run `zenml login <remote-url>` again.
 
 ## Pipeline Runs
 
