@@ -88,7 +88,7 @@ def event_check(
             properties["artifact_store"]
             == client.active_stack_model.components[
                 StackComponentType.ARTIFACT_STORE
-            ][0].flavor
+            ][0].flavor_name
         )
 
         assert "orchestrator" in properties
@@ -96,7 +96,7 @@ def event_check(
             properties["orchestrator"]
             == client.active_stack_model.components[
                 StackComponentType.ORCHESTRATOR
-            ][0].flavor
+            ][0].flavor_name
         )
 
     return True, ""

@@ -52,6 +52,8 @@ class ServerModel(BaseModel):
 
     id: UUID = Field(default_factory=uuid4, title="The unique server id.")
 
+    name: Optional[str] = Field(None, title="The name of the ZenML server.")
+
     version: str = Field(
         title="The ZenML version that the server is running.",
     )

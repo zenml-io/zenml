@@ -367,18 +367,6 @@ def change_user_password(
         f"Successfully updated password for active user '{active_user.name}'."
     )
 
-    store = GlobalConfiguration().store_configuration
-    if store.type == StoreType.REST:
-        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
-
-        assert isinstance(store, RestZenStoreConfiguration)
-
-        if store.password is not None:
-            cli_utils.declare(
-                "You may need to log in again with your new password by "
-                "running `zenml connect`."
-            )
-
 
 @user.command(
     "deactivate",

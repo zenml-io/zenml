@@ -22,7 +22,16 @@ import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import BuiltinFunctionType, FunctionType, ModuleType
-from typing import Any, Callable, Dict, Iterator, Optional, Type, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from zenml.config.source import (
@@ -121,7 +130,17 @@ def load(source: Union[Source, str]) -> Any:
         # root in python path just to be sure
         import_root = get_source_root()
 
-    module = _load_module(module_name=source.module, import_root=import_root)
+    if _should_load_from_main_module(source):
+        # This source points to the __main__ module of the current process.
+        # If we were to load the module here, we would load the same python
+        # file with a different module name, which would rerun all top-level
+        # code. To avoid this, we instead load the source from the __main__
+        # module which is already loaded.
+        module = sys.modules["__main__"]
+    else:
+        module = _load_module(
+            module_name=source.module, import_root=import_root
+        )
 
     if source.attribute:
         obj = getattr(module, source.attribute)
@@ -780,3 +799,21 @@ def get_resolved_notebook_sources() -> Dict[str, str]:
         of their notebook cell.
     """
     return _resolved_notebook_sources.copy()
+
+
+def _should_load_from_main_module(source: Source) -> bool:
+    """Check whether the source should be loaded from the main module.
+
+    Args:
+        source: The source to check.
+
+    Returns:
+        If the source should be loaded from the main module instead of the
+        module defined in the source object.
+    """
+    try:
+        resolved_main_module = _resolve_module(sys.modules["__main__"])
+    except RuntimeError:
+        return False
+
+    return resolved_main_module == source.module

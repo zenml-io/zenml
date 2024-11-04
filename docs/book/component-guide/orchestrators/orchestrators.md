@@ -1,4 +1,5 @@
 ---
+icon: train-track
 description: Orchestrating the execution of ML pipelines.
 ---
 
@@ -12,7 +13,7 @@ steps of your pipeline) are available.
 {% hint style="info" %}
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute
 your pipeline code. If you want to learn more about how Docker images are built by ZenML, check
-out [this guide](../../how-to/customize-docker-builds/README.md).
+out [this guide](../../how-to/infrastructure-deployment/customize-docker-builds/README.md).
 {% endhint %}
 
 ### When to use it
@@ -74,7 +75,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 #### Specifying per-step resources
 
 If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps
-as described [here](../../how-to/use-configuration-files/runtime-configuration.md).
+as described [here](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look
 at [step operators](../step-operators/step-operators.md).
