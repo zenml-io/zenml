@@ -70,7 +70,7 @@ To generate a API key, use the command:
 zenml service-account create <SERVICE_ACCOUNT_NAME>
 ```
 
-You can learn more about how to generate a ZENML_API_KEY via service accounts
+You can learn more about how to generate a 1ZENML_API_KEY` via service accounts
 [here](../../project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md).
 
 ### Create the service connectors
