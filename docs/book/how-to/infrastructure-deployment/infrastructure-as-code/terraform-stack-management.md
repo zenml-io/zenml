@@ -45,25 +45,21 @@ resource "google_artifact_registry_repository" "ml_containers" {
 
 ### Setup the ZenML Provider
 
-First, configure the REST API provider to communicate with your ZenML server:
+First, configure the ZenML provider to communicate with your ZenML server:
 
 ```hcl
 terraform {
   required_providers {
-    restapi = {
-      source  = "Mastercard/restapi"
-      version = "~> 1.19"
+    zenml = {
+      source = "zenml-io/zenml"
     }
   }
 }
 
-provider "restapi" {
-  alias                = "zenml_api"
-  uri                  = var.zenml_server_url
-  write_returns_object = true
-  headers = {
-    Authorization = "Bearer ${var.zenml_api_key}"
-  }
+provider "zenml" {
+  # Configuration options will be loaded from environment variables:
+  # ZENML_SERVER_URL
+  # ZENML_API_KEY
 }
 ```
 
@@ -73,33 +69,33 @@ The key to successful registration is proper authentication. Service connectors 
 
 ```hcl
 # First, create a service connector
-resource "restapi_object" "gcp_connector" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/service-connectors"
-  data = jsonencode({
-    name = "gcp-${var.environment}-connector"
-    type = "gcp"
-    auth_method = "service-account"
-    configuration = {
-      project_id = var.project_id
-      service_account_json = base64encode(var.service_account_key)
-    }
-  })
+resource "zenml_service_connector" "gcp_connector" {
+  name        = "gcp-${var.environment}-connector"
+  type        = "gcp"
+  auth_method = "service-account"
+  
+  resource_types = ["artifact-store", "container-registry"]
+  
+  configuration = {
+    project_id = var.project_id
+  }
+  
+  secrets = {
+    service_account_json = file("service-account.json")
+  }
 }
 
-# Reference it in component registration
-resource "restapi_object" "artifact_store" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode({
-    name = "existing-artifact-store"
-    type = "artifact_store"
-    flavor = "gcp"
-    configuration = {
-      path = "gs://${google_storage_bucket.ml_artifacts.name}"
-    }
-    service_connector_id = restapi_object.gcp_connector.id
-  })
+# Create a stack component referencing the connector
+resource "zenml_stack_component" "artifact_store" {
+  name   = "existing-artifact-store"
+  type   = "artifact_store"
+  flavor = "gcp"
+  
+  configuration = {
+    path = "gs://${google_storage_bucket.ml_artifacts.name}"
+  }
+  
+  connector_id = zenml_service_connector.gcp_connector.id
 }
 ```
 
@@ -113,8 +109,8 @@ locals {
     # Dev uses service account keys
     dev = {
       auth_method = "service-account"
-      configuration = {
-        service_account_json = base64encode(var.dev_sa_key)
+      secrets = {
+        service_account_json = file("dev-sa.json")
       }
     }
     # Prod uses workload identity
@@ -122,21 +118,32 @@ locals {
       auth_method = "workload-identity"
       configuration = {
         workload_identity_pool = var.workload_identity_pool_id
-        service_account = var.prod_service_account_email
+        service_account       = var.prod_service_account_email
       }
     }
   }
 }
 
-resource "restapi_object" "env_connector" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/service-connectors"
-  data = jsonencode({
-    name = "${var.environment}-connector"
-    type = "gcp"  # or aws/azure
-    auth_method = local.auth_methods[var.environment].auth_method
-    configuration = local.auth_methods[var.environment].configuration
-  })
+resource "zenml_service_connector" "env_connector" {
+  name        = "${var.environment}-connector"
+  type        = "gcp"  # or aws/azure
+  auth_method = local.auth_methods[var.environment].auth_method
+  
+  dynamic "configuration" {
+    for_each = try(local.auth_methods[var.environment].configuration, {})
+    content {
+      key   = configuration.key
+      value = configuration.value
+    }
+  }
+  
+  dynamic "secrets" {
+    for_each = try(local.auth_methods[var.environment].secrets, {})
+    content {
+      key   = secrets.key
+      value = secrets.value
+    }
+  }
 }
 ```
 
@@ -167,25 +174,22 @@ locals {
       flavor = "vertex"
       configuration = {
         project = var.project_id
-        region = var.region
+        region  = var.region
       }
     }
   }
 }
 
 # Register multiple components
-resource "restapi_object" "stack_components" {
+resource "zenml_stack_component" "components" {
   for_each = local.component_configs
   
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode(merge(
-    each.value,
-    {
-      name = "existing-${each.key}"
-      service_connector_id = restapi_object.env_connector.id
-    }
-  ))
+  name          = "existing-${each.key}"
+  type          = each.value.type
+  flavor        = each.value.flavor
+  configuration = each.value.configuration
+  
+  connector_id = zenml_service_connector.env_connector.id
 }
 ```
 
@@ -194,18 +198,12 @@ resource "restapi_object" "stack_components" {
 Finally, assemble the components into a stack:
 
 ```hcl
-resource "restapi_object" "ml_stack" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stacks"
+resource "zenml_stack" "ml_stack" {
+  name = "${var.environment}-ml-stack"
   
-  data = jsonencode({
-    name = "${var.environment}-ml-stack"
-    components = {
-      for k, v in restapi_object.stack_components : k => {
-        id = v.id
-      }
-    }
-  })
+  components = {
+    for k, v in zenml_stack_component.components : k => v.id
+  }
 }
 ```
 
@@ -231,20 +229,21 @@ resource "restapi_object" "ml_stack" {
    - Consider using workspaces for different environments
    - Keep registration state with the team that manages ML operations
 
-Read more about best practices in the [next chapter](./terraform-best-practices.md).
-
 ## Practical Walkthrough: Registering Existing GCP Infrastructure
 
-Let's walk through registering an ML infrastructure stack on GCP with ZenML. We'll assume you already have:
+Let's see a complete example of registering an existing GCP infrastructure stack with ZenML.
+
+### Prerequisites
 - A GCS bucket for artifacts
 - An Artifact Registry repository
 - A service account for ML operations
 - Vertex AI enabled for orchestration
 
-## Step 1: Create Registration Module
+
+### Step 1: Variables Configuration
 
 ```hcl
-# modules/zenml_gcp_registration/variables.tf
+# variables.tf
 variable "zenml_server_url" {
   description = "URL of the ZenML server"
   type        = string
@@ -264,239 +263,243 @@ variable "project_id" {
 variable "region" {
   description = "GCP region"
   type        = string
+  default     = "us-central1"
 }
 
-variable "artifact_store_bucket" {
-  description = "Name of existing GCS bucket for artifacts"
+variable "environment" {
+  description = "Environment name (e.g., dev, staging, prod)"
   type        = string
 }
 
-variable "container_registry_id" {
-  description = "Existing Artifact Registry repository ID"
+variable "gcp_service_account_key" {
+  description = "GCP service account key in JSON format"
   type        = string
-}
-
-variable "service_account_email" {
-  description = "Email of the service account for ML operations"
-  type        = string
+  sensitive   = true
 }
 ```
 
-## Step 2: Configure Provider and Service Connector
+### Step 2: Main Configuration
 
 ```hcl
-# modules/zenml_gcp_registration/main.tf
+# main.tf
 terraform {
   required_providers {
-    restapi = {
-      source  = "Mastercard/restapi"
-      version = "~> 1.19"
+    zenml = {
+      source = "zenml-io/zenml"
     }
     google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
+      source = "hashicorp/google"
     }
   }
 }
 
-provider "restapi" {
-  alias                = "zenml_api"
-  uri                  = var.zenml_server_url
-  write_returns_object = true
-  headers = {
-    Authorization = "Bearer ${var.zenml_api_key}"
+# Configure providers
+provider "zenml" {
+  server_url = var.zenml_server_url
+  api_key    = var.zenml_api_key
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# Create GCP resources if needed
+resource "google_storage_bucket" "artifacts" {
+  name     = "${var.project_id}-zenml-artifacts-${var.environment}"
+  location = var.region
+}
+
+resource "google_artifact_registry_repository" "containers" {
+  location      = var.region
+  repository_id = "zenml-containers-${var.environment}"
+  format        = "DOCKER"
+}
+
+# ZenML Service Connector for GCP
+resource "zenml_service_connector" "gcp" {
+  name        = "gcp-${var.environment}"
+  type        = "gcp"
+  auth_method = "service-account"
+
+  resource_types = [
+    "artifact-store",
+    "container-registry",
+    "orchestrator",
+    "step-operator"
+  ]
+
+  configuration = {
+    project_id = var.project_id
+    region     = var.region
+  }
+
+  secrets = {
+    service_account_json = var.gcp_service_account_key
+  }
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
   }
 }
 
-# Get service account key for the connector
-data "google_service_account_key" "ml_sa_key" {
-  name = "projects/${var.project_id}/serviceAccounts/${var.service_account_email}/keys/default"
+# Artifact Store Component
+resource "zenml_stack_component" "artifact_store" {
+  name   = "gcs-${var.environment}"
+  type   = "artifact_store"
+  flavor = "gcp"
+
+  configuration = {
+    path = "gs://${google_storage_bucket.artifacts.name}/artifacts"
+  }
+
+  connector_id = zenml_service_connector.gcp.id
+
+  labels = {
+    environment = var.environment
+  }
 }
 
-# Create service connector for GCP authentication
-resource "restapi_object" "gcp_connector" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/service-connectors"
-  data = jsonencode({
-    name = "gcp-ml-connector"
-    type = "gcp"
-    auth_method = "service-account"
-    configuration = {
-      project_id = var.project_id
-      service_account_json = data.google_service_account_key.ml_sa_key.private_key
-    }
-    resource_types = [
-      "artifact-store",
-      "container-registry",
-      "orchestrator",
-      "step-operator"
-    ]
-  })
-}
-```
+# Container Registry Component
+resource "zenml_stack_component" "container_registry" {
+  name   = "gcr-${var.environment}"
+  type   = "container_registry"
+  flavor = "gcp"
 
-## Step 3: Register Stack Components
+  configuration = {
+    uri = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.containers.repository_id}"
+  }
 
-```hcl
-# modules/zenml_gcp_registration/components.tf
+  connector_id = zenml_service_connector.gcp.id
 
-# Register artifact store
-resource "restapi_object" "artifact_store" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode({
-    name = "gcp-artifact-store"
-    type = "artifact_store"
-    flavor = "gcp"
-    configuration = {
-      path = "gs://${var.artifact_store_bucket}"
-    }
-    service_connector_id = restapi_object.gcp_connector.id
-  })
+  labels = {
+    environment = var.environment
+  }
 }
 
-# Register container registry
-resource "restapi_object" "container_registry" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode({
-    name = "gcp-container-registry"
-    type = "container_registry"
-    flavor = "gcp"
-    configuration = {
-      uri = "${var.region}-docker.pkg.dev/${var.project_id}/${var.container_registry_id}"
-    }
-    service_connector_id = restapi_object.gcp_connector.id
-  })
+# Vertex AI Orchestrator
+resource "zenml_stack_component" "orchestrator" {
+  name   = "vertex-${var.environment}"
+  type   = "orchestrator"
+  flavor = "vertex"
+
+  configuration = {
+    location    = var.region
+    synchronous = true
+  }
+
+  connector_id = zenml_service_connector.gcp.id
+
+  labels = {
+    environment = var.environment
+  }
 }
 
-# Register Vertex AI orchestrator
-resource "restapi_object" "orchestrator" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode({
-    name = "vertex-orchestrator"
-    type = "orchestrator"
-    flavor = "vertex"
-    configuration = {
-      project = var.project_id
-      region = var.region
-      service_account = var.service_account_email
-    }
-    service_connector_id = restapi_object.gcp_connector.id
-  })
-}
+# Complete Stack
+resource "zenml_stack" "gcp_stack" {
+  name = "gcp-${var.environment}"
 
-# Register Vertex AI step operator
-resource "restapi_object" "step_operator" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stack-components"
-  data = jsonencode({
-    name = "vertex-step-operator"
-    type = "step_operator"
-    flavor = "vertex"
-    configuration = {
-      project = var.project_id
-      region = var.region
-      service_account = var.service_account_email
-    }
-    service_connector_id = restapi_object.gcp_connector.id
-  })
+  components = {
+    artifact_store     = zenml_stack_component.artifact_store.id
+    container_registry = zenml_stack_component.container_registry.id
+    orchestrator      = zenml_stack_component.orchestrator.id
+  }
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+  }
 }
 ```
 
-## Step 4: Create the Stack
+### Step 3: Outputs Configuration
 
 ```hcl
-# modules/zenml_gcp_registration/stack.tf
-resource "restapi_object" "ml_stack" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stacks"
-  
-  data = jsonencode({
-    name = "gcp-ml-stack"
-    description = "GCP ML stack using existing infrastructure"
-    
-    components = {
-      artifact_store = {
-        id = restapi_object.artifact_store.id
-      }
-      container_registry = {
-        id = restapi_object.container_registry.id
-      }
-      orchestrator = {
-        id = restapi_object.orchestrator.id
-      }
-      step_operator = {
-        id = restapi_object.step_operator.id
-      }
-    }
-  })
-}
-```
-
-## Step 5: Output Stack Information
-
-```hcl
-# modules/zenml_gcp_registration/outputs.tf
+# outputs.tf
 output "stack_id" {
   description = "ID of the created ZenML stack"
-  value       = restapi_object.ml_stack.id
+  value       = zenml_stack.gcp_stack.id
 }
 
 output "stack_name" {
   description = "Name of the created ZenML stack"
-  value       = jsondecode(restapi_object.ml_stack.data).name
+  value       = zenml_stack.gcp_stack.name
 }
 
-output "service_connector_id" {
-  description = "ID of the created service connector"
-  value       = restapi_object.gcp_connector.id
+output "artifact_store_path" {
+  description = "GCS path for artifacts"
+  value       = "${google_storage_bucket.artifacts.name}/artifacts"
+}
+
+output "container_registry_uri" {
+  description = "URI of the container registry"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.containers.repository_id}"
 }
 ```
 
-## Step 6: Use the Registration Module
+### Step 4: terraform.tfvars Configuration
+
+Create a `terraform.tfvars` file (remember to never commit this to version control):
 
 ```hcl
-# main.tf in your root configuration
-module "zenml_registration" {
-  source = "./modules/zenml_gcp_registration"
-  
-  zenml_server_url = "https://your-zenml-server.com"
-  zenml_api_key    = var.zenml_api_key
-  
-  project_id             = "your-gcp-project"
-  region                 = "us-central1"
-  artifact_store_bucket  = "existing-ml-artifacts"
-  container_registry_id  = "existing-ml-containers"
-  service_account_email  = "ml-service-account@your-project.iam.gserviceaccount.com"
-}
-
-output "stack_info" {
-  value = {
-    id   = module.zenml_registration.stack_id
-    name = module.zenml_registration.stack_name
-  }
-}
+zenml_server_url = "https://your-zenml-server.com"
+project_id       = "your-gcp-project-id"
+region           = "us-central1"
+environment      = "dev"
 ```
 
-## Usage
+Store sensitive variables in environment variables:
+```bash
+export TF_VAR_zenml_api_key="your-zenml-api-key"
+export TF_VAR_gcp_service_account_key=$(cat path/to/service-account-key.json)
+```
 
-After applying this configuration:
+### Usage Instructions
 
-1. Install required integrations:
+1. Install required providers and initializing Terraform:
+```bash
+terraform init
+```
+
+2. Install required ZenML integrations:
 ```bash
 zenml integration install gcp
 ```
 
-2. Set the stack:
+3. Review the planned changes:
 ```bash
-zenml stack set $(terraform output -raw stack_info.name)
+terraform plan
 ```
 
-3. Verify the configuration:
+4. Apply the configuration:
+```bash
+terraform apply
+```
+
+5. Set the newly created stack as active:
+```bash
+zenml stack set $(terraform output -raw stack_name)
+```
+
+6. Verify the configuration:
 ```bash
 zenml stack describe
 ```
 
-This example demonstrates how to register existing GCP infrastructure with ZenML while maintaining clean separation between infrastructure provisioning and ZenML registration. The same pattern can be adapted for AWS and Azure infrastructure.
+This complete example demonstrates:
+- Setting up necessary GCP infrastructure
+- Creating a service connector with proper authentication
+- Registering stack components with the infrastructure
+- Creating a complete ZenML stack
+- Proper variable management and output configuration
+- Best practices for sensitive information handling
+
+The same pattern can be adapted for AWS and Azure infrastructure by adjusting the provider configurations and resource types accordingly.
+
+Remember to:
+- Use appropriate IAM roles and permissions
+- Follow your organization's security practices for handling credentials
+- Consider using Terraform workspaces for managing multiple environments
+- Regular backup of your Terraform state files
+- Version control your Terraform configurations (excluding sensitive files)
