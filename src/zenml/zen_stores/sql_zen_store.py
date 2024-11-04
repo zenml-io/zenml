@@ -4213,22 +4213,10 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If an identical pipeline already exists.
+            IntegrityError: If the new pipeline creation lead to any
+                integrity errors.
         """
         with Session(self.engine) as session:
-            # Check if pipeline with the given name already exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.workspace_id == pipeline.workspace)
-            ).first()
-            if existing_pipeline is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name "
-                    "already exists."
-                )
-
-            # Create the pipeline
             new_pipeline = PipelineSchema.from_request(pipeline)
 
             if pipeline.tags:
@@ -4239,7 +4227,16 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.add(new_pipeline)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError as e:
+                if "name" in str(e):
+                    raise EntityExistsError(
+                        f"Unable to create pipeline in workspace "
+                        f"'{pipeline.workspace}': A pipeline with the name "
+                        f"{pipeline.name} already exists."
+                    )
+                raise
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model(
@@ -5096,20 +5093,10 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
+            IntegrityError: If the new run creation lead to any
+                integrity errors.
         """
         with Session(self.engine) as session:
-            # Check if pipeline run with same name already exists.
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with name "
-                    f"'{pipeline_run.name}' already exists."
-                )
-
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
 
@@ -5121,7 +5108,17 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.add(new_run)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError as e:
+                if "name" in str(e):
+                    # This is the only way to differentiate from integrity
+                    # errors due to other unique constraints
+                    raise EntityExistsError(
+                        f"Unable to create pipeline run: A pipeline run with name "
+                        f"'{pipeline_run.name}' already exists."
+                    )
+                raise
 
             return new_run.to_model(
                 include_metadata=True, include_resources=True
