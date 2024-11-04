@@ -10186,6 +10186,30 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    def _get_next_numeric_version_for_model(
+        self, session: Session, model_id: UUID
+    ) -> int:
+        """Get the next numeric version for a model.
+
+        Args:
+            session: DB session.
+            model_id: ID of the model for which to get the next numeric
+                version.
+
+        Returns:
+            The next numeric version.
+        """
+        current_max_version = session.exec(
+            select(func.max(ModelVersionSchema.number)).where(
+                ModelVersionSchema.model_id == model_id
+            )
+        ).first()
+
+        if current_max_version is None:
+            return 1
+        else:
+            return int(current_max_version) + 1
+
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequest
@@ -10206,63 +10230,67 @@ class SqlZenStore(BaseZenStore):
             raise ValueError(
                 "`number` field  must be None during model version creation."
             )
-        with Session(self.engine) as session:
-            model_version_ = model_version.model_copy()
-            model = self.get_model(model_version_.model)
+        model_version_ = model_version.model_copy()
+        model = self.get_model(model_version_.model)
 
-            def _check(tolerance: int = 0) -> None:
-                query = session.exec(
-                    select(ModelVersionSchema)
-                    .where(ModelVersionSchema.model_id == model.id)
-                    .where(ModelVersionSchema.name == model_version_.name)
-                )
-                existing_model_version = query.fetchmany(tolerance + 1)
-                if (
-                    existing_model_version is not None
-                    and len(existing_model_version) > tolerance
-                ):
-                    raise EntityExistsError(
-                        f"Unable to create model version {model_version_.name}: "
-                        f"A model version with this name already exists in {model.name} model."
-                    )
+        if model_version_.name is not None:
+            validate_name(model_version_)
 
-            _check()
-            all_versions = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
-            ).first()
-
-            model_version_.number = (
-                all_versions.number + 1 if all_versions else 1
-            )
-
-            if model_version_.name is None:
-                model_version_.name = str(model_version_.number)
-            else:
-                validate_name(model_version_)
-
-            model_version_schema = ModelVersionSchema.from_request(
-                model_version_
-            )
-            session.add(model_version_schema)
-
-            if model_version_.tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_version_.tags,
-                    resource_id=model_version_schema.id,
-                    resource_type=TaggableResourceTypes.MODEL_VERSION,
-                )
+        remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+        while remaining_tries > 0:
+            remaining_tries -= 1
             try:
-                _check(1)
-                session.commit()
-            except EntityExistsError as e:
-                session.rollback()
-                raise e
+                with Session(self.engine) as session:
+                    model_version_.number = (
+                        self._get_next_numeric_version_for_model(
+                            session=session,
+                            model_id=model.id,
+                        )
+                    )
+                    if not model_version_.name:
+                        model_version_.name = str(model_version_.number)
 
-            return model_version_schema.to_model(
-                include_metadata=True, include_resources=True
-            )
+                    model_version_schema = ModelVersionSchema.from_request(
+                        model_version_
+                    )
+                    session.add(model_version_schema)
+                    session.commit()
+
+                    if model_version_.tags:
+                        self._attach_tags_to_resource(
+                            tag_names=model_version_.tags,
+                            resource_id=model_version_schema.id,
+                            resource_type=TaggableResourceTypes.MODEL_VERSION,
+                        )
+                    session.refresh(model_version_schema)
+                    return model_version_schema.to_model(
+                        include_metadata=True, include_resources=True
+                    )
+            except IntegrityError:
+                if remaining_tries == 0:
+                    raise EntityExistsError(
+                        f"Failed to create version for model "
+                        f"{model.name}. This is most likely "
+                        "caused by multiple parallel requests that try "
+                        "to create versions for this model in the "
+                        "database."
+                    )
+                else:
+                    # Exponential backoff to account for heavy
+                    # parallelization
+                    sleep_duration = 0.05 * 1.5 ** (
+                        MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                        - remaining_tries
+                    )
+                    logger.debug(
+                        "Failed to create artifact version %s "
+                        "(version %s) due to an integrity error. "
+                        "Retrying in %f seconds.",
+                        model.name,
+                        model_version_.number,
+                        sleep_duration,
+                    )
+                    time.sleep(sleep_duration)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True

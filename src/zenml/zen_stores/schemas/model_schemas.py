@@ -225,6 +225,13 @@ class ModelVersionSchema(NamedSchema, table=True):
     """SQL Model for model version."""
 
     __tablename__ = MODEL_VERSION_TABLENAME
+    __table_args__ = (
+        UniqueConstraint(
+            "number",
+            "model_id",
+            name="unique_version_for_model_id",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

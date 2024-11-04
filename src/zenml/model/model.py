@@ -14,7 +14,6 @@
 """Model user facing interface to pass into pipeline or step."""
 
 import datetime
-import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,7 +27,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -671,16 +669,6 @@ class Model(BaseModel):
         if isinstance(self.version, str):
             self.version = format_name_template(self.version)
 
-        zenml_client = Client()
-        model_version_request = ModelVersionRequest(
-            user=zenml_client.active_user.id,
-            workspace=zenml_client.active_workspace.id,
-            name=str(self.version) if self.version else None,
-            description=self.description,
-            model=model.id,
-            tags=self.tags,
-        )
-        mv_request = ModelVersionRequest.model_validate(model_version_request)
         try:
             if self.version or self.model_version_id:
                 model_version = self._get_model_version()
@@ -710,34 +698,20 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list -n {self.name}` CLI command."
                 )
-            retries_made = 0
-            for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
-                try:
-                    model_version = (
-                        zenml_client.zen_store.create_model_version(
-                            model_version=mv_request
-                        )
-                    )
-                    break
-                except EntityExistsError as e:
-                    if i == MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION - 1:
-                        raise RuntimeError(
-                            f"Failed to create model version "
-                            f"`{self.version if self.version else 'new'}` "
-                            f"in model `{self.name}`. Retried {retries_made} times. "
-                            "This could be driven by exceptionally high concurrency of "
-                            "pipeline runs. Please, reach out to us on ZenML Slack for support."
-                        ) from e
-                    # smoothed exponential back-off, it will go as 0.2, 0.3,
-                    # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
-                    sleep = 0.2 * 1.5**i
-                    logger.debug(
-                        f"Failed to create new model version for "
-                        f"model `{self.name}`. Retrying in {sleep}..."
-                    )
-                    time.sleep(sleep)
-                    retries_made += 1
-            self.version = model_version.name
+
+            client = Client()
+            model_version_request = ModelVersionRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name=str(self.version) if self.version else None,
+                description=self.description,
+                model=model.id,
+                tags=self.tags,
+            )
+            model_version = client.zen_store.create_model_version(
+                model_version=model_version_request
+            )
+
             self._created_model_version = True
 
             logger.info(
@@ -746,6 +720,7 @@ class Model(BaseModel):
                 self.name,
             )
 
+        self.version = model_version.name
         self.model_version_id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
