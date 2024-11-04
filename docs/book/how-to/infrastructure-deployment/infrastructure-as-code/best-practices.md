@@ -14,7 +14,7 @@ You're a system architect tasked with setting up a scalable ML infrastructure th
 
 ## The ZenML Approach
 
-ZenML introduces stack components as abstractions over cloud resources. Let's explore how to architect this effectively with Terraform.
+ZenML introduces stack components as abstractions over cloud resources. Let's explore how to architect this effectively with Terraform using the official ZenML provider.
 
 ## Part 1: Foundation - Stack Component Architecture
 
@@ -27,6 +27,18 @@ Start by breaking down your infrastructure into reusable modules that map to Zen
 
 ```hcl
 # modules/zenml_stack_base/main.tf
+terraform {
+  required_providers {
+    zenml = {
+      source = "zenml-io/zenml"
+    }
+    google = {
+      source = "hashicorp/google"
+    }
+  }
+}
+
+# Create base infrastructure
 module "base_infrastructure" {
   source = "./modules/base_infra"
   
@@ -38,90 +50,131 @@ module "base_infrastructure" {
   resource_prefix = "zenml-${var.environment}-${random_id.suffix.hex}"
 }
 
+# Create service connector for authentication
+resource "zenml_service_connector" "base_connector" {
+  name        = "${var.environment}-base-connector"
+  type        = "gcp"
+  auth_method = "service-account"
+
+  resource_types = [
+    "artifact-store",
+    "container-registry"
+  ]
+
+  configuration = {
+    project_id = var.project_id
+    region     = var.region
+  }
+
+  secrets = {
+    service_account_json = var.gcp_service_account_key
+  }
+
+  labels = {
+    environment = var.environment
+  }
+}
+
 # Create base stack components
+resource "zenml_stack_component" "artifact_store" {
+  name   = "${var.environment}-artifact-store"
+  type   = "artifact_store"
+  flavor = "gcp"
+
+  configuration = {
+    path = "gs://${module.base_infrastructure.artifact_store_bucket}/artifacts"
+  }
+
+  connector_id = zenml_service_connector.base_connector.id
+}
+
+resource "zenml_stack_component" "container_registry" {
+  name   = "${var.environment}-container-registry"
+  type   = "container_registry"
+  flavor = "gcp"
+
+  configuration = {
+    uri = "${var.region}-docker.pkg.dev/${var.project_id}/${module.base_infrastructure.container_registry_id}"
+  }
+
+  connector_id = zenml_service_connector.base_connector.id
+}
+
+# Create the base stack
 resource "zenml_stack" "base_stack" {
-  name        = "${var.environment}-base-stack"
-  description = "Base infrastructure for ${var.environment}"
+  name = "${var.environment}-base-stack"
 
   components = {
-    artifact_store = {
-      flavor = "gcp"
-      config = {
-        path = module.base_infrastructure.artifact_store_path
-      }
-    }
-    container_registry = {
-      flavor = "gcp"
-      config = {
-        uri = module.base_infrastructure.container_registry_uri
-      }
-    }
+    artifact_store     = zenml_stack_component.artifact_store.id
+    container_registry = zenml_stack_component.container_registry.id
+  }
+
+  labels = {
+    environment = var.environment
+    type        = "base"
   }
 }
 ```
 
-Now teams can extend this base stack:
+Teams can extend this base stack:
 
 ```hcl
 # team_configs/training_stack.tf
-module "training_stack" {
-  source = "./modules/specialized_stack"
-  
-  base_stack_id = zenml_stack.base_stack.id
-  
-  # Add training-specific components
-  additional_components = {
-    orchestrator = {
-      flavor = "vertex"
-      config = {
-        machine_type = "n1-standard-8"
-        gpu_enabled = true
-      }
-    }
+
+# Create training-specific connector
+resource "zenml_service_connector" "training_connector" {
+  name        = "${var.environment}-training-connector"
+  type        = "gcp"
+  auth_method = "service-account"
+
+  resource_types = ["orchestrator"]
+
+  configuration = {
+    project_id = var.project_id
+    region     = var.region
   }
-}
-```
 
-You can now register them with ZenML using the REST API provider (as demonstrated in this [official ZenML stack module](https://github.com/zenml-io/terraform-gcp-zenml-stack)):
-
-```hcl
-provider "restapi" {
-  alias                = "zenml_api"
-  uri                  = var.zenml_server_url
-  write_returns_object = true
-  headers = {
-    Authorization = "Bearer ${var.zenml_api_key}"
+  secrets = {
+    service_account_json = var.gcp_service_account_key
   }
 }
 
-resource "restapi_object" "zenml_stack" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stacks"
-  data = jsonencode({
-    name        = "${var.environment}-base-stack"
-    description = "Base infrastructure for ${var.environment}"
-    components  = {
-      artifact_store = {
-        flavor = "gcp"
-        configuration = {
-          path = "gs://${google_storage_bucket.artifact_store.name}"
-        }
-      }
-      container_registry = {
-        flavor = "gcp"
-        configuration = {
-          uri = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.container_registry.repository_id}"
-        }
-      }
-    }
-  })
+# Add training-specific components
+resource "zenml_stack_component" "training_orchestrator" {
+  name   = "${var.environment}-training-orchestrator"
+  type   = "orchestrator"
+  flavor = "vertex"
+
+  configuration = {
+    location      = var.region
+    machine_type  = "n1-standard-8"
+    gpu_enabled   = true
+    synchronous   = true
+  }
+
+  connector_id = zenml_service_connector.training_connector.id
+}
+
+# Create specialized training stack
+resource "zenml_stack" "training_stack" {
+  name = "${var.environment}-training-stack"
+
+  components = {
+    artifact_store     = zenml_stack_component.artifact_store.id
+    container_registry = zenml_stack_component.container_registry.id
+    orchestrator       = zenml_stack_component.training_orchestrator.id
+  }
+
+  labels = {
+    environment = var.environment
+    type        = "training"
+  }
 }
 ```
 
 ## Part 2: Authentication and Access Control
 
 ### The Problem
-
 Different environments require different authentication methods, and you need to maintain security without complexity.
 
 ### The Solution: Smart Service Connector Pattern
@@ -131,185 +184,207 @@ Create a flexible service connector setup that adapts to your environment:
 ```hcl
 locals {
   # Define authentication patterns per environment
-  auth_patterns = {
+  auth_config = {
     dev = {
-      method = "service-account"
-      config = {
-        type = "gcp"
-        service_account_json = google_service_account_key.dev_sa.private_key
+      auth_method = "service-account"
+      secrets = {
+        service_account_json = file("dev-sa.json")
       }
     }
     prod = {
-      method = "workload-identity"
-      config = {
-        type = "gcp"
-        workload_identity_provider = google_iam_workload_identity_pool.prod.id
+      auth_method = "workload-identity"
+      configuration = {
+        workload_identity_pool = var.workload_identity_pool_id
+        service_account       = var.prod_service_account_email
       }
     }
   }
 }
-```
 
-Create service connectors and link them to stack components:
+# Create environment-specific connector
+resource "zenml_service_connector" "env_connector" {
+  name        = "${var.environment}-connector"
+  type        = "gcp"
+  auth_method = local.auth_config[var.environment].auth_method
 
-```hcl
-# First create the service connector
-resource "restapi_object" "gcp_connector" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/service-connectors"
-  data = jsonencode({
-    name = "gcp-${var.environment}-connector"
-    type = "gcp"
-    auth_method = local.auth_patterns[var.environment].method
-    configuration = local.auth_patterns[var.environment].config
-  })
-}
+  resource_types = [
+    "artifact-store",
+    "container-registry",
+    "orchestrator"
+  ]
 
-# Then reference it in your stack components
-resource "restapi_object" "zenml_stack" {
-  provider = restapi.zenml_api
-  path     = "/api/v1/stacks"
-  data = jsonencode({
-    name = "${var.environment}-stack"
-    components = {
-      artifact_store = {
-        flavor = "gcp"
-        configuration = {
-          path = "gs://${google_storage_bucket.artifact_store.name}"
-        }
-        service_connector_id = restapi_object.gcp_connector.id
-      }
-      # Other components...
+  dynamic "configuration" {
+    for_each = try(local.auth_config[var.environment].configuration, {})
+    content {
+      key   = configuration.key
+      value = configuration.value
     }
-  })
+  }
+
+  dynamic "secrets" {
+    for_each = try(local.auth_config[var.environment].secrets, {})
+    content {
+      key   = secrets.key
+      value = secrets.value
+    }
+  }
 }
 ```
 
 ## Part 3: Resource Sharing and Isolation
 
 ### The Problem
-
 Different ML projects need to share some resources while maintaining isolation for others.
 
 ### The Solution: Resource Scoping Pattern
 
-Implement a resource sharing strategy using path-based isolation:
+Implement resource sharing with project isolation:
 
 ```hcl
-# shared_resources.tf
-module "shared_artifact_store" {
-  source = "./modules/artifact_store"
-  
-  # Shared configuration
-  storage_class = "STANDARD"
-  location      = var.region
-  
-  # Project-specific paths
+locals {
   project_paths = {
     fraud_detection = "projects/fraud_detection/${var.environment}"
     recommendation  = "projects/recommendation/${var.environment}"
   }
 }
 
-# project_stack.tf
-module "project_stack" {
-  source = "./modules/project_stack"
+# Create shared artifact store components with project isolation
+resource "zenml_stack_component" "project_artifact_stores" {
+  for_each = local.project_paths
   
-  # Share the artifact store but with project-specific paths
-  artifact_store_config = {
-    bucket_name = module.shared_artifact_store.bucket_name
-    base_path   = module.shared_artifact_store.project_paths[var.project_name]
+  name   = "${each.key}-artifact-store"
+  type   = "artifact_store"
+  flavor = "gcp"
+  
+  configuration = {
+    path = "gs://${var.shared_bucket}/${each.value}"
   }
   
-  # Project-specific container registry
-  container_registry_config = {
-    repository_id = "${var.project_name}-${var.environment}"
+  connector_id = zenml_service_connector.env_connector.id
+  
+  labels = {
+    project     = each.key
+    environment = var.environment
+  }
+}
+
+# Create project-specific stacks
+resource "zenml_stack" "project_stacks" {
+  for_each = local.project_paths
+  
+  name = "${each.key}-stack"
+  
+  components = {
+    artifact_store = zenml_stack_component.project_artifact_stores[each.key].id
+  }
+  
+  labels = {
+    project     = each.key
+    environment = var.environment
   }
 }
 ```
 
-Note: While this example uses project-based isolation, it's different from ZenML Pro's team feature, which manages user access control. This infrastructure-level isolation complements ZenML's built-in access controls.
-
 ## Part 4: Environment Management
-
-### The Problem
-Managing multiple environments while maintaining consistency and avoiding configuration drift.
 
 ### The Solution: Environment Configuration Pattern
 
-Use Terraform workspaces and environment-specific configurations:
+Use environment-specific configurations:
 
 ```hcl
-# config/environments/prod.tfvars
-environment = "prod"
-stack_config = {
-  high_availability = true
-  backup_enabled    = true
-  compliance_mode   = "strict"
+locals {
+  env_config = {
+    dev = {
+      machine_type = "n1-standard-4"
+      gpu_enabled  = false
+    }
+    prod = {
+      machine_type = "n1-standard-8"
+      gpu_enabled  = true
+    }
+  }
 }
 
-# main.tf
-module "environment_stack" {
-  source = "./modules/environment_stack"
+# Create environment-specific orchestrator
+resource "zenml_stack_component" "env_orchestrator" {
+  name   = "${var.environment}-orchestrator"
+  type   = "orchestrator"
+  flavor = "vertex"
   
-  # Base configuration
-  stack_name = "zenml-${var.environment}"
-  
-  # Environment-specific overrides
-  config = merge(
-    local.default_config,
-    var.stack_config
+  configuration = merge(
+    {
+      location = var.region
+    },
+    local.env_config[var.environment]
   )
+  
+  connector_id = zenml_service_connector.env_connector.id
+  
+  labels = {
+    environment = var.environment
+  }
 }
 ```
 
 ## Best Practices and Lessons Learned
 
 1. **Stack Component Versioning**
-   - Version your stack components independently
-   - Use semantic versioning for stack configurations
-   ```hcl
-   locals {
-     stack_version = "1.2.0"
-     stack_name    = "zenml-${var.environment}-v${local.stack_version}"
-   }
-   ```
+```hcl
+locals {
+  stack_version = "1.2.0"
+  common_labels = {
+    version     = local.stack_version
+    managed_by  = "terraform"
+    environment = var.environment
+  }
+}
 
-2. **Resource Cleanup**
-   - Use tags to track resource ownership and environment
-   ```hcl
-   locals {
-     common_tags = {
-       managed_by = "terraform"
-       stack_id   = zenml_stack.main.id
-       project    = var.project_name
-     }
-   }
-   ```
-   - Implement cleanup through Terraform destroy or cloud provider lifecycle policies
-   - Consider using cloud provider native cleanup mechanisms (e.g., GCS bucket lifecycle rules) rather than expiration tags
+resource "zenml_stack" "versioned_stack" {
+  name   = "stack-v${local.stack_version}"
+  labels = local.common_labels
+}
+```
+
+2. **Resource Organization**
+```hcl
+# Group related components
+resource "zenml_stack_component" "training_components" {
+  for_each = {
+    orchestrator = {
+      type   = "orchestrator"
+      flavor = "vertex"
+    }
+    experiment_tracker = {
+      type   = "experiment_tracker"
+      flavor = "mlflow"
+    }
+  }
+
+  name          = "${var.environment}-${each.key}"
+  type          = each.value.type
+  flavor        = each.value.flavor
+  connector_id  = zenml_service_connector.env_connector.id
+  
+  labels = local.common_labels
+}
+```
 
 3. **Stack Evolution**
-   - Design for component upgrades
-   - Maintain backward compatibility
-   ```hcl
-   resource "restapi_object" "zenml_stack" {
-     provider = restapi.zenml_api
-     path     = "/api/v1/stacks"
-     
-     lifecycle {
-       create_before_destroy = true
-       # Be careful with ignore_changes as stack updates might need
-       # full replacement depending on the ZenML server version
-       ignore_changes = [
-         # Only ignore specific metadata that doesn't affect functionality
-         data.labels,
-         data.description
-       ]
-     }
-   }
-   ```
+```hcl
+resource "zenml_stack" "evolvable_stack" {
+  name = "${var.environment}-stack"
+  
+  lifecycle {
+    create_before_destroy = true
+    # Only ignore metadata that doesn't affect functionality
+    ignore_changes = [
+      labels["last_modified"],
+      labels["created_by"]
+    ]
+  }
+}
+```
 
 ## Conclusion
 
-Building ML infrastructure with ZenML and Terraform allows you to create a flexible, maintainable, and secure environment for ML teams. The key is to use ZenML's abstractions effectively while maintaining clean infrastructure patterns underneath.
+Building ML infrastructure with ZenML and Terraform enables you to create a flexible, maintainable, and secure environment for ML teams. The official ZenML provider simplifies the process while maintaining clean infrastructure patterns.
