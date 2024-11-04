@@ -227,7 +227,7 @@ class ModelVersionSchema(NamedSchema, table=True):
     __tablename__ = MODEL_VERSION_TABLENAME
     __table_args__ = (
         UniqueConstraint(
-            "number",
+            "name",
             "model_id",
             name="unique_version_for_model_id",
         ),
