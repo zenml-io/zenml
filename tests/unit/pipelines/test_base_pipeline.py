@@ -605,22 +605,17 @@ def test_rerunning_deloyment_does_not_fail(
     assert runs.total == 2
 
 
-def test_failure_during_initialization_deletes_placeholder_run(
+def test_failure_during_initialization_marks_placeholder_run_as_failed(
     clean_client,
     empty_pipeline,  # noqa: F811
     mocker,
 ):
     """Tests that when a pipeline run fails during initialization, the
-    placeholder run that was created for it is deleted."""
+    placeholder run is marked as failed."""
     mock_create_run = mocker.patch.object(
         type(clean_client.zen_store),
         "create_run",
         wraps=clean_client.zen_store.create_run,
-    )
-    mock_delete_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "delete_run",
-        wraps=clean_client.zen_store.delete_run,
     )
 
     pipeline_instance = empty_pipeline
@@ -634,9 +629,10 @@ def test_failure_during_initialization_deletes_placeholder_run(
         pipeline_instance()
 
     mock_create_run.assert_called_once()
-    mock_delete_run.assert_called_once()
 
-    assert clean_client.list_pipeline_runs().total == 0
+    runs = clean_client.list_pipeline_runs()
+    assert len(runs) == 1
+    assert runs[0].status == ExecutionStatus.FAILED
 
 
 def test_running_scheduled_pipeline_does_not_create_placeholder_run(
@@ -674,3 +670,18 @@ def test_env_var_substitution(clean_client, empty_pipeline):  # noqa: F811
         run = empty_pipeline()
 
         assert run.config.extra["key"] == "1_suffix"
+
+
+def test_run_tagging(clean_client, tmp_path, empty_pipeline):  # noqa: F811
+    """Test run tagging."""
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("tags: [tag_3]")
+
+    empty_pipeline.configure(tags=["tag_1"])
+    p = empty_pipeline.with_options(
+        tags=["tag_2"], config_path=str(config_path)
+    )
+    run = p()
+
+    assert {tag.name for tag in run.tags} == {"tag_1", "tag_2", "tag_3"}

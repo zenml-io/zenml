@@ -79,7 +79,6 @@ from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
-from zenml.zen_server.deploy import ServerDeployment
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -223,6 +222,8 @@ def print_table(
         caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
+    from rich.text import Text
+
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(
@@ -241,10 +242,19 @@ def print_table(
             if key is None:
                 values.append(None)
             else:
-                value = str(dict_.get(key) or " ")
-                # escape text when square brackets are used
-                if "[" in value:
-                    value = escape(value)
+                v = dict_.get(key) or " "
+                if isinstance(v, str) and (
+                    v.startswith("http://") or v.startswith("https://")
+                ):
+                    # Display the URL as a hyperlink in a way that doesn't break
+                    # the URL when it needs to be wrapped over multiple lines
+                    value: Union[str, Text] = Text(v, style=f"link {v}")
+                else:
+                    value = str(v)
+                    # Escape text when square brackets are used, but allow
+                    # links to be decorated as rich style links
+                    if "[" in value and "[link=" not in value:
+                        value = escape(value)
                 values.append(value)
         rich_table.add_row(*values)
     if len(rich_table.columns) > 1:
@@ -258,6 +268,7 @@ def print_pydantic_models(
     exclude_columns: Optional[List[str]] = None,
     active_models: Optional[List[T]] = None,
     show_active: bool = False,
+    rename_columns: Dict[str, str] = {},
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -270,6 +281,7 @@ def print_pydantic_models(
         active_models: Optional list of active models of the given type T.
         show_active: Flag to decide whether to append the active model on the
             top of the list.
+        rename_columns: Optional dictionary to rename columns.
     """
     if exclude_columns is None:
         exclude_columns = list()
@@ -326,6 +338,8 @@ def print_pydantic_models(
 
         for k in include_columns:
             value = getattr(model, k)
+            if k in rename_columns:
+                k = rename_columns[k]
             # In case the response model contains nested `BaseResponse`s
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
@@ -350,6 +364,7 @@ def print_pydantic_models(
                 items[k] = [str(v) for v in value]
             else:
                 items[k] = str(value)
+
         # prepend an active marker if a function to mark active was passed
         if not active_models and not show_active:
             return items
@@ -613,7 +628,7 @@ def print_stack_component_configuration(
 
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
-        f"'{component.flavor}' with id '{component.id}' is owned by "
+        f"'{component.flavor_name}' with id '{component.id}' is owned by "
         f"user '{user_name}'."
     )
 
@@ -1391,74 +1406,6 @@ def print_served_model_configuration(
     console.print(rich_table)
 
 
-def print_server_deployment_list(servers: List["ServerDeployment"]) -> None:
-    """Print a table with a list of ZenML server deployments.
-
-    Args:
-        servers: list of ZenML server deployments
-    """
-    server_dicts = []
-    for server in servers:
-        status = ""
-        url = ""
-        connected = ""
-        if server.status:
-            status = get_service_state_emoji(server.status.status)
-            if server.status.url:
-                url = server.status.url
-            if server.status.connected:
-                connected = ":point_left:"
-        server_dicts.append(
-            {
-                "STATUS": status,
-                "NAME": server.config.name,
-                "PROVIDER": server.config.provider.value,
-                "URL": url,
-                "CONNECTED": connected,
-            }
-        )
-    print_table(server_dicts)
-
-
-def print_server_deployment(server: "ServerDeployment") -> None:
-    """Prints the configuration and status of a ZenML server deployment.
-
-    Args:
-        server: Server deployment to print
-    """
-    server_name = server.config.name
-    title_ = f"ZenML server '{server_name}'"
-
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title=title_,
-        show_header=False,
-        show_lines=True,
-    )
-    rich_table.add_column("", overflow="fold")
-    rich_table.add_column("", overflow="fold")
-
-    server_info = []
-
-    if server.status:
-        server_info.extend(
-            [
-                ("URL", server.status.url or ""),
-                ("STATUS", get_service_state_emoji(server.status.status)),
-                ("STATUS_MESSAGE", server.status.status_message or ""),
-                (
-                    "CONNECTED",
-                    ":white_check_mark:" if server.status.connected else "",
-                ),
-            ]
-        )
-
-    for item in server_info:
-        rich_table.add_row(*item)
-
-    console.print(rich_table)
-
-
 def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
     """Describes a Pydantic object based on the dict-representation of its schema.
 
@@ -1632,7 +1579,7 @@ def print_components_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
             "COMPONENT ID": component.id,
-            "FLAVOR": component.flavor,
+            "FLAVOR": component.flavor_name,
             "OWNER": f"{component.user.name if component.user else '-'}",
         }
         configurations.append(component_config)
@@ -2719,8 +2666,8 @@ def print_model_url(url: Optional[str]) -> None:
         warning(
             "You can display various ZenML entities including pipelines, "
             "runs, stacks and much more on the ZenML Dashboard. "
-            "You can try it locally, by running `zenml up`, or remotely, "
-            "by deploying ZenML on the infrastructure of your choice."
+            "You can try it locally, by running `zenml local --local`, or "
+            "remotely, by deploying ZenML on the infrastructure of your choice."
         )
 
 

@@ -1,16 +1,15 @@
 ---
 name: release-prepare
 on:
-  workflow_dispatch:
-  create:
-    branches: ["misc/prepare-release-*"]
-    types: [branch]
+  push:
+    branches:
+      - "misc/prepare-release-*"
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
-    if: github.repository == 'zenml-io/zenml'
+    if: github.event.created && github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.old-version.outputs.old_version }}

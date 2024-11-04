@@ -22,6 +22,7 @@ from zenml.models import (
     PipelineRunResponse,
     StackResponse,
 )
+from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
 from zenml.utils import code_utils, notebook_utils, source_utils
@@ -81,6 +82,7 @@ def create_placeholder_run(
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
+        tags=deployment.pipeline_configuration.tags,
     )
     return Client().zen_store.create_run(run_request)
 
@@ -124,20 +126,18 @@ def deploy_pipeline(
     Args:
         deployment: The deployment to run.
         stack: The stack on which to run the deployment.
-        placeholder_run: An optional placeholder run for the deployment. This
-            will be deleted in case the pipeline deployment failed.
+        placeholder_run: An optional placeholder run for the deployment.
 
     Raises:
         Exception: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
-    stack.prepare_pipeline_deployment(deployment=deployment)
-
     # Prevent execution of nested pipelines which might lead to
     # unexpected behavior
     previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     try:
+        stack.prepare_pipeline_deployment(deployment=deployment)
         stack.deploy_pipeline(
             deployment=deployment,
             placeholder_run=placeholder_run,
@@ -145,13 +145,14 @@ def deploy_pipeline(
     except Exception as e:
         if (
             placeholder_run
-            and Client().get_pipeline_run(placeholder_run.id).status
+            and Client()
+            .get_pipeline_run(placeholder_run.id, hydrate=False)
+            .status
             == ExecutionStatus.INITIALIZING
         ):
-            # The run hasn't actually started yet, which means that we
-            # failed during initialization -> We don't want the
-            # placeholder run to stay in the database
-            Client().delete_pipeline_run(placeholder_run.id)
+            # The run failed during the initialization phase -> We change it's
+            # status to `Failed`
+            publish_failed_pipeline_run(placeholder_run.id)
 
         raise e
     finally:
@@ -203,7 +204,7 @@ def validate_stack_is_runnable_from_server(
         assert len(component_list) == 1
         component = component_list[0]
         flavors = zen_store.list_flavors(
-            FlavorFilter(name=component.flavor, type=component.type)
+            FlavorFilter(name=component.flavor_name, type=component.type)
         )
         assert len(flavors) == 1
         flavor_model = flavors[0]

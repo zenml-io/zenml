@@ -68,8 +68,11 @@ pip install -r requirements.txt
 # Initialize ZenML
 zenml init
 
-# Start the ZenServer to enable dashboard access
-zenml connect --url="INSERT_YOUR_SERVER_URL_HERE"
+# add your ZenML Server URL here or leave empty to use ZenML Pro
+ZENML_SERVER_URL=
+
+# Connect to your ZenML Server
+zenml login $ZENML_SERVER_URL
 
 # We'll start on the default stack
 zenml stack set default

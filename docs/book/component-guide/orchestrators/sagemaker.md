@@ -29,9 +29,9 @@ The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.am
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,
 including a Sagemaker orchestrator? Check out the
-[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML AWS Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -59,7 +59,7 @@ There are three ways you can authenticate your orchestrator and link it to the I
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator:
+The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -101,7 +101,7 @@ python run.py  # Authenticates with `default` profile in `~/.aws/config`
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Sagemaker. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Sagemaker. Check out [this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Sagemaker orchestrator:
@@ -187,7 +187,7 @@ They can then be applied to a step as follows:
 
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` (for Processing Steps) or `ml.m5.xlarge` (for Training Steps) with 30GB additional storage. See the next section for details on how ZenML decides which Sagemaker Step type to use.
 
-Check out [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings in general.
+Check out [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings in general.
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor.SagemakerOrchestratorSettings) .
 
@@ -337,6 +337,6 @@ This approach allows for more granular tagging, giving you flexibility in how yo
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

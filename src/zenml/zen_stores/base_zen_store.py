@@ -24,11 +24,9 @@ from typing import (
     Type,
     Union,
 )
-from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
-from requests import ConnectionError
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -39,13 +37,11 @@ from zenml.constants import (
     DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     IS_DEBUG_ENV,
-    ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT,
 )
 from zenml.enums import (
     SecretsStoreType,
     StoreType,
 )
-from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     ServerDatabaseType,
@@ -57,9 +53,6 @@ from zenml.models import (
     WorkspaceResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.zen_stores.secrets_stores.sql_secrets_store import (
-    SqlSecretsStoreConfiguration,
-)
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
@@ -136,51 +129,10 @@ class BaseZenStore(
                 stack and user in the store will be skipped.
             **kwargs: Additional keyword arguments to pass to the Pydantic
                 constructor.
-
-        Raises:
-            RuntimeError: If the store cannot be initialized.
-            AuthorizationException: If the store cannot be initialized due to
-                authentication errors.
         """
         super().__init__(**kwargs)
 
-        try:
-            self._initialize()
-
-        # Handle cases where the ZenML server is not available
-        except ConnectionError as e:
-            error_message = (
-                "Cannot connect to the ZenML database because the ZenML server "
-                f"at {self.url} is not running."
-            )
-            if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
-                recommendation = (
-                    "Please run `zenml down` and `zenml up` to restart the "
-                    "server."
-                )
-            else:
-                recommendation = (
-                    "Please run `zenml disconnect` and `zenml connect --url "
-                    f"{self.url}` to reconnect to the server."
-                )
-            raise RuntimeError(f"{error_message}\n{recommendation}") from e
-
-        except AuthorizationException as e:
-            raise AuthorizationException(
-                f"Authorization failed for store at '{self.url}'. Please check "
-                f"your credentials: {str(e)}"
-            )
-
-        except Exception as e:
-            zenml_pro_extra = ""
-            if ".zenml.io" in self.url:
-                zenml_pro_extra = (
-                    ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT
-                )
-            raise RuntimeError(
-                f"Error initializing {self.type.value} store with URL "
-                f"'{self.url}': {str(e)}" + zenml_pro_extra
-            ) from e
+        self._initialize()
 
         if not skip_default_registrations:
             logger.debug("Initializing database")
@@ -293,6 +245,9 @@ class BaseZenStore(
         Returns:
             The default store configuration.
         """
+        from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+            SqlSecretsStoreConfiguration,
+        )
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(

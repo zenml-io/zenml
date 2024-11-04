@@ -1,4 +1,5 @@
 ---
+icon: rocket
 description: Deploying your models and serve real-time predictions.
 ---
 
@@ -43,6 +44,8 @@ integrations:
 | [BentoML](bentoml.md)              | `bentoml` | `bentoml`     | Build and Deploy ML models locally or for production grade (Cloud, K8s)      |
 | [Seldon Core](seldon.md)           | `seldon`  | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
 | [Hugging Face](huggingface.md) | `huggingface` | `huggingface` | Deploys ML model on Hugging Face Inference Endpoints |
+| [Databricks](databricks.md) | `databricks` | `databricks` | Deploying models to Databricks Inference Endpoints with Databricks |
+| [vLLM](vllm.md)                | `vllm`  | `vllm`      | Deploys LLM using vLLM locally |
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}

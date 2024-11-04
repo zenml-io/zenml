@@ -36,7 +36,7 @@ install_integrations() {
     # figure out the python version
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
-    ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy"
+    ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy argilla"
 
     # Ignore tensorflow and deepchecks only on Python 3.12
     if [ "$python_version" = "3.12" ]; then
@@ -60,10 +60,6 @@ install_integrations() {
     echo "pyopenssl" >> integration-requirements.txt
     echo "typing-extensions" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
-
-    # TODO: remove after torch 2.3.0+ is released
-    # https://github.com/pytorch/pytorch/issues/124897
-    echo "torch<2.3.0" >> integration-requirements.txt
 
     # workaround to make yamlfix work
     echo "maison<2" >> integration-requirements.txt

@@ -340,6 +340,6 @@ def step_on_spark(...) -> ...:
 
 ### Additional configuration
 
-For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-spark/#zenml.integrations.spark.flavors.spark\_step\_operator\_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-spark/#zenml.integrations.spark.flavors.spark\_step\_operator\_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

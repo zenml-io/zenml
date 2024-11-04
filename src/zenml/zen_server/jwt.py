@@ -25,7 +25,7 @@ from uuid import UUID
 import jwt
 from pydantic import BaseModel
 
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import CredentialsNotValid
 from zenml.logger import get_logger
 from zenml.zen_server.utils import server_config
 
@@ -71,7 +71,7 @@ class JWTToken(BaseModel):
             The decoded JWT access token.
 
         Raises:
-            AuthorizationException: If the token is invalid.
+            CredentialsNotValid: If the token is invalid.
         """
         config = server_config()
 
@@ -87,18 +87,18 @@ class JWTToken(BaseModel):
             )
             claims = cast(Dict[str, Any], claims_data)
         except jwt.PyJWTError as e:
-            raise AuthorizationException(f"Invalid JWT token: {e}") from e
+            raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
         subject: str = claims.pop("sub", "")
         if not subject:
-            raise AuthorizationException(
+            raise CredentialsNotValid(
                 "Invalid JWT token: the subject claim is missing"
             )
 
         try:
             user_id = UUID(subject)
         except ValueError:
-            raise AuthorizationException(
+            raise CredentialsNotValid(
                 "Invalid JWT token: the subject claim is not a valid UUID"
             )
 
@@ -107,7 +107,7 @@ class JWTToken(BaseModel):
             try:
                 device_id = UUID(claims.pop("device_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the device_id claim is not a valid "
                     "UUID"
                 )
@@ -117,7 +117,7 @@ class JWTToken(BaseModel):
             try:
                 api_key_id = UUID(claims.pop("api_key_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the api_key_id claim is not a valid "
                     "UUID"
                 )
@@ -127,7 +127,7 @@ class JWTToken(BaseModel):
             try:
                 pipeline_id = UUID(claims.pop("pipeline_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the pipeline_id claim is not a valid "
                     "UUID"
                 )
@@ -137,7 +137,7 @@ class JWTToken(BaseModel):
             try:
                 schedule_id = UUID(claims.pop("schedule_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the schedule_id claim is not a valid "
                     "UUID"
                 )
