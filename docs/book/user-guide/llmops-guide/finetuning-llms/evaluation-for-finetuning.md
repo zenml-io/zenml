@@ -10,11 +10,11 @@ Why do we even need evaluations, and why do we need them (however incremental an
 
 The motivation for implementing thorough evals is similar to that of unit tests in traditional software development:
 
-1. Prevent Regressions: Ensure that new iterations or changes don't negatively impact existing functionality.
+1. **Prevent Regressions**: Ensure that new iterations or changes don't negatively impact existing functionality.
 
-2. Track Improvements: Quantify and visualise how your model improves with each iteration or finetuning session.
+2. **Track Improvements**: Quantify and visualise how your model improves with each iteration or finetuning session.
 
-3. Ensure Safety and Robustness: Given the complex nature of LLMs, comprehensive evals help identify and mitigate potential risks, biases, or unexpected behaviours.
+3. **Ensure Safety and Robustness**: Given the complex nature of LLMs, comprehensive evals help identify and mitigate potential risks, biases, or unexpected behaviours.
 
 By implementing a robust evaluation strategy, you can develop more reliable, performant, and safe finetuned LLMs while maintaining a clear picture of your model's capabilities and limitations throughout the development process.
 
@@ -27,12 +27,12 @@ used and [showcased in the RAG guide](../evaluation/README.md).
 
 Custom evals are tailored to your specific use case and can be categorised into two main types:
 
-1. Success Modes: These evals focus on things you want to see in your model's output, such as:
+1. **Success Modes**: These evals focus on things you want to see in your model's output, such as:
 	- Correct formatting
 	- Appropriate responses to specific prompts
 	- Desired behaviour in edge cases
 
-2. Failure Modes: These evals target things you don't want to see, including:
+2. **Failure Modes**: These evals target things you don't want to see, including:
 	- Hallucinations (generating false or nonsensical information)
 	- Incorrect output formats
 	- Biased or insulting responses

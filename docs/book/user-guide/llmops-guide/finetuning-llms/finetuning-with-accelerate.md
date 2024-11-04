@@ -33,11 +33,11 @@ evaluation steps to check the performance of the finetuned model.
 As you can see in the DAG visualization, the pipeline consists of the following
 steps:
 
-- **prepare_data**: we load and preprocess the Viggo dataset.
-- **finetune**: we finetune the model on the Viggo dataset.
-- **evaluate_base**: we evaluate the base model (i.e. the model before finetuning) on the Viggo dataset.
-- **evaluate_finetuned**: we evaluate the finetuned model on the Viggo dataset.
-- **promote**: we promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/use-the-model-control-plane/README.md).
+- **prepare_data**: We load and preprocess the Viggo dataset.
+- **finetune**: We finetune the model on the Viggo dataset.
+- **evaluate_base**: We evaluate the base model (i.e. the model before finetuning) on the Viggo dataset.
+- **evaluate_finetuned**: We evaluate the finetuned model on the Viggo dataset.
+- **promote**: We promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/use-the-model-control-plane/README.md).
 
 If you adapt the code to your own use case, the specific logic in each step
 might differ but the overall structure should remain the same. When you're
@@ -119,10 +119,10 @@ Here are some things to note:
 For the evaluation steps, we use [the `evaluate` library](https://github.com/huggingface/evaluate) to compute the ROUGE
 scores. ROUGE (Recall-Oriented Understudy for Gisting Evaluation) is a set of metrics for evaluating automatic summarization and machine translation. It works by comparing generated text against reference texts by measuring:
 
-- ROUGE-N: Overlap of n-grams (sequences of n consecutive words) between generated and reference texts
-- ROUGE-L: Longest Common Subsequence between generated and reference texts
-- ROUGE-W: Weighted Longest Common Subsequence that favors consecutive matches
-- ROUGE-S: Skip-bigram co-occurrence statistics between generated and reference texts
+- **ROUGE-N**: Overlap of n-grams (sequences of n consecutive words) between generated and reference texts
+- **ROUGE-L**: Longest Common Subsequence between generated and reference texts
+- **ROUGE-W**: Weighted Longest Common Subsequence that favors consecutive matches
+- **ROUGE-S**: Skip-bigram co-occurrence statistics between generated and reference texts
 
 These metrics help quantify how well the generated text captures the key
 information and phrasing from the reference text, making them useful for

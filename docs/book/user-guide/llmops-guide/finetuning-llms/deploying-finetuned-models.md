@@ -134,13 +134,13 @@ you're deploying on AWS, GCP, or a multi-cloud environment.
 Once your finetuned LLM is deployed, ongoing monitoring and maintenance become
 crucial. Key areas to watch include:
 
-1. *Evaluation Failures*: Regularly run your model through evaluation sets to
+1. **Evaluation Failures**: Regularly run your model through evaluation sets to
    catch any degradation in performance.
-2. *Latency Metrics*: Monitor response times to ensure they meet your
+2. **Latency Metrics**: Monitor response times to ensure they meet your
    application's requirements.
-3. *Load and Usage Patterns*: Keep an eye on how users interact with your model
+3. **Load and Usage Patterns**: Keep an eye on how users interact with your model
    to inform scaling decisions and potential optimisations.
-4. *Data Analysis*: Regularly analyse the inputs and outputs of your model to
+4. **Data Analysis**: Regularly analyse the inputs and outputs of your model to
    identify trends, potential biases, or areas for improvement.
 
 It's also important to consider privacy and security when capturing and logging

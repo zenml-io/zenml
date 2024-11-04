@@ -15,25 +15,25 @@ finetuning models on your custom data and use cases. Before we dive into the det
 
 Finetuning an LLM can be a powerful approach in certain scenarios. Here are some situations where it might make sense:
 
-1. Domain-specific knowledge: When you need the model to have deep understanding
+1. **Domain-specific knowledge**: When you need the model to have deep understanding
    of a particular domain (e.g., medical, legal, or technical fields) that isn't
    well-represented in the base model's training data. Usually, RAG will be a
    better choice for novel domains, but if you have a lot of data and a very
    specific use case, finetuning might be the way to go.
 
-2. Consistent style or format: If you require outputs in a very specific style
+2. **Consistent style or format**: If you require outputs in a very specific style
    or format that the base model doesn't naturally produce. This is especially
    true for things like code generation or structured data generation/extraction.
 
-3. Improved accuracy on specific tasks: When you need higher accuracy on particular tasks that are crucial for your application.
+3. **Improved accuracy on specific tasks**: When you need higher accuracy on particular tasks that are crucial for your application.
 
-4. Handling proprietary information: If your use case involves working with confidential or proprietary information that can't be sent to external API endpoints.
+4. **Handling proprietary information**: If your use case involves working with confidential or proprietary information that can't be sent to external API endpoints.
 
-5. Custom instructions or prompts: If you find yourself repeatedly using the
+5. **Custom instructions or prompts**: If you find yourself repeatedly using the
    same set of instructions or prompts, finetuning can bake these into the model
    itself. This might save you latency and costs compared to repeatedly sending the same prompt to an API.
 
-6. Improved efficiency: Finetuning can sometimes lead to better performance with shorter prompts, potentially reducing costs and latency.
+6. **Improved efficiency**: Finetuning can sometimes lead to better performance with shorter prompts, potentially reducing costs and latency.
 
 Here's a flowchart representation of these points:
 
