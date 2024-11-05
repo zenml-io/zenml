@@ -137,15 +137,21 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         self.endpoint.prepare_for_start()
 
         import uvloop
-        from vllm.entrypoints.openai.api_server import run_server
-        from vllm.entrypoints.openai.cli_args import make_arg_parser
-        from vllm.utils import FlexibleArgumentParser
+        from vllm.entrypoints.openai.api_server import (
+            run_server,
+        )
+        from vllm.entrypoints.openai.cli_args import (
+            make_arg_parser,
+        )
+        from vllm.utils import (
+            FlexibleArgumentParser,
+        )
 
         try:
             parser = make_arg_parser(FlexibleArgumentParser())
             args = parser.parse_args()
             # Override port with the available port
-            self.config.port = self.endpoint.status.port
+            self.config.port = self.endpoint.status.port or self.config.port
             # Update the arguments in place
             args.__dict__.update(self.config.model_dump())
             uvloop.run(run_server(args=args))
@@ -161,7 +167,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         """
         if not self.is_running:
             return None
-        return self.endpoint.prediction_url_path
+        return self.endpoint.prediction_url
 
     def predict(self, data: "Any") -> "Any":
         """Make a prediction using the service.
