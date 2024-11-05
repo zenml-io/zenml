@@ -143,18 +143,3 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
             github.sha }}
           file: ./docker/zenml-server-dev.Dockerfile
-# custom-arc-runner-set-integration-test-server:
-#   needs: [build-and-push, linting]
-#   if: github.event.pull_request.draft == false
-#   strategy:
-#     matrix:
-#       os: [ubuntu-latest]
-#       python-version: ['3.11']
-#       test_environment: [github-actions-server-docker-orchestrator]
-#     fail-fast: false
-#   uses: ./.github/workflows/integration-test-fast-services.yml
-#   with:
-#     os: ${{ matrix.os }}
-#     python-version: ${{ matrix.python-version }}
-#     test_environment: ${{ matrix.test_environment }}
-#   secrets: inherit
