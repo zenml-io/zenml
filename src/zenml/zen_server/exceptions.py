@@ -23,6 +23,7 @@ from zenml.exceptions import (
     CredentialsNotValid,
     DoesNotExistException,
     DuplicateRunNameError,
+    EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
     MethodNotAllowedError,
@@ -32,7 +33,6 @@ from zenml.exceptions import (
     SubscriptionUpgradeRequiredError,
     ValidationError,
     ZenKeyError,
-    EntityCreationError
 )
 
 if TYPE_CHECKING:
