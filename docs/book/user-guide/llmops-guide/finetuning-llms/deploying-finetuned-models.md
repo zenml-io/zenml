@@ -60,6 +60,44 @@ When choosing a deployment option, consider factors such as your team's
 expertise, budget constraints, expected load patterns, and specific use case
 requirements like speed, throughput, and accuracy needs.
 
+## Deployment with vLLM and ZenML
+
+[vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library
+for running large language models (LLMs) at high throughputs and low latency.
+ZenML comes with a [vLLM integration](../../../component-guide/model-deployers/vllm.md)
+that makes it easy to deploy your finetuned model using vLLM. You can use a
+pre-built step that exposes a `VLLMDeploymentService` that can be used as part of
+your deployment pipeline.
+
+```python
+
+from zenml import pipeline
+from typing import Annotated
+from steps.vllm_deployer import vllm_model_deployer_step
+from zenml.integrations.vllm.services.vllm_deployment import VLLMDeploymentService
+
+
+@pipeline()
+def deploy_vllm_pipeline(
+    model: str,
+    timeout: int = 1200,
+) -> Annotated[VLLMDeploymentService, "my_finetuned_llm"]:
+   # ...
+   # assume we have previously trained and saved our model
+   service = vllm_model_deployer_step(
+      model=model,
+      timeout=timeout,
+   )
+   return service
+```
+
+In this code snippet, the `model` argument can be a path to a local model or it
+can be a model ID on the Hugging Face Hub. This will then deploy the model
+locally using vLLM and you can then use the `VLLMDeploymentService` for batch
+inference requests using the OpenAI-compatible API.
+
+For more details on how to use this deployer, see the [vLLM integration documentation](../../../component-guide/model-deployers/vllm.md).
+
 ## Cloud-Specific Deployment Options
 
 For AWS deployments, Amazon SageMaker stands out as a fully managed machine

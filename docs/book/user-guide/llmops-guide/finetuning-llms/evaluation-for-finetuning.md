@@ -20,10 +20,23 @@ By implementing a robust evaluation strategy, you can develop more reliable, per
 
 ## Types of Evaluations
 
-Please note that the approach taken for these evaluations is similar to that
-used and [showcased in the RAG guide](../evaluation/README.md).
+It's common for finetuning projects to use generic out-of-the-box evaluation
+frameworks, but it's also useful to understand how to implement custom evals
+for your specific use case. In the end, building out a robust set of evaluations
+is a crucial part of knowing whether what you finetune is actually working. It
+also will allow you to benchmark your progress over time as well as check --
+when a new model gets released -- whether it even makes sense to continue with
+the finetuning work you've done. New open-source and open-weights models are
+released all the time, and you might find that your use case is better solved by
+a new model. Evaluations will allow you to make this decision.
 
 ### Custom Evals
+
+The approach taken for custom evaluations is similar to that used and [showcased
+in the RAG guide](../evaluation/README.md), but it is adapted here for the
+finetuning use case. The main distinction here is that we are not looking to
+evaluate retrieval, but rather the performance of the finetuned model (i.e.
+[the generation part](../evaluation/generation.md)).
 
 Custom evals are tailored to your specific use case and can be categorised into two main types:
 
@@ -79,6 +92,11 @@ When using generalised evals, it's important to consider their limitations and c
 - [giskard](https://docs.giskard.ai/en/stable/getting_started/quickstart/quickstart_llm.html)
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
+
+It's easy to build in one of these frameworks into your ZenML pipeline. The
+implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning) is a good
+example of how to do this. We used the `evaluate` library for ROUGE evaluation,
+but you could easily swap this out for another framework if you prefer. See [the previous section](finetuning-with-accelerate.md#implementation-details) for more details.
 
 ## Data and Tracking
 
