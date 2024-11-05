@@ -39,9 +39,16 @@ def keep_pipeline_alive() -> None:
 @step(enable_cache=True)
 def cacheable_multiple_versioned_producer(
     versions_count: int,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
 ) -> Annotated[int, "trackable_artifact"]:
     for _ in range(versions_count):
-        save_artifact(42, name="manual_artifact")
+        save_artifact(
+            42,
+            name="manual_artifact",
+            is_model_artifact=is_model_artifact,
+            is_deployment_artifact=is_deployment_artifact,
+        )
     return 42
 
 
@@ -65,13 +72,19 @@ def cacheable_pipeline_where_second_step_is_cached():
 @pipeline
 def cacheable_pipeline_with_multiple_versions_producer_where_second_step_is_cached(
     version_count: int,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
 ):
     cacheable_multiple_versioned_producer(
         versions_count=version_count,
+        is_model_artifact=is_model_artifact,
+        is_deployment_artifact=is_deployment_artifact,
         id="cacheable_multiple_versioned_producer_1",
     )
     cacheable_multiple_versioned_producer(
         versions_count=version_count,
+        is_model_artifact=is_model_artifact,
+        is_deployment_artifact=is_deployment_artifact,
         id="cacheable_multiple_versioned_producer_2",
         after=["cacheable_multiple_versioned_producer_1"],
     )
@@ -256,3 +269,26 @@ def test_that_cached_artifact_versions_are_created_properly_for_multiple_version
     assert (
         len(mv2.data_artifacts["trackable_artifact"]) == 1
     )  # cached show up only once
+
+
+# TODO: Enable this test after fixing the issue with `is_model_artifact` and `is_deployment_artifact` flags
+@pytest.mark.skip(
+    "Enable this test after fixing the issue with `is_model_artifact` and `is_deployment_artifact` flags"
+)
+def test_that_cached_manual_artifact_has_proper_type_on_second_run(
+    clean_client: Client,
+):
+    for is_ma, is_da in zip([True, False], [False, True]):
+        for _ in range(2):
+            cacheable_pipeline_with_multiple_versions_producer_where_second_step_is_cached.with_options(
+                model=Model(name="foo")
+            )(
+                version_count=1,
+                is_model_artifact=is_ma,
+                is_deployment_artifact=is_da,
+            )
+
+            mv = clean_client.get_model_version("foo", ModelStages.LATEST)
+            assert len(mv.data_artifacts) == 1
+            assert len(mv.model_artifacts) == int(is_ma)
+            assert len(mv.deployment_artifacts) == int(is_da)
