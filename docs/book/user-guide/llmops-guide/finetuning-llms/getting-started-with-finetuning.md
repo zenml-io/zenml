@@ -138,28 +138,6 @@ graph TD
     style H fill:#bfb,stroke:#333
 ```
 
-### 🚀 Quick Decision Guide
-
-1. **Start with Llama3.1-8B if:**
-   - You need structured output
-   - Have moderate computing resources
-   - Want a good balance of performance/cost
-
-2. **Choose Llama-3.1-70B when:**
-   - Accuracy is critical
-   - Complex reasoning is needed
-   - Resources aren't constrained
-
-3. **Go with Mistral-7B if:**
-   - You need strong instruction following
-   - Want recent architectural improvements
-   - Need good context handling
-
-4. **Consider Phi-2 when:**
-   - Resources are limited
-   - Quick experimentation is needed
-   - Prototyping new ideas
-
 Remember: Start with the smallest model that meets your needs - you can always scale up if necessary!
 
 ## How to evaluate success

@@ -6,7 +6,7 @@ description: Learn how to implement an LLM fine-tuning pipeline in just 100 line
 
 There's a lot to understand about LLM fine-tuning - from choosing the right base model to preparing your dataset and selecting training parameters. But let's start with a concrete implementation to see how it works in practice. The following 100 lines of code demonstrate:
 
-- Loading a small base model (TinyLlama, 1.1B parameters)
+- Loading a small base model ([TinyLlama](https://huggingface.co/TinyLlama/TinyLlama_v1.1), 1.1B parameters)
 - Preparing a simple instruction-tuning dataset
 - Fine-tuning the model on custom data
 - Using the fine-tuned model to generate responses
