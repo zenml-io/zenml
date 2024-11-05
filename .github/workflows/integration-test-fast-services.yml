@@ -102,7 +102,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
       - name: Restore uv cache
         uses: actions/cache@v4
         with:

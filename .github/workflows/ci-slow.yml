@@ -23,7 +23,7 @@ jobs:
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: actions/github-script@v5
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
@@ -47,11 +47,11 @@ jobs:
       ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -70,11 +70,11 @@ jobs:
       ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -94,11 +94,11 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Test migrations across versions
@@ -111,11 +111,11 @@ jobs:
       ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -131,9 +131,9 @@ jobs:
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
       - name: Set up Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.11'
       - name: Install uv

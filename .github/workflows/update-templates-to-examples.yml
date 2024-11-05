@@ -57,7 +57,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh E2E template
@@ -129,7 +129,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh NLP template
@@ -201,7 +201,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh Starter template
@@ -272,7 +272,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-llm-finetuning compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh LLM Finetuning template
