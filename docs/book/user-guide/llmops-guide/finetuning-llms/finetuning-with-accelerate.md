@@ -185,7 +185,8 @@ def finetuning_pipeline(...):
     # Your pipeline steps here
 ```
 
-This configuration ensures that your training environment has all the necessary components for distributed training.
+This configuration ensures that your training environment has all the necessary
+components for distributed training. For more details, see the [Accelerate documentation](../../../how-to/advanced-topics/training-with-gpus/accelerate-distributed-training.md).
 
 ## Dataset iteration
 
