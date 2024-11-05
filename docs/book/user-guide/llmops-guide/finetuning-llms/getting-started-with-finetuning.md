@@ -16,6 +16,26 @@ important to get these decisions right before you start coding. Your use case is
 only as good as your data, and you'll need to choose a base model that is
 appropriate for your use case.
 
+## 🔍 Quick Assessment Questions
+
+Before starting your finetuning project, ask:
+
+1. Can you define success with numbers?
+   - ✅ "95% accuracy in extracting order IDs"
+   - ❌ "Better customer satisfaction"
+
+2. Is your data ready?
+   - ✅ "We have 1000 labeled support tickets"
+   - ❌ "We could manually label some emails"
+
+3. Is the task consistent?
+   - ✅ "Convert email to 5 specific fields"
+   - ❌ "Respond naturally to customers"
+
+4. Can a human verify correctness?
+   - ✅ "Check if extracted date matches document"
+   - ❌ "Evaluate if response is creative"
+
 ## Picking a use case
 
 In general, try to pick something that is small and self-contained, ideally the smaller the better. It should be something that isn't easily solvable by other (non-LLM) means — as then you'd be best just solving it that way — but it also shouldn't veer too much in the direction of 'magic'. Your LLM use case, in other words, should be something where you can test to know if it is handling the task you're giving to it.
@@ -35,11 +55,112 @@ A couple of examples of where you might be able to reuse pre-existing data:
 
 In terms of data volume, a good rule of thumb is that for a result that will be rewarding to work on, you probably want somewhere in the order of hundreds to thousands of examples.
 
+### 🎯 Good vs Not-So-Good Use Cases
+
+| Good Use Cases ✅ | Why It Works | Example | Data Requirements |
+|------------------|--------------|---------|-------------------|
+| **Structured Data Extraction** | Clear inputs/outputs, easily measurable accuracy | Extracting order details from customer emails (`order_id`, `issue_type`, `priority`) | 500-1000 annotated emails |
+| **Domain-Specific Classification** | Well-defined categories, objective evaluation | Categorizing support tickets by department (Billing/Technical/Account) | 1000+ labeled examples per category |
+| **Standardized Response Generation** | Consistent format, verifiable accuracy | Generating technical troubleshooting responses from documentation | 500+ pairs of queries and approved responses |
+| **Form/Document Parsing** | Structured output, clear success metrics | Extracting fields from invoices (date, amount, vendor) | 300+ annotated documents |
+| **Code Comment Generation** | Specific domain, measurable quality | Generating docstrings for Python functions | 1000+ function/docstring pairs |
+
+| Challenging Use Cases ⚠️ | Why It's Tricky | Alternative Approach |
+|-------------------------|------------------|---------------------|
+| **Open-ended Chat** | Hard to measure success, inconsistent format | Use instruction tuning or prompt engineering instead |
+| **Creative Writing** | Subjective quality, no clear metrics | Focus on specific formats/templates rather than open creativity |
+| **General Knowledge QA** | Too broad, hard to validate accuracy | Narrow down to specific knowledge domain or use RAG |
+| **Complex Decision Making** | Multiple dependencies, hard to verify | Break down into smaller, measurable subtasks |
+| **Real-time Content Generation** | Consistency issues, timing constraints | Use templating or hybrid approaches |
+
+As you can see, the challenging use cases are often the ones that are more
+open-ended or creative, and so on. With LLMs and finetuning, the real skill is
+finding a way to scope down your use case to something that is both small and
+manageable, but also where you can still make meaningful progress.
+
+### 📊 Success Indicators
+
+You can get a sense of how well-scoped your use case is by considering the following indicators:
+
+| Indicator | Good Sign | Warning Sign |
+|-----------|-----------|--------------|
+| **Task Scope** | "Extract purchase date from receipts" | "Handle all customer inquiries" |
+| **Output Format** | Structured JSON, fixed fields | Free-form text, variable length |
+| **Data Availability** | 500+ examples ready to use | "We'll need to create examples" |
+| **Evaluation Method** | Field-by-field accuracy metrics | "Users will tell us if it's good" |
+| **Business Impact** | "Save 10 hours of manual data entry" | "Make our AI more human-like" |
+
+You'll want to pick a use case that has a good mix of these indicators and where
+you can reasonably expect to be able to measure success in a timely manner.
+
 ## Picking a base model
 
-In these early stages, picking the right model probably won't be the most significant choice you make. If you stick to some tried-and-tested base models you will usually be able to get a sense of how well the LLM is able to align itself to your particular task. That said, choosing from the Llama3-7B or Mistral-7B families would probably be the best option.
+In these early stages, picking the right model probably won't be the most significant choice you make. If you stick to some tried-and-tested base models you will usually be able to get a sense of how well the LLM is able to align itself to your particular task. That said, choosing from the Llama3.1-8B or Mistral-7B families would probably be the best option.
 
-As to whether to go with a base model or one that has been instruction-tuned, this depends a little on your use case. If your use case is in the area of structured data extraction (highly recommended to start with something well-scoped like this) then you're advised to use the base model as it is more likely to align to this kind of text generation. If you're looking for something that more resembles a chat-style interface, then an instruction-tuned model is probably more likely to give you results that suit your purposes. In the end you'll probably want to try both out to confirm this, but this rule of thumb should give you a sense of what to start with.
+As to whether to go with a base model or one that has been instruction-tuned,
+this depends a little on your use case. If your use case is in the area of
+structured data extraction (highly recommended to start with something
+well-scoped like this) then you're advised to use the base model as it is more
+likely to align to this kind of text generation. If you're looking for something
+that more resembles a chat-style interface, then an instruction-tuned model is
+probably more likely to give you results that suit your purposes. In the end
+you'll probably want to try both out to confirm this, but this rule of thumb
+should give you a sense of what to start with.
+
+### 📊 Quick Model Selection Matrix
+
+| Model Family | Best For | Resource Requirements | Characteristics | When to Choose |
+|-------------|----------|----------------------|-----------------|----------------|
+| [**Llama 3.1 8B**](https://huggingface.co/meta-llama/Llama-3.1-8B) | • Structured data extraction<br>• Classification<br>• Code generation | • 16GB GPU RAM<br>• Mid-range compute | • 8 billion parameters<br>• Strong logical reasoning<br>• Efficient inference | When you need a balance of performance and resource efficiency |
+| [**Llama 3.1 70B**](https://huggingface.co/meta-llama/Llama-3.1-70B) | • Complex reasoning<br>• Technical content<br>• Longer outputs | • 80GB GPU RAM<br>• High compute | • 70 billion parameters<br>• Advanced reasoning<br>• More nuanced outputs<br>• Higher accuracy | When accuracy is critical and substantial resources are available |
+| [**Mistral 7B**](https://huggingface.co/mistralai/Mistral-7B-v0.3) | • General text generation<br>• Dialogue<br>• Summarization | • 16GB GPU RAM<br>• Mid-range compute | • 7.3 billion parameters<br>• Strong instruction following<br>• Good context handling<br>• Efficient training | When you need reliable instruction following with moderate resources |
+| [**Phi-2**](https://huggingface.co/microsoft/phi-2) | • Lightweight tasks<br>• Quick experimentation<br>• Educational use | • 8GB GPU RAM<br>• Low compute | • 2.7 billion parameters<br>• Fast training<br>• Smaller footprint<br>• Good for prototyping | When resources are limited or for rapid prototyping |
+
+## 🎯 Task-Specific Recommendations
+
+```mermaid
+graph TD
+    A[Choose Your Task] --> B{Structured Output?}
+    B -->|Yes| C[Llama-8B Base]
+    B -->|No| D{Complex Reasoning?}
+    D -->|Yes| E[Llama-70B Base]
+    D -->|No| F{Resource Constrained?}
+    F -->|Yes| G[Phi-2]
+    F -->|No| H[Mistral-7B]
+
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#bfb,stroke:#333
+    style D fill:#bbf,stroke:#333
+    style E fill:#bfb,stroke:#333
+    style F fill:#bbf,stroke:#333
+    style G fill:#bfb,stroke:#333
+    style H fill:#bfb,stroke:#333
+```
+
+### 🚀 Quick Decision Guide
+
+1. **Start with Llama3.1-8B if:**
+   - You need structured output
+   - Have moderate computing resources
+   - Want a good balance of performance/cost
+
+2. **Choose Llama-3.1-70B when:**
+   - Accuracy is critical
+   - Complex reasoning is needed
+   - Resources aren't constrained
+
+3. **Go with Mistral-7B if:**
+   - You need strong instruction following
+   - Want recent architectural improvements
+   - Need good context handling
+
+4. **Consider Phi-2 when:**
+   - Resources are limited
+   - Quick experimentation is needed
+   - Prototyping new ideas
+
+Remember: Start with the smallest model that meets your needs - you can always scale up if necessary!
 
 ## How to evaluate success
 
@@ -50,10 +171,13 @@ In the early stages, you'll rely on so-called 'vibes'-based checks. You'll try o
 A use case which is simply to function as a customer-support chatbot is really hard to measure. Which aspects of this task should we track and which should we classify as some kind of failure scenario? In the case of structured data extraction, we can do much more fine-grained measurement of exactly which parts of the data extraction are difficult for the LLM and how they improve (or degrade) when we change certain parameters, and so on.
 
 For structured data extraction, you might measure:
+
 - Accuracy of extracted fields against a test dataset
 - Precision and recall for specific field types
 - Processing time per document
 - Error rates on edge cases
+
+These are all covered in more detail in the [evaluation section](./evaluation-for-finetuning.md).
 
 ## Next steps
 
