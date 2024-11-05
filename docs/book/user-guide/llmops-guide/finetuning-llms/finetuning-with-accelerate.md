@@ -132,6 +132,61 @@ It is a generic evaluation that can be used for a wide range of tasks beyond
 just finetuning LLMs. We use it here as a placeholder for a more sophisticated
 evaluation step. See the next [evaluation section](./evaluation-for-finetuning.md) for more.
 
+### Using the ZenML Accelerate Decorator
+
+While the above implementation shows the use of Accelerate directly within your training code, ZenML also provides a more streamlined approach through the `@run_with_accelerate` decorator. This decorator allows you to easily enable distributed training capabilities without modifying your training logic:
+
+```python
+from zenml.integrations.huggingface.steps import run_with_accelerate
+
+@run_with_accelerate(num_processes=4, multi_gpu=True, mixed_precision='bf16')
+@step
+def finetune_step(
+    tokenized_train_dataset,
+    tokenized_val_dataset,
+    base_model_id: str,
+    output_dir: str,
+    # ... other parameters
+):
+    model = load_base_model(
+        base_model_id,
+        use_accelerate=True,
+        should_print=True,
+        load_in_4bit=load_in_4bit,
+        load_in_8bit=load_in_8bit,
+    )
+    
+    trainer = transformers.Trainer(
+        # ... trainer setup as shown above
+    )
+    
+    trainer.train()
+    return trainer.model
+```
+
+The decorator approach offers several advantages:
+- Cleaner separation of distributed training configuration from model logic
+- Easy toggling of distributed training features through pipeline configuration
+- Consistent interface across different training scenarios
+
+Remember that when using the decorator, your Docker environment needs to be properly configured with CUDA support and Accelerate dependencies:
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime",
+    requirements=["accelerate", "torchvision"]
+)
+
+@pipeline(settings={"docker": docker_settings})
+def finetuning_pipeline(...):
+    # Your pipeline steps here
+```
+
+This configuration ensures that your training environment has all the necessary components for distributed training.
+
 ## Dataset iteration
 
 While these stages offer lots of surface area for intervention and customisation, the most significant thing to be careful with is the data that you input into the model. If you find that your finetuned model offers worse performance than the base, or if you get garbled output post-fine tuning, this would be a strong indicator that you have not correctly formatted your input data, or something is mismatched with the tokeniser and so on. To combat this, be sure to inspect your data at all stages of the process!
