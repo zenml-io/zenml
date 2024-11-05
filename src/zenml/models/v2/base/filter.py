@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base filter model definitions."""
 
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import (
@@ -36,7 +37,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, cast, Float
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -171,6 +172,11 @@ class StrFilter(Filter):
         GenericFilterOps.STARTSWITH,
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
+        GenericFilterOps.ONEOF,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
     ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
@@ -190,6 +196,32 @@ class StrFilter(Filter):
             return column.endswith(f"{self.value}")
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
+        if self.operation == GenericFilterOps.ONEOF:
+            return column.in_(self.value)
+        if self.operation in {
+            GenericFilterOps.GT,
+            GenericFilterOps.LT,
+            GenericFilterOps.GTE,
+            GenericFilterOps.LTE
+        }:
+            # Try to cast the column to a numeric type for numeric operations
+            try:
+                numeric_column = cast(column, Float)
+                if self.operation == GenericFilterOps.GT:
+                    return numeric_column > self.value
+                if self.operation == GenericFilterOps.LT:
+                    return numeric_column < self.value
+                if self.operation == GenericFilterOps.GTE:
+                    return numeric_column >= self.value
+                if self.operation == GenericFilterOps.LTE:
+                    return numeric_column <= self.value
+            except Exception:
+                # Handle the exception or fallback as needed
+                raise ValueError(
+                    "Failed to cast column to numeric type for comparison"
+                )
+        else:
+            raise ValueError("Invalid operation or incompatible data type")
 
         return column == self.value
 
@@ -598,6 +630,13 @@ class BaseFilter(BaseModel):
             ):
                 value = split_value[1]
                 operator = GenericFilterOps(split_value[0])
+
+            if operator == operator.ONEOF:
+                try:
+                    value = json.loads(value)
+                except:
+                    raise ValueError("Add some error message here....")
+
         return value, operator
 
     def generate_name_or_id_query_conditions(
@@ -833,16 +872,17 @@ class FilterGenerator:
 
         # Create str filters
         if self.is_str_field(column):
-            return StrFilter(
-                operation=GenericFilterOps(operator),
+            return self._define_str_filter(
+                operator=GenericFilterOps(operator),
                 column=column,
                 value=value,
             )
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {self._model_class.model_fields[column].annotation} might "
-            "not be supported for filtering. Defaulting to a string filter."
+            f"The Datatype {self._model_class.model_fields[column].annotation} "
+            "might not be supported for filtering. Defaulting to a string "
+            "filter."
         )
         return StrFilter(
             operation=GenericFilterOps(operator),
@@ -1032,8 +1072,9 @@ class FilterGenerator:
                     "Invalid value passed as UUID query parameter."
                 ) from e
 
-        # Cast the value to string for further comparisons.
-        value = str(value)
+        # For equality checks, ensure that the value is a valid UUID.
+        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+            raise ValueError("")
 
         # Generate the filter.
         uuid_filter = UUIDFilter(
@@ -1042,6 +1083,35 @@ class FilterGenerator:
             value=value,
         )
         return uuid_filter
+
+    @staticmethod
+    def _define_str_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> StrFilter:
+        """Define a str filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The UUID value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a proper value.
+        """
+        # For equality checks, ensure that the value is a valid UUID.
+        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+            raise ValueError("")
+
+        # Generate the filter.
+        str_filter = StrFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=value,
+        )
+        return str_filter
 
     @staticmethod
     def _define_bool_filter(
