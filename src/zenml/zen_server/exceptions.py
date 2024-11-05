@@ -32,6 +32,7 @@ from zenml.exceptions import (
     SubscriptionUpgradeRequiredError,
     ValidationError,
     ZenKeyError,
+    EntityCreationError
 )
 
 if TYPE_CHECKING:
@@ -93,6 +94,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 422 Unprocessable Entity
     (ValueError, 422),
     # 500 Internal Server Error
+    (EntityCreationError, 500),
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
