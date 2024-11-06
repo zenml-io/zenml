@@ -48,7 +48,7 @@ from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
 from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
-from zenml.pipelines.utils import log_metadata
+from zenml.utils.metadata_utils import log_metadata
 from zenml.entrypoints import entrypoint
 
 __all__ = [
@@ -60,7 +60,6 @@ __all__ = [
     "log_artifact_metadata",
     "log_model_metadata",
     "log_step_metadata",
-    "log_metadata",
     "Model",
     "link_artifact_to_model",
     "pipeline",
