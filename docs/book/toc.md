@@ -62,7 +62,7 @@
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
     * [Finetuning in 100 lines of code](user-guide/llmops-guide/finetuning-llms/finetuning-100-loc.md)
     * [Why and when to finetune LLMs](user-guide/llmops-guide/finetuning-llms/why-and-when-to-finetune-llms.md)
-    * [Starter choices with finetuning](user-guide/llmops-guide/finetuning-llms/getting-started-with-finetuning.md)
+    * [Starter choices with finetuning](user-guide/llmops-guide/finetuning-llms/starter-choices-for-finetuning.md)
     * [Finetuning with 🤗 Accelerate](user-guide/llmops-guide/finetuning-llms/finetuning-with-accelerate.md)
     * [Evaluation for finetuning](user-guide/llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](user-guide/llmops-guide/finetuning-llms/deploying-finetuned-models.md)

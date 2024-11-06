@@ -2,7 +2,7 @@
 description: Get started with finetuning LLMs by picking a use case and data.
 ---
 
-# Getting started with finetuning LLMs
+# Starter choices for finetuning LLMs
 
 Finetuning large language models can be a powerful way to tailor their
 capabilities to specific tasks and datasets. This guide will walk you through
