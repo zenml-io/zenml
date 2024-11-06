@@ -10312,7 +10312,7 @@ class SqlZenStore(BaseZenStore):
                 break
             except IntegrityError:
                 if has_custom_name and self._model_version_exists(
-                    model_id=model.id, version=model_version.name
+                    model_id=model.id, version=cast(str, model_version.name)
                 ):
                     # We failed not because of a version number conflict,
                     # but because the user requested a version name that
