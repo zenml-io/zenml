@@ -64,7 +64,8 @@ class ModelSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            name="unique_model_name",
+            "workspace_id",
+            name="unique_model_name_in_workspace",
         ),
     )
 
