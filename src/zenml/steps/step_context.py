@@ -26,6 +26,7 @@ from typing import (
 
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.utils.callback_registry import CallbackRegistry
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
@@ -145,6 +146,7 @@ class StepContext(metaclass=SingletonMetaClass):
             )
             for key in output_materializers.keys()
         }
+        self._cleanup_registry = CallbackRegistry()
 
     @property
     def pipeline(self) -> "PipelineResponse":

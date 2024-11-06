@@ -14,7 +14,6 @@
 """Implementation of the Huggingface tokenizer materializer."""
 
 import os
-from tempfile import TemporaryDirectory
 from typing import Any, ClassVar, Tuple, Type
 
 from transformers import AutoTokenizer
@@ -46,7 +45,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Returns:
             The tokenizer read from the specified dir.
         """
-        with TemporaryDirectory() as temp_dir:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             io_utils.copy_dir(
                 os.path.join(self.uri, DEFAULT_TOKENIZER_DIR), temp_dir
             )
@@ -58,7 +57,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Args:
             tokenizer: The HFTokenizer to write.
         """
-        with TemporaryDirectory() as temp_dir:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             tokenizer.save_pretrained(temp_dir)
             io_utils.copy_dir(
                 temp_dir,

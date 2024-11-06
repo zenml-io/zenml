@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
+import contextlib
 import inspect
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+import shutil
+import tempfile
+from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
@@ -326,3 +329,67 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
+
+    @contextlib.contextmanager
+    def get_temporary_directory(
+        self,
+        delete_at_exit: bool,
+        delete_after_step_execution: bool = True,
+    ) -> Iterator[str]:
+        """Context manager to get a temporary directory.
+
+        Args:
+            delete_at_exit: If set to True, the temporary directory will be
+                deleted after the context manager exits.
+            delete_after_step_execution: If `delete_at_exit` is set to False and
+                this is set to True, the temporary directory will be deleted
+                after the step finished executing. If a materializer is being
+                used outside of the context of a step execution, the temporary
+                directory will not be deleted and the user is responsible for
+                deleting it themselves.
+
+        Yields:
+            Path to the temporary directory.
+        """
+        temp_dir = tempfile.mkdtemp(prefix="zenml-")
+
+        if delete_after_step_execution and not delete_at_exit:
+            # We should not delete the directory when the context manager
+            # exits, but cleanup once the step has finished executing.
+            self._register_directory_for_deletion_after_step_execution(
+                temp_dir
+            )
+
+        try:
+            yield temp_dir
+        finally:
+            if delete_at_exit:
+                shutil.rmtree(temp_dir)
+
+    def _register_directory_for_deletion_after_step_execution(
+        self, directory: str
+    ) -> None:
+        """Register directory to be deleted after the current step finishes.
+
+        If no step is currently being executed, this method does nothing.
+
+        Args:
+            directory: The directory to register for deletion.
+        """
+        from zenml import get_step_context
+
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            logger.debug(
+                "Materializer called outside of step execution, not cleaning "
+                "up directory %s",
+                directory,
+            )
+            return
+
+        def _callback() -> None:
+            shutil.rmtree(directory)
+            logger.debug("Cleaned up materializer directory %s", directory)
+
+        step_context._cleanup_registry.register_callback(_callback)
