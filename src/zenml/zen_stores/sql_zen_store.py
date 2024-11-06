@@ -10260,6 +10260,7 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
 
                     model_version_id = model_version_schema.id
+                break
             except IntegrityError as e:
                 if has_custom_name and "name" in str(e):
                     # We failed not because of a version number conflict,
