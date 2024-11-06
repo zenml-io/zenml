@@ -38,7 +38,10 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
-from zenml.models.v2.core.step_run import StepRunResponseResources
+from zenml.models.v2.core.step_run import (
+    StepRunInputResponse,
+    StepRunResponseResources,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -221,11 +224,10 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         input_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
-            for artifact in self.input_artifacts
-        }
-        input_artifact_types = {
-            artifact.name: StepRunInputArtifactType(artifact.type)
+            artifact.name: StepRunInputResponse(
+                input_type=StepRunInputArtifactType(artifact.type),
+                **artifact.artifact_version.to_model().model_dump(),
+            )
             for artifact in self.input_artifacts
         }
 
@@ -272,7 +274,6 @@ class StepRunSchema(NamedSchema, table=True):
             start_time=self.start_time,
             end_time=self.end_time,
             inputs=input_artifacts,
-            input_types=input_artifact_types,
             outputs=output_artifacts,
             created=self.created,
             updated=self.updated,

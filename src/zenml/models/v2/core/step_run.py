@@ -30,12 +30,12 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
@@ -43,6 +43,10 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.run_metadata import (
         RunMetadataResponse,
     )
+
+
+class StepRunInputResponse(ArtifactVersionResponse):
+    input_type: StepRunInputArtifactType
 
 
 # ------------------ Request Model ------------------
@@ -162,15 +166,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         title="The end time of the step run.",
         default=None,
     )
-    inputs: Dict[str, "ArtifactVersionResponse"] = Field(
+    inputs: Dict[str, StepRunInputResponse] = Field(
         title="The input artifact versions of the step run.",
         default_factory=dict,
     )
-    input_types: Dict[str, StepRunInputArtifactType] = Field(
-        title="The types of the input artifacts of the step run.",
-        default_factory=dict,
-    )
-    outputs: Dict[str, List["ArtifactVersionResponse"]] = Field(
+    outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
     )
@@ -274,7 +274,7 @@ class StepRunResponse(
 
     # Helper properties
     @property
-    def input(self) -> "ArtifactVersionResponse":
+    def input(self) -> ArtifactVersionResponse:
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -293,7 +293,7 @@ class StepRunResponse(
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> "ArtifactVersionResponse":
+    def output(self) -> ArtifactVersionResponse:
         """Returns the output artifact that was written by this step.
 
         Returns:
@@ -325,7 +325,7 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+    def inputs(self) -> Dict[str, StepRunInputResponse]:
         """The `inputs` property.
 
         Returns:
@@ -334,16 +334,7 @@ class StepRunResponse(
         return self.get_body().inputs
 
     @property
-    def input_types(self) -> Dict[str, StepRunInputArtifactType]:
-        """The `input_types` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().input_types
-
-    @property
-    def outputs(self) -> Dict[str, List["ArtifactVersionResponse"]]:
+    def outputs(self) -> Dict[str, List[ArtifactVersionResponse]]:
         """The `outputs` property.
 
         Returns:
