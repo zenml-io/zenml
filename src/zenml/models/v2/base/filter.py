@@ -37,7 +37,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc, cast, Float
+from sqlalchemy import Float, and_, asc, cast, desc
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -202,25 +202,29 @@ class StrFilter(Filter):
             GenericFilterOps.GT,
             GenericFilterOps.LT,
             GenericFilterOps.GTE,
-            GenericFilterOps.LTE
+            GenericFilterOps.LTE,
         }:
-            # Try to cast the column to a numeric type for numeric operations
             try:
                 numeric_column = cast(column, Float)
-                if not isinstance(numeric_column, (int, float)):
-                    raise ValueError("something went wrong!", numeric_column)
                 if self.operation == GenericFilterOps.GT:
-                    return numeric_column > float(self.value)
+                    return and_(
+                        numeric_column, numeric_column > float(self.value)
+                    )
                 if self.operation == GenericFilterOps.LT:
-                    return numeric_column < float(self.value)
+                    return and_(
+                        numeric_column, numeric_column < float(self.value)
+                    )
                 if self.operation == GenericFilterOps.GTE:
-                    return numeric_column >= float(self.value)
+                    return and_(
+                        numeric_column, numeric_column >= float(self.value)
+                    )
                 if self.operation == GenericFilterOps.LTE:
-                    return numeric_column <= float(self.value)
-            except Exception:
-                # Handle the exception or fallback as needed
+                    return and_(
+                        numeric_column, numeric_column <= float(self.value)
+                    )
+            except Exception as e:
                 raise ValueError(
-                    "Failed to cast column to numeric type for comparison"
+                    f"Failed to cast column to numeric type for comparison: {e}"
                 )
 
         return column == self.value

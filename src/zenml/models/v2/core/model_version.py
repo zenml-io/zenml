@@ -622,7 +622,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     )
     run_metadata: Optional[Dict[str, str]] = Field(
         default=None,
-        description="The run_metadata to filter the model versions by."
+        description="The run_metadata to filter the model versions by.",
     )
 
     _model_id: UUID = PrivateAttr(None)
@@ -656,8 +656,8 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             ModelVersionSchema,
-            UserSchema,
             RunMetadataSchema,
+            UserSchema,
         )
 
         if self.user:
@@ -677,7 +677,8 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
                     RunMetadataSchema.resource_id == ModelVersionSchema.id,
-                    RunMetadataSchema.resource_type == MetadataResourceTypes.MODEL_VERSION,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.MODEL_VERSION,
                     RunMetadataSchema.key == key,
                     self.generate_custom_query_conditions_for_column(
                         value=value,

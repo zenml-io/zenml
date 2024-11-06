@@ -668,7 +668,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     )
     run_metadata: Optional[Dict[str, str]] = Field(
         default=None,
-        description="The run_metadata to filter the pipeline runs by."
+        description="The run_metadata to filter the pipeline runs by.",
     )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     # generic `pipeline` filter below.
@@ -898,7 +898,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
                     RunMetadataSchema.resource_id == PipelineRunSchema.id,
-                    RunMetadataSchema.resource_type == MetadataResourceTypes.PIPELINE_RUN,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.PIPELINE_RUN,
                     RunMetadataSchema.key == key,
                     self.generate_custom_query_conditions_for_column(
                         value=value,

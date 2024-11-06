@@ -556,7 +556,7 @@ class StepRunFilter(WorkspaceScopedFilter):
     )
     run_metadata: Optional[Dict[str, str]] = Field(
         default=None,
-        description="The run_metadata to filter the step runs by."
+        description="The run_metadata to filter the step runs by.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -576,8 +576,8 @@ class StepRunFilter(WorkspaceScopedFilter):
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
-            StepRunSchema,
             RunMetadataSchema,
+            StepRunSchema,
         )
 
         if self.model:
@@ -595,7 +595,8 @@ class StepRunFilter(WorkspaceScopedFilter):
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
                     RunMetadataSchema.resource_id == StepRunSchema.id,
-                    RunMetadataSchema.resource_type == MetadataResourceTypes.STEP_RUN,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.STEP_RUN,
                     RunMetadataSchema.key == key,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
