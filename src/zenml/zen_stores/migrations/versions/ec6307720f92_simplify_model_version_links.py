@@ -1,4 +1,4 @@
-"""Simplify model version artifacts [ec6307720f92].
+"""Simplify model version links [ec6307720f92].
 
 Revision ID: ec6307720f92
 Revises: c22561cbb3a9
@@ -85,6 +85,14 @@ def upgrade() -> None:
         batch_op.drop_column("is_deployment_artifact")
         batch_op.drop_column("workspace_id")
         batch_op.drop_column("is_model_artifact")
+
+    with op.batch_alter_table('model_versions_runs', schema=None) as batch_op:
+        batch_op.drop_constraint('fk_model_versions_runs_model_id_model', type_='foreignkey')
+        batch_op.drop_constraint('fk_model_versions_runs_workspace_id_workspace', type_='foreignkey')
+        batch_op.drop_constraint('fk_model_versions_runs_user_id_user', type_='foreignkey')
+        batch_op.drop_column('model_id')
+        batch_op.drop_column('workspace_id')
+        batch_op.drop_column('user_id')
 
     # ### end Alembic commands ###
 

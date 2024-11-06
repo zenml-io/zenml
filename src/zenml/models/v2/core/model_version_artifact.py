@@ -128,17 +128,11 @@ class ModelVersionArtifactFilter(BaseFilter):
         "only_model_artifacts",
         "only_deployment_artifacts",
         "has_custom_name",
-        "model_id",
         "model_version_id",
         "updated",
         "id",
     ]
 
-    model_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Filter by model ID",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Filter by model version ID",

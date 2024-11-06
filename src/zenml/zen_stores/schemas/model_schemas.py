@@ -108,10 +108,6 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
-        back_populates="model",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
 
     @classmethod
     def from_request(cls, model_request: ModelRequest) -> "ModelSchema":
@@ -538,39 +534,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
 
     __tablename__ = "model_versions_runs"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
-
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
-
-    model_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ModelSchema.__tablename__,
-        source_column="model_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    model: "ModelSchema" = Relationship(back_populates="pipeline_run_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -616,9 +579,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=model_version_pipeline_run_request.workspace,
-            user_id=model_version_pipeline_run_request.user,
-            model_id=model_version_pipeline_run_request.model,
             model_version_id=model_version_pipeline_run_request.model_version,
             pipeline_run_id=model_version_pipeline_run_request.pipeline_run,
         )
@@ -645,7 +605,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
             body=ModelVersionPipelineRunResponseBody(
                 created=self.created,
                 updated=self.updated,
-                model=self.model_id,
                 model_version=self.model_version_id,
                 pipeline_run=self.pipeline_run.to_model(),
             ),

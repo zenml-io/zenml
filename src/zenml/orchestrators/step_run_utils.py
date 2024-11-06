@@ -540,10 +540,7 @@ def link_pipeline_run_to_model_version(
     client = Client()
     client.zen_store.create_model_version_pipeline_run_link(
         ModelVersionPipelineRunRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
             pipeline_run=pipeline_run.id,
-            model=model_version.model.id,
             model_version=model_version.id,
         )
     )
