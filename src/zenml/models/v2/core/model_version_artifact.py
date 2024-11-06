@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, List, Optional, Union
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
@@ -26,10 +26,7 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
 )
 from zenml.models.v2.base.filter import StrFilter
-from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-)
+from zenml.models.v2.base.scoped import UserScopedFilter, UserScopedRequest
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -40,14 +37,11 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionArtifactRequest(WorkspaceScopedRequest):
+class ModelVersionArtifactRequest(UserScopedRequest):
     """Request model for links between model versions and artifacts."""
 
-    model: UUID
     model_version: UUID
     artifact_version: UUID
-    is_model_artifact: bool = False
-    is_deployment_artifact: bool = False
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -56,15 +50,6 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())
-
-    @model_validator(mode="after")
-    def _validate_is_endpoint_artifact(self) -> "ModelVersionArtifactRequest":
-        if self.is_model_artifact and self.is_deployment_artifact:
-            raise ValueError(
-                "Artifact cannot be a model artifact and deployment artifact "
-                "at the same time."
-            )
-        return self
 
 
 # ------------------ Update Model ------------------
@@ -77,11 +62,8 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
 class ModelVersionArtifactResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and artifacts."""
 
-    model: UUID
     model_version: UUID
     artifact_version: "ArtifactVersionResponse"
-    is_model_artifact: bool = False
-    is_deployment_artifact: bool = False
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -105,16 +87,6 @@ class ModelVersionArtifactResponse(
 ):
     """Response model for links between model versions and artifacts."""
 
-    # Body and metadata properties
-    @property
-    def model(self) -> UUID:
-        """The `model` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model
-
     @property
     def model_version(self) -> UUID:
         """The `model_version` property.
@@ -133,34 +105,16 @@ class ModelVersionArtifactResponse(
         """
         return self.get_body().artifact_version
 
-    @property
-    def is_model_artifact(self) -> bool:
-        """The `is_model_artifact` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().is_model_artifact
-
-    @property
-    def is_deployment_artifact(self) -> bool:
-        """The `is_deployment_artifact` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().is_deployment_artifact
-
 
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionArtifactFilter(WorkspaceScopedFilter):
+class ModelVersionArtifactFilter(UserScopedFilter):
     """Model version pipeline run links filter model."""
 
     # Artifact name and type are not DB fields and need to be handled separately
     FILTER_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "artifact_name",
         "only_data_artifacts",
         "only_model_artifacts",
@@ -169,7 +123,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "user",
     ]
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
         "only_deployment_artifacts",
@@ -177,16 +131,10 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "model_id",
         "model_version_id",
         "user_id",
-        "workspace_id",
         "updated",
         "id",
     ]
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The workspace of the Model Version",
-        union_mode="left_to_right",
-    )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="The user of the Model Version",

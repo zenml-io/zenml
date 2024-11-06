@@ -14,10 +14,10 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple
 
 from zenml.client import Client
-from zenml.config.step_configurations import ArtifactConfiguration, Step
+from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
@@ -343,7 +343,6 @@ def create_cached_step_runs(
             if model_version := step_model_version or pipeline_model_version:
                 link_output_artifacts_to_model_version(
                     artifacts=step_run.outputs,
-                    output_configurations=step_run.config.outputs,
                     model_version=model_version,
                 )
 
@@ -552,23 +551,16 @@ def link_pipeline_run_to_model_version(
 
 def link_output_artifacts_to_model_version(
     artifacts: Dict[str, ArtifactVersionResponse],
-    output_configurations: Mapping[str, ArtifactConfiguration],
     model_version: ModelVersionResponse,
 ) -> None:
     """Link the outputs of a step run to a model version.
 
     Args:
         artifacts: The step output artifacts.
-        output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
-    for output_name, output_artifact in artifacts.items():
-        artifact_config = None
-        if output_config := output_configurations.get(output_name, None):
-            artifact_config = output_config.artifact_config
-
+    for output_artifact in artifacts.values():
         link_artifact_version_to_model_version(
             artifact_version=output_artifact,
             model_version=model_version,
-            artifact_config=artifact_config,
         )

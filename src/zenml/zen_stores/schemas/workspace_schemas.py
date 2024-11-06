@@ -35,7 +35,6 @@ if TYPE_CHECKING:
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
-        ModelVersionArtifactSchema,
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
@@ -141,12 +140,6 @@ class WorkspaceSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
-    )
-    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
-        Relationship(
-            back_populates="workspace",
-            sa_relationship_kwargs={"cascade": "delete"},
-        )
     )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"

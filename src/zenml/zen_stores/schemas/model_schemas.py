@@ -104,10 +104,6 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
-        back_populates="model",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -452,18 +448,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
 
     __tablename__ = "model_versions_artifacts"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_versions_artifacts_links"
-    )
-
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -476,15 +460,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         back_populates="model_versions_artifacts_links"
     )
 
-    model_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ModelSchema.__tablename__,
-        source_column="model_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    model: "ModelSchema" = Relationship(back_populates="artifact_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -506,11 +481,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
     artifact_version: "ArtifactVersionSchema" = Relationship(
         back_populates="model_versions_artifacts_links"
-    )
-
-    is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_deployment_artifact: bool = Field(
-        sa_column=Column(BOOLEAN, nullable=True)
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -535,13 +505,9 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=model_version_artifact_request.workspace,
             user_id=model_version_artifact_request.user,
-            model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
             artifact_version_id=model_version_artifact_request.artifact_version,
-            is_model_artifact=model_version_artifact_request.is_model_artifact,
-            is_deployment_artifact=model_version_artifact_request.is_deployment_artifact,
         )
 
     def to_model(
@@ -566,11 +532,8 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             body=ModelVersionArtifactResponseBody(
                 created=self.created,
                 updated=self.updated,
-                model=self.model_id,
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
-                is_model_artifact=self.is_model_artifact,
-                is_deployment_artifact=self.is_deployment_artifact,
             ),
             metadata=BaseResponseMetadata() if include_metadata else None,
         )

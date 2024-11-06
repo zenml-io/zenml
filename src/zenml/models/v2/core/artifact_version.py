@@ -551,6 +551,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionArtifactSchema,
+            ModelVersionSchema,
             PipelineRunSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
@@ -604,7 +605,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.model, table=ModelSchema
                 ),

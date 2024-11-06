@@ -243,7 +243,6 @@ class StepRunner:
 
                             step_run_utils.link_output_artifacts_to_model_version(
                                 artifacts=output_artifacts,
-                                output_configurations=step_run.config.outputs,
                                 model_version=model_version,
                             )
                 finally:
@@ -573,9 +572,11 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             artifact_config = output_annotations[output_name].artifact_config
 
+            artifact_type = None
             if artifact_config is not None:
                 has_custom_name = bool(artifact_config.name)
                 version = artifact_config.version
+                artifact_type = artifact_config.artifact_type
             else:
                 has_custom_name, version = False, None
 
@@ -601,6 +602,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,
