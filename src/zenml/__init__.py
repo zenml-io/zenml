@@ -60,6 +60,7 @@ __all__ = [
     "log_artifact_metadata",
     "log_model_metadata",
     "log_step_metadata",
+    "log_metadata",
     "Model",
     "link_artifact_to_model",
     "pipeline",
