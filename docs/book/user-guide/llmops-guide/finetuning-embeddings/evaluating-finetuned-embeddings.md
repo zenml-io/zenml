@@ -112,7 +112,7 @@ about it in the [Model Control Plane documentation](../../../how-to/use-the-mode
 ## Next Steps
 
 Now that we've finetuned our embeddings and evaluated them, when they were in a
-good shape for use we could bring these into [the original RAG pipeline](../rag/basic-rag-inference-pipeline.md),
+good shape for use we could bring these into [the original RAG pipeline](../rag-with-zenml/basic-rag-inference-pipeline.md),
 regenerate a new series of embeddings for our data and then rerun our RAG
 retrieval evaluations to see how they've improved in our hand-crafted and
 LLM-powered evaluations.
