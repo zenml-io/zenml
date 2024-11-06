@@ -46,6 +46,8 @@ if TYPE_CHECKING:
 
 
 class StepRunInputResponse(ArtifactVersionResponse):
+    """Response model for step run inputs."""
+
     input_type: StepRunInputArtifactType
 
 
