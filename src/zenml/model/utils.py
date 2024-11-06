@@ -85,7 +85,6 @@ def link_artifact_version_to_model_version(
     client = Client()
     client.zen_store.create_model_version_artifact_link(
         ModelVersionArtifactRequest(
-            user=client.active_user.id,
             artifact_version=artifact_version.id,
             model_version=model_version.id,
         )

@@ -21,7 +21,11 @@ from pydantic import ConfigDict
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
+from zenml.enums import (
+    ArtifactType,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     BaseResponseMetadata,
     ModelRequest,
@@ -348,11 +352,14 @@ class ModelVersionSchema(NamedSchema, table=True):
             artifact_name = artifact_link.artifact_version.artifact.name
             artifact_version = str(artifact_link.artifact_version.version)
             artifact_version_id = artifact_link.artifact_version.id
-            if artifact_link.is_model_artifact:
+            if artifact_link.artifact_version.type == ArtifactType.MODEL.value:
                 model_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
-            elif artifact_link.is_deployment_artifact:
+            if (
+                artifact_link.artifact_version.type
+                == ArtifactType.SERVICE.value
+            ):
                 deployment_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
@@ -448,18 +455,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
 
     __tablename__ = "model_versions_artifacts"
 
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="model_versions_artifacts_links"
-    )
-
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -505,7 +500,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            user_id=model_version_artifact_request.user,
             model_version_id=model_version_artifact_request.model_version,
             artifact_version_id=model_version_artifact_request.artifact_version,
         )

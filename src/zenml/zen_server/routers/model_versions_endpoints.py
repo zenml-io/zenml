@@ -29,6 +29,7 @@ from zenml.constants import (
 )
 from zenml.models import (
     ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
     ModelVersionFilter,
     ModelVersionPipelineRunFilter,
@@ -196,6 +197,34 @@ model_version_artifacts_router = APIRouter(
     tags=["model_version_artifacts"],
     responses={401: error_response},
 )
+
+
+@model_version_artifacts_router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_artifact_link(
+    model_version_artifact_link: ModelVersionArtifactRequest,
+    _: AuthContext = Security(authorize),
+) -> ModelVersionArtifactResponse:
+    """Create a new model version to artifact link.
+
+    Args:
+        model_version_artifact_link: The model version to artifact link to create.
+
+    Returns:
+        The created model version to artifact link.
+    """
+    model_version = zen_store().get_model_version(
+        model_version_artifact_link.model_version
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
+    mv = zen_store().create_model_version_artifact_link(
+        model_version_artifact_link
+    )
+    return mv
 
 
 @model_version_artifacts_router.get(

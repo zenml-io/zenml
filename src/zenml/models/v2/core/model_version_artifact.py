@@ -22,11 +22,11 @@ from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
+    BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import StrFilter
-from zenml.models.v2.base.scoped import UserScopedFilter, UserScopedRequest
+from zenml.models.v2.base.filter import BaseFilter, StrFilter
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionArtifactRequest(UserScopedRequest):
+class ModelVersionArtifactRequest(BaseRequest):
     """Request model for links between model versions and artifacts."""
 
     model_version: UUID
@@ -109,12 +109,12 @@ class ModelVersionArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionArtifactFilter(UserScopedFilter):
+class ModelVersionArtifactFilter(BaseFilter):
     """Model version pipeline run links filter model."""
 
     # Artifact name and type are not DB fields and need to be handled separately
     FILTER_EXCLUDE_FIELDS = [
-        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "artifact_name",
         "only_data_artifacts",
         "only_model_artifacts",
@@ -123,23 +123,17 @@ class ModelVersionArtifactFilter(UserScopedFilter):
         "user",
     ]
     CLI_EXCLUDE_FIELDS = [
-        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
         "only_deployment_artifacts",
         "has_custom_name",
         "model_id",
         "model_version_id",
-        "user_id",
         "updated",
         "id",
     ]
 
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The user of the Model Version",
-        union_mode="left_to_right",
-    )
     model_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Filter by model ID",
