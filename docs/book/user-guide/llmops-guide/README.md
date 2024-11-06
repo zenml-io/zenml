@@ -32,6 +32,13 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Finetuning embeddings with Sentence Transformers](finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
   * [Evaluating finetuned embeddings](finetuning-embeddings/evaluating-finetuned-embeddings.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
+  * [Finetuning in 100 lines of code](finetuning-llms/finetuning-100-loc.md)
+  * [Why and when to finetune LLMs](finetuning-llms/why-and-when-to-finetune-llms.md)
+  * [Starter choices with finetuning](finetuning-llms/starter-choices-for-finetuning-llms.md)
+  * [Finetuning with 🤗 Accelerate](finetuning-llms/finetuning-with-accelerate.md)
+  * [Evaluation for finetuning](finetuning-llms/evaluation-for-finetuning.md)
+  * [Deploying finetuned models](finetuning-llms/deploying-finetuned-models.md)
+  * [Next steps](finetuning-llms/next-steps.md)
 
 To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/README.md) and [Production Guide](../production-guide/README.md) is recommended.
 

@@ -57,6 +57,7 @@ from zenml.constants import (
     ARTIFACT_VERSIONS,
     ARTIFACT_VISUALIZATIONS,
     ARTIFACTS,
+    BATCH,
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
@@ -985,6 +986,23 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=artifact_version,
+            response_model=ArtifactVersionResponse,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return self._batch_create_resources(
+            resources=artifact_versions,
             response_model=ArtifactVersionResponse,
             route=ARTIFACT_VERSIONS,
         )
@@ -4466,6 +4484,40 @@ class RestZenStore(BaseZenStore):
         response_body = self.post(f"{route}", body=resource, params=params)
 
         return response_model.model_validate(response_body)
+
+    def _batch_create_resources(
+        self,
+        resources: List[AnyRequest],
+        response_model: Type[AnyResponse],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> List[AnyResponse]:
+        """Create a new batch of resources.
+
+        Args:
+            resources: The resources to create.
+            response_model: The response model of an individual resource.
+            route: The resource REST route to use.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            List of response models.
+        """
+        json_data = [
+            resource.model_dump(mode="json") for resource in resources
+        ]
+        response = self._request(
+            "POST",
+            self.url + API + VERSION_1 + route + BATCH,
+            json=json_data,
+            params=params,
+        )
+        assert isinstance(response, list)
+
+        return [
+            response_model.model_validate(model_data)
+            for model_data in response
+        ]
 
     def _create_workspace_scoped_resource(
         self,
