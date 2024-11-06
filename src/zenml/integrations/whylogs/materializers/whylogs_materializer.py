@@ -14,7 +14,6 @@
 """Implementation of the whylogs materializer."""
 
 import os
-import tempfile
 from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
@@ -51,18 +50,14 @@ class WhylogsMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), PROFILE_FILENAME)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), PROFILE_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        profile_view = DatasetProfileView.read(temp_file)
+            # Copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            profile_view = DatasetProfileView.read(temp_file)
 
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
-
-        return profile_view
+            return profile_view
 
     def save(self, profile_view: DatasetProfileView) -> None:
         """Writes a whylogs dataset profile view.
@@ -72,15 +67,13 @@ class WhylogsMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), PROFILE_FILENAME)
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            temp_file = os.path.join(str(temp_dir), PROFILE_FILENAME)
 
-        profile_view.write(temp_file)
+            profile_view.write(temp_file)
 
-        # Copy it into artifact store
-        fileio.copy(temp_file, filepath)
-        fileio.rmtree(temp_dir)
+            # Copy it into artifact store
+            fileio.copy(temp_file, filepath)
 
         try:
             self._upload_to_whylabs(profile_view)
