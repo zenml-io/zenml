@@ -18,6 +18,7 @@ import json
 import logging
 import math
 import os
+import random
 import re
 import sys
 import time
@@ -373,6 +374,25 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+
+def exponential_backoff_with_jitter(
+    attempt: int, base_duration: float = 0.05
+) -> float:
+    """Exponential backoff with 'Full jitter'.
+
+    Implemented according to
+    https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+
+    Args:
+        attempt: The backoff attempt.
+        base_duration: The backoff base duration.
+
+    Returns:
+        The backoff duration.
+    """
+    exponential_backoff = base_duration * 1.5**attempt
+    return random.uniform(0, exponential_backoff)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -2836,12 +2856,14 @@ class SqlZenStore(BaseZenStore):
                             "database."
                         )
                     else:
-                        # Exponential backoff to account for heavy
-                        # parallelization
-                        sleep_duration = 0.05 * 1.5 ** (
+                        attempt = (
                             MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
                             - remaining_tries
                         )
+                        sleep_duration = exponential_backoff_with_jitter(
+                            attempt=attempt
+                        )
+
                         logger.debug(
                             "Failed to create artifact version %s "
                             "(version %s) due to an integrity error. "
@@ -10282,11 +10304,12 @@ class SqlZenStore(BaseZenStore):
                         "database."
                     )
                 else:
-                    # Exponential backoff to account for heavy
-                    # parallelization
-                    sleep_duration = 0.05 * 1.5 ** (
+                    attempt = (
                         MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
                         - remaining_tries
+                    )
+                    sleep_duration = exponential_backoff_with_jitter(
+                        attempt=attempt
                     )
                     logger.debug(
                         "Failed to create model version %s "

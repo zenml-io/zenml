@@ -168,7 +168,7 @@ class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
 
 
-class EntityCreationError(ZenMLBaseException):
+class EntityCreationError(ZenMLBaseException, RuntimeError):
     """Raised when failing to create an entity."""
 
 
