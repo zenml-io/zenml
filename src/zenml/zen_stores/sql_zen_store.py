@@ -10237,6 +10237,8 @@ class SqlZenStore(BaseZenStore):
         if has_custom_name:
             validate_name(model_version)
 
+        model_version_id = None
+
         remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
         while remaining_tries > 0:
             remaining_tries -= 1
@@ -10257,16 +10259,7 @@ class SqlZenStore(BaseZenStore):
                     session.add(model_version_schema)
                     session.commit()
 
-                    if model_version.tags:
-                        self._attach_tags_to_resource(
-                            tag_names=model_version.tags,
-                            resource_id=model_version_schema.id,
-                            resource_type=TaggableResourceTypes.MODEL_VERSION,
-                        )
-                    session.refresh(model_version_schema)
-                    return model_version_schema.to_model(
-                        include_metadata=True, include_resources=True
-                    )
+                    model_version_id = model_version_schema.id
             except IntegrityError as e:
                 if has_custom_name and "name" in str(e):
                     # We failed not because of a version number conflict,
@@ -10304,10 +10297,15 @@ class SqlZenStore(BaseZenStore):
                     )
                     time.sleep(sleep_duration)
 
-        # This can never happen, we just need this for mypy
-        raise EntityCreationError(
-            f"Failed to create version for model " f"{model.name}."
-        )
+        assert model_version_id
+        if model_version.tags:
+            self._attach_tags_to_resource(
+                tag_names=model_version.tags,
+                resource_id=model_version_id,
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
+            )
+
+        return self.get_model_version(model_version_id)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
