@@ -206,6 +206,9 @@ class StrFilter(Filter):
         }:
             try:
                 numeric_column = cast(column, Float)
+
+                assert self.value is not None
+
                 if self.operation == GenericFilterOps.GT:
                     return and_(
                         numeric_column, numeric_column > float(self.value)
@@ -224,7 +227,7 @@ class StrFilter(Filter):
                     )
             except Exception as e:
                 raise ValueError(
-                    f"Failed to cast column to numeric type for comparison: {e}"
+                    f"Failed to compare the column to the numeric value: {e}"
                 )
 
         return column == self.value

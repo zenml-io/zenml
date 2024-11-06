@@ -31,6 +31,7 @@ def log_metadata(metadata: Dict[str, MetadataType]) -> None: ...
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     artifact_version_id: UUID,
 ) -> None: ...
@@ -38,6 +39,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     artifact_name: str,
     artifact_version: Optional[str] = None,
@@ -46,6 +48,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     model_version_id: UUID,
 ) -> None: ...
@@ -53,6 +56,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     model_name: str,
     model_version: str,
@@ -61,6 +65,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     step_id: UUID,
 ) -> None: ...
@@ -68,6 +73,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     run_id_name_or_prefix: Union[UUID, str],
 ) -> None: ...
@@ -75,6 +81,7 @@ def log_metadata(
 
 @overload
 def log_metadata(
+    *,
     metadata: Dict[str, MetadataType],
     step_name: str,
     run_id_name_or_prefix: Union[UUID, str],
@@ -114,6 +121,7 @@ def log_metadata(
         ValueError: If no identifiers are provided and the function is not
             called from within a step.
     """
+    # Initialize the client
     client = Client()
 
     # Initialize a batch of request to avoid duplications
