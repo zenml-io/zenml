@@ -518,19 +518,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             "pipeline_execution_arn": pipeline_execution_arn,
         }
 
-        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
-
-        region_name, _, _ = dissect_pipeline_execution_arn(
-            pipeline_execution_arn=pipeline_execution_arn
-        )
-
-        orchestrator_logs_url = (
-            f"https://{region_name}.console.aws.amazon.com/"
-            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
-            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
-            f"$3Dpipelines-{aws_run_id}-"
-        )
-        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
         return run_metadata
 
     def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
@@ -673,7 +660,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return (
                 f"https://{region_name}.console.aws.amazon.com/"
                 f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
-                f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+                f"/$252Faws$252Fsagemaker$252FTrainingJobs$3FlogStreamNameFilter"
                 f"$3Dpipelines-{execution_id}-"
             )
         except Exception as e:
