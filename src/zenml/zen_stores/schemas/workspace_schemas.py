@@ -35,7 +35,6 @@ if TYPE_CHECKING:
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
-        ModelVersionPipelineRunSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,

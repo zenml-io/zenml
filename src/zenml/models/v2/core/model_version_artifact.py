@@ -172,7 +172,7 @@ class ModelVersionArtifactFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlmodel import and_
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
             ArtifactSchema,
@@ -198,20 +198,27 @@ class ModelVersionArtifactFilter(BaseFilter):
 
         if self.only_data_artifacts:
             data_artifact_filter = and_(
-                ModelVersionArtifactSchema.is_model_artifact.is_(False),  # type: ignore[attr-defined]
-                ModelVersionArtifactSchema.is_deployment_artifact.is_(False),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                col(ArtifactVersionSchema.type).not_in(
+                    ["ServiceArtifact", "ModelArtifact"]
+                ),
             )
             custom_filters.append(data_artifact_filter)
 
         if self.only_model_artifacts:
             model_artifact_filter = and_(
-                ModelVersionArtifactSchema.is_model_artifact.is_(True),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.type == "ModelArtifact",
             )
             custom_filters.append(model_artifact_filter)
 
         if self.only_deployment_artifacts:
             deployment_artifact_filter = and_(
-                ModelVersionArtifactSchema.is_deployment_artifact.is_(True),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.type == "ServiceArtifact",
             )
             custom_filters.append(deployment_artifact_filter)
 

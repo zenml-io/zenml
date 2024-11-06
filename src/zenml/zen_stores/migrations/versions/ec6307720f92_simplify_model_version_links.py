@@ -52,13 +52,13 @@ def _migrate_artifact_type() -> None:
             connection.execute(
                 sa.update(artifact_version_table)
                 .where(artifact_version_table.c.id == artifact_version_id)
-                .values(type="model")
+                .values(type="ModelArtifact")
             )
         elif is_deployment_artifact:
             updated.add(artifact_version_id)
             sa.update(artifact_version_table).where(
                 artifact_version_table.c.id == artifact_version_id
-            ).values(type="service")
+            ).values(type="ServiceArtifact")
 
 
 def upgrade() -> None:
@@ -86,13 +86,19 @@ def upgrade() -> None:
         batch_op.drop_column("workspace_id")
         batch_op.drop_column("is_model_artifact")
 
-    with op.batch_alter_table('model_versions_runs', schema=None) as batch_op:
-        batch_op.drop_constraint('fk_model_versions_runs_model_id_model', type_='foreignkey')
-        batch_op.drop_constraint('fk_model_versions_runs_workspace_id_workspace', type_='foreignkey')
-        batch_op.drop_constraint('fk_model_versions_runs_user_id_user', type_='foreignkey')
-        batch_op.drop_column('model_id')
-        batch_op.drop_column('workspace_id')
-        batch_op.drop_column('user_id')
+    with op.batch_alter_table("model_versions_runs", schema=None) as batch_op:
+        batch_op.drop_constraint(
+            "fk_model_versions_runs_model_id_model", type_="foreignkey"
+        )
+        batch_op.drop_constraint(
+            "fk_model_versions_runs_workspace_id_workspace", type_="foreignkey"
+        )
+        batch_op.drop_constraint(
+            "fk_model_versions_runs_user_id_user", type_="foreignkey"
+        )
+        batch_op.drop_column("model_id")
+        batch_op.drop_column("workspace_id")
+        batch_op.drop_column("user_id")
 
     # ### end Alembic commands ###
 
