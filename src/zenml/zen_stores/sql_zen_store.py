@@ -4252,14 +4252,12 @@ class SqlZenStore(BaseZenStore):
             session.add(new_pipeline)
             try:
                 session.commit()
-            except IntegrityError as e:
-                if "name" in str(e):
-                    raise EntityExistsError(
-                        f"Unable to create pipeline in workspace "
-                        f"'{pipeline.workspace}': A pipeline with the name "
-                        f"{pipeline.name} already exists."
-                    )
-                raise
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with the name "
+                    f"{pipeline.name} already exists."
+                )
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model(
@@ -5103,6 +5101,26 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
+    def _pipeline_run_exists(self, workspace_id: UUID, name: str) -> bool:
+        """Check if a pipeline name with a certain name exists.
+
+        Args:
+            workspace_id: The workspace to check.
+            name: The run name.
+
+        Returns:
+            If a pipeline run with the given name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(PipelineRunSchema.id)
+                    .where(PipelineRunSchema.workspace_id == workspace_id)
+                    .where(PipelineRunSchema.name == name)
+                ).first()
+                is not None
+            )
+
     def create_run(
         self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
@@ -5131,15 +5149,20 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             try:
                 session.commit()
-            except IntegrityError as e:
-                if "name" in str(e):
-                    # This is the only way to differentiate from integrity
-                    # errors due to other unique constraints
+            except IntegrityError:
+                if self._pipeline_run_exists(
+                    workspace_id=pipeline_run.workspace, name=pipeline_run.name
+                ):
                     raise EntityExistsError(
-                        f"Unable to create pipeline run: A pipeline run with name "
-                        f"'{pipeline_run.name}' already exists."
+                        f"Unable to create pipeline run: A pipeline run with "
+                        f"name '{pipeline_run.name}' already exists."
                     )
-                raise
+                else:
+                    raise EntityExistsError(
+                        "Unable to create pipeline run: A pipeline run with "
+                        "the same deployment_id and orchestrator_run_id "
+                        "already exists."
+                    )
 
             return new_run.to_model(
                 include_metadata=True, include_resources=True
@@ -5331,21 +5354,14 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
             return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError) as create_error:
-            # Creating the run failed with an
-            # - IntegrityError: This happens when we violated a unique
-            #   constraint, which in turn means a run with the same
-            #   deployment_id and orchestrator_run_id exists. We now fetch and
-            #   return that run.
-            # - EntityExistsError: This happens when a run with the same name
-            #   already exists. This could be either a different run (in which
-            #   case we want to fail) or a run created by a step of the same
-            #   pipeline run (in which case we want to return it).
-            # Note: The IntegrityError might also be raised when other unique
-            # constraints get violated. The only other such constraint is the
-            # primary key constraint on the run ID, which means we randomly
-            # generated an existing UUID. In this case the call below will fail,
-            # but the chance of that happening is so low we don't handle it.
+        except EntityExistsError as create_error:
+            # Creating the run failed because
+            # - a run with the same deployment_id and orchestrator_run_id
+            #   exists. We now fetch and return that run.
+            # - a run with the same name already exists. This could be either a
+            #   different run (in which case we want to fail) or a run created
+            #   by a step of the same pipeline run (in which case we want to
+            #   return it).
             try:
                 return (
                     self._get_run_by_orchestrator_run_id(
@@ -5355,18 +5371,11 @@ class SqlZenStore(BaseZenStore):
                     False,
                 )
             except KeyError:
-                if isinstance(create_error, EntityExistsError):
-                    # There was a run with the same name which does not share
-                    # the deployment_id and orchestrator_run_id -> We fail with
-                    # the error that run names must be unique.
-                    raise create_error from None
-
-                # This should never happen as the run creation failed with an
-                # IntegrityError which means a run with the deployment_id and
-                # orchestrator_run_id exists.
-                raise RuntimeError(
-                    f"Failed to get or create run: {create_error}"
-                )
+                # We should only get here if the run creation failed because
+                # of a name conflict. We raise the error that happened during
+                # creation in any case to forward the error message to the
+                # user.
+                raise create_error
 
     def list_runs(
         self,
@@ -10063,13 +10072,11 @@ class SqlZenStore(BaseZenStore):
                 )
             try:
                 session.commit()
-            except IntegrityError as e:
-                if "name" in str(e):
-                    raise EntityExistsError(
-                        f"Unable to create model {model.name}: "
-                        "A model with this name already exists."
-                    )
-                raise
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create model {model.name}: "
+                    "A model with this name already exists."
+                )
 
             return model_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -10230,6 +10237,26 @@ class SqlZenStore(BaseZenStore):
         else:
             return int(current_max_version) + 1
 
+    def _model_version_exists(self, model_id: UUID, version: str) -> bool:
+        """Check if a model version with a certain version exists.
+
+        Args:
+            model_id: The model ID of the version.
+            version: The version name.
+
+        Returns:
+            If a model version with the given version name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(ModelVersionSchema.id)
+                    .where(ModelVersionSchema.model_id == model_id)
+                    .where(ModelVersionSchema.name == version)
+                ).first()
+                is not None
+            )
+
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequest
@@ -10283,8 +10310,10 @@ class SqlZenStore(BaseZenStore):
 
                     model_version_id = model_version_schema.id
                 break
-            except IntegrityError as e:
-                if has_custom_name and "name" in str(e):
+            except IntegrityError:
+                if has_custom_name and self._model_version_exists(
+                    model_id=model.id, version=model_version.name
+                ):
                     # We failed not because of a version number conflict,
                     # but because the user requested a version name that
                     # is already taken -> We don't retry anymore but fail
