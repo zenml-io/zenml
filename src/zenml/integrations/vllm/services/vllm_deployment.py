@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the vLLM Inference Server Service."""
 
+import argparse
 import os
 from typing import Any, List, Optional, Union
 
@@ -148,8 +149,10 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
         )
 
         try:
-            parser = make_arg_parser(FlexibleArgumentParser())
-            args = parser.parse_args()
+            parser: argparse.ArgumentParser = make_arg_parser(
+                FlexibleArgumentParser()
+            )
+            args: argparse.Namespace = parser.parse_args()
             # Override port with the available port
             self.config.port = self.endpoint.status.port or self.config.port
             # Update the arguments in place
