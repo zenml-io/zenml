@@ -341,6 +341,7 @@ def test_input_artifacts_typing(clean_client: Client):
             == StepRunInputArtifactType.MANUAL
         )
 
+
 # TODO: Enable this test after fixing the issue with `is_model_artifact` and `is_deployment_artifact` flags
 @pytest.mark.skip(
     "Enable this test after fixing the issue with `is_model_artifact` and `is_deployment_artifact` flags"
