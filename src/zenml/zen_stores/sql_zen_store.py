@@ -379,9 +379,9 @@ ZENML_SQLITE_DB_FILENAME = "zenml.db"
 def exponential_backoff_with_jitter(
     attempt: int, base_duration: float = 0.05
 ) -> float:
-    """Exponential backoff with 'Full jitter'.
+    """Exponential backoff with jitter.
 
-    Implemented according to
+    Implemented the `Full jitter` algorithm described in
     https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 
     Args:
