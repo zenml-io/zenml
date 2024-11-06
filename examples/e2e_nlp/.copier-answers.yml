@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.09.23
+_commit: 2024.09.23-2-gea2a15f
 _src_path: gh:zenml-io/template-nlp
 accelerator: cpu
 cloud_of_choice: aws
