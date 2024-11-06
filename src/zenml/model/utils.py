@@ -56,6 +56,11 @@ def log_model_metadata(
         ValueError: If no model name/version is provided and the function is not
             called inside a step with configured `model` in decorator.
     """
+    logger.warning(
+        "The `log_model_metadata` function is deprecated and will soon be "
+        "removed. Please use `log_metadata` instead."
+    )
+
     if model_name and model_version:
         from zenml import Model
 

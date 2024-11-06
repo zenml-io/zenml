@@ -438,6 +438,11 @@ def log_step_metadata(
             from within a step or if no pipeline name or ID is provided and
             the function is not called from within a step.
     """
+    logger.warning(
+        "The `log_step_metadata` function is deprecated and will soon be "
+        "removed. Please use `log_metadata` instead."
+    )
+
     step_context = None
     if not step_name:
         with contextlib.suppress(RuntimeError):
