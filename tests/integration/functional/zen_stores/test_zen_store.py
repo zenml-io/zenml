@@ -2941,17 +2941,17 @@ def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     assert len(runs) == 2  # The first two runs
 
     # Test oneof: tags filtering
-    runs_filter = PipelineRunFilter(tag=f'oneof:["cats", "dogs"]')
+    runs_filter = PipelineRunFilter(tag='oneof:["cats", "dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == len(metadata_values)  # All runs
 
-    runs_filter = PipelineRunFilter(tag=f'oneof:["dogs"]')
+    runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
     # Test oneof: formatting
     with pytest.raises(ValidationError):
-        PipelineRunFilter(name=f"oneof:random_value")
+        PipelineRunFilter(name="oneof:random_value")
 
     # Test metadata filtering
     runs_filter = PipelineRunFilter(run_metadata={"blupus": "lt:30"})
