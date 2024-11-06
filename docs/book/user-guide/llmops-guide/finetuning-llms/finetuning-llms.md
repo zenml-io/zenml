@@ -27,7 +27,7 @@ We'll go through the following steps in this guide:
 
 - [Finetuning in 100 lines of code](finetuning-100-loc.md)
 - [Why and when to finetune LLMs](why-and-when-to-finetune-llms.md)
-- [Starter choices with finetuning](getting-started-with-finetuning.md)
+- [Starter choices with finetuning](starter-choices-for-finetuning.md)
 - [Finetuning with 🤗 Accelerate](finetuning-with-accelerate.md)
 - [Evaluation for finetuning](evaluation-for-finetuning.md)
 - [Deploying finetuned models](deploying-finetuned-models.md)
