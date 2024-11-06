@@ -4216,8 +4216,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If an identical pipeline already exists.
-            IntegrityError: If the new pipeline creation lead to any
-                integrity errors.
         """
         with Session(self.engine) as session:
             new_pipeline = PipelineSchema.from_request(pipeline)
@@ -5096,8 +5094,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
-            IntegrityError: If the new run creation lead to any
-                integrity errors.
         """
         with Session(self.engine) as session:
             # Create the pipeline run
@@ -10031,7 +10027,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a model with the given name already exists.
-            IntegrityError: If creating the model violated a DB unique constraint.
         """
         validate_name(model)
         with Session(self.engine) as session:
