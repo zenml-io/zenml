@@ -590,6 +590,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "user",
+        "run_metadata",
     ]
 
     name: Optional[str] = Field(
@@ -618,6 +619,10 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the model version.",
+    )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the model versions by."
     )
 
     _model_id: UUID = PrivateAttr(None)
@@ -652,6 +657,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         from zenml.zen_stores.schemas import (
             ModelVersionSchema,
             UserSchema,
+            RunMetadataSchema,
         )
 
         if self.user:
@@ -664,6 +670,22 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
                 ),
             )
             custom_filters.append(user_filter)
+
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == ModelVersionSchema.id,
+                    RunMetadataSchema.resource_type == MetadataResourceTypes.MODEL_VERSION,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters
 
