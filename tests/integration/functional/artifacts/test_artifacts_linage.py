@@ -319,25 +319,25 @@ def test_input_artifacts_typing(clean_client: Client):
         prr: PipelineRunResponse = my_pipeline.with_options(
             enable_cache=cache
         )()
-        assert len(prr.steps["producer_step"].input_types) == 0
+        assert len(prr.steps["producer_step"].inputs) == 0
         assert (
-            prr.steps["cs1"].input_types["shared_name"]
+            prr.steps["cs1"].inputs["shared_name"].input_type
             == StepRunInputArtifactType.STEP_OUTPUT
         )
         assert (
-            prr.steps["cs2"].input_types["shared_name"]
+            prr.steps["cs2"].inputs["shared_name"].input_type
             == StepRunInputArtifactType.EXTERNAL
         )
         assert (
-            prr.steps["cs3"].input_types["shared_name"]
+            prr.steps["cs3"].inputs["shared_name"].input_type
             == StepRunInputArtifactType.LAZY_LOADED
         )
         assert (
-            prr.steps["mcsl"].input_types["shared_name"]
+            prr.steps["mcsl"].inputs["shared_name"].input_type
             == StepRunInputArtifactType.MANUAL
         )
         assert (
-            prr.steps["mcsc"].input_types["shared_name"]
+            prr.steps["mcsc"].inputs["shared_name"].input_type
             == StepRunInputArtifactType.MANUAL
         )
 
