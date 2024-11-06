@@ -10227,7 +10227,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a model version with the given name already exists.
+            EntityExistsError: If a model version with the given name already
+                exists.
             EntityCreationError: If the model version creation failed.
         """
         if model_version.number is not None:
@@ -10307,6 +10308,11 @@ class SqlZenStore(BaseZenStore):
                         sleep_duration,
                     )
                     time.sleep(sleep_duration)
+
+        # This can never happen, we just need this for mypy
+        raise EntityCreationError(
+            f"Failed to create version for model " f"{model.name}."
+        )
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
