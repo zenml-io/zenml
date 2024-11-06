@@ -11,7 +11,7 @@ finetuning models on your custom data and use cases. Before we dive into the det
 - Chatbot-style interfaces are not the only way LLMs can be used: there are lots of uses for LLMs and this finetuning approach which don't include any kind of chatbot. What's more, these non-chatbot interfaces should often to be considered preferable since the surface area of failure is much lower.
 - The choice to finetune an LLM should probably be the final step in a series of experiments. As with the first point, you shouldn't just jump to it because other people are doing it. Rather, you should probably rule out other approaches (smaller models for more decomposed tasks, [RAG](../rag-with-zenml/understanding-rag.md) if you're working on a retrieval or long-context problem, or a mixture of the above for more complete use cases).
 
-## When makes sense to finetune an LLM?
+## When does it make sense to finetune an LLM?
 
 Finetuning an LLM can be a powerful approach in certain scenarios. Here are some situations where it might make sense:
 
