@@ -1126,7 +1126,10 @@ class FilterGenerator:
         """
         # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
-            raise ValueError("")
+            raise ValueError(
+                "If you are using `oneof:` as a filtering op, the value needs "
+                "to be a json formatted list string."
+            )
 
         # Generate the filter.
         str_filter = StrFilter(
