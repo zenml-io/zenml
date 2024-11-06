@@ -258,6 +258,14 @@ The `load()` and `save()` methods define the serialization and deserialization o
 
 You will need to override these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
+{% hint style="info" %}
+If you need a temporary directory in your custom materializer, it is best to use the helper method `get_temporary_directory(...)` on the materializer class in order to have the directory cleaned up correctly:
+```python
+with self.get_temporary_directory(...) as temp_dir:
+    ...
+```
+{% endhint %}
+
 #### (Optional) How to Visualize the Artifact
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:

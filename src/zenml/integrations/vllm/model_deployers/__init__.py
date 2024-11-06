@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,17 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the OpenAI integration."""
+"""Initialization of the vLLM model deployers."""
+from zenml.integrations.vllm.model_deployers.vllm_model_deployer import (  # noqa
+    VLLMModelDeployer,
+)
 
-from zenml.integrations.constants import OPEN_AI
-from zenml.integrations.integration import Integration
-
-
-class OpenAIIntegration(Integration):
-    """Definition of OpenAI integration for ZenML."""
-
-    NAME = OPEN_AI
-    REQUIREMENTS = ["openai>=1.0.0"]
-
-
-OpenAIIntegration.check_installation()
+__all__ = ["VLLMModelDeployer"]
