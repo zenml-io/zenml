@@ -207,21 +207,21 @@ class StrFilter(Filter):
             # Try to cast the column to a numeric type for numeric operations
             try:
                 numeric_column = cast(column, Float)
+                if not isinstance(numeric_column, (int, float)):
+                    raise ValueError("something went wrong!", numeric_column)
                 if self.operation == GenericFilterOps.GT:
-                    return numeric_column > self.value
+                    return numeric_column > float(self.value)
                 if self.operation == GenericFilterOps.LT:
-                    return numeric_column < self.value
+                    return numeric_column < float(self.value)
                 if self.operation == GenericFilterOps.GTE:
-                    return numeric_column >= self.value
+                    return numeric_column >= float(self.value)
                 if self.operation == GenericFilterOps.LTE:
-                    return numeric_column <= self.value
+                    return numeric_column <= float(self.value)
             except Exception:
                 # Handle the exception or fallback as needed
                 raise ValueError(
                     "Failed to cast column to numeric type for comparison"
                 )
-        else:
-            raise ValueError("Invalid operation or incompatible data type")
 
         return column == self.value
 
@@ -242,6 +242,9 @@ class UUIDFilter(StrFilter):
         """
         if isinstance(value, str):
             return value.replace("-", "")
+
+        if isinstance(value, list):
+            return [str(v).replace("-", "") for v in value]
 
         return value
 
@@ -634,8 +637,18 @@ class BaseFilter(BaseModel):
             if operator == operator.ONEOF:
                 try:
                     value = json.loads(value)
-                except:
-                    raise ValueError("Add some error message here....")
+                    if not isinstance(value, list):
+                        raise ValueError(
+                            "When you are using the 'oneof:' filtering "
+                            "make sure that the provided value is a json "
+                            "formatted list."
+                        )
+                except ValueError:
+                    raise ValueError(
+                        "When you are using the 'oneof:' filtering "
+                        "make sure that the provided value is a json "
+                        "formatted list."
+                    )
 
         return value, operator
 
@@ -687,8 +700,8 @@ class BaseFilter(BaseModel):
 
         return or_(*conditions)
 
+    @staticmethod
     def generate_custom_query_conditions_for_column(
-        self,
         value: Any,
         table: Type[SQLModel],
         column: str,
@@ -1074,7 +1087,10 @@ class FilterGenerator:
 
         # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
-            raise ValueError("")
+            raise ValueError(
+                "If you are using `oneof:` as a filtering op, the value needs "
+                "to be a json formatted list string."
+            )
 
         # Generate the filter.
         uuid_filter = UUIDFilter(
