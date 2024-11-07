@@ -87,41 +87,44 @@ class TensorboardVisualizer:
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
         """
-        for _, artifact_view in object.outputs.items():
-            # filter out anything but model artifacts
-            if artifact_view.type == ArtifactType.MODEL:
-                logdir = os.path.dirname(artifact_view.uri)
+        for output in object.outputs.values():
+            for artifact_view in output:
+                # filter out anything but model artifacts
+                if artifact_view.type == ArtifactType.MODEL:
+                    logdir = os.path.dirname(artifact_view.uri)
 
-                # first check if a TensorBoard server is already running for
-                # the same logdir location and use that one
-                running_server = self.find_running_tensorboard_server(logdir)
-                if running_server:
-                    self.visualize_tensorboard(running_server.port, height)
+                    # first check if a TensorBoard server is already running for
+                    # the same logdir location and use that one
+                    running_server = self.find_running_tensorboard_server(
+                        logdir
+                    )
+                    if running_server:
+                        self.visualize_tensorboard(running_server.port, height)
+                        return
+
+                    if sys.platform == "win32":
+                        # Daemon service functionality is currently not supported
+                        # on Windows
+                        print(
+                            "You can run:\n"
+                            f"[italic green]    tensorboard --logdir {logdir}"
+                            "[/italic green]\n"
+                            "...to visualize the TensorBoard logs for your trained model."
+                        )
+                    else:
+                        # start a new TensorBoard server
+                        service = TensorboardService(
+                            TensorboardServiceConfig(
+                                logdir=logdir,
+                                name=f"zenml-tensorboard-{logdir}",
+                            )
+                        )
+                        service.start(timeout=60)
+                        if service.endpoint.status.port:
+                            self.visualize_tensorboard(
+                                service.endpoint.status.port, height
+                            )
                     return
-
-                if sys.platform == "win32":
-                    # Daemon service functionality is currently not supported
-                    # on Windows
-                    print(
-                        "You can run:\n"
-                        f"[italic green]    tensorboard --logdir {logdir}"
-                        "[/italic green]\n"
-                        "...to visualize the TensorBoard logs for your trained model."
-                    )
-                else:
-                    # start a new TensorBoard server
-                    service = TensorboardService(
-                        TensorboardServiceConfig(
-                            logdir=logdir,
-                            name=f"zenml-tensorboard-{logdir}",
-                        )
-                    )
-                    service.start(timeout=60)
-                    if service.endpoint.status.port:
-                        self.visualize_tensorboard(
-                            service.endpoint.status.port, height
-                        )
-                return
 
     def visualize_tensorboard(
         self,
@@ -154,31 +157,34 @@ class TensorboardVisualizer:
         Args:
             object: StepRunResponseModel fetched from get_step().
         """
-        for _, artifact_view in object.outputs.items():
-            # filter out anything but model artifacts
-            if artifact_view.type == ArtifactType.MODEL:
-                logdir = os.path.dirname(artifact_view.uri)
+        for output in object.outputs.values():
+            for artifact_view in output:
+                # filter out anything but model artifacts
+                if artifact_view.type == ArtifactType.MODEL:
+                    logdir = os.path.dirname(artifact_view.uri)
 
-                # first check if a TensorBoard server is already running for
-                # the same logdir location and use that one
-                running_server = self.find_running_tensorboard_server(logdir)
-                if not running_server:
-                    return
+                    # first check if a TensorBoard server is already running for
+                    # the same logdir location and use that one
+                    running_server = self.find_running_tensorboard_server(
+                        logdir
+                    )
+                    if not running_server:
+                        return
 
-                logger.debug(
-                    "Stopping tensorboard server with PID '%d' ...",
-                    running_server.pid,
-                )
-                try:
-                    p = psutil.Process(running_server.pid)
-                except psutil.Error:
-                    logger.error(
-                        "Could not find process for PID '%d' ...",
+                    logger.debug(
+                        "Stopping tensorboard server with PID '%d' ...",
                         running_server.pid,
                     )
-                    continue
-                p.kill()
-                return
+                    try:
+                        p = psutil.Process(running_server.pid)
+                    except psutil.Error:
+                        logger.error(
+                            "Could not find process for PID '%d' ...",
+                            running_server.pid,
+                        )
+                        continue
+                    p.kill()
+                    return
 
 
 def get_step(pipeline_name: str, step_name: str) -> "StepRunResponse":

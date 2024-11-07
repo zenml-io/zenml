@@ -13,10 +13,25 @@
 #  permissions and limitations under the License.
 """Run Metadata Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-if TYPE_CHECKING:
-    from zenml.models import RunMetadataResponse
+from pydantic import BaseModel
+
+from zenml.metadata.metadata_types import MetadataType
+
+
+class LazyRunMetadataResponse(BaseModel):
+    """Lazy run metadata response.
+
+    Used if the run metadata is accessed from the model in
+    a pipeline context available only during pipeline compilation.
+    """
+
+    lazy_load_artifact_name: Optional[str] = None
+    lazy_load_artifact_version: Optional[str] = None
+    lazy_load_metadata_name: Optional[str] = None
+    lazy_load_model_name: str
+    lazy_load_model_version: Optional[str] = None
 
 
 class RunMetadataLazyGetter:
@@ -47,7 +62,7 @@ class RunMetadataLazyGetter:
         self._lazy_load_artifact_name = _lazy_load_artifact_name
         self._lazy_load_artifact_version = _lazy_load_artifact_version
 
-    def __getitem__(self, key: str) -> "RunMetadataResponse":
+    def __getitem__(self, key: str) -> MetadataType:
         """Get the metadata for the given key.
 
         Args:
@@ -56,9 +71,7 @@ class RunMetadataLazyGetter:
         Returns:
             The metadata lazy loader wrapper for the given key.
         """
-        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
-
-        return LazyRunMetadataResponse(
+        return LazyRunMetadataResponse(  # type: ignore[return-value]
             lazy_load_model_name=self._lazy_load_model_name,
             lazy_load_model_version=self._lazy_load_model_version,
             lazy_load_artifact_name=self._lazy_load_artifact_name,

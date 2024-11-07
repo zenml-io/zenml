@@ -74,7 +74,6 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -977,7 +976,6 @@ def get_or_create_pipeline_run(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUN_METADATA,
-    response_model=List[RunMetadataResponse],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -985,7 +983,7 @@ def create_run_metadata(
     workspace_name_or_id: Union[str, UUID],
     run_metadata: RunMetadataRequest,
     auth_context: AuthContext = Security(authorize),
-) -> List[RunMetadataResponse]:
+) -> None:
     """Creates run metadata.
 
     Args:
@@ -1039,7 +1037,8 @@ def create_run_metadata(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
     )
 
-    return zen_store().create_run_metadata(run_metadata)
+    zen_store().create_run_metadata(run_metadata)
+    return None
 
 
 @router.post(

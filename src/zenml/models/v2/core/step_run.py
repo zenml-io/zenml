@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -39,9 +40,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
-    )
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
     )
 
 
@@ -97,11 +95,11 @@ class StepRunRequest(WorkspaceScopedRequest):
     )
     inputs: Dict[str, UUID] = Field(
         title="The IDs of the input artifact versions of the step run.",
-        default={},
+        default_factory=dict,
     )
-    outputs: Dict[str, UUID] = Field(
+    outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
-        default={},
+        default_factory=dict,
     )
     logs: Optional["LogsRequest"] = Field(
         title="Logs associated with this step run.",
@@ -127,10 +125,6 @@ class StepRunUpdate(BaseModel):
 
     outputs: Dict[str, UUID] = Field(
         title="The IDs of the output artifact versions of the step run.",
-        default={},
-    )
-    saved_artifact_versions: Dict[str, UUID] = Field(
-        title="The IDs of artifact versions that were saved by this step run.",
         default={},
     )
     loaded_artifact_versions: Dict[str, UUID] = Field(
@@ -168,11 +162,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     )
     inputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The input artifact versions of the step run.",
-        default={},
+        default_factory=dict,
     )
-    outputs: Dict[str, "ArtifactVersionResponse"] = Field(
+    outputs: Dict[str, List["ArtifactVersionResponse"]] = Field(
         title="The output artifact versions of the step run.",
-        default={},
+        default_factory=dict,
     )
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
@@ -230,7 +224,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         title="Metadata associated with this step run.",
         default={},
     )
@@ -304,12 +298,15 @@ class StepRunResponse(
         """
         if not self.outputs:
             raise ValueError(f"Step {self.name} has no outputs.")
-        if len(self.outputs) > 1:
+        if len(self.outputs) > 1 or (
+            len(self.outputs) == 1
+            and len(next(iter(self.outputs.values()))) > 1
+        ):
             raise ValueError(
                 f"Step {self.name} has multiple outputs, so `Step.output` is "
                 "ambiguous. Please use `Step.outputs` instead."
             )
-        return next(iter(self.outputs.values()))
+        return next(iter(self.outputs.values()))[0]
 
     # Body and metadata properties
     @property
@@ -331,7 +328,7 @@ class StepRunResponse(
         return self.get_body().inputs
 
     @property
-    def outputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+    def outputs(self) -> Dict[str, List["ArtifactVersionResponse"]]:
         """The `outputs` property.
 
         Returns:
@@ -466,7 +463,7 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
