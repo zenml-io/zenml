@@ -251,7 +251,7 @@ jobs:
           ZENML_SERVER_DEPLOYMENT_TYPE: docker
           ZENML_SERVER_AUTO_ACTIVATE: 'True'
           ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
-        ports: 
+        ports:   
           - 8080:8080
         options: >-
           --health-cmd="curl -f http://127.0.0.1:8080/health"
