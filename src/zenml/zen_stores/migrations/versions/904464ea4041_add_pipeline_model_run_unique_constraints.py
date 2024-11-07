@@ -11,6 +11,10 @@ from collections import defaultdict
 import sqlalchemy as sa
 from alembic import op
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
 # revision identifiers, used by Alembic.
 revision = "904464ea4041"
 down_revision = "1cb6477f72d6"
@@ -40,6 +44,12 @@ def resolve_duplicate_entities() -> None:
 
             if name in names_in_workspace:
                 new_name = f"{name}_{id_[:6]}"
+                logger.warning(
+                    "Migrating %s name from %s to %s to resolve duplicate name.",
+                    table_name,
+                    name,
+                    new_name,
+                )
                 connection.execute(
                     sa.update(table)
                     .where(table.c.id == id_)
@@ -98,9 +108,19 @@ def resolve_duplicate_entities() -> None:
             values["number"] = next_numeric_version
             values["name"] = str(next_numeric_version)
             existing_numbers[model_id].add(next_numeric_version)
+            logger.warning(
+                "Migrating model version %s to %s to resolve duplicate name.",
+                name,
+                values["name"],
+            )
         else:
             if needs_new_name:
                 values["name"] = f"{name}_{id_[:6]}"
+                logger.warning(
+                    "Migrating model version %s to %s to resolve duplicate name.",
+                    name,
+                    values["name"],
+                )
 
             if needs_new_number:
                 values["number"] = next_numeric_version
