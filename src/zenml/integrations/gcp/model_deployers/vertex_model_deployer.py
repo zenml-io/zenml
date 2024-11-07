@@ -36,7 +36,7 @@ from zenml.integrations.gcp.model_registries.vertex_model_registry import (
     VertexAIModelRegistry,
 )
 from zenml.integrations.gcp.services.vertex_deployment import (
-    VertexAIDeploymentConfig,
+    VertexDeploymentConfig,
     VertexDeploymentService,
 )
 from zenml.logger import get_logger
@@ -97,11 +97,8 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
             Returns:
                 A tuple of (is_valid, error_message).
             """
-            # Validate that the container registry is not local.
             model_registry = stack.model_registry
-            if not model_registry and isinstance(
-                model_registry, VertexAIModelRegistry
-            ):
+            if not isinstance(model_registry, VertexAIModelRegistry):
                 return False, (
                     "The Vertex AI model deployer requires a Vertex AI model "
                     "registry to be present in the stack. Please add a Vertex AI "
@@ -110,10 +107,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
 
             # Validate that the rest of the components are not local.
             for stack_comp in stack.components.values():
-                # For Forward compatibility a list of components is returned,
-                # but only the first item is relevant for now
-                # TODO: [server] make sure the ComponentModel actually has
-                #  a local_path property or implement similar check
                 local_path = stack_comp.local_path
                 if not local_path:
                     continue
@@ -138,7 +131,7 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         )
 
     def _create_deployment_service(
-        self, id: UUID, timeout: int, config: VertexAIDeploymentConfig
+        self, id: UUID, timeout: int, config: VertexDeploymentConfig
     ) -> VertexDeploymentService:
         """Creates a new VertexAIDeploymentService.
 
@@ -178,14 +171,13 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
             The ZenML Vertex AI deployment service object.
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
-            config = cast(VertexAIDeploymentConfig, config)
+            config = cast(VertexDeploymentConfig, config)
             service = self._create_deployment_service(
                 id=id, config=config, timeout=timeout
             )
             logger.info(
                 f"Creating a new Vertex AI deployment service: {service}"
             )
-            service.start(timeout=timeout)
 
             client = Client()
             stack = client.active_stack
@@ -250,7 +242,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """
         service = cast(VertexDeploymentService, service)
         service.stop(timeout=timeout, force=force)
-        service.stop()
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]

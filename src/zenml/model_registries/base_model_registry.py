@@ -63,7 +63,7 @@ class ModelRegistryModelMetadata(BaseModel):
     model and its development process.
     """
 
-    managed_by: str = "ZenML"
+    _managed_by: str = "zenml"
     zenml_version: str = __version__
     zenml_run_name: Optional[str] = None
     zenml_pipeline_name: Optional[str] = None
@@ -71,6 +71,15 @@ class ModelRegistryModelMetadata(BaseModel):
     zenml_pipeline_run_uuid: Optional[str] = None
     zenml_step_name: Optional[str] = None
     zenml_workspace: Optional[str] = None
+
+    @property
+    def managed_by(self) -> str:
+        """Returns the managed_by attribute.
+
+        Returns:
+            The managed_by attribute.
+        """
+        return self._managed_by
 
     @property
     def custom_attributes(self) -> Dict[str, str]:

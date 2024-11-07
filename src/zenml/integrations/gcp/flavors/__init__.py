@@ -35,7 +35,7 @@ from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
 )
 from zenml.integrations.gcp.flavors.vertex_model_registry_flavor import (
     VertexAIModelRegistryConfig,
-    VertexAIModelRegistryFlavor,
+    VertexModelRegistryFlavor,
 )
 
 __all__ = [
@@ -49,6 +49,6 @@ __all__ = [
     "VertexStepOperatorConfig",
     "VertexModelDeployerFlavor",
     "VertexModelDeployerConfig",
-    "VertexAIModelRegistryFlavor",
+    "VertexModelRegistryFlavor",
     "VertexAIModelRegistryConfig",
 ]

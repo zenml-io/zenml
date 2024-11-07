@@ -70,7 +70,7 @@ from typing_extensions import Annotated
 from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
 from zenml.integrations.gcp.services.vertex_deployment import (
-    VertexAIDeploymentConfig,
+    VertexDeploymentConfig,
     VertexDeploymentService,
 )
 
@@ -87,7 +87,7 @@ def model_deployer(
     model_deployer = zenml_client.active_stack.model_deployer
 
     # Configure the deployment
-    vertex_deployment_config = VertexAIDeploymentConfig(
+    vertex_deployment_config = VertexDeploymentConfig(
         location="europe-west1",
         name="zenml-vertex-quickstart",
         model_name=current_model.name,
@@ -109,7 +109,7 @@ def model_deployer(
 
 ### Configuration Options
 
-The Vertex AI Model Deployer accepts a rich set of configuration options through `VertexAIDeploymentConfig`:
+The Vertex AI Model Deployer accepts a rich set of configuration options through `VertexDeploymentConfig`:
 
 * Basic Configuration:
   * `location`: GCP region for deployment (e.g., "us-central1")

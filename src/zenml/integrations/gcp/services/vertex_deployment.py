@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Implementation of the Vertex AI Deployment service."""
 
 import re
@@ -24,24 +37,6 @@ POLLING_TIMEOUT = (
 UUID_SLICE_LENGTH: int = 8
 
 
-def sanitize_labels(labels: Dict[str, str]) -> None:
-    """Update the label values to be valid Kubernetes labels.
-
-    See:
-    https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
-
-    Args:
-        labels: the labels to sanitize.
-    """
-    for key, value in labels.items():
-        # Kubernetes labels must be alphanumeric, no longer than
-        # 63 characters, and must begin and end with an alphanumeric
-        # character ([a-z0-9A-Z])
-        labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
-            "-_."
-        )
-
-
 def sanitize_vertex_label(value: str) -> str:
     """Sanitize a label value to comply with Vertex AI requirements.
 
@@ -62,15 +57,13 @@ def sanitize_vertex_label(value: str) -> str:
     return value[:63]
 
 
-class VertexAIDeploymentConfig(VertexBaseConfig, ServiceConfig):
+class VertexDeploymentConfig(VertexBaseConfig, ServiceConfig):
     """Vertex AI service configurations."""
 
     def get_vertex_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the VertexAI deployment from the service configuration."""
-        labels = {
-            "managed-by": "zenml",  # Changed from managed_by to managed-by
-        }
-
+        labels = self.labels or {}
+        labels["managed_by"] = "zenml"
         if self.pipeline_name:
             labels["pipeline-name"] = sanitize_vertex_label(self.pipeline_name)
         if self.pipeline_step_name:
@@ -109,12 +102,12 @@ class VertexDeploymentService(BaseDeploymentService):
         flavor="vertex",
         description="Vertex AI inference endpoint prediction service",
     )
-    config: VertexAIDeploymentConfig
+    config: VertexDeploymentConfig
     status: VertexServiceStatus = Field(
         default_factory=lambda: VertexServiceStatus()
     )
 
-    def __init__(self, config: VertexAIDeploymentConfig, **attrs: Any):
+    def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
         """Initialize the Vertex AI deployment service."""
         super().__init__(config=config, **attrs)
 

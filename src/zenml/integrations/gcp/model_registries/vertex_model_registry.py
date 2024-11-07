@@ -147,7 +147,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             or "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
         )
         is_default_version = metadata_dict.get("is_default_version", False)
-        metadata_dict["managed_by"] = "zenml"
         try:
             version_info = aiplatform.Model.upload(
                 artifact_uri=model_source_uri,

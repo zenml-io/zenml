@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the MLflow Service."""
+"""Initialization of the Vertex Service."""
 
 from zenml.integrations.gcp.services.vertex_deployment import (  # noqa
-    VertexAIDeploymentConfig,
+    VertexDeploymentConfig,
     VertexDeploymentService,
 )
 
-__all__ = ["VertexAIDeploymentConfig", "VertexDeploymentService"]
+__all__ = ["VertexDeploymentConfig", "VertexDeploymentService"]

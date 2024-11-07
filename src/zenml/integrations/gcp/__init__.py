@@ -78,7 +78,7 @@ class GcpIntegration(Integration):
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
             VertexModelDeployerFlavor,
-            VertexAIModelRegistryFlavor,
+            VertexModelRegistryFlavor,
         )
 
         return [
@@ -86,7 +86,7 @@ class GcpIntegration(Integration):
             GCPImageBuilderFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
-            VertexAIModelRegistryFlavor,
+            VertexModelRegistryFlavor,
             VertexModelDeployerFlavor,
         ]
 

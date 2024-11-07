@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Vertex AI model deployers."""
+"""Initialization of the Vertex AI model registry."""
 
 from zenml.integrations.gcp.model_registries.vertex_model_registry import (
     VertexAIModelRegistry

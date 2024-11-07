@@ -73,6 +73,7 @@ class VertexBaseConfig(BaseModel):
     explanation_metadata: Optional[Dict[str, str]] = None
     explanation_parameters: Optional[Dict[str, str]] = None
     existing_endpoint: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
 
 
 class VertexModelDeployerConfig(
@@ -82,7 +83,7 @@ class VertexModelDeployerConfig(
 
 
 class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Vertex AI Endpoint model deployer flavor."""
+    """Vertex AI model deployer flavor."""
 
     @property
     def name(self) -> str:

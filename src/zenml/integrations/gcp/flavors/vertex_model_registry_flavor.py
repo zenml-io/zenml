@@ -49,7 +49,7 @@ class VertexAIModelRegistryConfig(
     """Configuration for the VertexAI model registry."""
 
 
-class VertexAIModelRegistryFlavor(BaseModelRegistryFlavor):
+class VertexModelRegistryFlavor(BaseModelRegistryFlavor):
     """Model registry flavor for VertexAI models."""
 
     @property
