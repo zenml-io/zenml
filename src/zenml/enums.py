@@ -38,11 +38,15 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
 
 
-class StepRunOutputArtifactType(StrEnum):
-    """All possible types of a step run output artifact."""
+class ArtifactSaveType(StrEnum):
+    """All possible method types of how artifact versions can be saved."""
 
-    DEFAULT = "default"  # output of the current step
+    STEP_OUTPUT = "step_output"  # output of the current step
     MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+    PREEXISTING = "preexisting"  # register via `zenml.register_artifact()`
+    EXTERNAL = (
+        "external"  # saved via `zenml.ExternalArtifact.upload_by_value()`
+    )
 
 
 class VisualizationType(StrEnum):

@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.artifacts.utils import load_artifact_visualization
-from zenml.constants import API, ARTIFACT_VERSIONS, VERSION_1, VISUALIZE
+from zenml.constants import API, ARTIFACT_VERSIONS, BATCH, VERSION_1, VISUALIZE
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -30,6 +31,7 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -115,6 +117,30 @@ def create_artifact_version(
         request_model=artifact_version,
         resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().create_artifact_version,
+    )
+
+
+@artifact_version_router.post(
+    BATCH,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def batch_create_artifact_version(
+    artifact_versions: List[ArtifactVersionRequest],
+    _: AuthContext = Security(authorize),
+) -> List[ArtifactVersionResponse]:
+    """Create a batch of artifact versions.
+
+    Args:
+        artifact_versions: The artifact versions to create.
+
+    Returns:
+        The created artifact versions.
+    """
+    return verify_permissions_and_batch_create_entity(
+        batch=artifact_versions,
+        resource_type=ResourceType.ARTIFACT_VERSION,
+        create_method=zen_store().batch_create_artifact_versions,
     )
 
 

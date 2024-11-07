@@ -16,6 +16,7 @@
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.models import (
     FlavorRequest,
@@ -146,9 +147,6 @@ class Flavor:
         Returns:
             The model.
         """
-        from zenml.client import Client
-
-        client = Client()
         connector_requirements = self.service_connector_requirements
         connector_type = (
             connector_requirements.connector_type
@@ -165,10 +163,16 @@ class Flavor:
             if connector_requirements
             else None
         )
+        user = None
+        workspace = None
+        if is_custom:
+            user = Client().active_user.id
+            workspace = Client().active_workspace.id
+
         model_class = FlavorRequest if is_custom else InternalFlavorRequest
         model = model_class(
-            user=client.active_user.id if is_custom else None,
-            workspace=client.active_workspace.id if is_custom else None,
+            user=user,
+            workspace=workspace,
             name=self.name,
             type=self.type,
             source=source_utils.resolve(self.__class__).import_path,

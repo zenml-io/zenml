@@ -21,6 +21,7 @@ from zenml import (
 )
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
+from zenml.enums import ArtifactSaveType
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -225,10 +226,10 @@ def test_log_artifact_metadata_multi_output(clean_client):
     artifact_metadata_logging_pipeline()
     run_ = artifact_metadata_logging_pipeline.model.last_run
     step_ = run_.steps["artifact_multi_output_metadata_logging_step"]
-    str_output = step_.outputs["str_output"]
+    str_output = step_.outputs["str_output"][0]
     assert "description" not in str_output.run_metadata
     assert "metrics" not in str_output.run_metadata
-    int_output = step_.outputs["int_output"]
+    int_output = step_.outputs["int_output"][0]
     assert "description" in int_output.run_metadata
     assert int_output.run_metadata["description"] == "Blupus is great!"
     assert "metrics" in int_output.run_metadata
@@ -384,6 +385,7 @@ def test_register_artifact(clean_client: Client):
     )
     assert artifact
     assert artifact.uri == uri_prefix
+    assert artifact.save_type == ArtifactSaveType.PREEXISTING
 
     loaded_dir = artifact.load()
     assert isinstance(loaded_dir, Path)

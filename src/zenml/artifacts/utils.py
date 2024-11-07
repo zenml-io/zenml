@@ -31,7 +31,7 @@ from typing import (
 from uuid import UUID, uuid4
 
 from zenml.artifacts.artifact_config import ArtifactConfig
-from zenml.artifacts.load_directory_materializer import (
+from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
 from zenml.client import Client
@@ -39,6 +39,7 @@ from zenml.constants import (
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -82,6 +83,117 @@ logger = get_logger(__name__)
 # ----------
 
 
+def _save_artifact_visualizations(
+    data: Any, materializer: "BaseMaterializer"
+) -> List[ArtifactVisualizationRequest]:
+    """Save artifact visualizations.
+
+    Args:
+        data: The data for which to save the visualizations.
+        materializer: The materializer that should be used to generate and
+            save the visualizations.
+
+    Returns:
+        List of requests for the saved visualizations.
+    """
+    try:
+        visualizations = materializer.save_visualizations(data)
+    except Exception as e:
+        logger.warning("Failed to save artifact visualizations: %s", e)
+        return []
+
+    return [
+        ArtifactVisualizationRequest(
+            type=type,
+            uri=uri,
+        )
+        for uri, type in visualizations.items()
+    ]
+
+
+def _store_artifact_data_and_prepare_request(
+    data: Any,
+    name: str,
+    uri: str,
+    materializer_class: Type["BaseMaterializer"],
+    save_type: ArtifactSaveType,
+    version: Optional[Union[int, str]] = None,
+    tags: Optional[List[str]] = None,
+    store_metadata: bool = True,
+    store_visualizations: bool = True,
+    has_custom_name: bool = True,
+    metadata: Optional[Dict[str, "MetadataType"]] = None,
+) -> ArtifactVersionRequest:
+    """Store artifact data and prepare a request to the server.
+
+    Args:
+        data: The artifact data.
+        name: The artifact name.
+        uri: The artifact URI.
+        materializer_class: The materializer class to use for storing the
+            artifact data.
+        save_type: Save type of the artifact version.
+        version: The artifact version.
+        tags: Tags for the artifact version.
+        store_metadata: Whether to store metadata for the artifact version.
+        store_visualizations: Whether to store visualizations for the artifact
+            version.
+        has_custom_name: Whether the artifact has a custom name.
+        metadata: Metadata to store for the artifact version. This will be
+            ignored if `store_metadata` is set to `False`.
+
+    Returns:
+        Artifact version request for the artifact data that was stored.
+    """
+    artifact_store = Client().active_stack.artifact_store
+    artifact_store.makedirs(uri)
+
+    materializer = materializer_class(uri=uri, artifact_store=artifact_store)
+    materializer.uri = materializer.uri.replace("\\", "/")
+
+    data_type = type(data)
+    materializer.validate_save_type_compatibility(data_type)
+    materializer.save(data)
+
+    visualizations = (
+        _save_artifact_visualizations(data=data, materializer=materializer)
+        if store_visualizations
+        else None
+    )
+
+    combined_metadata: Dict[str, "MetadataType"] = {}
+    if store_metadata:
+        try:
+            combined_metadata = materializer.extract_full_metadata(data)
+        except Exception as e:
+            logger.warning("Failed to extract materializer metadata: %s", e)
+
+        # Update with user metadata to potentially overwrite values coming from
+        # the materializer
+        combined_metadata.update(metadata or {})
+
+    artifact_version_request = ArtifactVersionRequest(
+        artifact_name=name,
+        version=version,
+        tags=tags,
+        type=materializer.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer.uri,
+        materializer=source_utils.resolve(materializer.__class__),
+        data_type=source_utils.resolve(data_type),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store.id,
+        visualizations=visualizations,
+        has_custom_name=has_custom_name,
+        save_type=save_type,
+        metadata=validate_metadata(combined_metadata)
+        if combined_metadata
+        else None,
+    )
+
+    return artifact_version_request
+
+
 def save_artifact(
     data: Any,
     name: str,
@@ -89,13 +201,14 @@ def save_artifact(
     tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
-    has_custom_name: bool = True,
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
-    manual_save: bool = True,
+    # TODO: remove these once external artifact does not use this function anymore
+    save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
+    has_custom_name: bool = True,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -107,8 +220,6 @@ def save_artifact(
         tags: Tags to associate with the artifact.
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
-        has_custom_name: If the artifact name is custom and should be listed in
-            the dashboard "Artifacts" tab.
         user_metadata: User-provided metadata to store with the artifact.
         materializer: The materializer to use for saving the artifact to the
             artifact store.
@@ -117,8 +228,9 @@ def save_artifact(
             `custom_artifacts/{name}/{version}`.
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
-        manual_save: If this function is called manually and should therefore
-            link the artifact to the current step run.
+        save_type: The type of save operation that created the artifact version.
+        has_custom_name: If the artifact name is custom and should be listed in
+            the dashboard "Artifacts" tab.
 
     Returns:
         The saved artifact response.
@@ -129,17 +241,14 @@ def save_artifact(
     from zenml.utils import source_utils
 
     client = Client()
-
-    # Get the current artifact store
     artifact_store = client.active_stack.artifact_store
 
-    # Build and check the artifact URI
     if not uri:
         uri = os.path.join("custom_artifacts", name, str(uuid4()))
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         _check_if_artifact_with_given_uri_already_registered(
@@ -147,9 +256,7 @@ def save_artifact(
             uri=uri,
             name=name,
         )
-    artifact_store.makedirs(uri)
 
-    # Find and initialize the right materializer class
     if isinstance(materializer, type):
         materializer_class = materializer
     elif materializer:
@@ -158,66 +265,25 @@ def save_artifact(
         )
     else:
         materializer_class = materializer_registry[type(data)]
-    materializer_object = materializer_class(uri)
 
-    # Force URIs to have forward slashes
-    materializer_object.uri = materializer_object.uri.replace("\\", "/")
-
-    # Save the artifact to the artifact store
-    data_type = type(data)
-    materializer_object.validate_save_type_compatibility(data_type)
-    materializer_object.save(data)
-
-    # Save visualizations of the artifact
-    visualizations: List[ArtifactVisualizationRequest] = []
-    if include_visualizations:
-        try:
-            vis_data = materializer_object.save_visualizations(data)
-            for vis_uri, vis_type in vis_data.items():
-                vis_model = ArtifactVisualizationRequest(
-                    type=vis_type,
-                    uri=vis_uri,
-                )
-                visualizations.append(vis_model)
-        except Exception as e:
-            logger.warning(
-                f"Failed to save visualization for output artifact '{name}': "
-                f"{e}"
-            )
-
-    # Save metadata of the artifact
-    artifact_metadata: Dict[str, "MetadataType"] = {}
-    if extract_metadata:
-        try:
-            artifact_metadata = materializer_object.extract_full_metadata(data)
-            artifact_metadata.update(user_metadata or {})
-        except Exception as e:
-            logger.warning(
-                f"Failed to extract metadata for output artifact '{name}': {e}"
-            )
-
-    artifact_version_request = ArtifactVersionRequest(
-        artifact_name=name,
+    artifact_version_request = _store_artifact_data_and_prepare_request(
+        data=data,
+        name=name,
+        uri=uri,
+        materializer_class=materializer_class,
+        save_type=save_type,
         version=version,
         tags=tags,
-        type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
-        uri=materializer_object.uri,
-        materializer=source_utils.resolve(materializer_object.__class__),
-        data_type=source_utils.resolve(data_type),
-        user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
-        artifact_store_id=artifact_store.id,
-        visualizations=visualizations,
+        store_metadata=extract_metadata,
+        store_visualizations=include_visualizations,
         has_custom_name=has_custom_name,
-        metadata=validate_metadata(artifact_metadata)
-        if artifact_metadata
-        else None,
+        metadata=user_metadata,
     )
     artifact_version = client.zen_store.create_artifact_version(
         artifact_version=artifact_version_request
     )
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
             artifact_version=artifact_version,
             is_model_artifact=is_model_artifact,
@@ -281,6 +347,7 @@ def register_artifact(
         version=version,
         tags=tags,
         type=ArtifactType.DATA,
+        save_type=ArtifactSaveType.PREEXISTING,
         uri=folder_or_file_uri,
         materializer=source_utils.resolve(PreexistingDataMaterializer),
         data_type=source_utils.resolve(Path),
@@ -578,7 +645,8 @@ def get_artifacts_versions_of_pipeline_run(
     artifact_versions: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
-            artifact_versions.extend(step.outputs.values())
+            for output in step.outputs.values():
+                artifact_versions.extend(output)
     return artifact_versions
 
 
@@ -639,9 +707,7 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={
-                    artifact_version.artifact.name: artifact_version.id
-                }
+                outputs={artifact_version.artifact.name: artifact_version.id}
             ),
         )
         error_message = "model"

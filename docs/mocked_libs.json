@@ -146,6 +146,8 @@
     "langchain.embeddings",
     "langchain.vectorstores",
     "langchain.vectorstores.base",
+    "langchain_community",
+    "langchain_community.embeddings",
     "lightgbm",
     "mlflow",
     "mlflow.entities",
