@@ -257,13 +257,29 @@ console.
 
         config: Optional[str] = None
         if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
-            config = f"""module "zenml_stack" {{
+            config = f"""terraform {{
+    required_providers {{
+        aws = {{
+            source  = "hashicorp/aws"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "aws" {{
+    region = "{self.location or "eu-central-1"}"
+}}
+
+provider "zenml" {{
+    server_url = "{self.zenml_server_url}"
+    api_token = "{self.zenml_server_api_token}"
+}}
+
+module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/aws"
 
-    region = "{self.location or "eu-central-1"}"
-    zenml_server_url = "{self.zenml_server_url}"
-    zenml_api_key = ""
-    zenml_api_token = "{self.zenml_server_api_token}"
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
 }}
