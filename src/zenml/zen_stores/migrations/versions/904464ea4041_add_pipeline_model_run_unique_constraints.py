@@ -7,7 +7,7 @@ Create Date: 2024-11-04 10:27:05.450092
 """
 
 from collections import defaultdict
-from typing import Dict, Set
+from typing import Any, Dict, Set
 
 import sqlalchemy as sa
 from alembic import op
@@ -99,7 +99,7 @@ def resolve_duplicate_entities() -> None:
         needs_new_name,
         needs_new_number,
     ) in needs_update:
-        values = {}
+        values: Dict[str, Any] = {}
 
         is_numeric_version = str(number) == name
         next_numeric_version = max(existing_numbers[model_id]) + 1
