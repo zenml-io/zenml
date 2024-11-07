@@ -57,6 +57,7 @@ from zenml.constants import (
     ARTIFACT_VERSIONS,
     ARTIFACT_VISUALIZATIONS,
     ARTIFACTS,
+    BATCH,
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
@@ -200,9 +201,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -987,6 +986,23 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=artifact_version,
+            response_model=ArtifactVersionResponse,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return self._batch_create_resources(
+            resources=artifact_versions,
             response_model=ArtifactVersionResponse,
             route=ARTIFACT_VERSIONS,
         )
@@ -1996,9 +2012,7 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -2008,55 +2022,8 @@ class RestZenStore(BaseZenStore):
             The created run metadata.
         """
         route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
-        response_body = self.post(f"{route}", body=run_metadata)
-        result: List[RunMetadataResponse] = []
-        if isinstance(response_body, list):
-            for metadata in response_body or []:
-                result.append(RunMetadataResponse.model_validate(metadata))
-        return result
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._get_resource(
-            resource_id=run_metadata_id,
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._list_paginated_resources(
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            filter_model=run_metadata_filter_model,
-            params={"hydrate": hydrate},
-        )
+        self.post(f"{route}", body=run_metadata)
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
@@ -4517,6 +4484,40 @@ class RestZenStore(BaseZenStore):
         response_body = self.post(f"{route}", body=resource, params=params)
 
         return response_model.model_validate(response_body)
+
+    def _batch_create_resources(
+        self,
+        resources: List[AnyRequest],
+        response_model: Type[AnyResponse],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> List[AnyResponse]:
+        """Create a new batch of resources.
+
+        Args:
+            resources: The resources to create.
+            response_model: The response model of an individual resource.
+            route: The resource REST route to use.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            List of response models.
+        """
+        json_data = [
+            resource.model_dump(mode="json") for resource in resources
+        ]
+        response = self._request(
+            "POST",
+            self.url + API + VERSION_1 + route + BATCH,
+            json=json_data,
+            params=params,
+        )
+        assert isinstance(response, list)
+
+        return [
+            response_model.model_validate(model_data)
+            for model_data in response
+        ]
 
     def _create_workspace_scoped_resource(
         self,
