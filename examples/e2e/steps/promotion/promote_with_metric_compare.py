@@ -92,14 +92,14 @@ def promote_with_metric_compare(
         # Promote in Model Registry
         latest_version_model_registry_number = latest_version.run_metadata[
             "model_registry_version"
-        ].value
+        ]
         if current_version_number is None:
             current_version_model_registry_number = (
                 latest_version_model_registry_number
             )
         else:
             current_version_model_registry_number = (
-                current_version.run_metadata["model_registry_version"].value
+                current_version.run_metadata["model_registry_version"]
             )
         promote_in_model_registry(
             latest_version=latest_version_model_registry_number,
@@ -111,7 +111,7 @@ def promote_with_metric_compare(
     else:
         promoted_version = current_version.run_metadata[
             "model_registry_version"
-        ].value
+        ]
 
     logger.info(
         f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"

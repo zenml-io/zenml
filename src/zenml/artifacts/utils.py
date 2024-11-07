@@ -39,6 +39,7 @@ from zenml.constants import (
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -115,6 +116,7 @@ def _store_artifact_data_and_prepare_request(
     name: str,
     uri: str,
     materializer_class: Type["BaseMaterializer"],
+    save_type: ArtifactSaveType,
     version: Optional[Union[int, str]] = None,
     tags: Optional[List[str]] = None,
     store_metadata: bool = True,
@@ -130,6 +132,7 @@ def _store_artifact_data_and_prepare_request(
         uri: The artifact URI.
         materializer_class: The materializer class to use for storing the
             artifact data.
+        save_type: Save type of the artifact version.
         version: The artifact version.
         tags: Tags for the artifact version.
         store_metadata: Whether to store metadata for the artifact version.
@@ -182,6 +185,7 @@ def _store_artifact_data_and_prepare_request(
         artifact_store_id=artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
+        save_type=save_type,
         metadata=validate_metadata(combined_metadata)
         if combined_metadata
         else None,
@@ -203,7 +207,7 @@ def save_artifact(
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
     # TODO: remove these once external artifact does not use this function anymore
-    manual_save: bool = True,
+    save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
@@ -224,8 +228,7 @@ def save_artifact(
             `custom_artifacts/{name}/{version}`.
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
-        manual_save: If this function is called manually and should therefore
-            link the artifact to the current step run.
+        save_type: The type of save operation that created the artifact version.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
 
@@ -245,7 +248,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         _check_if_artifact_with_given_uri_already_registered(
@@ -268,6 +271,7 @@ def save_artifact(
         name=name,
         uri=uri,
         materializer_class=materializer_class,
+        save_type=save_type,
         version=version,
         tags=tags,
         store_metadata=extract_metadata,
@@ -279,7 +283,7 @@ def save_artifact(
         artifact_version=artifact_version_request
     )
 
-    if manual_save:
+    if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
             artifact_version=artifact_version,
             is_model_artifact=is_model_artifact,
@@ -343,6 +347,7 @@ def register_artifact(
         version=version,
         tags=tags,
         type=ArtifactType.DATA,
+        save_type=ArtifactSaveType.PREEXISTING,
         uri=folder_or_file_uri,
         materializer=source_utils.resolve(PreexistingDataMaterializer),
         data_type=source_utils.resolve(Path),
@@ -636,7 +641,8 @@ def get_artifacts_versions_of_pipeline_run(
     artifact_versions: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
-            artifact_versions.extend(step.outputs.values())
+            for output in step.outputs.values():
+                artifact_versions.extend(output)
     return artifact_versions
 
 
@@ -697,9 +703,7 @@ def _link_artifact_version_to_the_step_and_model(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                saved_artifact_versions={
-                    artifact_version.artifact.name: artifact_version.id
-                }
+                outputs={artifact_version.artifact.name: artifact_version.id}
             ),
         )
         error_message = "model"

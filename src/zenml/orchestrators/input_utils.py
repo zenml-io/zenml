@@ -18,6 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.enums import ArtifactSaveType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
@@ -45,7 +46,7 @@ def resolve_step_inputs(
         The IDs of the input artifact versions and the IDs of parent steps of
             the current step.
     """
-    from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+    from zenml.models import ArtifactVersionResponse
 
     current_run_steps = {
         run_step.name: run_step
@@ -64,14 +65,32 @@ def resolve_step_inputs(
             )
 
         try:
-            artifact = step_run.outputs[input_.output_name]
+            outputs = step_run.outputs[input_.output_name]
         except KeyError:
             raise InputResolutionError(
-                f"No output `{input_.output_name}` found for step "
+                f"No step output `{input_.output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
-        input_artifacts[name] = artifact
+        step_outputs = [
+            output
+            for output in outputs
+            if output.save_type == ArtifactSaveType.STEP_OUTPUT
+        ]
+        if len(step_outputs) > 2:
+            # This should never happen, there can only be a single regular step
+            # output for a name
+            raise InputResolutionError(
+                f"Too many step outputs for output `{input_.output_name}` of "
+                f"step `{input_.step_name}`."
+            )
+        elif len(step_outputs) == 0:
+            raise InputResolutionError(
+                f"No step output `{input_.output_name}` found for step "
+                f"`{input_.step_name}`."
+            )
+
+        input_artifacts[name] = step_outputs[0]
 
     for (
         name,
@@ -98,9 +117,7 @@ def resolve_step_inputs(
             ):
                 # metadata values should go directly in parameters, as primitive types
                 step.config.parameters[name] = (
-                    context_model_version.run_metadata[
-                        config_.metadata_name
-                    ].value
+                    context_model_version.run_metadata[config_.metadata_name]
                 )
             elif config_.artifact_name is None:
                 err_msg = (
@@ -117,9 +134,7 @@ def resolve_step_inputs(
                         # metadata values should go directly in parameters, as primitive types
                         try:
                             step.config.parameters[name] = (
-                                artifact_.run_metadata[
-                                    config_.metadata_name
-                                ].value
+                                artifact_.run_metadata[config_.metadata_name]
                             )
                         except KeyError:
                             err_msg = (
@@ -142,8 +157,6 @@ def resolve_step_inputs(
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
             input_artifacts[name] = value_
-        elif isinstance(value_, RunMetadataResponse):
-            step.config.parameters[name] = value_.value
         else:
             step.config.parameters[name] = value_
 
