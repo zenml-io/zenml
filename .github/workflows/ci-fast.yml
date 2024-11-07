@@ -107,7 +107,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-arc-runner-set-integration-test:
+  ubuntu-latest-integration-test:
     needs: [build-and-push, linting]
     if: github.event.pull_request.draft == false
     strategy:

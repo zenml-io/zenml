@@ -177,7 +177,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.12']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -190,7 +190,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -203,7 +203,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.12']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -291,35 +291,31 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  custom-ubuntu-integration-test:
+  ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
     needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]
         python-version: ['3.9', '3.10', '3.12']
-        test_environment: [default, docker-server-docker-orchestrator-mariadb]
+        test_environment:
+          - default
+          - docker-server-docker-orchestrator-mysql
+          - docker-server-docker-orchestrator-mariadb
         exclude:
           # docker is time-consuming to run, so we only run it on 3.9
-          - test_environment: default
-            python-version: '3.12'
-          - test_environment: default
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: '3.9'
+          - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.10'
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: '3.12'
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.12'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.12'
-          # IMPORTANT: Since we are using the following combinations
-          # in our `ci-fast` workflow, this combination has been
-          # excluded from the `ci-slow` workflow.
-          - os: arc-runner-set
-            test_environment: default
-            python-version: '3.10'
-          - os: arc-runner-set
-            test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
