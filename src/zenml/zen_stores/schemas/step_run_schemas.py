@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -36,6 +36,7 @@ from zenml.models import (
     StepRunResponseMetadata,
     StepRunUpdate,
 )
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import StepRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -223,12 +224,13 @@ class StepRunSchema(NamedSchema, table=True):
             for artifact in self.input_artifacts
         }
 
-        output_artifacts = {
-            artifact.name: artifact.artifact_version.to_model(
-                pipeline_run_id_in_context=self.pipeline_run_id
+        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+        for artifact in self.output_artifacts:
+            if artifact.name not in output_artifacts:
+                output_artifacts[artifact.name] = []
+            output_artifacts[artifact.name].append(
+                artifact.artifact_version.to_model()
             )
-            for artifact in self.output_artifacts
-        }
 
         full_step_config = None
         if self.deployment is not None:
@@ -398,7 +400,6 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
-    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
