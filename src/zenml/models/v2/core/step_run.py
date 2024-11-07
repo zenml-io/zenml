@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -39,9 +40,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
-    )
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
     )
 
 
@@ -226,7 +224,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         title="Metadata associated with this step run.",
         default={},
     )
@@ -465,7 +463,7 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
