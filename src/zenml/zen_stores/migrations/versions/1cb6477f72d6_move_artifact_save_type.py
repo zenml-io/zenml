@@ -26,9 +26,10 @@ def upgrade() -> None:
     op.execute("""
         UPDATE artifact_version
         SET save_type = (
-            SELECT step_run_output_artifact.type
+            SELECT max(step_run_output_artifact.type)
             FROM step_run_output_artifact
             WHERE step_run_output_artifact.artifact_id = artifact_version.id
+            GROUP BY artifact_id
         )
     """)
     op.execute("""
@@ -71,9 +72,10 @@ def downgrade() -> None:
     op.execute("""
         UPDATE step_run_output_artifact
         SET type = (
-            SELECT artifact_version.save_type
+            SELECT max(artifact_version.save_type)
             FROM artifact_version
             WHERE step_run_output_artifact.artifact_id = artifact_version.id
+            GROUP BY artifact_id
         )
     """)
     op.execute("""
