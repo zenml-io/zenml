@@ -184,7 +184,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-ubuntu-unit-test:
+  ubuntu-unit-test:
     if: github.event.pull_request.draft == false
     needs: [run-slow-ci-label-is-set, ubuntu-linting]
     strategy:
@@ -293,7 +293,7 @@ jobs:
     secrets: inherit
   ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, custom-ubuntu-unit-test]
+    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]

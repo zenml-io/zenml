@@ -94,7 +94,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-ubuntu-setup-and-unit-test:
+  ubuntu-setup-and-unit-test:
     needs: linting
     if: github.event.pull_request.draft == false
     strategy:
