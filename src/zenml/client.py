@@ -4199,6 +4199,7 @@ class Client(metaclass=ClientMetaClass):
         materializer: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -4227,7 +4228,8 @@ class Client(metaclass=ClientMetaClass):
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
+            model_version_id: Filter by model version ID.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
@@ -4260,6 +4262,7 @@ class Client(metaclass=ClientMetaClass):
             materializer=materializer,
             workspace_id=workspace_id,
             user_id=user_id,
+            model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,

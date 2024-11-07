@@ -109,9 +109,6 @@ def multi_named_pipeline():
 
 def test_link_multiple_named_outputs(clean_client: "Client"):
     """Test multiple typed output step with explicit linking from step context."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     multi_named_pipeline()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -119,8 +116,6 @@ def test_link_multiple_named_outputs(clean_client: "Client"):
     assert mv.number == 1 and mv.name == "1"
     al = clean_client.list_model_version_artifact_links(
         model_version_id=mv.id,
-        user_id=user,
-        workspace_id=ws,
     )
     assert al.size == 3
 
@@ -217,9 +212,6 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
     clean_client: "Client",
 ):
     """In this test a mixed linkage of artifacts is verified. See steps description."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     # manual creation needed, as we work with specific versions
     models = []
     mvs = []
@@ -243,8 +235,6 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
         artifact_links.append(
             clean_client.list_model_version_artifact_links(
                 model_version_id=mv.id,
-                user_id=user,
-                workspace_id=ws,
             )
         )
 
