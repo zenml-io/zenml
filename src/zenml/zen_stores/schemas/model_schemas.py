@@ -353,7 +353,7 @@ class ModelVersionSchema(NamedSchema, table=True):
                 model_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
-            if (
+            elif (
                 artifact_link.artifact_version.type
                 == ArtifactType.SERVICE.value
             ):
