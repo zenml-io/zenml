@@ -28,7 +28,8 @@ from typing import (
 )
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.artifacts.utils import save_artifact
+from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
+from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
@@ -36,6 +37,7 @@ from zenml.constants import (
     ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
+from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
@@ -241,7 +243,9 @@ class StepRunner:
                             from zenml.orchestrators import step_run_utils
 
                             step_run_utils.link_output_artifacts_to_model_version(
-                                artifacts=output_artifacts,
+                                artifacts={
+                                    k: [v] for k, v in output_artifacts.items()
+                                },
                                 output_configurations=step_run.config.outputs,
                                 model_version=model_version,
                             )
@@ -534,7 +538,7 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         step_context = get_step_context()
-        output_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
+        artifact_requests = []
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -595,22 +599,25 @@ class StepRunner:
             # Get full set of tags
             tags = step_context.get_output_tags(output_name)
 
-            artifact = save_artifact(
+            artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,
                 data=return_value,
-                materializer=materializer_class,
+                materializer_class=materializer_class,
                 uri=uri,
-                extract_metadata=artifact_metadata_enabled,
-                include_visualizations=artifact_visualization_enabled,
+                store_metadata=artifact_metadata_enabled,
+                store_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,
                 version=version,
                 tags=tags,
-                user_metadata=user_metadata,
-                manual_save=False,
+                save_type=ArtifactSaveType.STEP_OUTPUT,
+                metadata=user_metadata,
             )
-            output_artifacts[output_name] = artifact
+            artifact_requests.append(artifact_request)
 
-        return output_artifacts
+        responses = Client().zen_store.batch_create_artifact_versions(
+            artifact_requests
+        )
+        return dict(zip(output_data.keys(), responses))
 
     def load_and_run_hook(
         self,

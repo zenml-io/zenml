@@ -14,12 +14,12 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import ArtifactConfiguration, Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -142,8 +142,8 @@ class StepRunRequestFactory:
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_step_run.outputs.items()
+                    output_name: [artifact.id for artifact in artifacts]
+                    for output_name, artifacts in cached_step_run.outputs.items()
                 }
 
                 request.status = ExecutionStatus.CACHED
@@ -551,7 +551,7 @@ def link_pipeline_run_to_model_version(
 
 
 def link_output_artifacts_to_model_version(
-    artifacts: Dict[str, ArtifactVersionResponse],
+    artifacts: Dict[str, List[ArtifactVersionResponse]],
     output_configurations: Mapping[str, ArtifactConfiguration],
     model_version: ModelVersionResponse,
 ) -> None:
@@ -562,13 +562,16 @@ def link_output_artifacts_to_model_version(
         output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
-    for output_name, output_artifact in artifacts.items():
-        artifact_config = None
-        if output_config := output_configurations.get(output_name, None):
-            artifact_config = output_config.artifact_config
+    for output_name, output_artifacts in artifacts.items():
+        for output_artifact in output_artifacts:
+            artifact_config = None
+            if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT and (
+                output_config := output_configurations.get(output_name, None)
+            ):
+                artifact_config = output_config.artifact_config
 
-        link_artifact_version_to_model_version(
-            artifact_version=output_artifact,
-            model_version=model_version,
-            artifact_config=artifact_config,
-        )
+            link_artifact_version_to_model_version(
+                artifact_version=output_artifact,
+                model_version=model_version,
+                artifact_config=artifact_config,
+            )

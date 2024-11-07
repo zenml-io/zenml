@@ -119,7 +119,6 @@ from zenml.enums import (
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
-    StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
 )
@@ -2939,6 +2938,22 @@ class SqlZenStore(BaseZenStore):
             return artifact_version_schema.to_model(
                 include_metadata=True, include_resources=True
             )
+
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return [
+            self.create_artifact_version(artifact_version)
+            for artifact_version in artifact_versions
+        ]
 
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
@@ -8211,14 +8226,14 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_version_id in step_run.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_schema.id,
-                    artifact_version_id=artifact_version_id,
-                    name=output_name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
+            for output_name, artifact_version_ids in step_run.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_schema.id,
+                        artifact_version_id=artifact_version_id,
+                        name=output_name,
+                        session=session,
+                    )
 
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
@@ -8318,26 +8333,12 @@ class SqlZenStore(BaseZenStore):
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
-            # Update the output artifacts.
+            # Update the artifacts.
             for name, artifact_version_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_version_id=artifact_version_id,
                     name=name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
-
-            # Update saved artifacts
-            for (
-                artifact_name,
-                artifact_version_id,
-            ) in step_run_update.saved_artifact_versions.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=artifact_name,
-                    output_type=StepRunOutputArtifactType.MANUAL,
                     session=session,
                 )
 
@@ -8484,7 +8485,6 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         artifact_version_id: UUID,
         name: str,
-        output_type: StepRunOutputArtifactType,
         session: Session,
     ) -> None:
         """Sets an artifact as an output of a step run.
@@ -8493,7 +8493,6 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run.
             artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
-            output_type: In which way the artifact was saved by the step.
             session: The database session to use.
 
         Raises:
@@ -8537,7 +8536,6 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=output_type.value,
         )
         session.add(assignment)
 
