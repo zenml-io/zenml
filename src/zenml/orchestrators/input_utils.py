@@ -18,18 +18,19 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactVersionResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse
+    from zenml.models.v2.core.step_run import StepRunInputResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
-) -> Tuple[Dict[str, "ArtifactVersionResponse"], List[UUID]]:
+) -> Tuple[Dict[str, "StepRunInputResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
@@ -47,6 +48,7 @@ def resolve_step_inputs(
             the current step.
     """
     from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+    from zenml.models.v2.core.step_run import StepRunInputResponse
 
     current_run_steps = {
         run_step.name: run_step
@@ -55,7 +57,7 @@ def resolve_step_inputs(
         )
     }
 
-    input_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
+    input_artifacts: Dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]
@@ -90,15 +92,19 @@ def resolve_step_inputs(
                 f"`{input_.step_name}`."
             )
 
-        input_artifacts[name] = step_outputs[0]
+        input_artifacts[name] = StepRunInputResponse(
+            input_type=StepRunInputArtifactType.STEP_OUTPUT,
+            **step_outputs[0].model_dump(),
+        )
 
     for (
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
         artifact_version_id = external_artifact.get_artifact_version_id()
-        input_artifacts[name] = Client().get_artifact_version(
-            artifact_version_id
+        input_artifacts[name] = StepRunInputResponse(
+            input_type=StepRunInputArtifactType.EXTERNAL,
+            **Client().get_artifact_version(artifact_version_id).model_dump(),
         )
 
     for name, config_ in step.config.model_artifacts_or_metadata.items():
@@ -131,7 +137,10 @@ def resolve_step_inputs(
                     config_.artifact_name, config_.artifact_version
                 ):
                     if config_.metadata_name is None:
-                        input_artifacts[name] = artifact_
+                        input_artifacts[name] = StepRunInputResponse(
+                            input_type=StepRunInputArtifactType.LAZY_LOADED,
+                            **artifact_.model_dump(),
+                        )
                     elif config_.metadata_name:
                         # metadata values should go directly in parameters, as primitive types
                         try:
@@ -160,7 +169,10 @@ def resolve_step_inputs(
     for name, cll_ in step.config.client_lazy_loaders.items():
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
-            input_artifacts[name] = value_
+            input_artifacts[name] = StepRunInputResponse(
+                input_type=StepRunInputArtifactType.LAZY_LOADED,
+                **value_.model_dump(),
+            )
         elif isinstance(value_, RunMetadataResponse):
             step.config.parameters[name] = value_.value
         else:
