@@ -108,7 +108,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   ubuntu-latest-integration-test:
-    needs: [build-and-push, linting]
+    needs: [linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -122,24 +122,24 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write  # Needed for pushing to GHCR
-    steps:
-      - uses: actions/checkout@v4.2.2
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3.3.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push ZenML server image to GHCR
-        uses: docker/build-push-action@v6.9.0
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
-            github.sha }}
-          file: ./docker/zenml-server-dev.Dockerfile
+# build-and-push:
+#   runs-on: ubuntu-latest
+#   permissions:
+#     contents: read
+#     packages: write  # Needed for pushing to GHCR
+#   steps:
+#     - uses: actions/checkout@v4.2.2
+#     - name: Log in to GitHub Container Registry
+#       uses: docker/login-action@v3.3.0
+#       with:
+#         registry: ghcr.io
+#         username: ${{ github.actor }}
+#         password: ${{ secrets.GITHUB_TOKEN }}
+#     - name: Build and push ZenML server image to GHCR
+#       uses: docker/build-push-action@v6.9.0
+#       with:
+#         context: .
+#         push: true
+#         tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
+#           github.sha }}
+#         file: ./docker/zenml-server-dev.Dockerfile
