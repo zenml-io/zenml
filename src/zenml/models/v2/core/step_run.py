@@ -48,6 +48,19 @@ class StepRunInputResponse(ArtifactVersionResponse):
 
     input_type: StepRunInputArtifactType
 
+    def get_hydrated_version(self) -> "StepRunInputResponse":
+        """Get the hydrated version of this step run input.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return StepRunInputResponse(
+            input_type=self.input_type,
+            **Client().zen_store.get_artifact_version(self.id).model_dump(),
+        )
+
 
 # ------------------ Request Model ------------------
 
