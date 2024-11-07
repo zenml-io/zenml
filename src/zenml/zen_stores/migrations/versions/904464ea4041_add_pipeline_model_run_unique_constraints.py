@@ -10,7 +10,7 @@ from collections import defaultdict
 
 import sqlalchemy as sa
 from alembic import op
-
+from typing import Dict, Set
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +37,7 @@ def resolve_duplicate_entities() -> None:
         result = connection.execute(
             sa.select(table.c.id, table.c.name, table.c.workspace_id)
         ).all()
-        existing = defaultdict(set)
+        existing: Dict[str, Set[str]] = defaultdict(set)
 
         for id_, name, workspace_id in result:
             names_in_workspace = existing[workspace_id]
@@ -70,8 +70,8 @@ def resolve_duplicate_entities() -> None:
         )
     ).all()
 
-    existing_names = defaultdict(set)
-    existing_numbers = defaultdict(set)
+    existing_names: Dict[str, Set[str]] = defaultdict(set)
+    existing_numbers: Dict[str, Set[int]] = defaultdict(set)
 
     needs_update = []
 
