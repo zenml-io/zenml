@@ -3,7 +3,7 @@ name: release-prepare
 on:
   push:
     branches:
-      - 'misc/prepare-release-*'
+      - "misc/prepare-release-*"
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
