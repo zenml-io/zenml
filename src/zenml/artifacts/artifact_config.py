@@ -71,6 +71,10 @@ class ArtifactConfig(BaseModel):
         Args:
             data: The model data.
 
+        Raises:
+            ValueError: If the artifact is configured to be
+                both a model and a deployment artifact.
+
         Returns:
             Model data without the removed attributes.
         """
