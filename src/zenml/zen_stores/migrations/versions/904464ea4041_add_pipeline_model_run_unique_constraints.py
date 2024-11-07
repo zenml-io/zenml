@@ -7,10 +7,11 @@ Create Date: 2024-11-04 10:27:05.450092
 """
 
 from collections import defaultdict
+from typing import Dict, Set
 
 import sqlalchemy as sa
 from alembic import op
-from typing import Dict, Set
+
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
