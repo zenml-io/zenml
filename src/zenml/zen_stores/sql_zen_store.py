@@ -118,7 +118,6 @@ from zenml.enums import (
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
-    StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
 )
@@ -216,9 +215,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -5481,9 +5478,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -5492,7 +5487,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return_value: List[RunMetadataResponse] = []
         with Session(self.engine) as session:
             for key, value in run_metadata.values.items():
                 type_ = run_metadata.types[key]
@@ -5508,70 +5502,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(
-                    run_metadata_schema.to_model(
-                        include_metadata=True, include_resources=True
-                    )
-                )
-        return return_value
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-        with Session(self.engine) as session:
-            run_metadata = session.exec(
-                select(RunMetadataSchema).where(
-                    RunMetadataSchema.id == run_metadata_id
-                )
-            ).first()
-            if run_metadata is None:
-                raise KeyError(
-                    f"Unable to get run metadata with ID "
-                    f"{run_metadata_id}: "
-                    f"No run metadata with this ID found."
-                )
-            return run_metadata.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        with Session(self.engine) as session:
-            query = select(RunMetadataSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RunMetadataSchema,
-                filter_model=run_metadata_filter_model,
-                hydrate=hydrate,
-            )
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
@@ -8200,14 +8131,14 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_version_id in step_run.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_schema.id,
-                    artifact_version_id=artifact_version_id,
-                    name=output_name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
+            for output_name, artifact_version_ids in step_run.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_schema.id,
+                        artifact_version_id=artifact_version_id,
+                        name=output_name,
+                        session=session,
+                    )
 
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
@@ -8307,26 +8238,12 @@ class SqlZenStore(BaseZenStore):
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
-            # Update the output artifacts.
+            # Update the artifacts.
             for name, artifact_version_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_version_id=artifact_version_id,
                     name=name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
-
-            # Update saved artifacts
-            for (
-                artifact_name,
-                artifact_version_id,
-            ) in step_run_update.saved_artifact_versions.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=artifact_name,
-                    output_type=StepRunOutputArtifactType.MANUAL,
                     session=session,
                 )
 
@@ -8473,7 +8390,6 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         artifact_version_id: UUID,
         name: str,
-        output_type: StepRunOutputArtifactType,
         session: Session,
     ) -> None:
         """Sets an artifact as an output of a step run.
@@ -8482,7 +8398,6 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run.
             artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
-            output_type: In which way the artifact was saved by the step.
             session: The database session to use.
 
         Raises:
@@ -8526,7 +8441,6 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=output_type.value,
         )
         session.add(assignment)
 

@@ -14,7 +14,7 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -142,8 +142,8 @@ class StepRunRequestFactory:
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
-                    output_name: artifact.id
-                    for output_name, artifact in cached_step_run.outputs.items()
+                    output_name: [artifact.id for artifact in artifacts]
+                    for output_name, artifacts in cached_step_run.outputs.items()
                 }
 
                 request.status = ExecutionStatus.CACHED
@@ -547,7 +547,7 @@ def link_pipeline_run_to_model_version(
 
 
 def link_output_artifacts_to_model_version(
-    artifacts: Dict[str, ArtifactVersionResponse],
+    artifacts: Dict[str, List[ArtifactVersionResponse]],
     model_version: ModelVersionResponse,
 ) -> None:
     """Link the outputs of a step run to a model version.
@@ -556,8 +556,9 @@ def link_output_artifacts_to_model_version(
         artifacts: The step output artifacts.
         model_version: The model version to link.
     """
-    for output_artifact in artifacts.values():
-        link_artifact_version_to_model_version(
-            artifact_version=output_artifact,
-            model_version=model_version,
-        )
+    for output_artifacts in artifacts.values():
+        for output_artifact in output_artifacts:
+            link_artifact_version_to_model_version(
+                artifact_version=output_artifact,
+                model_version=model_version,
+            )

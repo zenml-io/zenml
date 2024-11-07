@@ -28,7 +28,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
     ) as runs:
         steps = runs["data_profiling_pipeline"][0].steps
         profiles = [
-            steps["data_loader"].outputs["profile"].load(),
+            steps["data_loader"].outputs["profile"][0].load(),
             steps["whylogs_profiler_step"].output.load(),
             steps["whylogs_profiler_step_2"].output.load(),
         ]

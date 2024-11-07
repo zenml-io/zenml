@@ -34,7 +34,7 @@ from pydantic import (
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType, GenericFilterOps
+from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
@@ -57,9 +57,6 @@ if TYPE_CHECKING:
         ArtifactVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.models.v2.core.step_run import StepRunResponse
 
 logger = get_logger(__name__)
@@ -106,6 +103,9 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     )
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
+    )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
     )
     metadata: Optional[Dict[str, MetadataType]] = Field(
         default=None, title="Metadata of the artifact version."
@@ -193,6 +193,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
@@ -230,7 +233,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={}, title="Metadata of the artifact."
     )
 
@@ -314,6 +317,15 @@ class ArtifactVersionResponse(
         return self.get_body().producer_pipeline_run_id
 
     @property
+    def save_type(self) -> ArtifactSaveType:
+        """The `save_type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().save_type
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
@@ -343,7 +355,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().visualizations
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property.
 
         Returns:
@@ -694,7 +706,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property in lazy loading mode.
 
         Returns:

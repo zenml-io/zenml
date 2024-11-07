@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -23,6 +24,7 @@ from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -196,6 +198,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
+    save_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
     # Foreign keys
     artifact_id: UUID = build_foreign_key_field(
@@ -300,6 +303,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             uri=artifact_version_request.uri,
             materializer=artifact_version_request.materializer.model_dump_json(),
             data_type=artifact_version_request.data_type.model_dump_json(),
+            save_type=artifact_version_request.save_type.value,
         )
 
     def to_model(
@@ -360,6 +364,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
+            save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,
         )
 
@@ -370,7 +375,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 workspace=self.workspace.to_model(),
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
-                run_metadata={m.key: m.to_model() for m in self.run_metadata},
+                run_metadata={
+                    m.key: json.loads(m.value) for m in self.run_metadata
+                },
             )
 
         resources = None

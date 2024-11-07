@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
@@ -378,8 +379,7 @@ class ModelVersionSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
                 description=self.description,
                 run_metadata={
-                    rm.key: rm.to_model(include_metadata=True)
-                    for rm in self.run_metadata
+                    rm.key: json.loads(rm.value) for rm in self.run_metadata
                 },
             )
 
