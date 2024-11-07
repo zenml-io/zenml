@@ -216,9 +216,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -5481,9 +5479,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -5492,7 +5488,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return_value: List[RunMetadataResponse] = []
         with Session(self.engine) as session:
             for key, value in run_metadata.values.items():
                 type_ = run_metadata.types[key]
@@ -5508,70 +5503,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(
-                    run_metadata_schema.to_model(
-                        include_metadata=True, include_resources=True
-                    )
-                )
-        return return_value
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-        with Session(self.engine) as session:
-            run_metadata = session.exec(
-                select(RunMetadataSchema).where(
-                    RunMetadataSchema.id == run_metadata_id
-                )
-            ).first()
-            if run_metadata is None:
-                raise KeyError(
-                    f"Unable to get run metadata with ID "
-                    f"{run_metadata_id}: "
-                    f"No run metadata with this ID found."
-                )
-            return run_metadata.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        with Session(self.engine) as session:
-            query = select(RunMetadataSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RunMetadataSchema,
-                filter_model=run_metadata_filter_model,
-                hydrate=hydrate,
-            )
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
