@@ -276,4 +276,31 @@ def log_metadata(
             )
 
     else:
-        raise ValueError()
+        raise ValueError(
+            """
+            Unsupported way to call the `log_metadata`. Possible combinations "
+            include:
+            
+            # Inside a step
+            # Logs the metadata to the step, its run and possibly its model
+            log_metadata(metadata={})
+            
+            # Manually logging for a step
+            # Logs the metadata to the step, its run and possibly its model
+            log_metadata(metadata={}, step_name=..., run_id_name_or_prefix=...)
+            log_metadata(metadata={}, step_id=...)
+            
+            # Manually logging for a run 
+            # Logs the metadata to the run, possibly its model
+            log_metadata(metadata={}, run_id_name_or_prefix=...)
+            
+            # Manually logging for a model
+            log_metadata(metadata={}, model_name=..., model_version=...)
+            log_metadata(metadata={}, model_version_id=...)
+            
+            # Manually logging for an artifact
+            log_metadata(metadata={}, artifact_name=...)  # inside a step 
+            log_metadata(metadata={}, artifact_name=..., artifact_version=...)
+            log_metadata(metadata={}, artifact_version_id=...)
+            """
+        )
