@@ -325,7 +325,7 @@ Resources:
               "flavor": "sagemaker",
               "service_connector_index": 0,
               "configuration": {
-                "execution_role": "${SageMakerRuntimeRole.Arn}"
+                "execution_role": "${SageMakerRuntimeRole.Arn}",
                 "output_data_s3_uri": "s3://${S3Bucket}/sagemaker"
               }
             }],
@@ -333,7 +333,7 @@ Resources:
               "flavor": "sagemaker",
               "service_connector_index": 0,
               "configuration": {
-                "role": "${SageMakerRuntimeRole.Arn}"
+                "role": "${SageMakerRuntimeRole.Arn}",
                 "bucket": "${S3Bucket}"
               }
             }],
@@ -406,7 +406,7 @@ Outputs:
             "flavor": "sagemaker",
             "service_connector_index": 0,
             "configuration": {
-              "execution_role": "${SageMakerRuntimeRole.Arn}"
+              "execution_role": "${SageMakerRuntimeRole.Arn}",
               "output_data_s3_uri": "s3://${S3Bucket}/sagemaker"
             }
           }],
@@ -414,7 +414,7 @@ Outputs:
             "flavor": "sagemaker",
             "service_connector_index": 0,
             "configuration": {
-              "role": "${SageMakerRuntimeRole.Arn}"
+              "role": "${SageMakerRuntimeRole.Arn}",
               "bucket": "${S3Bucket}"
             }
           }],
