@@ -52,8 +52,10 @@ def get_step_logs(
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
     """Get the logs by ID.
+
     Args:
         logs_id: ID of the logs.
+
     Returns:
         The logs response.
     """
