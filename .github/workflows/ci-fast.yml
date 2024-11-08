@@ -99,6 +99,10 @@ jobs:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
+        # IMPORTANT: Since we are using the combination of `arc-runner-set`
+        # and `3.10` in our `ci-fast` workflow, this combination has been
+        # excluded from the `ci-slow` workflow. If you change the configuration
+        # here, please adjust the configuration of `ci-slow` accordingly.
         os: [ubuntu-latest]
         python-version: ['3.11']
       fail-fast: false
@@ -112,6 +116,10 @@ jobs:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
+        # IMPORTANT: Since we are using the combination of `arc-runner-set`
+        # and `3.10` in our `ci-fast` workflow, this combination has been
+        # excluded from the `ci-slow` workflow. If you change the configuration
+        # here, please adjust the configuration of `ci-slow` accordingly.
         os: [ubuntu-latest]
         python-version: ['3.11']
         test_environment: [default, docker-server-docker-orchestrator-mysql]
@@ -122,24 +130,3 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-# build-and-push:
-#   runs-on: ubuntu-latest
-#   permissions:
-#     contents: read
-#     packages: write  # Needed for pushing to GHCR
-#   steps:
-#     - uses: actions/checkout@v4.2.2
-#     - name: Log in to GitHub Container Registry
-#       uses: docker/login-action@v3.3.0
-#       with:
-#         registry: ghcr.io
-#         username: ${{ github.actor }}
-#         password: ${{ secrets.GITHUB_TOKEN }}
-#     - name: Build and push ZenML server image to GHCR
-#       uses: docker/build-push-action@v6.9.0
-#       with:
-#         context: .
-#         push: true
-#         tags: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
-#           github.sha }}
-#         file: ./docker/zenml-server-dev.Dockerfile
