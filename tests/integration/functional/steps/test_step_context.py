@@ -6,7 +6,7 @@ import pytest
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
-from zenml import get_step_context, log_artifact_metadata, pipeline, step
+from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ArtifactType
@@ -92,7 +92,7 @@ def test_step_can_access_step_context():
 
 @step
 def output_metadata_logging_step() -> Annotated[int, "my_output"]:
-    log_artifact_metadata(metadata={"some_key": "some_value"})
+    log_metadata(metadata={"some_key": "some_value"})
     return 42
 
 

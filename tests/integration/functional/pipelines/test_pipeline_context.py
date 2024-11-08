@@ -10,7 +10,7 @@ from zenml import (
     pipeline,
     step,
 )
-from zenml.artifacts.utils import log_artifact_metadata
+from zenml.artifacts.utils import log_metadata
 from zenml.client import Client
 
 
@@ -103,7 +103,7 @@ def producer() -> Annotated[str, "bar"]:
     """Produce artifact with metadata and attach metadata to model version."""
     ver = get_step_context().model.version
     log_model_metadata(metadata={"foobar": "model_meta_" + ver})
-    log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
+    log_metadata(metadata={"foobar": "artifact_meta_" + ver})
     return "artifact_data_" + ver
 
 
