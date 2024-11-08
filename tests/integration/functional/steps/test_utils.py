@@ -14,8 +14,7 @@
 
 """Tests for utility functions and classes to run ZenML steps."""
 
-from zenml import pipeline, step
-from zenml import log_metadata
+from zenml import log_metadata, pipeline, step
 
 
 @step

@@ -33,7 +33,6 @@ from zenml import (
     get_pipeline_context,
     get_step_context,
     log_metadata,
-    log_model_metadata,
     pipeline,
     save_artifact,
     step,
@@ -972,11 +971,13 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
 
     client = Client()
 
-    log_model_metadata(
-        metadata={"some_meta": "meta_new_one"},
-    )
-
     model = get_step_context().model
+
+    log_metadata(
+        metadata={"some_meta": "meta_new_one"},
+        model_name=model.name,
+        model_version=model.model_version,
+    )
 
     mv = client.create_model_version(
         model_name_or_id=model.name,
@@ -1137,7 +1138,7 @@ class TestArtifact:
             artifact_name="preexisting",
             artifact_version="1.2.3",
         )
-        log_model_metadata(
+        log_metadata(
             metadata={"some_meta": "meta_preexisting"},
             model_name="aria",
             model_version="model_version",
