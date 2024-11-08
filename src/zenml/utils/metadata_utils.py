@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
+import contextlib
 from typing import Dict, Optional, Union, overload
 from uuid import UUID
 
@@ -216,11 +217,12 @@ def log_metadata(
             resource_type=MetadataResourceTypes.MODEL_VERSION,
         )
 
-    # If the user provides an artifact name, there are two possibilities. If
+    # If the user provides an artifact name, there are three possibilities. If
     # an artifact version is also provided with the name, we use both to fetch
     # the artifact version and use it to log the metadata. If no version is
-    # provided, we make sure that the call is happening within a step, otherwise
-    # we fail.
+    # provided, if the function is called within a step we search the artifacts
+    # of the step if not we fetch the latest version and attach the metadata
+    # to the latest version.
     elif artifact_name is not None:
         if artifact_version:
             artifact_version_model = client.get_artifact_version(
@@ -232,15 +234,22 @@ def log_metadata(
                 resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
             )
         else:
-            try:
+            step_context = None
+            with contextlib.suppress(RuntimeError):
                 step_context = get_step_context()
+
+            if step_context:
                 step_context.add_output_metadata(
                     metadata=metadata, output_name=artifact_name
                 )
-            except RuntimeError:
-                raise ValueError(
-                    "You are calling 'log_metadata(artifact_name='...') "
-                    "without specifying a version outside of a step execution."
+            else:
+                artifact_version_model = client.get_artifact_version(
+                    name_id_or_prefix=artifact_name
+                )
+                client.create_run_metadata(
+                    metadata=metadata,
+                    resource_id=artifact_version_model.id,
+                    resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
                 )
 
     # If the user directly provides an artifact_version_id, we use the client to

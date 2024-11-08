@@ -17,6 +17,7 @@ from zenml import (
     log_metadata,
     pipeline,
     save_artifact,
+log_artifact_metadata,
     step,
 )
 from zenml.artifacts.utils import register_artifact
@@ -185,7 +186,7 @@ def artifact_metadata_logging_step() -> str:
         "description": "Aria is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_metadata(metadata=output_metadata)
+    log_artifact_metadata(metadata=output_metadata)
     return "42"
 
 
@@ -247,7 +248,7 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
         "description": "Axl is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_metadata(output_metadata)
+    log_artifact_metadata(output_metadata)
     return "42", 42
 
 

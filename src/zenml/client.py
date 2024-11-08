@@ -4195,7 +4195,7 @@ class Client(metaclass=ClientMetaClass):
                 ),
             )
         except RuntimeError:
-            pass  # Cannot link to step run if called outside of a step
+            pass  # Cannot link to step run if called outside a step
         return artifact
 
     def list_artifact_versions(

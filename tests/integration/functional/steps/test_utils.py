@@ -115,8 +115,7 @@ def test_log_metadata_using_specific_params(clean_client):
     }
     log_metadata(
         metadata=step_metadata,
-        step_name="step_metadata_logging_step",
-        run_id_name_or_prefix=step_run_id,
+        step_id=step_run_id,
     )
     run_after_log = step_metadata_logging_pipeline.model.last_run
     run_metadata_after_log = run_after_log.steps[
