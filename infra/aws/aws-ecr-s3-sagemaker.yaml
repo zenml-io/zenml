@@ -188,6 +188,20 @@ Resources:
             Principal:
               Service: sagemaker.amazonaws.com
             Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: SageMakerRuntimePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:AbortMultipartUpload'
+                Resource:
+                  - !Sub '${S3Bucket.Arn}'
+                  - !Sub '${S3Bucket.Arn}/*'
       ManagedPolicyArns: 
         - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
 
