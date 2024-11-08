@@ -387,17 +387,6 @@ def load_artifact(
         The loaded artifact.
     """
     artifact = Client().get_artifact_version(name_or_id, version)
-    try:
-        step_run = get_step_context().step_run
-        client = Client()
-        client.zen_store.update_run_step(
-            step_run_id=step_run.id,
-            step_run_update=StepRunUpdate(
-                loaded_artifact_versions={artifact.name: artifact.id}
-            ),
-        )
-    except RuntimeError:
-        pass  # Cannot link to step run if called outside of a step
     return load_artifact_from_response(artifact)
 
 
