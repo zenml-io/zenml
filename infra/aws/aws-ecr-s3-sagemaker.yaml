@@ -163,6 +163,15 @@ Resources:
                   - 'sagemaker:DescribePipeline'
                   - 'sagemaker:DescribePipelineExecution'
                 Resource: '*'
+              # Allow this role to create, start and monitor SageMaker training jobs
+              # (required for the step operator)
+              - Effect: Allow
+                Action:
+                  - 'sagemaker:CreateTrainingJob'
+                  - 'sagemaker:DescribeTrainingJob'
+                  - 'logs:Describe*'
+                  - 'logs:GetLogEvents'
+                Resource: '*'
               # Allow this role to pass the SageMaker execution role to the pipeline
               - Effect: Allow
                 Action: iam:PassRole
