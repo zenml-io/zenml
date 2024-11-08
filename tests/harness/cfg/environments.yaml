@@ -188,3 +188,14 @@ environments:
       - mlflow-local-registry
       - mlflow-local-deployer
     mandatory_requirements: [airflow-local]
+  - name: github-actions-server-docker-orchestrator
+    description: >-
+      Server using GitHub Actions services with docker orchestrator and all
+      local components.
+    deployment: github-actions-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    mandatory_requirements: [docker-local]

@@ -25,7 +25,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: ${{ inputs.zenml_nightly && 'develop' || github.ref }}
       - name: Determine version
