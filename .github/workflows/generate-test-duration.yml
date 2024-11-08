@@ -7,7 +7,7 @@ on:
 jobs:
   generate-test-duration-file:
     name: Generate test duration file
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
     env:
@@ -23,7 +23,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           ref: develop
       - name: Setup environment
@@ -31,7 +31,7 @@ jobs:
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: '3.10'
-          os: arc-runner-set
+          os: ubuntu-latest
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
           discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}

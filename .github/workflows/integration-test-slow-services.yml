@@ -101,23 +101,6 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 20000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          build-mount-path: /var/lib/docker/
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - name: Reload Docker
-        run: sudo systemctl restart docker
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -244,3 +227,34 @@ jobs:
           zenml integration list
           uv pip list
           uv pip check || true
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: zenml
+          MYSQL_DATABASE: zenml
+        ports: 
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      zenml-server:
+        image: ghcr.io/${{ github.repository_owner }}/zenml-server-github-actions:${{
+          github.sha }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
+        env:
+          ZENML_STORE_URL: mysql://root:zenml@mysql:3306/zenml
+          ZENML_SERVER_DEPLOYMENT_TYPE: docker
+          ZENML_SERVER_AUTO_ACTIVATE: 'True'
+          ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
+        ports:   
+          - 8080:8080
+        options: >-
+          --health-cmd="curl -f http://127.0.0.1:8080/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
