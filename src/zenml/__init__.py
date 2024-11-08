@@ -57,6 +57,7 @@ __all__ = [
     "get_pipeline_context",
     "get_step_context",
     "load_artifact",
+    "log_metadata",
     "log_artifact_metadata",
     "log_model_metadata",
     "log_step_metadata",

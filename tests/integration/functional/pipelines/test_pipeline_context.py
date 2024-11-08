@@ -10,7 +10,7 @@ from zenml import (
     pipeline,
     step,
 )
-from zenml.artifacts.utils import log_metadata
+from zenml import log_metadata
 from zenml.client import Client
 
 
