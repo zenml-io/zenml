@@ -71,7 +71,8 @@ of any potential costs:
 
 - An S3 bucket registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/s3).
 - An ECR repository registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/aws).
-- Sagemaker registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker).
+- Sagemaker registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker)
+as well as a [ZenML step operator](https://docs.zenml.io/stack-components/step-operators/sagemaker).
 - An IAM user and IAM role with the minimum necessary permissions to access the
 above resources.
 - An AWS access key used to give access to ZenML to connect to the above
