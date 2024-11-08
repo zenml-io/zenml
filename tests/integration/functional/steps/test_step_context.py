@@ -92,7 +92,7 @@ def test_step_can_access_step_context():
 
 @step
 def output_metadata_logging_step() -> Annotated[int, "my_output"]:
-    log_metadata(metadata={"some_key": "some_value"})
+    log_metadata(metadata={"some_key": "some_value"}, artifact_name="my_output")
     return 42
 
 

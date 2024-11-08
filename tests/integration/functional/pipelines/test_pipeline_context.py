@@ -103,12 +103,12 @@ def producer() -> Annotated[str, "bar"]:
     model = get_step_context().model
 
     log_metadata(
-        metadata={"foobar": "model_meta_" + model.ver},
+        metadata={"foobar": "model_meta_" + model.version},
         model_name=model.name,
         model_version=model.version,
     )
-    log_metadata(metadata={"foobar": "artifact_meta_" + model.ver})
-    return "artifact_data_" + model.ver
+    log_metadata(metadata={"foobar": "artifact_meta_" + model.version})
+    return "artifact_data_" + model.version
 
 
 @step

@@ -4223,6 +4223,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str,str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
@@ -4254,6 +4255,7 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name or ID.
             model: Filter by model name or ID.
             pipeline_run: Filter by pipeline run name or ID.
+            run_metadata: Filter by run metadata.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
