@@ -42,11 +42,11 @@ In general, try to pick something that is small and self-contained, ideally the 
 
 For example, a general use case of "answer all customer support emails" is almost certainly too vague, whereas something like "triage incoming customer support queries and extract relevant information as per some pre-defined checklist or schema" is much more realistic.
 
-It's also worth picking something where you can reach some sort of answer as to whether this the right approach in a short amount of time. If your use case depends on the generation or annotation of lots of data, or organisation and sorting of pre-existing data, this is less of an ideal starter project than if you have data that already exists within your organisation and that you can repurpose here.
+It's also worth picking something where you can reach some sort of answer as to whether this the right approach in a short amount of time. If your use case depends on the generation or annotation of lots of data, or organization and sorting of pre-existing data, this is less of an ideal starter project than if you have data that already exists within your organization and that you can repurpose here.
 
 ## Picking data for your use case
 
-The data needed for your use case will follow directly from the specific use case you're choosing, but ideally it should be something that is already *mostly* in the direction of what you need. It will take time to annotate and manually transform data if it is too distinct from the specific use case you want to use, so try to minimise this as much as you possibly can.
+The data needed for your use case will follow directly from the specific use case you're choosing, but ideally it should be something that is already *mostly* in the direction of what you need. It will take time to annotate and manually transform data if it is too distinct from the specific use case you want to use, so try to minimize this as much as you possibly can.
 
 A couple of examples of where you might be able to reuse pre-existing data:
 
