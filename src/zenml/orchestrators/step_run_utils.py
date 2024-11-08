@@ -104,6 +104,7 @@ class StepRunRequestFactory:
             input_name: artifact.id
             for input_name, artifact in input_artifacts.items()
         }
+
         request.inputs = input_artifact_ids
         request.parent_step_ids = parent_step_ids
 
