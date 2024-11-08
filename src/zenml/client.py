@@ -3834,6 +3834,7 @@ class Client(metaclass=ClientMetaClass):
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             user: The name/ID of the user to filter by.
+            run_metadata: The run_metadata of the run to filter by.
             pipeline: The name/ID of the pipeline to filter by.
             code_repository: Filter by code repository name/ID.
             model: Filter by model name/ID.
