@@ -107,7 +107,10 @@ def producer() -> Annotated[str, "bar"]:
         model_name=model.name,
         model_version=model.version,
     )
-    log_metadata(metadata={"foobar": "artifact_meta_" + model.version})
+    log_metadata(
+        metadata={"foobar": "artifact_meta_" + model.version},
+        artifact_name="bar",
+    )
     return "artifact_data_" + model.version
 
 

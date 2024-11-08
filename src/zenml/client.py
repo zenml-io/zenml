@@ -4223,7 +4223,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str,str]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:

@@ -187,6 +187,9 @@ class StrFilter(Filter):
 
         Returns:
             A list of query conditions.
+
+        Raises:
+            ValueError: the comparison of the column to a numeric value fails.
         """
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
@@ -227,7 +230,8 @@ class StrFilter(Filter):
                     )
             except Exception as e:
                 raise ValueError(
-                    f"Failed to compare the column to the numeric value: {e}"
+                    f"Failed to compare the column '{column}' to the "
+                    f"value '{self.value}' (must be numeric): {e}"
                 )
 
         return column == self.value
@@ -630,6 +634,10 @@ class BaseFilter(BaseModel):
 
         Returns:
             A tuple of the filter value and the operator.
+
+        Raises:
+            ValueError: when we try to use the `oneof` operator with the wrong
+                value.
         """
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
@@ -645,11 +653,7 @@ class BaseFilter(BaseModel):
                 try:
                     value = json.loads(value)
                     if not isinstance(value, list):
-                        raise ValueError(
-                            "When you are using the 'oneof:' filtering "
-                            "make sure that the provided value is a json "
-                            "formatted list."
-                        )
+                        raise ValueError
                 except ValueError:
                     raise ValueError(
                         "When you are using the 'oneof:' filtering "

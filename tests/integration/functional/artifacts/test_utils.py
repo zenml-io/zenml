@@ -14,10 +14,10 @@ from typing_extensions import Annotated
 
 from zenml import (
     load_artifact,
+    log_artifact_metadata,
     log_metadata,
     pipeline,
     save_artifact,
-log_artifact_metadata,
     step,
 )
 from zenml.artifacts.utils import register_artifact

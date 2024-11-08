@@ -976,7 +976,7 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     log_metadata(
         metadata={"some_meta": "meta_new_one"},
         model_name=model.name,
-        model_version=model.model_version,
+        model_version=model.version,
     )
 
     mv = client.create_model_version(
