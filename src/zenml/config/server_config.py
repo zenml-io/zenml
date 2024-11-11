@@ -19,7 +19,7 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
@@ -260,7 +260,7 @@ class ServerConfiguration(BaseModel):
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
 
-    generic_api_token_lifetime: int = (
+    generic_api_token_lifetime: PositiveInt = (
         DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME
     )
 

@@ -28,7 +28,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
-    PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
 from zenml.enums import AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -39,7 +38,6 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-    from zenml.models import PipelineDeploymentResponse
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
@@ -82,16 +80,23 @@ def is_setting_enabled(
 
 
 def get_config_environment_vars(
-    deployment: Optional["PipelineDeploymentResponse"] = None,
+    schedule_id: Optional[UUID] = None,
+    pipeline_run_id: Optional[UUID] = None,
+    step_run_id: Optional[UUID] = None,
 ) -> Dict[str, str]:
     """Gets environment variables to set for mirroring the active config.
 
-    If a pipeline deployment is given, the environment variables will be set to
-    include a newly generated API token valid for the duration of the pipeline
-    run instead of the API token from the global config.
+    If a schedule ID, pipeline run ID or step run ID is given, and the current
+    client is not authenticated to a server with an API key, the environment
+    variables will be updated to include a newly generated workload API token
+    that will be valid for the duration of the schedule, pipeline run, or step
+    run instead of the current API token used to authenticate the client.
 
     Args:
-        deployment: Optional deployment to use for the environment variables.
+        schedule_id: Optional schedule ID to use to generate a new API token.
+        pipeline_run_id: Optional pipeline run ID to use to generate a new API
+            token.
+        step_run_id: Optional step run ID to use to generate a new API token.
 
     Returns:
         Environment variable dict.
@@ -112,42 +117,49 @@ def get_config_environment_vars(
         api_key = credentials_store.get_api_key(url)
         api_token = credentials_store.get_token(url, allow_expired=False)
         if api_key:
+            # If an API key is available, it is used to authenticate the
+            # pipeline run environment.
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_KEY"] = api_key
-        elif deployment:
-            # When connected to an authenticated ZenML server, if a pipeline
-            # deployment is supplied, we need to fetch an API token that will be
-            # valid for the duration of the pipeline run.
+        elif schedule_id or pipeline_run_id or step_run_id:
+            # When connected to an authenticated ZenML server, if a schedule ID,
+            # pipeline run ID or step run ID is supplied, we need to fetch a new
+            # workload API token scoped to the schedule, pipeline run or step
+            # run.
             assert isinstance(global_config.zen_store, RestZenStore)
-            pipeline_id: Optional[UUID] = None
-            if deployment.pipeline:
-                pipeline_id = deployment.pipeline.id
-            schedule_id: Optional[UUID] = None
-            expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
-            if deployment.schedule:
-                schedule_id = deployment.schedule.id
-                # If a schedule is given, this is a long running pipeline that
-                # should not have an API token that expires.
-                expires_minutes = None
+
+            if pipeline_run_id or step_run_id:
+                # If a pipeline run or step run is given, the pipeline run
+                # or step run credentials are scoped to the pipeline run or step
+                # run and will only be valid for the duration of the run/step.
+                new_api_token = global_config.zen_store.get_api_token(
+                    schedule_id=schedule_id,
+                    pipeline_run_id=pipeline_run_id,
+                    step_run_id=step_run_id,
+                )
+            else:
+                # If a schedule is given, the pipeline run credentials is
+                # configured with a token that is scoped to the given schedule.
                 logger.warning(
                     "An API token without an expiration time will be generated "
                     "and used to run this pipeline on a schedule. This is very "
-                    "insecure because the API token cannot be revoked in case "
-                    "of potential theft without disabling the entire user "
-                    "account. When deploying a pipeline on a schedule, it is "
-                    "strongly advised to use a service account API key to "
-                    "authenticate to the ZenML server instead of your regular "
-                    "user account. For more information, see "
+                    "insecure because the API token will be valid for the "
+                    "entire lifetime of the schedule and can be used to access "
+                    "your account if leaked. When deploying a pipeline on a "
+                    "schedule, it is strongly advised to use a service account "
+                    "API key to authenticate to the ZenML server instead of "
+                    "your regular user account. For more information, see "
                     "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
                 )
-            new_api_token = global_config.zen_store.get_api_token(
-                pipeline_id=pipeline_id,
-                schedule_id=schedule_id,
-                expires_minutes=expires_minutes,
-            )
+                new_api_token = global_config.zen_store.get_api_token(
+                    schedule_id=schedule_id,
+                )
+
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 new_api_token
             )
         elif api_token:
+            # For all other cases, the pipeline run environment is configured
+            # with the current access token.
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 api_token.access_token
             )
