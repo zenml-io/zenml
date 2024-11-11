@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import TaggableResourceTypes
@@ -50,7 +50,13 @@ class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
     __tablename__ = "pipeline"
-
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_pipeline_name_in_workspace",
+        ),
+    )
     # Fields
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
