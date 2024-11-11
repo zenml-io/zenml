@@ -67,7 +67,7 @@ def deployment_deploy() -> (
             registry_model_name=model.name,
             registry_model_version=model.run_metadata[
                 "model_registry_version"
-            ].value,
+            ],
             replace_existing=True,
         )
     else:
