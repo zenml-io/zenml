@@ -23,7 +23,7 @@ jobs:
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: actions/github-script@v5
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
@@ -45,13 +45,13 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -68,13 +68,13 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -87,18 +87,18 @@ jobs:
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
     needs: run-slow-ci-label-is-set
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Test migrations across versions
@@ -109,13 +109,13 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Login to Docker Hub
@@ -131,9 +131,9 @@ jobs:
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
       - name: Set up Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.11'
       - name: Install uv
@@ -171,28 +171,48 @@ jobs:
           bash scripts/check-alembic-branches.sh
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
-  custom-ubuntu-unit-test:
-    if: github.event.pull_request.draft == false
+  ubuntu-linting:
     needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        # IMPORTANT: Since we are using the following combination
-        # in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow.
-        exclude:
-          - os: arc-runner-set
-            python-version: '3.10'
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.12']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  ubuntu-unit-test:
+    if: github.event.pull_request.draft == false
+    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  windows-linting:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   windows-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-linting]
     strategy:
       matrix:
         os: [windows-latest]
@@ -203,9 +223,22 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  macos-linting:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-linting]
     strategy:
       matrix:
         os: [macos-latest]
@@ -224,7 +257,7 @@ jobs:
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
@@ -239,7 +272,7 @@ jobs:
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, macos-unit-test]
     strategy:
       matrix:
         os: [macos-13]
@@ -258,13 +291,13 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  custom-ubuntu-integration-test:
+  ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
     strategy:
       matrix:
-        os: [arc-runner-set]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.12']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
@@ -272,26 +305,17 @@ jobs:
         exclude:
           # docker is time-consuming to run, so we only run it on 3.9
           - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
+            python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.11'
+            python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.10'
+            python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.11'
+            python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.12'
-          # IMPORTANT: Since we are using the following combinations
-          # in our `ci-fast` workflow, this combination has been
-          # excluded from the `ci-slow` workflow.
-          - os: arc-runner-set
-            test_environment: default
-            python-version: '3.10'
-          - os: arc-runner-set
-            test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:

@@ -33,13 +33,13 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
-    ArtifactVersionResponse,
     LogsRequest,
     PipelineDeploymentResponse,
     PipelineRunRequest,
     PipelineRunResponse,
     StepRunResponse,
 )
+from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
@@ -441,7 +441,7 @@ class StepLauncher:
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, ArtifactVersionResponse],
+        input_artifacts: Dict[str, StepRunInputResponse],
         output_artifact_uris: Dict[str, str],
         last_retry: bool,
     ) -> None:

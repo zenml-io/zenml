@@ -19,9 +19,15 @@ from uuid import UUID
 import pytest
 from typing_extensions import Annotated
 
-from zenml import pipeline, save_artifact, step
+from zenml import (
+    ExternalArtifact,
+    load_artifact,
+    pipeline,
+    save_artifact,
+    step,
+)
 from zenml.client import Client
-from zenml.enums import ArtifactType, ModelStages
+from zenml.enums import ArtifactType, ModelStages, StepRunInputArtifactType
 from zenml.model.model import Model
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
@@ -258,6 +264,71 @@ def test_that_cached_artifact_versions_are_created_properly_for_multiple_version
     assert (
         len(mv2.data_artifacts["trackable_artifact"]) == 1
     )  # cached show up only once
+
+
+@step
+def producer_step() -> Annotated[int, "shared_name"]:
+    save_artifact(41, "shared_name")
+    return 42
+
+
+@step
+def consumer_step(shared_name: int, expected: int):
+    assert shared_name == expected
+
+
+@step
+def manual_consumer_step_load():
+    assert load_artifact("shared_name", 1) == 41
+
+
+@step
+def manual_consumer_step_client():
+    assert Client().get_artifact_version("shared_name", 1).load() == 41
+
+
+def test_input_artifacts_typing(clean_client: Client):
+    """Test that input artifacts are correctly typed."""
+
+    @pipeline
+    def my_pipeline():
+        a = producer_step()
+        consumer_step(a, 42, id="cs1", after=["producer_step"])
+        consumer_step(ExternalArtifact(value=42), 42, id="cs2", after=["cs1"])
+        consumer_step(
+            clean_client.get_artifact_version("shared_name", 1),
+            41,
+            after=["producer_step", "cs2"],
+            id="cs3",
+        )
+        manual_consumer_step_load(id="mcsl", after=["cs3"])
+        manual_consumer_step_client(id="mcsc", after=["mcsl"])
+
+    for cache in [False, True]:
+        prr: PipelineRunResponse = my_pipeline.with_options(
+            enable_cache=cache
+        )()
+        assert len(prr.steps["producer_step"].inputs) == 0
+        assert (
+            prr.steps["cs1"].inputs["shared_name"].input_type
+            == StepRunInputArtifactType.STEP_OUTPUT
+        )
+        assert (
+            prr.steps["cs2"].inputs["shared_name"].input_type
+            == StepRunInputArtifactType.EXTERNAL
+        )
+        assert (
+            prr.steps["cs3"].inputs["shared_name"].input_type
+            == StepRunInputArtifactType.LAZY_LOADED
+        )
+        assert (
+            prr.steps["mcsl"].inputs["shared_name"].input_type
+            == StepRunInputArtifactType.MANUAL
+        )
+        assert (
+            prr.steps["mcsc"].inputs["shared_name"].input_type
+            == StepRunInputArtifactType.MANUAL
+        )
 
 
 # TODO: Enable this test after fixing the issue with `is_model_artifact` and `is_deployment_artifact` flags

@@ -10,7 +10,7 @@ The Deepchecks [Data Validator](./data-validators.md) flavor provided with the Z
 
 ### When would you want to use it?
 
-[Deepchecks](https://deepchecks.com/) is an open-source library that you can use to run a variety of data and model validation tests, from data integrity tests that work with a single dataset to model evaluation tests to data drift analyses and model performance comparison tests. All this can be done with minimal configuration input from the user, or customized with specialized conditions that the validation tests should perform.
+[Deepchecks](https://deepchecks.com/) is an open-source library that you can use to run a variety of data and model validation tests, from data integrity tests that work with a single dataset to model evaluation tests to data drift analyzes and model performance comparison tests. All this can be done with minimal configuration input from the user, or customized with specialized conditions that the validation tests should perform.
 
 Deepchecks works with both tabular data and computer vision data. For tabular, the supported dataset format is `pandas.DataFrame` and the supported model format is `sklearn.base.ClassifierMixin`. For computer vision, the supported dataset format is `torch.utils.data.dataloader.DataLoader` and supported model format is `torch.nn.Module`.
 

@@ -12,7 +12,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       # Setup AWS CLI
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
