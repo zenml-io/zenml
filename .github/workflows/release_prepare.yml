@@ -25,7 +25,7 @@ jobs:
       # Check out main to get the old version
       - name: Checkout code
         id: checkout-code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: main
       # Configure Git
@@ -47,7 +47,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       # Configure Git
       - name: Configure git
         shell: bash
@@ -61,7 +61,7 @@ jobs:
           scripts/validate-new-version.sh ${{ needs.fetch-versions.outputs.new_version }}
       # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.12'
       # Install ZenML
@@ -142,7 +142,7 @@ jobs:
     steps:
       # Check out the prepare-release branch
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       # Sign in to Google
       - uses: google-github-actions/setup-gcloud@v0
         with:
@@ -183,7 +183,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       # Setting up Python
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -221,7 +221,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       # Setting up Python
       - name: Set up Python
         uses: actions/setup-python@v2

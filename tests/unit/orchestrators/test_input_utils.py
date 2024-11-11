@@ -17,19 +17,24 @@ from uuid import uuid4
 import pytest
 
 from zenml.config.step_configurations import Step
+from zenml.enums import StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
 from zenml.models import Page, PipelineRunResponse
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import input_utils
 
 
 def test_input_resolution(
-    mocker, sample_artifact_version_model, create_step_run
+    mocker,
+    sample_artifact_version_model: ArtifactVersionResponse,
+    create_step_run,
 ):
     """Tests that input resolution works if the correct models exist in the
     zen store."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_version_model},
+        output_artifacts={"output_name": [sample_artifact_version_model]},
     )
 
     mocker.patch(
@@ -57,7 +62,12 @@ def test_input_resolution(
     input_artifacts, parent_ids = input_utils.resolve_step_inputs(
         step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
     )
-    assert input_artifacts == {"input_name": sample_artifact_version_model}
+    assert input_artifacts == {
+        "input_name": StepRunInputResponse(
+            input_type=StepRunInputArtifactType.STEP_OUTPUT,
+            **sample_artifact_version_model.model_dump(),
+        )
+    }
     assert parent_ids == [step_run.id]
 
 
@@ -132,7 +142,7 @@ def test_input_resolution_fetches_all_run_steps(
     """Tests that input resolution fetches all step runs of the pipeline run."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_version_model},
+        output_artifacts={"output_name": [sample_artifact_version_model]},
     )
     second_step_run = create_step_run(
         step_run_name="other_step",

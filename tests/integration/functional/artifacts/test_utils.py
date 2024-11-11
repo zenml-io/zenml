@@ -21,6 +21,7 @@ from zenml import (
 )
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
+from zenml.enums import ArtifactSaveType
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -150,22 +151,19 @@ def test_log_artifact_metadata_existing(clean_client):
         "meaning_of_life", version="1"
     )
     assert "description" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["description"].value == "Aria is great!"
+    assert artifact_1.run_metadata["description"] == "Aria is great!"
     assert "description_3" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["description_3"].value == "Axl is great!"
+    assert artifact_1.run_metadata["description_3"] == "Axl is great!"
     assert "float" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["float"].value - 1.0 < 10e-6
+    assert artifact_1.run_metadata["float"] - 1.0 < 10e-6
     assert "int" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["int"].value == 1
+    assert artifact_1.run_metadata["int"] == 1
     assert "str" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["str"].value == "1.0"
+    assert artifact_1.run_metadata["str"] == "1.0"
     assert "list_str" in artifact_1.run_metadata
-    assert (
-        len(set(artifact_1.run_metadata["list_str"].value) - {"1.0", "2.0"})
-        == 0
-    )
+    assert len(set(artifact_1.run_metadata["list_str"]) - {"1.0", "2.0"}) == 0
     assert "list_floats" in artifact_1.run_metadata
-    for each in artifact_1.run_metadata["list_floats"].value:
+    for each in artifact_1.run_metadata["list_floats"]:
         if 0.99 < each < 1.01:
             assert each - 1.0 < 10e-6
         else:
@@ -175,7 +173,7 @@ def test_log_artifact_metadata_existing(clean_client):
         "meaning_of_life", version="43"
     )
     assert "description_2" in artifact_2.run_metadata
-    assert artifact_2.run_metadata["description_2"].value == "Blupus is great!"
+    assert artifact_2.run_metadata["description_2"] == "Blupus is great!"
 
 
 @step
@@ -200,9 +198,9 @@ def test_log_artifact_metadata_single_output(clean_client):
     run_ = artifact_metadata_logging_pipeline.model.last_run
     output = run_.steps["artifact_metadata_logging_step"].output
     assert "description" in output.run_metadata
-    assert output.run_metadata["description"].value == "Aria is great!"
+    assert output.run_metadata["description"] == "Aria is great!"
     assert "metrics" in output.run_metadata
-    assert output.run_metadata["metrics"].value == {"accuracy": 0.9}
+    assert output.run_metadata["metrics"] == {"accuracy": 0.9}
 
 
 @step
@@ -228,14 +226,14 @@ def test_log_artifact_metadata_multi_output(clean_client):
     artifact_metadata_logging_pipeline()
     run_ = artifact_metadata_logging_pipeline.model.last_run
     step_ = run_.steps["artifact_multi_output_metadata_logging_step"]
-    str_output = step_.outputs["str_output"]
+    str_output = step_.outputs["str_output"][0]
     assert "description" not in str_output.run_metadata
     assert "metrics" not in str_output.run_metadata
-    int_output = step_.outputs["int_output"]
+    int_output = step_.outputs["int_output"][0]
     assert "description" in int_output.run_metadata
-    assert int_output.run_metadata["description"].value == "Blupus is great!"
+    assert int_output.run_metadata["description"] == "Blupus is great!"
     assert "metrics" in int_output.run_metadata
-    assert int_output.run_metadata["metrics"].value == {"accuracy": 0.9}
+    assert int_output.run_metadata["metrics"] == {"accuracy": 0.9}
 
 
 @step
@@ -365,10 +363,6 @@ def test_parallel_artifact_creation(clean_client: Client):
         name="meaning_of_life", size=min(1000, process_count * 10)
     )
     assert len(avs) == process_count
-    print(
-        {str(i) for i in range(1, process_count + 1)}
-        - {av.version for av in avs}
-    )
     assert {av.version for av in avs} == {
         str(i) for i in range(1, process_count + 1)
     }
@@ -391,6 +385,7 @@ def test_register_artifact(clean_client: Client):
     )
     assert artifact
     assert artifact.uri == uri_prefix
+    assert artifact.save_type == ArtifactSaveType.PREEXISTING
 
     loaded_dir = artifact.load()
     assert isinstance(loaded_dir, Path)

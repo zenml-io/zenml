@@ -71,7 +71,8 @@ of any potential costs:
 
 - An S3 bucket registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/s3).
 - An ECR repository registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/aws).
-- Sagemaker registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker).
+- Sagemaker registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker)
+as well as a [ZenML step operator](https://docs.zenml.io/stack-components/step-operators/sagemaker).
 - An IAM user and IAM role with the minimum necessary permissions to access the
 above resources.
 - An AWS access key used to give access to ZenML to connect to the above
@@ -257,13 +258,29 @@ console.
 
         config: Optional[str] = None
         if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
-            config = f"""module "zenml_stack" {{
+            config = f"""terraform {{
+    required_providers {{
+        aws = {{
+            source  = "hashicorp/aws"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "aws" {{
+    region = "{self.location or "eu-central-1"}"
+}}
+
+provider "zenml" {{
+    server_url = "{self.zenml_server_url}"
+    api_token = "{self.zenml_server_api_token}"
+}}
+
+module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/aws"
 
-    region = "{self.location or "eu-central-1"}"
-    zenml_server_url = "{self.zenml_server_url}"
-    zenml_api_key = ""
-    zenml_api_token = "{self.zenml_server_api_token}"
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
 }}

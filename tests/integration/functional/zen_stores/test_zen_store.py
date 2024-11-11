@@ -62,6 +62,7 @@ from zenml.constants import (
     USERS,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ColorVariants,
     ExecutionStatus,
@@ -5372,6 +5373,7 @@ class TestRunMetadata:
                     data_type=Source(
                         module="acme.foo", type=SourceType.INTERNAL
                     ),
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
         elif type_ == MetadataResourceTypes.MODEL_VERSION:
@@ -5434,7 +5436,7 @@ class TestRunMetadata:
                 pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
             )
 
-        rm = client.zen_store.create_run_metadata(
+        client.zen_store.create_run_metadata(
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
@@ -5448,12 +5450,13 @@ class TestRunMetadata:
                 else None,
             )
         )
-        rm = client.zen_store.get_run_metadata(rm[0].id, True)
-        assert rm.key == "foo"
-        assert rm.value == "bar"
-        assert rm.resource_id == resource.id
-        assert rm.resource_type == type_
-        assert rm.type == MetadataTypeEnum.STRING
+        if type_ == MetadataResourceTypes.PIPELINE_RUN:
+            rm = client.zen_store.get_run(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
+
+        elif type_ == MetadataResourceTypes.STEP_RUN:
+            rm = client.zen_store.get_run_step(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
@@ -5466,9 +5469,6 @@ class TestRunMetadata:
         ):
             client.zen_store.delete_run(pr.id)
             client.zen_store.delete_deployment(deployment.id)
-
-        with pytest.raises(KeyError):
-            client.zen_store.get_run_metadata(rm.id)
 
         client.zen_store.delete_stack_component(sc.id)
 

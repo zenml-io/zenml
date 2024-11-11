@@ -475,5 +475,9 @@ module = [
     "prodigy.components.*",
     "prodigy.components.db.*",
     "transformers.*",
+    "langchain_community.*",
+    "vllm.*",
+    "numba.*",
+    "uvloop.*",
 ]
 ignore_missing_imports = true

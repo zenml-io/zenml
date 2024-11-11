@@ -27,6 +27,19 @@ You need to select **a pipeline run that was executed on a remote stack**
 (i.e. at least a remote orchestrator, artifact store, and container registry)
 {% endhint %}
 
+
+You can also create a template directly from your pipeline definition by running the
+following code while having a **remote stack** active:
+```python
+from zenml import pipeline
+
+@pipeline
+def my_pipeline():
+    ...
+
+template = my_pipeline.create_run_template(name=<TEMPLATE_NAME>)
+```
+
 ## Run a template 
 
 You can use the ZenML client to run a template:

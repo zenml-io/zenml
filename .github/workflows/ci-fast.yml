@@ -16,12 +16,12 @@ concurrency:
 jobs:
   docstring-check:
     if: github.event.pull_request.draft == false
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       - name: Set up Python
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.10'
       - name: Install darglint using uv
@@ -32,7 +32,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing-random:
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -40,11 +40,11 @@ jobs:
     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
       - name: Test migrations across versions
@@ -54,9 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       - name: Spelling checker
-        uses: crate-ci/typos@v1.17.0
+        uses: crate-ci/typos@v1.27.0
         with:
           files: .
           config: ./.typos.toml
@@ -65,9 +65,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.11'
       - name: Test API docs buildable
@@ -82,7 +82,20 @@ jobs:
       python-version: '3.9'
       os: ubuntu-latest
     secrets: inherit
-  custom-ubuntu-setup-and-unit-test:
+  linting:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.11']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  ubuntu-setup-and-unit-test:
+    needs: linting
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -90,25 +103,25 @@ jobs:
         # and `3.10` in our `ci-fast` workflow, this combination has been
         # excluded from the `ci-slow` workflow. If you change the configuration
         # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [arc-runner-set]
-        python-version: ['3.10']
+        os: [ubuntu-latest]
+        python-version: ['3.11']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-arc-runner-set-integration-test:
+  ubuntu-latest-integration-test:
+    needs: [linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        # IMPORTANT: Since we are using the combinations of `arc-runner-set`
-        # `3.10` and two different test environments in our `ci-fast` workflow,
-        # these combination have been excluded from the `ci-slow` workflow.
-        # If you change the configuration here, please adjust the configuration
-        # of `ci-slow` accordingly.
-        os: [arc-runner-set]
-        python-version: ['3.10']
+        # IMPORTANT: Since we are using the combination of `arc-runner-set`
+        # and `3.10` in our `ci-fast` workflow, this combination has been
+        # excluded from the `ci-slow` workflow. If you change the configuration
+        # here, please adjust the configuration of `ci-slow` accordingly.
+        os: [ubuntu-latest]
+        python-version: ['3.11']
         test_environment: [default, docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml

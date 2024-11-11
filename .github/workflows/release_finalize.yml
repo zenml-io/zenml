@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       latest_version:
-        description: "The latest version of ZenML"
+        description: The latest version of ZenML
         required: true
         type: string
       new_version:
-        description: "The new version of ZenML"
+        description: The new version of ZenML
         required: true
         type: string
 env:
@@ -26,14 +26,14 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: develop
       # Create the release branch
       - name: Release branch
         run: |
           git pull
-          git checkout -b release/${{ github.event.inputs.latest_version }}
+          git checkout -b release/${{ github.event.inputs.new_version }}
           git push --set-upstream origin release/${{ github.event.inputs.new_version }}
   add-docs-warning-header:
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out the previous release branch
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: release/${{ github.event.inputs.latest_version }}
       # Create the docs update PR
@@ -66,7 +66,7 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: develop
       # Create the migration test version if necessary
@@ -80,7 +80,7 @@ jobs:
     steps:
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: develop
       # Setting up the Python
@@ -115,7 +115,7 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out legacy docs branch
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.2
         with:
           ref: docs/legacy-docs-page
       # Append new version to the legacy docs table

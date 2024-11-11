@@ -26,6 +26,7 @@ from typing import (
 
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.utils.callback_registry import CallbackRegistry
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
@@ -34,11 +35,12 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.model import Model
     from zenml.models import (
-        ArtifactVersionResponse,
         PipelineResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
+    from zenml.models.v2.core.step_run import StepRunInputResponse
+
 
 logger = get_logger(__name__)
 
@@ -145,6 +147,7 @@ class StepContext(metaclass=SingletonMetaClass):
             )
             for key in output_materializers.keys()
         }
+        self._cleanup_registry = CallbackRegistry()
 
     @property
     def pipeline(self) -> "PipelineResponse":
@@ -189,7 +192,7 @@ class StepContext(metaclass=SingletonMetaClass):
         return self.model_version.to_model_class()
 
     @property
-    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+    def inputs(self) -> Dict[str, "StepRunInputResponse"]:
         """Returns the input artifacts of the current step.
 
         Returns:

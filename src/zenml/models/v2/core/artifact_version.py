@@ -24,12 +24,19 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType, GenericFilterOps
+from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -50,9 +57,6 @@ if TYPE_CHECKING:
         ArtifactVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.models.v2.core.step_run import StepRunResponse
 
 logger = get_logger(__name__)
@@ -63,11 +67,16 @@ logger = get_logger(__name__)
 class ArtifactVersionRequest(WorkspaceScopedRequest):
     """Request model for artifact versions."""
 
-    artifact_id: UUID = Field(
+    artifact_id: Optional[UUID] = Field(
+        default=None,
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.", union_mode="left_to_right"
+    artifact_name: Optional[str] = Field(
+        default=None,
+        title="Name of the artifact to which this version belongs.",
+    )
+    version: Optional[Union[int, str]] = Field(
+        default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
@@ -95,6 +104,12 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
+    metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, title="Metadata of the artifact version."
+    )
 
     @field_validator("version")
     @classmethod
@@ -116,6 +131,28 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
         return value
+
+    @model_validator(mode="after")
+    def _validate_request(self) -> "ArtifactVersionRequest":
+        """Validate the request values.
+
+        Raises:
+            ValueError: If the request is invalid.
+
+        Returns:
+            The validated request.
+        """
+        if self.artifact_id and self.artifact_name:
+            raise ValueError(
+                "Only one of artifact_name and artifact_id can be set."
+            )
+
+        if not (self.artifact_id or self.artifact_name):
+            raise ValueError(
+                "Either artifact_name or artifact_id must be set."
+            )
+
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -156,6 +193,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
@@ -193,7 +233,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={}, title="Metadata of the artifact."
     )
 
@@ -277,6 +317,15 @@ class ArtifactVersionResponse(
         return self.get_body().producer_pipeline_run_id
 
     @property
+    def save_type(self) -> ArtifactSaveType:
+        """The `save_type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().save_type
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
@@ -306,7 +355,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().visualizations
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property.
 
         Returns:
@@ -634,7 +683,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property in lazy loading mode.
 
         Returns:
