@@ -1,7 +1,7 @@
 """Simplify model version links [ec6307720f92].
 
 Revision ID: ec6307720f92
-Revises: 1cb6477f72d6
+Revises: 904464ea4041
 Create Date: 2024-11-06 16:16:43.344569
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ec6307720f92"
-down_revision = "1cb6477f72d6"
+down_revision = "904464ea4041"
 branch_labels = None
 depends_on = None
 
