@@ -12,9 +12,9 @@ The motivation for implementing thorough evals is similar to that of unit tests 
 
 1. **Prevent Regressions**: Ensure that new iterations or changes don't negatively impact existing functionality.
 
-2. **Track Improvements**: Quantify and visualise how your model improves with each iteration or finetuning session.
+2. **Track Improvements**: Quantify and visualize how your model improves with each iteration or finetuning session.
 
-3. **Ensure Safety and Robustness**: Given the complex nature of LLMs, comprehensive evals help identify and mitigate potential risks, biases, or unexpected behaviours.
+3. **Ensure Safety and Robustness**: Given the complex nature of LLMs, comprehensive evals help identify and mitigate potential risks, biases, or unexpected behaviors.
 
 By implementing a robust evaluation strategy, you can develop more reliable, performant, and safe finetuned LLMs while maintaining a clear picture of your model's capabilities and limitations throughout the development process.
 
@@ -38,12 +38,12 @@ finetuning use case. The main distinction here is that we are not looking to
 evaluate retrieval, but rather the performance of the finetuned model (i.e.
 [the generation part](../evaluation/generation.md)).
 
-Custom evals are tailored to your specific use case and can be categorised into two main types:
+Custom evals are tailored to your specific use case and can be categorized into two main types:
 
 1. **Success Modes**: These evals focus on things you want to see in your model's output, such as:
 	- Correct formatting
 	- Appropriate responses to specific prompts
-	- Desired behaviour in edge cases
+	- Desired behavior in edge cases
 
 2. **Failure Modes**: These evals target things you don't want to see, including:
 	- Hallucinations (generating false or nonsensical information)
@@ -59,7 +59,7 @@ from my_library import query_llm
 
 good_responses = {
     "what are the best salads available at the food court?": ["caesar", "italian"],
-    "how late is the shopping centre open until?": ["10pm", "22:00", "ten"]
+    "how late is the shopping center open until?": ["10pm", "22:00", "ten"]
 }
 
 for question, answers in good_responses.items():
@@ -67,7 +67,7 @@ for question, answers in good_responses.items():
     assert any(answer in llm_response for answer in answers), f"Response does not contain any of the expected answers: {answers}"
 
 bad_responses = {
-    "who is the manager of the shopping centre?": ["tom hanks", "spiderman"]
+    "who is the manager of the shopping center?": ["tom hanks", "spiderman"]
 }
 
 for question, answers in bad_responses.items():
@@ -77,15 +77,15 @@ for question, answers in bad_responses.items():
 
 You can see how you might want to expand this out to cover more examples and more failure modes, but this is a good start. As you continue in the work of iterating on your model and performing more tests, you can update these cases with known failure modes (and/or with obvious success modes that your use case must always work for).
 
-### Generalised Evals and Frameworks
+### Generalized Evals and Frameworks
 
-Generalised evals and frameworks provide a structured approach to evaluating your finetuned LLM. They offer:
+Generalized evals and frameworks provide a structured approach to evaluating your finetuned LLM. They offer:
 
-- Assistance in organising and structuring your evals
-- Standardised evaluation metrics for common tasks
+- Assistance in organizing and structuring your evals
+- Standardized evaluation metrics for common tasks
 - Insights into the model's overall performance
 
-When using generalised evals, it's important to consider their limitations and caveats. While they provide valuable insights, they should be complemented with custom evals tailored to your specific use case. Some possible options for you to check out include:
+When using Generalized evals, it's important to consider their limitations and caveats. While they provide valuable insights, they should be complemented with custom evals tailored to your specific use case. Some possible options for you to check out include:
 
 - [prodigy-evaluate](https://github.com/explosion/prodigy-evaluate?tab=readme-ov-file)
 - [ragas](https://docs.ragas.io/en/stable/getstarted/monitoring.html)
@@ -112,7 +112,7 @@ As part of this, implementing comprehensive logging from the early stages of dev
 
 Alongside collecting the raw data and viewing it periodically, creating simple
 dashboards that display core metrics reflecting your model's performance is an
-effective way to visualise and monitor progress. These metrics should align with
+effective way to visualize and monitor progress. These metrics should align with
 your iteration goals and capture improvements over time, allowing you to quickly
 assess the impact of changes and identify areas that require attention. Again,
 as with everything else, don't let perfect be the enemy of the good; a simple

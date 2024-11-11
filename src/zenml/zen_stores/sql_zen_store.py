@@ -18,6 +18,7 @@ import json
 import logging
 import math
 import os
+import random
 import re
 import sys
 import time
@@ -126,6 +127,7 @@ from zenml.exceptions import (
     ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
+    EntityCreationError,
     EntityExistsError,
     EventSourceExistsError,
     IllegalOperationError,
@@ -370,6 +372,25 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+
+def exponential_backoff_with_jitter(
+    attempt: int, base_duration: float = 0.05
+) -> float:
+    """Exponential backoff with jitter.
+
+    Implemented the `Full jitter` algorithm described in
+    https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+
+    Args:
+        attempt: The backoff attempt.
+        base_duration: The backoff base duration.
+
+    Returns:
+        The backoff duration.
+    """
+    exponential_backoff = base_duration * 1.5**attempt
+    return random.uniform(0, exponential_backoff)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -2782,7 +2803,9 @@ class SqlZenStore(BaseZenStore):
             artifact_version: The artifact version to create.
 
         Raises:
-            EntityExistsError: If the artifact version already exists.
+            EntityExistsError: If an artifact version with the same name
+                already exists.
+            EntityCreationError: If the artifact version creation failed.
 
         Returns:
             The created artifact version.
@@ -2823,7 +2846,7 @@ class SqlZenStore(BaseZenStore):
                         artifact_version_id = artifact_version_schema.id
                 except IntegrityError:
                     if remaining_tries == 0:
-                        raise EntityExistsError(
+                        raise EntityCreationError(
                             f"Failed to create version for artifact "
                             f"{artifact_schema.name}. This is most likely "
                             "caused by multiple parallel requests that try "
@@ -2831,12 +2854,14 @@ class SqlZenStore(BaseZenStore):
                             "database."
                         )
                     else:
-                        # Exponential backoff to account for heavy
-                        # parallelization
-                        sleep_duration = 0.05 * 1.5 ** (
+                        attempt = (
                             MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
                             - remaining_tries
                         )
+                        sleep_duration = exponential_backoff_with_jitter(
+                            attempt=attempt
+                        )
+
                         logger.debug(
                             "Failed to create artifact version %s "
                             "(version %s) due to an integrity error. "
@@ -4229,20 +4254,6 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
-            # Check if pipeline with the given name already exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.workspace_id == pipeline.workspace)
-            ).first()
-            if existing_pipeline is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name "
-                    "already exists."
-                )
-
-            # Create the pipeline
             new_pipeline = PipelineSchema.from_request(pipeline)
 
             if pipeline.tags:
@@ -4253,7 +4264,14 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.add(new_pipeline)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with the name "
+                    f"{pipeline.name} already exists."
+                )
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model(
@@ -5097,6 +5115,26 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
+    def _pipeline_run_exists(self, workspace_id: UUID, name: str) -> bool:
+        """Check if a pipeline name with a certain name exists.
+
+        Args:
+            workspace_id: The workspace to check.
+            name: The run name.
+
+        Returns:
+            If a pipeline run with the given name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(PipelineRunSchema.id)
+                    .where(PipelineRunSchema.workspace_id == workspace_id)
+                    .where(PipelineRunSchema.name == name)
+                ).first()
+                is not None
+            )
+
     def create_run(
         self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
@@ -5112,18 +5150,6 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
-            # Check if pipeline run with same name already exists.
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with name "
-                    f"'{pipeline_run.name}' already exists."
-                )
-
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
 
@@ -5135,7 +5161,22 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.add(new_run)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                if self._pipeline_run_exists(
+                    workspace_id=pipeline_run.workspace, name=pipeline_run.name
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create pipeline run: A pipeline run with "
+                        f"name '{pipeline_run.name}' already exists."
+                    )
+                else:
+                    raise EntityExistsError(
+                        "Unable to create pipeline run: A pipeline run with "
+                        "the same deployment_id and orchestrator_run_id "
+                        "already exists."
+                    )
 
             return new_run.to_model(
                 include_metadata=True, include_resources=True
@@ -5327,21 +5368,14 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
             return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError) as create_error:
-            # Creating the run failed with an
-            # - IntegrityError: This happens when we violated a unique
-            #   constraint, which in turn means a run with the same
-            #   deployment_id and orchestrator_run_id exists. We now fetch and
-            #   return that run.
-            # - EntityExistsError: This happens when a run with the same name
-            #   already exists. This could be either a different run (in which
-            #   case we want to fail) or a run created by a step of the same
-            #   pipeline run (in which case we want to return it).
-            # Note: The IntegrityError might also be raised when other unique
-            # constraints get violated. The only other such constraint is the
-            # primary key constraint on the run ID, which means we randomly
-            # generated an existing UUID. In this case the call below will fail,
-            # but the chance of that happening is so low we don't handle it.
+        except EntityExistsError as create_error:
+            # Creating the run failed because
+            # - a run with the same deployment_id and orchestrator_run_id
+            #   exists. We now fetch and return that run.
+            # - a run with the same name already exists. This could be either a
+            #   different run (in which case we want to fail) or a run created
+            #   by a step of the same pipeline run (in which case we want to
+            #   return it).
             try:
                 return (
                     self._get_run_by_orchestrator_run_id(
@@ -5351,18 +5385,11 @@ class SqlZenStore(BaseZenStore):
                     False,
                 )
             except KeyError:
-                if isinstance(create_error, EntityExistsError):
-                    # There was a run with the same name which does not share
-                    # the deployment_id and orchestrator_run_id -> We fail with
-                    # the error that run names must be unique.
-                    raise create_error from None
-
-                # This should never happen as the run creation failed with an
-                # IntegrityError which means a run with the deployment_id and
-                # orchestrator_run_id exists.
-                raise RuntimeError(
-                    f"Failed to get or create run: {create_error}"
-                )
+                # We should only get here if the run creation failed because
+                # of a name conflict. We raise the error that happened during
+                # creation in any case to forward the error message to the
+                # user.
+                raise create_error
 
     def list_runs(
         self,
@@ -10000,19 +10027,10 @@ class SqlZenStore(BaseZenStore):
             The newly created model.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model with the given name already exists.
         """
         validate_name(model)
         with Session(self.engine) as session:
-            existing_model = session.exec(
-                select(ModelSchema).where(ModelSchema.name == model.name)
-            ).first()
-            if existing_model is not None:
-                raise EntityExistsError(
-                    f"Unable to create model {model.name}: "
-                    "A model with this name already exists."
-                )
-
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -10022,7 +10040,14 @@ class SqlZenStore(BaseZenStore):
                     resource_id=model_schema.id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create model {model.name}: "
+                    "A model with this name already exists."
+                )
+
             return model_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -10158,6 +10183,50 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    def _get_next_numeric_version_for_model(
+        self, session: Session, model_id: UUID
+    ) -> int:
+        """Get the next numeric version for a model.
+
+        Args:
+            session: DB session.
+            model_id: ID of the model for which to get the next numeric
+                version.
+
+        Returns:
+            The next numeric version.
+        """
+        current_max_version = session.exec(
+            select(func.max(ModelVersionSchema.number)).where(
+                ModelVersionSchema.model_id == model_id
+            )
+        ).first()
+
+        if current_max_version is None:
+            return 1
+        else:
+            return int(current_max_version) + 1
+
+    def _model_version_exists(self, model_id: UUID, version: str) -> bool:
+        """Check if a model version with a certain version exists.
+
+        Args:
+            model_id: The model ID of the version.
+            version: The version name.
+
+        Returns:
+            If a model version with the given version name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(ModelVersionSchema.id)
+                    .where(ModelVersionSchema.model_id == model_id)
+                    .where(ModelVersionSchema.name == version)
+                ).first()
+                is not None
+            )
+
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequest
@@ -10172,69 +10241,94 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model version with the given name already
+                exists.
+            EntityCreationError: If the model version creation failed.
         """
         if model_version.number is not None:
             raise ValueError(
                 "`number` field  must be None during model version creation."
             )
-        with Session(self.engine) as session:
-            model_version_ = model_version.model_copy()
-            model = self.get_model(model_version_.model)
 
-            def _check(tolerance: int = 0) -> None:
-                query = session.exec(
-                    select(ModelVersionSchema)
-                    .where(ModelVersionSchema.model_id == model.id)
-                    .where(ModelVersionSchema.name == model_version_.name)
-                )
-                existing_model_version = query.fetchmany(tolerance + 1)
-                if (
-                    existing_model_version is not None
-                    and len(existing_model_version) > tolerance
-                ):
-                    raise EntityExistsError(
-                        f"Unable to create model version {model_version_.name}: "
-                        f"A model version with this name already exists in {model.name} model."
-                    )
+        model = self.get_model(model_version.model)
 
-            _check()
-            all_versions = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
-            ).first()
+        has_custom_name = model_version.name is not None
+        if has_custom_name:
+            validate_name(model_version)
 
-            model_version_.number = (
-                all_versions.number + 1 if all_versions else 1
-            )
+        model_version_id = None
 
-            if model_version_.name is None:
-                model_version_.name = str(model_version_.number)
-            else:
-                validate_name(model_version_)
-
-            model_version_schema = ModelVersionSchema.from_request(
-                model_version_
-            )
-            session.add(model_version_schema)
-
-            if model_version_.tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_version_.tags,
-                    resource_id=model_version_schema.id,
-                    resource_type=TaggableResourceTypes.MODEL_VERSION,
-                )
+        remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+        while remaining_tries > 0:
+            remaining_tries -= 1
             try:
-                _check(1)
-                session.commit()
-            except EntityExistsError as e:
-                session.rollback()
-                raise e
+                with Session(self.engine) as session:
+                    model_version.number = (
+                        self._get_next_numeric_version_for_model(
+                            session=session,
+                            model_id=model.id,
+                        )
+                    )
+                    if not has_custom_name:
+                        model_version.name = str(model_version.number)
 
-            return model_version_schema.to_model(
-                include_metadata=True, include_resources=True
+                    model_version_schema = ModelVersionSchema.from_request(
+                        model_version
+                    )
+                    session.add(model_version_schema)
+                    session.commit()
+
+                    model_version_id = model_version_schema.id
+                break
+            except IntegrityError:
+                if has_custom_name and self._model_version_exists(
+                    model_id=model.id, version=cast(str, model_version.name)
+                ):
+                    # We failed not because of a version number conflict,
+                    # but because the user requested a version name that
+                    # is already taken -> We don't retry anymore but fail
+                    # immediately.
+                    raise EntityExistsError(
+                        f"Unable to create model version "
+                        f"{model.name} (version "
+                        f"{model_version.name}): A model with the "
+                        "same name and version already exists."
+                    )
+                elif remaining_tries == 0:
+                    raise EntityCreationError(
+                        f"Failed to create version for model "
+                        f"{model.name}. This is most likely "
+                        "caused by multiple parallel requests that try "
+                        "to create versions for this model in the "
+                        "database."
+                    )
+                else:
+                    attempt = (
+                        MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                        - remaining_tries
+                    )
+                    sleep_duration = exponential_backoff_with_jitter(
+                        attempt=attempt
+                    )
+                    logger.debug(
+                        "Failed to create model version %s "
+                        "(version %s) due to an integrity error. "
+                        "Retrying in %f seconds.",
+                        model.name,
+                        model_version.number,
+                        sleep_duration,
+                    )
+                    time.sleep(sleep_duration)
+
+        assert model_version_id
+        if model_version.tags:
+            self._attach_tags_to_resource(
+                tag_names=model_version.tags,
+                resource_id=model_version_id,
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
             )
+
+        return self.get_model_version(model_version_id)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
