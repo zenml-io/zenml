@@ -430,7 +430,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         """Run one or more Deepchecks model validation checks.
 
         Call this method to perform model validation checks (e.g. confusion
-        matrix validation, performance reports, model error analyses, etc).
+        matrix validation, performance reports, model error analyzes, etc).
         A second dataset is required for model performance comparison tests
         (i.e. tests that identify changes in a model behavior by comparing how
         it performs on two different datasets).

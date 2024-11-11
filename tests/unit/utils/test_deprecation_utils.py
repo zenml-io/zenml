@@ -30,7 +30,7 @@ def test_pydantic_model_attribute_deprecation():
         old: Optional[str] = None
         new: Optional[str] = None
 
-        _deprecatation_validator = (
+        _deprecation_validator = (
             deprecation_utils.deprecate_pydantic_attributes(
                 "deprecated", ("old", "new")
             )
@@ -56,7 +56,7 @@ def test_pydantic_model_attribute_deprecation():
     class InvalidAttributeNameModel(BaseModel):
         deprecated: Optional[str] = None
 
-        _deprecatation_validator = (
+        _deprecation_validator = (
             deprecation_utils.deprecate_pydantic_attributes("not_an_attribute")
         )
 
@@ -66,7 +66,7 @@ def test_pydantic_model_attribute_deprecation():
     class DeprecateRequiredAttributeModel(BaseModel):
         deprecated: str
 
-        _deprecatation_validator = (
+        _deprecation_validator = (
             deprecation_utils.deprecate_pydantic_attributes("deprecated")
         )
 

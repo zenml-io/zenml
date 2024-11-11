@@ -87,6 +87,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
+from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -217,9 +218,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -5507,9 +5506,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -5518,7 +5515,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return_value: List[RunMetadataResponse] = []
         with Session(self.engine) as session:
             for key, value in run_metadata.values.items():
                 type_ = run_metadata.types[key]
@@ -5534,70 +5530,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(
-                    run_metadata_schema.to_model(
-                        include_metadata=True, include_resources=True
-                    )
-                )
-        return return_value
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-        with Session(self.engine) as session:
-            run_metadata = session.exec(
-                select(RunMetadataSchema).where(
-                    RunMetadataSchema.id == run_metadata_id
-                )
-            ).first()
-            if run_metadata is None:
-                raise KeyError(
-                    f"Unable to get run metadata with ID "
-                    f"{run_metadata_id}: "
-                    f"No run metadata with this ID found."
-                )
-            return run_metadata.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        with Session(self.engine) as session:
-            query = select(RunMetadataSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RunMetadataSchema,
-                filter_model=run_metadata_filter_model,
-                hydrate=hydrate,
-            )
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
@@ -8215,13 +8148,23 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            session.commit()
+            session.refresh(step_schema)
+
+            step_model = step_schema.to_model(include_metadata=True)
+
             # Save input artifact IDs into the database.
             for input_name, artifact_version_id in step_run.inputs.items():
+                input_type = self._get_step_run_input_type(
+                    input_name=input_name,
+                    step_config=step_model.config,
+                    step_spec=step_model.spec,
+                )
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
                     artifact_version_id=artifact_version_id,
                     name=input_name,
-                    input_type=StepRunInputArtifactType.DEFAULT,
+                    input_type=input_type,
                     session=session,
                 )
 
@@ -8241,6 +8184,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.commit()
+            session.refresh(step_schema)
 
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -8366,6 +8310,34 @@ class SqlZenStore(BaseZenStore):
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
             )
+
+    def _get_step_run_input_type(
+        self,
+        input_name: str,
+        step_config: StepConfiguration,
+        step_spec: StepSpec,
+    ) -> StepRunInputArtifactType:
+        """Get the input type of an artifact.
+
+        Args:
+            input_name: The name of the input artifact.
+            step_config: The step config.
+            step_spec: The step spec.
+
+        Returns:
+            The input type of the artifact.
+        """
+        if input_name in step_spec.inputs:
+            return StepRunInputArtifactType.STEP_OUTPUT
+        if input_name in step_config.external_input_artifacts:
+            return StepRunInputArtifactType.EXTERNAL
+        elif (
+            input_name in step_config.model_artifacts_or_metadata
+            or input_name in step_config.client_lazy_loaders
+        ):
+            return StepRunInputArtifactType.LAZY_LOADED
+        else:
+            return StepRunInputArtifactType.MANUAL
 
     @staticmethod
     def _set_run_step_parent_step(

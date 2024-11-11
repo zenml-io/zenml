@@ -21,7 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StepRunInputArtifactType
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -30,19 +31,35 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
     )
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
+
+
+class StepRunInputResponse(ArtifactVersionResponse):
+    """Response model for step run inputs."""
+
+    input_type: StepRunInputArtifactType
+
+    def get_hydrated_version(self) -> "StepRunInputResponse":
+        """Get the hydrated version of this step run input.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return StepRunInputResponse(
+            input_type=self.input_type,
+            **Client().zen_store.get_artifact_version(self.id).model_dump(),
+        )
 
 
 # ------------------ Request Model ------------------
@@ -162,11 +179,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
         title="The end time of the step run.",
         default=None,
     )
-    inputs: Dict[str, "ArtifactVersionResponse"] = Field(
+    inputs: Dict[str, StepRunInputResponse] = Field(
         title="The input artifact versions of the step run.",
         default_factory=dict,
     )
-    outputs: Dict[str, List["ArtifactVersionResponse"]] = Field(
+    outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
     )
@@ -226,7 +243,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         title="Metadata associated with this step run.",
         default={},
     )
@@ -270,7 +287,7 @@ class StepRunResponse(
 
     # Helper properties
     @property
-    def input(self) -> "ArtifactVersionResponse":
+    def input(self) -> ArtifactVersionResponse:
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -289,7 +306,7 @@ class StepRunResponse(
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> "ArtifactVersionResponse":
+    def output(self) -> ArtifactVersionResponse:
         """Returns the output artifact that was written by this step.
 
         Returns:
@@ -321,7 +338,7 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+    def inputs(self) -> Dict[str, StepRunInputResponse]:
         """The `inputs` property.
 
         Returns:
@@ -330,7 +347,7 @@ class StepRunResponse(
         return self.get_body().inputs
 
     @property
-    def outputs(self) -> Dict[str, List["ArtifactVersionResponse"]]:
+    def outputs(self) -> Dict[str, List[ArtifactVersionResponse]]:
         """The `outputs` property.
 
         Returns:
@@ -465,7 +482,7 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:

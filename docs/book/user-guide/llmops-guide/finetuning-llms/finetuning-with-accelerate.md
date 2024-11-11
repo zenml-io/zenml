@@ -46,7 +46,7 @@ smaller size (e.g. one of the Llama 3.1 family at the ~8B parameter mark) and
 then iterate on that. This will allow you to quickly run through a number of
 experiments and see how the model performs on your use case.
 
-In this early stage, experimentation is important. Accordingly, any way you can maximise the number of experiments you can run will help increase the amount you can learn. So we want to minimise the amount of time it takes to iterate to a new experiment. Depending on the precise details of what you do, you might iterate on your data, on some hyperparameters of the finetuning process, or you might even try out different use case options.
+In this early stage, experimentation is important. Accordingly, any way you can maximize the number of experiments you can run will help increase the amount you can learn. So we want to minimize the amount of time it takes to iterate to a new experiment. Depending on the precise details of what you do, you might iterate on your data, on some hyperparameters of the finetuning process, or you might even try out different use case options.
 
 ## Implementation details
 
@@ -190,15 +190,15 @@ components for distributed training. For more details, see the [Accelerate docum
 
 ## Dataset iteration
 
-While these stages offer lots of surface area for intervention and customisation, the most significant thing to be careful with is the data that you input into the model. If you find that your finetuned model offers worse performance than the base, or if you get garbled output post-fine tuning, this would be a strong indicator that you have not correctly formatted your input data, or something is mismatched with the tokeniser and so on. To combat this, be sure to inspect your data at all stages of the process!
+While these stages offer lots of surface area for intervention and customization, the most significant thing to be careful with is the data that you input into the model. If you find that your finetuned model offers worse performance than the base, or if you get garbled output post-fine tuning, this would be a strong indicator that you have not correctly formatted your input data, or something is mismatched with the tokeniser and so on. To combat this, be sure to inspect your data at all stages of the process!
 
-The main behaviour and activity while using this notebook should be around being
+The main behavior and activity while using this notebook should be around being
 more serious about your data. If you are finding that you're on the low end of
 the spectrum, consider ways to either supplement that data or to synthetically
 generate data that could be substituted in. You should also start to think about
 evaluations at this stage (see [the next guide](./evaluation-for-finetuning.md) for more) since
 the changes you will likely want to measure how well your model is doing,
-especially when you make changes and customisations. Once you have some basic
+especially when you make changes and customizations. Once you have some basic
 evaluations up and running, you can then start thinking through all the optimal
 parameters and measuring whether these updates are actually doing what you think
 they will.

@@ -28,6 +28,7 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    StepRunInputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -37,7 +38,10 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
-from zenml.models.v2.core.step_run import StepRunResponseResources
+from zenml.models.v2.core.step_run import (
+    StepRunInputResponse,
+    StepRunResponseResources,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -215,12 +219,15 @@ class StepRunSchema(NamedSchema, table=True):
                 or a step_configuration.
         """
         run_metadata = {
-            metadata_schema.key: metadata_schema.to_model()
+            metadata_schema.key: json.loads(metadata_schema.value)
             for metadata_schema in self.run_metadata
         }
 
         input_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
+            artifact.name: StepRunInputResponse(
+                input_type=StepRunInputArtifactType(artifact.type),
+                **artifact.artifact_version.to_model().model_dump(),
+            )
             for artifact in self.input_artifacts
         }
 

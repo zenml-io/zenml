@@ -408,6 +408,7 @@ def register_stack(
                     component_type, preset_name
                 )
                 component_info = component_response.id
+                component_name = component_response.name
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
