@@ -37,6 +37,7 @@ class ArtifactConfig(BaseModel):
         int, ArtifactConfig(
             name="my_artifact",  # override the default artifact name
             version=42,  # set a custom version
+            artifact_type=ArtifactType.MODEL,  # Specify the artifact type
             tags=["tag1", "tag2"],  # set custom tags
         )
     ]:
@@ -92,7 +93,8 @@ class ArtifactConfig(BaseModel):
 
         if is_model_artifact and is_deployment_artifact:
             raise ValueError(
-                "An artifact can only be a model artifact or deployment artifact."
+                "An artifact can only be a model artifact or deployment "
+                "artifact."
             )
         elif is_model_artifact:
             logger.warning(
