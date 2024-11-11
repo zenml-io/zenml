@@ -1,7 +1,7 @@
 """Add pipeline, model and run unique constraints [904464ea4041].
 
 Revision ID: 904464ea4041
-Revises: 1cb6477f72d6
+Revises: b557b2871693
 Create Date: 2024-11-04 10:27:05.450092
 
 """
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 # revision identifiers, used by Alembic.
 revision = "904464ea4041"
-down_revision = "1cb6477f72d6"
+down_revision = "b557b2871693"
 branch_labels = None
 depends_on = None
 
