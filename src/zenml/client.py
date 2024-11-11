@@ -3426,7 +3426,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             id_or_prefix: The id or id prefix of the deployment.
         """
-        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        deployment = self.get_deployment(
+            id_or_prefix=id_or_prefix, hydrate=False
+        )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
 
     # ------------------------------ Run templates -----------------------------

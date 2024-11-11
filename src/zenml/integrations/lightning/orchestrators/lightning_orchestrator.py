@@ -390,10 +390,13 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run(
                 f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
-            studio.upload_file(
-                env_file_path,
-                remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
+            studio.upload_file(env_file_path)
+            time.sleep(6)
+            studio.run(
+                f"cp {env_file_path.split('/')[-1]} ./.lightning_studio/.studiorc"
             )
+            studio.run(f"rm {env_file_path.split('/')[-1]}")
+
             studio.run("pip install uv")
             logger.info(
                 f"Installing requirements: {pipeline_requirements_to_string}"
@@ -481,16 +484,25 @@ class LightningOrchestrator(WheeledOrchestrator):
                 code_path,
                 remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
             )
+            time.sleep(6)
             studio.run(
                 f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
             )
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
-            studio.upload_file(
-                env_file_path,
-                remote_path="/teamspace/studios/this_studio/.lightning_studio/.studiorc",
+            # for some reason uploading file directly to /teamspace/studios/this_studio/.lightning_studio/.studiorc
+            # doesn't work, while other file names can be uploaded just fine.
+            # below is a workaround to copy the file to the correct location.
+            # we first upload it under a different name and then copy it to the
+            # right location.
+            studio.upload_file(env_file_path)
+            time.sleep(6)
+            studio.run(
+                f"cp {env_file_path.split('/')[-1]} ./.lightning_studio/.studiorc"
             )
+            studio.run(f"rm {env_file_path.split('/')[-1]}")
+
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
             studio.run("pip install zenml")
@@ -557,13 +569,21 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio.run(
             f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
         )
-        studio.upload_file(code_path, remote_path=f"/zenml_codes/{filename}")
+        studio.upload_file(
+            code_path,
+            remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
+        )
+        time.sleep(6)
         studio.run(
             f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
         )
-        studio.upload_file(
-            env_file_path, remote_path=".lightning_studio/.studiorc"
+        studio.upload_file(env_file_path)
+        time.sleep(6)
+        studio.run(
+            f"cp {env_file_path.split('/')[-1]} ./.lightning_studio/.studiorc"
         )
+        studio.run(f"rm {env_file_path.split('/')[-1]}")
+
         studio.run("pip install uv")
         studio.run(f"uv pip install {details['requirements']}")
         studio.run("pip install zenml")
