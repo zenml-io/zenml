@@ -36,6 +36,7 @@ def _migrate_artifact_type() -> None:
     result = connection.execute(query)
 
     updated = set()
+    updates = []
     for (
         artifact_version_id,
         is_model_artifact,
@@ -49,16 +50,16 @@ def _migrate_artifact_type() -> None:
 
         if is_model_artifact:
             updated.add(artifact_version_id)
-            connection.execute(
-                sa.update(artifact_version_table)
-                .where(artifact_version_table.c.id == artifact_version_id)
-                .values(type="ModelArtifact")
+            updates.append(
+                {"id": artifact_version_id, "type": "ModelArtifact"}
             )
         elif is_deployment_artifact:
             updated.add(artifact_version_id)
-            sa.update(artifact_version_table).where(
-                artifact_version_table.c.id == artifact_version_id
-            ).values(type="ServiceArtifact")
+            updates.append(
+                {"id": artifact_version_id, "type": "ServiceArtifact"}
+            )
+
+    connection.execute(sa.update(artifact_version_table), updates)
 
 
 def upgrade() -> None:
