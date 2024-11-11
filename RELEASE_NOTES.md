@@ -6,7 +6,7 @@ The **ZenML 0.70.0** release includes a significant number of database schema ch
 
 ## Key Changes
 
-* **Artifact Versioning Improvements**: The handling of artifact versions has been improved, including the ability to batch artifact version requests and more flexible step inputs/outputs management and versioning.
+* **Artifact Versioning Improvements**: The handling of artifact versions has been improved, including the API improvements like the ability to batch artifact version requests to improve the execution times and more types for the step input/output artifacts, including multiple versions of the same artifact (e.g. model checkpoints), to improve the UX using ZenML UI or while working directly with the API.
 * **Scalability Enhancements**: Various scalability improvements have been made, such as reducing unnecessary server requests and incrementing artifact versions server-side. These enhancements are expected to provide significant speed and scale improvements for ZenML users.
 * **Documentation Improvements**: The ZenML documentation has been restructured and expanded, including the addition of new sections on [finetuning](https://docs.zenml.io/user-guide/llmops-guide/finetuning-llms) and [LLM/ML engineering](https://docs.zenml.io/user-guide/llmops-guide/evaluation) resources.
 * **Bug Fixes**: This release includes several bug fixes, including issues with in-process main module source loading, and more.
