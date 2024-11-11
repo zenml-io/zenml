@@ -321,7 +321,7 @@ model_version_pipeline_runs_router = APIRouter(
 )
 
 
-@router.post(
+@model_version_pipeline_runs_router.post(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
