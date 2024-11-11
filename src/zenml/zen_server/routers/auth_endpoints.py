@@ -605,6 +605,9 @@ def api_token(
 
     return generate_access_token(
         user_id=token.user_id,
+        # Keep the original API key and device token scopes
+        api_key=auth_context.api_key,
+        device=auth_context.device,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,

@@ -126,6 +126,9 @@ def run_template(
     api_token = generate_access_token(
         user_id=auth_context.user.id,
         pipeline_run_id=placeholder_run.id,
+        # Keep the original API key or device scopes, if any
+        api_key=auth_context.api_key,
+        device=auth_context.device,
     ).access_token
 
     environment = {
