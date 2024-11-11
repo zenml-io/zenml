@@ -25,9 +25,8 @@ from zenml.constants import (
 from zenml.models.v2.core.logs import LogsResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action
-from zenml.zen_server.rbac.utils import (
-    verify_permission_for_model,
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_get_entity,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -63,5 +62,5 @@ def get_logs(
         The requested logs.
     """
     return verify_permissions_and_get_entity(
-        id=stack_id, get_method=zen_store().get_logs, hydrate=hydrate
+        id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
     )
