@@ -83,15 +83,10 @@ The key to successful registration is proper authentication between the componen
 resource "zenml_service_connector" "gcp_connector" {
   name        = "gcp-${var.environment}-connector"
   type        = "gcp"
-  auth_method = "service-account"
-  
-  resource_types = ["artifact-store", "container-registry"]
+  auth_method = "service-account"  
   
   configuration = {
     project_id = var.project_id
-  }
-  
-  secrets = {
     service_account_json = file("service-account.json")
   }
 }
@@ -263,19 +258,9 @@ resource "zenml_service_connector" "gcp" {
   type        = "gcp"
   auth_method = "service-account"
 
-  resource_types = [
-    "artifact-store",
-    "container-registry",
-    "orchestrator",
-    "step-operator"
-  ]
-
   configuration = {
     project_id = var.project_id
     region     = var.region
-  }
-
-  secrets = {
     service_account_json = var.gcp_service_account_key
   }
 

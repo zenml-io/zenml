@@ -38,7 +38,17 @@ terraform {
   }
 }
 
-# Create base infrastructure
+resource "random_id" "suffix" {
+  # This will generate a string of 12 characters, encoded as base64 which makes
+  # it 8 characters long
+  byte_length = 6
+}
+
+# Create base infrastructure resources, including a shared object storage,
+# and container registry. This module should also create resources used to
+# authenticate with the cloud provider and authorize access to the resources
+# (e.g. user accounts, service accounts, workload identities, roles,
+# permissions etc.)
 module "base_infrastructure" {
   source = "./modules/base_infra"
   
@@ -46,28 +56,20 @@ module "base_infrastructure" {
   project_id  = var.project_id
   region      = var.region
   
-  # Generate consistent naming across resources
+  # Generate consistent random naming across resources
   resource_prefix = "zenml-${var.environment}-${random_id.suffix.hex}"
 }
 
-# Create service connector for authentication
+# Create a flexible service connector for authentication
 resource "zenml_service_connector" "base_connector" {
   name        = "${var.environment}-base-connector"
   type        = "gcp"
   auth_method = "service-account"
 
-  resource_types = [
-    "artifact-store",
-    "container-registry"
-  ]
-
   configuration = {
     project_id = var.project_id
     region     = var.region
-  }
-
-  secrets = {
-    service_account_json = var.gcp_service_account_key
+    service_account_json = module.base_infrastructure.service_account_key
   }
 
   labels = {
@@ -94,7 +96,20 @@ resource "zenml_stack_component" "container_registry" {
   flavor = "gcp"
 
   configuration = {
-    uri = "${var.region}-docker.pkg.dev/${var.project_id}/${module.base_infrastructure.container_registry_id}"
+    uri = module.base_infrastructure.container_registry_uri
+  }
+
+  connector_id = zenml_service_connector.base_connector.id
+}
+
+resource "zenml_stack_component" "orchestrator" {
+  name   = "${var.environment}-orchestrator"
+  type   = "orchestrator"
+  flavor = "vertex"
+
+  configuration = {
+    location      = var.region
+    workload_service_account = "${module.base_infrastructure.service_account_email}"
   }
 
   connector_id = zenml_service_connector.base_connector.id
@@ -107,6 +122,7 @@ resource "zenml_stack" "base_stack" {
   components = {
     artifact_store     = zenml_stack_component.artifact_store.id
     container_registry = zenml_stack_component.container_registry.id
+    orchestrator       = zenml_stack_component.orchestrator.id
   }
 
   labels = {
@@ -121,24 +137,6 @@ Teams can extend this base stack:
 ```hcl
 # team_configs/training_stack.tf
 
-# Create training-specific connector
-resource "zenml_service_connector" "training_connector" {
-  name        = "${var.environment}-training-connector"
-  type        = "gcp"
-  auth_method = "service-account"
-
-  resource_types = ["orchestrator"]
-
-  configuration = {
-    project_id = var.project_id
-    region     = var.region
-  }
-
-  secrets = {
-    service_account_json = var.gcp_service_account_key
-  }
-}
-
 # Add training-specific components
 resource "zenml_stack_component" "training_orchestrator" {
   name   = "${var.environment}-training-orchestrator"
@@ -152,7 +150,7 @@ resource "zenml_stack_component" "training_orchestrator" {
     synchronous   = true
   }
 
-  connector_id = zenml_service_connector.training_connector.id
+  connector_id = zenml_service_connector.base_connector.id
 }
 
 # Create specialized training stack
@@ -198,7 +196,7 @@ locals {
       
       # Authentication configuration
       auth_method = "service-account"
-      auth_secrets = {
+      auth_configuration = {
         service_account_json = file("dev-sa.json")
       }
     }
@@ -208,10 +206,9 @@ locals {
       gpu_enabled  = true
       
       # Authentication configuration
-      auth_method = "workload-identity"
+      auth_method = "external-account"
       auth_configuration = {
-        workload_identity_pool = var.workload_identity_pool_id
-        service_account       = var.prod_service_account_email
+        external_account_json = file("prod-sa.json")
       }
     }
   }
@@ -223,25 +220,11 @@ resource "zenml_service_connector" "env_connector" {
   type        = "gcp"
   auth_method = local.env_config[var.environment].auth_method
 
-  resource_types = [
-    "artifact-store",
-    "container-registry",
-    "orchestrator"
-  ]
-
   dynamic "configuration" {
     for_each = try(local.env_config[var.environment].auth_configuration, {})
     content {
       key   = configuration.key
       value = configuration.value
-    }
-  }
-
-  dynamic "secrets" {
-    for_each = try(local.env_config[var.environment].auth_secrets, {})
-    content {
-      key   = secrets.key
-      value = secrets.value
     }
   }
 }
@@ -321,7 +304,7 @@ resource "zenml_stack_component" "project_orchestrator" {
   }
 }
 
-# Create project-specific stacks seperated by artifact stores
+# Create project-specific stacks separated by artifact stores
 resource "zenml_stack" "project_stacks" {
   for_each = local.project_paths
   
@@ -368,8 +351,9 @@ resource "zenml_service_connector" "env_connector" {
   # Use workload identity for production
   auth_method = var.environment == "prod" ? "workload-identity" : "service-account"
   
-  # Enable connector reuse across components
-  resource_types = var.supported_resources
+  # Use a specific resource type and resource ID
+  resource_type = var.resource_type
+  resource_id   = var.resource_id
   
   labels = merge(local.common_labels, {
     purpose = var.purpose
