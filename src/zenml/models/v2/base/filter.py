@@ -64,6 +64,11 @@ logger = get_logger(__name__)
 
 AnyQuery = TypeVar("AnyQuery", bound=Any)
 
+ONEOF_ERROR = (
+    "When you are using the 'oneof:' filtering make sure that the "
+    "provided value is a json formatted list."
+)
+
 
 class Filter(BaseModel, ABC):
     """Filter for all fields.
@@ -178,6 +183,13 @@ class StrFilter(Filter):
         GenericFilterOps.LT,
         GenericFilterOps.LTE,
     ]
+
+    @model_validator(mode="after")
+    def check_value_if_operation_oneof(self) -> "StrFilter":
+        if self.operation == GenericFilterOps.ONEOF:
+            if not isinstance(self.value, list):
+                raise ValueError(ONEOF_ERROR)
+        return self
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a string column.
@@ -655,11 +667,7 @@ class BaseFilter(BaseModel):
                     if not isinstance(value, list):
                         raise ValueError
                 except ValueError:
-                    raise ValueError(
-                        "When you are using the 'oneof:' filtering "
-                        "make sure that the provided value is a json "
-                        "formatted list."
-                    )
+                    raise ValueError(ONEOF_ERROR)
 
         return value, operator
 
@@ -1098,10 +1106,7 @@ class FilterGenerator:
 
         # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
-            raise ValueError(
-                "If you are using `oneof:` as a filtering op, the value needs "
-                "to be a json formatted list string."
-            )
+            raise ValueError(ONEOF_ERROR)
 
         # Generate the filter.
         uuid_filter = UUIDFilter(
