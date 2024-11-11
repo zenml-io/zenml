@@ -8,7 +8,6 @@ Create Date: 2024-11-06 16:16:43.344569
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.orm.session import Session
 
 # revision identifiers, used by Alembic.
 revision = "ec6307720f92"
@@ -52,18 +51,20 @@ def _migrate_artifact_type() -> None:
         if is_model_artifact:
             updated.add(artifact_version_id)
             updates.append(
-                {"id": artifact_version_id, "type": "ModelArtifact"}
+                {"id_": artifact_version_id, "type": "ModelArtifact"}
             )
         elif is_deployment_artifact:
             updated.add(artifact_version_id)
             updates.append(
-                {"id": artifact_version_id, "type": "ServiceArtifact"}
+                {"id_": artifact_version_id, "type": "ServiceArtifact"}
             )
 
-    with Session(connection) as session:
-        # We use a session here to leverage the ORM bulk updates
-        # https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-bulk-update-by-primary-key
-        session.execute(sa.update(artifact_version_table), updates)
+    connection.execute(
+        sa.update(artifact_version_table).where(
+            artifact_version_table.c.id == sa.bindparam("id_")
+        ),
+        updates,
+    )
 
 
 def upgrade() -> None:
