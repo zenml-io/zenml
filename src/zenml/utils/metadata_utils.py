@@ -122,7 +122,6 @@ def log_metadata(
         ValueError: If no identifiers are provided and the function is not
             called from within a step.
     """
-    # Initialize the client
     client = Client()
 
     # If a step name is provided, we need a run_id_name_or_prefix and will log
@@ -155,12 +154,9 @@ def log_metadata(
     # as well.
     elif step_id is not None:
         step_model = client.get_run_step(step_run_id=step_id)
-        run_model = client.get_pipeline_run(
-            name_id_or_prefix=step_model.pipeline_run_id
-        )
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=run_model.id,
+            resource_id=step_model.pipeline_run_id,
             resource_type=MetadataResourceTypes.PIPELINE_RUN,
         )
         client.create_run_metadata(
