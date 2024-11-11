@@ -378,6 +378,8 @@ def authenticate_credentials(
                     f"{decoded_token.pipeline_run_id} has already concluded and "
                     "API tokens scoped to it are no longer valid."
                 )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         if decoded_token.step_run_id:
             # If the token contains a step run ID, we need to check if the
@@ -403,6 +405,8 @@ def authenticate_credentials(
                     f"{decoded_token.step_run_id} has already concluded and "
                     "API tokens scoped to it are no longer valid."
                 )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,
