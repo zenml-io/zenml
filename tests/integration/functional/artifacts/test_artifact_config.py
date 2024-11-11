@@ -140,9 +140,6 @@ def multi_named_pipeline_not_tracked():
 
 def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
     """Test multi output step implicit linking based on step context."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     multi_named_pipeline_not_tracked()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -150,8 +147,6 @@ def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
     assert mv.model.name == MODEL_NAME
     artifact_links = clean_client.list_model_version_artifact_links(
         model_version_id=mv.id,
-        user_id=user,
-        workspace_id=ws,
     )
     assert artifact_links.size == 3
 
