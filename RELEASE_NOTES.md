@@ -2,7 +2,7 @@
 
 # 0.70.0
 
-The **ZenML 0.70.0** release includes a significant number of database schema changes and migrations, which means upgrading to this version will require extra caution.
+The **ZenML 0.70.0** release includes a significant number of database schema changes and migrations, which means upgrading to this version will require extra caution. As always, please make sure to make a copy of your production database before upgrading.
 
 ## Key Changes
 
@@ -11,7 +11,7 @@ The **ZenML 0.70.0** release includes a significant number of database schema ch
 * **Documentation Improvements**: The ZenML documentation has been restructured and expanded, including the addition of new sections on finetuning and LLM/ML engineering resources.
 * **Bug Fixes**: This release includes several bug fixes, including issues with in-process main module source loading, and more.
 
-## Potential Risk and Mitigation
+## Caution: Make sure to back up your data before upgrading!
 While this release brings many valuable improvements, the database schema changes and migrations pose a potential risk to users. It is strongly recommended that users:
 
 * **Test the upgrade on a non-production environment**: Before upgrading a production system, test the upgrade process in a non-production environment to identify and address any issues.
