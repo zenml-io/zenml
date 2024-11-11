@@ -2,6 +2,21 @@
 
 # 0.70.0
 
+The **ZenML 0.70.0** release includes a significant number of database schema changes and migrations, which means upgrading to this version will require extra caution.
+
+## Key Changes
+
+* **Artifact Versioning Improvements**: The handling of artifact versions has been improved, including the ability to batch artifact version requests and more flexible step inputs/outputs management and versioning.
+* **Scalability Enhancements**: Various scalability improvements have been made, such as reducing unnecessary server requests and incrementing artifact versions server-side.
+* **Documentation Improvements**: The ZenML documentation has been restructured and expanded, including the addition of new sections on finetuning and LLM/ML engineering resources.
+* **Bug Fixes**: This release includes several bug fixes, including issues with in-process main module source loading, and more.
+
+## Potential Risk and Mitigation
+While this release brings many valuable improvements, the database schema changes and migrations pose a potential risk to users. It is strongly recommended that users:
+
+* **Test the upgrade on a non-production environment**: Before upgrading a production system, test the upgrade process in a non-production environment to identify and address any issues.
+* **Back up your data**: Ensure that you have a reliable backup of your ZenML data before attempting the upgrade.
+
 ## What's Changed
 * Optimizing the CI workflows by @bcdurak in https://github.com/zenml-io/zenml/pull/3145
 * Adding 0.68.0 to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3144
