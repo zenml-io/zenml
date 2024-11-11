@@ -14,23 +14,23 @@ various factors that influence the deployment process. One of the primary
 considerations is the memory and machine requirements for your finetuned model.
 LLMs
 are typically resource-intensive, requiring substantial RAM, processing power
-and specialised hardware. This choice of hardware can significantly impact both
+and specialized hardware. This choice of hardware can significantly impact both
 performance and cost, so it's crucial to strike the right balance based on your
 specific use case.
 
 Real-time considerations play a vital role in deployment planning, especially
 for applications that require immediate responses. This includes preparing for
 potential failover scenarios if your finetuned model encounters issues,
-conducting thorough benchmarks and load testing, and modelling expected user
+conducting thorough benchmarks and load testing, and modeling expected user
 load and usage patterns. Additionally, you'll need to decide between streaming
 and non-streaming approaches, each with its own set of trade-offs in terms of
-latency and resource utilisation.
+latency and resource utilization.
 
-Optimisation techniques, such as quantisation, can help reduce the resource
-footprint of your model. However, these optimisations often come with additional
+Optimization techniques, such as quantization, can help reduce the resource
+footprint of your model. However, these Optimizations often come with additional
 steps in your workflow and require careful evaluation to ensure they don't
 negatively impact model performance. [Rigorous evaluation](./evaluation-for-finetuning.md)
-becomes crucial in quantifying the extent to which you can optimise without
+becomes crucial in quantifying the extent to which you can optimize without
 compromising accuracy or functionality.
 
 ## Deployment Options and Trade-offs
@@ -39,7 +39,7 @@ When it comes to deploying your finetuned LLM, several options are available,
 each with its own set of advantages and challenges:
 
 1. **Roll Your Own**: This approach involves setting up and managing your own
-   infrastructure. While it offers the most control and customisation, it also
+   infrastructure. While it offers the most control and customization, it also
    requires expertise and resources to maintain. For this, you'd
    usually create some kind of Docker-based service (a FastAPI endpoint, for
    example) and deploy this on your infrastructure, with you taking care of all
@@ -49,7 +49,7 @@ each with its own set of advantages and challenges:
    be aware of the "cold start" phenomenon, which can introduce latency for
    infrequently accessed models.
 3. **Always-On Options**: These deployments keep your model constantly running
-   and ready to serve requests. While this approach minimises latency, it can be
+   and ready to serve requests. While this approach minimizes latency, it can be
    more costly as you're paying for resources even during idle periods.
 4. **Fully Managed Solutions**: Many cloud providers and AI platforms offer
    managed services for deploying LLMs. These solutions can simplify the
@@ -177,14 +177,14 @@ crucial. Key areas to watch include:
 2. **Latency Metrics**: Monitor response times to ensure they meet your
    application's requirements.
 3. **Load and Usage Patterns**: Keep an eye on how users interact with your model
-   to inform scaling decisions and potential optimisations.
-4. **Data Analysis**: Regularly analyse the inputs and outputs of your model to
+   to inform scaling decisions and potential Optimizations.
+4. **Data Analysis**: Regularly analyze the inputs and outputs of your model to
    identify trends, potential biases, or areas for improvement.
 
 It's also important to consider privacy and security when capturing and logging
 responses. Ensure that your logging practices comply with relevant data
-protection regulations and your organisation's privacy policies.
+protection regulations and your organization's privacy policies.
 
 By carefully considering these deployment options and maintaining vigilant
 monitoring practices, you can ensure that your finetuned LLM performs optimally
-and continues to meet the needs of your users and organisation.
+and continues to meet the needs of your users and organization.

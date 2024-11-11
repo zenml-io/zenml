@@ -23,7 +23,7 @@ Related concepts:
 * early on, even if it's just to keep a log of the quality state of your data and the performance of your models at different stages of development.
 * if you have pipelines that regularly ingest new data, you should use data validation to run regular data integrity checks to signal problems before they are propagated downstream.
 * in continuous training pipelines, you should use data validation techniques to compare new training data against a data reference and to compare the performance of newly trained models against previous ones.
-* when you have pipelines that automate batch inference or if you regularly collect data used as input in online inference, you should use data validation to run data drift analyses and detect training-serving skew, data drift and model drift.
+* when you have pipelines that automate batch inference or if you regularly collect data used as input in online inference, you should use data validation to run data drift analyzes and detect training-serving skew, data drift and model drift.
 
 #### Data Validator Flavors
 

@@ -42,6 +42,7 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
@@ -100,7 +101,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, "ArtifactVersionResponse"],
+        input_artifacts: Dict[str, StepRunInputResponse],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -306,7 +307,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, "ArtifactVersionResponse"],
+        input_artifacts: Dict[str, StepRunInputResponse],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 

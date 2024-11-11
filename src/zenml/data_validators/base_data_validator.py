@@ -175,7 +175,7 @@ class BaseDataValidator(StackComponent):
 
         This method should be implemented by data validators that support
         running model validation checks (e.g. confusion matrix validation,
-        performance reports, model error analyses, etc).
+        performance reports, model error analyzes, etc).
 
         Unlike `data_validation`, model validation checks require that a model
         be present as an active component during the validation process.
@@ -184,7 +184,7 @@ class BaseDataValidator(StackComponent):
         accommodate different categories of data validation tests, e.g.:
 
         * single dataset tests: confusion matrix validation,
-        performance reports, model error analyses, etc
+        performance reports, model error analyzes, etc
         * model comparison tests: tests that identify changes in a model
         behavior by comparing how it performs on two different datasets.
 

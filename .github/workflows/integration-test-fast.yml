@@ -30,7 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
+        options: [ubuntu-latest, macos-13, windows-latest]
         required: false
         default: ubuntu-latest
       python-version:
@@ -38,7 +38,7 @@ on:
         type: choice
         options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.9'
+        default: '3.11'
       test_environment:
         description: The test environment
         type: choice
@@ -58,6 +58,7 @@ on:
           - docker-server-docker-orchestrator-mariadb
           - docker-server-airflow-orchestrator-mysql
           - docker-server-airflow-orchestrator-mariadb
+          - github-actions-server-docker-orchestrator
         required: false
         default: default
       enable_tmate:
@@ -78,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shard: [1, 2, 3, 4, 5, 6]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -118,7 +119,15 @@ jobs:
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
+      - name: Restore uv cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -236,7 +245,7 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 12 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
