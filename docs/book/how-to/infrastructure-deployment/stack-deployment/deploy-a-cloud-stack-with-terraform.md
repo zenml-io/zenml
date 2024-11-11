@@ -83,18 +83,40 @@ If you are already knowledgeable with using Terraform and the cloud provider
 where you want to deploy the stack, this process will be straightforward. In a
 nutshell, you will need to:
 
-1. create a new Terraform configuration file (e.g., `main.tf`), preferably in a
+1. set up the ZenML Terraform provider with your ZenML server URL and API key.
+It is recommended to use environment variables for this rather than hardcoding
+the values in your Terraform configuration file:
+
+```shell
+export ZENML_SERVER_URL="https://your-zenml-server.com"
+export ZENML_API_KEY="<your-api-key>"
+```
+
+2. create a new Terraform configuration file (e.g., `main.tf`), preferably in a
 new directory, with the content that looks like this (`<cloud provider>` can be
 `aws`, `gcp`, or `azure`):
 
 ```hcl
+terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+        }
+        zenml = {
+            source = "zenml-io/zenml"
+        }
+    }
+}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
 module "zenml_stack" {
   source = "zenml-io/zenml-stack/<cloud-provider>"
   version = "x.y.z"
 
-  # Required inputs
-  zenml_server_url = "https://<zenml-server-url>"
-  zenml_api_key = "<your-api-key>"
   # Optional inputs
   zenml_stack_name = "<your-stack-name>"
   orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "vertex", "azureml", "skypilot"
@@ -113,7 +135,7 @@ module in the [Terraform Registry](https://registry.terraform.io/modules/zenml-i
 documentation for the relevant module or you can read on in the following
 sections.
 
-2. Run the following commands in the directory where you have your Terraform
+3. Run the following commands in the directory where you have your Terraform
 configuration file:
 
 ```shell
@@ -130,10 +152,10 @@ resources with Terraform or after you have deprovisioned them up with
 `terraform destroy`.
 {% endhint %}
 
-3. Terraform will prompt you to confirm the changes it will make to your cloud
+4. Terraform will prompt you to confirm the changes it will make to your cloud
 infrastructure. If you are happy with the changes, type `yes` and hit enter.
 
-4. Terraform will then provision the resources you have specified in your
+5. Terraform will then provision the resources you have specified in your
 configuration file. Once the process is complete, you will see a message
 indicating that the resources have been successfully created and printing out
 the ZenML stack ID and name:
@@ -179,17 +201,34 @@ Here is an example Terraform configuration file for deploying a ZenML stack on
 AWS:
 
 ```hcl
+terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+        }
+        zenml = {
+            source = "zenml-io/zenml"
+        }
+    }
+}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
+provider "aws" {
+    region = "eu-central-1"
+}
+
 module "zenml_stack" {
   source = "zenml-io/zenml-stack/aws"
 
-  # Required inputs
-  zenml_server_url = "https://<zenml-server-url>"
-  zenml_api_key = "<your-api-key>"
-
   # Optional inputs
-  region = "<your-aws-region>"
   orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "skypilot"
+  zenml_stack_name = "<your-stack-name>"
 }
+
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
 }
@@ -204,15 +243,13 @@ The Terraform module will create a ZenML stack configuration with the
 following components:
 
 
-1. an S3 Artifact Store linked to a S3 bucket
-2. an ECR Container Registry linked to a ECR repository
+1. an S3 Artifact Store linked to a S3 bucket via an AWS Service Connector configured with IAM role credentials
+2. an ECR Container Registry linked to a ECR repository via an AWS Service Connector configured with IAM role credentials
 3. depending on the `orchestrator` input variable:
   * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the SageMaker Step Operator to selectively run some steps locally and some on SageMaker.
-  * a SageMaker Orchestrator linked to the AWS account, if `orchestrator` is set to `sagemaker` (default)
-  * a SkyPilot Orchestrator linked to the AWS account, if `orchestrator` is set to `skypilot`
-4. a SageMaker Step Operator linked to the AWS account
-5. an AWS Service Connector configured with the IAM role credentials and used to
-authenticate all ZenML components with your AWS account
+  * if `orchestrator` is set to `sagemaker` (default): a SageMaker Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+  * if `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+4. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 
@@ -248,18 +285,35 @@ Here is an example Terraform configuration file for deploying a ZenML stack on
 AWS:
 
 ```hcl
+terraform {
+    required_providers {
+        google = {
+            source  = "hashicorp/google"
+        }
+        zenml = {
+            source = "zenml-io/zenml"
+        }
+    }
+}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
+provider "google" {
+    region  = "europe-west3"
+    project = "my-project"
+}
+
 module "zenml_stack" {
   source = "zenml-io/zenml-stack/gcp"
 
-  # Required inputs
-  project_id = "<your-gcp-project-id>"
-  zenml_server_url = "https://<zenml-server-url>"
-  zenml_api_key = "<your-api-key>"
-
   # Optional inputs
-  region = "<your-gcp-region>"
   orchestrator = "<your-orchestrator-type>" # e.g., "local", "vertex", "skypilot" or "airflow"
+  zenml_stack_name = "<your-stack-name>"
 }
+
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
 }
@@ -273,16 +327,15 @@ output "zenml_stack_name" {
 The Terraform module will create a ZenML stack configuration with the
 following components:
 
-1. an GCP Artifact Store linked to a GCS bucket
-2. an GCP Container Registry linked to a Google Artifact Registry
+1. an GCP Artifact Store linked to a GCS bucket via a GCP Service Connector configured with the GCP service account credentials
+2. an GCP Container Registry linked to a Google Artifact Registry via a GCP Service Connector configured with the GCP service account credentials
 3. depending on the `orchestrator` input variable:
   * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the Vertex AI Step Operator to selectively run some steps locally and some on Vertex AI.
-  * a Vertex AI Orchestrator linked to the GCP project, if `orchestrator` is set to `vertex` (default)
-  * a SkyPilot Orchestrator linked to the GCP project, if `orchestrator` is set to `skypilot`
-  * an Airflow Orchestrator linked to the Cloud Composer environment, if `orchestrator` is set to `airflow`
-4. a Google Cloud Build Image Builder linked to your GCP project
-5. a Vertex AI Step Operator linked to the GCP project
-6. a GCP Service Connector configured with the GCP service account credentials or the GCP Workload Identity Provider configuration and used to authenticate all ZenML components with the GCP resources
+  * if `orchestrator` is set to `vertex` (default): a Vertex AI Orchestrator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
+  * if `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
+  * if `orchestrator` is set to `airflow`: an Airflow Orchestrator linked to the Cloud Composer environment
+4. a Google Cloud Build Image Builder linked to your GCP project via a GCP Service Connector configured with the GCP service account credentials
+5. a Vertex AI Step Operator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 
@@ -324,17 +377,42 @@ Here is an example Terraform configuration file for deploying a ZenML stack on
 AWS:
 
 ```hcl
+terraform {{
+    required_providers {{
+        azurerm = {{
+            source  = "hashicorp/azurerm"
+        }}
+        azuread = {{
+            source  = "hashicorp/azuread"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
+provider "azurerm" {{
+    features {{
+        resource_group {{
+            prevent_deletion_if_contains_resources = false
+        }}
+    }}
+}}
+
 module "zenml_stack" {
   source = "zenml-io/zenml-stack/azure"
-
-  # Required inputs
-  zenml_server_url = "https://<zenml-server-url>"
-  zenml_api_key = "<your-api-key>"
 
   # Optional inputs
   location = "<your-azure-location>"
   orchestrator = "<your-orchestrator-type>" # e.g., "local", "skypilot_azure"
+  zenml_stack_name = "<your-stack-name>"
 }
+
 output "zenml_stack_id" {
   value = module.zenml_stack.zenml_stack_id
 }
@@ -348,15 +426,13 @@ output "zenml_stack_name" {
 The Terraform module will create a ZenML stack configuration with the
 following components:
 
-1. an Azure Artifact Store linked to an Azure Storage Account and Blob Container
-2. an ACR Container Registry linked to an Azure Container Registry
+1. an Azure Artifact Store linked to an Azure Storage Account and Blob Container via an Azure Service Connector configured with Azure Service Principal credentials
+2. an ACR Container Registry linked to an Azure Container Registry via an Azure Service Connector configured with Azure Service Principal credentials
 3. depending on the `orchestrator` input variable:
-  * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the AzureML Step Operator to selectively run some steps locally and some on AzureML.
-  * an Azure SkyPilot Orchestrator linked to the Azure subscription, if `orchestrator` is set to `skypilot` (default)
-  * an AzureML Orchestrator linked to an AzureML Workspace, if `orchestrator` is set to `azureml` 
-4. an AzureML Step Operator linked to an AzureML Workspace
-5. an Azure Service Connector configured with Azure Service Principal
-credentials and used to authenticate all ZenML components with the Azure resources
+  * if `orchestrator` is set to `local`: a local Orchestrator. This can be used in combination with the AzureML Step Operator to selectively run some steps locally and some on AzureML.
+  * if `orchestrator` is set to `skypilot` (default): an Azure SkyPilot Orchestrator linked to the Azure subscription via an Azure Service Connector configured with Azure Service Principal credentials
+  * if `orchestrator` is set to `azureml`: an AzureML Orchestrator linked to an AzureML Workspace via an Azure Service Connector configured with Azure Service Principal credentials
+4. an AzureML Step Operator linked to an AzureML Workspace via an Azure Service Connector configured with Azure Service Principal credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 

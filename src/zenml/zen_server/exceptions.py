@@ -23,6 +23,7 @@ from zenml.exceptions import (
     CredentialsNotValid,
     DoesNotExistException,
     DuplicateRunNameError,
+    EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
     MethodNotAllowedError,
@@ -93,6 +94,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 422 Unprocessable Entity
     (ValueError, 422),
     # 500 Internal Server Error
+    (EntityCreationError, 500),
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
