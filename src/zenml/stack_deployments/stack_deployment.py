@@ -219,16 +219,14 @@ class ZenMLCloudStackDeployment(BaseModel):
             if stack.labels.get("zenml:deployment") != self.deployment_type:
                 continue
 
-            artifact_store = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0]
+            orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
 
-            if not artifact_store.connector:
+            if not orchestrator.connector:
                 continue
 
             return DeployedStack(
                 stack=stack,
-                service_connector=artifact_store.connector,
+                service_connector=orchestrator.connector,
             )
 
         return None

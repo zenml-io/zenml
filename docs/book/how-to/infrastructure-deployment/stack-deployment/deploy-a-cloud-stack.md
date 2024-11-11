@@ -335,7 +335,7 @@ prepare for you based on your cloud provider:
 
 - An S3 bucket that will be used as a ZenML Artifact Store.
 - An ECR container registry that will be used as a ZenML Container Registry.
-- Permissions to use SageMaker as a ZenML Orchestrator.
+- Permissions to use SageMaker as a ZenML Orchestrator and Step Operator.
 - An IAM user and IAM role with the minimum necessary permissions to access 
 the resources listed above.
 - An AWS access key used to give access to ZenML to connect to the above 
@@ -382,7 +382,7 @@ following AWS permissions in your AWS account:
 
 - A GCS bucket that will be used as a ZenML Artifact Store.
 - A GCP Artifact Registry that will be used as a ZenML Container Registry.
-- Permissions to use Vertex AI as a ZenML Orchestrator.
+- Permissions to use Vertex AI as a ZenML Orchestrator and Step Operator.
 - Permissions to use GCP Cloud Builder as a ZenML Image Builder.
 - A GCP Service Account with the minimum necessary permissions to access 
 the resources listed above.

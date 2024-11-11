@@ -30,7 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
+        options: [ubuntu-latest, macos-13, windows-latest]
         required: false
         default: ubuntu-latest
       python-version:
@@ -38,7 +38,7 @@ on:
         type: choice
         options: ['3.9', '3.10', '3.11', '3.12']
         required: false
-        default: '3.9'
+        default: '3.11'
       test_environment:
         description: The test environment
         type: choice
@@ -126,7 +126,7 @@ jobs:
         if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:

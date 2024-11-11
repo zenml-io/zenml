@@ -482,7 +482,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
         elif run.orchestrator_run_id is not None:
             run_id = run.orchestrator_run_id
         else:
