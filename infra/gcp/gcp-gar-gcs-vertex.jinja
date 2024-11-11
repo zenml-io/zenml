@@ -52,6 +52,14 @@
         "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
       }
     }],
+    "step_operator": [{
+      "flavor": "vertex",
+      "service_connector_index": 0,
+      "configuration": {
+        "region": "{{ region }}",
+        "service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
+      }
+    }],
     "image_builder": [{
       "flavor": "gcp",
       "service_connector_index": 0
