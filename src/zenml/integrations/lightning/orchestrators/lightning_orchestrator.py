@@ -569,7 +569,10 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio.run(
             f"mkdir -p /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
         )
-        studio.upload_file(code_path, remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}")
+        studio.upload_file(
+            code_path,
+            remote_path=f"/teamspace/studios/this_studio/zenml_codes/{filename}",
+        )
         time.sleep(6)
         studio.run(
             f"tar -xvzf /teamspace/studios/this_studio/zenml_codes/{filename} -C /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]}"
