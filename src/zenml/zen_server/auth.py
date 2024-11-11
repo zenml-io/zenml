@@ -334,13 +334,21 @@ def authenticate_credentials(
             # If the token contains a schedule ID, we need to check if the
             # schedule still exists in the database.
             try:
-                zen_store().get_schedule(
+                schedule = zen_store().get_schedule(
                     decoded_token.schedule_id, hydrate=False
                 )
             except KeyError:
                 error = (
                     f"Authentication error: error retrieving token schedule "
                     f"{decoded_token.schedule_id}"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+            if not schedule.active:
+                error = (
+                    f"Authentication error: schedule {decoded_token.schedule_id} "
+                    "is not active"
                 )
                 logger.error(error)
                 raise CredentialsNotValid(error)

@@ -573,11 +573,17 @@ def api_token(
     if schedule_id:
         # The schedule must exist
         try:
-            zen_store().get_schedule(schedule_id, hydrate=False)
+            schedule = zen_store().get_schedule(schedule_id, hydrate=False)
         except KeyError:
             raise ValueError(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
+            )
+
+        if not schedule.active:
+            raise ValueError(
+                f"Schedule {schedule_id} is not active and API tokens cannot "
+                "be generated for inactive schedules for security reasons."
             )
 
     if pipeline_run_id:
