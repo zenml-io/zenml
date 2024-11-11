@@ -47,24 +47,21 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_logs(
+def get_logs(
     logs_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
-    """Get the logs by ID.
+    """Returns the requested logs.
 
     Args:
         logs_id: ID of the logs.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
-        The logs response.
+        The requested logs.
     """
-    logs = zen_store().get_logs(logs_id=logs_id, hydrate=True)
-    if step_run_id := logs.step_run_id:
-        if isinstance(step_run_id, UUID):
-            step_run = zen_store().get_run_step(step_run_id)
-        else:
-            step_run = zen_store().get_run_step(UUID(step_run_id))
-        pipeline_run = zen_store().get_run(step_run.pipeline_run_id)
-        verify_permission_for_model(pipeline_run, action=Action.READ)
-    return logs
+    return verify_permissions_and_get_entity(
+        id=stack_id, get_method=zen_store().get_logs, hydrate=hydrate
+    )
