@@ -3,7 +3,7 @@ enable_cache: True
 # Environment configuration
 settings:
   docker:
-    parent_image: "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-0.68.1-py3.11-aws"
+    parent_image: "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-public-pipelines:quickstart-0.70.0-py3.11-aws"
     skip_build: True  # If you switch this to False remove the parent_image
     requirements: requirements.txt
   orchestrator.sagemaker:

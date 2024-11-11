@@ -1,4 +1,4 @@
-zenml[server]==0.68.1
+zenml[server]==0.70.0
 notebook
 pyarrow
 datasets
