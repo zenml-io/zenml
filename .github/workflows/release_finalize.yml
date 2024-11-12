@@ -33,7 +33,7 @@ jobs:
       - name: Release branch
         run: |
           git pull
-          git checkout -b release/${{ github.event.inputs.latest_version }}
+          git checkout -b release/${{ github.event.inputs.new_version }}
           git push --set-upstream origin release/${{ github.event.inputs.new_version }}
   add-docs-warning-header:
     runs-on: ubuntu-latest

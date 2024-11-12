@@ -408,7 +408,7 @@ def log_artifact_metadata(
             not provided, when being called inside a step that produces an
             artifact named `artifact_name`, the metadata will be associated to
             the corresponding newly created artifact. Or, if not provided when
-            being called outside of a step, or in a step that does not produce
+            being called outside a step, or in a step that does not produce
             any artifact named `artifact_name`, the metadata will be associated
             to the latest version of that artifact.
 
@@ -417,6 +417,10 @@ def log_artifact_metadata(
             called inside a step with a single output, or, if neither an
             artifact nor an output with the given name exists.
     """
+    logger.warning(
+        "The `log_artifact_metadata` function is deprecated and will soon be "
+        "removed. Please use `log_metadata` instead."
+    )
     try:
         step_context = get_step_context()
         in_step_outputs = (artifact_name in step_context._outputs) or (
