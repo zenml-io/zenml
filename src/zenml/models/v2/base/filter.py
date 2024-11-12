@@ -186,6 +186,14 @@ class StrFilter(Filter):
 
     @model_validator(mode="after")
     def check_value_if_operation_oneof(self) -> "StrFilter":
+        """Validator to check if value is a list if oneof operation is used.
+
+        Raises:
+            ValueError: If the value is not a list
+
+        Returns:
+            self
+        """
         if self.operation == GenericFilterOps.ONEOF:
             if not isinstance(self.value, list):
                 raise ValueError(ONEOF_ERROR)
