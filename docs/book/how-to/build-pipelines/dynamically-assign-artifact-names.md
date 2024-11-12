@@ -2,6 +2,11 @@
 description: How to dynamically assign artifact names in your pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Dynamically assign artifact names
 
 In ZenML pipelines, you often need to reuse the same step multiple times with
