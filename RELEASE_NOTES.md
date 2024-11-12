@@ -2,6 +2,23 @@
 
 # 0.70.0
 
+The **ZenML 0.70.0** release includes a significant number of database schema changes and migrations, which means upgrading to this version will require extra caution. As always, please make sure to make a copy of your production database before upgrading.
+
+## Key Changes
+
+* **Artifact Versioning Improvements**: The handling of artifact versions has been improved, including the API improvements like the ability to batch artifact version requests to improve the execution times and more types for the step input/output artifacts, including multiple versions of the same artifact (e.g. model checkpoints), to improve the UX using ZenML UI or while working directly with the API.
+* **Scalability Enhancements**: Various scalability improvements have been made, such as reducing unnecessary server requests and incrementing artifact versions server-side. These enhancements are expected to provide significant speed and scale improvements for ZenML users.
+* **Metadata management**: Now, all the metadata-creating functions are gathered under one method called `log_metadata`. It is possible to call this method with different inputs to log run metadata for artifact versions, model versions, steps, and runs.
+* **The oneof filtering**: This allows to filter entities using a new operator called `oneof`. You can possibly use this with IDs, tags, and all the other attributes like `PipelineRunFilter(tag='oneof:["cats", "dogs"]')`.
+* **Documentation Improvements**: The ZenML documentation has been restructured and expanded, including the addition of new sections on [finetuning](https://docs.zenml.io/user-guide/llmops-guide/finetuning-llms) and [LLM/ML engineering](https://docs.zenml.io/user-guide/llmops-guide/evaluation) resources.
+* **Bug Fixes**: This release includes several bug fixes, including issues with in-process main module source loading, and more.
+
+## Caution: Make sure to back up your data before upgrading!
+While this release brings many valuable improvements, the database schema changes and migrations pose a potential risk to users. It is strongly recommended that users:
+
+* **Test the upgrade on a non-production environment**: Before upgrading a production system, test the upgrade process in a non-production environment to identify and address any issues.
+* **Back up your data**: Ensure that you have a reliable backup of your ZenML data before attempting the upgrade.
+
 ## What's Changed
 * Optimizing the CI workflows by @bcdurak in https://github.com/zenml-io/zenml/pull/3145
 * Adding 0.68.0 to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3144
