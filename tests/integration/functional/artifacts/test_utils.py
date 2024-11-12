@@ -15,6 +15,7 @@ from typing_extensions import Annotated
 from zenml import (
     load_artifact,
     log_artifact_metadata,
+    log_metadata,
     pipeline,
     save_artifact,
     step,
@@ -120,23 +121,25 @@ def test_save_load_artifact_in_run(clean_client):
     )
 
 
-def test_log_artifact_metadata_existing(clean_client):
+def test_log_metadata_existing(clean_client):
     """Test logging artifact metadata for existing artifacts."""
     save_artifact(42, "meaning_of_life")
-    log_artifact_metadata(
-        {"description": "Aria is great!"}, artifact_name="meaning_of_life"
+    log_metadata(
+        metadata={"description": "Aria is great!"},
+        artifact_name="meaning_of_life",
     )
     save_artifact(43, "meaning_of_life", version="43")
-    log_artifact_metadata(
-        {"description_2": "Blupus is great!"}, artifact_name="meaning_of_life"
+    log_metadata(
+        metadata={"description_2": "Blupus is great!"},
+        artifact_name="meaning_of_life",
     )
-    log_artifact_metadata(
-        {"description_3": "Axl is great!"},
+    log_metadata(
+        metadata={"description_3": "Axl is great!"},
         artifact_name="meaning_of_life",
         artifact_version="1",
     )
-    log_artifact_metadata(
-        {
+    log_metadata(
+        metadata={
             "float": 1.0,
             "int": 1,
             "str": "1.0",
@@ -183,11 +186,11 @@ def artifact_metadata_logging_step() -> str:
         "description": "Aria is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(output_metadata)
+    log_artifact_metadata(metadata=output_metadata)
     return "42"
 
 
-def test_log_artifact_metadata_single_output(clean_client):
+def test_log_metadata_single_output(clean_client):
     """Test logging artifact metadata for a single output."""
 
     @pipeline
@@ -212,11 +215,11 @@ def artifact_multi_output_metadata_logging_step() -> (
         "description": "Blupus is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(metadata=output_metadata, artifact_name="int_output")
+    log_metadata(metadata=output_metadata, artifact_name="int_output")
     return "42", 42
 
 
-def test_log_artifact_metadata_multi_output(clean_client):
+def test_log_metadata_multi_output(clean_client):
     """Test logging artifact metadata for multiple outputs."""
 
     @pipeline
@@ -249,10 +252,10 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def test_log_artifact_metadata_raises_error_if_output_name_unclear(
+def test_log_metadata_raises_error_if_output_name_unclear(
     clean_client,
 ):
-    """Test that `log_artifact_metadata` raises an error if the output name is unclear."""
+    """Test that `log_metadata` raises an error if the output name is unclear."""
 
     @pipeline
     def artifact_metadata_logging_pipeline():

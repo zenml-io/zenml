@@ -253,6 +253,7 @@ class GenericFilterOps(StrEnum):
     CONTAINS = "contains"
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
+    ONEOF = "oneof"
     GTE = "gte"
     GT = "gt"
     LTE = "lte"
