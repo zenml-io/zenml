@@ -61,6 +61,8 @@ The service account needs the following permissions:
 
 ## How to use it
 
+A full project example is available in the [ZenML Examples repository](https://github.com/zenml-io/zenml-projects/tree/main/vertex-registry-and-deployer).
+
 ### Deploy a model in a pipeline
 
 Here's an example of how to use the Vertex AI Model Deployer in a ZenML pipeline:

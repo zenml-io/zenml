@@ -148,7 +148,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         )
         is_default_version = metadata_dict.get("is_default_version", False)
         try:
-            version_info = aiplatform.Model.upload(
+            model_version = aiplatform.Model.upload(
                 artifact_uri=model_source_uri,
                 display_name=f"{name}_{version}",
                 serving_container_image_uri=serving_container_image_uri,
@@ -156,17 +156,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 is_default_version=is_default_version,
                 labels=metadata_dict,
             )
-            return RegistryModelVersion(
-                version=version_info.version_id,
-                model_source_uri=version_info.resource_name,
-                model_format="Custom",  # Vertex AI doesn't provide this info directly
-                registered_model=self.get_model(version_info.name),
-                description=description,
-                created_at=version_info.create_time,
-                last_updated_at=version_info.update_time,
-                stage=ModelVersionStage.NONE,  # Vertex AI doesn't have built-in stages
-                metadata=metadata,
-            )
+            return self._vertex_model_to_registry_version(model_version)
         except Exception as e:
             raise RuntimeError(f"Failed to register model version: {str(e)}")
 
@@ -218,17 +208,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         self.setup_aiplatform()
         try:
             model_version = aiplatform.Model(model_name=f"{name}@{version}")
-            return RegistryModelVersion(
-                version=model_version.version_id,
-                model_source_uri=model_version.artifact_uri,
-                model_format="Custom",  # Vertex AI doesn't provide this info directly
-                registered_model=self.get_model(model_version.name),
-                description=model_version.description,
-                created_at=model_version.create_time,
-                last_updated_at=model_version.update_time,
-                stage=ModelVersionStage.NONE,  # Vertex AI doesn't have built-in stages
-                metadata=ModelRegistryModelMetadata(**model_version.labels),
-            )
+            return self._vertex_model_to_registry_version(model_version)
         except Exception as e:
             raise RuntimeError(f"Failed to get model version: {str(e)}")
 
@@ -306,3 +286,26 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> str:
         """Get the model URI artifact store."""
         return model_version.model_source_uri
+
+    def _vertex_model_to_registry_version(
+        self, model: "aiplatform.Model"
+    ) -> RegistryModelVersion:
+        """Convert Vertex AI model to RegistryModelVersion.
+
+        Args:
+            model: Vertex AI model instance
+
+        Returns:
+            RegistryModelVersion object
+        """
+        return RegistryModelVersion(
+            version=model.version_id,
+            model_source_uri=model.resource_name,
+            model_format="Custom",  # Vertex AI doesn't provide this info directly
+            registered_model=self.get_model(model.name),
+            description=model.description,
+            created_at=model.create_time,
+            last_updated_at=model.update_time,
+            stage=ModelVersionStage.NONE,  # Vertex AI doesn't have built-in stages
+            metadata=ModelRegistryModelMetadata(**model.labels),
+        )
