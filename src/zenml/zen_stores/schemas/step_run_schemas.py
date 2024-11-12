@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import (
-        RunMetadataResourceLinkSchema,
+        RunMetadataResourceSchema,
     )
 
 
@@ -141,10 +141,10 @@ class StepRunSchema(NamedSchema, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="step_run",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==StepRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),

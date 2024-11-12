@@ -325,7 +325,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
-    RunMetadataResourceLinkSchema,
+    RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
@@ -5532,7 +5532,7 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
 
                     for resource in run_metadata.resources:
-                        rm_resource_link = RunMetadataResourceLinkSchema(
+                        rm_resource_link = RunMetadataResourceSchema(
                             resource_id=resource[0],
                             resource_type=resource[1].value,
                             run_metadata_id=run_metadata_schema.id,

@@ -722,7 +722,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
-            RunMetadataResourceLinkSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
@@ -898,11 +898,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataResourceLinkSchema.resource_id
+                    RunMetadataResourceSchema.resource_id
                     == PipelineRunSchema.id,
-                    RunMetadataResourceLinkSchema.resource_type
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.PIPELINE_RUN,
-                    RunMetadataResourceLinkSchema.run_metadata_id
+                    RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,

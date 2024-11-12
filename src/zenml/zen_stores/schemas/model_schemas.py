@@ -48,7 +48,7 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import (
-    RunMetadataResourceLinkSchema,
+    RunMetadataResourceSchema,
 )
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
@@ -305,10 +305,10 @@ class ModelVersionSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==ModelVersionSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),

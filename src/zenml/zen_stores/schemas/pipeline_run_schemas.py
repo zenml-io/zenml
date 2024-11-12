@@ -57,7 +57,7 @@ if TYPE_CHECKING:
         ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import (
-        RunMetadataResourceLinkSchema,
+        RunMetadataResourceSchema,
     )
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
@@ -138,10 +138,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==PipelineRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),

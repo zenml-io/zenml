@@ -569,7 +569,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             ModelSchema,
             ModelVersionArtifactSchema,
             PipelineRunSchema,
-            RunMetadataResourceLinkSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
@@ -657,11 +657,11 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataResourceLinkSchema.resource_id
+                    RunMetadataResourceSchema.resource_id
                     == ArtifactVersionSchema.id,
-                    RunMetadataResourceLinkSchema.resource_type
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.ARTIFACT_VERSION,
-                    RunMetadataResourceLinkSchema.run_metadata_id
+                    RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
