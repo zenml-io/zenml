@@ -21,7 +21,7 @@ from transformers import (
     T5TokenizerFast,
 )
 
-from zenml import log_model_metadata, step
+from zenml import get_step_context, log_metadata, step
 from zenml.logger import get_logger
 
 from .data_loader import PROMPT
@@ -70,4 +70,11 @@ def test_model(
             sentence_without_prompt: decoded_output
         }
 
-    log_model_metadata({"Example Prompts": test_collection})
+    step_context = get_step_context()
+
+    if step_context.model:
+        log_metadata(
+            metadata={"Example Prompts": test_collection},
+            model_name=step_context.model.name,
+            model_version=step_context.model.version,
+        )
