@@ -21,6 +21,12 @@ This is particularly useful in the following scenarios:
 
 {% hint style="warning" %}
 Important: The Vertex AI Model Registry implementation only supports the model version interface, not the model interface. This means you cannot register, delete, or update models directly - you can only work with model versions. Operations like `register_model()`, `delete_model()`, and `update_model()` are not supported.
+
+Unlike platforms like MLflow where you first create a model container and then add versions to it, Vertex AI combines model registration and versioning into a single operation:
+
+- When you upload a model, it automatically creates both the model and its first version
+- Each subsequent upload with the same display name creates a new version
+- You cannot create an empty model container without a version
 {% endhint %}
 
 ## How do you deploy it?
@@ -141,9 +147,9 @@ Unlike the MLflow Model Registry, the Vertex AI implementation has some importan
 Based on the implementation, there are some limitations to be aware of:
 
 1. The `register_model()`, `update_model()`, and `delete_model()` methods are not implemented as Vertex AI only supports registering model versions
-2. Model stage transitions (Production, Staging, etc.) are not natively supported
-3. Models must have a serving container image URI specified or will use the default scikit-learn image
-4. All registered models are automatically labeled with `managed_by="zenml"` for tracking purposes
+3. It's preferable for the models to be given a serving container image URI specified to avoid using the default scikit-learn prediction container and to ensure compatibility with Vertex AI endpoints
+when deploying models.
+4. All registered models by the integration are automatically labeled with `managed_by="zenml"` for tracking purposes
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.model\_registry) to see more about the interface and implementation.
 

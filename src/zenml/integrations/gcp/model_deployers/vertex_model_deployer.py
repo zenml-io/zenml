@@ -22,9 +22,6 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.integrations.gcp import (
-    VERTEX_SERVICE_ARTIFACT,
-)
 from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
     VertexModelDeployerConfig,
     VertexModelDeployerFlavor,
@@ -142,14 +139,15 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
             config: the configuration of the model to be deployed with Vertex model deployer.
 
         Returns:
-            The VertexModelDeployerConfig object that can be used to interact
+            The VertexDeploymentService object that can be used to interact
             with the Vertex inference endpoint.
         """
         # create a new service for the new model
         service = VertexDeploymentService(uuid=id, config=config)
         logger.info(
-            f"Creating an artifact {VERTEX_SERVICE_ARTIFACT} with service instance attached as metadata."
-            " If there's an active pipeline and/or model this artifact will be associated with it."
+            "Creating an artifact %s with service instance attached as metadata.",
+            "attached as metadata. If there's an active pipeline and/or model, "
+            "this artifact will be associated with it.",
         )
         service.start(timeout=timeout)
         return service

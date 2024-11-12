@@ -14,10 +14,12 @@
 """Implementation of the Vertex AI Deployment service."""
 
 import re
+import time
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
 from google.api_core import exceptions
 from google.cloud import aiplatform
+from google.cloud import logging as vertex_logging
 from pydantic import BaseModel, Field
 
 from zenml.client import Client
@@ -46,6 +48,10 @@ def sanitize_vertex_label(value: str) -> str:
     Returns:
         Sanitized label value
     """
+    # Handle empty string
+    if not value:
+        return ""
+
     # Convert to lowercase
     value = value.lower()
     # Replace any character that's not lowercase letter, number, dash or underscore
@@ -81,10 +87,8 @@ class VertexPredictionServiceEndpoint(BaseModel):
     """Vertex AI Prediction Service Endpoint."""
 
     endpoint_name: str
+    deployed_model_id: str
     endpoint_url: Optional[str] = None
-    deployed_model_id: Optional[str] = (
-        None  # Added to track specific model deployment
-    )
 
 
 class VertexServiceStatus(ServiceStatus):
@@ -107,10 +111,8 @@ class VertexDeploymentService(BaseDeploymentService):
         default_factory=lambda: VertexServiceStatus()
     )
 
-    def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
-        """Initialize the Vertex AI deployment service."""
-        super().__init__(config=config, **attrs)
-
+    def _initialize_gcp_clients(self) -> None:
+        """Initialize GCP clients with consistent credentials."""
         # Initialize aiplatform with project and location
         from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
             VertexModelDeployer,
@@ -119,9 +121,29 @@ class VertexDeploymentService(BaseDeploymentService):
         zenml_client = Client()
         model_deployer = zenml_client.active_stack.model_deployer
         if not isinstance(model_deployer, VertexModelDeployer):
-            raise ValueError("Model deployer is not VertexModelDeployer")
+            raise RuntimeError(
+                "Active model deployer must be Vertex AI Model Deployer"
+            )
 
-        model_deployer.setup_aiplatform()
+        # get credentials from model deployer
+        credentials, project_id = model_deployer._get_authentication()
+
+        # Initialize aiplatform
+        aiplatform.init(
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
+        )
+
+        # Initialize logging client
+        self.logging_client = vertex_logging.Client(
+            project=project_id, credentials=credentials
+        )
+
+    def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
+        """Initialize the Vertex AI deployment service."""
+        super().__init__(config=config, **attrs)
+        self._initialize_gcp_clients()
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -187,6 +209,10 @@ class VertexDeploymentService(BaseDeploymentService):
             logger.info(
                 f"Found existing model to deploy: {model.resource_name} to the endpoint."
             )
+            if not model:
+                raise RuntimeError(
+                    f"Model {self.config.model_id} not found in the project."
+                )
 
             # Deploy the model to the endpoint
             endpoint.deploy(
@@ -332,7 +358,9 @@ class VertexDeploymentService(BaseDeploymentService):
                 instances=instances,
                 deployed_model_id=self.status.endpoint.deployed_model_id.split(
                     "/"
-                )[-1],
+                )[-1]
+                if self.status.endpoint.deployed_model_id
+                else None,
                 timeout=30,  # Add reasonable timeout
             )
 
@@ -348,14 +376,53 @@ class VertexDeploymentService(BaseDeploymentService):
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
     ) -> Generator[str, bool, None]:
-        """Retrieve the service logs."""
-        # Note: Could be enhanced to actually fetch logs from Cloud Logging
-        logger.info(
-            "Vertex AI Endpoints provides access to the logs through "
-            "Cloud Logging. Please check the Google Cloud Console for detailed logs. "
-            f"Location: {self.config.location}"
-        )
-        yield "Logs are available in Google Cloud Console."
+        """Retrieve the service logs from Cloud Logging.
+
+        Args:
+            follow: If True, continuously yield new logs
+            tail: Number of most recent logs to return
+        """
+        if not self.status.endpoint:
+            yield "No endpoint deployed yet"
+            return
+
+        try:
+            # Create filter for Vertex AI endpoint logs
+            endpoint_id = self.status.endpoint.endpoint_name.split("/")[-1]
+            filter_str = (
+                f'resource.type="aiplatform.googleapis.com/Endpoint" '
+                f'resource.labels.endpoint_id="{endpoint_id}" '
+                f'resource.labels.location="{self.config.location}"'
+            )
+
+            # Set time range for logs
+            if tail:
+                filter_str += f" limit {tail}"
+
+            # Get log iterator
+            iterator = self.logging_client.list_entries(
+                filter_=filter_str, order_by=vertex_logging.DESCENDING
+            )
+
+            # Yield historical logs
+            for entry in iterator:
+                yield f"[{entry.timestamp}] {entry.severity}: {entry.payload.get('message', '')}"
+
+            # If following logs, continue to stream new entries
+            if follow:
+                while True:
+                    time.sleep(2)  # Poll every 2 seconds
+                    for entry in self.logging_client.list_entries(
+                        filter_=filter_str,
+                        order_by=vertex_logging.DESCENDING,
+                        page_size=1,
+                    ):
+                        yield f"[{entry.timestamp}] {entry.severity}: {entry.payload.get('message', '')}"
+
+        except Exception as e:
+            error_msg = f"Failed to retrieve logs: {str(e)}"
+            logger.error(error_msg)
+            yield error_msg
 
     @property
     def is_running(self) -> bool:

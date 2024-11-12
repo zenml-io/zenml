@@ -76,7 +76,6 @@ from zenml.integrations.gcp.services.vertex_deployment import (
 
 @step(enable_cache=False)
 def model_deployer(
-    model_registry_uri: str,
 ) -> Annotated[
     VertexDeploymentService, 
     ArtifactConfig(name="vertex_deployment", is_deployment_artifact=True)
@@ -84,6 +83,7 @@ def model_deployer(
     """Model deployer step."""
     zenml_client = Client()
     current_model = get_step_context().model
+    model_registry_uri = current_model.get_model_artifact("THE_MODEL_ARTIFACT_NAME_GIVEN_IN_TRAINING_STEP").uri
     model_deployer = zenml_client.active_stack.model_deployer
 
     # Configure the deployment
