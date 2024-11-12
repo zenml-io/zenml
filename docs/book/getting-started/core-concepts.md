@@ -2,6 +2,11 @@
 description: Discovering the core concepts behind ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🪄 Core concepts
 
 ![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)

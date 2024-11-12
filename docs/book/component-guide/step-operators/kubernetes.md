@@ -2,6 +2,11 @@
 description: Executing individual steps in Kubernetes Pods.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Kubernetes Step Operator
 
 ZenML's Kubernetes step operator allows you to submit individual steps to be run on Kubernetes pods.

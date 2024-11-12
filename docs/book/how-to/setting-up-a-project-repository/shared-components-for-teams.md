@@ -2,6 +2,11 @@
 description: Sharing code and libraries within teams.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Shared Libraries and Logic for Teams
 
 Teams often need to collaborate on projects, share versioned logic, and implement cross-cutting functionality that benefits the entire organization. Sharing code libraries allows for incremental improvements, increased robustness, and standardization across projects.

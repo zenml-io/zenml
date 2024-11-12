@@ -4,6 +4,11 @@ description: >-
   with Evidently profiling
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evidently
 
 The Evidently [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [Evidently](https://evidentlyai.com/) to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
