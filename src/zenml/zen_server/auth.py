@@ -57,6 +57,7 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_server.cache import cache_result
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
@@ -332,12 +333,32 @@ def authenticate_credentials(
 
         if decoded_token.schedule_id:
             # If the token contains a schedule ID, we need to check if the
-            # schedule still exists in the database.
-            try:
-                schedule = zen_store().get_schedule(
-                    decoded_token.schedule_id, hydrate=False
-                )
-            except KeyError:
+            # schedule still exists in the database. We use a cached version
+            # of the schedule active status to avoid unnecessary database
+            # queries.
+
+            @cache_result(expiry=30)
+            def get_schedule_active(schedule_id: UUID) -> Optional[bool]:
+                """Get the active status of a schedule.
+
+                Args:
+                    schedule_id: The schedule ID.
+
+                Returns:
+                    The schedule active status or None if the schedule does not
+                    exist.
+                """
+                try:
+                    schedule = zen_store().get_schedule(
+                        schedule_id, hydrate=False
+                    )
+                except KeyError:
+                    return False
+
+                return schedule.active
+
+            schedule_active = get_schedule_active(decoded_token.schedule_id)
+            if schedule_active is None:
                 error = (
                     f"Authentication error: error retrieving token schedule "
                     f"{decoded_token.schedule_id}"
@@ -345,7 +366,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if not schedule.active:
+            if not schedule_active:
                 error = (
                     f"Authentication error: schedule {decoded_token.schedule_id} "
                     "is not active"
@@ -356,12 +377,35 @@ def authenticate_credentials(
         if decoded_token.pipeline_run_id:
             # If the token contains a pipeline run ID, we need to check if the
             # pipeline run exists in the database and the pipeline run has
-            # not concluded.
-            try:
-                pipeline_run = zen_store().get_run(
-                    decoded_token.pipeline_run_id, hydrate=False
-                )
-            except KeyError:
+            # not concluded. We use a cached version of the pipeline run status
+            # to avoid unnecessary database queries.
+
+            @cache_result(expiry=30)
+            def get_pipeline_run_status(
+                pipeline_run_id: UUID,
+            ) -> Optional[ExecutionStatus]:
+                """Get the status of a pipeline run.
+
+                Args:
+                    pipeline_run_id: The pipeline run ID.
+
+                Returns:
+                    The pipeline run status or None if the pipeline run does not
+                    exist.
+                """
+                try:
+                    pipeline_run = zen_store().get_run(
+                        pipeline_run_id, hydrate=False
+                    )
+                except KeyError:
+                    return None
+
+                return pipeline_run.status
+
+            pipeline_run_status = get_pipeline_run_status(
+                decoded_token.pipeline_run_id
+            )
+            if pipeline_run_status is None:
                 error = (
                     f"Authentication error: error retrieving token pipeline run "
                     f"{decoded_token.pipeline_run_id}"
@@ -369,7 +413,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if pipeline_run.status in [
+            if pipeline_run_status in [
                 ExecutionStatus.FAILED,
                 ExecutionStatus.COMPLETED,
             ]:
@@ -384,11 +428,32 @@ def authenticate_credentials(
         if decoded_token.step_run_id:
             # If the token contains a step run ID, we need to check if the
             # step run exists in the database and the step run has not concluded.
-            try:
-                step_run = zen_store().get_run_step(
-                    decoded_token.step_run_id, hydrate=False
-                )
-            except KeyError:
+            # We use a cached version of the step run status to avoid unnecessary
+            # database queries.
+
+            @cache_result(expiry=30)
+            def get_step_run_status(
+                step_run_id: UUID,
+            ) -> Optional[ExecutionStatus]:
+                """Get the status of a step run.
+
+                Args:
+                    step_run_id: The step run ID.
+
+                Returns:
+                    The step run status or None if the step run does not exist.
+                """
+                try:
+                    step_run = zen_store().get_run_step(
+                        step_run_id, hydrate=False
+                    )
+                except KeyError:
+                    return None
+
+                return step_run.status
+
+            step_run_status = get_step_run_status(decoded_token.step_run_id)
+            if step_run_status is None:
                 error = (
                     f"Authentication error: error retrieving token step run "
                     f"{decoded_token.step_run_id}"
@@ -396,7 +461,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if step_run.status in [
+            if step_run_status in [
                 ExecutionStatus.FAILED,
                 ExecutionStatus.COMPLETED,
             ]:

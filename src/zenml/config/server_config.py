@@ -233,6 +233,12 @@ class ServerConfiguration(BaseModel):
             deployment.
         max_request_body_size_in_bytes: The maximum size of the request body in
             bytes. If not specified, the default value of 256 Kb will be used.
+        memcache_max_capacity: The maximum number of entries that the memory
+            cache can hold. If not specified, the default value of 1000 will be
+            used.
+        memcache_default_expiry: The default expiry time in seconds for cache
+            entries. If not specified, the default value of 30 seconds will be
+            used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -327,6 +333,9 @@ class ServerConfiguration(BaseModel):
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
     )
+
+    memcache_max_capacity: int = 1000
+    memcache_default_expiry: int = 30
 
     _deployment_id: Optional[UUID] = None
 

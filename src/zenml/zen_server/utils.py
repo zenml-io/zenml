@@ -43,6 +43,7 @@ from zenml.enums import StoreType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
+from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.deploy.deployment import (
     LocalServerDeployment,
 )
@@ -67,6 +68,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
+_memcache: Optional[MemoryCache] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -220,6 +222,28 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
+
+
+def initialize_memcache(max_capacity: int, default_expiry: int) -> None:
+    """Initialize the memory cache.
+
+    Args:
+        max_capacity: The maximum capacity of the cache.
+        default_expiry: The default expiry time in seconds.
+    """
+    global _memcache
+    _memcache = MemoryCache(max_capacity, default_expiry)
+
+
+def memcache() -> MemoryCache:
+    """Return the memory cache.
+
+    Returns:
+        The memory cache.
+    """
+    if _memcache is None:
+        raise RuntimeError("Memory cache not initialized")
+    return _memcache
 
 
 _server_config: Optional[ServerConfiguration] = None
