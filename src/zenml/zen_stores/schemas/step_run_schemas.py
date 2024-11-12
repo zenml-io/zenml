@@ -56,7 +56,9 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataResourceLinkSchema,
+    )
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -139,10 +141,10 @@ class StepRunSchema(NamedSchema, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
         back_populates="step_run",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),
@@ -219,8 +221,8 @@ class StepRunSchema(NamedSchema, table=True):
                 or a step_configuration.
         """
         run_metadata = {
-            metadata_schema.key: json.loads(metadata_schema.value)
-            for metadata_schema in self.run_metadata
+            m.run_metadata.key: json.loads(m.run_metadata.value)
+            for m in self.run_metadata_links
         }
 
         input_artifacts = {

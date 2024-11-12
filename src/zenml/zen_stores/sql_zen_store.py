@@ -325,6 +325,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    RunMetadataResourceLinkSchema,
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
@@ -5516,20 +5517,29 @@ class SqlZenStore(BaseZenStore):
             The created run metadata.
         """
         with Session(self.engine) as session:
-            for key, value in run_metadata.values.items():
-                type_ = run_metadata.types[key]
-                run_metadata_schema = RunMetadataSchema(
-                    workspace_id=run_metadata.workspace,
-                    user_id=run_metadata.user,
-                    resource_id=run_metadata.resource_id,
-                    resource_type=run_metadata.resource_type.value,
-                    stack_component_id=run_metadata.stack_component_id,
-                    key=key,
-                    value=json.dumps(value),
-                    type=type_,
-                )
-                session.add(run_metadata_schema)
-                session.commit()
+            if run_metadata.resources:
+                for key, value in run_metadata.values.items():
+                    type_ = run_metadata.types[key]
+                    run_metadata_schema = RunMetadataSchema(
+                        workspace_id=run_metadata.workspace,
+                        user_id=run_metadata.user,
+                        stack_component_id=run_metadata.stack_component_id,
+                        key=key,
+                        value=json.dumps(value),
+                        type=type_,
+                    )
+                    session.add(run_metadata_schema)
+                    session.commit()
+
+                    for resource in run_metadata.resources:
+                        rm_resource_link = RunMetadataResourceLinkSchema(
+                            resource_id=resource[0],
+                            resource_type=resource[1].value,
+                            run_metadata_id=run_metadata_schema.id,
+                        )
+                        session.add(rm_resource_link)
+                        session.commit()
+
         return None
 
     # ----------------------------- Schedules -----------------------------

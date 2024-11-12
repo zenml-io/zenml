@@ -127,67 +127,46 @@ def log_metadata(
     # If a step name is provided, we need a run_id_name_or_prefix and will log
     # metadata for the steps pipeline and model accordingly.
     if step_name is not None and run_id_name_or_prefix is not None:
-        run_model = client.get_pipeline_run(
-            name_id_or_prefix=run_id_name_or_prefix
-        )
-        step_model = run_model.steps[step_name]
+        run = client.get_pipeline_run(run_id_name_or_prefix)
+        step = run.steps[step_name]
 
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=run_model.id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
-        )
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=step_model.id,
-            resource_type=MetadataResourceTypes.STEP_RUN,
-        )
-        if step_model.model_version:
-            client.create_run_metadata(
-                metadata=metadata,
-                resource_id=step_model.model_version.id,
-                resource_type=MetadataResourceTypes.MODEL_VERSION,
+        resources = [
+            (run.id, MetadataResourceTypes.PIPELINE_RUN),
+            (step.id, MetadataResourceTypes.STEP_RUN),
+        ]
+        if step.model_version:
+            resources.append(
+                (step.model_version.id, MetadataResourceTypes.MODEL_VERSION)
             )
-
+        client.create_run_metadata(metadata=metadata, resources=resources)
     # If a step is identified by id, fetch it directly through the client,
     # follow a similar procedure and log metadata for its pipeline and model
     # as well.
     elif step_id is not None:
-        step_model = client.get_run_step(step_run_id=step_id)
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=step_model.pipeline_run_id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
-        )
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=step_model.id,
-            resource_type=MetadataResourceTypes.STEP_RUN,
-        )
-        if step_model.model_version:
-            client.create_run_metadata(
-                metadata=metadata,
-                resource_id=step_model.model_version.id,
-                resource_type=MetadataResourceTypes.MODEL_VERSION,
+        step = client.get_run_step(step_id)
+
+        resources = [
+            (step.pipeline_run_id, MetadataResourceTypes.PIPELINE_RUN),
+            (step.id, MetadataResourceTypes.STEP_RUN),
+        ]
+        if step.model_version:
+            resources.append(
+                (step.model_version.id, MetadataResourceTypes.MODEL_VERSION)
             )
+        client.create_run_metadata(metadata=metadata, resources=resources)
 
     # If a pipeline run id is identified, we need to log metadata to it and its
     # model as well.
     elif run_id_name_or_prefix is not None:
-        run_model = client.get_pipeline_run(
-            name_id_or_prefix=run_id_name_or_prefix
-        )
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=run_model.id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
-        )
-        if run_model.model_version:
-            client.create_run_metadata(
-                metadata=metadata,
-                resource_id=run_model.model_version.id,
-                resource_type=MetadataResourceTypes.MODEL_VERSION,
+        run = client.get_pipeline_run(run_id_name_or_prefix)
+
+        resources = [(run.id, MetadataResourceTypes.PIPELINE_RUN)]
+
+        if run.model_version:
+            resources.append(
+                (run.model_version.id, MetadataResourceTypes.MODEL_VERSION)
             )
+        client.create_run_metadata(metadata=metadata, resources=resources)
 
     # If the user provides a model name and version, we use to model abstraction
     # to fetch the model version and attach the corresponding metadata to it.
@@ -195,22 +174,20 @@ def log_metadata(
         from zenml import Model
 
         mv = Model(name=model_name, version=model_version)
+
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=mv.id,
-            resource_type=MetadataResourceTypes.MODEL_VERSION,
+            resources=[(mv.id, MetadataResourceTypes.MODEL_VERSION)],
         )
 
     # If the user provides a model version id, we use the client to fetch it and
     # attach the metadata to it.
     elif model_version_id is not None:
-        model_version_id = client.get_model_version(
-            model_version_name_or_number_or_id=model_version_id
-        ).id
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=model_version_id,
-            resource_type=MetadataResourceTypes.MODEL_VERSION,
+            resources=[
+                (model_version_id, MetadataResourceTypes.MODEL_VERSION)
+            ],
         )
 
     # If the user provides an artifact name, there are three possibilities. If
@@ -226,8 +203,12 @@ def log_metadata(
             )
             client.create_run_metadata(
                 metadata=metadata,
-                resource_id=artifact_version_model.id,
-                resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+                resources=[
+                    (
+                        artifact_version_model.id,
+                        MetadataResourceTypes.ARTIFACT_VERSION,
+                    )
+                ],
             )
         else:
             step_context = None
@@ -244,20 +225,22 @@ def log_metadata(
                 )
                 client.create_run_metadata(
                     metadata=metadata,
-                    resource_id=artifact_version_model.id,
-                    resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+                    resources=[
+                        (
+                            artifact_version_model.id,
+                            MetadataResourceTypes.ARTIFACT_VERSION,
+                        )
+                    ],
                 )
 
     # If the user directly provides an artifact_version_id, we use the client to
     # fetch is and attach the metadata accordingly.
     elif artifact_version_id is not None:
-        artifact_version_model = client.get_artifact_version(
-            name_id_or_prefix=artifact_version_id,
-        )
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=artifact_version_model.id,
-            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+            resources=[
+                (artifact_version_id, MetadataResourceTypes.ARTIFACT_VERSION)
+            ],
         )
 
     # If every additional value is None, that means we are calling it bare bones
@@ -287,22 +270,21 @@ def log_metadata(
                 "of the step execution, please provide the required "
                 "identifiers."
             )
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=step_context.pipeline_run.id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
-        )
-        client.create_run_metadata(
-            metadata=metadata,
-            resource_id=step_context.step_run.id,
-            resource_type=MetadataResourceTypes.STEP_RUN,
-        )
+        resources = [
+            (step_context.step_run.id, MetadataResourceTypes.STEP_RUN),
+            (step_context.pipeline_run.id, MetadataResourceTypes.PIPELINE_RUN),
+        ]
         if step_context.model_version:
-            client.create_run_metadata(
-                metadata=metadata,
-                resource_id=step_context.model_version.id,
-                resource_type=MetadataResourceTypes.MODEL_VERSION,
+            resources.append(
+                (
+                    step_context.model_version.id,
+                    MetadataResourceTypes.MODEL_VERSION,
+                )
             )
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=resources,
+        )
 
     else:
         raise ValueError(

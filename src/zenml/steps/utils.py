@@ -477,8 +477,7 @@ def log_step_metadata(
         step_run_id = pipeline_run.steps[step_name].id
     client.create_run_metadata(
         metadata=metadata,
-        resource_id=step_run_id,
-        resource_type=MetadataResourceTypes.STEP_RUN,
+        resources=[(step_run_id, MetadataResourceTypes.STEP_RUN)],
     )
 
 

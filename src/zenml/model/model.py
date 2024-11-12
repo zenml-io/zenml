@@ -341,8 +341,7 @@ class Model(BaseModel):
         response = self._get_or_create_model_version()
         Client().create_run_metadata(
             metadata=metadata,
-            resource_id=response.id,
-            resource_type=MetadataResourceTypes.MODEL_VERSION,
+            resources=[(response.id, MetadataResourceTypes.MODEL_VERSION)],
         )
 
     @property

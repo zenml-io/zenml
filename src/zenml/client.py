@@ -4435,17 +4435,14 @@ class Client(metaclass=ClientMetaClass):
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        resource_id: UUID,
-        resource_type: MetadataResourceTypes,
+        resources: List[Tuple[UUID, MetadataResourceTypes]],
         stack_component_id: Optional[UUID] = None,
     ) -> None:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            resource_id: The ID of the resource for which the
-                metadata was produced.
-            resource_type: The type of the resource for which the
+            resources: The ID and type of the resources for that the
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
@@ -4480,14 +4477,12 @@ class Client(metaclass=ClientMetaClass):
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            resource_id=resource_id,
-            resource_type=resource_type,
+            resources=resources,
             stack_component_id=stack_component_id,
             values=values,
             types=types,
         )
         self.zen_store.create_run_metadata(run_metadata)
-        return None
 
     # -------------------------------- Secrets ---------------------------------
 

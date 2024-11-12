@@ -129,8 +129,7 @@ def publish_pipeline_run_metadata(
     for stack_component_id, metadata in pipeline_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=pipeline_run_id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
+            resources=[(pipeline_run_id, MetadataResourceTypes.PIPELINE_RUN)],
             stack_component_id=stack_component_id,
         )
 
@@ -150,7 +149,6 @@ def publish_step_run_metadata(
     for stack_component_id, metadata in step_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=step_run_id,
-            resource_type=MetadataResourceTypes.STEP_RUN,
+            resources=[(step_run_id, MetadataResourceTypes.STEP_RUN)],
             stack_component_id=stack_component_id,
         )

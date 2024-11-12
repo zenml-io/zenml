@@ -440,8 +440,7 @@ def log_artifact_metadata(
         response = client.get_artifact_version(artifact_name, artifact_version)
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=response.id,
-            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+            resources=[(response.id, MetadataResourceTypes.ARTIFACT_VERSION)],
         )
 
     else:

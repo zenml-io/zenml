@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import Field
@@ -30,11 +30,8 @@ from zenml.models.v2.base.scoped import (
 class RunMetadataRequest(WorkspaceScopedRequest):
     """Request model for run metadata."""
 
-    resource_id: UUID = Field(
-        title="The ID of the resource that this metadata belongs to.",
-    )
-    resource_type: MetadataResourceTypes = Field(
-        title="The type of the resource that this metadata belongs to.",
+    resources: List[Tuple[UUID, MetadataResourceTypes]] = Field(
+        title="The list of resources that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."

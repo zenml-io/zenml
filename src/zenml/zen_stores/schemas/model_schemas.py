@@ -47,7 +47,9 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+from zenml.zen_stores.schemas.run_metadata_schemas import (
+    RunMetadataResourceLinkSchema,
+)
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -303,10 +305,10 @@ class ModelVersionSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ModelVersionSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==ModelVersionSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),
@@ -404,7 +406,8 @@ class ModelVersionSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
                 description=self.description,
                 run_metadata={
-                    rm.key: json.loads(rm.value) for rm in self.run_metadata
+                    m.run_metadata.key: json.loads(m.run_metadata.value)
+                    for m in self.run_metadata_links
                 },
             )
 

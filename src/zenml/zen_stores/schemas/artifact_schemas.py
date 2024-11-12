@@ -59,7 +59,9 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionArtifactSchema,
     )
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataResourceLinkSchema,
+    )
     from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
@@ -242,10 +244,10 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(
         back_populates="artifact_versions"
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==ArtifactVersionSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),
@@ -376,7 +378,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={
-                    m.key: json.loads(m.value) for m in self.run_metadata
+                    m.run_metadata.key: json.loads(m.run_metadata.value)
+                    for m in self.run_metadata_links
                 },
             )
 

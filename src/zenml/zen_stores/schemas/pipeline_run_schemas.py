@@ -56,7 +56,9 @@ if TYPE_CHECKING:
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
     )
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataResourceLinkSchema,
+    )
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
@@ -136,10 +138,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata_links: List["RunMetadataResourceLinkSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceLinkSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceLinkSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",
             overlaps="run_metadata",
         ),
@@ -276,8 +278,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
 
         run_metadata = {
-            metadata_schema.key: json.loads(metadata_schema.value)
-            for metadata_schema in self.run_metadata
+            m.run_metadata.key: json.loads(m.run_metadata.value)
+            for m in self.run_metadata_links
         }
 
         if self.deployment is not None:

@@ -484,8 +484,7 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
+        resources=[(pipeline_run.id, MetadataResourceTypes.PIPELINE_RUN)],
     )
     rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
 
@@ -501,8 +500,7 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=step_run.id,
-        resource_type=MetadataResourceTypes.STEP_RUN,
+        resources=[(step_run.id, MetadataResourceTypes.STEP_RUN)],
     )
     rm = clean_client_with_run.get_run_step(step_run.id).run_metadata
 
@@ -518,8 +516,9 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=artifact_version.id,
-        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+        resources=[
+            (artifact_version.id, MetadataResourceTypes.ARTIFACT_VERSION)
+        ],
     )
 
     rm = clean_client_with_run.get_artifact_version(

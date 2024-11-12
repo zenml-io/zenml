@@ -5500,8 +5500,7 @@ class TestRunMetadata:
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                resource_id=resource.id,
-                resource_type=type_,
+                resources=[(resource.id, type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},
                 stack_component_id=sc.id

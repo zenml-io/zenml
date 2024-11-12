@@ -594,6 +594,7 @@ class StepRunFilter(WorkspaceScopedFilter):
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
+            RunMetadataResourceLinkSchema,
             RunMetadataSchema,
             StepRunSchema,
         )
@@ -612,10 +613,12 @@ class StepRunFilter(WorkspaceScopedFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == StepRunSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceLinkSchema.resource_id
+                    == StepRunSchema.id,
+                    RunMetadataResourceLinkSchema.resource_type
                     == MetadataResourceTypes.STEP_RUN,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceLinkSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
