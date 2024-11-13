@@ -106,7 +106,7 @@ class RunMetadataResourceSchema(SQLModel, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             overlaps="run_metadata,step_run,artifact_version,model_version",
-        )
+        ),
     )
     step_run: List["StepRunSchema"] = Relationship(
         back_populates="run_metadata",
