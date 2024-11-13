@@ -240,6 +240,9 @@ def memcache() -> MemoryCache:
 
     Returns:
         The memory cache.
+
+    Raises:
+        RuntimeError: If the memory cache is not initialized.
     """
     if _memcache is None:
         raise RuntimeError("Memory cache not initialized")
