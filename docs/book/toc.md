@@ -150,7 +150,7 @@
     * [Load artifacts from Model](how-to/model-management-metrics/model-control-plane/load-artifacts-from-model.md)
   * [Track metrics and metadata](how-to/model-management-metrics/track-metrics-metadata/README.md)
     * [Attach metadata to a step](how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step.md)
-    * [Attach metadata to a run](how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model.md)
+    * [Attach metadata to a run](how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-run.md)
     * [Attach metadata to an artifact](how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact.md)
     * [Attach metadata to a model](how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model.md)
     * [Group metadata](how-to/model-management-metrics/track-metrics-metadata/grouping-metadata.md)
