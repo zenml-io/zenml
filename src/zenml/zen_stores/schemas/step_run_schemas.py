@@ -141,7 +141,7 @@ class StepRunSchema(NamedSchema, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="step_run",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
@@ -222,7 +222,7 @@ class StepRunSchema(NamedSchema, table=True):
         """
         run_metadata = {
             m.run_metadata.key: json.loads(m.run_metadata.value)
-            for m in self.run_metadata_links
+            for m in self.run_metadata
         }
 
         input_artifacts = {

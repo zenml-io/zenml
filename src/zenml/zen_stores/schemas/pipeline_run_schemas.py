@@ -138,7 +138,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
@@ -279,7 +279,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         run_metadata = {
             m.run_metadata.key: json.loads(m.run_metadata.value)
-            for m in self.run_metadata_links
+            for m in self.run_metadata
         }
 
         if self.deployment is not None:

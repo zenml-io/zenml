@@ -244,7 +244,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(
         back_populates="artifact_versions"
     )
-    run_metadata_links: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
@@ -379,7 +379,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={
                     m.run_metadata.key: json.loads(m.run_metadata.value)
-                    for m in self.run_metadata_links
+                    for m in self.run_metadata
                 },
             )
 
