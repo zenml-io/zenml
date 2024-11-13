@@ -1,5 +1,4 @@
 """Separate run metadata into resource link table with new UUIDs.
-
 Revision ID: cc269488e5a9
 Revises: 0.70.0
 Create Date: 2024-11-12 09:46:46.587478
@@ -33,7 +32,7 @@ def upgrade() -> None:
         sa.Column("resource_type", sa.String(length=255), nullable=False),
         sa.Column(
             "run_metadata_id",
-            sa.Integer,
+            sqlmodel.sql.sqltypes.GUID(),
             sa.ForeignKey("run_metadata.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -62,18 +61,25 @@ def upgrade() -> None:
     ]
 
     # Perform bulk insert into `run_metadata_resource`
-    op.bulk_insert(
-        sa.table(
-            "run_metadata_resource",
-            sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-            sa.Column(
-                "resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+    if resource_data:  # Only perform insert if there's data to migrate
+        op.bulk_insert(
+            sa.table(
+                "run_metadata_resource",
+                sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+                sa.Column(
+                    "resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+                ),
+                sa.Column(
+                    "resource_type", sa.String(length=255), nullable=False
+                ),
+                sa.Column(
+                    "run_metadata_id",
+                    sqlmodel.sql.sqltypes.GUID(),
+                    nullable=False,
+                ),  # Changed to BIGINT
             ),
-            sa.Column("resource_type", sa.String(length=255), nullable=False),
-            sa.Column("run_metadata_id", sa.Integer, nullable=False),
-        ),
-        resource_data,
-    )
+            resource_data,
+        )
 
     # Drop the old `resource_id` and `resource_type` columns from `run_metadata`
     op.drop_column("run_metadata", "resource_id")
