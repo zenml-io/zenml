@@ -33,6 +33,22 @@ runs:
       uses: actions/setup-python@v5.3.0
       with:
         python-version: ${{ inputs.python-version }}
+    - name: Pip cache
+      uses: actions/cache@v4.1.2
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        restore-keys: |
+          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
+    - name: UV cache
+      uses: actions/cache@v4.1.2
+      with:
+        path: ~/.cache/uv
+        key: uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        restore-keys: |
+          uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
     - name: Delete error-causing bash
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
@@ -55,22 +71,6 @@ runs:
         "C:\Program Files\Git\bin\git.exe" config --global user.email "info@zenml.io"
         "C:\Program Files\Git\bin\git.exe" config --global user.name "ZenML
         GmbH"
-    - name: Pip cache
-      uses: actions/cache@v4.1.2
-      with:
-        path: ~/.cache/pip
-        key: pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-        restore-keys: |
-          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
-    - name: UV cache
-      uses: actions/cache@v4.1.2
-      with:
-        path: ~/.cache/uv
-        key: uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-        restore-keys: |
-          uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
     # - name: Get current week
     #   shell: bash
     #   id: date
