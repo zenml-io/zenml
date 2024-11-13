@@ -25,7 +25,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from typing_extensions import Annotated
 from utils import get_model_from_config
 
-from zenml import log_artifact_metadata, step
+from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -95,7 +95,7 @@ def hp_tuning_single_search(
     y_pred = cv.predict(X_tst)
     score = accuracy_score(y_tst, y_pred)
     # log score along with output artifact as metadata
-    log_artifact_metadata(
+    log_metadata(
         metadata={"metric": float(score)},
         artifact_name="hp_result",
     )
