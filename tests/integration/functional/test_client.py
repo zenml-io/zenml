@@ -32,8 +32,7 @@ from zenml import (
     ExternalArtifact,
     get_pipeline_context,
     get_step_context,
-    log_artifact_metadata,
-    log_model_metadata,
+    log_metadata,
     pipeline,
     save_artifact,
     step,
@@ -968,15 +967,19 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     """Produce artifact with metadata."""
     from zenml.client import Client
 
-    log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
+    log_metadata(
+        metadata={"some_meta": "meta_new_one"}, artifact_name="new_one"
+    )
 
     client = Client()
 
-    log_model_metadata(
-        metadata={"some_meta": "meta_new_one"},
-    )
-
     model = get_step_context().model
+
+    log_metadata(
+        metadata={"some_meta": "meta_new_one"},
+        model_name=model.name,
+        model_version=model.version,
+    )
 
     mv = client.create_model_version(
         model_name_or_id=model.name,
@@ -1132,12 +1135,12 @@ class TestArtifact:
         save_artifact(
             data="body_preexisting", name="preexisting", version="1.2.3"
         )
-        log_artifact_metadata(
+        log_metadata(
             metadata={"some_meta": "meta_preexisting"},
             artifact_name="preexisting",
             artifact_version="1.2.3",
         )
-        log_model_metadata(
+        log_metadata(
             metadata={"some_meta": "meta_preexisting"},
             model_name="aria",
             model_version="model_version",

@@ -587,6 +587,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack_component",
         "pipeline_name",
         "templatable",
+        "run_metadata",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -665,6 +666,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the user that created the run.",
     )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the pipeline runs by.",
+    )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     # generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -694,7 +699,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
-
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -718,6 +722,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
             StackCompositionSchema,
@@ -887,5 +892,21 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 )
 
             custom_filters.append(templatable_filter)
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == PipelineRunSchema.id,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.PIPELINE_RUN,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters
