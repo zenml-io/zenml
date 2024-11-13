@@ -259,14 +259,37 @@ ZenML's access to your Azure subscription.
             The configuration or script to deploy the ZenML stack to the
             specified cloud provider.
         """
-        config = f"""module "zenml_stack" {{
+        config = f"""terraform {{
+    required_providers {{
+        azurerm = {{
+            source  = "hashicorp/azurerm"
+        }}
+        azuread = {{
+            source  = "hashicorp/azuread"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "azurerm" {{
+    features {{
+        resource_group {{
+            prevent_deletion_if_contains_resources = false
+        }}
+    }}
+}}
+
+provider "zenml" {{
+    server_url = "{self.zenml_server_url}"
+    api_token = "{self.zenml_server_api_token}"
+}}
+
+module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/azure"
 
     location = "{self.location or "eastus"}"
-    orchestrator = "azureml"
-    zenml_server_url = "{self.zenml_server_url}"
-    zenml_api_key = ""
-    zenml_api_token = "{self.zenml_server_api_token}"
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
 }}
