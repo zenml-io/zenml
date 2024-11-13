@@ -4446,9 +4446,6 @@ class Client(metaclass=ClientMetaClass):
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
-
-        Returns:
-            None
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
