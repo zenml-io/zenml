@@ -19,13 +19,14 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
@@ -119,6 +120,8 @@ class ServerConfiguration(BaseModel):
             time of the JWT tokens issued to clients after they have
             authenticated with the ZenML server using an OAuth 2.0 device
             that has been marked as trusted.
+        generic_api_token_lifetime: The lifetime in seconds that generic
+            short-lived API tokens issued for automation purposes are valid.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
@@ -230,6 +233,12 @@ class ServerConfiguration(BaseModel):
             deployment.
         max_request_body_size_in_bytes: The maximum size of the request body in
             bytes. If not specified, the default value of 256 Kb will be used.
+        memcache_max_capacity: The maximum number of entries that the memory
+            cache can hold. If not specified, the default value of 1000 will be
+            used.
+        memcache_default_expiry: The default expiry time in seconds for cache
+            entries. If not specified, the default value of 30 seconds will be
+            used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -256,6 +265,10 @@ class ServerConfiguration(BaseModel):
     )
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
+
+    generic_api_token_lifetime: PositiveInt = (
+        DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME
+    )
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
@@ -320,6 +333,9 @@ class ServerConfiguration(BaseModel):
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
     )
+
+    memcache_max_capacity: int = 1000
+    memcache_default_expiry: int = 30
 
     _deployment_id: Optional[UUID] = None
 

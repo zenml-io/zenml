@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import model_validator
 
@@ -186,7 +187,17 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self._prepare_run(deployment=deployment)
 
-        environment = get_config_environment_vars(deployment=deployment)
+        pipeline_run_id: Optional[UUID] = None
+        schedule_id: Optional[UUID] = None
+        if deployment.schedule:
+            schedule_id = deployment.schedule.id
+        if placeholder_run:
+            pipeline_run_id = placeholder_run.id
+
+        environment = get_config_environment_vars(
+            schedule_id=schedule_id,
+            pipeline_run_id=pipeline_run_id,
+        )
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False

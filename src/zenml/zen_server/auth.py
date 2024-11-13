@@ -14,13 +14,13 @@
 """Authentication module for ZenML server."""
 
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
 import requests
-from fastapi import Depends
+from fastapi import Depends, Response
 from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
@@ -37,7 +37,7 @@ from zenml.constants import (
     LOGIN,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, OAuthDeviceStatus
+from zenml.enums import AuthScheme, ExecutionStatus, OAuthDeviceStatus
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
@@ -51,11 +51,13 @@ from zenml.models import (
     ExternalUserModel,
     OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
+    OAuthTokenResponse,
     UserAuthModel,
     UserRequest,
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_server.cache import cache_result
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
@@ -328,6 +330,148 @@ def authenticate_credentials(
                     update_last_login=True,
                 ),
             )
+
+        if decoded_token.schedule_id:
+            # If the token contains a schedule ID, we need to check if the
+            # schedule still exists in the database. We use a cached version
+            # of the schedule active status to avoid unnecessary database
+            # queries.
+
+            @cache_result(expiry=30)
+            def get_schedule_active(schedule_id: UUID) -> Optional[bool]:
+                """Get the active status of a schedule.
+
+                Args:
+                    schedule_id: The schedule ID.
+
+                Returns:
+                    The schedule active status or None if the schedule does not
+                    exist.
+                """
+                try:
+                    schedule = zen_store().get_schedule(
+                        schedule_id, hydrate=False
+                    )
+                except KeyError:
+                    return False
+
+                return schedule.active
+
+            schedule_active = get_schedule_active(decoded_token.schedule_id)
+            if schedule_active is None:
+                error = (
+                    f"Authentication error: error retrieving token schedule "
+                    f"{decoded_token.schedule_id}"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+            if not schedule_active:
+                error = (
+                    f"Authentication error: schedule {decoded_token.schedule_id} "
+                    "is not active"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+        if decoded_token.pipeline_run_id:
+            # If the token contains a pipeline run ID, we need to check if the
+            # pipeline run exists in the database and the pipeline run has
+            # not concluded. We use a cached version of the pipeline run status
+            # to avoid unnecessary database queries.
+
+            @cache_result(expiry=30)
+            def get_pipeline_run_status(
+                pipeline_run_id: UUID,
+            ) -> Optional[ExecutionStatus]:
+                """Get the status of a pipeline run.
+
+                Args:
+                    pipeline_run_id: The pipeline run ID.
+
+                Returns:
+                    The pipeline run status or None if the pipeline run does not
+                    exist.
+                """
+                try:
+                    pipeline_run = zen_store().get_run(
+                        pipeline_run_id, hydrate=False
+                    )
+                except KeyError:
+                    return None
+
+                return pipeline_run.status
+
+            pipeline_run_status = get_pipeline_run_status(
+                decoded_token.pipeline_run_id
+            )
+            if pipeline_run_status is None:
+                error = (
+                    f"Authentication error: error retrieving token pipeline run "
+                    f"{decoded_token.pipeline_run_id}"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+            if pipeline_run_status in [
+                ExecutionStatus.FAILED,
+                ExecutionStatus.COMPLETED,
+            ]:
+                error = (
+                    f"The execution of pipeline run "
+                    f"{decoded_token.pipeline_run_id} has already concluded and "
+                    "API tokens scoped to it are no longer valid."
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+        if decoded_token.step_run_id:
+            # If the token contains a step run ID, we need to check if the
+            # step run exists in the database and the step run has not concluded.
+            # We use a cached version of the step run status to avoid unnecessary
+            # database queries.
+
+            @cache_result(expiry=30)
+            def get_step_run_status(
+                step_run_id: UUID,
+            ) -> Optional[ExecutionStatus]:
+                """Get the status of a step run.
+
+                Args:
+                    step_run_id: The step run ID.
+
+                Returns:
+                    The step run status or None if the step run does not exist.
+                """
+                try:
+                    step_run = zen_store().get_run_step(
+                        step_run_id, hydrate=False
+                    )
+                except KeyError:
+                    return None
+
+                return step_run.status
+
+            step_run_status = get_step_run_status(decoded_token.step_run_id)
+            if step_run_status is None:
+                error = (
+                    f"Authentication error: error retrieving token step run "
+                    f"{decoded_token.step_run_id}"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+            if step_run_status in [
+                ExecutionStatus.FAILED,
+                ExecutionStatus.COMPLETED,
+            ]:
+                error = (
+                    f"The execution of step run "
+                    f"{decoded_token.step_run_id} has already concluded and "
+                    "API tokens scoped to it are no longer valid."
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,
@@ -658,6 +802,80 @@ def authenticate_api_key(
     # account to a user here.
     user_model = internal_api_key.service_account.to_user_model()
     return AuthContext(user=user_model, api_key=internal_api_key)
+
+
+def generate_access_token(
+    user_id: UUID,
+    response: Optional[Response] = None,
+    device: Optional[OAuthDeviceInternalResponse] = None,
+    api_key: Optional[APIKeyInternalResponse] = None,
+    expires_in: Optional[int] = None,
+    schedule_id: Optional[UUID] = None,
+    pipeline_run_id: Optional[UUID] = None,
+    step_run_id: Optional[UUID] = None,
+) -> OAuthTokenResponse:
+    """Generates an access token for the given user.
+
+    Args:
+        user_id: The ID of the user.
+        response: The FastAPI response object.
+        device: The device used for authentication.
+        api_key: The service account API key used for authentication.
+        expires_in: The number of seconds until the token expires.
+        schedule_id: The ID of the schedule to scope the token to.
+        pipeline_run_id: The ID of the pipeline run to scope the token to.
+        step_run_id: The ID of the step run to scope the token to.
+
+    Returns:
+        An authentication response with an access token.
+    """
+    config = server_config()
+
+    # If the expiration time is not supplied, the JWT tokens are set to expire
+    # according to the values configured in the server config. Device tokens are
+    # handled separately from regular user tokens.
+    expires: Optional[datetime] = None
+    if expires_in:
+        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+    elif device:
+        # If a device was used for authentication, the token will expire
+        # at the same time as the device.
+        expires = device.expires
+        if expires:
+            expires_in = max(
+                int(expires.timestamp() - datetime.utcnow().timestamp()), 0
+            )
+    elif config.jwt_token_expire_minutes:
+        expires = datetime.utcnow() + timedelta(
+            minutes=config.jwt_token_expire_minutes
+        )
+        expires_in = config.jwt_token_expire_minutes * 60
+
+    access_token = JWTToken(
+        user_id=user_id,
+        device_id=device.id if device else None,
+        api_key_id=api_key.id if api_key else None,
+        schedule_id=schedule_id,
+        pipeline_run_id=pipeline_run_id,
+        step_run_id=step_run_id,
+    ).encode(expires=expires)
+
+    if not device and response:
+        # Also set the access token as an HTTP only cookie in the response
+        response.set_cookie(
+            key=config.get_auth_cookie_name(),
+            value=access_token,
+            httponly=True,
+            samesite="lax",
+            max_age=config.jwt_token_expire_minutes * 60
+            if config.jwt_token_expire_minutes
+            else None,
+            domain=config.auth_cookie_domain,
+        )
+
+    return OAuthTokenResponse(
+        access_token=access_token, expires_in=expires_in, token_type="bearer"
+    )
 
 
 def http_authentication(
