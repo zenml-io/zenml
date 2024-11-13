@@ -37,15 +37,17 @@ runs:
       uses: actions/cache@v4.1.2
       with:
         path: ~/.cache/pip
-        key: pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        key: pip-${{ inputs.os }}-${{ inputs.python-version }}-${{ inputs.install_integrations
+          }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
         restore-keys: |
-          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
+          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{ inputs.install_integrations }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          pip-${{ inputs.os }}-${{ inputs.python-version }}-${{ inputs.install_integrations }}
     - name: UV cache
       uses: actions/cache@v4.1.2
       with:
         path: ~/.cache/uv
-        key: uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        key: uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{
+          hashFiles('src/zenml/integrations/*/__init__.py') }}
         restore-keys: |
           uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
           uv-${{ inputs.os }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
