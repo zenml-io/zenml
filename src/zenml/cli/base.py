@@ -91,7 +91,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.10.30",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.11.08",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 

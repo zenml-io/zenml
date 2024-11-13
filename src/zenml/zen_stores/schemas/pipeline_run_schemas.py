@@ -72,6 +72,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             "orchestrator_run_id",
             name="unique_orchestrator_run_id_for_deployment_id",
         ),
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_run_name_in_workspace",
+        ),
     )
 
     # Fields

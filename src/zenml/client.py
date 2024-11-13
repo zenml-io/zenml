@@ -3426,7 +3426,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             id_or_prefix: The id or id prefix of the deployment.
         """
-        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        deployment = self.get_deployment(
+            id_or_prefix=id_or_prefix, hydrate=False
+        )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
 
     # ------------------------------ Run templates -----------------------------
@@ -3794,6 +3796,7 @@ class Client(metaclass=ClientMetaClass):
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
@@ -3833,6 +3836,7 @@ class Client(metaclass=ClientMetaClass):
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             user: The name/ID of the user to filter by.
+            run_metadata: The run_metadata of the run to filter by.
             pipeline: The name/ID of the pipeline to filter by.
             code_repository: Filter by code repository name/ID.
             model: Filter by model name/ID.
@@ -3872,6 +3876,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             unlisted=unlisted,
             user=user,
+            run_metadata=run_metadata,
             pipeline=pipeline,
             code_repository=code_repository,
             stack=stack,
@@ -4192,7 +4197,7 @@ class Client(metaclass=ClientMetaClass):
                 ),
             )
         except RuntimeError:
-            pass  # Cannot link to step run if called outside of a step
+            pass  # Cannot link to step run if called outside a step
         return artifact
 
     def list_artifact_versions(
@@ -4220,6 +4225,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
@@ -4251,6 +4257,7 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name or ID.
             model: Filter by model name or ID.
             pipeline_run: Filter by pipeline run name or ID.
+            run_metadata: Filter by run metadata.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

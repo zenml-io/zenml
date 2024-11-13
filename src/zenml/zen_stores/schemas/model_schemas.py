@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
+from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
@@ -62,6 +62,13 @@ class ModelSchema(NamedSchema, table=True):
     """SQL Model for model."""
 
     __tablename__ = "model"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_model_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -220,6 +227,23 @@ class ModelVersionSchema(NamedSchema, table=True):
     """SQL Model for model version."""
 
     __tablename__ = MODEL_VERSION_TABLENAME
+    __table_args__ = (
+        # We need two unique constraints here:
+        # - The first to ensure that each model version for a
+        #   model has a unique version number
+        # - The second one to ensure that explicit names given by
+        #   users are unique
+        UniqueConstraint(
+            "number",
+            "model_id",
+            name="unique_version_number_for_model_id",
+        ),
+        UniqueConstraint(
+            "name",
+            "model_id",
+            name="unique_version_for_model_id",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
