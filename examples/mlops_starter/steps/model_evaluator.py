@@ -20,7 +20,7 @@ from typing import Optional
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
-from zenml import log_artifact_metadata, step
+from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -95,7 +95,7 @@ def model_evaluator(
         for message in messages:
             logger.warning(message)
 
-    log_artifact_metadata(
+    log_metadata(
         metadata={
             "train_accuracy": float(trn_acc),
             "test_accuracy": float(tst_acc),
