@@ -238,7 +238,7 @@ def log_metadata(
             with contextlib.suppress(RuntimeError):
                 step_context = get_step_context()
 
-            if step_context:
+            if step_context and artifact_name in step_context._outputs:
                 step_context.add_output_metadata(
                     metadata=metadata, output_name=artifact_name
                 )
