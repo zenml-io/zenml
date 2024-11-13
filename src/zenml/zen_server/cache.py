@@ -16,7 +16,8 @@
 import time
 from collections import OrderedDict
 from threading import Lock
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
+from typing import OrderedDict as OrderedDictType
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -41,7 +42,11 @@ class MemoryCacheEntry:
 
     @property
     def expired(self) -> bool:
-        """Check if the cache entry has expired."""
+        """Check if the cache entry has expired.
+
+        Returns:
+            True if the cache entry has expired; otherwise, False.
+        """
         return time.time() - self.timestamp >= self.expiry
 
 
@@ -62,10 +67,20 @@ class MemoryCache(metaclass=SingletonMetaClass):
         cache = MemoryCache()
         uuid_key = UUID("12345678123456781234567812345678")
 
-        cached_or_real_object = cache.get_or_cache(
-            uuid_key, lambda: "sync_data", expiry=120
-        )
-        print(cached_or_real_object)
+        if not cache.get(uuid_key):
+            # Get the value from the database or other source
+            value = get_value_from_database()
+            cache.set(uuid_key, value, expiry=60)
+
+    Usage Example with decorator:
+
+        @cache_result(expiry=60)
+        def get_cached_value(key: UUID) -> Any:
+            return get_value_from_database(key)
+
+        uuid_key = UUID("12345678123456781234567812345678")
+
+        value = get_cached_value(uuid_key)
     """
 
     def __init__(self, max_capacity: int, default_expiry: int) -> None:
@@ -75,7 +90,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
             max_capacity: The maximum number of entries the cache can hold.
             default_expiry: The default expiry time in seconds.
         """
-        self.cache: Dict[UUID, MemoryCacheEntry] = OrderedDict()
+        self.cache: OrderedDictType[UUID, MemoryCacheEntry] = OrderedDict()
         self.max_capacity = max_capacity
         self.default_expiry = default_expiry
         self._lock = Lock()
@@ -131,10 +146,10 @@ class MemoryCache(metaclass=SingletonMetaClass):
 
         # Ensure we don't exceed max capacity
         while len(self.cache) > self.max_capacity:
-            self.cache.popitem(last=False)  # type: ignore[call-arg]
+            self.cache.popitem(last=False)
 
 
-F = Callable[[UUID], Optional[Any]]
+F = Callable[[UUID], Any]
 
 
 def cache_result(
@@ -161,13 +176,11 @@ def cache_result(
             The wrapped function with caching logic.
         """
 
-        def wrapper(key: UUID) -> Optional[Any]:
+        def wrapper(key: UUID) -> Any:
             """The wrapped function with caching logic.
 
             Args:
                 key: The key to use for caching.
-                *args: Additional positional arguments.
-                **kwargs: Additional keyword arguments.
 
             Returns:
                 The result of the original function, either from cache or
