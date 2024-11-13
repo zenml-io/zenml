@@ -52,7 +52,7 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
 {% hint style="warning" %}
 In order to log metadata to a pipeline run during the step execution without 
 specifying any additional identifiers, `log_related_entities` should be 
-`True` (default behaviour).
+`True` (default behavior).
 {% endhint %}
 
 ## Logging Metadata Outside a Run
