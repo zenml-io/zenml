@@ -34,7 +34,8 @@ class RunMetadataRequest(WorkspaceScopedRequest):
         title="The list of resources that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
-        title="The ID of the stack component that this metadata belongs to."
+        title="The ID of the stack component that this metadata belongs to.",
+        default=None,
     )
     values: Dict[str, "MetadataType"] = Field(
         title="The metadata to be created.",
