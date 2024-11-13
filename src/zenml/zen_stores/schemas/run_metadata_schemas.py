@@ -104,13 +104,15 @@ class RunMetadataResourceSchema(SQLModel, table=True):
     pipeline_run: List["PipelineRunSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)"
-        ),
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
+            overlaps="run_metadata,step_run,artifact_version,model_version",
+        )
     )
     step_run: List["StepRunSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)"
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
+            overlaps="run_metadata,pipeline_run,artifact_version,model_version",
         ),
     )
     artifact_version: List["ArtifactVersionSchema"] = Relationship(
