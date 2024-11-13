@@ -1,5 +1,5 @@
 ---
-description: Attaching metadata to a run.
+description: Learn how to attach metadata to a run.
 ---
 
 # Attach Metadata to a Run
