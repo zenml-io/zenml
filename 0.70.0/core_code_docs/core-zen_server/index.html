@@ -20864,7 +20864,7 @@ the currently authenticated user.</p></td>
       </tr>
       <tr>
         <td><code>list_method</code></td>
-        <td><code>Callable[[~AnyFilter], zenml.models.v2.base.page.Page[TypeVar]]</code></td>
+        <td><code>Callable[[~AnyFilter], zenml.models.v2.base.page.Page[~AnyResponse]]</code></td>
         <td><p>The method to list the entities.</p></td>
         <td><em>required</em></td>
       </tr>
@@ -20886,7 +20886,7 @@ the currently authenticated user.</p></td>
   </thead>
   <tbody>
     <tr>
-      <td><code>Page[TypeVar]</code></td>
+      <td><code>Page[~AnyResponse]</code></td>
       <td><p>A page of entity models.</p></td>
     </tr>
   </tbody>
@@ -22063,7 +22063,7 @@ resource.</p></td>
   <tbody>
       <tr>
         <td><code>page</code></td>
-        <td><code>Page[TypeVar]</code></td>
+        <td><code>Page[~AnyResponse]</code></td>
         <td><p>The page to dehydrate.</p></td>
         <td><em>required</em></td>
       </tr>
@@ -22079,7 +22079,7 @@ resource.</p></td>
   </thead>
   <tbody>
     <tr>
-      <td><code>Page[TypeVar]</code></td>
+      <td><code>Page[~AnyResponse]</code></td>
       <td><p>The page with (potentially) dehydrated items.</p></td>
     </tr>
   </tbody>

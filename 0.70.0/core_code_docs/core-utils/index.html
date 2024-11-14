@@ -10810,7 +10810,6 @@ StrEnum            (<span title="str">str</span>, <span title="enum.Enum">Enum</
     <div class="doc doc-contents ">
 
       <p>Default object formatter.</p>
-<p>Return str(self) if format_spec is empty. Raise TypeError otherwise.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/utils/enum_utils.py</code></summary>
@@ -15589,7 +15588,7 @@ port is found.</p></td>
   <tbody>
       <tr>
         <td><code>list_method</code></td>
-        <td><code>Callable[..., zenml.models.v2.base.page.Page[TypeVar]]</code></td>
+        <td><code>Callable[..., zenml.models.v2.base.page.Page[~AnyResponse]]</code></td>
         <td><p>The list method to depaginate.</p></td>
         <td><em>required</em></td>
       </tr>
