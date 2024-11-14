@@ -20,7 +20,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../../component-guide/orchestrators/orchestrators.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](../../../component-guide/orchestrators/orchestrators.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../../component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```python
 from zenml import step
@@ -56,7 +56,7 @@ All steps running on GPU-backed hardware will be executed within a containerized
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](../customize-docker-builds/README.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](../../infrastructure-deployment/customize-docker-builds/README.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 from zenml import pipeline

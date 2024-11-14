@@ -7,9 +7,9 @@ description: Configuring ZenML's default logging behavior
 
 ZenML produces various kinds of logs:
 
-* The [ZenML Server](../../getting-started/deploying-zenml/README.md) produces server logs (like any FastAPI server).
-* The [Client or Runner](../configure-python-environments/README.md#client-environment-or-the-runner-environment) environment produces logs, for example after running a pipeline. These are steps that are typically before, after, and during the creation of a pipeline run.
-* The [Execution environment](../configure-python-environments/README.md#execution-environments) (on the orchestrator level) produces logs when it executes each step of a pipeline. These are logs that are typically written in your steps using the python `logging` module.
+* The [ZenML Server](../../../getting-started/deploying-zenml/README.md) produces server logs (like any FastAPI server).
+* The [Client or Runner](../../infrastructure-deployment/configure-python-environments/README.md#client-environment-or-the-runner-environment) environment produces logs, for example after running a pipeline. These are steps that are typically before, after, and during the creation of a pipeline run.
+* The [Execution environment](../../infrastructure-deployment/configure-python-environments/README.md#execution-environments) (on the orchestrator level) produces logs when it executes each step of a pipeline. These are logs that are typically written in your steps using the python `logging` module.
 
 This section talks about how users can control logging behavior in these various environments.
 

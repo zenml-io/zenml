@@ -64,7 +64,7 @@ All steps using Accelerate will be executed within a containerized environment. 
 
 ### 1. Specify a CUDA-enabled parent image in your `DockerSettings`
 
-For complete details, refer to the [containerization page](../customize-docker-builds/README.md). Here's an example using a CUDA-enabled PyTorch image:
+For complete details, refer to the [containerization page](../../infrastructure-deployment/customize-docker-builds/README.md). Here's an example using a CUDA-enabled PyTorch image:
 
 ```python
 from zenml import pipeline

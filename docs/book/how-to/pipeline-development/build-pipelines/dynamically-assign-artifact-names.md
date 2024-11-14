@@ -67,7 +67,7 @@ This method generates unique artifact names for each step, making it easier to
 track and retrieve specific artifacts later in your workflow.
 
 ![Dynamic artifact pipeline DAG in the
-dashboard](../../.gitbook/assets/dynamic_artifact_pipeline.png)
+dashboard](../../../.gitbook/assets/dynamic_artifact_pipeline.png)
 
 One caveat applies to this first method which is that either of the following
 two things must be true:
@@ -113,7 +113,7 @@ metadata_artifact_pipeline(train_data=1, val_data=2, test_data=3)
 
 We can see the metadata in the dashboard:
 
-![Metadata visible in the dashboard](../../.gitbook/assets/metadata_artifact_pipeline.png)
+![Metadata visible in the dashboard](../../../.gitbook/assets/metadata_artifact_pipeline.png)
 
 This method uses a single `generic_step` but adds custom metadata to each artifact. You can later use this metadata to identify and differentiate between artifacts:
 
