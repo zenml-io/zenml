@@ -44,7 +44,7 @@ To scale your ZenML server deployed as a service on ECS, you can follow the step
 - If you scroll down, you will see the "Service auto scaling - optional" section.
 - Here you can enable autoscaling and set the minimum and maximum number of tasks to run for your service and also the ECS service metric to use for scaling.
 
-![Image showing autoscaling settings for a service](../../.gitbook/assets/ecs_autoscaling.png)
+![Image showing autoscaling settings for a service](../../../.gitbook/assets/ecs_autoscaling.png)
 
 {% endtab %}
 
@@ -60,7 +60,7 @@ To scale your ZenML server deployed on Cloud Run, you can follow the steps below
 - Scroll down to the "Revision auto-scaling" section.
 - Here you can set the minimum and maximum number of instances to run for your service.
 
-![Image showing autoscaling settings for a service](../../.gitbook/assets/cloudrun_autoscaling.png)
+![Image showing autoscaling settings for a service](../../../.gitbook/assets/cloudrun_autoscaling.png)
 
 {% endtab %}
 {% tab title="Docker Compose" %}
@@ -159,7 +159,7 @@ sum by(namespace) (rate(container_cpu_usage_seconds_total{namespace=~"zenml.*"}[
 
 This query would give you the CPU utilization of your server pods in all namespaces that start with `zenml`. The image below shows how this query would look like in Grafana.
 
-![Image showing CPU utilization of ZenML server pods](../../.gitbook/assets/grafana_dashboard.png)
+![Image showing CPU utilization of ZenML server pods](../../../.gitbook/assets/grafana_dashboard.png)
 
 
 {% endtab %}
@@ -168,7 +168,7 @@ On ECS, you can utilize the [CloudWatch integration](https://docs.aws.amazon.com
 
 In the "Health and metrics" section of your ECS console, you should see metrics pertaining to your ZenML service like CPU utilization and Memory utilization.
 
-![Image showing CPU utilization ECS](../../.gitbook/assets/ecs_cpu_utilization.png)
+![Image showing CPU utilization ECS](../../../.gitbook/assets/ecs_cpu_utilization.png)
 
 {% endtab %}
 {% tab title="Cloud Run" %}
@@ -176,7 +176,7 @@ In Cloud Run, you can utilize the [Cloud Monitoring integration](https://cloud.g
 
 The "Metrics" tab in the Cloud Run console will show you metrics like Container CPU utilization, Container memory utilization, and more.
 
-![Image showing metrics in Cloud Run](../../.gitbook/assets/cloudrun_metrics.png)
+![Image showing metrics in Cloud Run](../../../.gitbook/assets/cloudrun_metrics.png)
 
 {% endtab %}
 {% endtabs %}

@@ -10,7 +10,7 @@ tags as a flexible tool to classify and filter your ML assets. In this guide,
 we'll demonstrate how to assign tags to both artifacts and models within the
 ZenML ecosystem.
 
-![Tags are visible in the ZenML Dashboard](../../.gitbook/assets/tags-in-dashboard.png)
+![Tags are visible in the ZenML Dashboard](../../../.gitbook/assets/tags-in-dashboard.png)
 
 ## Assigning tags to artifacts
 
