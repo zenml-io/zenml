@@ -20,7 +20,7 @@ You can view some of the options of what can be passed into this command by runn
 
 [ZenML Pro](https://zenml.io/pro) can register their models directly from the cloud dashboard interface.
 
-<figure><img src="../../.gitbook/assets/mcp_model_register.png" alt="ZenML Pro Register Model."><figcaption><p>Register a model on the [ZenML Pro](https://zenml.io/pro) dashboard</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/mcp_model_register.png" alt="ZenML Pro Register Model."><figcaption><p>Register a model on the [ZenML Pro](https://zenml.io/pro) dashboard</p></figcaption></figure>
 
 ## Explicit Python SDK registration
 

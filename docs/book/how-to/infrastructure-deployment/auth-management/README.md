@@ -17,13 +17,13 @@ The challenge comes from _setting up and implementing proper authentication and 
 
 The hard-to-swallow truth is there is no single standard that unifies all authentication and authorization-related matters or a single, well-defined set of security best practices that you can follow. However, with ZenML you get the next best thing, an abstraction that keeps the complexity of authentication and authorization away from your code and makes it easier to tackle them: _<mark style="color:blue;">the ZenML Service Connectors</mark>_.
 
-<figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
 ## A representative use-case
 
 The range of features covered by Service Connectors is extensive and going through the entire [Service Connector Guide](service-connectors-guide.md) can be overwhelming. If all you want is to get a quick overview of how Service Connectors work and what they can do for you, this section is for you.
 
-This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](../../component-guide/artifact-stores/s3.md) to it.
+This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](../../../component-guide/artifact-stores/s3.md) to it.
 
 Some details about the current alternatives to using Service Connectors and their drawbacks are provided below. Feel free to skip them if you are already familiar with them or just want to get to the good part.
 
@@ -38,7 +38,7 @@ There are quicker alternatives to using a Service Connector to link an S3 Artifa
     ```shell
     zenml artifact-store register s3 --flavor s3 --path=s3://BUCKET_NAME --key=AWS_ACCESS_KEY --secret=AWS_SECRET_KEY
     ```
-2.  [a ZenML secret](../../getting-started/deploying-zenml/secret-management.md) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
+2.  [a ZenML secret](../../../getting-started/deploying-zenml/secret-management.md) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
 
     ```shell
     zenml secret create aws --aws_access_key_id=AWS_ACCESS_KEY --aws_secret_access_key=AWS_SECRET_KEY
@@ -66,11 +66,11 @@ These drawbacks are addressed by Service Connectors.
 
 Without Service Connectors, credentials are stored directly in the Stack Component configuration or ZenML Secret and are directly used in the runtime environment. The Stack Component implementation is directly responsible for validating credentials, authenticating and connecting to the infrastructure service. This is illustrated in the following diagram:
 
-![Authentication without Service Connectors](../../.gitbook/assets/authentication\_without\_connectors.png)
+![Authentication without Service Connectors](../../../.gitbook/assets/authentication_without_connectors.png)
 
 When Service Connectors are involved in the authentication and authorization process, they can act as brokers. The credentials validation and authentication process takes place on the ZenML server. In most cases, the main credentials never have to leave the ZenML server as the Service Connector automatically converts them into short-lived credentials with a reduced set of privileges and issues these credentials to clients. Furthermore, multiple Stack Components of different flavors can use the same Service Connector to access different types or resources with the same credentials:
 
-![Authentication with Service Connectors](../../.gitbook/assets/authentication\_with\_connectors.png)
+![Authentication with Service Connectors](../../../.gitbook/assets/authentication_with_connectors.png)
 
 In working with Service Connectors, the first step is usually _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find out whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
 
@@ -191,7 +191,7 @@ setup that includes using the auto-configuration Service Connector features.
 
 Dashboard equivalent:
 
-<img src="../../.gitbook/assets/aws-service-connector-type.png" alt="AWS Service Connector Type Details" data-size="original">
+<img src="../../../.gitbook/assets/aws-service-connector-type.png" alt="AWS Service Connector Type Details" data-size="original">
 
 Fetching details about the S3 bucket resource type:
 
@@ -423,7 +423,7 @@ Service connector 'aws-s3' of type 'aws' with id '96a92154-4ec7-4722-bc18-21eeea
 ```
 {% endcode %}
 
-The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../../getting-started/deploying-zenml/secret-management.md).
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../../../getting-started/deploying-zenml/secret-management.md).
 
 Moreover, the following security best practice is automatically enforced by the AWS connector: the AWS Secret Key will be kept hidden on the ZenML Server and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
 

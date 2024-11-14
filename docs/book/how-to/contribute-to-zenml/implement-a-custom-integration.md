@@ -4,7 +4,7 @@ description: Creating an external integration and contributing to ZenML
 
 # Implement a custom integration
 
-![ZenML integrates with a number of tools from the MLOps landscape](../../.gitbook/assets/sam-side-by-side-full-text.png)
+![ZenML integrates with a number of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)
 
 One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to come up with ways to [implement your own stack component flavors](implement-a-custom-stack-component.md) in order to fill in any gaps that are remaining.
 
@@ -27,7 +27,7 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../setting-up-a-project-repository/best-practices.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../project-setup-and-management/setting-up-a-project-repository/README.md) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}
