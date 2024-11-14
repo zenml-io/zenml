@@ -90,7 +90,7 @@ Containerized orchestrators and step operators load your complete project files 
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official [zenml Docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](../customize-docker-builds/README.md).
+By default, ZenML uses the official [zenml Docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](../../infrastructure-deployment/customize-docker-builds/README.md).
 
 #### Notebooks
 

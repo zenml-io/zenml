@@ -13,4 +13,4 @@ instead of through manual processes.
 In this section, we will show you how to integrate ZenML with popular
 IaC tools such as [Terraform](https://www.terraform.io/).
 
-![Screenshot of ZenML stack on Terraform Registry](../../.gitbook/assets/terraform_providers_screenshot.png)
+![Screenshot of ZenML stack on Terraform Registry](../../../.gitbook/assets/terraform_providers_screenshot.png)
