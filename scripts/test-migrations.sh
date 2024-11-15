@@ -179,6 +179,7 @@ function run_tests_for_version() {
         # Run the pipeline again to check if the restored database is working
         echo "===== Running starter template pipeline after DB restore (file dump) ====="
         python3 run.py --feature-pipeline --training-pipeline --no-cache
+        python3 run.py --feature-pipeline --training-pipeline # run with cache
 
         # For a mysql compatible database, perform a DB backup and restore using
         # the backup database
@@ -206,6 +207,7 @@ function run_tests_for_version() {
             # Run the pipeline again to check if the restored database is working
             echo "===== Running starter template pipeline after DB restore (backup database) ====="
             python3 run.py --feature-pipeline --training-pipeline --no-cache
+            python3 run.py --feature-pipeline --training-pipeline # run with cache
         fi
 
     else
