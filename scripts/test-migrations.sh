@@ -141,8 +141,10 @@ function run_tests_for_version() {
     # Check if the version supports templates with arguments (> 0.52.0)
     if [ "$(version_compare "$VERSION" "0.52.0")" == ">" ]; then
         python3 run.py --feature-pipeline --training-pipeline --no-cache
+        python3 run.py --feature-pipeline --training-pipeline # run with cache
     else
         python3 run.py --no-cache
+        python3 run.py # run with cache
     fi
     # Add additional CLI tests here
     zenml version
