@@ -4442,7 +4442,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            resources: The ID and type of the resources for that the
+            resources: The list of IDs and types of the resources for that the
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.

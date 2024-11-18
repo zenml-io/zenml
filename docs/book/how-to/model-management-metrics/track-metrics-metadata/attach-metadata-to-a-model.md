@@ -26,7 +26,7 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
 
-from zenml import step, log_metadata, ArtifactConfig
+from zenml import step, log_metadata, ArtifactConfig, get_step_context
 
 
 @step
@@ -38,19 +38,23 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
     """Train a model and log model metadata."""
     classifier = RandomForestClassifier().fit(dataset)
     accuracy, precision, recall = ...
+    
+    step_context = get_step_context()
+    
+    if step_context.model:
+       # Log metadata for the model
+       log_metadata(
+           metadata={
+               "evaluation_metrics": {
+                   "accuracy": accuracy,
+                   "precision": precision,
+                   "recall": recall
+               }
+           },
+           model_name=step_context.model.name,
+           model_version=step_context.model.version,
+       )
 
-    # Log metadata for the model
-    log_metadata(
-        metadata={
-            "evaluation_metrics": {
-                "accuracy": accuracy,
-                "precision": precision,
-                "recall": recall
-            }
-        },
-        model_name="zenml_model_name",
-        model_version="zenml_model_version"
-    )
     return classifier
 ```
 
@@ -58,6 +62,11 @@ In this example, the metadata is associated with the model rather than the
 specific classifier artifact. This is particularly useful when the metadata
 reflects an aggregation or summary of various steps and artifacts in the
 pipeline.
+
+{% hint style="info" %}
+You can use the `get_step_context()` function to get fetch the model and model 
+version that the step is using.
+{% endhint %}
 
 ### Selecting Models with `log_metadata`
 
