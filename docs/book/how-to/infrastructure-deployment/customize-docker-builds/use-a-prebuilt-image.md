@@ -106,7 +106,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends YOUR_APT_PACKAG
 
 The files containing your pipeline and step code and all other necessary functions should be available in your execution environment.
 
-- If you have a [code repository](../../user-guide/production-guide/connect-code-repository.md) registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
+- If you have a [code repository](../../../user-guide/production-guide/connect-code-repository.md) registered, you don't need to include your code files in the image yourself. ZenML will download them from the repository to the appropriate location in the image.
 
 - If you don't have a code repository but `allow_download_from_artifact_store` is set to `True` in your `DockerSettings` (`True` by default), ZenML will upload your code to the artifact store and make it available to the image.
 

@@ -20,7 +20,8 @@ users understand the nature and characteristics of these outputs.
 To log metadata for an artifact, use the `log_metadata` function, specifying 
 the artifact name, version, or ID. The metadata can be any JSON-serializable 
 value, including ZenML custom types like `Uri`, `Path`, `DType`, and 
-`StorageSize`.
+`StorageSize`. Find out more about these different types 
+[here](../../model-management-metrics/track-metrics-metadata/logging-metadata.md).
 
 Here's an example of logging metadata for an artifact:
 
