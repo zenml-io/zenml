@@ -19,6 +19,13 @@ redirects:
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
 
+  # ZenML Pro
+  getting-started/zenml-pro/user-management: getting-started/zenml-pro/core-concepts.md
+  getting-started/zenml-pro/zenml-cloud: getting-started/zenml-pro/README.md
+
+  # Redirects for cases that have `docs` in the path
+  docs/getting-started/zenml-pro/core-concepts/tenants: getting-started/zenml-pro/tenants.md
+
   # Project Setup redirects
   how-to/setting-up-a-project-repository/: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
   how-to/setting-up-a-project-repository/set-up-repository: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
