@@ -234,10 +234,10 @@ def test_vertex_orchestrator_configure_container_resources(
         f"exec-{step_name}"
     ]["container"]
     if (
-        "accelerator" in expected_resources
-        and "count" in expected_resources["accelerator"]
+        "accelerator" in job_spec["resources"]
+        and "count" in job_spec["resources"]["accelerator"]
     ):
-        job_spec["resources"]["accelerator"]["count"] = job_spec["resources"][
+        expected_resources["accelerator"]["count"] = expected_resources[
             "accelerator"
         ]["resourceCount"]
     assert job_spec["resources"] == expected_resources
