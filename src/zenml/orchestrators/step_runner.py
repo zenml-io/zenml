@@ -149,7 +149,8 @@ class StepRunner:
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
+                func=step_instance.entrypoint,
+                original_outputs=step_run_info.config.outputs,
             )
 
             self._stack.prepare_step_run(info=step_run_info)

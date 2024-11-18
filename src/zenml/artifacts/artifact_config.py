@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -60,6 +60,8 @@ class ArtifactConfig(BaseModel):
 
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
+
+    _is_dynamic: bool = PrivateAttr(False)
 
     @model_validator(mode="before")
     @classmethod

@@ -36,6 +36,7 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.steps.step_context import get_step_context
 from zenml.utils import settings_utils, source_code_utils, typing_utils
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
@@ -94,7 +95,9 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 
 
 def parse_return_type_annotations(
-    func: Callable[..., Any], enforce_type_annotations: bool = False
+    func: Callable[..., Any],
+    enforce_type_annotations: bool = False,
+    original_outputs: Dict[str, ArtifactConfig] = None,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -102,6 +105,7 @@ def parse_return_type_annotations(
         func: The step function.
         enforce_type_annotations: If `True`, raises an exception if a type
             annotation is missing.
+        original_outputs: The original outputs of the step function.
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
@@ -132,6 +136,11 @@ def parse_return_type_annotations(
         else:
             return_annotation = Any
 
+    if original_outputs:
+        original_names = list(original_outputs.keys())
+    else:
+        original_names = None
+
     if typing_utils.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
@@ -146,7 +155,13 @@ def parse_return_type_annotations(
                 artifact_config = get_artifact_config_from_annotation_metadata(
                     annotation
                 )
-                output_name = artifact_config.name if artifact_config else None
+                if artifact_config:
+                    if artifact_config._is_dynamic and original_names:
+                        output_name = original_names[i]
+                    else:
+                        output_name = artifact_config.name
+                else:
+                    output_name = None
                 has_custom_name = output_name is not None
                 output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
@@ -164,7 +179,13 @@ def parse_return_type_annotations(
     artifact_config = get_artifact_config_from_annotation_metadata(
         return_annotation
     )
-    output_name = artifact_config.name if artifact_config else None
+    if artifact_config:
+        if artifact_config._is_dynamic and original_names:
+            output_name = original_names[0]
+        else:
+            output_name = artifact_config.name
+    else:
+        output_name = None
     has_custom_name = output_name is not None
     output_name = output_name or SINGLE_RETURN_OUT_NAME
     return {
@@ -228,9 +249,11 @@ def get_artifact_config_from_annotation_metadata(
 
     error_message = (
         "Artifact annotation should only contain two elements: the artifact "
-        "type, and either an output name or an `ArtifactConfig`, e.g.: "
-        "`Annotated[int, 'output_name']` or "
-        "`Annotated[int, ArtifactConfig(name='output_name'), ...]`."
+        "type, and one of the following: {an output name || "
+        "an `ArtifactConfig` || a callable returning string as name}, e.g.: "
+        "`Annotated[int, 'output_name']` || "
+        "`Annotated[int, ArtifactConfig(name='output_name')]`."
+        "`Annotated[int, lambda: 'name' + str(random_int(0,42))]`."
     )
 
     if len(metadata) > 2:
@@ -240,15 +263,20 @@ def get_artifact_config_from_annotation_metadata(
     # `Annotated[int, 'output_name', ArtifactConfig(...)]`
     output_name = None
     artifact_config = None
+    is_dynamic = False
     for metadata_instance in metadata:
         if isinstance(metadata_instance, str):
-            if output_name is not None:
-                raise ValueError(error_message)
-            output_name = metadata_instance
+            output_name = format_name_template(metadata_instance)
+            is_dynamic = output_name != metadata_instance
         elif isinstance(metadata_instance, ArtifactConfig):
             if artifact_config is not None:
                 raise ValueError(error_message)
             artifact_config = metadata_instance
+        elif isinstance(metadata_instance, Callable):
+            output_name = metadata_instance()
+            if not isinstance(output_name, str):
+                raise ValueError(error_message)
+            is_dynamic = True
         else:
             raise ValueError(error_message)
 
@@ -265,6 +293,8 @@ def get_artifact_config_from_annotation_metadata(
 
     if artifact_config and artifact_config.name == "":
         raise ValueError("Output name cannot be an empty string.")
+
+    artifact_config._is_dynamic = is_dynamic
 
     return artifact_config
 
