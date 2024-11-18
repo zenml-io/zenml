@@ -26,7 +26,7 @@ def func_namer():
     return "dummy_dynamic_" + str(43)
 
 
-lambda_namer = lambda: "dummy_dynamic_" + str(42)
+lambda_namer = lambda: "dummy_dynamic_" + str(42)  # noqa
 str_namer = "dummy_dynamic_time_{time}"
 static_namer = "dummy_static"
 
