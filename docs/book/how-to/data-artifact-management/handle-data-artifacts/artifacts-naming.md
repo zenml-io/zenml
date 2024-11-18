@@ -4,6 +4,10 @@ description: Understand how you can name your ZenML artifacts.
 
 # How Artifact Naming works in ZenML 
 
+In ZenML pipelines, you often need to reuse the same step multiple times with different inputs, resulting in multiple artifacts. However, the default naming convention for artifacts can make it challenging to track and differentiate between these outputs, especially when they need to be used in subsequent pipelines. Below you can find a detailed exploration of how you might name your output artifacts dynamically or statically, depending on your needs.
+
+ZenML uses type annotations in function definitions to determine artifact names. Output artifacts with the same name are saved with incremented version numbers.
+
 ZenML provides flexible options for naming output artifacts, supporting both static and dynamic naming strategies:
 - Names can be generated dynamically at runtime
 - Support for lambda functions, callable functions, and string templates
