@@ -13,11 +13,11 @@ In order to create a template over the dashboard, go a pipeline run that you
 executed on a remote stack (i.e. at least a remote orchestrator, artifact 
 store, and container registry):
 
-![Create Templates on the dashboard](../../.gitbook/assets/run-templates-create-1.png)
+![Create Templates on the dashboard](../../../.gitbook/assets/run-templates-create-1.png)
 
 Click on `+ New Template`, give it a name and click `Create`:
 
-![Template Details](../../.gitbook/assets/run-templates-create-2.png)
+![Template Details](../../../.gitbook/assets/run-templates-create-2.png)
 
 ## Run a template using the dashboard
 
@@ -27,10 +27,10 @@ In order to run a template from the dashboard:
 - You can go to a specific template page and click on `Run Template`.
 
 Either way, you will be forwarded to a page where you will see the 
-`Run Details`. Here, you have the option to upload a `.yaml` [configurations file](../../how-to/pipeline-development/use-configuration-files/README.md)
+`Run Details`. Here, you have the option to upload a `.yaml` [configurations file](../../pipeline-development/use-configuration-files/README.md)
 or change the configuration on the go by using our editor.
 
-![Run Details](../../.gitbook/assets/run-templates-run-1.png)
+![Run Details](../../../.gitbook/assets/run-templates-run-1.png)
 
 Once you run the template, a new run will be executed on the same stack as 
 the original run was executed on.

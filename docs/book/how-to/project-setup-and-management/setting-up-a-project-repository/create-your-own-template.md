@@ -37,7 +37,7 @@ Replace `v1.0.0` with the git tag of the version you want to use.
 
 That's it! Now you have your own ZenML project template that you can use to quickly set up new ML projects. Remember to keep your template up-to-date with the latest best practices and changes in your ML workflows.
 
-Our [Production Guide](../../user-guide/production-guide/README.md) documentation is built around the `E2E Batch` project template codes. Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template with `--template-with-defaults` flag before diving deeper into this documentation section, so you can follow this guide along using your own local environment.
+Our [Production Guide](../../../user-guide/production-guide/README.md) documentation is built around the `E2E Batch` project template codes. Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template with `--template-with-defaults` flag before diving deeper into this documentation section, so you can follow this guide along using your own local environment.
 
 ```bash
 mkdir e2e_batch
