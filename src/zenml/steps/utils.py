@@ -266,13 +266,27 @@ def get_artifact_config_from_annotation_metadata(
     is_dynamic = False
     for metadata_instance in metadata:
         if isinstance(metadata_instance, str):
+            if output_name is not None:
+                raise ValueError(error_message)
             output_name = format_name_template(metadata_instance)
             is_dynamic = output_name != metadata_instance
         elif isinstance(metadata_instance, ArtifactConfig):
             if artifact_config is not None:
                 raise ValueError(error_message)
             artifact_config = metadata_instance
+            if isinstance(artifact_config.name, str):
+                _name = format_name_template(artifact_config.name)
+                is_dynamic = _name != metadata_instance
+                artifact_config.name = _name
+            elif isinstance(artifact_config.name, Callable):
+                _name = artifact_config.name()
+                if not isinstance(_name, str):
+                    raise ValueError(error_message)
+                artifact_config.name = _name
+                is_dynamic = True
         elif isinstance(metadata_instance, Callable):
+            if output_name is not None:
+                raise ValueError(error_message)
             output_name = metadata_instance()
             if not isinstance(output_name, str):
                 raise ValueError(error_message)

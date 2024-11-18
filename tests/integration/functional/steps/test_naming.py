@@ -17,7 +17,7 @@ from typing import Callable, Tuple
 import pytest
 from typing_extensions import Annotated
 
-from zenml import pipeline, step
+from zenml import ArtifactConfig, pipeline, step
 from zenml.client import Client
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
@@ -86,15 +86,28 @@ def static_single() -> Annotated[str, static_namer]:
     return "static_namer"
 
 
+@step
+def mixed_tuple_artifact_config() -> (
+    Tuple[
+        Annotated[str, ArtifactConfig(name=static_namer)],
+        Annotated[str, ArtifactConfig(name=lambda_namer)],
+        Annotated[str, ArtifactConfig(name=func_namer)],
+        Annotated[str, ArtifactConfig(name=str_namer)],
+    ]
+):
+    return "static_namer", "lambda_namer", "func_namer", "str_namer"
+
+
 @pytest.mark.parametrize(
     "step",
     [
-        (dynamic_single_lambda),
-        (dynamic_single_callable),
-        (dynamic_single_string),
-        (dynamic_tuple),
-        (mixed_tuple),
-        (static_single),
+        dynamic_single_lambda,
+        dynamic_single_callable,
+        dynamic_single_string,
+        dynamic_tuple,
+        mixed_tuple,
+        static_single,
+        mixed_tuple_artifact_config,
     ],
     ids=[
         "dynamic_single_lambda",
@@ -103,6 +116,7 @@ def static_single() -> Annotated[str, static_namer]:
         "dynamic_tuple",
         "mixed_tuple",
         "static_single",
+        "mixed_tuple_artifact_config",
     ],
 )
 def test_various_naming_scenarios(step: Callable, clean_client: Client):
