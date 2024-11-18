@@ -18,6 +18,7 @@ redirects:
   how-to/setting-up-a-project-repository/best-practices: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step.md
 
   # Project Setup redirects
   how-to/setting-up-a-project-repository/: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
