@@ -120,12 +120,26 @@ def mixed_tuple_artifact_config() -> (
     ],
 )
 def test_various_naming_scenarios(step: Callable, clean_client: Client):
+    """Test that dynamic naming works in both normal and cached runs.
+
+    In cached run the names of the dynamic artifacts shall remain same as in real run.
+    """
+
     @pipeline
     def _inner():
         step()
 
-    p: PipelineRunResponse = _inner()
-    for step_response in p.steps.values():
+    p1: PipelineRunResponse = _inner.with_options(enable_cache=False)()
+    for step_response in p1.steps.values():
+        for k in step_response.outputs.keys():
+            value = clean_client.get_artifact_version(k).load()
+            assert _validate_name_by_value(k, value)
+
+    p2: PipelineRunResponse = _inner.with_options(enable_cache=True)()
+    for step_response in p2.steps.values():
+        assert set(step_response.outputs.keys()) == set(
+            p1.steps[step_response.name].outputs.keys()
+        )
         for k in step_response.outputs.keys():
             value = clean_client.get_artifact_version(k).load()
             assert _validate_name_by_value(k, value)

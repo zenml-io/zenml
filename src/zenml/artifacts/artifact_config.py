@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field, PrivateAttr, model_validator
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.string_utils import format_name_template
 
 logger = get_logger(__name__)
 
@@ -43,7 +44,10 @@ class ArtifactConfig(BaseModel):
     ```
 
     Attributes:
-        name: The name of the artifact.
+        name: The name of the artifact:
+            - static string e.g. "name"
+            - dynamic callable e.g. lambda: "name"+str(42)
+            - dynamic string e.g. "name_{date}_{time}"
         version: The version of the artifact.
         tags: The tags of the artifact.
         run_metadata: Metadata to add to the artifact.
@@ -51,7 +55,7 @@ class ArtifactConfig(BaseModel):
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
 
-    name: Optional[Union[str, Callable]] = Field(
+    name: Optional[Union[str, Callable[[], str]]] = Field(
         default=None, union_mode="smart"
     )
     version: Optional[Union[str, int]] = Field(
@@ -87,3 +91,35 @@ class ArtifactConfig(BaseModel):
             )
 
         return data
+
+    @model_validator(mode="after")
+    def artifact_config_after_validator(self) -> "ArtifactConfig":
+        """Artifact config after validator.
+
+        Returns:
+            The artifact config.
+        """
+        if isinstance(self.name, str):
+            _name = format_name_template(self.name)
+            self._is_dynamic = _name != self.name
+            self.name = _name
+        elif callable(self.name):
+            self.name = self.name()
+            self._is_dynamic = True
+        return self
+
+    @property
+    def _evaluated_name(self) -> Optional[str]:
+        """Evaluated name of the artifact.
+
+        Returns:
+            The evaluated name of the artifact.
+
+        Raises:
+            RuntimeError: If the name is still a callable.
+        """
+        if callable(self.name):
+            raise RuntimeError(
+                "Artifact name is still a callable, evaluation error happened. Contact ZenML team to follow-up."
+            )
+        return self.name

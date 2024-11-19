@@ -18,7 +18,16 @@ import ast
 import contextlib
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,6 +35,7 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
+from zenml.config.step_configurations import ArtifactConfiguration
 from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
@@ -36,7 +46,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.steps.step_context import get_step_context
 from zenml.utils import settings_utils, source_code_utils, typing_utils
-from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
@@ -97,7 +106,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
-    original_outputs: Dict[str, ArtifactConfig] = None,
+    original_outputs: Optional[Mapping[str, ArtifactConfiguration]] = None,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -159,7 +168,7 @@ def parse_return_type_annotations(
                     if artifact_config._is_dynamic and original_names:
                         output_name = original_names[i]
                     else:
-                        output_name = artifact_config.name
+                        output_name = artifact_config._evaluated_name
                 else:
                     output_name = None
                 has_custom_name = output_name is not None
@@ -183,7 +192,7 @@ def parse_return_type_annotations(
         if artifact_config._is_dynamic and original_names:
             output_name = original_names[0]
         else:
-            output_name = artifact_config.name
+            output_name = artifact_config._evaluated_name
     else:
         output_name = None
     has_custom_name = output_name is not None
@@ -263,34 +272,19 @@ def get_artifact_config_from_annotation_metadata(
     # `Annotated[int, 'output_name', ArtifactConfig(...)]`
     output_name = None
     artifact_config = None
-    is_dynamic = False
     for metadata_instance in metadata:
         if isinstance(metadata_instance, str):
             if output_name is not None:
                 raise ValueError(error_message)
-            output_name = format_name_template(metadata_instance)
-            is_dynamic = output_name != metadata_instance
+            output_name = metadata_instance
         elif isinstance(metadata_instance, ArtifactConfig):
             if artifact_config is not None:
                 raise ValueError(error_message)
             artifact_config = metadata_instance
-            if isinstance(artifact_config.name, str):
-                _name = format_name_template(artifact_config.name)
-                is_dynamic = _name != metadata_instance
-                artifact_config.name = _name
-            elif isinstance(artifact_config.name, Callable):
-                _name = artifact_config.name()
-                if not isinstance(_name, str):
-                    raise ValueError(error_message)
-                artifact_config.name = _name
-                is_dynamic = True
-        elif isinstance(metadata_instance, Callable):
+        elif callable(metadata_instance):
             if output_name is not None:
                 raise ValueError(error_message)
-            output_name = metadata_instance()
-            if not isinstance(output_name, str):
-                raise ValueError(error_message)
-            is_dynamic = True
+            output_name = metadata_instance
         else:
             raise ValueError(error_message)
 
@@ -307,8 +301,6 @@ def get_artifact_config_from_annotation_metadata(
 
     if artifact_config and artifact_config.name == "":
         raise ValueError("Output name cannot be an empty string.")
-
-    artifact_config._is_dynamic = is_dynamic
 
     return artifact_config
 
