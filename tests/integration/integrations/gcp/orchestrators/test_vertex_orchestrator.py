@@ -233,11 +233,13 @@ def test_vertex_orchestrator_configure_container_resources(
     job_spec = pipeline_json["deploymentSpec"]["executors"][
         f"exec-{step_name}"
     ]["container"]
-    if (
-        "accelerator" in job_spec["resources"]
-        and "count" in job_spec["resources"]["accelerator"]
-    ):
-        expected_resources["accelerator"]["count"] = expected_resources[
-            "accelerator"
-        ]["resourceCount"]
+    if "accelerator" in job_spec["resources"]:
+        if "count" in job_spec["resources"]["accelerator"]:
+            expected_resources["accelerator"]["count"] = expected_resources[
+                "accelerator"
+            ]["resourceCount"]
+        if "type" in job_spec["resources"]["accelerator"]:
+            expected_resources["accelerator"]["type"] = expected_resources[
+                "accelerator"
+            ]["resourceType"]
     assert job_spec["resources"] == expected_resources
