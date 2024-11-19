@@ -184,15 +184,15 @@ redirects:
   docs/getting-started/installation: getting-started/installation.md
   docs/getting-started/core-concepts: getting-started/core-concepts.md
   docs/getting-started/system-architectures: getting-started/system-architectures.md
-  docs/getting-started/deploying-zenml/README: getting-started/deploying-zenml/README.md
-  docs/getting-started/zenml-pro/README: getting-started/zenml-pro/README.md
-  docs/user-guide/starter-guide/README: user-guide/starter-guide/README.md
-  docs/user-guide/production-guide/README: user-guide/production-guide/README.md
-  docs/user-guide/llmops-guide/README: user-guide/llmops-guide/README.md
+  docs/getting-started/deploying-zenml/: getting-started/deploying-zenml/README.md
+  docs/getting-started/zenml-pro/: getting-started/zenml-pro/README.md
+  docs/user-guide/starter-guide/: user-guide/starter-guide/README.md
+  docs/user-guide/production-guide/: user-guide/production-guide/README.md
+  docs/user-guide/llmops-guide/: user-guide/llmops-guide/README.md
   docs/how-to/interact-with-secrets: how-to/interact-with-secrets.md
   docs/how-to/debug-and-solve-issues: how-to/debug-and-solve-issues.md
-  docs/how-to/contribute-to-zenml/README: how-to/contribute-to-zenml/README.md
-  docs/component-guide/README: component-guide/README.md
+  docs/how-to/contribute-to-zenml/: how-to/contribute-to-zenml/README.md
+  docs/component-guide/: component-guide/README.md
   docs/reference/python-client: reference/python-client.md
   docs/reference/global-settings: reference/global-settings.md
   docs/reference/environment-variables: reference/environment-variables.md
