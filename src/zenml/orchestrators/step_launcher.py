@@ -421,7 +421,8 @@ class StepLauncher:
             )
         )
         environment = orchestrator_utils.get_config_environment_vars(
-            deployment=self._deployment
+            pipeline_run_id=step_run_info.run_id,
+            step_run_id=step_run_info.step_run_id,
         )
         if last_retry:
             environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)

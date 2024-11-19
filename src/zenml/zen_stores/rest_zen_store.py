@@ -110,6 +110,7 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.enums import (
+    APITokenType,
     OAuthGrantTypes,
     StackDeploymentProvider,
     StoreType,
@@ -3872,17 +3873,16 @@ class RestZenStore(BaseZenStore):
 
     def get_api_token(
         self,
-        pipeline_id: Optional[UUID] = None,
         schedule_id: Optional[UUID] = None,
-        expires_minutes: Optional[int] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token for a workload.
 
         Args:
-            pipeline_id: The ID of the pipeline to get a token for.
             schedule_id: The ID of the schedule to get a token for.
-            expires_minutes: The number of minutes for which the token should
-                be valid. If not provided, the token will be valid indefinitely.
+            pipeline_run_id: The ID of the pipeline run to get a token for.
+            step_run_id: The ID of the step run to get a token for.
 
         Returns:
             The API token.
@@ -3890,13 +3890,16 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: if the server response is not valid.
         """
-        params: Dict[str, Any] = {}
-        if pipeline_id:
-            params["pipeline_id"] = pipeline_id
+        params: Dict[str, Any] = {
+            # Python clients may only request workload tokens.
+            "token_type": APITokenType.WORKLOAD.value,
+        }
         if schedule_id:
             params["schedule_id"] = schedule_id
-        if expires_minutes:
-            params["expires_minutes"] = expires_minutes
+        if pipeline_run_id:
+            params["pipeline_run_id"] = pipeline_run_id
+        if step_run_id:
+            params["step_run_id"] = step_run_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(

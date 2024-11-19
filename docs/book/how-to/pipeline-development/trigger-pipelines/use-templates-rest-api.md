@@ -24,7 +24,7 @@ REST API:
 
 {% hint style="info" %}
 Learn how to get a bearer token for the curl commands 
-[here](../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programmatically).
+[here](../../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programmatically).
 {% endhint %}
 
 Here is an example. Let's say would we like to re-run a pipeline called 
@@ -37,7 +37,7 @@ curl -X 'GET' \
   -H 'Authorization: Bearer <YOUR_TOKEN>'
 ```
 
-<figure><img src="../../.gitbook/assets/rest_api_step_1.png" alt=""><figcaption><p>Identifying the pipeline ID</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/rest_api_step_1.png" alt=""><figcaption><p>Identifying the pipeline ID</p></figcaption></figure>
 
 We can take the ID from any object in the list of responses. In this case, 
 the <PIPELINE_ID> is `c953985e-650a-4cbf-a03a-e49463f58473` in the response.
@@ -53,7 +53,7 @@ curl -X 'GET' \
 
 We can now take the <TEMPLATE_ID> from this response. Here it is `b826b714-a9b3-461c-9a6e-1bde3df3241d`.
 
-<figure><img src="../../.gitbook/assets/rest_api_step_2.png" alt=""><figcaption><p>Identifying the template ID</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/rest_api_step_2.png" alt=""><figcaption><p>Identifying the template ID</p></figcaption></figure>
 
 Finally, we can use the template ID to trigger the pipeline with a different 
 configuration:

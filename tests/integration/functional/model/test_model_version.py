@@ -19,12 +19,12 @@ import pytest
 from typing_extensions import Annotated
 
 from tests.integration.functional.utils import random_str
-from zenml import get_step_context, pipeline, step
+from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
 from zenml.enums import ArtifactType, ModelStages
 from zenml.model.model import Model
-from zenml.model.utils import link_artifact_to_model, log_model_metadata
+from zenml.model.utils import link_artifact_to_model
 from zenml.models import TagRequest
 
 
@@ -107,10 +107,10 @@ class TagContext:
 @step
 def step_metadata_logging_functional(mdl_name: str):
     """Functional logging using implicit Model from context."""
-    log_model_metadata({"foo": "bar"})
+    log_metadata({"foo": "bar"})
     assert get_step_context().model.run_metadata["foo"] == "bar"
-    log_model_metadata(
-        {"foo": "bar"}, model_name=mdl_name, model_version="other"
+    log_metadata(
+        metadata={"foo": "bar"}, model_name=mdl_name, model_version="other"
     )
 
 
@@ -403,18 +403,22 @@ class TestModel:
             )
             mv._get_or_create_model_version()
 
-            log_model_metadata(
-                {"foo": "bar"}, model_name=mv.name, model_version=mv.number
+            log_metadata(
+                metadata={"foo": "bar"},
+                model_name=mv.name,
+                model_version=str(mv.number),
             )
 
             assert len(mv.run_metadata) == 1
             assert mv.run_metadata["foo"] == "bar"
 
             with pytest.raises(ValueError):
-                log_model_metadata({"foo": "bar"})
+                log_metadata({"foo": "bar"})
 
-            log_model_metadata(
-                {"bar": "foo"}, model_name=mv.name, model_version="latest"
+            log_metadata(
+                metadata={"bar": "foo"},
+                model_name=mv.name,
+                model_version="latest",
             )
 
             assert len(mv.run_metadata) == 2

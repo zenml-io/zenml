@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 import os
 import random
 import time
@@ -19,12 +20,12 @@ from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from string import ascii_lowercase
 from threading import Thread
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from tests.integration.functional.utils import sample_name
@@ -46,6 +47,7 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
+from zenml import Model, log_metadata, pipeline, step
 from zenml.artifacts.utils import (
     _load_artifact_store,
 )
@@ -2903,6 +2905,64 @@ def test_deleting_run_deletes_steps():
         assert store.list_run_steps(filter_model).total == 2
         store.delete_run(run_id)
         assert store.list_run_steps(filter_model).total == 0
+
+
+@step
+def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
+    log_metadata({"blupus": metadata})
+    return 42
+
+
+@pipeline(name="aria", model=Model(name="axl"), tags=["cats", "squirrels"])
+def pipeline_to_log_metadata(metadata):
+    step_to_log_metadata(metadata)
+
+
+def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
+    store = clean_client.zen_store
+
+    metadata_values = [3, 25, 100, "random_string", True]
+
+    runs = []
+    for v in metadata_values:
+        runs.append(pipeline_to_log_metadata(v))
+
+    # Test oneof: name filtering
+    runs_filter = PipelineRunFilter(
+        name=f"oneof:{json.dumps([r.name for r in runs[:2]])}"
+    )
+    runs = store.list_runs(runs_filter_model=runs_filter)
+    assert len(runs) == 2  # The first two runs
+
+    # Test oneof: UUID filtering
+    runs_filter = PipelineRunFilter(
+        id=f"oneof:{json.dumps([str(r.id) for r in runs[:2]])}"
+    )
+    runs = store.list_runs(runs_filter_model=runs_filter)
+    assert len(runs) == 2  # The first two runs
+
+    # Test oneof: tags filtering
+    runs_filter = PipelineRunFilter(tag='oneof:["cats", "dogs"]')
+    runs = store.list_runs(runs_filter_model=runs_filter)
+    assert len(runs) == len(metadata_values)  # All runs
+
+    runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
+    runs = store.list_runs(runs_filter_model=runs_filter)
+    assert len(runs) == 0  # No runs
+
+    # Test oneof: formatting
+    with pytest.raises(ValidationError):
+        PipelineRunFilter(name="oneof:random_value")
+
+    # Test metadata filtering
+    runs_filter = PipelineRunFilter(run_metadata={"blupus": "lt:30"})
+    runs = store.list_runs(runs_filter_model=runs_filter)
+    assert len(runs) == 2  # The run with 3 and 25
+
+    for r in runs:
+        assert "blupus" in r.run_metadata
+        assert isinstance(r.run_metadata["blupus"], int)
+        assert r.run_metadata["blupus"] < 30
 
 
 # .--------------------.

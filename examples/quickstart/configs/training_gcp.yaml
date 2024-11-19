@@ -1,7 +1,7 @@
 # Environment configuration
 settings:
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.68.1-py3.11-gcp"
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.70.0-py3.11-gcp"
     skip_build: True
     requirements: requirements.txt
 # Uncomment the following two lines to specify the accelerator for your vertex orchestrator

@@ -20,7 +20,7 @@ ZenML offers several types of custom components that can be shared between teams
 Custom flavors are special integrations that don't come built-in with ZenML. These can be implemented and shared as follows:
 
 1. Create the custom flavor in a shared repository.
-2. Implement the custom stack component as described in the [ZenML documentation](../stack-deployment/implement-a-custom-stack-component.md#implementing-a-custom-stack-component-flavor).
+2. Implement the custom stack component as described in the [ZenML documentation](../../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md#implementing-a-custom-stack-component-flavor).
 3. Register the component using the ZenML CLI, for example in the case of a custom artifact store flavor:
 
 ```bash

@@ -42,7 +42,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import dict_utils, requirements_utils, settings_utils
-from zenml.zen_server.auth import AuthContext
+from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
@@ -111,17 +111,6 @@ def run_template(
 
     new_deployment = zen_store().create_deployment(deployment_request)
 
-    if auth_context.access_token:
-        token = auth_context.access_token
-        token.pipeline_id = deployment_request.pipeline
-
-        # We create a non-expiring token to make sure its active for the entire
-        # duration of the pipeline run
-        api_token = token.encode(expires=None)
-    else:
-        assert auth_context.encoded_access_token
-        api_token = auth_context.encoded_access_token
-
     server_url = server_config().server_url
     if not server_url:
         raise RuntimeError(
@@ -129,6 +118,18 @@ def run_template(
         )
     assert build.zenml_version
     zenml_version = build.zenml_version
+
+    placeholder_run = create_placeholder_run(deployment=new_deployment)
+    assert placeholder_run
+
+    # We create an API token scoped to the pipeline run
+    api_token = generate_access_token(
+        user_id=auth_context.user.id,
+        pipeline_run_id=placeholder_run.id,
+        # Keep the original API key or device scopes, if any
+        api_key=auth_context.api_key,
+        device=auth_context.device,
+    ).access_token
 
     environment = {
         ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.workspace.id),
@@ -144,9 +145,6 @@ def run_template(
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
         deployment_id=new_deployment.id
     )
-
-    placeholder_run = create_placeholder_run(deployment=new_deployment)
-    assert placeholder_run
 
     def _task() -> None:
         pypi_requirements, apt_packages = (
@@ -350,7 +348,7 @@ def deployment_request_from_template(
     )
 
     step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters"}
+        exclude={"name", "parameters", "tags"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():

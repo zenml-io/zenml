@@ -13,9 +13,9 @@ export ZENML_LOGGING_VERBOSITY=INFO
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`. This will set the logs
 to whichever level you suggest.
 
-Note that setting this on the [client environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically set the same logging verbosity for remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
+Note that setting this on the [client environment](../../infrastructure-deployment/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically set the same logging verbosity for remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
 
-If you wish to control for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
+If you wish to control for [remote pipeline runs](../../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_VERBOSITY": "DEBUG"})

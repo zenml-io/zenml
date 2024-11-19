@@ -509,6 +509,7 @@ class StepRunFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "model",
+        "run_metadata",
     ]
 
     name: Optional[str] = Field(
@@ -571,6 +572,10 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the step runs by.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -589,6 +594,7 @@ class StepRunFilter(WorkspaceScopedFilter):
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
+            RunMetadataSchema,
             StepRunSchema,
         )
 
@@ -601,5 +607,21 @@ class StepRunFilter(WorkspaceScopedFilter):
                 ),
             )
             custom_filters.append(model_filter)
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == StepRunSchema.id,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.STEP_RUN,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters

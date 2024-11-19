@@ -245,6 +245,13 @@ class OAuthDeviceStatus(StrEnum):
     LOCKED = "locked"
 
 
+class APITokenType(StrEnum):
+    """The API token type."""
+
+    GENERIC = "generic"
+    WORKLOAD = "workload"
+
+
 class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
@@ -253,6 +260,7 @@ class GenericFilterOps(StrEnum):
     CONTAINS = "contains"
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
+    ONEOF = "oneof"
     GTE = "gte"
     GT = "gt"
     LTE = "lte"

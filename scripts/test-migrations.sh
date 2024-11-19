@@ -23,7 +23,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0")
+VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0" "0.70.0")
 
 # Try to get the latest version using pip index
 version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
@@ -141,8 +141,10 @@ function run_tests_for_version() {
     # Check if the version supports templates with arguments (> 0.52.0)
     if [ "$(version_compare "$VERSION" "0.52.0")" == ">" ]; then
         python3 run.py --feature-pipeline --training-pipeline --no-cache
+        python3 run.py --feature-pipeline --training-pipeline # run with cache
     else
         python3 run.py --no-cache
+        python3 run.py # run with cache
     fi
     # Add additional CLI tests here
     zenml version
@@ -177,6 +179,7 @@ function run_tests_for_version() {
         # Run the pipeline again to check if the restored database is working
         echo "===== Running starter template pipeline after DB restore (file dump) ====="
         python3 run.py --feature-pipeline --training-pipeline --no-cache
+        python3 run.py --feature-pipeline --training-pipeline # run with cache
 
         # For a mysql compatible database, perform a DB backup and restore using
         # the backup database
@@ -204,6 +207,7 @@ function run_tests_for_version() {
             # Run the pipeline again to check if the restored database is working
             echo "===== Running starter template pipeline after DB restore (backup database) ====="
             python3 run.py --feature-pipeline --training-pipeline --no-cache
+            python3 run.py --feature-pipeline --training-pipeline # run with cache
         fi
 
     else
