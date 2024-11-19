@@ -85,5 +85,70 @@ def mixed_tuple() -> Tuple[
     return "static_namer", "lambda_namer", "func_namer", "str_namer"
 ```
 
+## Naming in cached runs
+
+If your ZenML step is running with enabled caching and cache was used the names of the outputs artifacts (both static and dynamic) will remain the same as in the original run.
+
+```python
+from typing_extensions import Annotated
+from typing import Tuple
+from random import randint
+
+from zenml import step, pipeline
+from zenml.models import PipelineRunResponse
+
+
+@step
+def demo() -> (
+    Tuple[
+        Annotated[int, lambda: "dummy" + str(randint(0, 42))],
+        Annotated[int, "dummy_{date}_{time}"],
+    ]
+):
+    return 42, 43
+
+
+@pipeline
+def my_pipeline():
+    demo()
+
+
+if __name__ == "__main__":
+    run_without_cache: PipelineRunResponse = my_pipeline.with_options(
+        enable_cache=False
+    )()
+    run_with_cache: PipelineRunResponse = my_pipeline.with_options(enable_cache=True)()
+
+    assert set(run_without_cache.steps["demo"].outputs.keys()) == set(
+        run_with_cache.steps["demo"].outputs.keys()
+    )
+    print(list(run_without_cache.steps["demo"].outputs.keys()))
+```
+
+These 2 runs will produce output like the one below:
+```
+Initiating a new run for the pipeline: my_pipeline.
+Caching is disabled by default for my_pipeline.
+Using user: default
+Using stack: default
+  orchestrator: default
+  artifact_store: default
+Dashboard URL for Pipeline Run: http://127.0.0.1:8237/runs/e4375452-a72e-45c2-a0df-c59b07089696
+Step demo has started.
+Step demo has finished in 0.061s.
+Pipeline run has finished in 0.100s.
+
+Initiating a new run for the pipeline: my_pipeline.
+Using user: default
+Using stack: default
+  orchestrator: default
+  artifact_store: default
+Dashboard URL for Pipeline Run: http://127.0.0.1:8237/runs/cb4fffbf-b173-418f-bf4e-11d1bdac377c
+Using cached version of step demo.
+All steps of the pipeline run were cached.
+
+['dummy_2024_11_19_10_46_52_341267', 'dummy26']
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
