@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
@@ -36,6 +37,7 @@ class ArtifactConfig(BaseModel):
         int, ArtifactConfig(
             name="my_artifact",  # override the default artifact name
             version=42,  # set a custom version
+            artifact_type=ArtifactType.MODEL,  # Specify the artifact type
             tags=["tag1", "tag2"],  # set custom tags
         )
     ]:
@@ -47,8 +49,9 @@ class ArtifactConfig(BaseModel):
         version: The version of the artifact.
         tags: The tags of the artifact.
         run_metadata: Metadata to add to the artifact.
-        is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is a deployment artifact.
+        artifact_type: Optional type of the artifact. If not given, the type
+            specified by the materializer that is used to save this artifact
+            is used.
     """
 
     name: Optional[str] = None
@@ -58,8 +61,7 @@ class ArtifactConfig(BaseModel):
     tags: Optional[List[str]] = None
     run_metadata: Optional[Dict[str, MetadataType]] = None
 
-    is_model_artifact: bool = False
-    is_deployment_artifact: bool = False
+    artifact_type: Optional[ArtifactType] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -69,6 +71,10 @@ class ArtifactConfig(BaseModel):
 
         Args:
             data: The model data.
+
+        Raises:
+            ValueError: If the artifact is configured to be
+                both a model and a deployment artifact.
 
         Returns:
             Model data without the removed attributes.
@@ -81,5 +87,27 @@ class ArtifactConfig(BaseModel):
                 "Specifying a model name or version for a step output "
                 "artifact is not supported anymore."
             )
+
+        is_model_artifact = data.pop("is_model_artifact", None)
+        is_deployment_artifact = data.pop("is_deployment_artifact", None)
+
+        if is_model_artifact and is_deployment_artifact:
+            raise ValueError(
+                "An artifact can only be a model artifact or deployment "
+                "artifact."
+            )
+        elif is_model_artifact:
+            logger.warning(
+                "`ArtifactConfig.is_model_artifact` is deprecated and will be "
+                "removed soon. Use `ArtifactConfig.artifact_type` instead."
+            )
+            data.setdefault("artifact_type", ArtifactType.MODEL)
+        elif is_deployment_artifact:
+            logger.warning(
+                "`ArtifactConfig.is_deployment_artifact` is deprecated and "
+                "will be removed soon. Use `ArtifactConfig.artifact_type` "
+                "instead."
+            )
+            data.setdefault("artifact_type", ArtifactType.SERVICE)
 
         return data

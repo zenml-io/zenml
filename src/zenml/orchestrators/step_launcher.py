@@ -294,7 +294,6 @@ class StepLauncher:
                     ):
                         step_run_utils.link_output_artifacts_to_model_version(
                             artifacts=step_run.outputs,
-                            output_configurations=step_run.config.outputs,
                             model_version=model_version,
                         )
 

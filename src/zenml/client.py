@@ -4220,6 +4220,7 @@ class Client(metaclass=ClientMetaClass):
         materializer: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -4249,7 +4250,8 @@ class Client(metaclass=ClientMetaClass):
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
+            model_version_id: Filter by model version ID.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
@@ -4283,6 +4285,7 @@ class Client(metaclass=ClientMetaClass):
             materializer=materializer,
             workspace_id=workspace_id,
             user_id=user_id,
+            model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,
@@ -6435,9 +6438,6 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         artifact_version_id: Optional[Union[UUID, str]] = None,
         artifact_name: Optional[str] = None,
@@ -6457,9 +6457,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             artifact_version_id: Use the artifact id for filtering
             artifact_name: Use the artifact name for filtering
@@ -6482,9 +6479,6 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 artifact_version_id=artifact_version_id,
                 artifact_name=artifact_name,
@@ -6556,9 +6550,6 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
@@ -6574,9 +6565,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
             pipeline_run_name: Use the pipeline run name for filtering
@@ -6595,9 +6583,6 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,

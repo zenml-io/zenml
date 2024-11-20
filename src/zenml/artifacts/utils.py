@@ -30,7 +30,6 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
@@ -118,6 +117,7 @@ def _store_artifact_data_and_prepare_request(
     materializer_class: Type["BaseMaterializer"],
     save_type: ArtifactSaveType,
     version: Optional[Union[int, str]] = None,
+    artifact_type: Optional[ArtifactType] = None,
     tags: Optional[List[str]] = None,
     store_metadata: bool = True,
     store_visualizations: bool = True,
@@ -134,6 +134,8 @@ def _store_artifact_data_and_prepare_request(
             artifact data.
         save_type: Save type of the artifact version.
         version: The artifact version.
+        artifact_type: The artifact type. If not given, the type will be defined
+            by the materializer that is used to save the artifact.
         tags: Tags for the artifact version.
         store_metadata: Whether to store metadata for the artifact version.
         store_visualizations: Whether to store visualizations for the artifact
@@ -176,7 +178,7 @@ def _store_artifact_data_and_prepare_request(
         artifact_name=name,
         version=version,
         tags=tags,
-        type=materializer.ASSOCIATED_ARTIFACT_TYPE,
+        type=artifact_type or materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
         data_type=source_utils.resolve(data_type),
@@ -198,14 +200,13 @@ def save_artifact(
     data: Any,
     name: str,
     version: Optional[Union[int, str]] = None,
+    artifact_type: Optional[ArtifactType] = None,
     tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
     # TODO: remove these once external artifact does not use this function anymore
     save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
@@ -218,6 +219,8 @@ def save_artifact(
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
         tags: Tags to associate with the artifact.
+        artifact_type: The artifact type. If not given, the type will be defined
+            by the materializer that is used to save the artifact.
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
         user_metadata: User-provided metadata to store with the artifact.
@@ -226,8 +229,6 @@ def save_artifact(
         uri: The URI within the artifact store to upload the artifact
             to. If not provided, the artifact will be uploaded to
             `custom_artifacts/{name}/{version}`.
-        is_model_artifact: If the artifact is a model artifact.
-        is_deployment_artifact: If the artifact is a deployment artifact.
         save_type: The type of save operation that created the artifact version.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
@@ -273,6 +274,7 @@ def save_artifact(
         materializer_class=materializer_class,
         save_type=save_type,
         version=version,
+        artifact_type=artifact_type,
         tags=tags,
         store_metadata=extract_metadata,
         store_visualizations=include_visualizations,
@@ -286,8 +288,6 @@ def save_artifact(
     if save_type == ArtifactSaveType.MANUAL:
         _link_artifact_version_to_the_step_and_model(
             artifact_version=artifact_version,
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
         )
 
     return artifact_version
@@ -297,10 +297,9 @@ def register_artifact(
     folder_or_file_uri: str,
     name: str,
     version: Optional[Union[int, str]] = None,
+    artifact_type: Optional[ArtifactType] = None,
     tags: Optional[List[str]] = None,
     has_custom_name: bool = True,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
     artifact_metadata: Dict[str, "MetadataType"] = {},
 ) -> "ArtifactVersionResponse":
     """Register existing data stored in the artifact store as a ZenML Artifact.
@@ -311,11 +310,11 @@ def register_artifact(
         name: The name of the artifact.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
+        artifact_type: The artifact type. If not given, the type will default
+            to `data`.
         tags: Tags to associate with the artifact.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
-        is_model_artifact: If the artifact is a model artifact.
-        is_deployment_artifact: If the artifact is a deployment artifact.
         artifact_metadata: Metadata dictionary to attach to the artifact version.
 
     Returns:
@@ -346,7 +345,7 @@ def register_artifact(
         artifact_name=name,
         version=version,
         tags=tags,
-        type=ArtifactType.DATA,
+        type=artifact_type or ArtifactType.DATA,
         save_type=ArtifactSaveType.PREEXISTING,
         uri=folder_or_file_uri,
         materializer=source_utils.resolve(PreexistingDataMaterializer),
@@ -365,8 +364,6 @@ def register_artifact(
 
     _link_artifact_version_to_the_step_and_model(
         artifact_version=artifact_version,
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
     )
 
     return artifact_version
@@ -674,8 +671,6 @@ def _check_if_artifact_with_given_uri_already_registered(
 
 def _link_artifact_version_to_the_step_and_model(
     artifact_version: ArtifactVersionResponse,
-    is_model_artifact: bool,
-    is_deployment_artifact: bool,
 ) -> None:
     """Link an artifact version to the step and its' context model.
 
@@ -685,8 +680,6 @@ def _link_artifact_version_to_the_step_and_model(
 
     Args:
         artifact_version: The artifact version to link.
-        is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
     client = Client()
     try:
@@ -706,14 +699,9 @@ def _link_artifact_version_to_the_step_and_model(
                 link_artifact_version_to_model_version,
             )
 
-            artifact_config = ArtifactConfig(
-                is_model_artifact=is_model_artifact,
-                is_deployment_artifact=is_deployment_artifact,
-            )
             link_artifact_version_to_model_version(
                 artifact_version=artifact_version,
                 model_version=step_context.model_version,
-                artifact_config=artifact_config,
             )
     except (RuntimeError, StepContextError):
         logger.debug(f"Unable to link saved artifact to {error_message}.")
