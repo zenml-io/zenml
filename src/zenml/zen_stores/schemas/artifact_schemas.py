@@ -244,12 +244,12 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(
         back_populates="artifact_versions"
     )
-    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(

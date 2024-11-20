@@ -1015,20 +1015,20 @@ def create_run_metadata(
         )
 
     for resource in run_metadata.resources:
-        if resource[1] == MetadataResourceTypes.PIPELINE_RUN:
-            run = zen_store().get_run(resource[0])
+        if resource.type == MetadataResourceTypes.PIPELINE_RUN:
+            run = zen_store().get_run(resource.id)
             verify_permission_for_model(run, action=Action.UPDATE)
-        elif resource[1] == MetadataResourceTypes.STEP_RUN:
-            step = zen_store().get_run_step(resource[0])
+        elif resource.type == MetadataResourceTypes.STEP_RUN:
+            step = zen_store().get_run_step(resource.id)
             verify_permission_for_model(step, action=Action.UPDATE)
-        elif resource[1] == MetadataResourceTypes.ARTIFACT_VERSION:
-            artifact_version = zen_store().get_artifact_version(resource[0])
+        elif resource.type == MetadataResourceTypes.ARTIFACT_VERSION:
+            artifact_version = zen_store().get_artifact_version(resource.id)
             verify_permission_for_model(artifact_version, action=Action.UPDATE)
-        elif resource[1] == MetadataResourceTypes.MODEL_VERSION:
-            model_version = zen_store().get_model_version(resource[0])
+        elif resource.type == MetadataResourceTypes.MODEL_VERSION:
+            model_version = zen_store().get_model_version(resource.id)
             verify_permission_for_model(model_version, action=Action.UPDATE)
         else:
-            raise RuntimeError(f"Unknown resource type: {resource[1]}")
+            raise RuntimeError(f"Unknown resource type: {resource.type}")
 
     verify_permission(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE

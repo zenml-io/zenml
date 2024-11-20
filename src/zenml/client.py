@@ -60,7 +60,6 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
-    MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
     PluginSubType,
@@ -137,6 +136,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunResponse,
     RunMetadataRequest,
+    RunMetadataResource,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -4435,8 +4435,9 @@ class Client(metaclass=ClientMetaClass):
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        resources: List[Tuple[UUID, MetadataResourceTypes]],
+        resources: List[RunMetadataResource],
         stack_component_id: Optional[UUID] = None,
+        publisher_step_id: Optional[UUID] = None,
     ) -> None:
         """Create run metadata.
 
@@ -4446,6 +4447,10 @@ class Client(metaclass=ClientMetaClass):
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
+            publisher_step_id: The ID of the step which published this metadata.
+
+        Returns:
+            None
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -4476,6 +4481,7 @@ class Client(metaclass=ClientMetaClass):
             user=self.active_user.id,
             resources=resources,
             stack_component_id=stack_component_id,
+            publisher_step_id=publisher_step_id,
             values=values,
             types=types,
         )

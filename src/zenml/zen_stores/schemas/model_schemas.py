@@ -305,12 +305,12 @@ class ModelVersionSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
@@ -407,7 +407,7 @@ class ModelVersionSchema(NamedSchema, table=True):
                 description=self.description,
                 run_metadata={
                     m.run_metadata.key: json.loads(m.run_metadata.value)
-                    for m in self.run_metadata
+                    for m in self.run_metadata_resources
                 },
             )
 

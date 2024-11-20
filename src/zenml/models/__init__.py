@@ -368,6 +368,10 @@ from zenml.models.v2.misc.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
+from zenml.models.v2.misc.run_metadata import (
+    RunMetadataEntry,
+    RunMetadataResource,
+)
 from zenml.models.v2.misc.server_models import (
     ServerModel,
     ServerDatabaseType,
@@ -747,4 +751,6 @@ __all__ = [
     "ServiceConnectorInfo",
     "ServiceConnectorResourcesInfo",
     "ResourcesInfo",
+    "RunMetadataEntry",
+    "RunMetadataResource",
 ]

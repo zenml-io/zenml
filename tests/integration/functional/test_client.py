@@ -63,6 +63,7 @@ from zenml.models import (
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,
+    RunMetadataResource,
     StackResponse,
 )
 from zenml.utils import io_utils
@@ -484,7 +485,11 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resources=[(pipeline_run.id, MetadataResourceTypes.PIPELINE_RUN)],
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
     )
     rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
 
@@ -500,7 +505,11 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resources=[(step_run.id, MetadataResourceTypes.STEP_RUN)],
+        resources=[
+            RunMetadataResource(
+                id=step_run.id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ],
     )
     rm = clean_client_with_run.get_run_step(step_run.id).run_metadata
 
@@ -517,7 +526,10 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
         resources=[
-            (artifact_version.id, MetadataResourceTypes.ARTIFACT_VERSION)
+            RunMetadataResource(
+                id=artifact_version.id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
         ],
     )
 

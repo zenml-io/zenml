@@ -59,6 +59,7 @@ from zenml.models import (
     ArtifactVisualizationRequest,
     LoadedVisualization,
     PipelineRunResponse,
+    RunMetadataResource,
     StepRunResponse,
     StepRunUpdate,
 )
@@ -440,7 +441,11 @@ def log_artifact_metadata(
         response = client.get_artifact_version(artifact_name, artifact_version)
         client.create_run_metadata(
             metadata=metadata,
-            resources=[(response.id, MetadataResourceTypes.ARTIFACT_VERSION)],
+            resources=[
+                RunMetadataResource(
+                    id=response.id, type=MetadataResourceTypes.ARTIFACT_VERSION
+                )
+            ],
         )
 
     else:

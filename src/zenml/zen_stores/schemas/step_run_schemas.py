@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -30,7 +30,9 @@ from zenml.enums import (
     MetadataResourceTypes,
     StepRunInputArtifactType,
 )
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
+    RunMetadataEntry,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -141,12 +143,12 @@ class StepRunSchema(NamedSchema, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="step_run",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
@@ -167,6 +169,9 @@ class StepRunSchema(NamedSchema, table=True):
     )
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
+    )
+    original_step_run: Optional["StepRunSchema"] = Relationship(
+        sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
@@ -198,6 +203,50 @@ class StepRunSchema(NamedSchema, table=True):
             model_version_id=request.model_version_id,
         )
 
+    def fetch_metadata_collection(
+        self, latest_values_only: True
+    ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
+        """Fetches the metadata of related to the pipeline run.
+
+        Returns:
+            a dictionary, where the key is the name of the metadata and the
+                values represent the entries under this name.
+        """
+        metadata_dict = {}
+
+        # Fetch the metadata related to this step
+        for rm in self.run_metadata_resources:
+            if rm.run_metadata.key not in metadata_dict:
+                metadata_dict[rm.run_metadata.key] = []
+            metadata_dict[rm.run_metadata.key].append(
+                RunMetadataEntry(
+                    value=json.loads(rm.run_metadata.value),
+                    created=rm.run_metadata.created,
+                )
+            )
+
+        # Fetch the metadata related to the original step of this cached step
+        if self.original_step_run:
+            for metadata in self.original_step_run.run_metadata_resources:
+                if metadata.publisher_step_id is not None:
+                    if metadata.key not in metadata_dict:
+                        metadata_dict[metadata.key] = []
+                    metadata_dict[metadata.key].append(
+                        RunMetadataEntry(
+                            value=json.loads(metadata.value),
+                            created=metadata.created,
+                        )
+                    )
+
+        # If we get only the latest values, sort by created and get the first
+        if latest_values_only:
+            for k, v in metadata_dict.items():
+                metadata_dict[k] = sorted(
+                    v, key=lambda x: x.created, reverse=True
+                )[0].value
+
+        return metadata_dict
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -220,10 +269,7 @@ class StepRunSchema(NamedSchema, table=True):
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        run_metadata = {
-            m.run_metadata.key: json.loads(m.run_metadata.value)
-            for m in self.run_metadata
-        }
+        run_metadata = self.fetch_metadata_collection(latest_values_only=True)
 
         input_artifacts = {
             artifact.name: StepRunInputResponse(

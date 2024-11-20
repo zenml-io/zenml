@@ -337,11 +337,16 @@ class Model(BaseModel):
             metadata: The metadata to log.
         """
         from zenml.client import Client
+        from zenml.models import RunMetadataResource
 
         response = self._get_or_create_model_version()
         Client().create_run_metadata(
             metadata=metadata,
-            resources=[(response.id, MetadataResourceTypes.MODEL_VERSION)],
+            resources=[
+                RunMetadataResource(
+                    id=response.id, type=MetadataResourceTypes.MODEL_VERSION
+                )
+            ],
         )
 
     @property

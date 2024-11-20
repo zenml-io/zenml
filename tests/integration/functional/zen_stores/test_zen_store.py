@@ -102,6 +102,7 @@ from zenml.models import (
     ModelVersionUpdate,
     PipelineRunFilter,
     PipelineRunResponse,
+    RunMetadataResource,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountUpdate,
@@ -5500,7 +5501,7 @@ class TestRunMetadata:
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                resources=[(resource.id, type_)],
+                resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},
                 stack_component_id=sc.id

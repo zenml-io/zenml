@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -28,12 +28,14 @@ from zenml.enums import (
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunUpdate,
+    RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -138,12 +140,12 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata: List["RunMetadataResourceSchema"] = Relationship(
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     logs: Optional["LogsSchema"] = Relationship(
@@ -251,6 +253,44 @@ class PipelineRunSchema(NamedSchema, table=True):
             model_version_id=request.model_version_id,
         )
 
+    def fetch_metadata_collection(
+        self, latest_values_only: True
+    ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
+        """Fetches the metadata of related to the pipeline run.
+
+        Returns:
+            a dictionary, where the key is the name of the metadata and the
+                values represent the entries under this name.
+        """
+        metadata_dict = {}
+
+        # Fetch the metadata related to this run
+        for rm in self.run_metadata_resources:
+            if rm.run_metadata.key not in metadata_dict:
+                metadata_dict[rm.run_metadata.key] = []
+            metadata_dict[rm.run_metadata.key].append(
+                RunMetadataEntry(
+                    value=json.loads(rm.run_metadata.value),
+                    created=rm.run_metadata.created,
+                )
+            )
+        # Fetch the metadata related to the steps of this run
+        for s in self.step_runs:
+            step_metadata = s.fetch_metadata_collection(
+                latest_values_only=False
+            )
+            for k, v in step_metadata.items():
+                metadata_dict[f"{s.name}::{k}"] = v
+
+        # If we get only the latest values, sort by created and get the first
+        if latest_values_only:
+            for k, v in metadata_dict.items():
+                metadata_dict[k] = sorted(
+                    v, key=lambda x: x.created, reverse=True
+                )[0].value
+
+        return metadata_dict
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -277,10 +317,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             else {}
         )
 
-        run_metadata = {
-            m.run_metadata.key: json.loads(m.run_metadata.value)
-            for m in self.run_metadata
-        }
+        run_metadata = self.fetch_metadata_collection(latest_values_only=True)
 
         if self.deployment is not None:
             deployment = self.deployment.to_model()

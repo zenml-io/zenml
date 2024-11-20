@@ -5555,19 +5555,19 @@ class SqlZenStore(BaseZenStore):
                         key=key,
                         value=json.dumps(value),
                         type=type_,
+                        publisher_step_id=run_metadata.publisher_step_id,
                     )
                     session.add(run_metadata_schema)
                     session.commit()
 
                     for resource in run_metadata.resources:
                         rm_resource_link = RunMetadataResourceSchema(
-                            resource_id=resource[0],
-                            resource_type=resource[1].value,
+                            resource_id=resource.id,
+                            resource_type=resource.type.value,
                             run_metadata_id=run_metadata_schema.id,
                         )
                         session.add(rm_resource_link)
                         session.commit()
-
         return None
 
     # ----------------------------- Schedules -----------------------------

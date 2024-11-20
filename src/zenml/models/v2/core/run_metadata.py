@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import Field
 
-from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
 )
+from zenml.models.v2.misc.run_metadata import RunMetadataResource
 
 # ------------------ Request Model ------------------
 
@@ -30,7 +30,7 @@ from zenml.models.v2.base.scoped import (
 class RunMetadataRequest(WorkspaceScopedRequest):
     """Request model for run metadata."""
 
-    resources: List[Tuple[UUID, MetadataResourceTypes]] = Field(
+    resources: List[RunMetadataResource] = Field(
         title="The list of resources that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
@@ -42,4 +42,7 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     )
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
+    )
+    publisher_step_id: Optional[UUID] = Field(
+        title="The ID of the step who published this metadata."
     )
