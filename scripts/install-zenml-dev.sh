@@ -67,7 +67,7 @@ install_integrations() {
     echo "###INTEGRATIONS TO INSTALL###"
     cat integration-requirements.txt
     echo "###INTEGRATIONS TO INSTALL###"
-    uv pip install $PIP_ARGS -r integration-requirements.txt
+    uv pip install $PIP_ARGS --python-platform macos -r integration-requirements.txt
     rm integration-requirements.txt
 }
 
