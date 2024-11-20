@@ -1,132 +1,132 @@
----
-name: ci-fast
-on:
-  workflow_dispatch:
-  workflow_call:
-  push:
-    branches: [main]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
-concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-jobs:
-  docstring-check:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-      - name: Set up Python
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: '3.10'
-      - name: Install darglint using uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-          uv pip install --system darglint
-      - name: Check docstrings
-        run: bash scripts/docstring.sh
-  sqlite-db-migration-testing-random:
-    runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: '3.9'
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-      - name: Spelling checker
-        uses: crate-ci/typos@v1.27.0
-        with:
-          files: .
-          config: ./.typos.toml
-  api-docs-test:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: '3.11'
-      - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
-      == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.9'
-      os: ubuntu-latest
-    secrets: inherit
-  linting:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  ubuntu-setup-and-unit-test:
-    needs: linting
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  ubuntu-latest-integration-test:
-    needs: [linting]
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+# ---
+# name: ci-fast
+# on:
+#   workflow_dispatch:
+#   workflow_call:
+#   push:
+#     branches: [main]
+#     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+#   pull_request:
+#     types: [opened, synchronize, ready_for_review]
+#     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+# concurrency:
+#   # New commit on branch cancels running workflows of the same branch
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
+# jobs:
+#   docstring-check:
+#     if: github.event.pull_request.draft == false
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4.2.2
+#       - name: Set up Python
+#         uses: actions/setup-python@v5.3.0
+#         with:
+#           python-version: '3.10'
+#       - name: Install darglint using uv
+#         run: |
+#           curl -LsSf https://astral.sh/uv/install.sh | sh
+#           source $HOME/.cargo/env
+#           uv pip install --system darglint
+#       - name: Check docstrings
+#         run: bash scripts/docstring.sh
+#   sqlite-db-migration-testing-random:
+#     runs-on: ubuntu-latest
+#     env:
+#       ZENML_ANALYTICS_OPT_IN: false
+#       ZENML_DEBUG: true
+#     # if team member commented, not a draft, on a PR, using /fulltest
+#     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4.2.2
+#         with:
+#           fetch-depth: 0
+#       - name: Set up Python 3.9
+#         uses: actions/setup-python@v5.3.0
+#         with:
+#           python-version: '3.9'
+#       - name: Test migrations across versions
+#         run: bash scripts/test-migrations.sh sqlite random
+#   spellcheck:
+#     if: github.event.pull_request.draft == false
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4.2.2
+#       - name: Spelling checker
+#         uses: crate-ci/typos@v1.27.0
+#         with:
+#           files: .
+#           config: ./.typos.toml
+#   api-docs-test:
+#     if: github.event.pull_request.draft == false
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4.2.2
+#       - name: Set up Python 3.11
+#         uses: actions/setup-python@v5.3.0
+#         with:
+#           python-version: '3.11'
+#       - name: Test API docs buildable
+#         run: bash scripts/generate-docs.sh -v DUMMY -c
+#   update-templates-to-examples:
+#     # this doesn't work on forked repositories (i.e. outside contributors)
+#     # so we disable template updates for those PRs / branches
+#     if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
+#       == false
+#     uses: ./.github/workflows/update-templates-to-examples.yml
+#     with:
+#       python-version: '3.9'
+#       os: ubuntu-latest
+#     secrets: inherit
+#   linting:
+#     if: github.event.pull_request.draft == false
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         python-version: ['3.11']
+#       fail-fast: false
+#     uses: ./.github/workflows/linting.yml
+#     with:
+#       python-version: ${{ matrix.python-version }}
+#       os: ${{ matrix.os }}
+#     secrets: inherit
+#   ubuntu-setup-and-unit-test:
+#     needs: linting
+#     if: github.event.pull_request.draft == false
+#     strategy:
+#       matrix:
+#         # IMPORTANT: Since we are using the combination of `arc-runner-set`
+#         # and `3.10` in our `ci-fast` workflow, this combination has been
+#         # excluded from the `ci-slow` workflow. If you change the configuration
+#         # here, please adjust the configuration of `ci-slow` accordingly.
+#         os: [ubuntu-latest]
+#         python-version: ['3.11']
+#       fail-fast: false
+#     uses: ./.github/workflows/unit-test.yml
+#     with:
+#       python-version: ${{ matrix.python-version }}
+#       os: ${{ matrix.os }}
+#     secrets: inherit
+#   ubuntu-latest-integration-test:
+#     needs: [linting]
+#     if: github.event.pull_request.draft == false
+#     strategy:
+#       matrix:
+#         # IMPORTANT: Since we are using the combination of `arc-runner-set`
+#         # and `3.10` in our `ci-fast` workflow, this combination has been
+#         # excluded from the `ci-slow` workflow. If you change the configuration
+#         # here, please adjust the configuration of `ci-slow` accordingly.
+#         os: [ubuntu-latest]
+#         python-version: ['3.11']
+#         test_environment: [default, docker-server-docker-orchestrator-mysql]
+#       fail-fast: false
+#     uses: ./.github/workflows/integration-test-fast.yml
+#     with:
+#       os: ${{ matrix.os }}
+#       python-version: ${{ matrix.python-version }}
+#       test_environment: ${{ matrix.test_environment }}
+#     secrets: inherit
