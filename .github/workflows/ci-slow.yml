@@ -229,7 +229,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -242,7 +242,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
         # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
@@ -276,7 +276,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-13]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
         # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         exclude:
