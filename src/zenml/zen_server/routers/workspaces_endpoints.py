@@ -956,15 +956,14 @@ def get_or_create_pipeline_run(
             "is not supported."
         )
 
-    verify_permission(
-        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
-    )
+    def _pre_creation_hook() -> None:
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+        )
+        check_entitlement(resource_type=ResourceType.PIPELINE_RUN)
 
     run, created = zen_store().get_or_create_run(
-        pipeline_run=pipeline_run,
-        pre_creation_hook=lambda: check_entitlement(
-            resource_type=ResourceType.PIPELINE_RUN
-        ),
+        pipeline_run=pipeline_run, pre_creation_hook=_pre_creation_hook
     )
     if created:
         report_usage(
