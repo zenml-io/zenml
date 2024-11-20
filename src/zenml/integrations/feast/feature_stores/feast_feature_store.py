@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
-from feast import FeatureStore  # type: ignore
+from feast import FeatureService, FeatureStore  # type: ignore
 from feast.infra.registry.base_registry import BaseRegistry  # type: ignore
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -118,17 +118,17 @@ class FeastFeatureStore(BaseFeatureStore):
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_entities()]
 
-    def get_feature_services(self) -> List[str]:
-        """Returns the feature service names.
+    def get_feature_services(self) -> List[FeatureService]:
+        """Returns the feature services.
 
         Raise:
             ConnectionError: If the online component (Redis) is not available.
 
         Returns:
-            The feature service names.
+            The feature services.
         """
         fs = FeatureStore(repo_path=self.config.feast_repo)
-        return [ds.name for ds in fs.list_feature_services()]
+        return fs.list_feature_services()
 
     def get_feature_views(self) -> List[str]:
         """Returns the feature view names.
