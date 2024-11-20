@@ -576,10 +576,6 @@ class ModelVersionResponse(
             force=force,
         )
 
-    # TODO in https://zenml.atlassian.net/browse/OSS-2433
-    # def generate_model_card(self, template_name: str) -> str:
-    #     """Return HTML/PDF based on input template"""
-
 
 # ------------------ Filter Model ------------------
 

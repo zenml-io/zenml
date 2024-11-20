@@ -689,6 +689,7 @@ class ModelContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        artifact_types: Optional[List[ArtifactType]] = None,
         delete: bool = True,
     ):
         client = Client()
@@ -705,6 +706,13 @@ class ModelContext:
         self.prs = []
         self.deployments = []
         self.delete = delete
+
+        if create_artifacts > 0:
+            artifact_types = artifact_types or [
+                ArtifactType.DATA for _ in range(create_artifacts)
+            ]
+            assert len(artifact_types) == create_artifacts
+            self.artifact_types = artifact_types
 
     def __enter__(self):
         client = Client()
@@ -728,7 +736,7 @@ class ModelContext:
                     )
                 )
 
-        for _ in range(self.create_artifacts):
+        for i in range(self.create_artifacts):
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
@@ -743,7 +751,7 @@ class ModelContext:
                     version=1,
                     data_type="module.class",
                     materializer="module.class",
-                    type=ArtifactType.DATA,
+                    type=self.artifact_types[i],
                     uri="",
                     user=user.id,
                     workspace=ws.id,

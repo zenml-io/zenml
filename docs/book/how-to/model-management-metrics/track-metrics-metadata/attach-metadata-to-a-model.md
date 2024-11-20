@@ -31,9 +31,7 @@ from zenml import step, log_metadata, ArtifactConfig, get_step_context
 
 @step
 def train_model(dataset: pd.DataFrame) -> Annotated[
-    ClassifierMixin, ArtifactConfig(
-        name="sklearn_classifier", is_model_artifact=True
-    )
+    ClassifierMixin, ArtifactConfig(name="sklearn_classifier")
 ]:
     """Train a model and log model metadata."""
     classifier = RandomForestClassifier().fit(dataset)
