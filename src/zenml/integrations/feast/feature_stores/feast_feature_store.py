@@ -43,14 +43,14 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_historical_features(
         self,
         entity_df: Union[pd.DataFrame, str],
-        features: List[str],
+        features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
 
         Args:
             entity_df: The entity DataFrame or entity name.
-            features: The features to retrieve.
+            features: The features to retrieve or a FeatureService.
             full_feature_names: Whether to return the full feature names.
 
         Raise:
@@ -70,14 +70,14 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_online_features(
         self,
         entity_rows: List[Dict[str, Any]],
-        features: List[str],
+        features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
         """Returns the latest online feature data.
 
         Args:
             entity_rows: The entity rows to retrieve.
-            features: The features to retrieve.
+            features: The features to retrieve or a FeatureService.
             full_feature_names: Whether to return the full feature names.
 
         Raise:
