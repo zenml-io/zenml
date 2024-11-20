@@ -128,7 +128,11 @@ class FeastFeatureStore(BaseFeatureStore):
             The feature services.
         """
         fs = FeatureStore(repo_path=self.config.feast_repo)
-        return fs.list_feature_services()
+        feature_services: List[FeatureService] = list(
+            fs.list_feature_services()
+        )
+
+        return feature_services
 
     def get_feature_views(self) -> List[str]:
         """Returns the feature view names.
