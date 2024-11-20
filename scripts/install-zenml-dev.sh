@@ -64,6 +64,9 @@ install_integrations() {
     # workaround to make yamlfix work
     echo "maison<2" >> integration-requirements.txt
 
+    echo "###INTEGRATIONS TO INSTALL###"
+    cat integration-requirements.txt
+    echo "###INTEGRATIONS TO INSTALL###"
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
 }
