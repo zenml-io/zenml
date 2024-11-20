@@ -228,13 +228,13 @@ class StepRunSchema(NamedSchema, table=True):
         # Fetch the metadata related to the original step of this cached step
         if self.original_step_run:
             for metadata in self.original_step_run.run_metadata_resources:
-                if metadata.publisher_step_id is not None:
-                    if metadata.key not in metadata_dict:
-                        metadata_dict[metadata.key] = []
-                    metadata_dict[metadata.key].append(
+                if metadata.run_metadata.publisher_step_id is not None:
+                    if metadata.run_metadata.key not in metadata_dict:
+                        metadata_dict[metadata.run_metadata.key] = []
+                    metadata_dict[metadata.run_metadata.key].append(
                         RunMetadataEntry(
-                            value=json.loads(metadata.value),
-                            created=metadata.created,
+                            value=json.loads(metadata.run_metadata.value),
+                            created=metadata.run_metadata.created,
                         )
                     )
 
