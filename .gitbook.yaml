@@ -196,4 +196,7 @@ redirects:
   docs/reference/python-client: reference/python-client.md
   docs/reference/global-settings: reference/global-settings.md
   docs/reference/environment-variables: reference/environment-variables.md
-  docs/reference/
+  docs/reference/api-reference: reference/api-reference.md
+  docs/reference/how-do-i: reference/how-do-i.md
+  docs/reference/community-and-content: reference/community-and-content.md
+  docs/reference/faq: reference/faq.md
