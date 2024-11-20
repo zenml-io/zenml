@@ -18,9 +18,9 @@ jobs:
   #   runs-on: ubuntu-latest
   #   if: github.event.pull_request.draft == false
   #   steps:
-  #     # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
-  #     # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
-  #     # With dynamic approach dev can set label and rerun this flow to make it running.
+  #  # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
+  #  # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+  #  # With dynamic approach dev can set label and rerun this flow to make it running.
   #     - name: Get PR labels
   #       id: pr-labels
   #       uses: actions/github-script@v7.0.1
@@ -229,7 +229,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -242,7 +242,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         # exclude:
@@ -276,7 +276,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.9'] #, '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
         # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
         # exclude:
@@ -303,7 +303,7 @@ jobs:
   #         - docker-server-docker-orchestrator-mysql
   #         - docker-server-docker-orchestrator-mariadb
   #       exclude:
-  #         # docker is time-consuming to run, so we only run it on 3.9
+  #  # docker is time-consuming to run, so we only run it on 3.9
   #         - test_environment: docker-server-docker-orchestrator-mysql
   #           python-version: '3.9'
   #         - test_environment: docker-server-docker-orchestrator-mysql
