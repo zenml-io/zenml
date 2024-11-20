@@ -12,7 +12,14 @@ parse_args () {
                 shift # past value
                 ;;
             -s|--system)
-                PIP_ARGS="--system"
+                PIP_ARGS="$PIP_ARGS --system"
+                shift # past argument
+                ;;
+            --macos-13)
+                PIP_ARGS="$PIP_ARGS --python-platform aarch64-apple-darwin"
+                shift # past argument
+                ;;
+            --macos-latest|--ubuntu-latest|--windows-latest)
                 shift # past argument
                 ;;
             -*|--*)
@@ -67,7 +74,7 @@ install_integrations() {
     echo "###INTEGRATIONS TO INSTALL###"
     cat integration-requirements.txt
     echo "###INTEGRATIONS TO INSTALL###"
-    uv pip install $PIP_ARGS --python-platform macos -r integration-requirements.txt
+    uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
 }
 
