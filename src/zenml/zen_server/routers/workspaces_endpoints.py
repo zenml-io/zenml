@@ -970,6 +970,8 @@ def get_or_create_pipeline_run(
         report_usage(
             resource_type=ResourceType.PIPELINE_RUN, resource_id=run.id
         )
+    else:
+        verify_permission_for_model(run, action=Action.READ)
 
     return run, created
 
