@@ -72,7 +72,7 @@ Note, that you can also install your dependencies directly, but please note that
 
 #### Use `uv` for package installation
 
-You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstallations. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`.
+You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstalls. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`.
 
 Full documentation for how it works with PyTorch can be found on Astral's docs
 website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers
