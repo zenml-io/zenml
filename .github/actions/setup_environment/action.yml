@@ -117,7 +117,7 @@ runs:
     - name: Install ZenML and dependencies
       shell: bash
       run: |
-        scripts/install-zenml-dev.sh --system --${{ inputs.os }}--integrations ${{ inputs.install_integrations }}
+        scripts/install-zenml-dev.sh --system --${{ inputs.os }} --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
       shell: bash
       run: |-
