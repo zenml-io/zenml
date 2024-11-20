@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 import os
+import platform
 import shutil
 from pathlib import Path
-from sys import platform
 
 import pytest
 import transformers

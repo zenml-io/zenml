@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from sys import platform
+import platform
 
 import pytest
 
