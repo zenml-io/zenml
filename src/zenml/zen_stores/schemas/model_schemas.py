@@ -22,7 +22,11 @@ from pydantic import ConfigDict
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
-from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
+from zenml.enums import (
+    ArtifactType,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     BaseResponseMetadata,
     ModelRequest,
@@ -109,14 +113,6 @@ class ModelSchema(NamedSchema, table=True):
         ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
-        back_populates="model",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
-        back_populates="model",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -377,11 +373,14 @@ class ModelVersionSchema(NamedSchema, table=True):
             artifact_name = artifact_link.artifact_version.artifact.name
             artifact_version = str(artifact_link.artifact_version.version)
             artifact_version_id = artifact_link.artifact_version.id
-            if artifact_link.is_model_artifact:
+            if artifact_link.artifact_version.type == ArtifactType.MODEL.value:
                 model_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
-            elif artifact_link.is_deployment_artifact:
+            elif (
+                artifact_link.artifact_version.type
+                == ArtifactType.SERVICE.value
+            ):
                 deployment_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
@@ -476,39 +475,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
 
     __tablename__ = "model_versions_artifacts"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_versions_artifacts_links"
-    )
-
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="model_versions_artifacts_links"
-    )
-
-    model_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ModelSchema.__tablename__,
-        source_column="model_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    model: "ModelSchema" = Relationship(back_populates="artifact_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -530,11 +496,6 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
     artifact_version: "ArtifactVersionSchema" = Relationship(
         back_populates="model_versions_artifacts_links"
-    )
-
-    is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_deployment_artifact: bool = Field(
-        sa_column=Column(BOOLEAN, nullable=True)
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -559,13 +520,8 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=model_version_artifact_request.workspace,
-            user_id=model_version_artifact_request.user,
-            model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
             artifact_version_id=model_version_artifact_request.artifact_version,
-            is_model_artifact=model_version_artifact_request.is_model_artifact,
-            is_deployment_artifact=model_version_artifact_request.is_deployment_artifact,
         )
 
     def to_model(
@@ -590,11 +546,8 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             body=ModelVersionArtifactResponseBody(
                 created=self.created,
                 updated=self.updated,
-                model=self.model_id,
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
-                is_model_artifact=self.is_model_artifact,
-                is_deployment_artifact=self.is_deployment_artifact,
             ),
             metadata=BaseResponseMetadata() if include_metadata else None,
         )
@@ -605,39 +558,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
 
     __tablename__ = "model_versions_runs"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
-
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
-
-    model_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ModelSchema.__tablename__,
-        source_column="model_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    model: "ModelSchema" = Relationship(back_populates="pipeline_run_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -683,9 +603,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=model_version_pipeline_run_request.workspace,
-            user_id=model_version_pipeline_run_request.user,
-            model_id=model_version_pipeline_run_request.model,
             model_version_id=model_version_pipeline_run_request.model_version,
             pipeline_run_id=model_version_pipeline_run_request.pipeline_run,
         )
@@ -712,7 +629,6 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
             body=ModelVersionPipelineRunResponseBody(
                 created=self.created,
                 updated=self.updated,
-                model=self.model_id,
                 model_version=self.model_version_id,
                 pipeline_run=self.pipeline_run.to_model(),
             ),
