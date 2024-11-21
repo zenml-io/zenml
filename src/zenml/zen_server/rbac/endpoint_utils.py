@@ -203,6 +203,7 @@ def verify_permissions_and_update_entity(
     Returns:
         A model of the updated entity.
     """
+    # TODO: don't hydrate
     model = get_method(id)
     verify_permission_for_model(model, action=Action.UPDATE)
     updated_model = update_method(model.id, update_model)
@@ -224,6 +225,8 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
+    # TODO: don't hydrate
+
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
