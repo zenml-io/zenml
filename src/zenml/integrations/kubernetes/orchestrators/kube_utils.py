@@ -42,8 +42,8 @@ from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_cluster_role_binding_manifest_for_service_account,
     build_namespace_manifest,
+    build_role_binding_manifest_for_service_account,
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
@@ -300,13 +300,15 @@ def create_edit_service_account(
         cluster_role_binding_name: Name of the cluster role binding.
             Defaults to "zenml-edit".
     """
-    crb_manifest = build_cluster_role_binding_manifest_for_service_account(
+    crb_manifest = build_role_binding_manifest_for_service_account(
         name=cluster_role_binding_name,
         role_name="edit",
         service_account_name=service_account_name,
         namespace=namespace,
     )
-    _if_not_exists(rbac_api.create_cluster_role_binding)(body=crb_manifest)
+    _if_not_exists(rbac_api.create_namespaced_role_binding)(
+        namespace=namespace, body=crb_manifest
+    )
 
     sa_manifest = build_service_account_manifest(
         name=service_account_name, namespace=namespace

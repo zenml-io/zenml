@@ -59,6 +59,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cron_job_manifest,
     build_pod_manifest,
 )
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
@@ -422,6 +423,37 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return
 
+        # We set some default minimum resource requests for the orchestrator pod
+        # here if the user has not specified any, because the orchestrator pod
+        # takes up some memory resources itself and, if not specified, the pod
+        # will be scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        resources = {
+            "requests": {"cpu": "100m", "memory": "400Mi"},
+        }
+        if not settings.orchestrator_pod_settings:
+            orchestrator_pod_settings = KubernetesPodSettings(
+                resources=resources
+            )
+        elif not settings.orchestrator_pod_settings.resources:
+            # We can't update the orchestrator pod settings in place (because
+            # it's a frozen pydantic model), so we have to create a new one.
+            orchestrator_pod_settings = KubernetesPodSettings(
+                **settings.orchestrator_pod_settings.model_dump(
+                    exclude_unset=True
+                ),
+                resources=resources,
+            )
+        else:
+            orchestrator_pod_settings = settings.orchestrator_pod_settings
+            set_requests = orchestrator_pod_settings.resources.get(
+                "requests", {}
+            )
+            resources["requests"].update(set_requests)
+            orchestrator_pod_settings.resources["requests"] = resources[
+                "requests"
+            ]
+
         # Create and run the orchestrator pod.
         pod_manifest = build_pod_manifest(
             run_name=orchestrator_run_name,
@@ -431,7 +463,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             command=command,
             args=args,
             privileged=False,
-            pod_settings=settings.orchestrator_pod_settings,
+            pod_settings=orchestrator_pod_settings,
             service_account_name=service_account_name,
             env=environment,
             mount_local_stores=self.config.is_local,

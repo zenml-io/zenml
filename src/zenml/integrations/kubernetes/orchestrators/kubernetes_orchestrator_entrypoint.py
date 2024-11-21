@@ -33,6 +33,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -116,6 +117,31 @@ def main() -> None:
         env = get_config_environment_vars()
         env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
+        # We set some default minimum memory resource requests for the step pod
+        # here if the user has not specified any, because the step pod takes up
+        # some memory resources itself and, if not specified, the pod will be
+        # scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        resources = {
+            "requests": {"memory": "400Mi"},
+        }
+        if not settings.pod_settings:
+            pod_settings = KubernetesPodSettings(
+                resources=resources,
+            )
+        elif not settings.pod_settings.resources:
+            # We can't update the step pod settings in place (because
+            # it's a frozen pydantic model), so we have to create a new one.
+            pod_settings = KubernetesPodSettings(
+                **settings.pod_settings.model_dump(exclude_unset=True),
+                resources=resources,
+            )
+        else:
+            pod_settings = settings.pod_settings
+            set_requests = pod_settings.resources.get("requests", {})
+            resources["requests"].update(set_requests)
+            pod_settings.resources["requests"] = resources["requests"]
+
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
@@ -126,7 +152,7 @@ def main() -> None:
             args=step_args,
             env=env,
             privileged=settings.privileged,
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
             service_account_name=settings.step_pod_service_account_name
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,

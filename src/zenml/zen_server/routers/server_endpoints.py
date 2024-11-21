@@ -22,6 +22,7 @@ from zenml.constants import (
     ACTIVATE,
     API,
     INFO,
+    LOAD_INFO,
     ONBOARDING_STATE,
     SERVER_SETTINGS,
     VERSION_1,
@@ -30,6 +31,7 @@ from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ServerActivationRequest,
+    ServerLoadInfo,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -69,6 +71,51 @@ def server_info() -> ServerModel:
         Information about the server.
     """
     return zen_store().get_store_info()
+
+
+@router.get(
+    LOAD_INFO,
+    response_model=ServerLoadInfo,
+)
+@handle_exceptions
+def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
+    """Get information about the server load.
+
+    Returns:
+        Information about the server load.
+    """
+    import threading
+
+    # Get the current number of threads
+    num_threads = len(threading.enumerate())
+
+    store = zen_store()
+
+    if store.config.driver == "sqlite":
+        # SQLite doesn't have a connection pool
+        return ServerLoadInfo(
+            threads=num_threads,
+            db_connections_total=0,
+            db_connections_active=0,
+            db_connections_overflow=0,
+        )
+
+    from sqlalchemy.pool import QueuePool
+
+    # Get the number of active connections
+    pool = store.engine.pool
+    assert isinstance(pool, QueuePool)
+    idle_conn = pool.checkedin()
+    active_conn = pool.checkedout()
+    overflow_conn = pool.overflow()
+    overflow_conn = max(0, overflow_conn)
+
+    return ServerLoadInfo(
+        threads=num_threads,
+        db_connections_total=idle_conn + active_conn + overflow_conn,
+        db_connections_active=active_conn,
+        db_connections_overflow=overflow_conn,
+    )
 
 
 @router.get(

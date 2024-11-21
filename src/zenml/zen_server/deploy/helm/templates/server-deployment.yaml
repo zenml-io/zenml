@@ -63,14 +63,14 @@ spec:
               value: "True"
             {{- end }}
             {{- if .Values.zenml.database.url }}
-            - name: ZENML_STORE_TYPE
-              value: sql
             - name: DISABLE_DATABASE_MIGRATION
               value: "True"
-            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
-              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
 
+            {{- range $k, $v := include "zenml.storeEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
             {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
             - name: {{ $k }}
               value: {{ $v | quote }}

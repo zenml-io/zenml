@@ -304,13 +304,13 @@ def build_cron_job_manifest(
     return job_manifest
 
 
-def build_cluster_role_binding_manifest_for_service_account(
+def build_role_binding_manifest_for_service_account(
     name: str,
     role_name: str,
     service_account_name: str,
     namespace: str = "default",
 ) -> Dict[str, Any]:
-    """Build a manifest for a cluster role binding of a service account.
+    """Build a manifest for a role binding of a service account.
 
     Args:
         name: Name of the cluster role binding.
@@ -323,7 +323,7 @@ def build_cluster_role_binding_manifest_for_service_account(
     """
     return {
         "apiVersion": "rbac.authorization.k8s.io/v1",
-        "kind": "ClusterRoleBinding",
+        "kind": "RoleBinding",
         "metadata": {"name": name},
         "subjects": [
             {
