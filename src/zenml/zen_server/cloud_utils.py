@@ -171,7 +171,7 @@ class ZenMLCloudConnection:
             self._session.headers.update({"Authorization": "Bearer " + token})
 
             retries = Retry(
-                total=10, backoff_factor=0.1, status_forcelist=[502, 504]
+                total=5, backoff_factor=0.1, status_forcelist=[502, 504]
             )
             self._session.mount(
                 "https://",
