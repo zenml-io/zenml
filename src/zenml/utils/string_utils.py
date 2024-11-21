@@ -161,6 +161,9 @@ def format_name_template(
 
     Returns:
         The formatted name template.
+
+    Raises:
+        KeyError: If a key in template is missing in the kwargs.
     """
     kwargs["date"] = kwargs.get(
         "date",

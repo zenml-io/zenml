@@ -56,7 +56,7 @@ class ArtifactConfig(BaseModel):
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
 
-    name: Optional[str] = Field(default=None, union_mode="smart")
+    name: Optional[str] = None
     version: Optional[Union[str, int]] = Field(
         default=None, union_mode="smart"
     )
