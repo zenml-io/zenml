@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
 import sys
 
 import pytest
@@ -22,6 +23,11 @@ from tests.unit.test_general import _test_materializer
 @pytest.mark.skipif(
     sys.version_info.minor == 12,
     reason="The tensorflow integrations is not yet supported on 3.12.",
+)
+@pytest.mark.skipif(
+    platform.system() == "Darwin",
+    # Details: https://github.com/tensorflow/tensorflow/issues/61915#issuecomment-1809771930
+    reason="Have to be 2.15 and above and our integration is <2.15",
 )
 def test_tensorflow_keras_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
