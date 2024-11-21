@@ -189,7 +189,7 @@ def verify_permissions_and_list_entities(
 def verify_permissions_and_update_entity(
     id: UUIDOrStr,
     update_model: AnyUpdate,
-    get_method: Callable[[UUIDOrStr], AnyResponse],
+    get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     update_method: Callable[[UUIDOrStr, AnyUpdate], AnyResponse],
 ) -> AnyResponse:
     """Verify permissions and update an entity.
@@ -203,8 +203,8 @@ def verify_permissions_and_update_entity(
     Returns:
         A model of the updated entity.
     """
-    # TODO: don't hydrate
-    model = get_method(id)
+    # We don't need the hydrated version here
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.UPDATE)
     updated_model = update_method(model.id, update_model)
     return dehydrate_response_model(updated_model)
@@ -212,7 +212,7 @@ def verify_permissions_and_update_entity(
 
 def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
-    get_method: Callable[[UUIDOrStr], AnyResponse],
+    get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
 ) -> AnyResponse:
     """Verify permissions and delete an entity.
@@ -225,9 +225,8 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    # TODO: don't hydrate
-
-    model = get_method(id)
+    # We don't need the hydrated version here
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
 
