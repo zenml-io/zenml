@@ -37,7 +37,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.filter import StrFilter
+from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -474,6 +474,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "user",
         "model",
         "pipeline_run",
+        "model_version_id",
         "run_metadata",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
@@ -525,6 +526,11 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="User that produced this artifact",
         union_mode="left_to_right",
     )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="ID of the model version that is associated with this artifact version.",
+        union_mode="left_to_right",
+    )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
     )
@@ -568,6 +574,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionArtifactSchema,
+            ModelVersionSchema,
             PipelineRunSchema,
             RunMetadataSchema,
             StepRunInputArtifactSchema,
@@ -600,6 +607,20 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(unused_filter)
 
+        if self.model_version_id:
+            value, operator = self._resolve_operator(self.model_version_id)
+
+            model_version_filter = and_(
+                ArtifactVersionSchema.id
+                == ModelVersionArtifactSchema.artifact_version_id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                FilterGenerator(ModelVersionSchema)
+                .define_filter(column="id", value=value, operator=operator)
+                .generate_query_conditions(ModelVersionSchema),
+            )
+            custom_filters.append(model_version_filter)
+
         if self.has_custom_name is not None:
             custom_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
@@ -622,7 +643,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.model, table=ModelSchema
                 ),

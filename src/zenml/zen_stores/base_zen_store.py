@@ -42,6 +42,7 @@ from zenml.enums import (
     SecretsStoreType,
     StoreType,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     ServerDatabaseType,
@@ -335,7 +336,7 @@ class BaseZenStore(
             # Ensure that the active stack is still valid
             try:
                 active_stack = self.get_stack(stack_id=active_stack_id)
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 logger.warning(
                     "The current %s active stack is no longer available. "
                     "Resetting the active stack to default.",

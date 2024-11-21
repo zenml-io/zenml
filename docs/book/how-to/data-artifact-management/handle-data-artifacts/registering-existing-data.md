@@ -193,7 +193,6 @@ class ZenMLModelCheckpoint(ModelCheckpoint):
                 self.dirpath, self.filename_format.format(epoch=trainer.current_epoch)
             ),
             self.artifact_name,
-            is_model_artifact=True,
         )
 ```
 
@@ -281,7 +280,6 @@ class ZenMLModelCheckpoint(ModelCheckpoint):
                 self.dirpath, self.filename_format.format(epoch=trainer.current_epoch)
             ),
             self.artifact_name,
-            is_model_artifact=True,
         )
 
 

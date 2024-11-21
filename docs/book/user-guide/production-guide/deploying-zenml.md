@@ -60,7 +60,7 @@ You can always go back to the local zenml experience by using `zenml logout`
 
 To learn more about deploying ZenML, check out the following resources:
 
-- [Deploying ZenML](../../getting-started/deploying-zenml.md): an overview of
+- [Deploying ZenML](../../getting-started/deploying-zenml/README.md): an overview of
   the different options for deploying ZenML and the system architecture of a
   deployed ZenML instance.
 - [Full how-to guides](../../getting-started/deploying-zenml/README.md): guides on how to

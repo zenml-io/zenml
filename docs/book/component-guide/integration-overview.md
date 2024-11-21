@@ -40,9 +40,13 @@ You can run `zenml integration --help` to see a full list of CLI commands that Z
 
 Note, that you can also install your dependencies directly, but please note that there is no guarantee that ZenML internals with work with any arbitrary version of any external library.
 
-### Experimental: Use `uv` for package installation
+### Use `uv` for package installation
 
 You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstallations. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`. We will monitor how this performs and update as `uv` becomes more stable.
+
+Full documentation for how it works with PyTorch can be found on Astral Docs
+website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers
+some of the particular gotchas and details you might need to know.
 
 ## Upgrade ZenML integrations
 

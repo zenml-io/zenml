@@ -167,6 +167,32 @@ def annotation_approach() -> (
     return "string"
 ```
 
+### Specify a type for your artifacts
+
+Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
+
+{% hint style="info" %}
+If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to
+save the artifact.
+{% endhint %}
+
+
+```python
+from typing_extensions import Annotated
+from zenml import ArtifactConfig, save_artifact, step
+from zenml.enums import ArtifactType
+
+# Assign an artifact type to a step output
+@step
+def trainer() -> Annotated[MyCustomModel, ArtifactConfig(artifact_type=ArtifactType.MODEL)]:
+    return MyCustomModel(...)
+
+
+# Assign an artifact type when manually saving artifacts
+model = ...
+save_artifact(model, name="model", artifact_type=ArtifactType.MODEL)
+```
+
 ### Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
@@ -456,7 +482,7 @@ def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
     ClassifierMixin,
-    ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"]),
+    ArtifactConfig(name="my_model", tags=["SVC", "trained"]),
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
