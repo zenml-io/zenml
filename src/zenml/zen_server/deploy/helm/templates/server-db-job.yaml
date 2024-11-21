@@ -79,9 +79,20 @@ spec:
             {{- end }}
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
-            {{- range $k, $v := include "zenml.storeEnvVariables" . | fromYaml }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- if .Values.zenml.database.backupStrategy }}
+            - name: ZENML_STORE_BACKUP_STRATEGY
+              value: {{ .Values.zenml.database.backupStrategy | quote }}
+            {{- if eq .Values.zenml.database.backupStrategy "database" }}
+            - name: ZENML_STORE_BACKUP_DATABASE
+              value: {{ .Values.zenml.database.backupDatabase | quote }}
+            {{- else if eq .Values.zenml.database.backupStrategy "dump-file" }}
+            - name: ZENML_STORE_BACKUP_DIRECTORY
+              value: /backups
+            {{- end }}
             {{- end }}
             {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
             - name: {{ $k }}
