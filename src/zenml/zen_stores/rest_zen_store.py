@@ -4172,7 +4172,44 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
-            retries = Retry(backoff_factor=0.1, connect=5)
+            # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
+            # OPTIONS and DELETE) on specific HTTP status codes:
+            #
+            #     500: Internal Server Error.
+            #     502: Bad Gateway.
+            #     503: Service Unavailable.
+            #     504: Gateway Timeout.
+            #
+            # This also handles connection level errors, if a connection attempt
+            # fails due to transient issues like:
+            #
+            #     DNS resolution errors.
+            #     Connection timeouts.
+            #     Network disruptions.
+            #
+            # Additional errors retried:
+            #
+            #     Read Timeouts: If the server does not send a response within
+            #     the timeout period.
+            #     Connection Refused: If the server refuses the connection.
+            #
+            retries = Retry(
+                connect=5,
+                read=8,
+                redirect=3,
+                status=10,
+                allowed_methods = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
+                status_forcelist=[
+                    408, # Request Timeout
+                    429, # Too Many Requests
+                    500, # Internal Server Error
+                    502, # Bad Gateway
+                    503, # Service Unavailable
+                    504, # Gateway Timeout
+                ],
+                other=3,
+                backoff_factor=0.5,
+            )
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl

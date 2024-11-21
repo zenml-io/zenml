@@ -104,6 +104,18 @@ spec:
             httpGet:
               path: /health
               port: http
+          lifecycle:
+            preStop:
+              exec:
+                # Give the process 15 more seconds before the SIGTERM signal is
+                # sent. This allows the endpoint removal to reach the ingress
+                # controller in time and for traffic to be routed away from the
+                # pod before it is shut down. This eliminates the number of 502
+                # errors returned to the user.
+                #
+                # See https://learnk8s.io/graceful-shutdown for more information.
+                #
+                command: ["sleep", "15"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
