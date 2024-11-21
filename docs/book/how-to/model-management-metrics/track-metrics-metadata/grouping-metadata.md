@@ -4,7 +4,7 @@ description: Learn how to group key-value pairs in the dashboard.
 
 # Grouping Metadata in the Dashboard
 
-![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
+![Metadata in the dashboard](../../../.gitbook/assets/metadata-in-dashboard.png)
 
 When logging metadata passing a dictionary of dictionaries in the `metadata` parameter will group the metadata into cards in the ZenML dashboard. This feature helps organize metadata into logical sections, making it easier to visualize and understand.
 

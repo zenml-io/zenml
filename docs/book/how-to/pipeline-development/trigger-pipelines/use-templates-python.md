@@ -110,7 +110,7 @@ def loads_data_and_triggers_training():
 
 Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) and [`trigger_pipeline`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client) function object in the [SDK Docs](https://sdkdocs.zenml.io/).
 
-Read more about Unmaterialized Artifacts [here](../handle-data-artifacts/unmaterialized-artifacts.md).
+Read more about Unmaterialized Artifacts [here](../../data-artifact-management/handle-data-artifacts/unmaterialized-artifacts.md).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

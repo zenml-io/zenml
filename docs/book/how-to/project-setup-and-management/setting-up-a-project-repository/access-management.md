@@ -17,7 +17,7 @@ In an ML project, you will typically have the following roles:
 The above is an estimation of roles that you might have in your team. In your case, the names might be different or there might be more roles, but you can relate the responbilities we discuss in this document to your own project loosely.
 
 {% hint style="info" %}
-You can create [Roles in ZenML Pro](../../getting-started/zenml-pro/roles.md) with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
+You can create [Roles in ZenML Pro](../../../getting-started/zenml-pro/roles.md) with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
 {% endhint %}
 
 ## Service Connectors: Gateways to External Services
@@ -31,19 +31,19 @@ Other team members can use connectors to create stack components that talk to th
 Let's look at an example of how this works in practice.
 Imagine you have a `DataScientist` role in your ZenML server. This role should only be able to use the connectors to create stack components and run pipelines. They shouldn't have access to the credentials used to configure these connectors. Therefore, the permissions for this role could look like the following:
 
-![Data Scientist Permissions](../../.gitbook/assets/data_scientist_connector_role.png)
+![Data Scientist Permissions](../../../.gitbook/assets/data_scientist_connector_role.png)
 
 You can notice that the role doesn't grant the data scientist permissions to create, update, or delete connectors, or read their secret values.
 
 On the other hand, the `MLOpsPlatformEngineer` role has the permissions to create, update, and delete connectors, as well as read their secret values. The permissions for this role could look like the following:
 
-![MLOps Platform Engineer Permissions](../../.gitbook/assets/platform_engineer_connector_role.png)
+![MLOps Platform Engineer Permissions](../../../.gitbook/assets/platform_engineer_connector_role.png)
 
 {% hint style="info" %}
-Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](../../getting-started/zenml-pro/roles.md).
+Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](../../../getting-started/zenml-pro/roles.md).
 {% endhint %}
 
-Learn more about the best practices in managing credentials and recommended roles in our [Managing Stacks and Components guide](../stack-deployment/README.md).
+Learn more about the best practices in managing credentials and recommended roles in our [Managing Stacks and Components guide](../../infrastructure-deployment/stack-deployment/README.md).
 
 
 ## Who is responsible for upgrading the ZenML server?
@@ -51,7 +51,7 @@ Learn more about the best practices in managing credentials and recommended role
 The decision to upgrade your ZenML server is usually taken by your Project Owners after consulting with all the teams using the server. This is because there might be teams with conflicting requirements and moving to a new version of ZenML (that might come with upgrades to certain libraries) can break code for some users.
 
 {% hint style="info" %}
-You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers [multi-tenancy](../../getting-started/zenml-pro/tenants.md) out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
+You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers [multi-tenancy](../../../getting-started/zenml-pro/tenants.md) out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
 {% endhint %}
 
 Performing the upgrade itself is a task that typically falls on the MLOps Platform Engineers. They should:
@@ -68,7 +68,7 @@ When you upgrade to a new version of ZenML, you might have to test if your code 
 
 The pipeline code itself is typically owned by the Data Scientist, but the Platform Engineer is responsible for making sure that new changes can be tested in a safe environment without impacting existing workflows. This involves setting up a new server and doing a staged upgrade and other strategies.
 
-The Data Scientist should also check out the release notes, and the migration guide where applicable when upgrading the code. Read more about the best practices for upgrading your ZenML server and your code in the [Best Practices for Upgrading ZenML Servers](../manage-the-zenml-server/best-practices-upgrading-zenml.md) guide.
+The Data Scientist should also check out the release notes, and the migration guide where applicable when upgrading the code. Read more about the best practices for upgrading your ZenML server and your code in the [Best Practices for Upgrading ZenML Servers](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
 
 
 ## Best Practices for Access Management

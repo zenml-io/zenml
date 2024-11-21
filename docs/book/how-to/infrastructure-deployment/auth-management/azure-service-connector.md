@@ -564,7 +564,7 @@ The 'azure-service-principal' Azure Service Connector connector was used to succ
 
 ## Stack Components use
 
-The [Azure Artifact Store Stack Component](../../component-guide/artifact-stores/azure.md) can be connected to a remote Azure blob storage container through an Azure Service Connector.
+The [Azure Artifact Store Stack Component](../../../component-guide/artifact-stores/azure.md) can be connected to a remote Azure blob storage container through an Azure Service Connector.
 
 The Azure Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows AKS Kubernetes container workloads to be managed without the need to configure and maintain explicit Azure or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
@@ -578,10 +578,10 @@ Similarly, Container Registry Stack Components can be connected to a ACR Contain
 
 This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type Azure Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](../../component-guide/orchestrators/kubernetes.md) connected to an AKS Kubernetes cluster
-* a [Azure Blob Storage Artifact Store](../../component-guide/artifact-stores/azure.md) connected to an Azure blob storage container
-* an [Azure Container Registry](../../component-guide/container-registries/azure.md) connected to an ACR container registry
-* a local [Image Builder](../../component-guide/image-builders/local.md)
+* a [Kubernetes Orchestrator](../../../component-guide/orchestrators/kubernetes.md) connected to an AKS Kubernetes cluster
+* a [Azure Blob Storage Artifact Store](../../../component-guide/artifact-stores/azure.md) connected to an Azure blob storage container
+* an [Azure Container Registry](../../../component-guide/container-registries/azure.md) connected to an ACR container registry
+* a local [Image Builder](../../../component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 

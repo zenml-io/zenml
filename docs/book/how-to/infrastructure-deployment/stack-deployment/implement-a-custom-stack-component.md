@@ -43,7 +43,7 @@ class BaseArtifactStore(StackComponent):
 As each component defines a different interface, make sure to check out the base class definition of the component type that you want to implement and also check out the [documentation on how to extend specific stack components](implement-a-custom-stack-component.md#extending-specific-stack-components).
 
 {% hint style="info" %}
-If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md) section.
+If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](../..//model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md) section.
 {% endhint %}
 
 See the full code of the base `StackComponent` class [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack\_component.py#L301).
@@ -55,7 +55,7 @@ As the name suggests, the `StackComponentConfig` is used to configure a stack co
 {% hint style="info" %}
 The `config` and `settings` of a stack component are two separate, yet related entities. The `config` is the static part of your flavor's configuration, defined when you register your flavor. The `settings` are the dynamic part of your flavor's configuration that can be overridden at runtime.
 
-You can read more about the differences [here](../use-configuration-files/runtime-configuration.md).
+You can read more about the differences [here](../../pipeline-development/use-configuration-files/runtime-configuration.md).
 {% endhint %}
 
 Let us now continue with the base artifact store example from above and take a look at the `BaseArtifactStoreConfig`:
@@ -145,7 +145,7 @@ class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
 ```
 
 {% hint style="info" %}
-You can pass sensitive configuration values as [secrets](../../how-to/interact-with-secrets.md) by defining them as type `SecretField` in the configuration class.
+You can pass sensitive configuration values as [secrets](../../interact-with-secrets.md) by defining them as type `SecretField` in the configuration class.
 {% endhint %}
 
 With the configuration defined, we can move on to the implementation class, which will use the S3 file system to implement the abstract methods of the `BaseArtifactStore`:
@@ -277,15 +277,15 @@ If you would like to learn more about how to build a custom stack component flav
 
 | **Type of Stack Component**                                                                                                                                  | **Description**                                                   |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| [Orchestrator](../../component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](../../component-guide/container-registries/custom.md) | Store for your containers                                         |
-| [Step Operator](../../component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
-| [Annotator](../../component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
-| [Data Validator](../../component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
+| [Orchestrator](../../../component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](../../../component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](../../../component-guide/container-registries/custom.md) | Store for your containers                                         |
+| [Step Operator](../../../component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../../../component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](../../../component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](../../../component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](../../../component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Annotator](../../../component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
+| [Data Validator](../../../component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

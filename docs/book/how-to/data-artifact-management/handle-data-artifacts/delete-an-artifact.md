@@ -13,7 +13,7 @@ However, it is possible to delete artifacts that are no longer referenced by any
 zenml artifact prune
 ```
 
-By default, this method deletes artifacts physically from the underlying [artifact store](../../component-guide/artifact-stores/artifact-stores.md)
+By default, this method deletes artifacts physically from the underlying [artifact store](../../../component-guide/artifact-stores/artifact-stores.md)
 AND also the entry in the database. You can control this behavior by using the
 `--only-artifact` and `--only-metadata` flags.
 
