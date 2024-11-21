@@ -170,7 +170,13 @@ def format_name_template(
         "time",
         datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
     )
-    return name_template.format(**kwargs)
+    try:
+        return name_template.format(**kwargs)
+    except KeyError as e:
+        raise KeyError(
+            f"Could not format the name template `{name_template}`. "
+            f"Missing key: {e}"
+        )
 
 
 def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:

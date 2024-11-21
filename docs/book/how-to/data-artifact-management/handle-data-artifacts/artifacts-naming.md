@@ -10,7 +10,7 @@ ZenML uses type annotations in function definitions to determine artifact names.
 
 ZenML provides flexible options for naming output artifacts, supporting both static and dynamic naming strategies:
 - Names can be generated dynamically at runtime
-- Support for lambda functions, callable functions, and string templates
+- Support for string templates (standard and custom placeholders supported)
 - Compatible with single and multiple output scenarios
 - Annotations help define naming strategy without modifying core logic
 
@@ -28,31 +28,8 @@ def static_single() -> Annotated[str, "static_output_name"]:
 ### Dynamic Naming
 Dynamic names can be generated using:
 
-#### Lambda Functions
-```python
-from random import randint
-
-lambda_namer = lambda: "dynamic_name_" + str(randint(0,42))
-
-@step
-def dynamic_single_lambda() -> Annotated[str, lambda_namer]:
-    return "null"
-```
-
-#### Callable Functions
-```python
-from random import randint
-
-def func_namer():
-    return "dummy_dynamic_" + str(randint(0,42))
-
-@step
-def dynamic_single_callable() -> Annotated[str, func_namer]:
-    return "null"
-```
-
-#### String Templates
-Use the following placeholders that ZenML will replace:
+#### String Templates Using Standard Placeholders
+Use the following placeholders that ZenML will replace automatically:
 
 * `{date}` will resolve to the current date, e.g. `2024_11_18`
 * `{time}` will resolve to the current time, e.g. `11_07_09_326492`
@@ -65,24 +42,44 @@ def dynamic_single_string() -> Annotated[str, str_namer]:
     return "null"
 ```
 
+#### String Templates Using Custom Placeholders
+Use any placeholders that ZenML will replace for you, if they are provided into a step via `extra_name_placeholders` parameter:
+
+```python
+str_namer = "placeholder_name_{custom_placeholder}_{time}"
+
+@step(extra_name_placeholders={"custom_placeholder": "some_substitute"})
+def dynamic_single_string() -> Annotated[str, str_namer]:
+    return "null"
+```
+
+Another option is to use `with_options` to dynamically redefine the placeholder, like this:
+
+```python
+str_namer = "{stage}_dataset"
+
+@step
+def extract_data(source: str) -> Annotated[str, str_namer]:
+    ...
+    return "my data"
+
+@pipeline
+def extraction_pipeline():
+    extract_data.with_options(extra_name_placeholders={"stage": "train"})(source="s3://train")
+    extract_data.with_options(extra_name_placeholders={"stage": "test"})(source="s3://test")
+```
+
 ### Multiple Output Handling
 
 If you plan to return multiple artifacts from you ZenML step you can flexibly combine all naming options outlined above, like this:
 
 ```python
-from random import randint
-
-def func_namer():
-    return "dummy_dynamic_" + str(randint(0,42))
-
 @step
 def mixed_tuple() -> Tuple[
     Annotated[str, "static_output_name"],
-    Annotated[str, lambda: "dynamic_name_" + str(randint(0,42))],
-    Annotated[str, func_namer],
     Annotated[str, "placeholder_name_{date}_{time}"],
 ]:
-    return "static_namer", "lambda_namer", "func_namer", "str_namer"
+    return "static_namer", "str_namer"
 ```
 
 ## Naming in cached runs
@@ -92,19 +89,16 @@ If your ZenML step is running with enabled caching and cache was used the names 
 ```python
 from typing_extensions import Annotated
 from typing import Tuple
-from random import randint
 
 from zenml import step, pipeline
 from zenml.models import PipelineRunResponse
 
 
-@step
-def demo() -> (
-    Tuple[
-        Annotated[int, lambda: "dummy" + str(randint(0, 42))],
-        Annotated[int, "dummy_{date}_{time}"],
-    ]
-):
+@step(extra_name_placeholders={"custom_placeholder": "resolution"})
+def demo() -> Tuple[
+    Annotated[int, "dummy_{date}_{time}"],
+    Annotated[int, "dummy_{custom_placeholder}"],
+]:
     return 42, 43
 
 
@@ -133,21 +127,19 @@ Using user: default
 Using stack: default
   orchestrator: default
   artifact_store: default
-Dashboard URL for Pipeline Run: http://127.0.0.1:8237/runs/e4375452-a72e-45c2-a0df-c59b07089696
+You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml login --local.
 Step demo has started.
-Step demo has finished in 0.061s.
-Pipeline run has finished in 0.100s.
-
+Step demo has finished in 0.038s.
+Pipeline run has finished in 0.064s.
 Initiating a new run for the pipeline: my_pipeline.
 Using user: default
 Using stack: default
   orchestrator: default
   artifact_store: default
-Dashboard URL for Pipeline Run: http://127.0.0.1:8237/runs/cb4fffbf-b173-418f-bf4e-11d1bdac377c
+You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml login --local.
 Using cached version of step demo.
 All steps of the pipeline run were cached.
-
-['dummy_2024_11_19_10_46_52_341267', 'dummy26']
+['dummy_2024_11_21_14_27_33_750134', 'dummy_resolution']
 ```
 
 <!-- For scarf -->

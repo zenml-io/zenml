@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
@@ -55,9 +56,7 @@ class ArtifactConfig(BaseModel):
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
 
-    name: Optional[Union[str, Callable[[], str]]] = Field(
-        default=None, union_mode="smart"
-    )
+    name: Optional[str] = Field(default=None, union_mode="smart")
     version: Optional[Union[str, int]] = Field(
         default=None, union_mode="smart"
     )
@@ -67,7 +66,7 @@ class ArtifactConfig(BaseModel):
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    _is_dynamic: bool = PrivateAttr(False)
+    _unique_name: UUID = PrivateAttr(default_factory=uuid4)
 
     @model_validator(mode="before")
     @classmethod
@@ -92,34 +91,17 @@ class ArtifactConfig(BaseModel):
 
         return data
 
-    @model_validator(mode="after")
-    def artifact_config_after_validator(self) -> "ArtifactConfig":
-        """Artifact config after validator.
-
-        Returns:
-            The artifact config.
-        """
-        if isinstance(self.name, str):
-            _name = format_name_template(self.name)
-            self._is_dynamic = _name != self.name
-            self.name = _name
-        elif callable(self.name):
-            self.name = self.name()
-            self._is_dynamic = True
-        return self
-
-    @property
-    def _evaluated_name(self) -> Optional[str]:
+    def _evaluated_name(
+        self, extra_name_placeholders: Dict[str, str]
+    ) -> Optional[str]:
         """Evaluated name of the artifact.
+
+        Args:
+            extra_name_placeholders: Extra placeholders to use in the name template.
 
         Returns:
             The evaluated name of the artifact.
-
-        Raises:
-            RuntimeError: If the name is still a callable.
         """
-        if callable(self.name):
-            raise RuntimeError(
-                "Artifact name is still a callable, evaluation error happened. Contact ZenML team to follow-up."
-            )
+        if self.name:
+            return format_name_template(self.name, **extra_name_placeholders)
         return self.name

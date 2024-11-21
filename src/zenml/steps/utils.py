@@ -23,7 +23,7 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Mapping,
+    List,
     Optional,
     Tuple,
     Union,
@@ -35,7 +35,6 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.config.step_configurations import ArtifactConfiguration
 from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
@@ -106,7 +105,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
-    original_outputs: Optional[Mapping[str, ArtifactConfiguration]] = None,
+    original_output_names: Optional[List[str]] = None,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -114,7 +113,7 @@ def parse_return_type_annotations(
         func: The step function.
         enforce_type_annotations: If `True`, raises an exception if a type
             annotation is missing.
-        original_outputs: The original outputs of the step function.
+        original_output_names: The original output names of the step function.
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
@@ -145,11 +144,6 @@ def parse_return_type_annotations(
         else:
             return_annotation = Any
 
-    if original_outputs:
-        original_names = list(original_outputs.keys())
-    else:
-        original_names = None
-
     if typing_utils.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
@@ -165,10 +159,10 @@ def parse_return_type_annotations(
                     annotation
                 )
                 if artifact_config:
-                    if artifact_config._is_dynamic and original_names:
-                        output_name = original_names[i]
+                    if original_output_names:
+                        output_name = original_output_names[i]
                     else:
-                        output_name = artifact_config._evaluated_name
+                        output_name = artifact_config._unique_name.hex
                 else:
                     output_name = None
                 has_custom_name = output_name is not None
@@ -189,10 +183,10 @@ def parse_return_type_annotations(
         return_annotation
     )
     if artifact_config:
-        if artifact_config._is_dynamic and original_names:
-            output_name = original_names[0]
+        if original_output_names:
+            output_name = original_output_names[0]
         else:
-            output_name = artifact_config._evaluated_name
+            output_name = artifact_config._unique_name.hex
     else:
         output_name = None
     has_custom_name = output_name is not None

@@ -152,6 +152,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     retry: Optional[StepRetryConfig] = None
+    extra_name_placeholders: Optional[Dict[str, str]] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 

@@ -116,6 +116,7 @@ class BaseStep:
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
+        extra_name_placeholders: Optional[Dict[str, str]] = None,
     ) -> None:
         """Initializes a step.
 
@@ -144,6 +145,7 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
+            extra_name_placeholders: Extra placeholders to use in the name template.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -203,6 +205,7 @@ class BaseStep:
             on_success=on_success,
             model=model,
             retry=retry,
+            extra_name_placeholders=extra_name_placeholders,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -595,6 +598,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         merge: bool = True,
         retry: Optional[StepRetryConfig] = None,
+        extra_name_placeholders: Optional[Dict[str, str]] = None,
     ) -> T:
         """Configures the step.
 
@@ -637,6 +641,7 @@ class BaseStep:
                 overwrite all existing ones. See the general description of this
                 method for an example.
             retry: Configuration for retrying the step in case of failure.
+            extra_name_placeholders: Extra placeholders to use in the name template.
 
         Returns:
             The step instance that this method was called on.
@@ -701,6 +706,7 @@ class BaseStep:
                 "success_hook_source": success_hook_source,
                 "model": model,
                 "retry": retry,
+                "extra_name_placeholders": extra_name_placeholders,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -725,6 +731,7 @@ class BaseStep:
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         merge: bool = True,
+        extra_name_placeholders: Optional[Dict[str, str]] = None,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
 
@@ -756,6 +763,7 @@ class BaseStep:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            extra_name_placeholders: Extra placeholders for the step name.
 
         Returns:
             The copied step instance.
@@ -776,6 +784,7 @@ class BaseStep:
             on_success=on_success,
             model=model,
             merge=merge,
+            extra_name_placeholders=extra_name_placeholders,
         )
         return step_copy
 

@@ -21,64 +21,57 @@ from zenml import ArtifactConfig, pipeline, step
 from zenml.client import Client
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
-
-def func_namer():
-    return "dummy_dynamic_" + str(43)
-
-
-lambda_namer = lambda: "dummy_dynamic_" + str(42)  # noqa
-str_namer = "dummy_dynamic_time_{time}"
+str_namer_standard = "dummy_dynamic_dt_{date}_{time}"
+str_namer_custom = "dummy_dynamic_custom_{funny_name}"
 static_namer = "dummy_static"
 
 
 def _validate_name_by_value(name: str, value: str) -> bool:
-    if value == "func_namer":
-        return name == func_namer()
-    if value == "lambda_namer":
-        return name == lambda_namer()
-    if value == "str_namer":
-        return name.startswith("dummy_dynamic_time_")
+    if value == "str_namer_standard":
+        return name.startswith("dummy_dynamic_dt_")
+    if value == "str_namer_custom":
+        return name.startswith("dummy_dynamic_custom_")
     if value == "static_namer":
         return name == "dummy_static"
     return False
 
 
 @step
-def dynamic_single_lambda() -> Annotated[str, lambda_namer]:
-    return "lambda_namer"
+def dynamic_single_string_standard() -> Annotated[str, str_namer_standard]:
+    return "str_namer_standard"
+
+
+@step(extra_name_placeholders={"funny_name": "name_placeholder"})
+def dynamic_single_string_custom() -> Annotated[str, str_namer_custom]:
+    return "str_namer_custom"
 
 
 @step
-def dynamic_single_callable() -> Annotated[str, func_namer]:
-    return "func_namer"
+def dynamic_single_string_custom_no_default() -> (
+    Annotated[str, str_namer_custom]
+):
+    return "str_namer_custom"
 
 
-@step
-def dynamic_single_string() -> Annotated[str, str_namer]:
-    return "str_namer"
-
-
-@step
+@step(extra_name_placeholders={"funny_name": "name_placeholder"})
 def dynamic_tuple() -> (
     Tuple[
-        Annotated[str, lambda_namer],
-        Annotated[str, func_namer],
-        Annotated[str, str_namer],
+        Annotated[str, str_namer_standard],
+        Annotated[str, str_namer_custom],
     ]
 ):
-    return "lambda_namer", "func_namer", "str_namer"
+    return "str_namer_standard", "str_namer_custom"
 
 
-@step
+@step(extra_name_placeholders={"funny_name": "name_placeholder"})
 def mixed_tuple() -> (
     Tuple[
+        Annotated[str, str_namer_standard],
         Annotated[str, static_namer],
-        Annotated[str, lambda_namer],
-        Annotated[str, func_namer],
-        Annotated[str, str_namer],
+        Annotated[str, str_namer_custom],
     ]
 ):
-    return "static_namer", "lambda_namer", "func_namer", "str_namer"
+    return "str_namer_standard", "static_namer", "str_namer_custom"
 
 
 @step
@@ -86,33 +79,30 @@ def static_single() -> Annotated[str, static_namer]:
     return "static_namer"
 
 
-@step
+@step(extra_name_placeholders={"funny_name": "name_placeholder"})
 def mixed_tuple_artifact_config() -> (
     Tuple[
         Annotated[str, ArtifactConfig(name=static_namer)],
-        Annotated[str, ArtifactConfig(name=lambda_namer)],
-        Annotated[str, ArtifactConfig(name=func_namer)],
-        Annotated[str, ArtifactConfig(name=str_namer)],
+        Annotated[str, ArtifactConfig(name=str_namer_standard)],
+        Annotated[str, ArtifactConfig(name=str_namer_custom)],
     ]
 ):
-    return "static_namer", "lambda_namer", "func_namer", "str_namer"
+    return "static_namer", "str_namer_standard", "str_namer_custom"
 
 
 @pytest.mark.parametrize(
     "step",
     [
-        dynamic_single_lambda,
-        dynamic_single_callable,
-        dynamic_single_string,
+        dynamic_single_string_standard,
+        dynamic_single_string_custom,
         dynamic_tuple,
         mixed_tuple,
         static_single,
         mixed_tuple_artifact_config,
     ],
     ids=[
-        "dynamic_single_lambda",
-        "dynamic_single_callable",
-        "dynamic_single_string",
+        "dynamic_single_string_standard",
+        "dynamic_single_string_custom",
         "dynamic_tuple",
         "mixed_tuple",
         "static_single",
@@ -143,3 +133,38 @@ def test_various_naming_scenarios(step: Callable, clean_client: Client):
         for k in step_response.outputs.keys():
             value = clean_client.get_artifact_version(k).load()
             assert _validate_name_by_value(k, value)
+
+
+def test_sequential_executions_have_different_names(clean_client: "Client"):
+    """Test that dynamic naming works each time for unique uncached runs."""
+
+    @pipeline(enable_cache=False)
+    def _inner(name_placeholder: str):
+        dynamic_single_string_custom.with_options(
+            extra_name_placeholders={"funny_name": name_placeholder}
+        )()
+
+    p1: PipelineRunResponse = _inner("funny_name_42")
+    p2: PipelineRunResponse = _inner("this_is_not_funny")
+
+    assert set(p1.steps["dynamic_single_string_custom"].outputs.keys()) != set(
+        p2.steps["dynamic_single_string_custom"].outputs.keys()
+    )
+
+
+def test_execution_fails_on_custom_but_not_provided_name(
+    clean_client: "Client",
+):
+    """Test that dynamic naming fails on custom placeholder, if they are not provided."""
+
+    @pipeline(enable_cache=False)
+    def _inner():
+        dynamic_single_string_custom_no_default.with_options(
+            extra_name_placeholders={"not_a_funny_name": "it's gonna fail"}
+        )()
+
+    with pytest.raises(
+        KeyError,
+        match="Could not format the name template `dummy_dynamic_custom_{funny_name}`. Missing key: 'funny_name'",
+    ):
+        _inner()

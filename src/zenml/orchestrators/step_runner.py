@@ -150,8 +150,24 @@ class StepRunner:
 
             output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint,
-                original_outputs=step_run_info.config.outputs,
+                original_output_names=list(output_materializers.keys()),
             )
+
+            for k, v in list(output_annotations.items()):
+                if v.artifact_config:
+                    _evaluated_name = v.artifact_config._evaluated_name(
+                        step_run.config.extra_name_placeholders or {}
+                    )
+                    if _evaluated_name:
+                        output_materializers[_evaluated_name] = (
+                            output_materializers.pop(k)
+                        )
+                        output_artifact_uris[_evaluated_name] = (
+                            output_artifact_uris.pop(k)
+                        )
+                        output_annotations[_evaluated_name] = (
+                            output_annotations.pop(k)
+                        )
 
             self._stack.prepare_step_run(info=step_run_info)
 
