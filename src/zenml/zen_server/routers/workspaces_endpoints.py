@@ -165,7 +165,7 @@ def create_workspace(
     # noqa: DAR401
 
     Args:
-        workspace: Workspace to create.
+        workspace_request: Workspace to create.
 
     Returns:
         The created workspace.
