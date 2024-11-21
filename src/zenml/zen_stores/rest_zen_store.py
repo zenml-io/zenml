@@ -4198,14 +4198,14 @@ class RestZenStore(BaseZenStore):
                 read=8,
                 redirect=3,
                 status=10,
-                allowed_methods = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
+                allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
                 status_forcelist=[
-                    408, # Request Timeout
-                    429, # Too Many Requests
-                    500, # Internal Server Error
-                    502, # Bad Gateway
-                    503, # Service Unavailable
-                    504, # Gateway Timeout
+                    408,  # Request Timeout
+                    429,  # Too Many Requests
+                    500,  # Internal Server Error
+                    502,  # Bad Gateway
+                    503,  # Service Unavailable
+                    504,  # Gateway Timeout
                 ],
                 other=3,
                 backoff_factor=0.5,
