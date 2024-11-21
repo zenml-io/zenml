@@ -4,6 +4,123 @@ Helpers for environment variables configured in ZenML deployments and secrets st
 
 
 {{/*
+ZenML store configuration options (non-secret values).
+
+This template constructs a dictionary that is similar to the python values that
+can be configured in the zenml.zen_store.sql_zen_store.SqlZenStoreConfiguration
+class. Only non-secret values are included in this dictionary.
+
+The dictionary is then converted into deployment environment variables by other
+templates and inserted where it is needed.
+
+The input is taken from a .ZenML dict that is passed to the template and
+contains the values configured in the values.yaml file for the ZenML server.
+
+Args:
+  .ZenML: A dictionary with the ZenML configuration values configured for the
+  ZenML server.
+Returns:
+  A dictionary with the non-secret values configured for the ZenML store.
+*/}}
+{{- define "zenml.storeConfigurationAttrs" -}}
+{{- if .ZenML.database.url }}
+type: sql
+ssl_verify_server_cert: {{ .ZenML.database.sslVerifyServerCert | default "false" | quote }}
+{{- if .ZenML.database.backupStrategy }}
+backup_strategy: {{ .ZenML.database.backupStrategy | quote }}
+{{- if eq .ZenML.database.backupStrategy "database" }}
+backup_database: {{ .ZenML.database.backupDatabase | quote }}
+{{- else if eq .ZenML.database.backupStrategy "dump-file" }}
+backup_directory: "/backups"
+{{- end }}
+{{- end }}
+{{- if .ZenML.database.poolSize }}
+pool_size: {{ .ZenML.database.poolSize | quote }}
+{{- end }}
+{{- if .ZenML.database.maxOverflow }}
+max_overflow: {{ .ZenML.database.maxOverflow | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+ZenML store configuration options (secret values).
+
+This template constructs a dictionary that is similar to the python values that
+can be configured in the zenml.zen_store.sql_zen_store.SqlZenStoreConfiguration
+class. Only secret values are included in this dictionary.
+
+The dictionary is then converted into deployment environment variables by other
+templates and inserted where it is needed.
+
+The input is taken from a .ZenML dict that is passed to the template and
+contains the values configured in the values.yaml file for the ZenML server.
+
+Args:
+  .ZenML: A dictionary with the ZenML configuration values configured for the
+  ZenML server.
+Returns:
+  A dictionary with the secret values configured for the ZenML store.
+*/}}
+{{- define "zenml.storeSecretConfigurationAttrs" -}}
+{{- if .ZenML.database.url }}
+url: {{ .ZenML.database.url | quote }}
+{{- if .ZenML.database.sslCa }}
+ssl_ca: {{ .Files.Get .ZenML.database.sslCa }}
+{{- end }}
+{{- if .ZenML.database.sslCert }}
+ssl_cert: {{ .Files.Get .ZenML.database.sslCert }}
+{{- end }}
+{{- if .ZenML.database.sslKey }}
+ssl_key: {{ .Files.Get .ZenML.database.sslKey }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Store configuration environment variables (non-secret values).
+
+Passes the .Values.zenml dict as input to the `zenml.storeConfigurationAttrs`
+template and converts the output into a dictionary of environment variables that
+need to be configured for the store.
+
+Args:
+  .Values: The values.yaml file for the ZenML deployment.
+Returns:
+  A dictionary with the non-secret environment variables that are configured for
+  the store (i.e. keys starting with `ZENML_STORE_`).
+*/}}
+{{- define "zenml.storeEnvVariables" -}}
+{{ $zenml := dict "ZenML" .Values.zenml }}
+{{- range $k, $v := include "zenml.storeConfigurationAttrs" $zenml | fromYaml }}
+ZENML_STORE_{{ $k | upper }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Store configuration environment variables (secret values).
+
+Passes the .Values.zenml dict as input to the `zenml.storeSecretConfigurationAttrs`
+template and converts the output into a dictionary of environment variables that
+need to be configured for the store.
+
+Args:
+  .Values: The values.yaml file for the ZenML deployment.
+Returns:
+  A dictionary with the secret environment variables that are configured for
+  the store (i.e. keys starting with `ZENML_STORE_`).
+*/}}
+{{- define "zenml.storeSecretEnvVariables" -}}
+{{ $zenml := dict "ZenML" .Values.zenml }}
+{{- range $k, $v := include "zenml.storeSecretConfigurationAttrs" $zenml | fromYaml }}
+ZENML_STORE_{{ $k | upper }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
 ZenML server configuration options (non-secret values).
 
 This template constructs a dictionary that is similar to the python values that
