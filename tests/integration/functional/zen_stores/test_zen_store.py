@@ -4765,9 +4765,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4781,9 +4778,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             al1 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4791,9 +4785,6 @@ class TestModelVersionArtifactLinks:
             assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[1].id,
                 )
@@ -4809,9 +4800,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             link1 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4819,9 +4807,6 @@ class TestModelVersionArtifactLinks:
 
             link2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4839,18 +4824,12 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
             )
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[1].id,
                 )
@@ -4871,9 +4850,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             link = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4898,9 +4874,6 @@ class TestModelVersionArtifactLinks:
             for artifact in artifacts:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         artifact_version=artifact.id,
                     )
@@ -4935,32 +4908,32 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
-        with ModelContext(True, create_artifacts=4) as (
+        with ModelContext(
+            True,
+            create_artifacts=4,
+            artifact_types=[
+                ArtifactType.DATA,
+                ArtifactType.MODEL,
+                ArtifactType.SERVICE,
+                ArtifactType.DATA,
+            ],
+        ) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
+            client = Client()
+            zs = client.zen_store
             mvls = zs.list_model_version_artifact_links(
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
             assert len(mvls) == 0
-            for mo, dep, artifact in [
-                (False, False, artifacts[0]),
-                (True, False, artifacts[1]),
-                (False, True, artifacts[2]),
-                (False, False, artifacts[3]),
-            ]:
+            for artifact in artifacts:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         artifact_version=artifact.id,
-                        is_model_artifact=mo,
-                        is_deployment_artifact=dep,
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
@@ -5036,9 +5009,6 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
@@ -5053,18 +5023,12 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             link_1 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
             )
             link_2 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
@@ -5079,11 +5043,7 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             link = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=prs[0].id,
                 )
             )
@@ -5131,9 +5091,6 @@ class TestModelVersionPipelineRunLinks:
             for pr in prs:
                 zs.create_model_version_pipeline_run_link(
                     ModelVersionPipelineRunRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         pipeline_run=pr.id,
                     )

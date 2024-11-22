@@ -3672,10 +3672,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created model version to artifact link.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model_version_artifact_link,
             response_model=ModelVersionArtifactResponse,
-            route=f"{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
+            route=MODEL_VERSION_ARTIFACTS,
         )
 
     def list_model_version_artifact_links(
@@ -3752,10 +3752,10 @@ class RestZenStore(BaseZenStore):
             - Otherwise, returns the newly created model version to pipeline
                 run link.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model_version_pipeline_run_link,
             response_model=ModelVersionPipelineRunResponse,
-            route=f"{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
+            route=MODEL_VERSION_PIPELINE_RUNS,
         )
 
     def list_model_version_pipeline_run_links(

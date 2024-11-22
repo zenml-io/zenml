@@ -134,4 +134,8 @@ def my_pipeline(...):
 `uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
 {% endhint %}
 
+Full documentation for how `uv` works with PyTorch can be found on Astral Docs
+website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers
+some of the particular gotchas and details you might need to know.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

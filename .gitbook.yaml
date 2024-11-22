@@ -19,6 +19,10 @@ redirects:
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
   how-to/build-pipelines/name-your-pipeline-and-runs: how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md
 
+  # ZenML Pro
+  getting-started/zenml-pro/user-management: getting-started/zenml-pro/core-concepts.md
+  getting-started/zenml-pro/zenml-cloud: getting-started/zenml-pro/README.md
+
   # Project Setup redirects
   how-to/setting-up-a-project-repository/: how-to/project-setup-and-management/setting-up-a-project-repository/README.md
   how-to/setting-up-a-project-repository/set-up-repository: how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md
@@ -174,3 +178,26 @@ redirects:
   how-to/control-logging/set-logging-verbosity: how-to/advanced-topics/control-logging/set-logging-verbosity.md
   how-to/control-logging/disable-rich-traceback: how-to/advanced-topics/control-logging/disable-rich-traceback.md
   how-to/control-logging/disable-colorful-logging: how-to/advanced-topics/control-logging/disable-colorful-logging.md
+
+  # Redirects for cases that have `docs` in the path
+  docs/getting-started/zenml-pro/core-concepts/tenants: getting-started/zenml-pro/tenants.md
+  docs/introduction: introduction.md
+  docs/getting-started/installation: getting-started/installation.md
+  docs/getting-started/core-concepts: getting-started/core-concepts.md
+  docs/getting-started/system-architectures: getting-started/system-architectures.md
+  docs/getting-started/deploying-zenml/: getting-started/deploying-zenml/README.md
+  docs/getting-started/zenml-pro/: getting-started/zenml-pro/README.md
+  docs/user-guide/starter-guide/: user-guide/starter-guide/README.md
+  docs/user-guide/production-guide/: user-guide/production-guide/README.md
+  docs/user-guide/llmops-guide/: user-guide/llmops-guide/README.md
+  docs/how-to/interact-with-secrets: how-to/interact-with-secrets.md
+  docs/how-to/debug-and-solve-issues: how-to/debug-and-solve-issues.md
+  docs/how-to/contribute-to-zenml/: how-to/contribute-to-zenml/README.md
+  docs/component-guide/: component-guide/README.md
+  docs/reference/python-client: reference/python-client.md
+  docs/reference/global-settings: reference/global-settings.md
+  docs/reference/environment-variables: reference/environment-variables.md
+  docs/reference/api-reference: reference/api-reference.md
+  docs/reference/how-do-i: reference/how-do-i.md
+  docs/reference/community-and-content: reference/community-and-content.md
+  docs/reference/faq: reference/faq.md
