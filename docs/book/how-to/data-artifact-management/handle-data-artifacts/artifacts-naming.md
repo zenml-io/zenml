@@ -43,12 +43,12 @@ def dynamic_single_string() -> Annotated[str, str_namer]:
 ```
 
 #### String Templates Using Custom Placeholders
-Use any placeholders that ZenML will replace for you, if they are provided into a step via `extra_name_placeholders` parameter:
+Use any placeholders that ZenML will replace for you, if they are provided into a step via `name_subs` parameter:
 
 ```python
 str_namer = "placeholder_name_{custom_placeholder}_{time}"
 
-@step(extra_name_placeholders={"custom_placeholder": "some_substitute"})
+@step(name_subs={"custom_placeholder": "some_substitute"})
 def dynamic_single_string() -> Annotated[str, str_namer]:
     return "null"
 ```
@@ -65,8 +65,8 @@ def extract_data(source: str) -> Annotated[str, str_namer]:
 
 @pipeline
 def extraction_pipeline():
-    extract_data.with_options(extra_name_placeholders={"stage": "train"})(source="s3://train")
-    extract_data.with_options(extra_name_placeholders={"stage": "test"})(source="s3://test")
+    extract_data.with_options(name_subs={"stage": "train"})(source="s3://train")
+    extract_data.with_options(name_subs={"stage": "test"})(source="s3://test")
 ```
 
 ### Multiple Output Handling
@@ -94,7 +94,7 @@ from zenml import step, pipeline
 from zenml.models import PipelineRunResponse
 
 
-@step(extra_name_placeholders={"custom_placeholder": "resolution"})
+@step(name_subs={"custom_placeholder": "resolution"})
 def demo() -> Tuple[
     Annotated[int, "dummy_{date}_{time}"],
     Annotated[int, "dummy_{custom_placeholder}"],

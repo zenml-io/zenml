@@ -117,19 +117,17 @@ class ArtifactConfig(BaseModel):
 
         return data
 
-    def _evaluated_name(
-        self, extra_name_placeholders: Dict[str, str]
-    ) -> Optional[str]:
+    def _evaluated_name(self, name_subs: Dict[str, str]) -> Optional[str]:
         """Evaluated name of the artifact.
 
         Args:
-            extra_name_placeholders: Extra placeholders to use in the name template.
+            name_subs: Extra placeholders to use in the name template.
 
         Returns:
             The evaluated name of the artifact.
         """
         if self.name:
-            return format_name_template(self.name, **extra_name_placeholders)
+            return format_name_template(self.name, **name_subs)
         return self.name
 
     @property

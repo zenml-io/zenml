@@ -41,7 +41,7 @@ def dynamic_single_string_standard() -> Annotated[str, str_namer_standard]:
     return "str_namer_standard"
 
 
-@step(extra_name_placeholders={"funny_name": "name_placeholder"})
+@step(name_subs={"funny_name": "name_placeholder"})
 def dynamic_single_string_custom() -> Annotated[str, str_namer_custom]:
     return "str_namer_custom"
 
@@ -53,7 +53,7 @@ def dynamic_single_string_custom_no_default() -> (
     return "str_namer_custom"
 
 
-@step(extra_name_placeholders={"funny_name": "name_placeholder"})
+@step(name_subs={"funny_name": "name_placeholder"})
 def dynamic_tuple() -> (
     Tuple[
         Annotated[str, str_namer_standard],
@@ -63,7 +63,7 @@ def dynamic_tuple() -> (
     return "str_namer_standard", "str_namer_custom"
 
 
-@step(extra_name_placeholders={"funny_name": "name_placeholder"})
+@step(name_subs={"funny_name": "name_placeholder"})
 def mixed_tuple() -> (
     Tuple[
         Annotated[str, str_namer_standard],
@@ -79,7 +79,7 @@ def static_single() -> Annotated[str, static_namer]:
     return "static_namer"
 
 
-@step(extra_name_placeholders={"funny_name": "name_placeholder"})
+@step(name_subs={"funny_name": "name_placeholder"})
 def mixed_tuple_artifact_config() -> (
     Tuple[
         Annotated[str, ArtifactConfig(name=static_namer)],
@@ -148,7 +148,7 @@ def test_sequential_executions_have_different_names(clean_client: "Client"):
     @pipeline(enable_cache=False)
     def _inner(name_placeholder: str):
         dynamic_single_string_custom.with_options(
-            extra_name_placeholders={"funny_name": name_placeholder}
+            name_subs={"funny_name": name_placeholder}
         )()
 
     p1: PipelineRunResponse = _inner("funny_name_42")
@@ -167,7 +167,7 @@ def test_execution_fails_on_custom_but_not_provided_name(
     @pipeline(enable_cache=False)
     def _inner():
         dynamic_single_string_custom_no_default.with_options(
-            extra_name_placeholders={"not_a_funny_name": "it's gonna fail"}
+            name_subs={"not_a_funny_name": "it's gonna fail"}
         )()
 
     with pytest.raises(

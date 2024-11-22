@@ -156,7 +156,7 @@ class StepRunner:
             for k, v in list(output_annotations.items()):
                 if v.artifact_config:
                     _evaluated_name = v.artifact_config._evaluated_name(
-                        step_run.config.extra_name_placeholders or {}
+                        step_run.config.name_subs or {}
                     )
                     if _evaluated_name:
                         output_materializers[_evaluated_name] = (

@@ -73,7 +73,7 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    extra_name_placeholders: Optional[Dict[str, str]] = None,
+    name_subs: Optional[Dict[str, str]] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -94,7 +94,7 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    extra_name_placeholders: Optional[Dict[str, str]] = None,
+    name_subs: Optional[Dict[str, str]] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -126,7 +126,7 @@ def step(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
-        extra_name_placeholders: Extra placeholders for the step name.
+        name_subs: Extra placeholders for the step name.
 
     Returns:
         The step instance.
@@ -160,7 +160,7 @@ def step(
             on_success=on_success,
             model=model,
             retry=retry,
-            extra_name_placeholders=extra_name_placeholders,
+            name_subs=name_subs,
         )
 
         return step_instance
