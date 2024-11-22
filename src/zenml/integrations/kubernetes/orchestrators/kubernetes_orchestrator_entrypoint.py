@@ -33,7 +33,6 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
-from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -122,25 +121,10 @@ def main() -> None:
         # some memory resources itself and, if not specified, the pod will be
         # scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
-        resources = {
-            "requests": {"memory": "400Mi"},
-        }
-        if not settings.pod_settings:
-            pod_settings = KubernetesPodSettings(
-                resources=resources,
-            )
-        elif not settings.pod_settings.resources:
-            # We can't update the step pod settings in place (because
-            # it's a frozen pydantic model), so we have to create a new one.
-            pod_settings = KubernetesPodSettings(
-                **settings.pod_settings.model_dump(exclude_unset=True),
-                resources=resources,
-            )
-        else:
-            pod_settings = settings.pod_settings
-            set_requests = pod_settings.resources.get("requests", {})
-            resources["requests"].update(set_requests)
-            pod_settings.resources["requests"] = resources["requests"]
+        pod_settings = KubernetesOrchestrator.apply_default_resource_requests(
+            memory="400Mi",
+            pod_settings=settings.pod_settings,
+        )
 
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(

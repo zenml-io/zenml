@@ -102,17 +102,17 @@ def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
 
     from sqlalchemy.pool import QueuePool
 
-    # Get the number of active connections
+    # Get the number of connections
     pool = store.engine.pool
     assert isinstance(pool, QueuePool)
     idle_conn = pool.checkedin()
     active_conn = pool.checkedout()
-    overflow_conn = pool.overflow()
-    overflow_conn = max(0, overflow_conn)
+    overflow_conn = max(0, pool.overflow())
+    total_conn = pool.overflow() + pool.size() + idle_conn
 
     return ServerLoadInfo(
         threads=num_threads,
-        db_connections_total=idle_conn + active_conn + overflow_conn,
+        db_connections_total=total_conn,
         db_connections_active=active_conn,
         db_connections_overflow=overflow_conn,
     )
