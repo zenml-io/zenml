@@ -1,7 +1,7 @@
 """extend_artifact_with_original_name [23c086a86a2b].
 
 Revision ID: 23c086a86a2b
-Revises: 0.70.0
+Revises: ec6307720f92
 Create Date: 2024-11-22 10:26:43.027089
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "23c086a86a2b"
-down_revision = "0.70.0"
+down_revision = "ec6307720f92"
 branch_labels = None
 depends_on = None
 
