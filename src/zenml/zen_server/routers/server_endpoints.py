@@ -108,7 +108,7 @@ def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
     idle_conn = pool.checkedin()
     active_conn = pool.checkedout()
     overflow_conn = max(0, pool.overflow())
-    total_conn = pool.overflow() + pool.size() + idle_conn
+    total_conn = idle_conn + active_conn
 
     return ServerLoadInfo(
         threads=num_threads,
