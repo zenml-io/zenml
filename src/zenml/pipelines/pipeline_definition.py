@@ -535,8 +535,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
             deployment, _, _ = self._compile(
-                config_path=config_path,
-                steps=step_configurations,
+                config_path=config_path or self._run_args.get("config_path"),
+                steps=step_configurations
+                or self._run_args.get("step_configurations"),
                 settings=settings,
             )
             pipeline_id = self._register().id
