@@ -488,6 +488,10 @@ class ServiceConnectorResponse(
 ):
     """Response model for service connectors."""
 
+    # Disable the warning for updating responses, because we update the
+    # service connector type in place
+    _warn_on_response_updates: bool = False
+
     name: str = Field(
         title="The service connector name.",
         max_length=STR_FIELD_MAX_LENGTH,
