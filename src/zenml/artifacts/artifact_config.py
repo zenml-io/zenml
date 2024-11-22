@@ -49,8 +49,11 @@ class ArtifactConfig(BaseModel):
     Attributes:
         name: The name of the artifact:
             - static string e.g. "name"
-            - dynamic callable e.g. lambda: "name"+str(42)
-            - dynamic string e.g. "name_{date}_{time}"
+            - dynamic string e.g. "name_{date}_{time}_{custom_placeholder}"
+            If you use any placeholders besides `date` and `time`,
+            you need to provide the values for them in the `name_subs`
+            argument of the step decorator or the `name_subs` argument
+            of `with_options` of the step.
         version: The version of the artifact.
         tags: The tags of the artifact.
         run_metadata: Metadata to add to the artifact.
