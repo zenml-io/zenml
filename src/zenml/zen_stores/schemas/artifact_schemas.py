@@ -76,6 +76,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
     # Fields
     has_custom_name: bool
+    original_name: str = Field(sa_column=Column(TEXT, nullable=True))
     versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -105,6 +106,7 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             has_custom_name=artifact_request.has_custom_name,
+            original_name=artifact_request.original_name,
         )
 
     def to_model(
@@ -149,6 +151,8 @@ class ArtifactSchema(NamedSchema, table=True):
         return ArtifactResponse(
             id=self.id,
             name=self.name,
+            # take self.name as a fallback for static names
+            original_name=self.original_name or self.name,
             body=body,
             metadata=metadata,
         )

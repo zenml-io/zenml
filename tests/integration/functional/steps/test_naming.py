@@ -90,6 +90,13 @@ def mixed_tuple_artifact_config() -> (
     return "static_namer", "str_namer_standard", "str_namer_custom"
 
 
+@step
+def dynamic_single_string_standard_controlled_return(
+    s: str,
+) -> Annotated[str, str_namer_standard]:
+    return s
+
+
 @pytest.mark.parametrize(
     "step",
     [
@@ -168,3 +175,31 @@ def test_execution_fails_on_custom_but_not_provided_name(
         match="Could not format the name template `dummy_dynamic_custom_{funny_name}`. Missing key: 'funny_name'",
     ):
         _inner()
+
+
+def test_stored_info_not_affected_by_dynamic_naming(clean_client: "Client"):
+    """Test that dynamic naming does not affect stored info."""
+
+    @pipeline(enable_cache=False)
+    def _inner(ret: str):
+        dynamic_single_string_standard_controlled_return(ret)
+
+    p1: PipelineRunResponse = _inner("output_1")
+    p2: PipelineRunResponse = _inner("output_2")
+
+    a1 = clean_client.get_artifact_version(
+        list(
+            p1.steps[
+                "dynamic_single_string_standard_controlled_return"
+            ].outputs.keys()
+        )[0]
+    ).load()
+    a2 = clean_client.get_artifact_version(
+        list(
+            p2.steps[
+                "dynamic_single_string_standard_controlled_return"
+            ].outputs.keys()
+        )[0]
+    ).load()
+    assert a1 == "output_1" != a2
+    assert a2 == "output_2" != a1

@@ -150,7 +150,8 @@ class BaseStep:
         from zenml.config.step_configurations import PartialStepConfiguration
 
         self.entrypoint_definition = validate_entrypoint_function(
-            self.entrypoint, reserved_arguments=["after", "id"]
+            self.entrypoint,
+            reserved_arguments=["after", "id"],
         )
 
         name = name or self.__class__.__name__

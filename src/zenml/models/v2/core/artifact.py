@@ -42,6 +42,11 @@ class ArtifactRequest(BaseRequest):
         title="Name of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    original_name: Optional[str] = Field(
+        title="Original name of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
@@ -113,6 +118,11 @@ class ArtifactResponse(
     name: str = Field(
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    original_name: Optional[str] = Field(
+        title="Original name of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
 
     # Body and metadata properties

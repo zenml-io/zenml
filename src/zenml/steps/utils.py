@@ -124,6 +124,20 @@ def parse_return_type_annotations(
     Returns:
         - A dictionary mapping output names to their output signatures.
     """
+
+    def _define_output_name(
+        artifact_config: Optional["ArtifactConfig"],
+        i: int,
+        original_output_names: Optional[List[str]] = original_output_names,
+    ) -> Optional[str]:
+        output_name: Optional[str] = None
+        if artifact_config:
+            if original_output_names:
+                output_name = original_output_names[i]
+            else:
+                output_name = artifact_config.name
+        return output_name
+
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
     output_name: Optional[str]
@@ -158,13 +172,7 @@ def parse_return_type_annotations(
                 artifact_config = get_artifact_config_from_annotation_metadata(
                     annotation
                 )
-                if artifact_config:
-                    if original_output_names:
-                        output_name = original_output_names[i]
-                    else:
-                        output_name = artifact_config._unique_name.hex
-                else:
-                    output_name = None
+                output_name = _define_output_name(artifact_config, i)
                 has_custom_name = output_name is not None
                 output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
@@ -182,13 +190,7 @@ def parse_return_type_annotations(
     artifact_config = get_artifact_config_from_annotation_metadata(
         return_annotation
     )
-    if artifact_config:
-        if original_output_names:
-            output_name = original_output_names[0]
-        else:
-            output_name = artifact_config._unique_name.hex
-    else:
-        output_name = None
+    output_name = _define_output_name(artifact_config, 0)
     has_custom_name = output_name is not None
     output_name = output_name or SINGLE_RETURN_OUT_NAME
     return {

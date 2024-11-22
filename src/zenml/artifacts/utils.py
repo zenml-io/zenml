@@ -123,6 +123,7 @@ def _store_artifact_data_and_prepare_request(
     store_visualizations: bool = True,
     has_custom_name: bool = True,
     metadata: Optional[Dict[str, "MetadataType"]] = None,
+    original_name: Optional[str] = None,
 ) -> ArtifactVersionRequest:
     """Store artifact data and prepare a request to the server.
 
@@ -141,6 +142,7 @@ def _store_artifact_data_and_prepare_request(
         has_custom_name: Whether the artifact has a custom name.
         metadata: Metadata to store for the artifact version. This will be
             ignored if `store_metadata` is set to `False`.
+        original_name: The original name of the dynamic artifact.
 
     Returns:
         Artifact version request for the artifact data that was stored.
@@ -174,6 +176,7 @@ def _store_artifact_data_and_prepare_request(
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
+        artifact_original_name=original_name,
         version=version,
         tags=tags,
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
@@ -209,6 +212,7 @@ def save_artifact(
     # TODO: remove these once external artifact does not use this function anymore
     save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
+    original_name: Optional[str] = None,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -231,6 +235,7 @@ def save_artifact(
         save_type: The type of save operation that created the artifact version.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
+        original_name: The original name of the dynamic artifact.
 
     Returns:
         The saved artifact response.
@@ -269,6 +274,7 @@ def save_artifact(
     artifact_version_request = _store_artifact_data_and_prepare_request(
         data=data,
         name=name,
+        original_name=original_name,
         uri=uri,
         materializer_class=materializer_class,
         save_type=save_type,
@@ -302,6 +308,7 @@ def register_artifact(
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
     artifact_metadata: Dict[str, "MetadataType"] = {},
+    original_name: Optional[str] = None,
 ) -> "ArtifactVersionResponse":
     """Register existing data stored in the artifact store as a ZenML Artifact.
 
@@ -317,6 +324,7 @@ def register_artifact(
         is_model_artifact: If the artifact is a model artifact.
         is_deployment_artifact: If the artifact is a deployment artifact.
         artifact_metadata: Metadata dictionary to attach to the artifact version.
+        original_name: The original name of the dynamic artifact.
 
     Returns:
         The saved artifact response.
@@ -344,6 +352,7 @@ def register_artifact(
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
+        artifact_original_name=original_name or name,
         version=version,
         tags=tags,
         type=ArtifactType.DATA,

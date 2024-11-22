@@ -597,8 +597,9 @@ class StepRunner:
             if artifact_config is not None:
                 has_custom_name = bool(artifact_config.name)
                 version = artifact_config.version
+                original_name = artifact_config._original_name
             else:
-                has_custom_name, version = False, None
+                has_custom_name, version, original_name = False, None, None
 
             # Override the artifact name if it is not a custom name.
             if has_custom_name:
@@ -619,6 +620,7 @@ class StepRunner:
 
             artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,
+                original_name=original_name,
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,

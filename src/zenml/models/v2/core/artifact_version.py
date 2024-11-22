@@ -75,6 +75,10 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None,
         title="Name of the artifact to which this version belongs.",
     )
+    artifact_original_name: Optional[str] = Field(
+        default=None,
+        title="Original name of the artifact to which this version belongs.",
+    )
     version: Optional[Union[int, str]] = Field(
         default=None, title="Version of the artifact."
     )

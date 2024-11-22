@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
+import re
 from typing import Any, Dict, List, Optional, Union
-from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -66,8 +66,6 @@ class ArtifactConfig(BaseModel):
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    _unique_name: UUID = PrivateAttr(default_factory=uuid4)
-
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
@@ -105,3 +103,15 @@ class ArtifactConfig(BaseModel):
         if self.name:
             return format_name_template(self.name, **extra_name_placeholders)
         return self.name
+
+    @property
+    def _original_name(self) -> Optional[str]:
+        """Original name of the dynamic artifact.
+
+        Returns:
+            The original name of the dynamic artifact.
+        """
+        pattern = r"\{[^}]+\}"
+        if re.findall(pattern, str(self.name)):
+            return self.name
+        return None

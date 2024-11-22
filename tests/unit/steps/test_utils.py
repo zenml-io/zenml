@@ -277,7 +277,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
     ],
 )
 def test_step_output_annotation_parsing(func, expected_output):
-    assert parse_return_type_annotations(func) == expected_output
+    assert parse_return_type_annotations(func, {}) == expected_output
 
 
 def func_with_multiple_annotations() -> Annotated[int, "a", "b"]:
@@ -323,4 +323,4 @@ def func_with_duplicate_output_name() -> (
 )
 def test_invalid_step_output_annotations(func, exception):
     with pytest.raises(exception):
-        parse_return_type_annotations(func)
+        parse_return_type_annotations(func, {})
