@@ -123,7 +123,6 @@ def _store_artifact_data_and_prepare_request(
     store_visualizations: bool = True,
     has_custom_name: bool = True,
     metadata: Optional[Dict[str, "MetadataType"]] = None,
-    original_name: Optional[str] = None,
 ) -> ArtifactVersionRequest:
     """Store artifact data and prepare a request to the server.
 
@@ -144,7 +143,6 @@ def _store_artifact_data_and_prepare_request(
         has_custom_name: Whether the artifact has a custom name.
         metadata: Metadata to store for the artifact version. This will be
             ignored if `store_metadata` is set to `False`.
-        original_name: The original name of the dynamic artifact.
 
     Returns:
         Artifact version request for the artifact data that was stored.
@@ -178,7 +176,6 @@ def _store_artifact_data_and_prepare_request(
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
-        artifact_original_name=original_name,
         version=version,
         tags=tags,
         type=artifact_type or materializer.ASSOCIATED_ARTIFACT_TYPE,

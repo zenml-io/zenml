@@ -184,7 +184,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     )
 
     # Fields
-    original_name: str = Field(nullable=True)
     version: str
     version_number: Optional[int]
     type: str
@@ -295,7 +294,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             version_number = None
         return cls(
             artifact_id=artifact_version_request.artifact_id,
-            original_name=artifact_version_request.artifact_original_name,
             version=str(artifact_version_request.version),
             version_number=version_number,
             artifact_store_id=artifact_version_request.artifact_store_id,
@@ -357,7 +355,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
             artifact=artifact,
-            original_name=self.original_name or artifact.name,
             version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,

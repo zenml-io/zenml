@@ -75,10 +75,6 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None,
         title="Name of the artifact to which this version belongs.",
     )
-    artifact_original_name: Optional[str] = Field(
-        default=None,
-        title="Original name of the artifact to which this version belongs.",
-    )
     version: Optional[Union[int, str]] = Field(
         default=None, title="Version of the artifact."
     )
@@ -180,7 +176,6 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="Artifact to which this version belongs."
     )
     version: str = Field(title="Version of the artifact.")
-    original_name: str = Field(title="Original name of the dynamic artifact.")
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
@@ -385,15 +380,6 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().data_type
-
-    @property
-    def original_name(self) -> str:
-        """The `original_name` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().original_name
 
     # Helper methods
     @property

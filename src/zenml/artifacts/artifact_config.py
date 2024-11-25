@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-import re
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
@@ -132,15 +131,3 @@ class ArtifactConfig(BaseModel):
         if self.name:
             return format_name_template(self.name, **name_subs)
         return self.name
-
-    @property
-    def _original_name(self) -> Optional[str]:
-        """Original name of the dynamic artifact.
-
-        Returns:
-            The original name of the dynamic artifact.
-        """
-        pattern = r"\{[^}]+\}"
-        if re.findall(pattern, str(self.name)):
-            return self.name
-        return None
