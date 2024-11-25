@@ -1,30 +1,12 @@
-# Apache Software License 2.0
-#
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# 
 
 
 from typing import Optional
 
 from typing_extensions import Annotated
-
 from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
-from zenml.integrations.mlflow.services.mlflow_deployment import (
-    MLFlowDeploymentService,
-)
+from zenml.integrations.mlflow.services.mlflow_deployment import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
@@ -65,9 +47,7 @@ def deployment_deploy() -> (
         # deploy predictor service
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
             registry_model_name=model.name,
-            registry_model_version=model.run_metadata[
-                "model_registry_version"
-            ],
+            registry_model_version=model.run_metadata["model_registry_version"],
             replace_existing=True,
         )
     else:

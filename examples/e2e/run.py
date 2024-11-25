@@ -1,41 +1,26 @@
-# Apache Software License 2.0
-#
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# 
 
 import os
 from datetime import datetime as dt
 from typing import Optional
 
 import click
-from pipelines import (
-    e2e_use_case_batch_inference,
-    e2e_use_case_deployment,
-    e2e_use_case_training,
-)
-
 from zenml.logger import get_logger
+
+from pipelines import (
+    supply_chain_forecast_batch_inference,
+    supply_chain_forecast_deployment,
+    supply_chain_forecast_training,
+)
 
 logger = get_logger(__name__)
 
 
 @click.command(
     help="""
-ZenML E2E project CLI v0.0.1.
+Supply Chain Forecasting CLI v0.0.1.
 
-Run the ZenML E2E project model training pipeline with various
+Run the Supply Chain Forecasting model training pipeline with various
 options.
 
 Examples:
@@ -180,23 +165,12 @@ def main(
             "configs",
             "train_config.yaml",
         )
-        pipeline_args["run_name"] = (
-            f"e2e_use_case_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        )
-        e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
+        pipeline_args[
+            "run_name"
+        ] = f"supply_chain_forecasting_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        supply_chain_forecast_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
-    # Execute Deployment Pipeline
-    run_args_inference = {}
-    pipeline_args["config_path"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "configs",
-        "deployer_config.yaml",
-    )
-    pipeline_args["run_name"] = (
-        f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    )
-    e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
 
     # Execute Batch Inference Pipeline
     run_args_inference = {}
@@ -205,12 +179,11 @@ def main(
         "configs",
         "inference_config.yaml",
     )
-    pipeline_args["run_name"] = (
-        f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    )
-    e2e_use_case_batch_inference.with_options(**pipeline_args)(
-        **run_args_inference
-    )
+    pipeline_args[
+        "run_name"
+    ] = f"supply_chain_forecasting_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    supply_chain_forecast_batch_inference.with_options(**pipeline_args)(**run_args_inference)
+
 
 
 if __name__ == "__main__":

@@ -1,34 +1,16 @@
-# Apache Software License 2.0
-#
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# 
 
 import mlflow
 import pandas as pd
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
-
 from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
-from zenml.integrations.mlflow.experiment_trackers import (
-    MLFlowExperimentTracker,
-)
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    mlflow_register_model_step,
-)
+from zenml.integrations.mlflow.experiment_trackers import MLFlowExperimentTracker
+from zenml.integrations.mlflow.steps.mlflow_registry import mlflow_register_model_step
 from zenml.logger import get_logger
+
+from constants import DATA_CLASSIFICATION
 
 logger = get_logger(__name__)
 
@@ -49,9 +31,7 @@ def model_trainer(
     model: ClassifierMixin,
     target: str,
     name: str,
-) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="model", is_model_artifact=True)
-]:
+) -> Annotated[ClassifierMixin, ArtifactConfig(name="model", tags=[DATA_CLASSIFICATION], is_model_artifact=True)]:
     """Configure and train a model on the training dataset.
 
     This is an example of a model training step that takes in a dataset artifact
@@ -101,12 +81,9 @@ def model_trainer(
     # keep track of mlflow version for future use
     model_registry = Client().active_stack.model_registry
     if model_registry:
-        version = model_registry.get_latest_model_version(
-            name=name, stage=None
-        )
+        version = model_registry.get_latest_model_version(name=name, stage=None)
         if version:
             model_ = get_step_context().model
             model_.log_metadata({"model_registry_version": version.version})
-    ### YOUR CODE ENDS HERE ###
 
     return model

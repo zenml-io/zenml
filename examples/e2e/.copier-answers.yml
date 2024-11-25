@@ -2,15 +2,13 @@
 _commit: 2024.10.30
 _src_path: gh:zenml-io/template-e2e-batch
 data_quality_checks: true
-email: info@zenml.io
-full_name: ZenML GmbH
-hyperparameters_tuning: true
+hyperparameters_tuning: false
 metric_compare_promotion: true
-notify_on_failures: true
+notify_on_failures: false
 notify_on_successes: false
-open_source_license: apache
-product_name: e2e_use_case
-project_name: ZenML E2E project
-target_environment: staging
+open_source_license: none
+product_name: supply_chain_forecasting
+project_name: Supply Chain Forecasting
+target_environment: production
 version: 0.0.1
 zenml_server_url: ''

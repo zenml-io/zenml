@@ -1,4 +1,4 @@
-# ZenML E2E project
+# Supply Chain Forecasting
 
 This is a comprehensive supervised ML project built with the
 ZenML framework and its integration. The project trains one or more
@@ -6,17 +6,17 @@ scikit-learn classification models to make predictions on the tabular
 classification datasets provided by the scikit-learn library. The project was
 generated from the [E2E Batch ZenML project template](https://github.com/zenml-io/template-e2e-batch)
 with the following properties:
-- Project name: ZenML E2E project
-- Technical Name: e2e_use_case
+- Project name: Supply Chain Forecasting
+- Technical Name: supply_chain_forecasting
 - Version: `0.0.1`
-- Licensed with apache to ZenML GmbH<info@zenml.io>
-- Deployment environment: `staging`
+- Licensed with none to ZenML GmbH<>
+- Deployment environment: `production`
 
 Settings of your project are:
-- Hyperparameters and model architecture tuning using configuration from `config.py`
-- Trained model promotion to `staging` based on accuracy metric vs currently deployed model
+- Fixed model architecture defined in `config.py`
+- Trained model promotion to `production` based on accuracy metric vs currently deployed model
 - Data drift checks based on Evidently report
-- Notifications about failures enabled
+- All notifications disabled
 
 > [!NOTE]
 > If you are coming from [our production guide](https://docs.zenml.io/user-guide/production-guide), 
@@ -30,7 +30,7 @@ Settings of your project are:
 
 ## 👋 Introduction
 
-Welcome to your newly generated "ZenML E2E project" project! This is
+Welcome to your newly generated "Supply Chain Forecasting" project! This is
 a great way to get hands-on with ZenML using production-like template. 
 The project contains a collection of standard and custom ZenML steps, 
 pipelines and other artifacts and useful resources that can serve as a 
@@ -80,7 +80,7 @@ what you can do with ZenML.
 
 ## 📦 What's in the box?
 
-The ZenML E2E project project demonstrates how the most important steps of 
+The Supply Chain Forecasting project demonstrates how the most important steps of 
 the ML Production Lifecycle can be implemented in a reusable way remaining 
 agnostic to the underlying infrastructure, and how to integrate them together 
 into pipelines serving Training and Batch Inference purposes.

@@ -1,24 +1,9 @@
-# Apache Software License 2.0
-#
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-from utils import promote_in_model_registry
+# 
 
 from zenml import Model, get_step_context, step
 from zenml.logger import get_logger
+
+from utils import promote_in_model_registry
 
 logger = get_logger(__name__)
 
@@ -29,7 +14,7 @@ def promote_with_metric_compare(
     current_metric: float,
     mlflow_model_name: str,
     target_env: str,
-) -> None:
+)->None:
     """Try to promote trained model.
 
     This is an example of a model promotion step. It gets precomputed
@@ -83,6 +68,7 @@ def promote_with_metric_compare(
             )
             should_promote = False
 
+    
     if should_promote:
         # Promote in Model Control Plane
         model = get_step_context().model
@@ -90,17 +76,11 @@ def promote_with_metric_compare(
         logger.info(f"Current model version was promoted to '{target_env}'.")
 
         # Promote in Model Registry
-        latest_version_model_registry_number = latest_version.run_metadata[
-            "model_registry_version"
-        ]
+        latest_version_model_registry_number = latest_version.run_metadata["model_registry_version"]
         if current_version_number is None:
-            current_version_model_registry_number = (
-                latest_version_model_registry_number
-            )
+            current_version_model_registry_number = latest_version_model_registry_number
         else:
-            current_version_model_registry_number = (
-                current_version.run_metadata["model_registry_version"]
-            )
+            current_version_model_registry_number = current_version.run_metadata["model_registry_version"]
         promote_in_model_registry(
             latest_version=latest_version_model_registry_number,
             current_version=current_version_model_registry_number,
@@ -109,9 +89,7 @@ def promote_with_metric_compare(
         )
         promoted_version = latest_version_model_registry_number
     else:
-        promoted_version = current_version.run_metadata[
-            "model_registry_version"
-        ]
+        promoted_version = current_version.run_metadata["model_registry_version"]
 
     logger.info(
         f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"
