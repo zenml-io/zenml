@@ -491,6 +491,7 @@ def sample_artifact_version_model(
         body=ArtifactVersionResponseBody(
             artifact=sample_artifact_model,
             version="1",
+            original_name=sample_artifact_model.name,
             user=sample_user_model,
             created=datetime.now(),
             updated=datetime.now(),
