@@ -534,11 +534,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
-            deployment, _, _ = self._compile(
-                config_path=config_path,
-                steps=step_configurations,
-                settings=settings,
-            )
+
+            compile_args = self._run_args.copy()
+            compile_args.pop("unlisted", None)
+            compile_args.pop("prevent_build_reuse", None)
+            if config_path:
+                compile_args["config_path"] = config_path
+            if step_configurations:
+                compile_args["step_configurations"] = step_configurations
+            if settings:
+                compile_args["settings"] = settings
+
+            deployment, _, _ = self._compile(**compile_args)
             pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
