@@ -274,7 +274,9 @@ class StepRunner:
 
             # Update the status and output artifacts of the step run.
             output_artifact_ids = {
-                output_name: artifact.id
+                output_name: [
+                    artifact.id,
+                ]
                 for output_name, artifact in output_artifacts.items()
             }
             publish_successful_step_run(

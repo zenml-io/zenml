@@ -23,6 +23,7 @@ from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 str_namer_standard = "dummy_dynamic_dt_{date}_{time}"
 str_namer_custom = "dummy_dynamic_custom_{funny_name}"
+str_namer_custom_2 = "dummy_dynamic_custom_{funnier_name}"
 static_namer = "dummy_static"
 
 
@@ -43,6 +44,11 @@ def dynamic_single_string_standard() -> Annotated[str, str_namer_standard]:
 
 @step(name_subs={"funny_name": "name_placeholder"})
 def dynamic_single_string_custom() -> Annotated[str, str_namer_custom]:
+    return "str_namer_custom"
+
+
+@step(name_subs={"funnier_name": "name_placeholder"})
+def dynamic_single_string_custom_2() -> Annotated[str, str_namer_custom_2]:
     return "str_namer_custom"
 
 
@@ -203,3 +209,36 @@ def test_stored_info_not_affected_by_dynamic_naming(clean_client: "Client"):
     ).load()
     assert a1 == "output_1" != a2
     assert a2 == "output_2" != a1
+
+
+def test_different_original_names_same_placeholder_value_evaluates_normally(
+    clean_client: "Client",
+):
+    """Test that different original names with same placeholder value evaluates normally"""
+
+    @pipeline
+    def _inner():
+        dynamic_single_string_custom.with_options(
+            name_subs={"funny_name": "name_placeholder"}
+        )()
+        dynamic_single_string_custom_2.with_options(
+            name_subs={"funnier_name": "name_placeholder"}
+        )()
+
+    p: PipelineRunResponse = _inner()
+
+    assert set(p.steps["dynamic_single_string_custom"].outputs.keys()) == set(
+        p.steps["dynamic_single_string_custom_2"].outputs.keys()
+    )
+    assert (
+        list(p.steps["dynamic_single_string_custom"].outputs.values())[0][
+            0
+        ].original_name
+        == str_namer_custom
+    )
+    assert (
+        list(p.steps["dynamic_single_string_custom_2"].outputs.values())[0][
+            0
+        ].original_name
+        == str_namer_custom_2
+    )

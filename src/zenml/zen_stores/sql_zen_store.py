@@ -2729,14 +2729,12 @@ class SqlZenStore(BaseZenStore):
         self,
         name: str,
         has_custom_name: bool,
-        original_name: Optional[str] = None,
     ) -> ArtifactSchema:
         """Get or create an artifact with a specific name.
 
         Args:
             name: The artifact name.
             has_custom_name: Whether the artifact has a custom name.
-            original_name: The original name of the dynamic artifact.
 
         Returns:
             Schema of the artifact.
@@ -2753,7 +2751,6 @@ class SqlZenStore(BaseZenStore):
                         artifact_request = ArtifactRequest(
                             name=name,
                             has_custom_name=has_custom_name,
-                            original_name=original_name,
                         )
                         artifact = ArtifactSchema.from_request(
                             artifact_request
@@ -2820,7 +2817,6 @@ class SqlZenStore(BaseZenStore):
             artifact_schema = self._get_or_create_artifact_for_name(
                 name=artifact_name,
                 has_custom_name=artifact_version.has_custom_name,
-                original_name=artifact_version.artifact_original_name,
             )
             artifact_version.artifact_id = artifact_schema.id
 
@@ -8176,12 +8172,12 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_version_ids in step_run.outputs.items():
+            for name, artifact_version_ids in step_run.outputs.items():
                 for artifact_version_id in artifact_version_ids:
                     self._set_run_step_output_artifact(
                         step_run_id=step_schema.id,
                         artifact_version_id=artifact_version_id,
-                        name=output_name,
+                        name=name,
                         session=session,
                     )
 
@@ -8285,13 +8281,14 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the artifacts.
-            for name, artifact_version_id in step_run_update.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=name,
-                    session=session,
-                )
+            for name, artifact_version_ids in step_run_update.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_run_id,
+                        artifact_version_id=artifact_version_id,
+                        name=name,
+                        session=session,
+                    )
 
             # Update loaded artifacts.
             for (

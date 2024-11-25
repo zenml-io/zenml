@@ -142,7 +142,7 @@ class StepRunRequest(WorkspaceScopedRequest):
 class StepRunUpdate(BaseModel):
     """Update model for step runs."""
 
-    outputs: Dict[str, UUID] = Field(
+    outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default={},
     )

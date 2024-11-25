@@ -213,7 +213,6 @@ def save_artifact(
     # TODO: remove these once external artifact does not use this function anymore
     save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
-    original_name: Optional[str] = None,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -236,7 +235,6 @@ def save_artifact(
         save_type: The type of save operation that created the artifact version.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
-        original_name: The original name of the dynamic artifact.
 
     Returns:
         The saved artifact response.
@@ -275,7 +273,6 @@ def save_artifact(
     artifact_version_request = _store_artifact_data_and_prepare_request(
         data=data,
         name=name,
-        original_name=original_name,
         uri=uri,
         materializer_class=materializer_class,
         save_type=save_type,
@@ -307,7 +304,6 @@ def register_artifact(
     tags: Optional[List[str]] = None,
     has_custom_name: bool = True,
     artifact_metadata: Dict[str, "MetadataType"] = {},
-    original_name: Optional[str] = None,
 ) -> "ArtifactVersionResponse":
     """Register existing data stored in the artifact store as a ZenML Artifact.
 
@@ -323,7 +319,6 @@ def register_artifact(
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
         artifact_metadata: Metadata dictionary to attach to the artifact version.
-        original_name: The original name of the dynamic artifact.
 
     Returns:
         The saved artifact response.
@@ -351,7 +346,6 @@ def register_artifact(
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
-        artifact_original_name=original_name or name,
         version=version,
         tags=tags,
         type=artifact_type or ArtifactType.DATA,
