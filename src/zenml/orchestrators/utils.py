@@ -174,11 +174,12 @@ def get_config_environment_vars(
     return environment_vars
 
 
-def get_run_name(run_name_template: str) -> str:
+def get_run_name(run_name_template: str, substitutions: Dict[str, str]) -> str:
     """Fill out the run name template to get a complete run name.
 
     Args:
         run_name_template: The run name template to fill out.
+        substitutions: The substitutions to use in the template.
 
     Raises:
         ValueError: If the run name is empty.
@@ -186,7 +187,7 @@ def get_run_name(run_name_template: str) -> str:
     Returns:
         The run name derived from the template.
     """
-    run_name = format_name_template(run_name_template)
+    run_name = format_name_template(run_name_template, **substitutions)
 
     if run_name == "":
         raise ValueError("Empty run names are not allowed.")

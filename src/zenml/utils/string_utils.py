@@ -14,10 +14,11 @@
 """Utils for strings."""
 
 import base64
-import datetime
 import functools
 import random
+import re
 import string
+from datetime import datetime
 from typing import Any, Callable, Dict, TypeVar, cast
 
 from pydantic import BaseModel
@@ -165,14 +166,28 @@ def format_name_template(
     Raises:
         KeyError: If a key in template is missing in the kwargs.
     """
-    kwargs["date"] = kwargs.get(
-        "date",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%Y_%m_%d"),
-    )
-    kwargs["time"] = kwargs.get(
-        "time",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
-    )
+    pattern = r"\{[^}]+\}"
+    if not re.findall(pattern, name_template):
+        # nothing to evaluate
+        return name_template
+
+    if ("date" not in kwargs and "{date}" in name_template) or (
+        "time" not in kwargs and "{time}" in name_template
+    ):
+        from zenml import get_step_context
+
+        try:
+            pr = get_step_context().pipeline_run
+            start_time = pr.start_time
+            kwargs.update(pr.config.substitutions or {})
+        except RuntimeError:
+            start_time = None
+
+        if start_time is None:
+            start_time = datetime.utcnow()
+        kwargs["date"] = start_time.strftime("%Y_%m_%d")
+        kwargs["time"] = start_time.strftime("%H_%M_%S_%f")
+
     try:
         return name_template.format(**kwargs)
     except KeyError as e:

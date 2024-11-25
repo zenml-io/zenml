@@ -165,6 +165,84 @@ def test_sequential_executions_have_different_names(clean_client: "Client"):
     )
 
 
+def test_sequential_executions_have_different_names_in_pipeline_context(
+    clean_client: "Client",
+):
+    """Test that dynamic naming works each time for unique uncached runs."""
+
+    @pipeline(enable_cache=False)
+    def _inner():
+        dynamic_single_string_custom_no_default()
+
+    @pipeline(enable_cache=False, substitutions={"funny_name": "p_d"})
+    def _inner_2():
+        dynamic_single_string_custom_no_default()
+
+    @pipeline(enable_cache=False, substitutions={"funny_name": "p_d"})
+    def _inner_3():
+        dynamic_single_string_custom_no_default.with_options(
+            substitutions={"funny_name": "s_wo"}
+        )()
+
+    @pipeline(enable_cache=False, substitutions={"funny_name": "p_d"})
+    def _inner_4():
+        dynamic_single_string_custom()
+
+    p1: PipelineRunResponse = _inner.with_options(
+        substitutions={"funny_name": "p_wo"}
+    )()
+    p2: PipelineRunResponse = _inner_2()
+    p3: PipelineRunResponse = _inner_3()
+    p4: PipelineRunResponse = _inner_4()
+    p5: PipelineRunResponse = _inner_2.with_options(
+        substitutions={"funny_name": "p_wo"}
+    )()
+
+    assert (
+        set(p1.steps["dynamic_single_string_custom_no_default"].outputs.keys())
+        != set(
+            p2.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )
+        != set(
+            p3.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )
+        != set(p4.steps["dynamic_single_string_custom"].outputs.keys())
+    )
+    # only pipeline `with_options` -> pipeline with_options
+    assert (
+        list(
+            p1.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )[0]
+        == "dummy_dynamic_custom_p_wo"
+    )
+    # only pipeline deco -> pipeline deco
+    assert (
+        list(
+            p2.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )[0]
+        == "dummy_dynamic_custom_p_d"
+    )
+    # pipeline deco + step with_options -> step with_options
+    assert (
+        list(
+            p3.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )[0]
+        == "dummy_dynamic_custom_s_wo"
+    )
+    # pipeline deco + step deco -> step deco
+    assert (
+        list(p4.steps["dynamic_single_string_custom"].outputs.keys())[0]
+        == "dummy_dynamic_custom_name_placeholder"
+    )
+    # pipeline deco + with_options -> pipeline with_options
+    assert (
+        list(
+            p5.steps["dynamic_single_string_custom_no_default"].outputs.keys()
+        )[0]
+        == "dummy_dynamic_custom_p_wo"
+    )
+
+
 def test_execution_fails_on_custom_but_not_provided_name(
     clean_client: "Client",
 ):

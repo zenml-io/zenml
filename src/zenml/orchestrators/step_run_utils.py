@@ -354,13 +354,16 @@ def create_cached_step_runs(
 
 
 def get_or_create_model_version_for_pipeline_run(
-    model: "Model", pipeline_run: PipelineRunResponse
+    model: "Model",
+    pipeline_run: PipelineRunResponse,
+    substitutions: Dict[str, str],
 ) -> Tuple[ModelVersionResponse, bool]:
     """Get or create a model version as part of a pipeline run.
 
     Args:
         model: The model to get or create.
         pipeline_run: The pipeline run for which the model should be created.
+        substitutions: Substitutions to apply to the model version name.
 
     Returns:
         The model version and a boolean indicating whether it was newly created
@@ -374,12 +377,14 @@ def get_or_create_model_version_for_pipeline_run(
         return model._get_model_version(), False
     elif model.version:
         if isinstance(model.version, str):
-            start_time = pipeline_run.start_time or datetime.utcnow()
             model.version = string_utils.format_name_template(
                 model.version,
-                date=start_time.strftime("%Y_%m_%d"),
-                time=start_time.strftime("%H_%M_%S_%f"),
+                **substitutions,
             )
+        model.name = string_utils.format_name_template(
+            model.name,
+            **substitutions,
+        )
 
         return (
             model._get_or_create_model_version(),
@@ -460,7 +465,11 @@ def prepare_pipeline_run_model_version(
         model_version = pipeline_run.model_version
     elif config_model := pipeline_run.config.model:
         model_version, _ = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
+            model=config_model,
+            pipeline_run=pipeline_run,
+            substitutions=pipeline_run.config.full_substitutions(
+                pipeline_run.start_time or datetime.utcnow()
+            ),
         )
         pipeline_run = Client().zen_store.update_run(
             run_id=pipeline_run.id,
@@ -491,8 +500,14 @@ def prepare_step_run_model_version(
     if step_run.model_version:
         model_version = step_run.model_version
     elif config_model := step_run.config.model:
+        substitutions = pipeline_run.config.full_substitutions(
+            pipeline_run.start_time or datetime.utcnow()
+        )
+        substitutions.update(step_run.config.substitutions or {})
         model_version, created = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
+            model=config_model,
+            pipeline_run=pipeline_run,
+            substitutions=substitutions,
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,

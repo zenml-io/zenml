@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import SerializeAsAny, field_validator
@@ -46,6 +47,27 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
+    substitutions: Optional[Dict[str, str]] = None
+
+    def full_substitutions(self, start_time: datetime) -> Dict[str, str]:
+        """Returns the full substitutions dict.
+
+        Args:
+            start_time: Start time of the pipeline run.
+
+        Returns:
+            The full substitutions dict including date and time.
+        """
+        ret = (self.substitutions or {}).copy()
+        ret["date"] = ret.get(
+            "date",
+            start_time.strftime("%Y_%m_%d"),
+        )
+        ret["time"] = ret.get(
+            "time",
+            start_time.strftime("%H_%M_%S_%f"),
+        )
+        return ret
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
