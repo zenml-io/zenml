@@ -1194,9 +1194,9 @@ to provide access to:
 use from an STS token to an AWS secret key. This involves updating some config
 values and deleting others:
 
-    $ zenml service-connector update aws-auto-multi \\                       
---aws-access-key-id=<aws-key-id> \\                                 
---aws_secret_access_key=<aws-secret-key>  \\                      
+    $ zenml service-connector update aws-auto-multi \\
+--aws_access_key_id=<aws-key-id> \\
+--aws_secret_access_key=<aws-secret-key>  \\
 --remove-attr aws-sts-token
 
 - update the foo label to a new value and delete the baz label from a connector:

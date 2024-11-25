@@ -59,12 +59,13 @@ def _migrate_artifact_type() -> None:
                 {"id_": artifact_version_id, "type": "ServiceArtifact"}
             )
 
-    connection.execute(
-        sa.update(artifact_version_table).where(
-            artifact_version_table.c.id == sa.bindparam("id_")
-        ),
-        updates,
-    )
+    if updates:
+        connection.execute(
+            sa.update(artifact_version_table).where(
+                artifact_version_table.c.id == sa.bindparam("id_")
+            ),
+            updates,
+        )
 
 
 def upgrade() -> None:
