@@ -50,8 +50,8 @@ class ArtifactConfig(BaseModel):
             - static string e.g. "name"
             - dynamic string e.g. "name_{date}_{time}_{custom_placeholder}"
             If you use any placeholders besides `date` and `time`,
-            you need to provide the values for them in the `name_subs`
-            argument of the step decorator or the `name_subs` argument
+            you need to provide the values for them in the `substitutions`
+            argument of the step decorator or the `substitutions` argument
             of `with_options` of the step.
         version: The version of the artifact.
         tags: The tags of the artifact.
@@ -119,15 +119,15 @@ class ArtifactConfig(BaseModel):
 
         return data
 
-    def _evaluated_name(self, name_subs: Dict[str, str]) -> Optional[str]:
+    def _evaluated_name(self, substitutions: Dict[str, str]) -> Optional[str]:
         """Evaluated name of the artifact.
 
         Args:
-            name_subs: Extra placeholders to use in the name template.
+            substitutions: Extra placeholders to use in the name template.
 
         Returns:
             The evaluated name of the artifact.
         """
         if self.name:
-            return format_name_template(self.name, **name_subs)
+            return format_name_template(self.name, **substitutions)
         return self.name
