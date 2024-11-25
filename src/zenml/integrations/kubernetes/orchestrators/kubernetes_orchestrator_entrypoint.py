@@ -116,6 +116,16 @@ def main() -> None:
         env = get_config_environment_vars()
         env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
+        # We set some default minimum memory resource requests for the step pod
+        # here if the user has not specified any, because the step pod takes up
+        # some memory resources itself and, if not specified, the pod will be
+        # scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = KubernetesOrchestrator.apply_default_resource_requests(
+            memory="400Mi",
+            pod_settings=settings.pod_settings,
+        )
+
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
@@ -126,7 +136,7 @@ def main() -> None:
             args=step_args,
             env=env,
             privileged=settings.privileged,
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
             service_account_name=settings.step_pod_service_account_name
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,

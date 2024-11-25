@@ -61,7 +61,7 @@ jobs:
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'macos-13' && inputs.python-version == '3.9') }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') }}
     defaults:
       run:
         shell: bash

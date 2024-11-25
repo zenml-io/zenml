@@ -328,7 +328,11 @@ from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypedResourcesModel,
     ResourceTypeModel,
 )
-from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.misc.server_models import (
+    ServerDatabaseType,
+    ServerLoadInfo,
+    ServerModel,
+)
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -735,6 +739,7 @@ __all__ = [
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
+    "ServerLoadInfo",
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
