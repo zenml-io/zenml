@@ -94,4 +94,9 @@ model = client.get_model_version("my_model", "my_version")
 print(model.run_metadata["metadata_key"])
 ```
 
+{% hint style="info" %}
+When you are fetching metadata using a specific key, the returned value will 
+always reflect the latest entry.
+{% endhint %}
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

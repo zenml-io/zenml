@@ -14,8 +14,9 @@ custom types like `Uri`, `Path`, `DType`, and `StorageSize`.
 
 If you are logging metadata from within a step that’s part of a pipeline run, 
 calling `log_metadata` will attach the specified metadata to the current 
-pipeline run. This is especially useful for logging details about the run 
-while it's still active.
+pipeline run where the metadata key will have the `step_name:metadata_key` 
+pattern. This allows you to use the same metadata key from different steps 
+while the run's still executing.
 
 ```python
 from typing import Annotated
@@ -49,15 +50,9 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
     return classifier
 ```
 
-{% hint style="warning" %}
-In order to log metadata to a pipeline run during the step execution without 
-specifying any additional identifiers, `log_related_entities` should be 
-`True` (default behavior).
-{% endhint %}
+## Manually Logging Metadata to a Pipeline Run
 
-## Logging Metadata Outside a Run
-
-You can also attach metadata to a specific pipeline run after its execution, 
+You can also attach metadata to a specific pipeline run without needing a step, 
 using identifiers like the run ID. This is useful when logging information or 
 metrics that were calculated post-execution.
 
@@ -83,3 +78,10 @@ run = client.get_pipeline_run("run_id_name_or_prefix")
 
 print(run.run_metadata["metadata_key"])
 ```
+
+{% hint style="info" %}
+When you are fetching metadata using a specific key, the returned value will 
+always reflect the latest entry.
+{% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

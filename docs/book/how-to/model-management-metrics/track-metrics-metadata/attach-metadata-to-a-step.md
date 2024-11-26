@@ -49,14 +49,7 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
     return classifier
 ```
 
-{% hint style="info" %}
-If you do not want to log the same metadata for the related entries such as 
-the pipeline run and the model version, you can set the `log_related_entities`
-to `False` when you call `log_metadata`.
-{% endhint %}
-
-
-## Logging Metadata Outside a Step
+## Manually Logging Metadata a Step Run
 
 You can also log metadata for a specific step after execution, using 
 identifiers to specify the pipeline, step, and run. This approach is 
@@ -92,9 +85,14 @@ the ZenML Client:
 from zenml.client import Client
 
 client = Client()
-step = client.get_pipeline_run().steps["step_name"]
+step = client.get_pipeline_run("pipeline_id").steps["step_name"]
 
 print(step.run_metadata["metadata_key"])
 ```
+
+{% hint style="info" %}
+When you are fetching metadata using a specific key, the returned value will 
+always reflect the latest entry.
+{% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

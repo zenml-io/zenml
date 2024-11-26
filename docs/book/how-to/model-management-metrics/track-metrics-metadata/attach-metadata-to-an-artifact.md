@@ -88,6 +88,11 @@ artifact = client.get_artifact_version("my_artifact", "my_version")
 print(artifact.run_metadata["metadata_key"])
 ```
 
+{% hint style="info" %}
+When you are fetching metadata using a specific key, the returned value will 
+always reflect the latest entry.
+{% endhint %}
+
 ## Grouping Metadata in the Dashboard
 
 When logging metadata passing a dictionary of dictionaries in the `metadata` 
