@@ -395,7 +395,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
 
         pipeline_name = deployment.pipeline_configuration.name
-        orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name, max_length=253
+        )
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
         assert stack.container_registry

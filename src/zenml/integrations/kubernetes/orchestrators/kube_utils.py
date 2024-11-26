@@ -103,9 +103,29 @@ def sanitize_pod_name(pod_name: str) -> str:
     Returns:
         Sanitized pod name.
     """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
-    return re.sub(r"[-]+", "-", pod_name)
+    pod_name = re.sub(r"[-]+", "-", pod_name)
+
+    return pod_name[:253]
+
+
+def sanitize_label(label: str) -> str:
+    """Sanitize a label for a Kubernetes resource.
+
+    Args:
+        label: The label to sanitize.
+
+    Returns:
+        The sanitized label.
+    """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+    label = re.sub(r"[^a-z0-9-]", "-", label.lower())
+    label = re.sub(r"^[-]+", "", label)
+    label = re.sub(r"[-]+", "-", label)
+
+    return label[:63]
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
