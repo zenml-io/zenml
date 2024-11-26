@@ -22,6 +22,10 @@ export ZENML_STORE_URL=https://...
 export ZENML_STORE_API_KEY=<API_KEY>
 ```
 
+{% hint style="info" %}
+You don't need to run `zenml login` after setting these two environment variables.
+{% endhint %}
+
 To see all the service accounts you've created and their API keys, use the following commands:
 
 ```bash
