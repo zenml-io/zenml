@@ -106,6 +106,7 @@ def sanitize_pod_name(pod_name: str) -> str:
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
+    pod_name = re.sub(r"[-]+$", "", pod_name)
     pod_name = re.sub(r"[-]+", "-", pod_name)
 
     return pod_name[:253]
@@ -123,6 +124,7 @@ def sanitize_label(label: str) -> str:
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
     label = re.sub(r"[^a-z0-9-]", "-", label.lower())
     label = re.sub(r"^[-]+", "", label)
+    label = re.sub(r"[-]+$", "", label)
     label = re.sub(r"[-]+", "-", label)
 
     return label[:63]
