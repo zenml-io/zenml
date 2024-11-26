@@ -399,13 +399,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # We already make sure the orchestrator run name has the correct length
         # to make sure we don't cut off the randomized suffix later when
         # sanitizing the pod name. This avoids any pod naming collisions.
-        max_run_name_length = (
-            kube_utils.calculate_max_pod_name_length_for_namespace(
-                namespace=self.config.kubernetes_namespace
-            )
+        max_length = kube_utils.calculate_max_pod_name_length_for_namespace(
+            namespace=self.config.kubernetes_namespace
         )
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name, max_length=max_run_name_length
+            pipeline_name, max_length=max_length
         )
         pod_name = kube_utils.sanitize_pod_name(
             orchestrator_run_name, namespace=self.config.kubernetes_namespace

@@ -108,7 +108,7 @@ def calculate_max_pod_name_length_for_namespace(namespace: str) -> int:
     # <NAMESPACE>_<POD_NAME>_<UUID>, which adds additional characters and
     # runs into filesystem limitations for filename lengths (255). We therefore
     # subtract the length of a UUID (36), the two underscores and the
-    # namespace length from the pod name.
+    # namespace length from the max filename length.
     return 255 - 38 - len(namespace)
 
 
