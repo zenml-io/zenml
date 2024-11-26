@@ -67,13 +67,12 @@ def create_placeholder_run(
     if deployment.schedule:
         return None
     start_time = datetime.utcnow()
-    substitutions = deployment.pipeline_configuration.full_substitutions(
-        start_time
-    )
     run_request = PipelineRunRequest(
         name=get_run_name(
             run_name_template=deployment.run_name_template,
-            substitutions=substitutions,
+            substitutions=deployment.pipeline_configuration.full_substitutions(
+                start_time
+            ),
         ),
         # We set the start time on the placeholder run already to
         # make it consistent with the {time} placeholder in the

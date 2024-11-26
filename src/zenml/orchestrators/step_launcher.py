@@ -310,15 +310,11 @@ class StepLauncher:
             and a boolean indicating whether the run was created or reused.
         """
         start_time = datetime.utcnow()
-        substitutions = (
-            self._deployment.pipeline_configuration.full_substitutions(
-                start_time
-            )
-        )
-
         run_name = orchestrator_utils.get_run_name(
             run_name_template=self._deployment.run_name_template,
-            substitutions=substitutions,
+            substitutions=self._deployment.pipeline_configuration.full_substitutions(
+                start_time
+            ),
         )
 
         logger.debug("Creating pipeline run %s", run_name)

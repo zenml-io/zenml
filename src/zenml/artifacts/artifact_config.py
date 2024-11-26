@@ -119,7 +119,9 @@ class ArtifactConfig(BaseModel):
 
         return data
 
-    def _evaluated_name(self, substitutions: Dict[str, str]) -> Optional[str]:
+    def _evaluated_name(
+        self, substitutions: Optional[Dict[str, str]]
+    ) -> Optional[str]:
         """Evaluated name of the artifact.
 
         Args:
@@ -129,5 +131,5 @@ class ArtifactConfig(BaseModel):
             The evaluated name of the artifact.
         """
         if self.name:
-            return format_name_template(self.name, **substitutions)
+            return format_name_template(self.name, substitutions=substitutions)
         return self.name

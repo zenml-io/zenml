@@ -379,11 +379,11 @@ def get_or_create_model_version_for_pipeline_run(
         if isinstance(model.version, str):
             model.version = string_utils.format_name_template(
                 model.version,
-                **substitutions,
+                substitutions=substitutions,
             )
         model.name = string_utils.format_name_template(
             model.name,
-            **substitutions,
+            substitutions=substitutions,
         )
 
         return (

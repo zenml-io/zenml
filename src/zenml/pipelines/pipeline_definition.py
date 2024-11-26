@@ -663,7 +663,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             else:
                 schedule_name = format_name_template(
                     deployment.run_name_template,
-                    **(deployment.pipeline_configuration.substitutions or {}),
+                    substitutions=deployment.pipeline_configuration.substitutions,
                 )
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
