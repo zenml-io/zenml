@@ -149,8 +149,7 @@ class StepRunner:
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint,
-                original_output_names=list(output_materializers.keys()),
+                func=step_instance.entrypoint
             )
 
             for k, v in list(output_annotations.items()):

@@ -23,7 +23,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    List,
     Optional,
     Tuple,
     Union,
@@ -105,7 +104,6 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
-    original_output_names: Optional[List[str]] = None,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -113,7 +111,6 @@ def parse_return_type_annotations(
         func: The step function.
         enforce_type_annotations: If `True`, raises an exception if a type
             annotation is missing.
-        original_output_names: The original output names of the step function.
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
@@ -124,19 +121,6 @@ def parse_return_type_annotations(
     Returns:
         - A dictionary mapping output names to their output signatures.
     """
-
-    def _define_output_name(
-        artifact_config: Optional["ArtifactConfig"],
-        i: int,
-        original_output_names: Optional[List[str]] = original_output_names,
-    ) -> Optional[str]:
-        output_name: Optional[str] = None
-        if artifact_config:
-            if original_output_names:
-                output_name = original_output_names[i]
-            else:
-                output_name = artifact_config.name
-        return output_name
 
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
@@ -172,7 +156,7 @@ def parse_return_type_annotations(
                 artifact_config = get_artifact_config_from_annotation_metadata(
                     annotation
                 )
-                output_name = _define_output_name(artifact_config, i)
+                output_name = artifact_config.name if artifact_config else None
                 has_custom_name = output_name is not None
                 output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
@@ -190,7 +174,7 @@ def parse_return_type_annotations(
     artifact_config = get_artifact_config_from_annotation_metadata(
         return_annotation
     )
-    output_name = _define_output_name(artifact_config, 0)
+    output_name = artifact_config.name if artifact_config else None
     has_custom_name = output_name is not None
     output_name = output_name or SINGLE_RETURN_OUT_NAME
     return {
