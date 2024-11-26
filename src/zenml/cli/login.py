@@ -14,6 +14,7 @@
 """CLI for managing ZenML server deployments."""
 
 import ipaddress
+import os
 import re
 import sys
 import time
@@ -670,6 +671,15 @@ def login(
             dashboard on a public domain. Primarily used for accessing the
             dashboard in Colab.
     """
+    if "ZENML_STORE_API_KEY" in os.environ:
+        cli_utils.warning(
+            "You're running `zenml login` while having the "
+            "`ZENML_STORE_API_KEY` environment variable set. If you want to "
+            "use this environment variable to authenticate to your ZenML "
+            "server, you don't need to run `zenml login` and can instead start "
+            "interacting with your server right away."
+        )
+
     if local:
         if api_key:
             cli_utils.error(
