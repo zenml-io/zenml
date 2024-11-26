@@ -5597,7 +5597,7 @@ tokenizer (again for NLP-based tasks).
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 ```
 
-A user can simple do:
+A user can simply do:
 
 ```python
 from zenml.pipelines import TrainingPipeline
