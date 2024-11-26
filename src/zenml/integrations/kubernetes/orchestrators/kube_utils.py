@@ -94,11 +94,12 @@ def load_kube_config(
         k8s_config.load_kube_config(context=context)
 
 
-def sanitize_pod_name(pod_name: str) -> str:
+def sanitize_pod_name(pod_name: str, namespace: str) -> str:
     """Sanitize pod names so they conform to Kubernetes pod naming convention.
 
     Args:
         pod_name: Arbitrary input pod name.
+        namespace: Namespace in which the Pod will be created.
 
     Returns:
         Sanitized pod name.
@@ -109,7 +110,14 @@ def sanitize_pod_name(pod_name: str) -> str:
     pod_name = re.sub(r"[-]+$", "", pod_name)
     pod_name = re.sub(r"[-]+", "-", pod_name)
 
-    return pod_name[:253]
+    # Kubernetes allows Pod names to have 253 characters. However, when
+    # creating a pod they try to create a log file which is called
+    # <NAMESPACE>_<POD_NAME>_<UUID>, which adds additional characters and
+    # runs into filesystem limitations for filename lengths. We therefore
+    # subtract the length of a UUID (36), the two underscores and the
+    # namespace length from the pod name.
+    allowed_length = 253 - 38 - len(namespace)
+    return pod_name[:allowed_length]
 
 
 def sanitize_label(label: str) -> str:
