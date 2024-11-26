@@ -350,10 +350,6 @@ class PipelineRunSchema(NamedSchema, table=True):
 
             steps = {step.name: step.to_model() for step in self.step_runs}
 
-            substitutions = {
-                step_name: step.config.substitutions
-                for step_name, step in steps.items()
-            }
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=run_metadata,
@@ -371,7 +367,6 @@ class PipelineRunSchema(NamedSchema, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
-                substitutions=substitutions,
             )
 
         resources = None
