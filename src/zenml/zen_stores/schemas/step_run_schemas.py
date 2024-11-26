@@ -204,7 +204,7 @@ class StepRunSchema(NamedSchema, table=True):
         )
 
     def fetch_metadata_collection(
-        self, latest_values_only: True
+        self, latest_values_only: bool = True
     ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
         """Fetches the metadata of related to the pipeline run.
 
@@ -224,19 +224,6 @@ class StepRunSchema(NamedSchema, table=True):
                     created=rm.run_metadata.created,
                 )
             )
-
-        # Fetch the metadata related to the original step of this cached step
-        if self.original_step_run:
-            for metadata in self.original_step_run.run_metadata_resources:
-                if metadata.run_metadata.publisher_step_id is not None:
-                    if metadata.run_metadata.key not in metadata_dict:
-                        metadata_dict[metadata.run_metadata.key] = []
-                    metadata_dict[metadata.run_metadata.key].append(
-                        RunMetadataEntry(
-                            value=json.loads(metadata.run_metadata.value),
-                            created=metadata.run_metadata.created,
-                        )
-                    )
 
         # If we get only the latest values, sort by created and get the first
         if latest_values_only:

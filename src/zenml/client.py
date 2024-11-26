@@ -4440,7 +4440,7 @@ class Client(metaclass=ClientMetaClass):
         metadata: Dict[str, "MetadataType"],
         resources: List[RunMetadataResource],
         stack_component_id: Optional[UUID] = None,
-        publisher_step_id: Optional[UUID] = None,
+        cached: bool = False,
     ) -> None:
         """Create run metadata.
 
@@ -4450,7 +4450,8 @@ class Client(metaclass=ClientMetaClass):
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
-            publisher_step_id: The ID of the step which published this metadata.
+            cached: A flag indicating if the run metadata can be cached during
+                a step execution.
 
         Returns:
             None
@@ -4484,7 +4485,7 @@ class Client(metaclass=ClientMetaClass):
             user=self.active_user.id,
             resources=resources,
             stack_component_id=stack_component_id,
-            publisher_step_id=publisher_step_id,
+            cached=cached,
             values=values,
             types=types,
         )

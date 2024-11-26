@@ -75,19 +75,10 @@ class RunMetadataSchema(BaseSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="run_metadata")
 
-    publisher_step_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="publisher_step_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    publisher_step: Optional["StepRunSchema"] = Relationship()
-
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str
+    cached: Optional[bool] = Field(default=False)
 
 
 class RunMetadataResourceSchema(SQLModel, table=True):

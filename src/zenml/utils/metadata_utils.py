@@ -134,9 +134,11 @@ def log_metadata(
 
     # Log metadata to a step by name and run ID
     if step_name is not None and run_id_name_or_prefix is not None:
-        step_model_id = client.get_pipeline_run(
-            name_id_or_prefix=run_id_name_or_prefix
-        )[step_name].id
+        step_model_id = (
+            client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
+            .steps[step_name]
+            .id
+        )
         client.create_run_metadata(
             metadata=metadata,
             resources=[
@@ -289,7 +291,7 @@ def log_metadata(
                     type=MetadataResourceTypes.STEP_RUN,
                 )
             ],
-            publisher_step_id=step_context.step_run.id,
+            cached=True,
         )
 
     else:

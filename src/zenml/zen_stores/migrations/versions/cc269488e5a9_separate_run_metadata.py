@@ -1,7 +1,7 @@
 """Separate run metadata into resource link table with new UUIDs.
 
 Revision ID: cc269488e5a9
-Revises: 0.70.0
+Revises: ec6307720f92
 Create Date: 2024-11-12 09:46:46.587478
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "cc269488e5a9"
-down_revision = "0.70.0"
+down_revision = "ec6307720f92"
 branch_labels = None
 depends_on = None
 
@@ -86,6 +86,14 @@ def upgrade() -> None:
     op.drop_column("run_metadata", "resource_id")
     op.drop_column("run_metadata", "resource_type")
 
+    # Add the cached column to the database table
+    op.add_column(
+        "run_metadata",
+        sa.Column(
+            "cached", sa.Boolean(), nullable=True, server_default=sa.false()
+        ),
+    )
+
 
 def downgrade() -> None:
     """Reverts the 'run_metadata_resource' table and migrates data back."""
@@ -127,3 +135,6 @@ def downgrade() -> None:
 
     # Drop the `run_metadata_resource` table
     op.drop_table("run_metadata_resource")
+
+    # Drop the cached column
+    op.drop_column("run_metadata", "cached")

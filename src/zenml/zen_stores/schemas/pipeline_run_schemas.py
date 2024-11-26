@@ -254,7 +254,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
 
     def fetch_metadata_collection(
-        self, latest_values_only: True
+        self, latest_values_only: bool = True
     ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
         """Fetches the metadata of related to the pipeline run.
 
@@ -262,34 +262,35 @@ class PipelineRunSchema(NamedSchema, table=True):
             a dictionary, where the key is the name of the metadata and the
                 values represent the entries under this name.
         """
-        metadata_dict = {}
+        metadata_collection: dict[str, List[RunMetadataEntry]] = {}
 
         # Fetch the metadata related to this run
         for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_dict:
-                metadata_dict[rm.run_metadata.key] = []
-            metadata_dict[rm.run_metadata.key].append(
+            if rm.run_metadata.key not in metadata_collection:
+                metadata_collection[rm.run_metadata.key] = []
+            metadata_collection[rm.run_metadata.key].append(
                 RunMetadataEntry(
                     value=json.loads(rm.run_metadata.value),
                     created=rm.run_metadata.created,
                 )
             )
+
         # Fetch the metadata related to the steps of this run
         for s in self.step_runs:
             step_metadata = s.fetch_metadata_collection(
                 latest_values_only=False
             )
             for k, v in step_metadata.items():
-                metadata_dict[f"{s.name}::{k}"] = v
+                metadata_collection[f"{s.name}::{k}"] = v
 
         # If we get only the latest values, sort by created and get the first
         if latest_values_only:
-            for k, v in metadata_dict.items():
-                metadata_dict[k] = sorted(
-                    v, key=lambda x: x.created, reverse=True
-                )[0].value
+            return {
+                k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
+                for k, v in metadata_collection.items()
+            }
 
-        return metadata_dict
+        return metadata_collection
 
     def to_model(
         self,

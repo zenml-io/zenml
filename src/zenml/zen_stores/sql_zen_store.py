@@ -5555,7 +5555,7 @@ class SqlZenStore(BaseZenStore):
                         key=key,
                         value=json.dumps(value),
                         type=type_,
-                        publisher_step_id=run_metadata.publisher_step_id,
+                        cached=run_metadata.cached,
                     )
                     session.add(run_metadata_schema)
                     session.commit()
@@ -8177,6 +8177,44 @@ class SqlZenStore(BaseZenStore):
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
                 session.add(log_entry)
+
+            # If cached, attach metadata of the original step
+            if (
+                step_run.status == ExecutionStatus.CACHED
+                and step_run.original_step_run_id is not None
+            ):
+                original_metadata_links = session.exec(
+                    select(RunMetadataResourceSchema)
+                    .join(
+                        RunMetadataSchema,
+                        RunMetadataResourceSchema.run_metadata_id
+                        == RunMetadataSchema.id,
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_id
+                        == step_run.original_step_run_id
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_type
+                        == MetadataResourceTypes.STEP_RUN
+                    )
+                    .where(RunMetadataSchema.cached.is_(True))
+                ).all()
+
+                # Create new links in a batch
+                new_links = [
+                    RunMetadataResourceSchema(
+                        resource_id=step_schema.id,
+                        resource_type=link.resource_type,
+                        run_metadata_id=link.run_metadata_id,
+                    )
+                    for link in original_metadata_links
+                ]
+                # Add all new links in a single operation
+                session.add_all(new_links)
+                # Commit the changes
+                session.commit()
+                session.refresh(step_schema)
 
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:

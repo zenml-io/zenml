@@ -43,6 +43,8 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
-    publisher_step_id: Optional[UUID] = Field(
-        title="The ID of the step who published this metadata."
+    cached: Optional[bool] = Field(
+        title="A flag indicating if the run metadata is cached through "
+        "a step execution.",
+        default=False,
     )
