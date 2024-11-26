@@ -414,6 +414,27 @@ def connect_to_pro_server(
     cli_utils.declare(f"Connected to ZenML Pro server: {server.name}.")
 
 
+def _fail_if_authentication_environment_variables_set() -> None:
+    """Fail if one of the authentication environment variables are set."""
+    environment_variables = [
+        "ZENML_STORE_URL",
+        "ZENML_STORE_API_KEY",
+        "ZENML_STORE_USERNAME",
+        "ZENML_STORE_PASSWORD",
+    ]
+
+    if any(env_var in os.environ for env_var in environment_variables):
+        cli_utils.error(
+            "You're running to login/logout while having one of the "
+            f"{environment_variables} environment variables set. "
+            "If you want to use those environment variables to authenticate "
+            "to your ZenML server, there is no need to login/logout, you can "
+            "start interacting with your server right away. If you want to use "
+            "the `zenml login` command for authentication, please unset these "
+            "environment variables first."
+        )
+
+
 @cli.command(
     "login",
     help=(
@@ -671,14 +692,7 @@ def login(
             dashboard on a public domain. Primarily used for accessing the
             dashboard in Colab.
     """
-    if "ZENML_STORE_API_KEY" in os.environ:
-        cli_utils.warning(
-            "You're running `zenml login` while having the "
-            "`ZENML_STORE_API_KEY` environment variable set. If you want to "
-            "use this environment variable to authenticate to your ZenML "
-            "server, you don't need to run `zenml login` and can instead start "
-            "interacting with your server right away."
-        )
+    _fail_if_authentication_environment_variables_set()
 
     if local:
         if api_key:
@@ -858,6 +872,8 @@ def logout(
         pro: Log out from ZenML Pro.
     """
     from zenml.login.credentials_store import get_credentials_store
+
+    _fail_if_authentication_environment_variables_set()
 
     credentials_store = get_credentials_store()
     gc = GlobalConfiguration()
