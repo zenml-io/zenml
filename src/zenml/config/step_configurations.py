@@ -254,9 +254,7 @@ class StepConfiguration(PartialStepConfiguration):
         Returns:
             The full set of substitutions for this step configuration.
         """
-        ret = pipeline_config._get_full_substitutions(
-            start_time or datetime.utcnow()
-        )
+        ret = pipeline_config._get_full_substitutions(start_time)
         ret.update(self.substitutions)
         return ret
 

@@ -451,7 +451,7 @@ class PipelineRunResponse(
         return self.get_body().model_version_id
 
     @property
-    def substitutions(self) -> Dict[str, Dict[str, str]]:
+    def substitutions(self) -> Dict[str, str]:
         """The `substitutions` property.
 
         Returns:
