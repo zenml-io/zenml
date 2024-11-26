@@ -4452,9 +4452,6 @@ class Client(metaclass=ClientMetaClass):
                 the metadata.
             cached: A flag indicating if the run metadata can be cached during
                 a step execution.
-
-        Returns:
-            None
         """
         from zenml.metadata.metadata_types import get_metadata_type
 

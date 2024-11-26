@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -253,16 +253,14 @@ class PipelineRunSchema(NamedSchema, table=True):
             model_version_id=request.model_version_id,
         )
 
-    def fetch_metadata_collection(
-        self, latest_values_only: bool = True
-    ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
-        """Fetches the metadata of related to the pipeline run.
+    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+        """Fetches all the metadata entries related to the pipeline run.
 
         Returns:
-            a dictionary, where the key is the name of the metadata and the
-                values represent the entries under this name.
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the list of entries with this key.
         """
-        metadata_collection: dict[str, List[RunMetadataEntry]] = {}
+        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
 
         # Fetch the metadata related to this run
         for rm in self.run_metadata_resources:
@@ -277,20 +275,24 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         # Fetch the metadata related to the steps of this run
         for s in self.step_runs:
-            step_metadata = s.fetch_metadata_collection(
-                latest_values_only=False
-            )
+            step_metadata = s.fetch_metadata_collection()
             for k, v in step_metadata.items():
                 metadata_collection[f"{s.name}::{k}"] = v
 
-        # If we get only the latest values, sort by created and get the first
-        if latest_values_only:
-            return {
-                k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
-                for k, v in metadata_collection.items()
-            }
-
         return metadata_collection
+
+    def fetch_metadata(self) -> Dict[str, MetadataType]:
+        """Fetches the latest metadata entry related to the pipeline run.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the latest entry with this key.
+        """
+        metadata_collection = self.fetch_metadata_collection()
+        return {
+            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
+            for k, v in metadata_collection.items()
+        }
 
     def to_model(
         self,
@@ -318,7 +320,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             else {}
         )
 
-        run_metadata = self.fetch_metadata_collection(latest_values_only=True)
+        run_metadata = self.fetch_metadata()
 
         if self.deployment is not None:
             deployment = self.deployment.to_model()

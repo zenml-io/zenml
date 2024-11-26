@@ -8185,10 +8185,9 @@ class SqlZenStore(BaseZenStore):
             ):
                 original_metadata_links = session.exec(
                     select(RunMetadataResourceSchema)
-                    .join(
-                        RunMetadataSchema,
+                    .where(
                         RunMetadataResourceSchema.run_metadata_id
-                        == RunMetadataSchema.id,
+                        == RunMetadataSchema.id
                     )
                     .where(
                         RunMetadataResourceSchema.resource_id
@@ -8198,7 +8197,9 @@ class SqlZenStore(BaseZenStore):
                         RunMetadataResourceSchema.resource_type
                         == MetadataResourceTypes.STEP_RUN
                     )
-                    .where(RunMetadataSchema.cached.is_(True))
+                    .where(
+                        RunMetadataSchema.cached == True  # noqa: E712
+                    )
                 ).all()
 
                 # Create new links in a batch

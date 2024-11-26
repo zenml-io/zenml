@@ -16,8 +16,7 @@
 import math
 from typing import List, Type, TypeVar
 
-from zenml.models.v2.base.base import BaseResponse
-from zenml.models.v2.base.page import Page
+from zenml.models import BaseResponse, Page
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 S = TypeVar("S", bound=BaseSchema)

@@ -27,6 +27,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     BaseResponseMetadata,
     ModelRequest,
@@ -46,6 +47,7 @@ from zenml.models import (
     ModelVersionResponseMetadata,
     ModelVersionResponseResources,
     Page,
+    RunMetadataEntry,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -346,6 +348,41 @@ class ModelVersionSchema(NamedSchema, table=True):
             stage=model_version_request.stage,
         )
 
+    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+        """Fetches all the metadata entries related to the model version.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the list of entries with this key.
+        """
+        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
+
+        # Fetch the metadata related to this step
+        for rm in self.run_metadata_resources:
+            if rm.run_metadata.key not in metadata_collection:
+                metadata_collection[rm.run_metadata.key] = []
+            metadata_collection[rm.run_metadata.key].append(
+                RunMetadataEntry(
+                    value=json.loads(rm.run_metadata.value),
+                    created=rm.run_metadata.created,
+                )
+            )
+
+        return metadata_collection
+
+    def fetch_metadata(self) -> Dict[str, MetadataType]:
+        """Fetches the latest metadata entry related to the model version.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the latest entry with this key.
+        """
+        metadata_collection = self.fetch_metadata_collection()
+        return {
+            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
+            for k, v in metadata_collection.items()
+        }
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -404,10 +441,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
-                run_metadata={
-                    m.run_metadata.key: json.loads(m.run_metadata.value)
-                    for m in self.run_metadata_resources
-                },
+                run_metadata=self.fetch_metadata(),
             )
 
         resources = None

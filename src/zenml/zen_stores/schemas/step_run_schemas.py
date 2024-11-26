@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -203,36 +203,40 @@ class StepRunSchema(NamedSchema, table=True):
             model_version_id=request.model_version_id,
         )
 
-    def fetch_metadata_collection(
-        self, latest_values_only: bool = True
-    ) -> Dict[str, Union[MetadataType, List[RunMetadataEntry]]]:
-        """Fetches the metadata of related to the pipeline run.
+    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+        """Fetches all the metadata entries related to the step run.
 
         Returns:
-            a dictionary, where the key is the name of the metadata and the
-                values represent the entries under this name.
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the list of entries with this key.
         """
-        metadata_dict = {}
+        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
 
         # Fetch the metadata related to this step
         for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_dict:
-                metadata_dict[rm.run_metadata.key] = []
-            metadata_dict[rm.run_metadata.key].append(
+            if rm.run_metadata.key not in metadata_collection:
+                metadata_collection[rm.run_metadata.key] = []
+            metadata_collection[rm.run_metadata.key].append(
                 RunMetadataEntry(
                     value=json.loads(rm.run_metadata.value),
                     created=rm.run_metadata.created,
                 )
             )
 
-        # If we get only the latest values, sort by created and get the first
-        if latest_values_only:
-            for k, v in metadata_dict.items():
-                metadata_dict[k] = sorted(
-                    v, key=lambda x: x.created, reverse=True
-                )[0].value
+        return metadata_collection
 
-        return metadata_dict
+    def fetch_metadata(self) -> Dict[str, MetadataType]:
+        """Fetches the latest metadata entry related to the step run.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the latest entry with this key.
+        """
+        metadata_collection = self.fetch_metadata_collection()
+        return {
+            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
+            for k, v in metadata_collection.items()
+        }
 
     def to_model(
         self,
@@ -256,7 +260,7 @@ class StepRunSchema(NamedSchema, table=True):
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        run_metadata = self.fetch_metadata_collection(latest_values_only=True)
+        run_metadata = self.fetch_metadata()
 
         input_artifacts = {
             artifact.name: StepRunInputResponse(
