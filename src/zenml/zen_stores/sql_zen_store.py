@@ -220,6 +220,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineUpdate,
     RunMetadataRequest,
+    RunMetadataResource,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -2946,9 +2947,9 @@ class SqlZenStore(BaseZenStore):
                         workspace=artifact_version.workspace,
                         user=artifact_version.user,
                         resources=[
-                            (
-                                artifact_version_id,
-                                MetadataResourceTypes.ARTIFACT_VERSION,
+                            RunMetadataResource(
+                                id=artifact_version_id,
+                                type=MetadataResourceTypes.ARTIFACT_VERSION,
                             )
                         ],
                         values=values,
