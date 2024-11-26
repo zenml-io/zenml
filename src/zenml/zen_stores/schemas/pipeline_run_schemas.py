@@ -346,16 +346,12 @@ class PipelineRunSchema(NamedSchema, table=True):
 
             steps = {step.name: step.to_model() for step in self.step_runs}
 
-            self_subs = config.full_substitutions(
-                self.start_time or datetime.utcnow()
-            )
             substitutions = {
-                "__pipeline__": self_subs,
+                step_name: step.config.full_substitutions(
+                    config, self.start_time
+                )
+                for step_name, step in steps.items()
             }
-            for step_name, step in steps.items():
-                _step_subs = self_subs.copy()
-                _step_subs.update(step.config.substitutions)
-                substitutions[step_name] = _step_subs
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=run_metadata,

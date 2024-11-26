@@ -500,14 +500,12 @@ def prepare_step_run_model_version(
     if step_run.model_version:
         model_version = step_run.model_version
     elif config_model := step_run.config.model:
-        substitutions = pipeline_run.config.full_substitutions(
-            pipeline_run.start_time or datetime.utcnow()
-        )
-        substitutions.update(step_run.config.substitutions)
         model_version, created = get_or_create_model_version_for_pipeline_run(
             model=config_model,
             pipeline_run=pipeline_run,
-            substitutions=substitutions,
+            substitutions=step_run.config.full_substitutions(
+                pipeline_run.config, pipeline_run.start_time
+            ),
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -49,6 +50,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
+    from zenml.config.pipeline_configurations import PipelineConfiguration
 
 logger = get_logger(__name__)
 
@@ -237,6 +239,26 @@ class StepConfiguration(PartialStepConfiguration):
         if isinstance(model_or_dict, BaseSettings):
             model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
+
+    def full_substitutions(
+        self,
+        pipeline_config: "PipelineConfiguration",
+        start_time: Optional[datetime],
+    ) -> Dict[str, str]:
+        """Get the full set of substitutions for this step configuration.
+
+        Args:
+            pipeline_config: The pipeline configuration.
+            start_time: The start time of the pipeline run.
+
+        Returns:
+            The full set of substitutions for this step configuration.
+        """
+        ret = pipeline_config.full_substitutions(
+            start_time or datetime.utcnow()
+        )
+        ret.update(self.substitutions)
+        return ret
 
 
 class InputSpec(StrictBaseModel):
