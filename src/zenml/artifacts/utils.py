@@ -575,7 +575,7 @@ def download_artifact_files_from_response(
                     )
                     file_path = str(Path(artifact.uri) / file_str)
                     with artifact_store.open(
-                        name=file_path, mode="rb"
+                        file_path, mode="rb"
                     ) as store_file:
                         # Use a loop to read and write chunks of the file
                         # instead of reading the entire file into memory
