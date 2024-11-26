@@ -237,6 +237,9 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         default=False,
         description="Whether a template can be created from this run.",
     )
+    substitutions: Dict[str, Dict[str, str]] = Field(
+        title="Substitutions used in the pipeline run and step runs.",
+    )
 
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
@@ -446,6 +449,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().model_version_id
+
+    @property
+    def substitutions(self) -> Dict[str, Dict[str, str]]:
+        """The `substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().substitutions
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:

@@ -323,9 +323,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             schedule=schedule,
             code_reference=code_reference,
-            trigger_execution=self.trigger_execution.to_model()
-            if self.trigger_execution
-            else None,
+            trigger_execution=(
+                self.trigger_execution.to_model()
+                if self.trigger_execution
+                else None
+            ),
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
@@ -344,6 +346,16 @@ class PipelineRunSchema(NamedSchema, table=True):
 
             steps = {step.name: step.to_model() for step in self.step_runs}
 
+            self_subs = config.full_substitutions(
+                self.start_time or datetime.utcnow()
+            )
+            substitutions = {
+                "__pipeline__": self_subs,
+            }
+            for step_name, step in steps.items():
+                _step_subs = self_subs.copy()
+                _step_subs.update(step.config.substitutions or {})
+                substitutions[step_name] = _step_subs
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=run_metadata,
@@ -361,6 +373,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
+                substitutions=substitutions,
             )
 
         resources = None
