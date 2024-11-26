@@ -451,17 +451,6 @@ class PipelineRunResponse(
         return self.get_body().model_version_id
 
     @property
-    def substitutions(self) -> Dict[str, str]:
-        """The `substitutions` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().config._get_full_substitutions(
-            self.start_time
-        )
-
-    @property
     def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
