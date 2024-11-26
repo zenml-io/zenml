@@ -305,8 +305,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Retrieve Executor arguments provided in the Step settings.
             if use_training_step:
                 args_for_step_executor = step_settings.estimator_args or {}
+                args_for_step_executor.setdefault(
+                    "volume_size", step_settings.volume_size_in_gb
+                )
+                args_for_step_executor.setdefault(
+                    "max_run", step_settings.max_runtime_in_seconds
+                )
             else:
                 args_for_step_executor = step_settings.processor_args or {}
+                args_for_step_executor.setdefault(
+                    "volume_size_in_gb", step_settings.volume_size_in_gb
+                )
+                args_for_step_executor.setdefault(
+                    "max_runtime_in_seconds",
+                    step_settings.max_runtime_in_seconds,
+                )
 
             # Set default values from configured orchestrator Component to
             # arguments to be used when they are not present in processor_args.
@@ -314,12 +327,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "role",
                 step_settings.execution_role or self.config.execution_role,
             )
-            args_for_step_executor.setdefault(
-                "volume_size_in_gb", step_settings.volume_size_in_gb
-            )
-            args_for_step_executor.setdefault(
-                "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
-            )
+
             tags = step_settings.tags
             args_for_step_executor.setdefault(
                 "tags",
