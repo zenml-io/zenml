@@ -457,7 +457,9 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().substitutions
+        return self.get_metadata().config._get_full_substitutions(
+            self.start_time
+        )
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:

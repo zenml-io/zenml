@@ -287,3 +287,47 @@ def test_stored_info_not_affected_by_dynamic_naming(clean_client: "Client"):
     ).load()
     assert a1 == "output_1" != a2
     assert a2 == "output_2" != a1
+
+
+def test_that_overrides_work_as_expected(clean_client: "Client"):
+    """Test that dynamic naming does not affect stored info."""
+
+    @pipeline(
+        enable_cache=False, substitutions={"date": "not_a_date_actually"}
+    )
+    def _inner(pass_to_step: str = ""):
+        if pass_to_step:
+            dynamic_single_string_custom_no_default.with_options(
+                substitutions={
+                    "funny_name": pass_to_step,
+                    "date": pass_to_step,
+                }
+            )()
+        else:
+            dynamic_single_string_custom_no_default()
+
+    p1: PipelineRunResponse = _inner.with_options(
+        substitutions={"funny_name": "pipeline_level"}
+    )()
+    p2: PipelineRunResponse = _inner("step_level")
+    p1_subs = p1.config.substitutions
+    p2_subs = p2.config.substitutions
+
+    assert p1_subs["date"] == "not_a_date_actually"
+    assert p2_subs["date"] == "not_a_date_actually"
+    assert p1_subs["time"] != p2_subs["time"]
+    assert p1_subs["funny_name"] == "pipeline_level"
+    assert "funny_name" not in p2_subs
+
+    p1_step_subs = p1.steps[
+        "dynamic_single_string_custom_no_default"
+    ].config.substitutions
+    p2_step_subs = p2.steps[
+        "dynamic_single_string_custom_no_default"
+    ].config.substitutions
+    assert p1_step_subs["time"] != p2_step_subs["time"]
+    assert p1_step_subs["date"] != p2_step_subs["date"]
+    assert p1_step_subs["date"] == "not_a_date_actually"
+    assert p2_step_subs["date"] == "step_level"
+    assert p1_step_subs["funny_name"] == "pipeline_level"
+    assert p2_step_subs["funny_name"] == "step_level"

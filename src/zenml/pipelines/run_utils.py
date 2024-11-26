@@ -70,7 +70,7 @@ def create_placeholder_run(
     run_request = PipelineRunRequest(
         name=get_run_name(
             run_name_template=deployment.run_name_template,
-            substitutions=deployment.pipeline_configuration.full_substitutions(
+            substitutions=deployment.pipeline_configuration._get_full_substitutions(
                 start_time
             ),
         ),

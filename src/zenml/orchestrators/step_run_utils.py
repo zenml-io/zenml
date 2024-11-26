@@ -467,9 +467,7 @@ def prepare_pipeline_run_model_version(
         model_version, _ = get_or_create_model_version_for_pipeline_run(
             model=config_model,
             pipeline_run=pipeline_run,
-            substitutions=pipeline_run.config.full_substitutions(
-                pipeline_run.start_time or datetime.utcnow()
-            ),
+            substitutions=pipeline_run.config.substitutions,
         )
         pipeline_run = Client().zen_store.update_run(
             run_id=pipeline_run.id,
@@ -503,9 +501,7 @@ def prepare_step_run_model_version(
         model_version, created = get_or_create_model_version_for_pipeline_run(
             model=config_model,
             pipeline_run=pipeline_run,
-            substitutions=step_run.config.full_substitutions(
-                pipeline_run.config, pipeline_run.start_time
-            ),
+            substitutions=step_run.config.substitutions,
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,

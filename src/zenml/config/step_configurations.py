@@ -240,7 +240,7 @@ class StepConfiguration(PartialStepConfiguration):
             model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
 
-    def full_substitutions(
+    def _get_full_substitutions(
         self,
         pipeline_config: "PipelineConfiguration",
         start_time: Optional[datetime],
@@ -254,7 +254,7 @@ class StepConfiguration(PartialStepConfiguration):
         Returns:
             The full set of substitutions for this step configuration.
         """
-        ret = pipeline_config.full_substitutions(
+        ret = pipeline_config._get_full_substitutions(
             start_time or datetime.utcnow()
         )
         ret.update(self.substitutions)

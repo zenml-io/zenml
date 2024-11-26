@@ -284,6 +284,10 @@ class PipelineRunSchema(NamedSchema, table=True):
             deployment = self.deployment.to_model()
 
             config = deployment.pipeline_configuration
+            new_substitutions = config._get_full_substitutions(self.start_time)
+            config = config.model_copy(
+                update={"substitutions": new_substitutions}
+            )
             client_environment = deployment.client_environment
 
             stack = deployment.stack
@@ -347,9 +351,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             substitutions = {
-                step_name: step.config.full_substitutions(
-                    config, self.start_time
-                )
+                step_name: step.config.substitutions
                 for step_name, step in steps.items()
             }
             metadata = PipelineRunResponseMetadata(

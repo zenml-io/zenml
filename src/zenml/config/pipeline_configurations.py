@@ -49,7 +49,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
 
-    def full_substitutions(self, start_time: datetime) -> Dict[str, str]:
+    def _get_full_substitutions(self, start_time: datetime) -> Dict[str, str]:
         """Returns the full substitutions dict.
 
         Args:
