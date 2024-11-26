@@ -415,7 +415,7 @@ def connect_to_pro_server(
 
 
 def _fail_if_authentication_environment_variables_set() -> None:
-    """Fail if one of the authentication environment variables are set."""
+    """Fail if any of the authentication environment variables are set."""
     environment_variables = [
         "ZENML_STORE_URL",
         "ZENML_STORE_API_KEY",
