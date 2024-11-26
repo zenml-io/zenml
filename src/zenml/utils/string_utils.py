@@ -18,7 +18,7 @@ import functools
 import random
 import string
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -147,7 +147,7 @@ def validate_name(model: BaseModel) -> None:
 
 def format_name_template(
     name_template: str,
-    substitutions: Optional[Dict[str, str]],
+    substitutions: Dict[str, str],
 ) -> str:
     """Formats a name template with the given arguments.
 
@@ -165,8 +165,6 @@ def format_name_template(
     Raises:
         KeyError: If a key in template is missing in the kwargs.
     """
-    substitutions = substitutions or {}
-
     if ("date" not in substitutions and "{date}" in name_template) or (
         "time" not in substitutions and "{time}" in name_template
     ):
@@ -175,7 +173,7 @@ def format_name_template(
         try:
             pr = get_step_context().pipeline_run
             start_time = pr.start_time
-            substitutions.update(pr.config.substitutions or {})
+            substitutions.update(pr.config.substitutions)
         except RuntimeError:
             start_time = None
 

@@ -157,7 +157,7 @@ class StepRunner:
             substitution_dict = pipeline_run.config.full_substitutions(
                 pipeline_run.start_time or datetime.utcnow()
             )
-            substitution_dict.update(step_run.config.substitutions or {})
+            substitution_dict.update(step_run.config.substitutions)
             for k, v in list(output_annotations.items()):
                 if v.artifact_config:
                     _evaluated_name = v.artifact_config._evaluated_name(

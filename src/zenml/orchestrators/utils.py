@@ -174,9 +174,7 @@ def get_config_environment_vars(
     return environment_vars
 
 
-def get_run_name(
-    run_name_template: str, substitutions: Optional[Dict[str, str]]
-) -> str:
+def get_run_name(run_name_template: str, substitutions: Dict[str, str]) -> str:
     """Fill out the run name template to get a complete run name.
 
     Args:

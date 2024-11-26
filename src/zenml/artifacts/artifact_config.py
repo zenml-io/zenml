@@ -119,9 +119,7 @@ class ArtifactConfig(BaseModel):
 
         return data
 
-    def _evaluated_name(
-        self, substitutions: Optional[Dict[str, str]]
-    ) -> Optional[str]:
+    def _evaluated_name(self, substitutions: Dict[str, str]) -> Optional[str]:
         """Evaluated name of the artifact.
 
         Args:

@@ -503,7 +503,7 @@ def prepare_step_run_model_version(
         substitutions = pipeline_run.config.full_substitutions(
             pipeline_run.start_time or datetime.utcnow()
         )
-        substitutions.update(step_run.config.substitutions or {})
+        substitutions.update(step_run.config.substitutions)
         model_version, created = get_or_create_model_version_for_pipeline_run(
             model=config_model,
             pipeline_run=pipeline_run,

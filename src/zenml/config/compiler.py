@@ -310,7 +310,7 @@ class Compiler:
     @staticmethod
     def _verify_run_name(
         run_name: str,
-        substitutions: Optional[Dict[str, str]],
+        substitutions: Dict[str, str],
     ) -> None:
         """Verifies that the run name contains only valid placeholders.
 
@@ -322,7 +322,7 @@ class Compiler:
             ValueError: If the run name contains invalid placeholders.
         """
         valid_placeholder_names = {"date", "time"}.union(
-            set((substitutions or {}).keys())
+            set(substitutions.keys())
         )
         placeholders = {
             v[1] for v in string.Formatter().parse(run_name) if v[1]

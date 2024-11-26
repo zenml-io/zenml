@@ -354,7 +354,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             }
             for step_name, step in steps.items():
                 _step_subs = self_subs.copy()
-                _step_subs.update(step.config.substitutions or {})
+                _step_subs.update(step.config.substitutions)
                 substitutions[step_name] = _step_subs
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),

@@ -47,7 +47,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
-    substitutions: Optional[Dict[str, str]] = None
+    substitutions: Dict[str, str] = {}
 
     def full_substitutions(self, start_time: datetime) -> Dict[str, str]:
         """Returns the full substitutions dict.
@@ -58,15 +58,9 @@ class PipelineConfigurationUpdate(StrictBaseModel):
         Returns:
             The full substitutions dict including date and time.
         """
-        ret = (self.substitutions or {}).copy()
-        ret["date"] = ret.get(
-            "date",
-            start_time.strftime("%Y_%m_%d"),
-        )
-        ret["time"] = ret.get(
-            "time",
-            start_time.strftime("%H_%M_%S_%f"),
-        )
+        ret = self.substitutions.copy()
+        ret.setdefault("date", start_time.strftime("%Y_%m_%d"))
+        ret.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
         return ret
 
 
