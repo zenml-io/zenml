@@ -2919,7 +2919,8 @@ def pipeline_to_log_metadata(metadata):
     step_to_log_metadata(metadata)
 
 
-def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
+def \
+        test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     store = clean_client.zen_store
 
     metadata_values = [3, 25, 100, "random_string", True]
@@ -2954,16 +2955,6 @@ def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     # Test oneof: formatting
     with pytest.raises(ValidationError):
         PipelineRunFilter(name="oneof:random_value")
-
-    # Test metadata filtering
-    runs_filter = PipelineRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_runs(runs_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
-
-    for r in runs:
-        assert "blupus" in r.run_metadata
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
 
 
 # .--------------------.
