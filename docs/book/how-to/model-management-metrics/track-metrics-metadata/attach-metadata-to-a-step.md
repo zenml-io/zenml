@@ -49,6 +49,13 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
     return classifier
 ```
 
+{% hint style="info" %}
+If you run a pipeline where the step execution is cached, the cached step run 
+will copy the metadata that was created in the original step execution. 
+(If there is any metadata that was generated manually after the execution of 
+the original step, these entries will not be included in this process.)
+{% endhint %}
+
 ## Manually Logging Metadata a Step Run
 
 You can also log metadata for a specific step after execution, using 
