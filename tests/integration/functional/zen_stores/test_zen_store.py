@@ -2919,8 +2919,7 @@ def pipeline_to_log_metadata(metadata):
     step_to_log_metadata(metadata)
 
 
-def \
-        test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
+def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     store = clean_client.zen_store
 
     metadata_values = [3, 25, 100, "random_string", True]
