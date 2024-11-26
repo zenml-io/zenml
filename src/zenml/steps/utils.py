@@ -254,11 +254,12 @@ def get_artifact_config_from_annotation_metadata(
 
     error_message = (
         "Artifact annotation should only contain two elements: the artifact "
-        "type, and one of the following: {an output name || "
-        "an `ArtifactConfig` || a callable returning string as name}, e.g.: "
+        "type, and one of the following: { a static or dynamic name || "
+        "an `ArtifactConfig` }, e.g.: "
         "`Annotated[int, 'output_name']` || "
+        "`Annotated[int, 'output_{placeholder}']` || "
+        "`Annotated[int, ArtifactConfig(name='output_{placeholder}')]` ||"
         "`Annotated[int, ArtifactConfig(name='output_name')]`."
-        "`Annotated[int, lambda: 'name' + str(random_int(0,42))]`."
     )
 
     if len(metadata) > 2:
@@ -277,10 +278,6 @@ def get_artifact_config_from_annotation_metadata(
             if artifact_config is not None:
                 raise ValueError(error_message)
             artifact_config = metadata_instance
-        elif callable(metadata_instance):
-            if output_name is not None:
-                raise ValueError(error_message)
-            output_name = metadata_instance
         else:
             raise ValueError(error_message)
 
