@@ -121,7 +121,6 @@ def parse_return_type_annotations(
     Returns:
         - A dictionary mapping output names to their output signatures.
     """
-
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
     output_name: Optional[str]
