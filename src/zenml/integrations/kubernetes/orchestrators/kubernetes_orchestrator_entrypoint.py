@@ -90,7 +90,9 @@ def main() -> None:
         """
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
-        pod_name = kube_utils.sanitize_pod_name(pod_name)
+        pod_name = kube_utils.sanitize_pod_name(
+            pod_name, namespace=args.kubernetes_namespace
+        )
 
         image = KubernetesOrchestrator.get_image(
             deployment=deployment_config, step_name=step_name
