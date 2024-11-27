@@ -2910,7 +2910,7 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata({"blupus": metadata})
+    log_metadata(metadata={"blupus": metadata})
     return 42
 
 
