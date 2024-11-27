@@ -40,7 +40,9 @@ if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 
 
-def get_orchestrator_run_name(pipeline_name: str) -> str:
+def get_orchestrator_run_name(
+    pipeline_name: str, max_length: Optional[int] = None
+) -> str:
     """Gets an orchestrator run name.
 
     This run name is not the same as the ZenML run name but can instead be
@@ -48,11 +50,31 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
 
     Args:
         pipeline_name: Name of the pipeline that will run.
+        max_length: Maximum length of the generated name.
+
+    Raises:
+        ValueError: If the max length is below 8 characters.
 
     Returns:
         The orchestrator run name.
     """
-    return f"{pipeline_name}_{random.Random().getrandbits(128):032x}"
+    suffix_length = 32
+    pipeline_name = f"{pipeline_name}_"
+
+    if max_length:
+        if max_length < 8:
+            raise ValueError(
+                "Maximum length for orchestrator run name must be 8 or above."
+            )
+
+        # Make sure we always have a certain suffix to guarantee no overlap
+        # with other runs
+        suffix_length = min(32, max(8, max_length - len(pipeline_name)))
+        pipeline_name = pipeline_name[: (max_length - suffix_length)]
+
+    suffix = "".join(random.choices("0123456789abcdef", k=suffix_length))
+
+    return f"{pipeline_name}{suffix}"
 
 
 def is_setting_enabled(

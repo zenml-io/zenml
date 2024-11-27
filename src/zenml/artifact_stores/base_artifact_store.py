@@ -267,11 +267,11 @@ class BaseArtifactStore(StackComponent):
 
     # --- User interface ---
     @abstractmethod
-    def open(self, name: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
 
         Args:
-            name: The path of the file to open.
+            path: The path of the file to open.
             mode: The mode to open the file.
 
         Returns:

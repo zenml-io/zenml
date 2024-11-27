@@ -170,7 +170,9 @@ class ZenMLCloudConnection:
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
 
-            retries = Retry(total=5, backoff_factor=0.1)
+            retries = Retry(
+                total=5, backoff_factor=0.1, status_forcelist=[502, 504]
+            )
             self._session.mount(
                 "https://",
                 HTTPAdapter(
