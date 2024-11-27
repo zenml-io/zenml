@@ -48,6 +48,7 @@ from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 
 # from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
+from zenml.integrations.modal import ModalIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.numpy import NumpyIntegration  # noqa
