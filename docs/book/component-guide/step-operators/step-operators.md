@@ -32,8 +32,8 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | Step Operator                      | Flavor      | Integration | Notes                                                                    |
 |------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
 | [AzureML](azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
-| [Kubernetes](kubernetes.md)              | `kubernetes`   | `kubernetes`     | Uses Kubernetes Pods to execute steps                                            |
-| [Modal](modal.md)                    | `modal`       | `modal`         | Uses Modal to execute steps                                                  |
+| [Kubernetes](kubernetes.md)              | `kubernetes`   | `kubernetes`     | Uses Kubernetes Pods to execute steps                      |
+| [Modal](modal.md)                    | `modal`       | `modal`         | Uses Modal to execute steps                                      |
 | [SageMaker](sagemaker.md)          | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
 | [Spark](spark-kubernetes.md)       | `spark`     | `spark`     | Uses Spark on Kubernetes to execute steps in a distributed manner        |
 | [Vertex](vertex.md)                | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
