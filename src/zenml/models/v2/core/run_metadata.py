@@ -16,7 +16,7 @@
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
@@ -48,3 +48,19 @@ class RunMetadataRequest(WorkspaceScopedRequest):
         "a step execution.",
         default=False,
     )
+
+    @model_validator(mode="after")
+    def validate_values_keys(self) -> "RunMetadataRequest":
+        """Validates if the keys in the metadata are properly defined.
+
+        Returns:
+            self
+        """
+        invalid_keys = [key for key in self.values.keys() if ":" in key]
+        if invalid_keys:
+            raise ValueError(
+                "You can not use colons (`:`) in the key names when you "
+                "are creating metadata for your ZenML objects. Please change "
+                f"the following keys: {invalid_keys}"
+            )
+        return self
