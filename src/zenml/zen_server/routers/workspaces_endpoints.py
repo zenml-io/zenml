@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -105,6 +105,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
     get_allowed_resource_ids,
     verify_permission,
     verify_permission_for_model,
@@ -1009,21 +1010,23 @@ def create_run_metadata(
             "is not supported."
         )
 
+    verify_models: List[Any] = []
     for resource in run_metadata.resources:
         if resource.type == MetadataResourceTypes.PIPELINE_RUN:
-            run = zen_store().get_run(resource.id)
-            verify_permission_for_model(run, action=Action.UPDATE)
+            verify_models.append(zen_store().get_run(resource.id))
         elif resource.type == MetadataResourceTypes.STEP_RUN:
-            step = zen_store().get_run_step(resource.id)
-            verify_permission_for_model(step, action=Action.UPDATE)
+            verify_models.append(zen_store().get_run_step(resource.id))
         elif resource.type == MetadataResourceTypes.ARTIFACT_VERSION:
-            artifact_version = zen_store().get_artifact_version(resource.id)
-            verify_permission_for_model(artifact_version, action=Action.UPDATE)
+            verify_models.append(zen_store().get_artifact_version(resource.id))
         elif resource.type == MetadataResourceTypes.MODEL_VERSION:
-            model_version = zen_store().get_model_version(resource.id)
-            verify_permission_for_model(model_version, action=Action.UPDATE)
+            verify_models.append(zen_store().get_model_version(resource.id))
         else:
             raise RuntimeError(f"Unknown resource type: {resource.type}")
+
+    batch_verify_permissions_for_models(
+        models=verify_models,
+        action=Action.UPDATE,
+    )
 
     verify_permission(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
