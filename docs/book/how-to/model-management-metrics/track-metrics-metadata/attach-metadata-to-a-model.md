@@ -49,8 +49,7 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
                    "recall": recall
                }
            },
-           model_name=step_context.model.name,
-           model_version=step_context.model.version,
+           model_version_id=step_context.model.id,
        )
 
     return classifier
