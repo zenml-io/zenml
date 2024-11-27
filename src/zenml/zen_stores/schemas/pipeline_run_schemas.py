@@ -350,7 +350,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
             steps = {step.name: step.to_model() for step in self.step_runs}
 
-            substitutions = {
+            steps_substitutions = {
                 step_name: step.config.substitutions
                 for step_name, step in steps.items()
             }
@@ -371,7 +371,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
-                substitutions=substitutions,
+                steps_substitutions=steps_substitutions,
             )
 
         resources = None
