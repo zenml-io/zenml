@@ -577,6 +577,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
+        skip_schedule_registration: bool = False,
     ) -> PipelineDeploymentResponse:
         """Create a pipeline deployment.
 
@@ -603,6 +604,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 to any pipeline).
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
+            skip_schedule_registration: Whether to skip schedule registration.
 
         Returns:
             The pipeline deployment.
@@ -643,7 +645,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         stack.validate()
 
         schedule_id = None
-        if schedule:
+        if schedule and not skip_schedule_registration:
             if not stack.orchestrator.config.is_schedulable:
                 raise ValueError(
                     f"Stack {stack.name} does not support scheduling. "
@@ -1438,7 +1440,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             The created run template.
         """
         self._prepare_if_possible()
-        deployment = self._create_deployment(**self._run_args)
+        deployment = self._create_deployment(
+            **self._run_args, skip_schedule_registration=True
+        )
 
         return Client().create_run_template(
             name=name, deployment_id=deployment.id, **kwargs
