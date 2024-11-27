@@ -32,6 +32,7 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.lazy_load import LazyRunMetadataResponse
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -136,10 +137,7 @@ class EntrypointFunctionDefinition(NamedTuple):
             UnmaterializedArtifact,
         )
         from zenml.client_lazy_loader import ClientLazyLoader
-        from zenml.models import (
-            ArtifactVersionResponse,
-            RunMetadataResponse,
-        )
+        from zenml.models import ArtifactVersionResponse
 
         if key not in self.inputs:
             raise KeyError(
@@ -154,8 +152,8 @@ class EntrypointFunctionDefinition(NamedTuple):
                 StepArtifact,
                 ExternalArtifact,
                 ArtifactVersionResponse,
-                RunMetadataResponse,
                 ClientLazyLoader,
+                LazyRunMetadataResponse,
             ),
         ):
             # If we were to do any type validation for artifacts here, we
@@ -197,7 +195,9 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-        config_dict = ConfigDict(arbitrary_types_allowed=False)
+        # We allow passing None for optional annotations that would otherwise
+        # not be allowed as a parameter
+        config_dict = ConfigDict(arbitrary_types_allowed=value is None)
 
         # Create a pydantic model with just a single required field with the
         # type annotation of the parameter to verify the input type including

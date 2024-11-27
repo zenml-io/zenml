@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base filter model definitions."""
 
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import (
@@ -36,7 +37,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc
+from sqlalchemy import Float, and_, asc, cast, desc
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -62,6 +63,11 @@ logger = get_logger(__name__)
 
 
 AnyQuery = TypeVar("AnyQuery", bound=Any)
+
+ONEOF_ERROR = (
+    "When you are using the 'oneof:' filtering make sure that the "
+    "provided value is a json formatted list."
+)
 
 
 class Filter(BaseModel, ABC):
@@ -171,7 +177,27 @@ class StrFilter(Filter):
         GenericFilterOps.STARTSWITH,
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
+        GenericFilterOps.ONEOF,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
     ]
+
+    @model_validator(mode="after")
+    def check_value_if_operation_oneof(self) -> "StrFilter":
+        """Validator to check if value is a list if oneof operation is used.
+
+        Raises:
+            ValueError: If the value is not a list
+
+        Returns:
+            self
+        """
+        if self.operation == GenericFilterOps.ONEOF:
+            if not isinstance(self.value, list):
+                raise ValueError(ONEOF_ERROR)
+        return self
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a string column.
@@ -181,6 +207,9 @@ class StrFilter(Filter):
 
         Returns:
             A list of query conditions.
+
+        Raises:
+            ValueError: the comparison of the column to a numeric value fails.
         """
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
@@ -190,6 +219,40 @@ class StrFilter(Filter):
             return column.endswith(f"{self.value}")
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
+        if self.operation == GenericFilterOps.ONEOF:
+            return column.in_(self.value)
+        if self.operation in {
+            GenericFilterOps.GT,
+            GenericFilterOps.LT,
+            GenericFilterOps.GTE,
+            GenericFilterOps.LTE,
+        }:
+            try:
+                numeric_column = cast(column, Float)
+
+                assert self.value is not None
+
+                if self.operation == GenericFilterOps.GT:
+                    return and_(
+                        numeric_column, numeric_column > float(self.value)
+                    )
+                if self.operation == GenericFilterOps.LT:
+                    return and_(
+                        numeric_column, numeric_column < float(self.value)
+                    )
+                if self.operation == GenericFilterOps.GTE:
+                    return and_(
+                        numeric_column, numeric_column >= float(self.value)
+                    )
+                if self.operation == GenericFilterOps.LTE:
+                    return and_(
+                        numeric_column, numeric_column <= float(self.value)
+                    )
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to compare the column '{column}' to the "
+                    f"value '{self.value}' (must be numeric): {e}"
+                )
 
         return column == self.value
 
@@ -210,6 +273,9 @@ class UUIDFilter(StrFilter):
         """
         if isinstance(value, str):
             return value.replace("-", "")
+
+        if isinstance(value, list):
+            return [str(v).replace("-", "") for v in value]
 
         return value
 
@@ -588,6 +654,10 @@ class BaseFilter(BaseModel):
 
         Returns:
             A tuple of the filter value and the operator.
+
+        Raises:
+            ValueError: when we try to use the `oneof` operator with the wrong
+                value.
         """
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
@@ -598,18 +668,30 @@ class BaseFilter(BaseModel):
             ):
                 value = split_value[1]
                 operator = GenericFilterOps(split_value[0])
+
+            if operator == operator.ONEOF:
+                try:
+                    value = json.loads(value)
+                    if not isinstance(value, list):
+                        raise ValueError
+                except ValueError:
+                    raise ValueError(ONEOF_ERROR)
+
         return value, operator
 
     def generate_name_or_id_query_conditions(
         self,
         value: Union[UUID, str],
         table: Type["NamedSchema"],
+        additional_columns: Optional[List[str]] = None,
     ) -> "ColumnElement[bool]":
         """Generate filter conditions for name or id of a table.
 
         Args:
             value: The filter value.
             table: The table to filter.
+            additional_columns: Additional table columns that should also
+                filtered for the given value as part of the or condition.
 
         Returns:
             The query conditions.
@@ -637,10 +719,16 @@ class BaseFilter(BaseModel):
         )
         conditions.append(filter_.generate_query_conditions(table=table))
 
+        for column in additional_columns or []:
+            filter_ = FilterGenerator(table).define_filter(
+                column=column, value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
+
         return or_(*conditions)
 
+    @staticmethod
     def generate_custom_query_conditions_for_column(
-        self,
         value: Any,
         table: Type[SQLModel],
         column: str,
@@ -824,16 +912,17 @@ class FilterGenerator:
 
         # Create str filters
         if self.is_str_field(column):
-            return StrFilter(
-                operation=GenericFilterOps(operator),
+            return self._define_str_filter(
+                operator=GenericFilterOps(operator),
                 column=column,
                 value=value,
             )
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {self._model_class.model_fields[column].annotation} might "
-            "not be supported for filtering. Defaulting to a string filter."
+            f"The Datatype {self._model_class.model_fields[column].annotation} "
+            "might not be supported for filtering. Defaulting to a string "
+            "filter."
         )
         return StrFilter(
             operation=GenericFilterOps(operator),
@@ -1023,8 +1112,9 @@ class FilterGenerator:
                     "Invalid value passed as UUID query parameter."
                 ) from e
 
-        # Cast the value to string for further comparisons.
-        value = str(value)
+        # For equality checks, ensure that the value is a valid UUID.
+        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+            raise ValueError(ONEOF_ERROR)
 
         # Generate the filter.
         uuid_filter = UUIDFilter(
@@ -1033,6 +1123,38 @@ class FilterGenerator:
             value=value,
         )
         return uuid_filter
+
+    @staticmethod
+    def _define_str_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> StrFilter:
+        """Define a str filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The UUID value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a proper value.
+        """
+        # For equality checks, ensure that the value is a valid UUID.
+        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+            raise ValueError(
+                "If you are using `oneof:` as a filtering op, the value needs "
+                "to be a json formatted list string."
+            )
+
+        # Generate the filter.
+        str_filter = StrFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=value,
+        )
+        return str_filter
 
     @staticmethod
     def _define_bool_filter(

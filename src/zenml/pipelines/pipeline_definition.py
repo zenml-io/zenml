@@ -37,6 +37,7 @@ from uuid import UUID
 
 import yaml
 from pydantic import ConfigDict, ValidationError
+from typing_extensions import Self
 
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
@@ -65,6 +66,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineResponse,
     PipelineRunResponse,
+    RunTemplateResponse,
     ScheduleRequest,
 )
 from zenml.pipelines import build_utils
@@ -99,6 +101,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.models import ArtifactVersionResponse
     from zenml.types import HookSpecification
 
     StepConfigurationUpdateOrDict = Union[
@@ -107,7 +110,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound="Pipeline")
 F = TypeVar("F", bound=Callable[..., None])
 
 
@@ -128,6 +130,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -144,7 +147,8 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            settings: Settings for this pipeline.
+            tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -168,6 +172,7 @@ class Pipeline:
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
                 settings=settings,
+                tags=tags,
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
@@ -279,19 +284,20 @@ class Pipeline:
         self.__suppress_warnings_flag__ = False
 
     def configure(
-        self: T,
+        self,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
-    ) -> T:
+    ) -> Self:
         """Configures the pipeline.
 
         Configuration merging example:
@@ -312,6 +318,7 @@ class Pipeline:
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
             settings: settings for this pipeline.
+            tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -340,6 +347,11 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
+        if merge and tags and self._configuration.tags:
+            # Merge tags explicitly here as the recursive update later only
+            # merges dicts
+            tags = self._configuration.tags + tags
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -347,6 +359,7 @@ class Pipeline:
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
                 "settings": settings,
+                "tags": tags,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
@@ -521,11 +534,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
-            deployment, _, _ = self._compile(
-                config_path=config_path,
-                steps=step_configurations,
-                settings=settings,
-            )
+
+            compile_args = self._run_args.copy()
+            compile_args.pop("unlisted", None)
+            compile_args.pop("prevent_build_reuse", None)
+            if config_path:
+                compile_args["config_path"] = config_path
+            if step_configurations:
+                compile_args["step_configurations"] = step_configurations
+            if settings:
+                compile_args["settings"] = settings
+
+            deployment, _, _ = self._compile(**compile_args)
             pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
@@ -539,7 +559,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 code_repository=code_repository,
             )
 
-    def _run(
+    def _create_deployment(
         self,
         *,
         run_name: Optional[str] = None,
@@ -557,8 +577,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
-    ) -> Optional[PipelineRunResponse]:
-        """Runs the pipeline on the active stack.
+    ) -> PipelineDeploymentResponse:
+        """Create a pipeline deployment.
 
         Args:
             run_name: Name of the pipeline run.
@@ -585,11 +605,157 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 `DockerSettings.prevent_build_reuse` instead.
 
         Returns:
-            Model of the pipeline run if running without a schedule, `None` if
-            running with a schedule.
+            The pipeline deployment.
 
         Raises:
-            ValueError: if the orchestrator doesn't support scheduling, but schedule was given
+            ValueError: If the orchestrator doesn't support scheduling, but a
+                schedule was given
+        """
+        deployment, schedule, build = self._compile(
+            config_path=config_path,
+            run_name=run_name,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
+            steps=step_configurations,
+            settings=settings,
+            schedule=schedule,
+            build=build,
+            extra=extra,
+        )
+
+        skip_pipeline_registration = constants.handle_bool_env_var(
+            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+            default=False,
+        )
+
+        register_pipeline = not (skip_pipeline_registration or unlisted)
+
+        pipeline_id = None
+        if register_pipeline:
+            pipeline_id = self._register().id
+
+        else:
+            logger.debug(f"Pipeline {self.name} is unlisted.")
+
+        stack = Client().active_stack
+        stack.validate()
+
+        schedule_id = None
+        if schedule:
+            if not stack.orchestrator.config.is_schedulable:
+                raise ValueError(
+                    f"Stack {stack.name} does not support scheduling. "
+                    "Not all orchestrator types support scheduling, "
+                    "kindly consult with "
+                    "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                    "for details."
+                )
+            if schedule.name:
+                schedule_name = schedule.name
+            else:
+                schedule_name = format_name_template(
+                    deployment.run_name_template
+                )
+            components = Client().active_stack_model.components
+            orchestrator = components[StackComponentType.ORCHESTRATOR][0]
+            schedule_model = ScheduleRequest(
+                workspace=Client().active_workspace.id,
+                user=Client().active_user.id,
+                pipeline_id=pipeline_id,
+                orchestrator_id=orchestrator.id,
+                name=schedule_name,
+                active=True,
+                cron_expression=schedule.cron_expression,
+                start_time=schedule.start_time,
+                end_time=schedule.end_time,
+                interval_second=schedule.interval_second,
+                catchup=schedule.catchup,
+                run_once_start_time=schedule.run_once_start_time,
+            )
+            schedule_id = Client().zen_store.create_schedule(schedule_model).id
+            logger.info(
+                f"Created schedule `{schedule_name}` for pipeline "
+                f"`{deployment.pipeline_configuration.name}`."
+            )
+
+        stack = Client().active_stack
+        stack.validate()
+        upload_notebook_cell_code_if_necessary(
+            deployment=deployment, stack=stack
+        )
+
+        local_repo_context = (
+            code_repository_utils.find_active_code_repository()
+        )
+        code_repository = build_utils.verify_local_repository_context(
+            deployment=deployment, local_repo_context=local_repo_context
+        )
+
+        if prevent_build_reuse:
+            logger.warning(
+                "Passing `prevent_build_reuse=True` to "
+                "`pipeline.with_opitions(...)` is deprecated. Use "
+                "`DockerSettings.prevent_build_reuse` instead."
+            )
+
+        build_model = build_utils.reuse_or_create_pipeline_build(
+            deployment=deployment,
+            pipeline_id=pipeline_id,
+            allow_build_reuse=not prevent_build_reuse,
+            build=build,
+            code_repository=code_repository,
+        )
+        build_id = build_model.id if build_model else None
+
+        code_reference = None
+        if local_repo_context and not local_repo_context.is_dirty:
+            source_root = source_utils.get_source_root()
+            subdirectory = (
+                Path(source_root)
+                .resolve()
+                .relative_to(local_repo_context.root)
+            )
+
+            code_reference = CodeReferenceRequest(
+                commit=local_repo_context.current_commit,
+                subdirectory=subdirectory.as_posix(),
+                code_repository=local_repo_context.code_repository_id,
+            )
+
+        code_path = None
+        if build_utils.should_upload_code(
+            deployment=deployment,
+            build=build_model,
+            code_reference=code_reference,
+        ):
+            code_archive = code_utils.CodeArchive(
+                root=source_utils.get_source_root()
+            )
+            logger.info("Archiving pipeline code...")
+            code_path = code_utils.upload_code_if_necessary(code_archive)
+
+        request = PipelineDeploymentRequest(
+            user=Client().active_user.id,
+            workspace=Client().active_workspace.id,
+            stack=stack.id,
+            pipeline=pipeline_id,
+            build=build_id,
+            schedule=schedule_id,
+            code_reference=code_reference,
+            code_path=code_path,
+            **deployment.model_dump(),
+        )
+        return Client().zen_store.create_deployment(deployment=request)
+
+    def _run(
+        self,
+    ) -> Optional[PipelineRunResponse]:
+        """Runs the pipeline on the active stack.
+
+        Returns:
+            The pipeline run or `None` if running with a schedule.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -607,153 +773,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, schedule, build = self._compile(
-                config_path=config_path,
-                run_name=run_name,
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                enable_artifact_visualization=enable_artifact_visualization,
-                enable_step_logs=enable_step_logs,
-                steps=step_configurations,
-                settings=settings,
-                schedule=schedule,
-                build=build,
-                extra=extra,
-            )
-
-            skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
-                default=False,
-            )
-
-            register_pipeline = not (skip_pipeline_registration or unlisted)
-
-            pipeline_id = None
-            if register_pipeline:
-                pipeline_id = self._register().id
-
-            else:
-                logger.debug(f"Pipeline {self.name} is unlisted.")
-
             stack = Client().active_stack
-            stack.validate()
+            deployment = self._create_deployment(**self._run_args)
 
-            schedule_id = None
-            if schedule:
-                if not stack.orchestrator.config.is_schedulable:
-                    raise ValueError(
-                        f"Stack {stack.name} does not support scheduling. "
-                        "Not all orchestrator types support scheduling, "
-                        "kindly consult with "
-                        "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
-                        "for details."
-                    )
-                if schedule.name:
-                    schedule_name = schedule.name
-                else:
-                    schedule_name = format_name_template(
-                        deployment.run_name_template
-                    )
-                components = Client().active_stack_model.components
-                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
-                schedule_model = ScheduleRequest(
-                    workspace=Client().active_workspace.id,
-                    user=Client().active_user.id,
-                    pipeline_id=pipeline_id,
-                    orchestrator_id=orchestrator.id,
-                    name=schedule_name,
-                    active=True,
-                    cron_expression=schedule.cron_expression,
-                    start_time=schedule.start_time,
-                    end_time=schedule.end_time,
-                    interval_second=schedule.interval_second,
-                    catchup=schedule.catchup,
-                    run_once_start_time=schedule.run_once_start_time,
-                )
-                schedule_id = (
-                    Client().zen_store.create_schedule(schedule_model).id
-                )
-                logger.info(
-                    f"Created schedule `{schedule_name}` for pipeline "
-                    f"`{deployment.pipeline_configuration.name}`."
-                )
-
-            stack = Client().active_stack
-            stack.validate()
-            upload_notebook_cell_code_if_necessary(
-                deployment=deployment, stack=stack
-            )
-
-            local_repo_context = (
-                code_repository_utils.find_active_code_repository()
-            )
-            code_repository = build_utils.verify_local_repository_context(
-                deployment=deployment, local_repo_context=local_repo_context
-            )
-
-            if prevent_build_reuse:
-                logger.warning(
-                    "Passing `prevent_build_reuse=True` to "
-                    "`pipeline.with_opitions(...)` is deprecated. Use "
-                    "`DockerSettings.prevent_build_reuse` instead."
-                )
-
-            build_model = build_utils.reuse_or_create_pipeline_build(
-                deployment=deployment,
-                pipeline_id=pipeline_id,
-                allow_build_reuse=not prevent_build_reuse,
-                build=build,
-                code_repository=code_repository,
-            )
-            build_id = build_model.id if build_model else None
-
-            code_reference = None
-            if local_repo_context and not local_repo_context.is_dirty:
-                source_root = source_utils.get_source_root()
-                subdirectory = (
-                    Path(source_root)
-                    .resolve()
-                    .relative_to(local_repo_context.root)
-                )
-
-                code_reference = CodeReferenceRequest(
-                    commit=local_repo_context.current_commit,
-                    subdirectory=subdirectory.as_posix(),
-                    code_repository=local_repo_context.code_repository_id,
-                )
-
-            code_path = None
-            if build_utils.should_upload_code(
-                deployment=deployment,
-                build=build_model,
-                code_reference=code_reference,
-            ):
-                code_archive = code_utils.CodeArchive(
-                    root=source_utils.get_source_root()
-                )
-                logger.info("Archiving pipeline code...")
-                code_path = code_utils.upload_code_if_necessary(code_archive)
-
-            deployment_request = PipelineDeploymentRequest(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                stack=stack.id,
-                pipeline=pipeline_id,
-                build=build_id,
-                schedule=schedule_id,
-                code_reference=code_reference,
-                code_path=code_path,
-                **deployment.model_dump(),
-            )
-            deployment_model = Client().zen_store.create_deployment(
-                deployment=deployment_request
-            )
-
-            self.log_pipeline_deployment_metadata(deployment_model)
-            run = create_placeholder_run(deployment=deployment_model)
+            self.log_pipeline_deployment_metadata(deployment)
+            run = create_placeholder_run(deployment=deployment)
 
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment_model,
+                deployment=deployment,
                 stack=stack,
                 run_id=run.id if run else None,
             )
@@ -766,11 +793,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
                         "Dashboard`. In order to try it locally, please run "
-                        "`zenml up`."
+                        "`zenml login --local`."
                     )
 
             deploy_pipeline(
-                deployment=deployment_model, stack=stack, placeholder_run=run
+                deployment=deployment, stack=stack, placeholder_run=run
             )
             if run:
                 return Client().get_pipeline_run(run.id)
@@ -786,15 +813,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment_model: The model for the pipeline deployment
         """
         try:
-            # Log about the schedule/run
-            if deployment_model.schedule:
-                logger.info(
-                    "Scheduling a run with the schedule: "
-                    f"`{deployment_model.schedule.name}`"
-                )
-            else:
-                logger.info("Executing a new run.")
-
             # Log about the caching status
             if deployment_model.pipeline_configuration.enable_cache is False:
                 logger.info(
@@ -1089,7 +1107,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
-        external_artifacts: Dict[str, "ExternalArtifact"],
+        external_artifacts: Dict[
+            str, Union["ExternalArtifact", "ArtifactVersionResponse"]
+        ],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
         parameters: Dict[str, Any],
@@ -1190,7 +1210,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         raise RuntimeError("Unable to find step ID")
 
-    def __enter__(self: T) -> T:
+    def __enter__(self) -> Self:
         """Activate the pipeline context.
 
         Raises:
@@ -1325,7 +1345,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         return copy.deepcopy(self)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> Optional[PipelineRunResponse]:
         """Handle a call of the pipeline.
 
         This method does one of two things:
@@ -1340,7 +1362,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **kwargs: Entrypoint function keyword arguments.
 
         Returns:
-            The outputs of the entrypoint function call.
+            If called within another pipeline, returns the outputs of the
+            `entrypoint` method. Otherwise, returns the pipeline run or `None`
+            if running with a schedule.
         """
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
@@ -1352,7 +1376,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return self.entrypoint(*args, **kwargs)
 
         self.prepare(*args, **kwargs)
-        return self._run(**self._run_args)
+        return self._run()
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.
@@ -1399,6 +1423,26 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
             else:
                 self.prepare()
+
+    def create_run_template(
+        self, name: str, **kwargs: Any
+    ) -> RunTemplateResponse:
+        """Create a run template for the pipeline.
+
+        Args:
+            name: The name of the run template.
+            **kwargs: Keyword arguments for the client method to create a run
+                template.
+
+        Returns:
+            The created run template.
+        """
+        self._prepare_if_possible()
+        deployment = self._create_deployment(**self._run_args)
+
+        return Client().create_run_template(
+            name=name, deployment_id=deployment.id, **kwargs
+        )
 
     def _reconfigure_from_file_with_overrides(
         self,

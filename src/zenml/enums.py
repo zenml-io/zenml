@@ -34,15 +34,23 @@ class ArtifactType(StrEnum):
 class StepRunInputArtifactType(StrEnum):
     """All possible types of a step run input artifact."""
 
-    DEFAULT = "default"  # input argument that is the output of a previous step
+    STEP_OUTPUT = (
+        "step_output"  # input argument that is the output of a previous step
+    )
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+    EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
+    LAZY_LOADED = "lazy"  # loaded via various lazy methods
 
 
-class StepRunOutputArtifactType(StrEnum):
-    """All possible types of a step run output artifact."""
+class ArtifactSaveType(StrEnum):
+    """All possible method types of how artifact versions can be saved."""
 
-    DEFAULT = "default"  # output of the current step
+    STEP_OUTPUT = "step_output"  # output of the current step
     MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+    PREEXISTING = "preexisting"  # register via `zenml.register_artifact()`
+    EXTERNAL = (
+        "external"  # saved via `zenml.ExternalArtifact.upload_by_value()`
+    )
 
 
 class VisualizationType(StrEnum):
@@ -198,11 +206,8 @@ class SecretValidationLevel(StrEnum):
 class ServerProviderType(StrEnum):
     """ZenML server providers."""
 
-    LOCAL = "local"
+    DAEMON = "daemon"
     DOCKER = "docker"
-    AWS = "aws"
-    GCP = "gcp"
-    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):
@@ -240,6 +245,13 @@ class OAuthDeviceStatus(StrEnum):
     LOCKED = "locked"
 
 
+class APITokenType(StrEnum):
+    """The API token type."""
+
+    GENERIC = "generic"
+    WORKLOAD = "workload"
+
+
 class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
@@ -248,6 +260,7 @@ class GenericFilterOps(StrEnum):
     CONTAINS = "contains"
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
+    ONEOF = "oneof"
     GTE = "gte"
     GT = "gt"
     LTE = "lte"

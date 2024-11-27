@@ -11,10 +11,10 @@ The ZenML server container image is available at [`zenmldocker/zenml-server`](ht
 If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like Docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
 
 ```bash
-zenml up --docker
+zenml login --local --docker
 ```
 
-This command deploys a ZenML server locally in a Docker container, then connects your client to it. Similar to running plain `zenml up`, the server and the local ZenML client share the same SQLite database.
+This command deploys a ZenML server locally in a Docker container, then connects your client to it. Similar to running plain `zenml login --local`, the server and the local ZenML client share the same SQLite database.
 
 The rest of this guide is addressed to advanced users who are looking to manually deploy and manage a containerized ZenML server.
 
@@ -81,7 +81,7 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -123,7 +123,7 @@ These configuration options are only relevant if you're using the GCP Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -176,7 +176,7 @@ These configuration options are only relevant if you're using Azure Key Vault as
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_KEY\_VAULT\_NAME**: The name of the Azure Key Vault. This must be set to point to the Azure Key Vault instance that you want to use.
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The Azure Service Connector authentication method to use (e.g. `service-account`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id":"my-tenant-id","client_id":"my-client-id","client_secret": "my-client-secret"}`).
@@ -284,7 +284,7 @@ The above command will start a containerized ZenML server running on your machin
 You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
-$ zenml connect --url http://localhost:8080
+$ zenml login http://localhost:8080
 Connecting to: 'http://localhost:8080'...
 If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:
 
@@ -364,7 +364,7 @@ docker run -it -d -p 8080:8080 --name zenml \
 You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080
+zenml login http://localhost:8080
 ```
 
 ### Direct MySQL database connection
@@ -377,10 +377,10 @@ As previously covered, the containerized MySQL database service can be started w
 docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
 ```
 
-The ZenML client on the host machine can then be configured to connect directly to the database with a slightly different `zenml connect` command:
+The ZenML client on the host machine can then be configured to connect directly to the database with a slightly different `zenml login` command:
 
 ```shell
-zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+zenml login mysql://root:password@127.0.0.1/zenml
 ```
 
 > **Note** The `localhost` hostname will not work with MySQL databases. You need to use the `127.0.0.1` IP address instead.
@@ -438,7 +438,7 @@ docker compose -f /path/to/docker-compose.yml -p zenml up -d
 You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080
+zenml login http://localhost:8080
 ```
 
 Tearing down the installation is as simple as running:
@@ -493,7 +493,7 @@ You can check the logs of the container to verify if the server is up and, depen
 
 ### CLI Docker deployments
 
-If you used the `zenml up --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the command:
+If you used the `zenml login --local --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the command:
 
 ```shell
 zenml logs -f

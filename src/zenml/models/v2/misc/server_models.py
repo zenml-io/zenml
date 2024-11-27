@@ -52,6 +52,8 @@ class ServerModel(BaseModel):
 
     id: UUID = Field(default_factory=uuid4, title="The unique server id.")
 
+    name: Optional[str] = Field(None, title="The name of the ZenML server.")
+
     version: str = Field(
         title="The ZenML version that the server is running.",
     )
@@ -99,10 +101,6 @@ class ServerModel(BaseModel):
         {},
         title="The metadata associated with the server.",
     )
-    use_legacy_dashboard: bool = Field(
-        False,
-        title="Flag to indicate whether the server is using the legacy dashboard.",
-    )
 
     last_user_activity: Optional[datetime] = Field(
         None,
@@ -120,3 +118,26 @@ class ServerModel(BaseModel):
         # Local ZenML servers are identifiable by the fact that their
         # server ID is the same as the local client (user) ID.
         return self.id == GlobalConfiguration().user_id
+
+
+class ServerLoadInfo(BaseModel):
+    """Domain model for ZenML server load information."""
+
+    threads: int = Field(
+        title="Number of threads that the server is currently using."
+    )
+
+    db_connections_total: int = Field(
+        title="Total number of database connections (active and idle) that the "
+        "server currently has established."
+    )
+
+    db_connections_active: int = Field(
+        title="Number of database connections that the server is currently "
+        "actively using to make queries or transactions."
+    )
+
+    db_connections_overflow: int = Field(
+        title="Number of overflow database connections that the server is "
+        "currently actively using to make queries or transactions."
+    )

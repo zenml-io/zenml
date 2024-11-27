@@ -13,22 +13,18 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
-import datetime
-import time
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
 )
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -43,8 +39,6 @@ if TYPE_CHECKING:
         ModelResponse,
         ModelVersionResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
-        StepRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -85,9 +79,9 @@ class Model(BaseModel):
     # technical attributes
     model_version_id: Optional[UUID] = None
     suppress_class_validation_warnings: bool = False
-    was_created_in_this_run: bool = False
     _model_id: UUID = PrivateAttr(None)
     _number: Optional[int] = PrivateAttr(None)
+    _created_model_version: bool = PrivateAttr(False)
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -349,7 +343,7 @@ class Model(BaseModel):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, "MetadataType"]:
         """Get model version run metadata.
 
         Returns:
@@ -528,14 +522,6 @@ class Model(BaseModel):
         data["suppress_class_validation_warnings"] = True
         return data
 
-    def _validate_config_in_runtime(self) -> "ModelVersionResponse":
-        """Validate that config doesn't conflict with runtime environment.
-
-        Returns:
-            The model version based on configuration.
-        """
-        return self._get_or_create_model_version()
-
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
 
@@ -568,7 +554,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    tags=self.tags,
                     user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,
@@ -680,53 +665,7 @@ class Model(BaseModel):
         if isinstance(self.version, str):
             self.version = format_name_template(self.version)
 
-        zenml_client = Client()
-        model_version_request = ModelVersionRequest(
-            user=zenml_client.active_user.id,
-            workspace=zenml_client.active_workspace.id,
-            name=str(self.version) if self.version else None,
-            description=self.description,
-            model=model.id,
-            tags=self.tags,
-        )
-        mv_request = ModelVersionRequest.model_validate(model_version_request)
         try:
-            if not self.version:
-                try:
-                    from zenml import get_step_context
-
-                    context = get_step_context()
-                except RuntimeError:
-                    pass
-                else:
-                    # if inside a step context we loop over all
-                    # model version configuration to find, if the
-                    # model version for current model was already
-                    # created in the current run, not to create
-                    # new model versions
-                    pipeline_mv = context.pipeline_run.config.model
-                    if (
-                        pipeline_mv
-                        and pipeline_mv.was_created_in_this_run
-                        and pipeline_mv.name == self.name
-                        and pipeline_mv.version is not None
-                    ):
-                        self.version = pipeline_mv.version
-                        self.model_version_id = pipeline_mv.model_version_id
-                    else:
-                        for step in context.pipeline_run.steps.values():
-                            step_mv = step.config.model
-                            if (
-                                step_mv
-                                and step_mv.was_created_in_this_run
-                                and step_mv.name == self.name
-                                and step_mv.version is not None
-                            ):
-                                self.version = step_mv.version
-                                self.model_version_id = (
-                                    step_mv.model_version_id
-                                )
-                                break
             if self.version or self.model_version_id:
                 model_version = self._get_model_version()
             else:
@@ -755,55 +694,33 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list -n {self.name}` CLI command."
                 )
-            retries_made = 0
-            for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
-                try:
-                    model_version = (
-                        zenml_client.zen_store.create_model_version(
-                            model_version=mv_request
-                        )
-                    )
-                    break
-                except EntityExistsError as e:
-                    if i == MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION - 1:
-                        raise RuntimeError(
-                            f"Failed to create model version "
-                            f"`{self.version if self.version else 'new'}` "
-                            f"in model `{self.name}`. Retried {retries_made} times. "
-                            "This could be driven by exceptionally high concurrency of "
-                            "pipeline runs. Please, reach out to us on ZenML Slack for support."
-                        ) from e
-                    # smoothed exponential back-off, it will go as 0.2, 0.3,
-                    # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
-                    sleep = 0.2 * 1.5**i
-                    logger.debug(
-                        f"Failed to create new model version for "
-                        f"model `{self.name}`. Retrying in {sleep}..."
-                    )
-                    time.sleep(sleep)
-                    retries_made += 1
-            self.version = model_version.name
-            self.was_created_in_this_run = True
 
-            logger.info(f"New model version `{self.version}` was created.")
+            client = Client()
+            model_version_request = ModelVersionRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name=str(self.version) if self.version else None,
+                description=self.description,
+                model=model.id,
+                tags=self.tags,
+            )
+            model_version = client.zen_store.create_model_version(
+                model_version=model_version_request
+            )
 
+            self._created_model_version = True
+
+            logger.info(
+                "Created new model version `%s` for model `%s`.",
+                model_version.name,
+                self.name,
+            )
+
+        self.version = model_version.name
         self.model_version_id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version
-
-    def _merge(self, model: "Model") -> None:
-        self.license = self.license or model.license
-        self.description = self.description or model.description
-        self.audience = self.audience or model.audience
-        self.use_cases = self.use_cases or model.use_cases
-        self.limitations = self.limitations or model.limitations
-        self.trade_offs = self.trade_offs or model.trade_offs
-        self.ethics = self.ethics or model.ethics
-        if model.tags is not None:
-            self.tags = list(
-                {t for t in self.tags or []}.union(set(model.tags))
-            )
 
     def __hash__(self) -> int:
         """Get hash of the `Model`.
@@ -822,85 +739,6 @@ class Model(BaseModel):
                 )
             )
         )
-
-    def _prepare_model_version_before_step_launch(
-        self,
-        pipeline_run: "PipelineRunResponse",
-        step_run: Optional["StepRunResponse"],
-        return_logs: bool,
-    ) -> Tuple[str, "PipelineRunResponse", Optional["StepRunResponse"]]:
-        """Prepares model version inside pipeline run.
-
-        Args:
-            pipeline_run: pipeline run
-            step_run: step run (passed only if model version is defined in a step explicitly)
-            return_logs: whether to return logs or not
-
-        Returns:
-            Logs related to the Dashboard URL to show later.
-        """
-        from zenml.client import Client
-        from zenml.models import PipelineRunUpdate, StepRunUpdate
-
-        logs = ""
-
-        # copy Model instance to prevent corrupting configs of the
-        # subsequent runs, if they share the same config object
-        self_copy = self.model_copy()
-
-        # in case request is within the step and no self-configuration is provided
-        # try reuse what's in the pipeline run first
-        if step_run is None and pipeline_run.model_version is not None:
-            self_copy.version = pipeline_run.model_version.name
-            self_copy.model_version_id = pipeline_run.model_version.id
-        # otherwise try to fill the templated name, if needed
-        elif isinstance(self_copy.version, str):
-            if pipeline_run.start_time:
-                start_time = pipeline_run.start_time
-            else:
-                start_time = datetime.datetime.now(datetime.timezone.utc)
-            self_copy.version = format_name_template(
-                self_copy.version,
-                date=start_time.strftime("%Y_%m_%d"),
-                time=start_time.strftime("%H_%M_%S_%f"),
-            )
-
-        # if exact model not yet defined - try to get/create and update it
-        # back to the run accordingly
-        if self_copy.model_version_id is None:
-            model_version_response = self_copy._get_or_create_model_version()
-
-            client = Client()
-            # update the configured model version id in runs accordingly
-            if step_run:
-                step_run = client.zen_store.update_run_step(
-                    step_run_id=step_run.id,
-                    step_run_update=StepRunUpdate(
-                        model_version_id=model_version_response.id
-                    ),
-                )
-            else:
-                pipeline_run = client.zen_store.update_run(
-                    run_id=pipeline_run.id,
-                    run_update=PipelineRunUpdate(
-                        model_version_id=model_version_response.id
-                    ),
-                )
-
-            if return_logs:
-                from zenml.utils.cloud_utils import try_get_model_version_url
-
-                if logs_to_show := try_get_model_version_url(
-                    model_version_response
-                ):
-                    logs = logs_to_show
-                else:
-                    logs = (
-                        "Models can be viewed in the dashboard using ZenML Pro. Sign up "
-                        "for a free trial at https://www.zenml.io/pro/"
-                    )
-        self.model_version_id = self_copy.model_version_id
-        return logs, pipeline_run, step_run
 
     @property
     def _lazy_version(self) -> Optional[str]:

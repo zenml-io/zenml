@@ -29,6 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
@@ -49,9 +50,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -193,7 +191,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         description="Metadata linked to the model version",
         default={},
     )
@@ -304,7 +302,7 @@ class ModelVersionResponse(
         return self.get_metadata().description
 
     @property
-    def run_metadata(self) -> Optional[Dict[str, "RunMetadataResponse"]]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -325,14 +323,11 @@ class ModelVersionResponse(
     # Helper functions
     def to_model_class(
         self,
-        was_created_in_this_run: bool = False,
-        suppress_class_validation_warnings: bool = False,
+        suppress_class_validation_warnings: bool = True,
     ) -> "Model":
         """Convert response model to Model object.
 
         Args:
-            was_created_in_this_run: Whether model version was created during
-                the current run.
             suppress_class_validation_warnings: internally used to suppress
                 repeated warnings.
 
@@ -352,7 +347,6 @@ class ModelVersionResponse(
             ethics=self.model.ethics,
             tags=[t.name for t in self.tags],
             version=self.name,
-            was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
             model_version_id=self.id,
         )
@@ -582,10 +576,6 @@ class ModelVersionResponse(
             force=force,
         )
 
-    # TODO in https://zenml.atlassian.net/browse/OSS-2433
-    # def generate_model_card(self, template_name: str) -> str:
-    #     """Return HTML/PDF based on input template"""
-
 
 # ------------------ Filter Model ------------------
 
@@ -596,6 +586,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "user",
+        "run_metadata",
     ]
 
     name: Optional[str] = Field(
@@ -624,6 +615,10 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the model version.",
+    )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the model versions by.",
     )
 
     _model_id: UUID = PrivateAttr(None)
@@ -657,6 +652,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             ModelVersionSchema,
+            RunMetadataSchema,
             UserSchema,
         )
 
@@ -664,10 +660,29 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
             user_filter = and_(
                 ModelVersionSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)
+
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == ModelVersionSchema.id,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.MODEL_VERSION,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters
 

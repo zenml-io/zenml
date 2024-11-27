@@ -72,6 +72,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             "orchestrator_run_id",
             name="unique_orchestrator_run_id_for_deployment_id",
         ),
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_run_name_in_workspace",
+        ),
     )
 
     # Fields
@@ -271,7 +276,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
 
         run_metadata = {
-            metadata_schema.key: metadata_schema.to_model()
+            metadata_schema.key: json.loads(metadata_schema.value)
             for metadata_schema in self.run_metadata
         }
 
@@ -412,10 +417,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if (
-            self.orchestrator_run_id
-            or self.status != ExecutionStatus.INITIALIZING
-        ):
+        if not self.is_placeholder_run():
             raise RuntimeError(
                 f"Unable to replace pipeline run {self.id} which is not a "
                 "placeholder run."
@@ -439,3 +441,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
 
         return self
+
+    def is_placeholder_run(self) -> bool:
+        """Whether the pipeline run is a placeholder run.
+
+        Returns:
+            Whether the pipeline run is a placeholder run.
+        """
+        return (
+            self.orchestrator_run_id is None
+            and self.status == ExecutionStatus.INITIALIZING
+        )

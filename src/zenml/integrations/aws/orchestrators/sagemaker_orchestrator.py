@@ -305,8 +305,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Retrieve Executor arguments provided in the Step settings.
             if use_training_step:
                 args_for_step_executor = step_settings.estimator_args or {}
+                args_for_step_executor.setdefault(
+                    "volume_size", step_settings.volume_size_in_gb
+                )
+                args_for_step_executor.setdefault(
+                    "max_run", step_settings.max_runtime_in_seconds
+                )
             else:
                 args_for_step_executor = step_settings.processor_args or {}
+                args_for_step_executor.setdefault(
+                    "volume_size_in_gb", step_settings.volume_size_in_gb
+                )
+                args_for_step_executor.setdefault(
+                    "max_runtime_in_seconds",
+                    step_settings.max_runtime_in_seconds,
+                )
 
             # Set default values from configured orchestrator Component to
             # arguments to be used when they are not present in processor_args.
@@ -314,12 +327,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "role",
                 step_settings.execution_role or self.config.execution_role,
             )
-            args_for_step_executor.setdefault(
-                "volume_size_in_gb", step_settings.volume_size_in_gb
-            )
-            args_for_step_executor.setdefault(
-                "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
-            )
+
             tags = step_settings.tags
             args_for_step_executor.setdefault(
                 "tags",
@@ -332,6 +340,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     else None
                 ),
             )
+
             args_for_step_executor.setdefault(
                 "instance_type", step_settings.instance_type
             )
@@ -457,7 +466,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=self.config.execution_role)
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        pipeline.create(
+            role_arn=self.config.execution_role,
+            tags=[
+                {"Key": key, "Value": value}
+                for key, value in settings.pipeline_tags.items()
+            ]
+            if settings.pipeline_tags
+            else None,
+        )
         execution = pipeline.start()
         logger.warning(
             "Steps can take 5-15 minutes to start running "
@@ -465,11 +486,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Yield metadata based on the generated execution object
-        yield from self.compute_metadata(execution=execution)
-
-        settings = cast(
-            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        yield from self.compute_metadata(
+            execution=execution, settings=settings
         )
+
         # mainly for testing purposes, we wait for the pipeline to finish
         if settings.synchronous:
             logger.info(
@@ -508,19 +528,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             "pipeline_execution_arn": pipeline_execution_arn,
         }
 
-        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
-
-        region_name, _, _ = dissect_pipeline_execution_arn(
-            pipeline_execution_arn=pipeline_execution_arn
-        )
-
-        orchestrator_logs_url = (
-            f"https://{region_name}.console.aws.amazon.com/"
-            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
-            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
-            f"$3Dpipelines-{aws_run_id}-"
-        )
-        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
         return run_metadata
 
     def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
@@ -556,7 +563,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         # Fetch the status of the _PipelineExecution
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID].value
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
         elif run.orchestrator_run_id is not None:
             run_id = run.orchestrator_run_id
         else:
@@ -580,12 +587,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             raise ValueError("Unknown status for the pipeline execution.")
 
     def compute_metadata(
-        self, execution: Any
+        self,
+        execution: Any,
+        settings: SagemakerOrchestratorSettings,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
             execution: The corresponding _PipelineExecution object.
+            settings: The Sagemaker orchestrator settings.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
@@ -602,7 +612,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding CloudWatch page
-        if logs_url := self._compute_orchestrator_logs_url(execution):
+        if logs_url := self._compute_orchestrator_logs_url(
+            execution, settings
+        ):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
@@ -646,11 +658,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
     @staticmethod
     def _compute_orchestrator_logs_url(
         pipeline_execution: Any,
+        settings: SagemakerOrchestratorSettings,
     ) -> Optional[str]:
         """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
             pipeline_execution: The corresponding _PipelineExecution object.
+            settings: The Sagemaker orchestrator settings.
 
         Returns:
             the URL querying the pipeline logs in CloudWatch on AWS.
@@ -660,10 +674,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 pipeline_execution.arn
             )
 
+            use_training_jobs = True
+            if settings.use_training_step is not None:
+                use_training_jobs = settings.use_training_step
+
+            job_type = "Training" if use_training_jobs else "Processing"
+
             return (
                 f"https://{region_name}.console.aws.amazon.com/"
                 f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
-                f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+                f"/$252Faws$252Fsagemaker$252F{job_type}Jobs$3FlogStreamNameFilter"
                 f"$3Dpipelines-{execution_id}-"
             )
         except Exception as e:

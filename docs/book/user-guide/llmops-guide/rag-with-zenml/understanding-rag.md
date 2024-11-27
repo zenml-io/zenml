@@ -34,7 +34,7 @@ In ZenML, you can set up RAG pipelines that combine the strengths of retrieval-b
 
 ZenML also provides a way to scale beyond the limitations of simple RAG pipelines, as we shall see in later sections of this guide. While you might start off with something simple, at a later point you might want to transition to a more complex setup that involves finetuning embeddings, reranking retrieved documents, or even finetuning the LLM itself. ZenML provides tools for all of these scenarios, making it easy to scale your RAG pipelines as needed.
 
-ZenML allows you to track all the artifacts associated with your RAG pipeline, from hyperparameters and model weights to metadata and performance metrics, as well as all the RAG or LLM-specific artifacts like chains, agents, tokenizers and vector stores. These can all be tracked in the [Model Control Plane](../../../how-to/use-the-model-control-plane/README.md) and thus visualized in the [ZenML Pro](https://zenml.io/pro) dashboard.
+ZenML allows you to track all the artifacts associated with your RAG pipeline, from hyperparameters and model weights to metadata and performance metrics, as well as all the RAG or LLM-specific artifacts like chains, agents, tokenizers and vector stores. These can all be tracked in the [Model Control Plane](../../../how-to/model-management-metrics/model-control-plane/README.md) and thus visualized in the [ZenML Pro](https://zenml.io/pro) dashboard.
 
 By bringing all of the above into a simple ZenML pipeline we achieve a clearly delineated set of steps that can be run and rerun to set up our basic RAG pipeline. This is a great starting point for building out more complex RAG pipelines, and it's a great way to get started with LLMs in a sensible way.
 

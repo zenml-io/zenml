@@ -36,7 +36,7 @@ If configured for it, the HyperAI orchestrator will connect the HyperAI instance
 
 ### Scheduled pipelines
 
-[Scheduled pipelines](../../how-to/build-pipelines/schedule-a-pipeline.md) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
+[Scheduled pipelines](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
 
 * Cron expressions via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry on the HyperAI instance. Use this when you want pipelines to run in intervals. Using cron expressions assumes that `crontab` is available on your instance and that its daemon is running.
 * Scheduled runs via `run_once_start_time`. When pipeline runs are scheduled this way, they are added as an `at` entry on the HyperAI instance. Use this when you want pipelines to run just once and at a specified time. This assumes that `at` is available on your instance.
@@ -78,6 +78,6 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

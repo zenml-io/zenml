@@ -45,7 +45,9 @@ def validate_deployment_is_templatable(
     """
     if not deployment.build:
         raise ValueError(
-            "Unable to create run template as there is no associated build."
+            "Unable to create run template as there is no associated build. "
+            "Run templates can only be created for remote orchestrators that "
+            "use container images to run the pipeline."
         )
 
     if not deployment.build.stack:

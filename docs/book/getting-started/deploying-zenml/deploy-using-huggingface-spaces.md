@@ -43,7 +43,7 @@ Your Space's URL will only be available and usable for connecting from your loca
 You can use the 'Direct URL' to connect to your ZenML server from your local machine with the following CLI command (after installing ZenML, and using your custom URL instead of the placeholder):
 
 ```shell
-zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>'
+zenml login '<YOUR_HF_SPACES_DIRECT_URL>'
 ```
 
 You can also use the Direct URL in your browser to use the ZenML dashboard as a fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).

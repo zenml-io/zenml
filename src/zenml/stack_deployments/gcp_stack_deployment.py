@@ -70,11 +70,12 @@ and are aware of any potential costs:
 
 - A GCS bucket registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/gcp).
 - A Google Artifact Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/gcp).
-- Vertex AI registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex).
+- Vertex AI registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex)
+and as a [ZenML step operator](https://docs.zenml.io/stack-components/step-operators/vertex).
 - GCP Cloud Build registered as a [ZenML image builder](https://docs.zenml.io/stack-components/image-builders/gcp).
 - A GCP Service Account with the minimum necessary permissions to access the
 above resources.
-- An GCP Service Account access key used to give access to ZenML to connect to
+- A GCP Service Account access key used to give access to ZenML to connect to
 the above resources through a [ZenML service connector](https://docs.zenml.io/how-to/auth-management/gcp-service-connector).
 
 The Deployment Manager deployment will automatically create a GCP Service
@@ -259,14 +260,30 @@ GCP project and to clean up the resources created by the stack by using
         )
 
         if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
-            config = f"""module "zenml_stack" {{
+            config = f"""terraform {{
+    required_providers {{
+        google = {{
+            source  = "hashicorp/google"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "google" {{
+    region  = "{self.location or "europe-west3"}"
+    project = your GCP project name
+}}
+
+provider "zenml" {{
+    server_url = "{self.zenml_server_url}"
+    api_token = "{self.zenml_server_api_token}"
+}}
+
+module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/gcp"
 
-    project_id = "my-gcp-project"
-    region = "{self.location or "europe-west3"}"
-    zenml_server_url = "{self.zenml_server_url}"
-    zenml_api_key = ""
-    zenml_api_token = "{self.zenml_server_api_token}"
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
 }}

@@ -14,7 +14,6 @@
 """Implementation of the Huggingface t5 materializer."""
 
 import os
-import tempfile
 from typing import Any, ClassVar, Type, Union
 
 from transformers import (
@@ -52,8 +51,7 @@ class HFT5Materializer(BaseMaterializer):
             ValueError: Unsupported data type used
         """
         filepath = self.uri
-
-        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             # Copy files from artifact store to temporary directory
             for file in fileio.listdir(filepath):
                 src = os.path.join(filepath, file)
@@ -86,8 +84,7 @@ class HFT5Materializer(BaseMaterializer):
         Args:
             obj: A T5ForConditionalGeneration model or T5Tokenizer.
         """
-        # Create a temporary directory
-        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
             # Save the model or tokenizer
             obj.save_pretrained(temp_dir)
 

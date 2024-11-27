@@ -31,7 +31,7 @@ init_logging()
 from zenml.models import *  # noqa: F401
 
 # Define public Python API
-from zenml.api import show
+from zenml.zen_server.utils import show_dashboard as show
 from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
@@ -48,6 +48,7 @@ from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
 from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
+from zenml.utils.metadata_utils import log_metadata
 from zenml.entrypoints import entrypoint
 
 __all__ = [
@@ -56,6 +57,7 @@ __all__ = [
     "get_pipeline_context",
     "get_step_context",
     "load_artifact",
+    "log_metadata",
     "log_artifact_metadata",
     "log_model_metadata",
     "log_step_metadata",

@@ -27,10 +27,10 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import EntityExistsError
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     ArtifactVersionResponse,
     ArtifactVisualizationResponse,
-    RunMetadataResponse,
 )
 
 if TYPE_CHECKING:
@@ -75,8 +75,8 @@ def test_multi_output_artifact_names(
     pipeline_instance = one_step_pipeline(multi_output_test_step)
     pipeline_run = pipeline_instance()
     step_run = pipeline_run.steps["multi_output_test_step"]
-    artifact_1 = step_run.outputs["number_7"]
-    artifact_2 = step_run.outputs["output_1"]
+    artifact_1 = step_run.outputs["number_7"][0]
+    artifact_2 = step_run.outputs["output_1"][0]
     assert artifact_1.name == "number_7"
     assert (
         artifact_2.name
@@ -341,7 +341,7 @@ def _get_visualizations_of_last_run(
 
 def _get_metadata_of_last_run(
     clean_client: "Client",
-) -> Dict[str, "RunMetadataResponse"]:
+) -> Dict[str, MetadataType]:
     """Get the artifact metadata of the last run."""
     return _get_output_of_last_run(clean_client).run_metadata
 

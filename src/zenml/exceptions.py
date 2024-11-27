@@ -47,6 +47,17 @@ class AuthorizationException(ZenMLBaseException):
     """Raised when an authorization error occurred while trying to access a ZenML resource ."""
 
 
+class CredentialsNotValid(AuthorizationException):
+    """Raised when the credentials provided are invalid.
+
+    This is a subclass of AuthorizationException and should only be raised when
+    the authentication credentials are invalid (e.g. expired API token, invalid
+    username/password, invalid signature). If caught by the ZenML client, it
+    will trigger an invalidation of the currently cached API token and a
+    re-authentication flow.
+    """
+
+
 class DoesNotExistException(ZenMLBaseException):
     """Raises exception when the entity does not exist in the system but an action is being done that requires it to be present."""
 
@@ -155,6 +166,10 @@ class ValidationError(ZenMLBaseException):
 
 class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
+
+
+class EntityCreationError(ZenMLBaseException, RuntimeError):
+    """Raised when failing to create an entity."""
 
 
 class ActionExistsError(EntityExistsError):

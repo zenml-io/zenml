@@ -16,7 +16,6 @@
 from typing import Dict, Optional, Union
 from uuid import UUID
 
-from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -24,93 +23,14 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
 from zenml.models import (
+    ArtifactVersionResponse,
     ModelVersionArtifactRequest,
+    ModelVersionResponse,
     ServiceUpdate,
 )
 from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
-
-
-def link_step_artifacts_to_model(
-    artifact_version_ids: Dict[str, UUID],
-) -> None:
-    """Links the output artifacts of a step to the model.
-
-    Args:
-        artifact_version_ids: The IDs of the published output artifacts.
-
-    Raises:
-        RuntimeError: If called outside of a step.
-    """
-    try:
-        step_context = get_step_context()
-    except StepContextError:
-        raise RuntimeError(
-            "`link_step_artifacts_to_model` can only be called from within a "
-            "step."
-        )
-    try:
-        model = step_context.model
-    except StepContextError:
-        model = None
-        logger.debug("No model context found, unable to auto-link artifacts.")
-
-    for artifact_name, artifact_version_id in artifact_version_ids.items():
-        artifact_config = step_context._get_output(
-            artifact_name
-        ).artifact_config
-
-        if artifact_config is None and model is not None:
-            artifact_config = ArtifactConfig(name=artifact_name)
-
-        if artifact_config:
-            link_artifact_config_to_model(
-                artifact_config=artifact_config,
-                artifact_version_id=artifact_version_id,
-                model=model,
-            )
-
-
-def link_artifact_config_to_model(
-    artifact_config: ArtifactConfig,
-    artifact_version_id: UUID,
-    model: Optional["Model"] = None,
-) -> None:
-    """Link an artifact config to its model version.
-
-    Args:
-        artifact_config: The artifact config to link.
-        artifact_version_id: The ID of the artifact to link.
-        model: The model version from the step or pipeline context.
-    """
-    client = Client()
-
-    # If the artifact config specifies a model itself then always use that
-    if artifact_config.model_name is not None:
-        from zenml.model.model import Model
-
-        model = Model(
-            name=artifact_config.model_name,
-            version=artifact_config.model_version,
-        )
-
-    if model:
-        logger.debug(
-            f"Linking artifact `{artifact_config.name}` to model "
-            f"`{model.name}` version `{model.version}` using config "
-            f"`{artifact_config}`."
-        )
-        request = ModelVersionArtifactRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            artifact_version=artifact_version_id,
-            model=model.model_id,
-            model_version=model.id,
-            is_model_artifact=artifact_config.is_model_artifact,
-            is_deployment_artifact=artifact_config.is_deployment_artifact,
-        )
-        client.zen_store.create_model_version_artifact_link(request)
 
 
 def log_model_metadata(
@@ -135,6 +55,11 @@ def log_model_metadata(
         ValueError: If no model name/version is provided and the function is not
             called inside a step with configured `model` in decorator.
     """
+    logger.warning(
+        "The `log_model_metadata` function is deprecated and will soon be "
+        "removed. Please use `log_metadata` instead."
+    )
+
     if model_name and model_version:
         from zenml import Model
 
@@ -152,19 +77,34 @@ def log_model_metadata(
     mv.log_metadata(metadata)
 
 
+def link_artifact_version_to_model_version(
+    artifact_version: ArtifactVersionResponse,
+    model_version: ModelVersionResponse,
+) -> None:
+    """Link an artifact version to a model version.
+
+    Args:
+        artifact_version: The artifact version to link.
+        model_version: The model version to link.
+    """
+    client = Client()
+    client.zen_store.create_model_version_artifact_link(
+        ModelVersionArtifactRequest(
+            artifact_version=artifact_version.id,
+            model_version=model_version.id,
+        )
+    )
+
+
 def link_artifact_to_model(
-    artifact_version_id: UUID,
+    artifact_version: ArtifactVersionResponse,
     model: Optional["Model"] = None,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
 ) -> None:
     """Link the artifact to the model.
 
     Args:
-        artifact_version_id: The ID of the artifact version.
+        artifact_version: The artifact version to link.
         model: The model to link to.
-        is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is a deployment artifact.
 
     Raises:
         RuntimeError: If called outside of a step.
@@ -185,13 +125,10 @@ def link_artifact_to_model(
                 "@step or @pipeline decorator."
             )
 
-    link_artifact_config_to_model(
-        artifact_config=ArtifactConfig(
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
-        ),
-        artifact_version_id=artifact_version_id,
-        model=model,
+    model_version = model._get_or_create_model_version()
+    link_artifact_version_to_model_version(
+        artifact_version=artifact_version,
+        model_version=model_version,
     )
 
 

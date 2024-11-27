@@ -18,11 +18,11 @@
 #      any ZenML Server. The client connects directly to a database, which is
 #      either local or remote.
 #   -  local: A deployment that uses a ZenML server running locally as a
-#      daemon process (similar to running `zenml up`). The test framework takes
-#      care of starting and stopping the server process.
+#      daemon process (similar to running `zenml login --local`). The test
+#      framework takes care of starting and stopping the server process.
 #   -  docker: A deployment that uses a ZenML server running locally as a
-#      docker container (similar to running `zenml up --docker`). The test
-#      framework takes care of starting and stopping the server container. It
+#      docker container (similar to running `zenml login --local --docker`). The
+#      test framework takes care of starting and stopping the server container. It
 #      also takes care of building and using a `zenml-server` Docker image with
 #      the latest code available in the local zenml code repository clone.
 #      When used with a dockerized database server like MySQL or MariaDB, the
@@ -36,7 +36,7 @@
 #   the following values:
 #   -  sqlite: Indicates that the default SQLite database is used. For `local`
 #      and `docker` server deployments, this is equivalent to deploying the
-#      ZenML server with `zenml up` or `zenml up --docker`.
+#      ZenML server with `zenml login --local` or `zenml login --local --docker`.
 #   -  mysql: Uses a MySQL database server running locally as a Docker
 #      container.
 #   -  mariadb: Uses a MariaDB database server running locally as a Docker
@@ -111,3 +111,14 @@ deployments:
     database: mariadb
     capabilities:
       server: true
+  - name: github-actions-server
+    description: >-
+      Local ZenML server and MariaDB both running in docker with docker-compose.
+    server: external
+    database: external
+    capabilities:
+      server: true
+    config:
+      url: http://127.0.0.1:8080/
+      username: default
+      password: ''

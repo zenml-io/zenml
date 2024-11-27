@@ -12,9 +12,9 @@ with correct permissions and the relevant ZenML stack and components.
 Would you like to skip ahead and deploy a full Azure ZenML cloud stack already?
 
 Check out the
-[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML Azure Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+[in-browser stack deployment wizard](../../infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Azure Terraform module](../../infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack.
 {% endhint %}
 
@@ -92,7 +92,7 @@ assign the role accordingly.
 ## 4. Create a service connector
 
 Now you have everything set up, you can go ahead and create [a ZenML Azure 
-Service Connector](../../how-to/auth-management/azure-service-connector.md).
+Service Connector](../../infrastructure-deployment/auth-management/azure-service-connector.md).
 
 ```bash
 zenml service-connector register azure_connector --type azure \
@@ -207,7 +207,7 @@ Now that you have a functional Azure stack set up with ZenML, you can explore
 more advanced features and capabilities offered by ZenML. Some next steps to 
 consider:
 
-* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
+* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 

@@ -273,30 +273,25 @@ class MigrationUtils(BaseModel):
                         + "\n);"
                     )
 
+                # Detect self-referential foreign keys from the table schema
+                has_self_referential_foreign_keys = False
+                for fk in table.foreign_keys:
+                    # Check if the foreign key points to the same table
+                    if fk.column.table == table:
+                        has_self_referential_foreign_keys = True
+                        break
+
                 # Store the table schema
                 store_db_info(
-                    dict(table=table.name, create_stmt=create_table_stmt)
+                    dict(
+                        table=table.name,
+                        create_stmt=create_table_stmt,
+                        self_references=has_self_referential_foreign_keys,
+                    )
                 )
 
                 # 2. extract the table data in batches
-
-                # If the table has a `created` column, we use it to sort
-                # the rows in the table starting with the oldest rows.
-                # This is to ensure that the rows are inserted in the
-                # correct order, since some tables have inner foreign key
-                # constraints.
-                if "created" in table.columns:
-                    order_by = [table.columns["created"]]
-                else:
-                    order_by = []
-                if "id" in table.columns:
-                    # If the table has an `id` column, we also use it to sort
-                    # the rows in the table, even if we already use "created"
-                    # to sort the rows. We need a unique field to sort the rows,
-                    # to break the tie between rows with the same "created"
-                    # date, otherwise the same entry might end up multiple times
-                    # in subsequent pages.
-                    order_by.append(table.columns["id"])
+                order_by = [col for col in table.primary_key]
 
                 # Fetch the number of rows in the table
                 row_count = conn.scalar(
@@ -305,7 +300,7 @@ class MigrationUtils(BaseModel):
 
                 # Fetch the data from the table in batches
                 if row_count is not None:
-                    batch_size = 50
+                    batch_size = 100
                     for i in range(0, row_count, batch_size):
                         rows = conn.execute(
                             table.select()
@@ -349,6 +344,7 @@ class MigrationUtils(BaseModel):
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
+            self_references: Dict[str, bool] = {}
             for table_dump in load_db_info():
                 table_name = table_dump["table"]
                 if "create_stmt" in table_dump:
@@ -356,10 +352,22 @@ class MigrationUtils(BaseModel):
                     connection.execute(text(table_dump["create_stmt"]))
                     # Reload the database metadata after creating the table
                     metadata.reflect(bind=self.engine)
+                    self_references[table_name] = table_dump.get(
+                        "self_references", False
+                    )
 
                 if "data" in table_dump:
                     # insert the data into the database
                     table = metadata.tables[table_name]
+                    if self_references.get(table_name, False):
+                        # If the table has self-referential foreign keys, we
+                        # need to disable the foreign key checks before inserting
+                        # the rows and re-enable them afterwards. This is because
+                        # the rows need to be inserted in the correct order to
+                        # satisfy the foreign key constraints and we don't sort
+                        # the rows by creation time in the backup.
+                        connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
                     for row in table_dump["data"]:
                         # Convert column values to the correct type
                         for column in table.columns:
@@ -372,10 +380,18 @@ class MigrationUtils(BaseModel):
                                     row[column.name], "utf-8"
                                 )
 
-                    # Insert the rows into the table
-                    connection.execute(
-                        table.insert().values(table_dump["data"])
-                    )
+                    # Insert the rows into the table in batches
+                    batch_size = 100
+                    for i in range(0, len(table_dump["data"]), batch_size):
+                        connection.execute(
+                            table.insert().values(
+                                table_dump["data"][i : i + batch_size]
+                            )
+                        )
+
+                    if table_dump.get("self_references", False):
+                        # Re-enable the foreign key checks after inserting the rows
+                        connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
     def backup_database_to_file(self, dump_file: str) -> None:
         """Backup the database to a file.

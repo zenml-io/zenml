@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -28,6 +28,7 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    StepRunInputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -36,7 +37,11 @@ from zenml.models import (
     StepRunResponseMetadata,
     StepRunUpdate,
 )
-from zenml.models.v2.core.step_run import StepRunResponseResources
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+from zenml.models.v2.core.step_run import (
+    StepRunInputResponse,
+    StepRunResponseResources,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -97,7 +102,7 @@ class StepRunSchema(NamedSchema, table=True):
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
+        target=PipelineRunSchema.__tablename__,  # type: ignore[has-type]
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",
@@ -214,21 +219,25 @@ class StepRunSchema(NamedSchema, table=True):
                 or a step_configuration.
         """
         run_metadata = {
-            metadata_schema.key: metadata_schema.to_model()
+            metadata_schema.key: json.loads(metadata_schema.value)
             for metadata_schema in self.run_metadata
         }
 
         input_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
+            artifact.name: StepRunInputResponse(
+                input_type=StepRunInputArtifactType(artifact.type),
+                **artifact.artifact_version.to_model().model_dump(),
+            )
             for artifact in self.input_artifacts
         }
 
-        output_artifacts = {
-            artifact.name: artifact.artifact_version.to_model(
-                pipeline_run_id_in_context=self.pipeline_run_id
+        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+        for artifact in self.output_artifacts:
+            if artifact.name not in output_artifacts:
+                output_artifacts[artifact.name] = []
+            output_artifacts[artifact.name].append(
+                artifact.artifact_version.to_model()
             )
-            for artifact in self.output_artifacts
-        }
 
         full_step_config = None
         if self.deployment is not None:
@@ -262,6 +271,8 @@ class StepRunSchema(NamedSchema, table=True):
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
             status=ExecutionStatus(self.status),
+            start_time=self.start_time,
+            end_time=self.end_time,
             inputs=input_artifacts,
             outputs=output_artifacts,
             created=self.created,
@@ -278,8 +289,6 @@ class StepRunSchema(NamedSchema, table=True):
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
-                start_time=self.start_time,
-                end_time=self.end_time,
                 logs=self.logs.to_model() if self.logs else None,
                 deployment_id=self.deployment_id,
                 pipeline_run_id=self.pipeline_run_id,
@@ -398,7 +407,6 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
-    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

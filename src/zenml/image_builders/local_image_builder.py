@@ -68,15 +68,25 @@ class LocalImageBuilder(BaseImageBuilder):
             )
 
         if not docker_utils.check_docker():
+            # For 3., this is not supported by the python docker library
+            # https://github.com/docker/docker-py/issues/3146
             raise RuntimeError(
-                "Unable to connect to the Docker daemon. There are two "
+                "Unable to connect to the Docker daemon. There are three "
                 "common causes for this:\n"
                 "1) The Docker daemon isn't running.\n"
                 "2) The Docker client isn't configured correctly. The client "
                 "loads its configuration from the following file: "
                 "$HOME/.docker/config.json. If your configuration file is in a "
-                "different location, set it using the `DOCKER_CONFIG` "
-                "environment variable."
+                "different location, set the `DOCKER_CONFIG` environment "
+                "variable to the directory that contains your `config.json` "
+                "file.\n"
+                "3) If your Docker CLI is working fine but you ran into this "
+                "issue, you might be using a non-default Docker context which "
+                "is not supported by the Docker python library. To verify "
+                "this, run `docker context ls` and check which context has a "
+                "`*` next to it. If this is not the `default` context, copy "
+                "the `DOCKER ENDPOINT` value of that context and set the "
+                "`DOCKER_HOST` environment variable to that value."
             )
 
     def build(

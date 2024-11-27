@@ -239,8 +239,8 @@ def main(
         #  to get the random state and target column
         random_state = preprocess_pipeline_artifact.run_metadata[
             "random_state"
-        ].value
-        target = preprocess_pipeline_artifact.run_metadata["target"].value
+        ]
+        target = preprocess_pipeline_artifact.run_metadata["target"]
         run_args_inference["random_state"] = random_state
         run_args_inference["target"] = target
 

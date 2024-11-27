@@ -1,8 +1,9 @@
 ---
+icon: gear
 description: Understanding the global settings of your ZenML installation.
 ---
 
-# 📼 Global settings
+# Global settings
 
 The information about the global settings of ZenML on a machine is kept in a folder commonly referred to as the **ZenML Global Config Directory** or the **ZenML Config Path**. The location of this folder depends on the operating system type and the current system user, but is usually located in the following locations:
 

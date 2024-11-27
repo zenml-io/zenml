@@ -24,13 +24,20 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType, GenericFilterOps
+from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
-from zenml.models.v2.base.filter import StrFilter
+from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -50,9 +57,6 @@ if TYPE_CHECKING:
         ArtifactVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
-    )
     from zenml.models.v2.core.step_run import StepRunResponse
 
 logger = get_logger(__name__)
@@ -63,11 +67,16 @@ logger = get_logger(__name__)
 class ArtifactVersionRequest(WorkspaceScopedRequest):
     """Request model for artifact versions."""
 
-    artifact_id: UUID = Field(
+    artifact_id: Optional[UUID] = Field(
+        default=None,
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.", union_mode="left_to_right"
+    artifact_name: Optional[str] = Field(
+        default=None,
+        title="Name of the artifact to which this version belongs.",
+    )
+    version: Optional[Union[int, str]] = Field(
+        default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
@@ -95,6 +104,12 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
+    metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, title="Metadata of the artifact version."
+    )
 
     @field_validator("version")
     @classmethod
@@ -116,6 +131,28 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
         return value
+
+    @model_validator(mode="after")
+    def _validate_request(self) -> "ArtifactVersionRequest":
+        """Validate the request values.
+
+        Raises:
+            ValueError: If the request is invalid.
+
+        Returns:
+            The validated request.
+        """
+        if self.artifact_id and self.artifact_name:
+            raise ValueError(
+                "Only one of artifact_name and artifact_id can be set."
+            )
+
+        if not (self.artifact_id or self.artifact_name):
+            raise ValueError(
+                "Either artifact_name or artifact_id must be set."
+            )
+
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -156,6 +193,13 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
+    save_type: ArtifactSaveType = Field(
+        title="The save type of the artifact version.",
+    )
+    artifact_store_id: Optional[UUID] = Field(
+        title="ID of the artifact store in which this artifact is stored.",
+        default=None,
+    )
 
     @field_validator("version")
     @classmethod
@@ -182,10 +226,6 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    artifact_store_id: Optional[UUID] = Field(
-        title="ID of the artifact store in which this artifact is stored.",
-        default=None,
-    )
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
@@ -193,7 +233,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={}, title="Metadata of the artifact."
     )
 
@@ -277,13 +317,22 @@ class ArtifactVersionResponse(
         return self.get_body().producer_pipeline_run_id
 
     @property
+    def save_type(self) -> ArtifactSaveType:
+        """The `save_type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().save_type
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_store_id
+        return self.get_body().artifact_store_id
 
     @property
     def producer_step_run_id(self) -> Optional[UUID]:
@@ -306,7 +355,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().visualizations
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property.
 
         Returns:
@@ -425,6 +474,8 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "user",
         "model",
         "pipeline_run",
+        "model_version_id",
+        "run_metadata",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -475,6 +526,11 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="User that produced this artifact",
         union_mode="left_to_right",
     )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="ID of the model version that is associated with this artifact version.",
+        union_mode="left_to_right",
+    )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
     )
@@ -496,6 +552,10 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
     )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the artifact versions by.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -514,7 +574,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionArtifactSchema,
+            ModelVersionSchema,
             PipelineRunSchema,
+            RunMetadataSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
             StepRunSchema,
@@ -545,6 +607,20 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(unused_filter)
 
+        if self.model_version_id:
+            value, operator = self._resolve_operator(self.model_version_id)
+
+            model_version_filter = and_(
+                ArtifactVersionSchema.id
+                == ModelVersionArtifactSchema.artifact_version_id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                FilterGenerator(ModelVersionSchema)
+                .define_filter(column="id", value=value, operator=operator)
+                .generate_query_conditions(ModelVersionSchema),
+            )
+            custom_filters.append(model_version_filter)
+
         if self.has_custom_name is not None:
             custom_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
@@ -556,7 +632,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             user_filter = and_(
                 ArtifactVersionSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)
@@ -565,7 +643,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.model, table=ModelSchema
                 ),
@@ -593,6 +673,23 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 ),
             )
             custom_filters.append(pipeline_run_filter)
+
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == ArtifactVersionSchema.id,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.ARTIFACT_VERSION,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters
 
@@ -632,7 +729,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `metadata` property in lazy loading mode.
 
         Returns:

@@ -132,6 +132,7 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+    ComponentResponseResources
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -238,12 +239,7 @@ from zenml.models.v2.core.run_template import (
 )
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
-    LazyRunMetadataResponse,
     RunMetadataRequest,
-    RunMetadataFilter,
-    RunMetadataResponse,
-    RunMetadataResponseBody,
-    RunMetadataResponseMetadata,
 )
 from zenml.models.v2.core.schedule import (
     ScheduleRequest,
@@ -292,6 +288,7 @@ from zenml.models.v2.core.step_run import (
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
+    StepRunResponseResources
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -331,7 +328,11 @@ from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypedResourcesModel,
     ResourceTypeModel,
 )
-from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.misc.server_models import (
+    ServerDatabaseType,
+    ServerLoadInfo,
+    ServerModel,
+)
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -409,13 +410,13 @@ CodeRepositoryResponseBody.model_rebuild()
 CodeRepositoryResponseMetadata.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
+ComponentResponseResources.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
-LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
 ModelVersionResponseBody.model_rebuild()
@@ -441,8 +442,6 @@ RunTemplateResponseBody.model_rebuild()
 RunTemplateResponseMetadata.model_rebuild()
 RunTemplateResponseResources.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
-RunMetadataResponseBody.model_rebuild()
-RunMetadataResponseMetadata.model_rebuild()
 ScheduleResponseBody.model_rebuild()
 ScheduleResponseMetadata.model_rebuild()
 SecretResponseBody.model_rebuild()
@@ -459,6 +458,7 @@ StackResponse.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
+StepRunResponseResources.model_rebuild()
 TriggerExecutionResponseResources.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -555,6 +555,7 @@ __all__ = [
     "ComponentResponse",
     "ComponentResponseBody",
     "ComponentResponseMetadata",
+    "ComponentResponseResources",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -632,10 +633,6 @@ __all__ = [
     "RunTemplateResponseResources",
     "RunTemplateFilter",
     "RunMetadataRequest",
-    "RunMetadataFilter",
-    "RunMetadataResponse",
-    "RunMetadataResponseBody",
-    "RunMetadataResponseMetadata",
     "ScheduleRequest",
     "ScheduleUpdate",
     "ScheduleFilter",
@@ -685,6 +682,7 @@ __all__ = [
     "StepRunResponse",
     "StepRunResponseBody",
     "StepRunResponseMetadata",
+    "StepRunResponseResources",
     "TagFilter",
     "TagResourceResponse",
     "TagResourceResponseBody",
@@ -737,6 +735,7 @@ __all__ = [
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
+    "ServerLoadInfo",
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",

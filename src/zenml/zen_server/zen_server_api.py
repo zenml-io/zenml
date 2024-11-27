@@ -37,7 +37,12 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from starlette.types import ASGIApp
 
 import zenml
@@ -48,6 +53,7 @@ from zenml.constants import (
     HEALTH,
 )
 from zenml.enums import AuthScheme, SourceContextTypes
+from zenml.models import ServerDeploymentType
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     actions_endpoints,
@@ -58,13 +64,13 @@ from zenml.zen_server.routers import (
     devices_endpoints,
     event_source_endpoints,
     flavors_endpoints,
+    logs_endpoints,
     model_versions_endpoints,
     models_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
     pipelines_endpoints,
     plugin_endpoints,
-    run_metadata_endpoints,
     run_templates_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -89,6 +95,7 @@ from zenml.zen_server.secure_headers import (
 )
 from zenml.zen_server.utils import (
     initialize_feature_gate,
+    initialize_memcache,
     initialize_plugins,
     initialize_rbac,
     initialize_workload_manager,
@@ -98,10 +105,7 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-if server_config().use_legacy_dashboard:
-    DASHBOARD_DIRECTORY = "dashboard_legacy"
-else:
-    DASHBOARD_DIRECTORY = "dashboard"
+DASHBOARD_DIRECTORY = "dashboard"
 
 
 def relative_path(rel: str) -> str:
@@ -176,7 +180,15 @@ class RequestBodyLimit(BaseHTTPMiddleware):
         if content_length := request.headers.get("content-length"):
             if int(content_length) > self.max_bytes:
                 return Response(status_code=413)  # Request Entity Too Large
-        return await call_next(request)
+
+        try:
+            return await call_next(request)
+        except Exception:
+            logger.exception("An error occurred while processing the request")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "An unexpected error occurred."},
+            )
 
 
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
@@ -216,7 +228,15 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
                         "detail": "File uploads are not allowed on this endpoint."
                     },
                 )
-        return await call_next(request)
+
+        try:
+            return await call_next(request)
+        except Exception:
+            logger.exception("An error occurred while processing the request")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "An unexpected error occurred."},
+            )
 
 
 ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
@@ -248,13 +268,21 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     Returns:
         The response with secure headers set.
     """
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
+
     # If the request is for the openAPI docs, don't set secure headers
     if request.url.path.startswith("/docs") or request.url.path.startswith(
         "/redoc"
     ):
-        return await call_next(request)
+        return response
 
-    response = await call_next(request)
     secure_headers().framework.fastapi(response)
     return response
 
@@ -294,7 +322,15 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
         zen_store()._update_last_user_activity_timestamp(
             last_user_activity=last_user_activity
         )
-    return await call_next(request)
+
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
 
 
 @app.middleware("http")
@@ -326,15 +362,23 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
         )
         source_context.set(SourceContextTypes.API)
 
-    return await call_next(request)
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
 
 
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
+    cfg = server_config()
     # Set the maximum number of worker threads
     to_thread.current_default_thread_limiter().total_tokens = (
-        server_config().thread_pool_size
+        cfg.thread_pool_size
     )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
@@ -344,19 +388,17 @@ def initialize() -> None:
     initialize_workload_manager()
     initialize_plugins()
     initialize_secure_headers()
+    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
 
 
-if server_config().use_legacy_dashboard:
-    app.mount(
-        "/static",
-        StaticFiles(
-            directory=relative_path(
-                os.path.join(DASHBOARD_DIRECTORY, "static")
-            ),
-            check_dir=False,
-        ),
-    )
-else:
+DASHBOARD_REDIRECT_URL = None
+if (
+    server_config().dashboard_url
+    and server_config().deployment_type == ServerDeploymentType.CLOUD
+):
+    DASHBOARD_REDIRECT_URL = server_config().dashboard_url
+
+if not DASHBOARD_REDIRECT_URL:
     app.mount(
         "/assets",
         StaticFiles(
@@ -396,6 +438,9 @@ async def dashboard(request: Request) -> Any:
     Raises:
         HTTPException: If the dashboard files are not included.
     """
+    if DASHBOARD_REDIRECT_URL:
+        return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
+
     if not os.path.isfile(
         os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
     ):
@@ -412,6 +457,7 @@ app.include_router(code_repositories_endpoints.router)
 app.include_router(plugin_endpoints.plugin_router)
 app.include_router(event_source_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
+app.include_router(logs_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(model_versions_endpoints.router)
 app.include_router(model_versions_endpoints.model_version_artifacts_router)
@@ -420,7 +466,6 @@ app.include_router(pipelines_endpoints.router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
-app.include_router(run_metadata_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
@@ -504,6 +549,8 @@ async def catch_all(request: Request, file_path: str) -> Any:
     Returns:
         The ZenML dashboard.
     """
+    if DASHBOARD_REDIRECT_URL:
+        return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
     # some static files need to be served directly from the root dashboard
     # directory
     if file_path and file_path in root_static_files:

@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
+import contextlib
 import inspect
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+import shutil
+import tempfile
+from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
@@ -229,35 +232,69 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # ================
     # Internal Methods
     # ================
-
-    def validate_type_compatibility(self, data_type: Type[Any]) -> None:
-        """Checks whether the materializer can read/write the given type.
+    def validate_save_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can save the given type.
 
         Args:
             data_type: The type to check.
 
         Raises:
-            TypeError: If the materializer cannot read/write the given type.
+            TypeError: If the materializer cannot save the given type.
         """
-        if not self.can_handle_type(data_type):
+        if not self.can_save_type(data_type):
             raise TypeError(
-                f"Unable to handle type {data_type}. {self.__class__.__name__} "
-                f"can only read/write artifacts of the following types: "
+                f"Unable to save type {data_type}. {self.__class__.__name__} "
+                f"can only save artifacts of the following types: "
+                f"{self.ASSOCIATED_TYPES}."
+            )
+
+    def validate_load_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can load the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Raises:
+            TypeError: If the materializer cannot load the given type.
+        """
+        if not self.can_load_type(data_type):
+            raise TypeError(
+                f"Unable to load type {data_type}. {self.__class__.__name__} "
+                f"can only load artifacts of the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
 
     @classmethod
-    def can_handle_type(cls, data_type: Type[Any]) -> bool:
-        """Whether the materializer can read/write a certain type.
+    def can_save_type(cls, data_type: Type[Any]) -> bool:
+        """Whether the materializer can save a certain type.
 
         Args:
             data_type: The type to check.
 
         Returns:
-            Whether the materializer can read/write the given type.
+            Whether the materializer can save the given type.
         """
         return any(
             issubclass(data_type, associated_type)
+            for associated_type in cls.ASSOCIATED_TYPES
+        )
+
+    @classmethod
+    def can_load_type(cls, data_type: Type[Any]) -> bool:
+        """Whether the materializer can load an artifact as the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Returns:
+            Whether the materializer can load an artifact as the given type.
+        """
+        return any(
+            issubclass(associated_type, data_type)
+            # This next condition is not always correct, but better to have a
+            # false positive here instead of failing for cases where it would
+            # have worked.
+            or issubclass(data_type, associated_type)
             for associated_type in cls.ASSOCIATED_TYPES
         )
 
@@ -292,3 +329,67 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
+
+    @contextlib.contextmanager
+    def get_temporary_directory(
+        self,
+        delete_at_exit: bool,
+        delete_after_step_execution: bool = True,
+    ) -> Iterator[str]:
+        """Context manager to get a temporary directory.
+
+        Args:
+            delete_at_exit: If set to True, the temporary directory will be
+                deleted after the context manager exits.
+            delete_after_step_execution: If `delete_at_exit` is set to False and
+                this is set to True, the temporary directory will be deleted
+                after the step finished executing. If a materializer is being
+                used outside of the context of a step execution, the temporary
+                directory will not be deleted and the user is responsible for
+                deleting it themselves.
+
+        Yields:
+            Path to the temporary directory.
+        """
+        temp_dir = tempfile.mkdtemp(prefix="zenml-")
+
+        if delete_after_step_execution and not delete_at_exit:
+            # We should not delete the directory when the context manager
+            # exits, but cleanup once the step has finished executing.
+            self._register_directory_for_deletion_after_step_execution(
+                temp_dir
+            )
+
+        try:
+            yield temp_dir
+        finally:
+            if delete_at_exit:
+                shutil.rmtree(temp_dir)
+
+    def _register_directory_for_deletion_after_step_execution(
+        self, directory: str
+    ) -> None:
+        """Register directory to be deleted after the current step finishes.
+
+        If no step is currently being executed, this method does nothing.
+
+        Args:
+            directory: The directory to register for deletion.
+        """
+        from zenml import get_step_context
+
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            logger.debug(
+                "Materializer called outside of step execution, not cleaning "
+                "up directory %s",
+                directory,
+            )
+            return
+
+        def _callback() -> None:
+            shutil.rmtree(directory)
+            logger.debug("Cleaned up materializer directory %s", directory)
+
+        step_context._cleanup_registry.register_callback(_callback)

@@ -26,7 +26,11 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ArtifactSaveType,
+    ExecutionStatus,
+    MetadataResourceTypes,
+)
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -438,6 +442,11 @@ def log_step_metadata(
             from within a step or if no pipeline name or ID is provided and
             the function is not called from within a step.
     """
+    logger.warning(
+        "The `log_step_metadata` function is deprecated and will soon be "
+        "removed. Please use `log_metadata` instead."
+    )
+
     step_context = None
     if not step_name:
         with contextlib.suppress(RuntimeError):
@@ -538,6 +547,7 @@ def run_as_single_step_pipeline(
         __step(**inputs)
 
     run = single_step_pipeline.with_options(unlisted=True)()
+    assert run
     run = wait_for_pipeline_run_to_finish(run.id)
 
     if run.status != ExecutionStatus.COMPLETED:
@@ -546,8 +556,10 @@ def run_as_single_step_pipeline(
     # 4. Load output artifacts
     step_run = next(iter(run.steps.values()))
     outputs = [
-        step_run.outputs[output_name].load()
+        artifact_version.load()
         for output_name in step_run.config.outputs.keys()
+        for artifact_version in step_run.outputs[output_name]
+        if artifact_version.save_type == ArtifactSaveType.STEP_OUTPUT
     ]
 
     if len(outputs) == 0:

@@ -42,8 +42,8 @@ from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_cluster_role_binding_manifest_for_service_account,
     build_namespace_manifest,
+    build_role_binding_manifest_for_service_account,
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
@@ -94,18 +94,62 @@ def load_kube_config(
         k8s_config.load_kube_config(context=context)
 
 
-def sanitize_pod_name(pod_name: str) -> str:
+def calculate_max_pod_name_length_for_namespace(namespace: str) -> int:
+    """Calculate the max pod length for a certain namespace.
+
+    Args:
+        namespace: The namespace in which the pod will be created.
+
+    Returns:
+        The maximum pod name length.
+    """
+    # Kubernetes allows Pod names to have 253 characters. However, when
+    # creating a pod they try to create a log file which is called
+    # <NAMESPACE>_<POD_NAME>_<UUID>, which adds additional characters and
+    # runs into filesystem limitations for filename lengths (255). We therefore
+    # subtract the length of a UUID (36), the two underscores and the
+    # namespace length from the max filename length.
+    return 255 - 38 - len(namespace)
+
+
+def sanitize_pod_name(pod_name: str, namespace: str) -> str:
     """Sanitize pod names so they conform to Kubernetes pod naming convention.
 
     Args:
         pod_name: Arbitrary input pod name.
+        namespace: Namespace in which the Pod will be created.
 
     Returns:
         Sanitized pod name.
     """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
-    return re.sub(r"[-]+", "-", pod_name)
+    pod_name = re.sub(r"[-]+$", "", pod_name)
+    pod_name = re.sub(r"[-]+", "-", pod_name)
+
+    allowed_length = calculate_max_pod_name_length_for_namespace(
+        namespace=namespace
+    )
+    return pod_name[:allowed_length]
+
+
+def sanitize_label(label: str) -> str:
+    """Sanitize a label for a Kubernetes resource.
+
+    Args:
+        label: The label to sanitize.
+
+    Returns:
+        The sanitized label.
+    """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+    label = re.sub(r"[^a-z0-9-]", "-", label.lower())
+    label = re.sub(r"^[-]+", "", label)
+    label = re.sub(r"[-]+$", "", label)
+    label = re.sub(r"[-]+", "-", label)
+
+    return label[:63]
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
@@ -288,7 +332,7 @@ def create_edit_service_account(
     rbac_api: k8s_client.RbacAuthorizationV1Api,
     service_account_name: str,
     namespace: str,
-    cluster_role_binding_name: str = "zenml-edit",
+    role_binding_name: str = "zenml-edit",
 ) -> None:
     """Create a new Kubernetes service account with "edit" rights.
 
@@ -297,16 +341,17 @@ def create_edit_service_account(
         rbac_api: Client of Rbac Authorization V1 API of Kubernetes API.
         service_account_name: Name of the service account.
         namespace: Kubernetes namespace. Defaults to "default".
-        cluster_role_binding_name: Name of the cluster role binding.
-            Defaults to "zenml-edit".
+        role_binding_name: Name of the role binding. Defaults to "zenml-edit".
     """
-    crb_manifest = build_cluster_role_binding_manifest_for_service_account(
-        name=cluster_role_binding_name,
+    rb_manifest = build_role_binding_manifest_for_service_account(
+        name=role_binding_name,
         role_name="edit",
         service_account_name=service_account_name,
         namespace=namespace,
     )
-    _if_not_exists(rbac_api.create_cluster_role_binding)(body=crb_manifest)
+    _if_not_exists(rbac_api.create_namespaced_role_binding)(
+        namespace=namespace, body=rb_manifest
+    )
 
     sa_manifest = build_service_account_manifest(
         name=service_account_name, namespace=namespace

@@ -15,9 +15,14 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import model_validator
 
+from zenml.constants import (
+    ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
+    handle_bool_env_var,
+)
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -162,9 +167,8 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
 
-        Returns:
-            The optional return value from this method will be returned by the
-            `pipeline_instance.run()` call when someone is running a pipeline.
+        Yields:
+            Metadata for the pipeline run.
         """
 
     def run(
@@ -172,7 +176,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> None:
         """Runs a pipeline on a stack.
 
         Args:
@@ -183,7 +187,51 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self._prepare_run(deployment=deployment)
 
-        environment = get_config_environment_vars(deployment=deployment)
+        pipeline_run_id: Optional[UUID] = None
+        schedule_id: Optional[UUID] = None
+        if deployment.schedule:
+            schedule_id = deployment.schedule.id
+        if placeholder_run:
+            pipeline_run_id = placeholder_run.id
+
+        environment = get_config_environment_vars(
+            schedule_id=schedule_id,
+            pipeline_run_id=pipeline_run_id,
+        )
+
+        prevent_client_side_caching = handle_bool_env_var(
+            ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
+        )
+
+        if (
+            placeholder_run
+            and not deployment.schedule
+            and not prevent_client_side_caching
+        ):
+            from zenml.orchestrators import step_run_utils
+
+            cached_invocations = step_run_utils.create_cached_step_runs(
+                deployment=deployment,
+                pipeline_run=placeholder_run,
+                stack=stack,
+            )
+
+            for invocation_id in cached_invocations:
+                # Remove the cached step invocations from the deployment so
+                # the orchestrator does not try to run them
+                deployment.step_configurations.pop(invocation_id)
+
+            for step in deployment.step_configurations.values():
+                for invocation_id in cached_invocations:
+                    if invocation_id in step.spec.upstream_steps:
+                        step.spec.upstream_steps.remove(invocation_id)
+
+            if len(deployment.step_configurations) == 0:
+                # All steps were cached, we update the pipeline run status and
+                # don't actually use the orchestrator to run the pipeline
+                self._cleanup_run()
+                logger.info("All steps of the pipeline run were cached.")
+                return
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(

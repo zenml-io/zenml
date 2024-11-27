@@ -13,19 +13,14 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-from zenml.enums import ModelStages
-from zenml.exceptions import StepContextError
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.steps.step_context import get_step_context
-
-if TYPE_CHECKING:
-    from zenml.model.model import Model
-
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -42,8 +37,8 @@ class ArtifactConfig(BaseModel):
         int, ArtifactConfig(
             name="my_artifact",  # override the default artifact name
             version=42,  # set a custom version
+            artifact_type=ArtifactType.MODEL,  # Specify the artifact type
             tags=["tag1", "tag2"],  # set custom tags
-            model_name="my_model",  # link the artifact to a model
         )
     ]:
         return ...
@@ -53,13 +48,10 @@ class ArtifactConfig(BaseModel):
         name: The name of the artifact.
         version: The version of the artifact.
         tags: The tags of the artifact.
-        model_name: The name of the model to link artifact to.
-        model_version: The identifier of a version of the model to link the artifact
-            to. It can be an exact version ("my_version"), exact version number
-            (42), stage (ModelStages.PRODUCTION or "production"), or
-            (ModelStages.LATEST or None) for the latest version (default).
-        is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is a deployment artifact.
+        run_metadata: Metadata to add to the artifact.
+        artifact_type: Optional type of the artifact. If not given, the type
+            specified by the materializer that is used to save this artifact
+            is used.
     """
 
     name: Optional[str] = None
@@ -69,63 +61,53 @@ class ArtifactConfig(BaseModel):
     tags: Optional[List[str]] = None
     run_metadata: Optional[Dict[str, MetadataType]] = None
 
-    model_name: Optional[str] = None
-    model_version: Optional[Union[ModelStages, str, int]] = Field(
-        default=None, union_mode="smart"
-    )
-    is_model_artifact: bool = False
-    is_deployment_artifact: bool = False
+    artifact_type: Optional[ArtifactType] = None
 
-    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
-    #  fields defined under base models. If not handled, this raises a warning.
-    #  It is possible to suppress this warning message with the following
-    #  configuration, however the ultimate solution is to rename these fields.
-    #  Even though they do not cause any problems right now, if we are not
-    #  careful we might overwrite some fields protected by pydantic.
-    model_config = ConfigDict(protected_namespaces=())
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _remove_old_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove old attributes that are not used anymore.
 
-    @model_validator(mode="after")
-    def artifact_config_validator(self) -> "ArtifactConfig":
-        """Model validator for the artifact config.
+        Args:
+            data: The model data.
 
         Raises:
-            ValueError: If both model_name and model_version is set incorrectly.
+            ValueError: If the artifact is configured to be
+                both a model and a deployment artifact.
 
         Returns:
-            the validated instance.
+            Model data without the removed attributes.
         """
-        if self.model_name is not None and self.model_version is None:
+        model_name = data.pop("model_name", None)
+        model_version = data.pop("model_version", None)
+
+        if model_name or model_version:
+            logger.warning(
+                "Specifying a model name or version for a step output "
+                "artifact is not supported anymore."
+            )
+
+        is_model_artifact = data.pop("is_model_artifact", None)
+        is_deployment_artifact = data.pop("is_deployment_artifact", None)
+
+        if is_model_artifact and is_deployment_artifact:
             raise ValueError(
-                f"Creation of new model version from {self.__class__.__name__} "
-                "is not allowed. Please either keep `model_name` and "
-                "`model_version` both `None` to get the model version from the "
-                "step context or specify both at the same time. You can use "
-                "`ModelStages.LATEST` as `model_version` when latest model "
-                "version is desired."
+                "An artifact can only be a model artifact or deployment "
+                "artifact."
             )
-        return self
-
-    @property
-    def _model(self) -> Optional["Model"]:
-        """The model linked to this artifact.
-
-        Returns:
-            The model or None if the model version cannot be determined.
-        """
-        try:
-            model_ = get_step_context().model
-        except (StepContextError, RuntimeError):
-            model_ = None
-        # Check if another model name was specified
-        if (self.model_name is not None) and (
-            model_ is None or model_.name != self.model_name
-        ):
-            # Create a new Model instance with the provided model name and version
-            from zenml.model.model import Model
-
-            on_the_fly_config = Model(
-                name=self.model_name, version=self.model_version
+        elif is_model_artifact:
+            logger.warning(
+                "`ArtifactConfig.is_model_artifact` is deprecated and will be "
+                "removed soon. Use `ArtifactConfig.artifact_type` instead."
             )
-            return on_the_fly_config
+            data.setdefault("artifact_type", ArtifactType.MODEL)
+        elif is_deployment_artifact:
+            logger.warning(
+                "`ArtifactConfig.is_deployment_artifact` is deprecated and "
+                "will be removed soon. Use `ArtifactConfig.artifact_type` "
+                "instead."
+            )
+            data.setdefault("artifact_type", ArtifactType.SERVICE)
 
-        return model_
+        return data

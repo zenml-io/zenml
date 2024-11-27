@@ -38,8 +38,8 @@ from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
+    CODE_HASH_PARAMETER_NAME,
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
-    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.exceptions import StepInterfaceError
@@ -78,6 +78,7 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.models import ArtifactVersionResponse
     from zenml.types import HookSpecification
 
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -283,7 +284,7 @@ class BaseStep:
             A dictionary containing the caching parameters
         """
         parameters = {
-            STEP_SOURCE_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
+            CODE_HASH_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
                 self.source_object
             )
         }
@@ -307,7 +308,7 @@ class BaseStep:
         self, *args: Any, **kwargs: Any
     ) -> Tuple[
         Dict[str, "StepArtifact"],
-        Dict[str, "ExternalArtifact"],
+        Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, "ClientLazyLoader"],
         Dict[str, Any],
@@ -326,11 +327,12 @@ class BaseStep:
             The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.metadata.lazy_load import LazyRunMetadataResponse
         from zenml.model.lazy_load import ModelVersionDataLazyLoader
         from zenml.models.v2.core.artifact_version import (
+            ArtifactVersionResponse,
             LazyArtifactVersionResponse,
         )
-        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
@@ -342,7 +344,9 @@ class BaseStep:
             ) from e
 
         artifacts = {}
-        external_artifacts = {}
+        external_artifacts: Dict[
+            str, Union["ExternalArtifact", "ArtifactVersionResponse"]
+        ] = {}
         model_artifacts_or_metadata = {}
         client_lazy_loaders = {}
         parameters = {}
@@ -378,6 +382,8 @@ class BaseStep:
                     artifact_version=value.lazy_load_version,
                     metadata_name=None,
                 )
+            elif isinstance(value, ArtifactVersionResponse):
+                external_artifacts[key] = value
             elif isinstance(value, LazyRunMetadataResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
                     model_name=value.lazy_load_model_name,
@@ -986,9 +992,7 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[str, Dict[str, Union[Source, Tuple[Source, ...]]]] = (
-            defaultdict(dict)
-        )
+        outputs: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
         for (
             output_name,
@@ -997,6 +1001,8 @@ To avoid this consider setting step parameters only in one place (config or code
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
+            if artifact_config := output_annotation.artifact_config:
+                outputs[output_name]["artifact_config"] = artifact_config
 
             if output.materializer_source:
                 # The materializer source was configured by the user. We

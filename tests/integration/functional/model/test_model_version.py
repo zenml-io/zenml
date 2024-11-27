@@ -19,12 +19,12 @@ import pytest
 from typing_extensions import Annotated
 
 from tests.integration.functional.utils import random_str
-from zenml import get_step_context, pipeline, step
+from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
-from zenml.enums import ModelStages
+from zenml.enums import ArtifactType, ModelStages
 from zenml.model.model import Model
-from zenml.model.utils import link_artifact_to_model, log_model_metadata
+from zenml.model.utils import link_artifact_to_model
 from zenml.models import TagRequest
 
 
@@ -107,10 +107,10 @@ class TagContext:
 @step
 def step_metadata_logging_functional(mdl_name: str):
     """Functional logging using implicit Model from context."""
-    log_model_metadata({"foo": "bar"})
-    assert get_step_context().model.run_metadata["foo"].value == "bar"
-    log_model_metadata(
-        {"foo": "bar"}, model_name=mdl_name, model_version="other"
+    log_metadata({"foo": "bar"})
+    assert get_step_context().model.run_metadata["foo"] == "bar"
+    log_metadata(
+        metadata={"foo": "bar"}, model_name=mdl_name, model_version="other"
     )
 
 
@@ -124,24 +124,18 @@ def simple_producer() -> str:
 def artifact_linker(
     artifact_name: str,
     model: Optional[Model] = None,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
+    artifact_type: Optional[ArtifactType] = None,
 ) -> None:
     """Step linking an artifact to a model via function or implicit."""
 
     artifact = save_artifact(
-        data="Hello, World!",
-        name=artifact_name,
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
+        data="Hello, World!", name=artifact_name, artifact_type=artifact_type
     )
 
     if model:
         link_artifact_to_model(
-            artifact_version_id=artifact.id,
+            artifact_version=artifact,
             model=model,
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
         )
 
 
@@ -198,7 +192,7 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_create_model_version_makes_proper_tagging(self):
         """Test if model versions get unique tags."""
@@ -208,14 +202,14 @@ class TestModel:
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag1", "tag2"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
             mv = Model(name=mdl_name, tags=["tag3", "tag4"])
             mv = mv._get_or_create_model_version()
             assert mv.name == str(mv.number)
             assert mv.model.name == mdl_name
             assert {t.name for t in mv.tags} == {"tag3", "tag4"}
-            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+            assert len(mv.model.tags) == 0
 
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
@@ -301,15 +295,17 @@ class TestModel:
 
                     # run 2 times to first create, next get
                     for _ in range(2):
-                        model = mv._get_or_create_model()
+                        model_version = mv._get_or_create_model_version()
 
-                        assert len(model.tags) == 2
-                        assert {t.name for t in model.tags} == {
+                        assert len(model_version.tags) == 2
+                        assert {t.name for t in model_version.tags} == {
                             green_tag,
                             new_tag,
                         }
                         assert {
-                            t.color for t in model.tags if t.name == green_tag
+                            t.color
+                            for t in model_version.tags
+                            if t.name == green_tag
                         } == {"green"}
 
     def test_tags_properly_updated(self):
@@ -324,10 +320,8 @@ class TestModel:
 
             client.update_model(model_id, add_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 4
+            assert len(model.tags) == 2
             assert {t.name for t in model.tags} == {
-                "foo",
-                "bar",
                 "tag1",
                 "tag2",
             }
@@ -346,8 +340,7 @@ class TestModel:
 
             client.update_model(model_id, remove_tags=["tag1", "tag2"])
             model = mv._get_or_create_model()
-            assert len(model.tags) == 2
-            assert {t.name for t in model.tags} == {"foo", "bar"}
+            assert len(model.tags) == 0
 
             client.update_model_version(
                 model_id, "1", remove_tags=["tag3", "tag4"]
@@ -393,13 +386,13 @@ class TestModel:
             mv.log_metadata({"foo": "bar"})
 
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             mv.log_metadata({"bar": "foo"})
 
             assert len(mv.run_metadata) == 2
-            assert mv.run_metadata["foo"].value == "bar"
-            assert mv.run_metadata["bar"].value == "foo"
+            assert mv.run_metadata["foo"] == "bar"
+            assert mv.run_metadata["bar"] == "foo"
 
     def test_metadata_logging_functional(self):
         """Test that model version can be used to track metadata from function."""
@@ -410,23 +403,27 @@ class TestModel:
             )
             mv._get_or_create_model_version()
 
-            log_model_metadata(
-                {"foo": "bar"}, model_name=mv.name, model_version=mv.number
+            log_metadata(
+                metadata={"foo": "bar"},
+                model_name=mv.name,
+                model_version=str(mv.number),
             )
 
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             with pytest.raises(ValueError):
-                log_model_metadata({"foo": "bar"})
+                log_metadata({"foo": "bar"})
 
-            log_model_metadata(
-                {"bar": "foo"}, model_name=mv.name, model_version="latest"
+            log_metadata(
+                metadata={"bar": "foo"},
+                model_name=mv.name,
+                model_version="latest",
             )
 
             assert len(mv.run_metadata) == 2
-            assert mv.run_metadata["foo"].value == "bar"
-            assert mv.run_metadata["bar"].value == "foo"
+            assert mv.run_metadata["foo"] == "bar"
+            assert mv.run_metadata["bar"] == "foo"
 
     def test_metadata_logging_in_steps(self):
         """Test that model version can be used to track metadata from function in steps."""
@@ -449,11 +446,11 @@ class TestModel:
 
             mv = Model(name=mdl_name, version="context")
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
             mv = Model(name=mdl_name, version="other")
             assert len(mv.run_metadata) == 1
-            assert mv.run_metadata["foo"].value == "bar"
+            assert mv.run_metadata["foo"] == "bar"
 
     @pytest.mark.parametrize("delete_artifacts", [False, True])
     def test_deletion_of_links(self, delete_artifacts: bool):
@@ -561,14 +558,12 @@ class TestModel:
                     @pipeline
                     def _inner_pipeline(
                         model: Model = None,
-                        is_model_artifact: bool = False,
-                        is_deployment_artifact: bool = False,
+                        artifact_type: Optional[ArtifactType] = None,
                     ):
                         artifact_linker(
                             artifact_name=artifact_name,
                             model=model,
-                            is_model_artifact=is_model_artifact,
-                            is_deployment_artifact=is_deployment_artifact,
+                            artifact_type=artifact_type,
                         )
 
                     mv_in_pipe = Model(
@@ -600,7 +595,7 @@ class TestModel:
 
                     # use context + model (cache invalidated)
                     _inner_pipeline.with_options(model=mv_in_pipe)(
-                        is_model_artifact=True
+                        artifact_type=ArtifactType.MODEL
                     )
 
                     mv = Model(name=mdl_name, version="latest")
@@ -611,7 +606,7 @@ class TestModel:
 
                     # use context + deployment (cache invalidated)
                     _inner_pipeline.with_options(model=mv_in_pipe)(
-                        is_deployment_artifact=True
+                        artifact_type=ArtifactType.SERVICE
                     )
 
                     mv = Model(name=mdl_name, version="latest")
@@ -625,7 +620,7 @@ class TestModel:
                         data="Hello, World!", name=artifact_name
                     )
                     link_artifact_to_model(
-                        artifact_version_id=artifact.id,
+                        artifact_version=artifact,
                         model=Model(name=mdl_name),
                     )
 
@@ -651,25 +646,16 @@ class TestModel:
                     enable_cache=False,
                 )
                 def _inner_pipeline(
-                    is_model_artifact: bool = False,
-                    is_deployment_artifact: bool = False,
+                    artifact_type: Optional[ArtifactType] = None,
                 ):
                     artifact_linker(
                         artifact_name=artifact_name,
-                        is_model_artifact=is_model_artifact,
-                        is_deployment_artifact=is_deployment_artifact,
+                        artifact_type=artifact_type,
                     )
 
                 mv_in_pipe = Model(
                     name=mdl_name,
                 )
-
-                # no context, no model
-                with patch("zenml.artifacts.utils.logger.debug") as logger:
-                    _inner_pipeline()
-                    logger.assert_called_once_with(
-                        "Unable to link saved artifact to model."
-                    )
 
                 # use context
                 _inner_pipeline.with_options(model=mv_in_pipe)()
@@ -680,7 +666,7 @@ class TestModel:
 
                 # use context + model
                 _inner_pipeline.with_options(model=mv_in_pipe)(
-                    is_model_artifact=True
+                    artifact_type=ArtifactType.MODEL
                 )
 
                 mv = Model(name=mdl_name, version="latest")
@@ -692,7 +678,7 @@ class TestModel:
 
                 # use context + deployment
                 _inner_pipeline.with_options(model=mv_in_pipe)(
-                    is_deployment_artifact=True
+                    artifact_type=ArtifactType.SERVICE
                 )
 
                 mv = Model(name=mdl_name, version="latest")

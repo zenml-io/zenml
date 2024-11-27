@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.67.0"
+version = "0.70.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -78,9 +78,6 @@ secure = { version = "~0.3.0", optional = true }
 copier = { version = ">=8.1.0", optional = true }
 pyyaml-include = { version = "<2.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-
-# Optional terraform dependency for stack recipes and ZenServer deployments
-python-terraform = { version = "^0.10.1", optional = true }
 
 # Optional dependencies for the AWS secrets store
 boto3 = { version = ">=1.16.0", optional = true }
@@ -181,9 +178,6 @@ types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
 
-# mlstacks dependencies
-mlstacks = { version = "0.10.0", optional = true }
-
 [tool.poetry.extras]
 server = [
     "fastapi",
@@ -276,7 +270,6 @@ dev = [
     "types-psutil",
     "types-passlib",
 ]
-mlstacks = ["mlstacks"]
 
 [build-system]
 requires = ["poetry-core"]
@@ -469,7 +462,6 @@ module = [
     "datasets.*",
     "pyngrok.*",
     "cloudpickle.*",
-    "mlstacks.*",
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
@@ -483,5 +475,9 @@ module = [
     "prodigy.components.*",
     "prodigy.components.db.*",
     "transformers.*",
+    "langchain_community.*",
+    "vllm.*",
+    "numba.*",
+    "uvloop.*",
 ]
 ignore_missing_imports = true

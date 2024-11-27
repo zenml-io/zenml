@@ -23,23 +23,19 @@ from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
+    BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import StrFilter
-from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-)
+from zenml.models.v2.base.filter import BaseFilter, StrFilter
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 # ------------------ Request Model ------------------
 
 
-class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
+class ModelVersionPipelineRunRequest(BaseRequest):
     """Request model for links between model versions and pipeline runs."""
 
-    model: UUID
     model_version: UUID
     pipeline_run: UUID
 
@@ -62,7 +58,6 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
 class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and pipeline runs."""
 
-    model: UUID
     model_version: UUID
     pipeline_run: PipelineRunResponse
 
@@ -88,16 +83,6 @@ class ModelVersionPipelineRunResponse(
 ):
     """Response model for links between model versions and pipeline runs."""
 
-    # Body and metadata properties
-    @property
-    def model(self) -> UUID:
-        """The `model` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model
-
     @property
     def model_version(self) -> UUID:
         """The `model_version` property.
@@ -120,39 +105,21 @@ class ModelVersionPipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
+class ModelVersionPipelineRunFilter(BaseFilter):
     """Model version pipeline run links filter model."""
 
     FILTER_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_name",
         "user",
     ]
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "model_id",
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "model_version_id",
-        "user_id",
-        "workspace_id",
         "updated",
         "id",
     ]
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The workspace of the Model Version",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The user of the Model Version",
-        union_mode="left_to_right",
-    )
-    model_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Filter by model ID",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Filter by model version ID",
@@ -218,7 +185,9 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
                 == PipelineRunSchema.id,
                 PipelineRunSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)

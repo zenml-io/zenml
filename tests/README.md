@@ -294,9 +294,9 @@ some examples of ZenML test deployments that are currently supported by the
 test framework:
 
 * a ZenML server running locally as a daemon process (same result as running
-`zenml up`)
+`zenml login --local`)
 * a ZenML server running in a Docker container (same result as running
-`zenml up --docker`)
+`zenml locain --local --docker`)
 * a ZenML server and a MySQL server both running in Docker containers and
 managed by Docker Compose
 * an external ZenML server running in the cloud.
@@ -308,7 +308,7 @@ is also responsible for setting up and tearing down the local ZenML deployment
 in addition to configuring the ZenML clients used by the tests.
 
 The following is a sample configuration for a local ZenML server deployment
-that is the equivalent of running `zenml up --docker`:
+that is the equivalent of running `zenml login --local --docker`:
 
 ```yaml
 deployments:
@@ -471,7 +471,7 @@ The following commands can be used to manage ZenML test deployments:
 * `./zen-test deployment list` - lists all configured ZenML test deployments.
 * `./zen-test deployment up <deployment-name>` - starts up a local ZenML test
 deployment. For example, for a local ZenML server deployment, this will start
-the local ZenML server as a daemon process, same as running `zenml up`.
+the local ZenML server as a daemon process, same as running `zenml login --local`.
 * `./zen-test deployment down <deployment-name>` - tears down a local ZenML
 test deployment. For example, for a local ZenML server deployment, this will
 stop the local ZenML server, same as running `zenml down`.

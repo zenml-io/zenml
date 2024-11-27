@@ -30,7 +30,7 @@ template: you can fork it and easily adapt it to your own MLOps stack, infrastru
 ### Configure an API Key in ZenML
 
 In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those
-[here](https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account).
+[here](../../how-to/connecting-to-zenml/connect-with-a-service-account.md).
 
 ```bash
 zenml service-account create github_action_api_key
@@ -68,9 +68,9 @@ You might not necessarily want to use the same stack with the same resources for
 This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact
 storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
 for the respective environments. You can also use different [configuration files](../../how-to/configuring-zenml/configuring-zenml.md)
-for the different environments to configure the [Model](../../how-to/use-the-model-control-plane/README.md), the 
-[DockerSettings](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
-accelerators](../../how-to/training-with-gpus/training-with-gpus.md) differently for the different environments.
+for the different environments to configure the [Model](../../how-to/model-management-metrics/model-control-plane/README.md), the 
+[DockerSettings](../../how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
+accelerators](../../how-to/advanced-topics/training-with-gpus/README.md) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 
@@ -95,8 +95,8 @@ jobs:
   run-staging-workflow:
     runs-on: run-zenml-pipeline
     env:
-      ZENML_HOST: ${{ secrets.ZENML_HOST }}  # Put your server url here
-      ZENML_API_KEY: ${{ secrets.ZENML_API_KEY }}  # Retrieves the api key for use  
+      ZENML_STORE_URL: ${{ secrets.ZENML_HOST }}  # Put your server url here
+      ZENML_STORE_API_KEY: ${{ secrets.ZENML_API_KEY }}  # Retrieves the api key for use  
       ZENML_STACK: stack_name  #  Use this to decide which stack is used for staging
       ZENML_GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
       ZENML_GITHUB_URL_PR: ${{ github.event.pull_request._links.html.href }}
@@ -119,9 +119,9 @@ steps:
     run: |
       pip3 install -r requirements.txt
 
-  - name: Connect to ZenML server
+  - name: Confirm ZenML client is connected to ZenML server
     run: |
-      zenml connect --url $ZENML_HOST --api-key $ZENML_API_KEY
+      zenml status
 
   - name: Set stack
     run: |

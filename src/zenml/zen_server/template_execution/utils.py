@@ -3,7 +3,7 @@
 import copy
 import hashlib
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks
@@ -22,11 +22,9 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.integrations.utils import get_integration_for_module
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
-    ComponentResponse,
     FlavorFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
@@ -43,8 +41,8 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, settings_utils
-from zenml.zen_server.auth import AuthContext
+from zenml.utils import dict_utils, requirements_utils, settings_utils
+from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
@@ -113,17 +111,6 @@ def run_template(
 
     new_deployment = zen_store().create_deployment(deployment_request)
 
-    if auth_context.access_token:
-        token = auth_context.access_token
-        token.pipeline_id = deployment_request.pipeline
-
-        # We create a non-expiring token to make sure its active for the entire
-        # duration of the pipeline run
-        api_token = token.encode(expires=None)
-    else:
-        assert auth_context.encoded_access_token
-        api_token = auth_context.encoded_access_token
-
     server_url = server_config().server_url
     if not server_url:
         raise RuntimeError(
@@ -131,6 +118,18 @@ def run_template(
         )
     assert build.zenml_version
     zenml_version = build.zenml_version
+
+    placeholder_run = create_placeholder_run(deployment=new_deployment)
+    assert placeholder_run
+
+    # We create an API token scoped to the pipeline run
+    api_token = generate_access_token(
+        user_id=auth_context.user.id,
+        pipeline_run_id=placeholder_run.id,
+        # Keep the original API key or device scopes, if any
+        api_key=auth_context.api_key,
+        device=auth_context.device,
+    ).access_token
 
     environment = {
         ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.workspace.id),
@@ -147,12 +146,9 @@ def run_template(
         deployment_id=new_deployment.id
     )
 
-    placeholder_run = create_placeholder_run(deployment=new_deployment)
-    assert placeholder_run
-
     def _task() -> None:
-        pypi_requirements, apt_packages = get_requirements_for_stack(
-            stack=stack
+        pypi_requirements, apt_packages = (
+            requirements_utils.get_requirements_for_stack(stack=stack)
         )
 
         if build.python_version:
@@ -248,7 +244,7 @@ def ensure_async_orchestrator(
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
-        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+        FlavorFilter(name=orchestrator.flavor_name, type=orchestrator.type)
     )
     flavor = Flavor.from_model(flavors[0])
 
@@ -264,59 +260,6 @@ def ensure_async_orchestrator(
         deployment.pipeline_configuration.settings[key] = (
             BaseSettings.model_validate(settings_dict)
         )
-
-
-def get_requirements_for_stack(
-    stack: StackResponse,
-) -> Tuple[List[str], List[str]]:
-    """Get requirements for a stack model.
-
-    Args:
-        stack: The stack for which to get the requirements.
-
-    Returns:
-        Tuple of PyPI and APT requirements of the stack.
-    """
-    pypi_requirements: Set[str] = set()
-    apt_packages: Set[str] = set()
-
-    for component_list in stack.components.values():
-        assert len(component_list) == 1
-        component = component_list[0]
-        (
-            component_pypi_requirements,
-            component_apt_packages,
-        ) = get_requirements_for_component(component=component)
-        pypi_requirements = pypi_requirements.union(
-            component_pypi_requirements
-        )
-        apt_packages = apt_packages.union(component_apt_packages)
-
-    return sorted(pypi_requirements), sorted(apt_packages)
-
-
-def get_requirements_for_component(
-    component: ComponentResponse,
-) -> Tuple[List[str], List[str]]:
-    """Get requirements for a component model.
-
-    Args:
-        component: The component for which to get the requirements.
-
-    Returns:
-        Tuple of PyPI and APT requirements of the component.
-    """
-    flavors = zen_store().list_flavors(
-        FlavorFilter(name=component.flavor, type=component.type)
-    )
-    assert len(flavors) == 1
-    flavor_source = flavors[0].source
-    integration = get_integration_for_module(module_name=flavor_source)
-
-    if integration:
-        return integration.get_requirements(), integration.APT_PACKAGES
-    else:
-        return [], []
 
 
 def generate_image_hash(dockerfile: str) -> str:
@@ -405,7 +348,7 @@ def deployment_request_from_template(
     )
 
     step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters"}
+        exclude={"name", "parameters", "tags"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
@@ -512,7 +455,7 @@ def get_pipeline_run_analytics_metadata(
     own_stack = stack_creator and stack_creator.id == deployment.user.id
 
     stack_metadata = {
-        component_type.value: component_list[0].flavor
+        component_type.value: component_list[0].flavor_name
         for component_type, component_list in stack.components.items()
     }
 

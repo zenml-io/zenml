@@ -36,12 +36,14 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     PluginSubType,
     SecretScope,
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
+from zenml.login.credentials_store import CredentialsStore
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -98,6 +100,7 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StepRunFilter,
+    StepRunResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
@@ -163,14 +166,16 @@ class PipelineRunContext:
         self.runs = self.store.list_runs(
             PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
-        self.steps = []
+        self.steps: List[StepRunResponse] = []
         self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifact_versions += [a for a in s.outputs.values()]
+                self.artifact_versions += [
+                    av for avs in s.outputs.values() for av in avs
+                ]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -237,30 +242,41 @@ class UserContext:
         if self.login or self.existing_user:
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                username=self.user_name,
-                password=self.password,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    username=self.user_name,
+                    password=self.password,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_user
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if not self.existing_user and self.delete:
             try:
                 self.store.delete_user(self.created_user.id)
             except (KeyError, IllegalOperationError):
                 pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class ServiceAccountContext:
@@ -309,23 +325,30 @@ class ServiceAccountContext:
             )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                api_key=self.api_key.key,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    api_key=self.api_key.key,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_service_account
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_account:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
@@ -339,6 +362,9 @@ class ServiceAccountContext:
                 )
             except (KeyError, IllegalOperationError):
                 pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class LoginContext:
@@ -355,23 +381,33 @@ class LoginContext:
     def __enter__(self):
         self.original_config = GlobalConfiguration.get_instance()
         self.original_client = Client.get_instance()
-
+        self.original_credentials = CredentialsStore.get_instance()
+        CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        store_config = StoreConfiguration(
-            url=self.original_config.store.url,
-            type=self.original_config.store.type,
-            api_key=self.api_key,
-            username=self.user_name,
-            password=self.password,
-            secrets_store=self.original_config.store.secrets_store,
-        )
-        GlobalConfiguration().set_store(config=store_config)
+        try:
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                api_key=self.api_key,
+                username=self.user_name,
+                password=self.password,
+                secrets_store=self.original_config.store.secrets_store,
+            )
+            GlobalConfiguration().set_store(config=store_config)
+        except Exception:
+            self.cleanup()
+            raise
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         GlobalConfiguration._reset_instance(self.original_config)
         Client._reset_instance(self.original_client)
+        CredentialsStore.reset_instance(self.original_credentials)
+
         _ = Client().zen_store
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class StackContext:
@@ -653,6 +689,7 @@ class ModelContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        artifact_types: Optional[List[ArtifactType]] = None,
         delete: bool = True,
     ):
         client = Client()
@@ -669,6 +706,13 @@ class ModelContext:
         self.prs = []
         self.deployments = []
         self.delete = delete
+
+        if create_artifacts > 0:
+            artifact_types = artifact_types or [
+                ArtifactType.DATA for _ in range(create_artifacts)
+            ]
+            assert len(artifact_types) == create_artifacts
+            self.artifact_types = artifact_types
 
     def __enter__(self):
         client = Client()
@@ -692,7 +736,7 @@ class ModelContext:
                     )
                 )
 
-        for _ in range(self.create_artifacts):
+        for i in range(self.create_artifacts):
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
@@ -707,10 +751,11 @@ class ModelContext:
                     version=1,
                     data_type="module.class",
                     materializer="module.class",
-                    type=ArtifactType.DATA,
+                    type=self.artifact_types[i],
                     uri="",
                     user=user.id,
                     workspace=ws.id,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
             self.artifact_versions.append(artifact_version)
@@ -1121,6 +1166,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         uri="",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
+        save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
     filter_model=ArtifactVersionFilter,
     update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),

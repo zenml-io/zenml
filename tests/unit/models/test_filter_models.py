@@ -182,7 +182,7 @@ def test_datetime_filter_model():
         filter_class=DatetimeFilter,
         filter_value=filter_value,
         expected_value=expected_value,
-        ignore_operators=[GenericFilterOps.IN],
+        ignore_operators=[GenericFilterOps.IN, GenericFilterOps.ONEOF],
     )
 
 
@@ -231,6 +231,7 @@ def test_uuid_filter_model():
         filter_class=UUIDFilter,
         filter_value=filter_value,
         expected_value=str(filter_value).replace("-", ""),
+        ignore_operators=[GenericFilterOps.ONEOF],
     )
 
 
@@ -245,7 +246,10 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     """Test filtering with other UUID operations is possible with non-UUIDs."""
     filter_value = "a92k34"
     for filter_op in UUIDFilter.ALLOWED_OPS:
-        if filter_op == GenericFilterOps.EQUALS:
+        if (
+            filter_op == GenericFilterOps.EQUALS
+            or filter_op == GenericFilterOps.ONEOF
+        ):
             continue
         filter_model = SomeFilterModel(
             uuid_field=f"{filter_op}:{filter_value}"
@@ -264,4 +268,5 @@ def test_string_filter_model():
         filter_field="str_field",
         filter_class=StrFilter,
         filter_value="a_random_string",
+        ignore_operators=[GenericFilterOps.ONEOF],
     )

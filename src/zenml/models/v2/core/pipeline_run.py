@@ -30,8 +30,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -51,9 +51,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
-    )
-    from zenml.models.v2.core.run_metadata import (
-        RunMetadataResponse,
     )
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
@@ -191,7 +188,7 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipeline runs."""
 
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+    run_metadata: Dict[str, MetadataType] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
@@ -451,7 +448,7 @@ class PipelineRunResponse(
         return self.get_body().model_version_id
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -575,7 +572,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
@@ -587,8 +584,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "stack",
         "code_repository",
         "model",
+        "stack_component",
         "pipeline_name",
         "templatable",
+        "run_metadata",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -667,6 +666,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the user that created the run.",
     )
+    run_metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The run_metadata to filter the pipeline runs by.",
+    )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     # generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -689,10 +692,13 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name/ID of the model associated with the run.",
     )
+    stack_component: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the stack component associated with the run.",
+    )
     templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
-
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -716,7 +722,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            RunMetadataSchema,
             ScheduleSchema,
+            StackComponentSchema,
+            StackCompositionSchema,
             StackSchema,
             UserSchema,
         )
@@ -773,7 +782,9 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             user_filter = and_(
                 PipelineRunSchema.user_id == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
-                    value=self.user, table=UserSchema
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
                 ),
             )
             custom_filters.append(user_filter)
@@ -822,6 +833,19 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(model_filter)
 
+        if self.stack_component:
+            component_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                StackSchema.id == StackCompositionSchema.stack_id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack_component,
+                    table=StackComponentSchema,
+                ),
+            )
+            custom_filters.append(component_filter)
+
         if self.pipeline_name:
             pipeline_name_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
@@ -868,5 +892,21 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 )
 
             custom_filters.append(templatable_filter)
+        if self.run_metadata is not None:
+            from zenml.enums import MetadataResourceTypes
+
+            for key, value in self.run_metadata.items():
+                additional_filter = and_(
+                    RunMetadataSchema.resource_id == PipelineRunSchema.id,
+                    RunMetadataSchema.resource_type
+                    == MetadataResourceTypes.PIPELINE_RUN,
+                    RunMetadataSchema.key == key,
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                    ),
+                )
+                custom_filters.append(additional_filter)
 
         return custom_filters

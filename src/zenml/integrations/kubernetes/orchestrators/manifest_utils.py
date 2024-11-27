@@ -25,6 +25,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
@@ -167,8 +168,8 @@ def build_pod_manifest(
     # Add run_name and pipeline_name to the labels
     labels.update(
         {
-            "run": run_name,
-            "pipeline": pipeline_name,
+            "run": kube_utils.sanitize_label(run_name),
+            "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
     )
 
@@ -304,13 +305,13 @@ def build_cron_job_manifest(
     return job_manifest
 
 
-def build_cluster_role_binding_manifest_for_service_account(
+def build_role_binding_manifest_for_service_account(
     name: str,
     role_name: str,
     service_account_name: str,
     namespace: str = "default",
 ) -> Dict[str, Any]:
-    """Build a manifest for a cluster role binding of a service account.
+    """Build a manifest for a role binding of a service account.
 
     Args:
         name: Name of the cluster role binding.
@@ -323,7 +324,7 @@ def build_cluster_role_binding_manifest_for_service_account(
     """
     return {
         "apiVersion": "rbac.authorization.k8s.io/v1",
-        "kind": "ClusterRoleBinding",
+        "kind": "RoleBinding",
         "metadata": {"name": name},
         "subjects": [
             {

@@ -1,4 +1,5 @@
 ---
+icon: chart-column
 description: >-
   How to enhance and maintain the quality of your data and the performance of
   your models with data profiling and validation
@@ -13,7 +14,7 @@ Data profiling, data integrity testing, data and model drift detection are all w
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](../../user-guide/production-guide/understand-stacks.md).
-* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/artifact-stores.md) and can be [retrieved and visualized](../../how-to/visualize-artifacts/README.md) later.
+* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/artifact-stores.md) and can be [retrieved and visualized](../../how-to/data-artifact-management/visualize-artifacts/README.md) later.
 
 ### When to use it
 
@@ -22,7 +23,7 @@ Related concepts:
 * early on, even if it's just to keep a log of the quality state of your data and the performance of your models at different stages of development.
 * if you have pipelines that regularly ingest new data, you should use data validation to run regular data integrity checks to signal problems before they are propagated downstream.
 * in continuous training pipelines, you should use data validation techniques to compare new training data against a data reference and to compare the performance of newly trained models against previous ones.
-* when you have pipelines that automate batch inference or if you regularly collect data used as input in online inference, you should use data validation to run data drift analyses and detect training-serving skew, data drift and model drift.
+* when you have pipelines that automate batch inference or if you regularly collect data used as input in online inference, you should use data validation to run data drift analyzes and detect training-serving skew, data drift and model drift.
 
 #### Data Validator Flavors
 
@@ -47,7 +48,7 @@ Every Data Validator has different data profiling and testing capabilities and u
 
 * first, you have to configure and add a Data Validator to your ZenML stack
 * every integration includes one or more builtin data validation steps that you can add to your pipelines. Of course, you can also use the libraries directly in your own custom pipeline steps and simply return the results (e.g. data profiles, test reports) as artifacts that are versioned and stored by ZenML in its Artifact Store.
-* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../how-to/handle-data-artifacts/load-artifacts-into-memory.md) to process them or visualize them as needed.
+* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](data-validators.md#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
 

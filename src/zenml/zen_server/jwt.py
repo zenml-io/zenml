@@ -25,7 +25,7 @@ from uuid import UUID
 import jwt
 from pydantic import BaseModel
 
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import CredentialsNotValid
 from zenml.logger import get_logger
 from zenml.zen_server.utils import server_config
 
@@ -40,16 +40,20 @@ class JWTToken(BaseModel):
         device_id: The id of the authenticated device.
         api_key_id: The id of the authenticated API key for which this token
             was issued.
-        pipeline_id: The id of the pipeline for which the token was issued.
         schedule_id: The id of the schedule for which the token was issued.
+        pipeline_run_id: The id of the pipeline run for which the token was
+            issued.
+        step_run_id: The id of the step run for which the token was
+            issued.
         claims: The original token claims.
     """
 
     user_id: UUID
     device_id: Optional[UUID] = None
     api_key_id: Optional[UUID] = None
-    pipeline_id: Optional[UUID] = None
     schedule_id: Optional[UUID] = None
+    pipeline_run_id: Optional[UUID] = None
+    step_run_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -71,7 +75,7 @@ class JWTToken(BaseModel):
             The decoded JWT access token.
 
         Raises:
-            AuthorizationException: If the token is invalid.
+            CredentialsNotValid: If the token is invalid.
         """
         config = server_config()
 
@@ -87,18 +91,18 @@ class JWTToken(BaseModel):
             )
             claims = cast(Dict[str, Any], claims_data)
         except jwt.PyJWTError as e:
-            raise AuthorizationException(f"Invalid JWT token: {e}") from e
+            raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
         subject: str = claims.pop("sub", "")
         if not subject:
-            raise AuthorizationException(
+            raise CredentialsNotValid(
                 "Invalid JWT token: the subject claim is missing"
             )
 
         try:
             user_id = UUID(subject)
         except ValueError:
-            raise AuthorizationException(
+            raise CredentialsNotValid(
                 "Invalid JWT token: the subject claim is not a valid UUID"
             )
 
@@ -107,7 +111,7 @@ class JWTToken(BaseModel):
             try:
                 device_id = UUID(claims.pop("device_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the device_id claim is not a valid "
                     "UUID"
                 )
@@ -117,18 +121,8 @@ class JWTToken(BaseModel):
             try:
                 api_key_id = UUID(claims.pop("api_key_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the api_key_id claim is not a valid "
-                    "UUID"
-                )
-
-        pipeline_id: Optional[UUID] = None
-        if "pipeline_id" in claims:
-            try:
-                pipeline_id = UUID(claims.pop("pipeline_id"))
-            except ValueError:
-                raise AuthorizationException(
-                    "Invalid JWT token: the pipeline_id claim is not a valid "
                     "UUID"
                 )
 
@@ -137,8 +131,28 @@ class JWTToken(BaseModel):
             try:
                 schedule_id = UUID(claims.pop("schedule_id"))
             except ValueError:
-                raise AuthorizationException(
+                raise CredentialsNotValid(
                     "Invalid JWT token: the schedule_id claim is not a valid "
+                    "UUID"
+                )
+
+        pipeline_run_id: Optional[UUID] = None
+        if "pipeline_run_id" in claims:
+            try:
+                pipeline_run_id = UUID(claims.pop("pipeline_run_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the pipeline_run_id claim is not a valid "
+                    "UUID"
+                )
+
+        step_run_id: Optional[UUID] = None
+        if "step_run_id" in claims:
+            try:
+                step_run_id = UUID(claims.pop("step_run_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the step_run_id claim is not a valid "
                     "UUID"
                 )
 
@@ -146,8 +160,9 @@ class JWTToken(BaseModel):
             user_id=user_id,
             device_id=device_id,
             api_key_id=api_key_id,
-            pipeline_id=pipeline_id,
             schedule_id=schedule_id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
             claims=claims,
         )
 
@@ -180,10 +195,12 @@ class JWTToken(BaseModel):
             claims["device_id"] = str(self.device_id)
         if self.api_key_id:
             claims["api_key_id"] = str(self.api_key_id)
-        if self.pipeline_id:
-            claims["pipeline_id"] = str(self.pipeline_id)
         if self.schedule_id:
             claims["schedule_id"] = str(self.schedule_id)
+        if self.pipeline_run_id:
+            claims["pipeline_run_id"] = str(self.pipeline_run_id)
+        if self.step_run_id:
+            claims["step_run_id"] = str(self.step_run_id)
 
         return jwt.encode(
             claims,

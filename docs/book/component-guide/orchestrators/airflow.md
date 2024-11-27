@@ -30,9 +30,8 @@ setup is necessary.
 
 There are many options to use a deployed Airflow server:
 
-* Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlstacks). This is the simplest solution to
-  get ZenML working with Airflow, as the recipe also takes care of additional steps such as installing required Python
-  dependencies in your Airflow server environment.
+* Use [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+  which includes a [Google Cloud Composer](https://cloud.google.com/composer) component.
 * Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer)
   , [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/),
   or [Astronomer](https://www.astronomer.io/).
@@ -40,8 +39,8 @@ There are many options to use a deployed Airflow server:
   official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more
   information.
 
-If you're not using `mlstacks` to deploy Airflow, there are some additional Python packages that you'll need to
-install in the Python environment of your Airflow server:
+If you're not using the ZenML GCP Terraform module to deploy Airflow, there are some additional Python
+packages that you'll need to install in the Python environment of your Airflow server:
 
 * `pydantic~=2.7.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
   configuration files.
@@ -160,13 +159,13 @@ of your Airflow deployment.
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Airflow. Check
-out [this page](/docs/book/how-to/customize-docker-builds/README.md) if you want to learn
+out [this page](/docs/book/how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Scheduling
 
-You can [schedule pipeline runs](../../how-to/build-pipelines/schedule-a-pipeline.md)
+You can [schedule pipeline runs](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md)
 on Airflow similarly to other orchestrators. However, note that 
 **Airflow schedules always need to be set in the past**, e.g.,:
 
@@ -205,13 +204,13 @@ The username will always be `admin`.
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/how-to/use-configuration-files/README.md) for
+for a full list of available attributes and [this docs page](/docs/book/how-to/pipeline-development/use-configuration-files/README.md) for
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/how-to/training-with-gpus/training-with-gpus.md) to ensure that it
+follow [the instructions on this page](/docs/book/how-to/advanced-topics/training-with-gpus/README.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 
@@ -288,7 +287,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your
-pipelines [here](/docs/book/how-to/use-configuration-files/README.md).
+pipelines [here](/docs/book/how-to/pipeline-development/use-configuration-files/README.md).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator) .
 

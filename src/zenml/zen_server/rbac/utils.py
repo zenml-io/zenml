@@ -404,7 +404,6 @@ def get_resource_type_for_model(
         PipelineDeploymentResponse,
         PipelineResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
         RunTemplateResponse,
         SecretResponse,
         ServiceAccountResponse,
@@ -414,8 +413,6 @@ def get_resource_type_for_model(
         TagResponse,
         TriggerExecutionResponse,
         TriggerResponse,
-        UserResponse,
-        WorkspaceResponse,
     )
 
     mapping: Dict[
@@ -435,9 +432,8 @@ def get_resource_type_for_model(
         ModelVersionResponse: ResourceType.MODEL_VERSION,
         ArtifactResponse: ResourceType.ARTIFACT,
         ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
-        WorkspaceResponse: ResourceType.WORKSPACE,
-        UserResponse: ResourceType.USER,
-        RunMetadataResponse: ResourceType.RUN_METADATA,
+        # WorkspaceResponse: ResourceType.WORKSPACE,
+        # UserResponse: ResourceType.USER,
         PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
@@ -572,7 +568,6 @@ def get_schema_for_resource_type(
         TriggerExecutionSchema,
         TriggerSchema,
         UserSchema,
-        WorkspaceSchema,
     )
 
     mapping: Dict[ResourceType, Type["BaseSchema"]] = {
@@ -590,13 +585,13 @@ def get_schema_for_resource_type(
         ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
-        ResourceType.WORKSPACE: WorkspaceSchema,
+        # ResourceType.WORKSPACE: WorkspaceSchema,
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
         ResourceType.RUN_TEMPLATE: RunTemplateSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
-        ResourceType.USER: UserSchema,
+        # ResourceType.USER: UserSchema,
         ResourceType.ACTION: ActionSchema,
         ResourceType.EVENT_SOURCE: EventSourceSchema,
         ResourceType.TRIGGER: TriggerSchema,

@@ -20,8 +20,10 @@ from pydantic import BaseModel
 
 from zenml.exceptions import (
     AuthorizationException,
+    CredentialsNotValid,
     DoesNotExistException,
     DuplicateRunNameError,
+    EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
     MethodNotAllowedError,
@@ -78,6 +80,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 403 Forbidden
     (IllegalOperationError, 403),
     # 401 Unauthorized
+    (CredentialsNotValid, 401),
     (AuthorizationException, 401),
     # 402 Payment required
     (SubscriptionUpgradeRequiredError, 402),
@@ -91,6 +94,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 422 Unprocessable Entity
     (ValueError, 422),
     # 500 Internal Server Error
+    (EntityCreationError, 500),
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
@@ -252,5 +256,14 @@ def exception_from_response(
             return None
 
         exception = default_exc
+
+    # There is one special case where we want to return a specific exception:
+    # 401 Unauthorized exceptions thrown directly by FastAPI in the course of
+    # authentication are interpreted as AuthorizationException, but we want to
+    # return CredentialsNotValid instead.
+    if response.status_code == 401:
+        if not isinstance(exception(), CredentialsNotValid):
+            if response.headers.get("WWW-Authenticate"):
+                return CredentialsNotValid(exc_msg)
 
     return exception(exc_msg)
