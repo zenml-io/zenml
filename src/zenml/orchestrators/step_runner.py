@@ -400,7 +400,7 @@ class StepRunner:
                 **artifact.get_hydrated_version().model_dump()
             )
 
-        if data_type is Any or is_union(get_origin(data_type)):
+        if data_type in (None, Any) or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)

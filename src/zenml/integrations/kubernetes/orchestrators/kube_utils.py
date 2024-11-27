@@ -94,18 +94,62 @@ def load_kube_config(
         k8s_config.load_kube_config(context=context)
 
 
-def sanitize_pod_name(pod_name: str) -> str:
+def calculate_max_pod_name_length_for_namespace(namespace: str) -> int:
+    """Calculate the max pod length for a certain namespace.
+
+    Args:
+        namespace: The namespace in which the pod will be created.
+
+    Returns:
+        The maximum pod name length.
+    """
+    # Kubernetes allows Pod names to have 253 characters. However, when
+    # creating a pod they try to create a log file which is called
+    # <NAMESPACE>_<POD_NAME>_<UUID>, which adds additional characters and
+    # runs into filesystem limitations for filename lengths (255). We therefore
+    # subtract the length of a UUID (36), the two underscores and the
+    # namespace length from the max filename length.
+    return 255 - 38 - len(namespace)
+
+
+def sanitize_pod_name(pod_name: str, namespace: str) -> str:
     """Sanitize pod names so they conform to Kubernetes pod naming convention.
 
     Args:
         pod_name: Arbitrary input pod name.
+        namespace: Namespace in which the Pod will be created.
 
     Returns:
         Sanitized pod name.
     """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
-    return re.sub(r"[-]+", "-", pod_name)
+    pod_name = re.sub(r"[-]+$", "", pod_name)
+    pod_name = re.sub(r"[-]+", "-", pod_name)
+
+    allowed_length = calculate_max_pod_name_length_for_namespace(
+        namespace=namespace
+    )
+    return pod_name[:allowed_length]
+
+
+def sanitize_label(label: str) -> str:
+    """Sanitize a label for a Kubernetes resource.
+
+    Args:
+        label: The label to sanitize.
+
+    Returns:
+        The sanitized label.
+    """
+    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+    label = re.sub(r"[^a-z0-9-]", "-", label.lower())
+    label = re.sub(r"^[-]+", "", label)
+    label = re.sub(r"[-]+$", "", label)
+    label = re.sub(r"[-]+", "-", label)
+
+    return label[:63]
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:

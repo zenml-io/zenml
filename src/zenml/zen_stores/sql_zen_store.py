@@ -5360,6 +5360,19 @@ class SqlZenStore(BaseZenStore):
             )
 
         try:
+            # We first try the most likely case that the run was already
+            # created by a previous step in the same pipeline run.
+            return (
+                self._get_run_by_orchestrator_run_id(
+                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                    deployment_id=pipeline_run.deployment,
+                ),
+                False,
+            )
+        except KeyError:
+            pass
+
+        try:
             return (
                 self._replace_placeholder_run(
                     pipeline_run=pipeline_run,
