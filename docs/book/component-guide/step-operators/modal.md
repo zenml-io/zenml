@@ -19,7 +19,7 @@ You should use the Modal step operator if:
 To use the Modal step operator:
 
 * [Sign up for a Modal account](https://modal.com/signup) if you haven't already.
-* Install the Modal CLI by running `pip install modal` and authenticate by running `modal setup` in your terminal.
+* Install the Modal CLI by running `pip install modal` (or `zenml integration install modal`) and authenticate by running `modal setup` in your terminal.
 
 ### How to use it
 
