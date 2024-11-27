@@ -207,7 +207,9 @@ class ModalStepOperator(BaseStepOperator):
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
 
-        app = modal.App(f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}")
+        app = modal.App(
+            f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
+        )
 
         async def run_sandbox() -> asyncio.Future[None]:
             loop = asyncio.get_event_loop()
@@ -225,7 +227,7 @@ class ModalStepOperator(BaseStepOperator):
                         cloud=settings.cloud,
                         region=settings.region,
                         app=app,
-                        timeout=86400, # 24h, the max Modal allows
+                        timeout=86400,  # 24h, the max Modal allows
                     )
 
                     await sb.wait.aio()  # type: ignore
