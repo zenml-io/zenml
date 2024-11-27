@@ -35,10 +35,8 @@ Use the following placeholders that ZenML will replace automatically:
 * `{time}` will resolve to the current time, e.g. `11_07_09_326492`
 
 ```python
-str_namer = "placeholder_name_{date}_{time}"
-
 @step
-def dynamic_single_string() -> Annotated[str, str_namer]:
+def dynamic_single_string() -> Annotated[str, "name_{date}_{time}"]:
     return "null"
 ```
 
@@ -46,20 +44,16 @@ def dynamic_single_string() -> Annotated[str, str_namer]:
 Use any placeholders that ZenML will replace for you, if they are provided into a step via `substitutions` parameter:
 
 ```python
-str_namer = "placeholder_name_{custom_placeholder}_{time}"
-
 @step(substitutions={"custom_placeholder": "some_substitute"})
-def dynamic_single_string() -> Annotated[str, str_namer]:
+def dynamic_single_string() -> Annotated[str, "name_{custom_placeholder}_{time}"]:
     return "null"
 ```
 
 Another option is to use `with_options` to dynamically redefine the placeholder, like this:
 
 ```python
-str_namer = "{stage}_dataset"
-
 @step
-def extract_data(source: str) -> Annotated[str, str_namer]:
+def extract_data(source: str) -> Annotated[str, "{stage}_dataset"]:
     ...
     return "my data"
 
@@ -69,6 +63,18 @@ def extraction_pipeline():
     extract_data.with_options(substitutions={"stage": "test"})(source="s3://test")
 ```
 
+{% hint style="info" %}
+The substitutions for the custom placeholders like `stage` can be set in:
+- `@pipeline` decorator, so they are effective for all steps in this pipeline
+- `pipeline.with_options` function, so they are effective for all steps in this pipeline run
+- `@step` decorator, so they are effective for this step (this overrides the pipeline settings)
+- `step.with_options` function, so they are effective for this step run (this overrides the pipeline settings)
+
+Standard substitutions always available and consistent in all steps of the pipeline are:
+- `{date}`: current date, e.g. `2024_11_27`
+- `{time}`: current time in UTC format, e.g. `11_07_09_326492`
+{% endhint %}
+
 ### Multiple Output Handling
 
 If you plan to return multiple artifacts from you ZenML step you can flexibly combine all naming options outlined above, like this:
@@ -77,7 +83,7 @@ If you plan to return multiple artifacts from you ZenML step you can flexibly co
 @step
 def mixed_tuple() -> Tuple[
     Annotated[str, "static_output_name"],
-    Annotated[str, "placeholder_name_{date}_{time}"],
+    Annotated[str, "name_{date}_{time}"],
 ]:
     return "static_namer", "str_namer"
 ```
@@ -96,8 +102,8 @@ from zenml.models import PipelineRunResponse
 
 @step(substitutions={"custom_placeholder": "resolution"})
 def demo() -> Tuple[
-    Annotated[int, "dummy_{date}_{time}"],
-    Annotated[int, "dummy_{custom_placeholder}"],
+    Annotated[int, "name_{date}_{time}"],
+    Annotated[int, "name_{custom_placeholder}"],
 ]:
     return 42, 43
 
@@ -139,7 +145,7 @@ Using stack: default
 You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml login --local.
 Using cached version of step demo.
 All steps of the pipeline run were cached.
-['dummy_2024_11_21_14_27_33_750134', 'dummy_resolution']
+['name_2024_11_21_14_27_33_750134', 'name_resolution']
 ```
 
 <!-- For scarf -->
