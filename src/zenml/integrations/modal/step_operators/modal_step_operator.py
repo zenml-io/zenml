@@ -17,7 +17,7 @@ import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
-from modal_proto import api_pb2  # type: ignore
+from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -216,6 +216,10 @@ class ModalStepOperator(BaseStepOperator):
             future = loop.create_future()
             with modal.enable_output():
                 async with app.run():
+                    memory_mb = resource_settings.get_memory(ByteUnit.MB)
+                    memory_int = (
+                        int(memory_mb) if memory_mb is not None else None
+                    )
                     sb = await modal.Sandbox.create.aio(
                         "bash",
                         "-c",
@@ -223,14 +227,14 @@ class ModalStepOperator(BaseStepOperator):
                         image=zenml_image,
                         gpu=gpu_values,
                         cpu=resource_settings.cpu_count,
-                        memory=resource_settings.get_memory(ByteUnit.MB),
+                        memory=memory_int,
                         cloud=settings.cloud,
                         region=settings.region,
                         app=app,
                         timeout=86400,  # 24h, the max Modal allows
                     )
 
-                    await sb.wait.aio()  # type: ignore
+                    await sb.wait.aio()
 
             future.set_result(None)
             return future
