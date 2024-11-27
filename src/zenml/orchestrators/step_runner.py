@@ -152,21 +152,14 @@ class StepRunner:
                 func=step_instance.entrypoint
             )
 
-            for k, v in list(output_annotations.items()):
-                if v.artifact_config:
-                    _evaluated_name = v.artifact_config._evaluated_name(
-                        step_run.config.substitutions
-                    )
-                    if _evaluated_name:
-                        output_materializers[_evaluated_name] = (
-                            output_materializers.pop(k)
-                        )
-                        output_artifact_uris[_evaluated_name] = (
-                            output_artifact_uris.pop(k)
-                        )
-                        output_annotations[_evaluated_name] = (
-                            output_annotations.pop(k)
-                        )
+            self._evaluate_artifact_names_in_collections(
+                step_run,
+                output_annotations,
+                [
+                    output_artifact_uris,
+                    output_materializers,
+                ],
+            )
 
             self._stack.prepare_step_run(info=step_run_info)
 
@@ -282,6 +275,33 @@ class StepRunner:
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
             )
+
+    def _evaluate_artifact_names_in_collections(
+        self,
+        step_run: "StepRunResponse",
+        output_annotations: Dict[str, OutputSignature],
+        collections: List[Dict[str, Any]],
+    ) -> None:
+        """Evaluates the artifact names in the collections.
+
+        Args:
+            step_run: The step run.
+            output_annotations: The output annotations of the step function
+                (also evaluated).
+            collections: The collections to evaluate.
+        """
+        collections.append(output_annotations)
+        for k, v in list(output_annotations.items()):
+            _evaluated_name = None
+            if v.artifact_config:
+                _evaluated_name = v.artifact_config._evaluated_name(
+                    step_run.config.substitutions
+                )
+            if _evaluated_name is None:
+                _evaluated_name = k
+
+            for d in collections:
+                d[_evaluated_name] = d.pop(k)
 
     def _load_step(self) -> "BaseStep":
         """Load the step instance.

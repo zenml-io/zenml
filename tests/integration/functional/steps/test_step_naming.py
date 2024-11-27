@@ -34,6 +34,8 @@ def _validate_name_by_value(name: str, value: str) -> bool:
         return name.startswith("dummy_dynamic_custom_")
     if value == "static_namer":
         return name == "dummy_static"
+    if value == "unannotated":
+        return name.startswith("output")
     return False
 
 
@@ -103,6 +105,23 @@ def dynamic_single_string_standard_controlled_return(
     return s
 
 
+@step(substitutions={"funny_name": "name_placeholder"})
+def mixed_with_unannotated_returns() -> (
+    Tuple[
+        Annotated[str, str_namer_standard],
+        str,
+        Annotated[str, str_namer_custom],
+        str,
+    ]
+):
+    return (
+        "str_namer_standard",
+        "unannotated",
+        "str_namer_custom",
+        "unannotated",
+    )
+
+
 @pytest.mark.parametrize(
     "step",
     [
@@ -112,6 +131,7 @@ def dynamic_single_string_standard_controlled_return(
         mixed_tuple,
         static_single,
         mixed_tuple_artifact_config,
+        mixed_with_unannotated_returns,
     ],
     ids=[
         "dynamic_single_string_standard",
@@ -120,6 +140,7 @@ def dynamic_single_string_standard_controlled_return(
         "mixed_tuple",
         "static_single",
         "mixed_tuple_artifact_config",
+        "mixed_with_unannotated_returns",
     ],
 )
 def test_various_naming_scenarios(step: Callable, clean_client: Client):
@@ -135,7 +156,12 @@ def test_various_naming_scenarios(step: Callable, clean_client: Client):
     p1: PipelineRunResponse = _inner.with_options(enable_cache=False)()
     for step_response in p1.steps.values():
         for k in step_response.outputs.keys():
-            value = clean_client.get_artifact_version(k).load()
+            if k.startswith("output"):
+                value = clean_client.get_artifact_version(
+                    f"{p1.pipeline.name}::{step_response.name}::{k}"
+                ).load()
+            else:
+                value = clean_client.get_artifact_version(k).load()
             assert _validate_name_by_value(k, value)
 
     p2: PipelineRunResponse = _inner.with_options(enable_cache=True)()
@@ -144,7 +170,12 @@ def test_various_naming_scenarios(step: Callable, clean_client: Client):
             p1.steps[step_response.name].outputs.keys()
         )
         for k in step_response.outputs.keys():
-            value = clean_client.get_artifact_version(k).load()
+            if k.startswith("output"):
+                value = clean_client.get_artifact_version(
+                    f"{p2.pipeline.name}::{step_response.name}::{k}"
+                ).load()
+            else:
+                value = clean_client.get_artifact_version(k).load()
             assert _validate_name_by_value(k, value)
 
 
