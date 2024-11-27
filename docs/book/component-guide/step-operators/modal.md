@@ -78,7 +78,7 @@ resource_settings = ResourceSettings(
 @step(
     step_operator="modal", # or whatever name you used when registering the step operator
     settings={
-        "step_operator.modal": modal_settings,
+        "step_operator": modal_settings,
         "resources": resource_settings
     }
 )
