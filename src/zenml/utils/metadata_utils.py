@@ -107,8 +107,6 @@ def log_metadata(
     model_version_id: Optional[UUID] = None,
     model_name: Optional[str] = None,
     model_version: Optional[str] = None,
-    # Parameter to adjust whether we log to all related entities
-    log_related_entities: Optional[bool] = True,
 ) -> None:
     """Logs metadata for various resource types in a generalized way.
 
@@ -122,9 +120,7 @@ def log_metadata(
         artifact_version: The version of the artifact.
         model_version_id: The ID of the model version.
         model_name: The name of the model.
-        model_version: The version of the model
-        log_related_entities: Flag to decide whether we should log the same
-            metadata for related entities.
+        model_version: The version of the model.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
