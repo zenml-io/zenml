@@ -54,11 +54,11 @@ class BaseFilesystem(ABC):
 
     @staticmethod
     @abstractmethod
-    def open(name: PathType, mode: str = "r") -> Any:
+    def open(path: PathType, mode: str = "r") -> Any:
         """Opens a file.
 
         Args:
-            name: The path to the file.
+            path: The path to the file.
             mode: The mode to open the file in.
 
         Returns:

@@ -25,6 +25,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
@@ -167,8 +168,8 @@ def build_pod_manifest(
     # Add run_name and pipeline_name to the labels
     labels.update(
         {
-            "run": run_name,
-            "pipeline": pipeline_name,
+            "run": kube_utils.sanitize_label(run_name),
+            "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
     )
 
