@@ -239,6 +239,7 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
     steps_substitutions: Dict[str, Dict[str, str]] = Field(
         title="Substitutions used in the step runs of this pipeline run.",
+        default_factory=dict,
     )
 
 
