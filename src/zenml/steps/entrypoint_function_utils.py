@@ -195,7 +195,9 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-        config_dict = ConfigDict(arbitrary_types_allowed=False)
+        # We allow passing None for optional annotations that would otherwise
+        # not be allowed as a parameter
+        config_dict = ConfigDict(arbitrary_types_allowed=value is None)
 
         # Create a pydantic model with just a single required field with the
         # type annotation of the parameter to verify the input type including

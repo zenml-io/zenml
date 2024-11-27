@@ -518,10 +518,15 @@ def log_model_version_dashboard_url(
     Args:
         model_version: The model version for which to log the dashboard URL.
     """
-    from zenml.utils.cloud_utils import try_get_model_version_url
+    from zenml.utils.dashboard_utils import get_model_version_url
 
-    if model_version_url_logs := try_get_model_version_url(model_version):
-        logger.info(model_version_url_logs)
+    if model_version_url := get_model_version_url(model_version.id):
+        logger.info(
+            "Dashboard URL for Model Version `%s (%s)`:\n%s",
+            model_version.model.name,
+            model_version.name,
+            model_version_url,
+        )
     else:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Pro. Sign up "
