@@ -215,7 +215,11 @@ def artifact_multi_output_metadata_logging_step() -> (
         "description": "Blupus is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_metadata(metadata=output_metadata, artifact_name="int_output")
+    log_metadata(
+        metadata=output_metadata,
+        artifact_name="int_output",
+        infer_artifact=True,
+    )
     return "42", 42
 
 
