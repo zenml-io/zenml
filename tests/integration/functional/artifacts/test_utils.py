@@ -123,15 +123,16 @@ def test_save_load_artifact_in_run(clean_client):
 
 def test_log_metadata_existing(clean_client):
     """Test logging artifact metadata for existing artifacts."""
-    save_artifact(42, "meaning_of_life")
+    av = save_artifact(42, "meaning_of_life")
     log_metadata(
         metadata={"description": "Aria is great!"},
-        artifact_name="meaning_of_life",
+        artifact_version_id=av.id,
     )
     save_artifact(43, "meaning_of_life", version="43")
     log_metadata(
         metadata={"description_2": "Blupus is great!"},
         artifact_name="meaning_of_life",
+        artifact_version="43"
     )
     log_metadata(
         metadata={"description_3": "Axl is great!"},
