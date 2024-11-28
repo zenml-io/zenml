@@ -438,6 +438,14 @@ def log_artifact_metadata(
             artifact_name=artifact_name,
             infer_artifact=True,
         )
+    elif step_context and len(step_context._outputs) == 1:
+        single_output_name = list(step_context._outputs.keys())[0]
+
+        log_metadata(
+            metadata=metadata,
+            artifact_name=single_output_name,
+            infer_artifact=True,
+        )
     elif artifact_name:
         client = Client()
         logger.warning(
