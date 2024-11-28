@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
-import contextlib
 from typing import Dict, Optional, Union, overload
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.enums import MetadataResourceTypes
+from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import RunMetadataResource
@@ -29,8 +28,32 @@ logger = get_logger(__name__)
 
 @overload
 def log_metadata(
+    metadata: Dict[str, MetadataType],
+) -> None: ...
+
+
+@overload
+def log_metadata(
     *,
     metadata: Dict[str, MetadataType],
+    step_id: UUID,
+) -> None: ...
+
+
+@overload
+def log_metadata(
+    *,
+    metadata: Dict[str, MetadataType],
+    step_name: str,
+    run_id_name_or_prefix: Union[UUID, str],
+) -> None: ...
+
+
+@overload
+def log_metadata(
+    *,
+    metadata: Dict[str, MetadataType],
+    run_id_name_or_prefix: Union[UUID, str],
 ) -> None: ...
 
 
@@ -55,6 +78,16 @@ def log_metadata(
 def log_metadata(
     *,
     metadata: Dict[str, MetadataType],
+    infer_artifact: bool = False,
+    artifact_name: Optional[str] = None,
+) -> None: ...
+
+
+# Model Metadata
+@overload
+def log_metadata(
+    *,
+    metadata: Dict[str, MetadataType],
     model_version_id: UUID,
 ) -> None: ...
 
@@ -64,7 +97,7 @@ def log_metadata(
     *,
     metadata: Dict[str, MetadataType],
     model_name: str,
-    model_version: str,
+    model_version: Union[ModelStages, int, str],
 ) -> None: ...
 
 
@@ -72,41 +105,26 @@ def log_metadata(
 def log_metadata(
     *,
     metadata: Dict[str, MetadataType],
-    step_id: UUID,
-) -> None: ...
-
-
-@overload
-def log_metadata(
-    *,
-    metadata: Dict[str, MetadataType],
-    run_id_name_or_prefix: Union[UUID, str],
-) -> None: ...
-
-
-@overload
-def log_metadata(
-    *,
-    metadata: Dict[str, MetadataType],
-    step_name: str,
-    run_id_name_or_prefix: Union[UUID, str],
+    infer_model: bool = False,
 ) -> None: ...
 
 
 def log_metadata(
     metadata: Dict[str, MetadataType],
-    # Parameters to manually log metadata for steps and runs
+    # Steps and runs
     step_id: Optional[UUID] = None,
     step_name: Optional[str] = None,
     run_id_name_or_prefix: Optional[Union[UUID, str]] = None,
-    # Parameters to manually log metadata for artifacts
+    # Artifacts
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
-    # Parameters to manually log metadata for models
+    infer_artifact: Optional[bool] = None,
+    # Models
     model_version_id: Optional[UUID] = None,
     model_name: Optional[str] = None,
-    model_version: Optional[str] = None,
+    model_version: Optional[Union[ModelStages, int, str]] = None,
+    infer_model: Optional[bool] = None,
 ) -> None:
     """Logs metadata for various resource types in a generalized way.
 
@@ -118,9 +136,13 @@ def log_metadata(
         artifact_version_id: The ID of the artifact version
         artifact_name: The name of the artifact.
         artifact_version: The version of the artifact.
+        infer_artifact: Flag deciding whether the artifact version should be
+            inferred from the step context.
         model_version_id: The ID of the model version.
         model_name: The name of the model.
         model_version: The version of the model.
+        infer_model: Flag deciding whether the model version should be
+            inferred from the step context.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
@@ -128,8 +150,19 @@ def log_metadata(
     """
     client = Client()
 
+    # Log metadata to a step by ID
+    if step_id is not None:
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=[
+                RunMetadataResource(
+                    id=step_id, type=MetadataResourceTypes.STEP_RUN
+                )
+            ],
+        )
+
     # Log metadata to a step by name and run ID
-    if step_name is not None and run_id_name_or_prefix is not None:
+    elif step_name is not None and run_id_name_or_prefix is not None:
         step_model_id = (
             client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
             .steps[step_name]
@@ -140,17 +173,6 @@ def log_metadata(
             resources=[
                 RunMetadataResource(
                     id=step_model_id, type=MetadataResourceTypes.STEP_RUN
-                )
-            ],
-        )
-
-    # Log metadata to a step by ID
-    elif step_id is not None:
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=step_id, type=MetadataResourceTypes.STEP_RUN
                 )
             ],
         )
@@ -174,15 +196,7 @@ def log_metadata(
         from zenml import Model
 
         mv = Model(name=model_name, version=model_version)
-
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=mv.id, type=MetadataResourceTypes.MODEL_VERSION
-                )
-            ],
-        )
+        mv.log_metadata(metadata)
 
     # Log metadata to a model version by id
     elif model_version_id is not None:
@@ -196,51 +210,36 @@ def log_metadata(
             ],
         )
 
-    # If the user provides an artifact name, there are three possibilities. If
-    # an artifact version is also provided with the name, we use both to fetch
-    # the artifact version and use it to log the metadata. If no version is
-    # provided, if the function is called within a step we search the artifacts
-    # of the step if not we fetch the latest version and attach the metadata
-    # to the latest version.
-    elif artifact_name is not None:
-        if artifact_version:
-            artifact_version_model = client.get_artifact_version(
-                name_id_or_prefix=artifact_name, version=artifact_version
+    # Log metadata to a model through the step context
+    elif infer_model is True:
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            raise ValueError(
+                "If you are using the `infer_model` option, the function must "
+                "be called inside a step with configured `model` in decorator."
+                "Otherwise, you can provide a `model_version_id` or a "
+                "combination of `model_name` and `model_version`."
             )
-            client.create_run_metadata(
-                metadata=metadata,
-                resources=[
-                    RunMetadataResource(
-                        id=artifact_version_model.id,
-                        type=MetadataResourceTypes.ARTIFACT_VERSION,
-                    )
-                ],
-            )
-        else:
-            step_context = None
-            with contextlib.suppress(RuntimeError):
-                step_context = get_step_context()
+        mv = step_context.model
+        mv.log_metadata(metadata)
 
-            if step_context and artifact_name in step_context._outputs:
-                step_context.add_output_metadata(
-                    metadata=metadata, output_name=artifact_name
+    # Log metadata to an artifact version by its name and version
+    elif artifact_name is not None and artifact_version is not None:
+        artifact_version_model = client.get_artifact_version(
+            name_id_or_prefix=artifact_name, version=artifact_version
+        )
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=[
+                RunMetadataResource(
+                    id=artifact_version_model.id,
+                    type=MetadataResourceTypes.ARTIFACT_VERSION,
                 )
-            else:
-                artifact_version_model = client.get_artifact_version(
-                    name_id_or_prefix=artifact_name
-                )
-                client.create_run_metadata(
-                    metadata=metadata,
-                    resources=[
-                        RunMetadataResource(
-                            id=artifact_version_model.id,
-                            type=MetadataResourceTypes.ARTIFACT_VERSION,
-                        )
-                    ],
-                )
+            ],
+        )
 
-    # If the user directly provides an artifact_version_id, we use the client to
-    # fetch is and attach the metadata accordingly.
+    # Log metadata to an artifact version by its ID
     elif artifact_version_id is not None:
         client.create_run_metadata(
             metadata=metadata,
@@ -250,6 +249,39 @@ def log_metadata(
                     type=MetadataResourceTypes.ARTIFACT_VERSION,
                 )
             ],
+        )
+
+    # Log metadata to an artifact version through the step context
+    elif infer_artifact is True:
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            raise ValueError(
+                "When you are using the `infer_artifact` option when you call "
+                "`log_metadata`, it must be called inside a step with outputs."
+                "Otherwise, you can provide a `artifact_version_id` or a "
+                "combination of `artifact_name` and `artifact_version`."
+            )
+
+        step_output_names = list(step_context._outputs.keys())
+
+        if artifact_name is not None:
+            # If a name provided, ensure it is in the outputs
+            assert artifact_name in step_output_names, (
+                f"The provided `artifact_name` does not exist in the "
+                f"step outputs: {step_output_names}."
+            )
+        else:
+            # If no name provided, ensure there is only one output
+            assert len(step_output_names) == 1, (
+                "There is mode than one output. If you would like to use the "
+                "`infer_artifact` option, you need to define an artifact_name."
+            )
+
+            artifact_name = step_output_names[0]
+
+        step_context.add_output_metadata(
+            metadata=metadata, output_name=artifact_name
         )
 
     # If every additional value is None, that means we are calling it bare bones
@@ -296,22 +328,28 @@ def log_metadata(
             Unsupported way to call the `log_metadata`. Possible combinations "
             include:
             
-            # Inside a step
+            # Automatic logging to a step (within a step)
             log_metadata(metadata={})
             
-            # Manual logging for a step
+            # Manual logging to a step
             log_metadata(metadata={}, step_name=..., run_id_name_or_prefix=...)
             log_metadata(metadata={}, step_id=...)
             
-            # Manual logging for a run
+            # Manual logging to a run
             log_metadata(metadata={}, run_id_name_or_prefix=...)
             
-            # Manual logging for a model
+            # Automatic logging to a model (within a step)
+            log_metadata(metadata={}, infer_model=True)
+            
+            # Manual logging to a model
             log_metadata(metadata={}, model_name=..., model_version=...)
             log_metadata(metadata={}, model_version_id=...)
             
-            # Manual logging for an artifact
-            log_metadata(metadata={}, artifact_name=...)  # inside a step 
+            # Automatic logging to an artifact (within a step)
+            log_metadata(metadata={}, infer_artifact=True)  # step with single output
+            log_metadata(metadata={}, artifact_name=..., infer_artifact=True)  # specific output of a step
+            
+            # Manual logging to an artifact
             log_metadata(metadata={}, artifact_name=..., artifact_version=...)
             log_metadata(metadata={}, artifact_version_id=...)
             """

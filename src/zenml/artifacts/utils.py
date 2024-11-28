@@ -14,6 +14,7 @@
 """Utility functions for handling artifacts."""
 
 import base64
+import contextlib
 import os
 import tempfile
 import zipfile
@@ -30,6 +31,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml import log_metadata
 from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
@@ -41,7 +43,6 @@ from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
-    MetadataResourceTypes,
     StackComponentType,
     VisualizationType,
 )
@@ -58,7 +59,6 @@ from zenml.models import (
     ArtifactVisualizationRequest,
     LoadedVisualization,
     PipelineRunResponse,
-    RunMetadataResource,
     StepRunResponse,
     StepRunUpdate,
 )
@@ -405,53 +405,61 @@ def log_artifact_metadata(
         artifact_version: The version of the artifact to log metadata for. If
             not provided, when being called inside a step that produces an
             artifact named `artifact_name`, the metadata will be associated to
-            the corresponding newly created artifact. Or, if not provided when
-            being called outside a step, or in a step that does not produce
-            any artifact named `artifact_name`, the metadata will be associated
-            to the latest version of that artifact.
+            the corresponding newly created artifact.
 
     Raises:
         ValueError: If no artifact name is provided and the function is not
             called inside a step with a single output, or, if neither an
             artifact nor an output with the given name exists.
+
     """
     logger.warning(
         "The `log_artifact_metadata` function is deprecated and will soon be "
         "removed. Please use `log_metadata` instead."
     )
-    try:
-        step_context = get_step_context()
-        in_step_outputs = (artifact_name in step_context._outputs) or (
-            not artifact_name and len(step_context._outputs) == 1
-        )
-    except RuntimeError:
-        step_context = None
-        in_step_outputs = False
 
-    if not step_context or not in_step_outputs or artifact_version:
-        if not artifact_name:
-            raise ValueError(
-                "Artifact name must be provided unless the function is called "
-                "inside a step with a single output."
-            )
-        client = Client()
-        response = client.get_artifact_version(artifact_name, artifact_version)
-        client.create_run_metadata(
+    if artifact_name and artifact_version:
+        assert artifact_name is not None
+
+        log_metadata(
             metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=response.id, type=MetadataResourceTypes.ARTIFACT_VERSION
-                )
-            ],
+            artifact_name=artifact_name,
+            artifact_version=artifact_version,
         )
 
+    step_context = None
+    with contextlib.suppress(RuntimeError):
+        step_context = get_step_context()
+
+    if step_context and artifact_name in step_context._outputs.keys():
+        log_metadata(
+            metadata=metadata,
+            artifact_name=artifact_name,
+            infer_artifact=True,
+        )
+    elif artifact_name:
+        client = Client()
+        logger.warning(
+            "Deprecation warning! Currently, you are calling "
+            "`log_artifact_metadata` from a context, where we use the "
+            "`artifact_name` to fetch it and link the metadata to its "
+            "latest version. This behaviour is deprecated and will be "
+            "removed in the future. To circumvent this, please check"
+            "the `log_metadata` function."
+        )
+        artifact_version_model = client.get_artifact_version(
+            name_id_or_prefix=artifact_name, version=artifact_version
+        )
+        log_metadata(
+            metadata=metadata,
+            artifact_version_id=artifact_version_model.id,
+        )
     else:
-        try:
-            step_context.add_output_metadata(
-                metadata=metadata, output_name=artifact_name
-            )
-        except StepContextError as e:
-            raise ValueError(e)
+        raise ValueError(
+            "You need to call `log_artifact_metadata` either within a step "
+            "(potentially with an artifact name) or outside of a step with an "
+            "artifact name (and/or version)."
+        )
 
 
 # -----------------
