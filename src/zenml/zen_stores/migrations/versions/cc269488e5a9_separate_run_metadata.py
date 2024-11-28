@@ -90,7 +90,7 @@ def upgrade() -> None:
     op.add_column(
         "run_metadata",
         sa.Column(
-            "cached", sa.Boolean(), nullable=True, server_default=sa.false()
+            "publisher_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
     )
 
@@ -137,4 +137,4 @@ def downgrade() -> None:
     op.drop_table("run_metadata_resource")
 
     # Drop the cached column
-    op.drop_column("run_metadata", "cached")
+    op.drop_column("run_metadata", "publisher_step_id")

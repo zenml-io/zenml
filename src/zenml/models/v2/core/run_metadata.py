@@ -43,10 +43,9 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
-    cached: Optional[bool] = Field(
-        title="A flag indicating if the run metadata is cached through "
-        "a step execution.",
-        default=False,
+    publisher_step_id: Optional[UUID] = Field(
+        title="The ID of the step execution that published this metadata.",
+        default=None,
     )
 
     @model_validator(mode="after")

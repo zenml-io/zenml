@@ -78,7 +78,15 @@ class RunMetadataSchema(BaseSchema, table=True):
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str
-    cached: Optional[bool] = Field(default=False)
+
+    publisher_step_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="publisher_step_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
 
 class RunMetadataResourceSchema(SQLModel, table=True):

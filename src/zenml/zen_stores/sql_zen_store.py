@@ -5572,7 +5572,7 @@ class SqlZenStore(BaseZenStore):
                         key=key,
                         value=json.dumps(value),
                         type=type_,
-                        cached=run_metadata.cached,
+                        publisher_step_id=run_metadata.publisher_step_id,
                     )
                     session.add(run_metadata_schema)
                     session.commit()
@@ -8215,7 +8215,8 @@ class SqlZenStore(BaseZenStore):
                         == MetadataResourceTypes.STEP_RUN
                     )
                     .where(
-                        RunMetadataSchema.cached == True  # noqa: E712
+                        RunMetadataSchema.publisher_step_id
+                        == step_run.original_step_run_id
                     )
                 ).all()
 

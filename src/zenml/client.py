@@ -4440,7 +4440,7 @@ class Client(metaclass=ClientMetaClass):
         metadata: Dict[str, "MetadataType"],
         resources: List[RunMetadataResource],
         stack_component_id: Optional[UUID] = None,
-        cached: bool = False,
+        publisher_step_id: Optional[UUID] = None,
     ) -> None:
         """Create run metadata.
 
@@ -4450,8 +4450,8 @@ class Client(metaclass=ClientMetaClass):
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
-            cached: A flag indicating if the run metadata can be cached during
-                a step execution.
+            publisher_step_id: The ID of the step execution that publishes
+                this metadata automatically.
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -4482,7 +4482,7 @@ class Client(metaclass=ClientMetaClass):
             user=self.active_user.id,
             resources=resources,
             stack_component_id=stack_component_id,
-            cached=cached,
+            publisher_step_id=publisher_step_id,
             values=values,
             types=types,
         )
