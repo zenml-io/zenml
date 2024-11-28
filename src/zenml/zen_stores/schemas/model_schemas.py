@@ -47,10 +47,7 @@ from zenml.models import (
     Page,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
-from zenml.zen_stores.schemas.base_schemas import (
-    BaseSchema,
-    NamedSchema,
-)
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import (

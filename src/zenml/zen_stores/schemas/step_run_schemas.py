@@ -43,9 +43,7 @@ from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
     StepRunResponseResources,
 )
-from zenml.zen_stores.schemas.base_schemas import (
-    NamedSchema,
-)
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,

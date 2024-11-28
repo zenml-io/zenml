@@ -41,10 +41,7 @@ from zenml.models import (
     ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
-from zenml.zen_stores.schemas.base_schemas import (
-    BaseSchema,
-    NamedSchema,
-)
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import (
