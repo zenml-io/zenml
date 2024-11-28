@@ -2410,6 +2410,23 @@ stack, use the `--stack` option.
 zenml pipeline run <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
 ```
 
+If you want to create a run template for your pipeline which can then be used
+to trigger a run from the dashboard or via an HTTP request, use:
+
+```bash
+zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+   --name=<TEMPLATE_NAME>
+
+To specify a config file or create the template for a different stack than the
+active one, use the `--config/-c` and `--stack` options:
+
+```bash
+zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+   --name=<TEMPLATE_NAME> \
+   --config=<PATH_TO_CONFIG_YAML> \
+   --stack=<STACK_ID_OR_NAME>
+```
+
 Tagging your resources with ZenML
 ---------------------------------
 
