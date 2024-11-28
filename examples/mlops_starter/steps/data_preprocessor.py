@@ -90,5 +90,6 @@ def data_preprocessor(
     log_metadata(
         metadata={"random_state": random_state, "target": target},
         artifact_name="preprocess_pipeline",
+        infer_artifact=True,
     )
     return dataset_trn, dataset_tst, preprocess_pipeline
