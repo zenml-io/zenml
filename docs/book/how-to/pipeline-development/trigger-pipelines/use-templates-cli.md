@@ -18,7 +18,7 @@ zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> --name=<TEMPLATE_NAME>
 ```
 
 {% hint style="warning" %}
-You need to have a **remote stack** active while running this command or specify
+You need to have an active **remote stack** while running this command or you can specify
 one with the `--stack` option.
 {% endhint %}
 
