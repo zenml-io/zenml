@@ -27,7 +27,11 @@ def test_publishing_a_successful_step_run(mocker):
     )
 
     step_run_id = uuid4()
-    output_artifact_ids = {"output_name": uuid4()}
+    output_artifact_ids = {
+        "output_name": [
+            uuid4(),
+        ]
+    }
 
     publish_utils.publish_successful_step_run(
         step_run_id=step_run_id, output_artifact_ids=output_artifact_ids

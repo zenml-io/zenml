@@ -57,7 +57,6 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
-    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -91,9 +90,11 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -658,6 +659,19 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The created artifact version.
+        """
+
+    @abstractmethod
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
         """
 
     @abstractmethod
@@ -1263,22 +1277,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
-    @abstractmethod
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Returns:
-            Model of the pipeline run.
-        """
-
     # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
@@ -1346,16 +1344,101 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment doesn't exist.
         """
 
+    # -------------------- Run templates --------------------
+
     @abstractmethod
-    def run_deployment(
+    def create_run_template(
         self,
-        deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a deployment.
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+        """
+
+    @abstractmethod
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+
+    @abstractmethod
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+
+    @abstractmethod
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+
+    @abstractmethod
+    def run_template(
+        self,
+        template_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a template.
+
+        Args:
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Returns:
@@ -1548,52 +1631,14 @@ class ZenStoreInterface(ABC):
     # -------------------- Run metadata --------------------
 
     @abstractmethod
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
             run_metadata: The run metadata to create.
 
         Returns:
-            The created run metadata.
-        """
-
-    @abstractmethod
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Get run metadata by its unique ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata with the given ID.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-
-    @abstractmethod
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
+            None
         """
 
     # -------------------- Schedules --------------------
@@ -2163,21 +2208,6 @@ class ZenStoreInterface(ABC):
 
         Args:
             stack: The stack to create.
-
-        Returns:
-            The created stack.
-
-        Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this workspace.
-        """
-
-    @abstractmethod
-    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
-        """Create a full stack.
-
-        Args:
-            full_stack: The full stack configuration.
 
         Returns:
             The created stack.

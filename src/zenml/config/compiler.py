@@ -39,11 +39,12 @@ from zenml.config.step_configurations import (
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
+from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.new.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps.step_invocation import StepInvocation
 
@@ -74,7 +75,7 @@ class Compiler:
         pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> Tuple[PipelineDeploymentBase, PipelineSpec]:
+    ) -> PipelineDeploymentBase:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -83,7 +84,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline deployment and spec
+            The compiled pipeline deployment.
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -92,9 +93,16 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
+        convert_component_shortcut_settings_keys(
+            pipeline.configuration.settings, stack=stack
+        )
+
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
         if run_configuration.run_name:
-            self._verify_run_name(run_configuration.run_name)
+            self._verify_run_name(
+                run_configuration.run_name,
+                pipeline.configuration.substitutions,
+            )
 
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
@@ -127,11 +135,16 @@ class Compiler:
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
 
-        run_name = run_configuration.run_name or self._get_default_run_name(
+        run_name = run_configuration.run_name or get_default_run_name(
             pipeline_name=pipeline.name
         )
 
         client_version, server_version = get_zenml_versions()
+
+        step_specs = [step.spec for step in steps.values()]
+        pipeline_spec = self._compute_pipeline_spec(
+            pipeline=pipeline, step_specs=step_specs
+        )
 
         deployment = PipelineDeploymentBase(
             run_name_template=run_name,
@@ -140,17 +153,15 @@ class Compiler:
             client_environment=get_run_environment_dict(),
             client_version=client_version,
             server_version=server_version,
-        )
-
-        step_specs = [step.spec for step in steps.values()]
-        pipeline_spec = self._compute_pipeline_spec(
-            pipeline=pipeline, step_specs=step_specs
+            pipeline_version_hash=pipeline._compute_unique_identifier(
+                pipeline_spec=pipeline_spec
+            ),
+            pipeline_spec=pipeline_spec,
         )
 
         logger.debug("Compiled pipeline deployment: %s", deployment)
-        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
 
-        return deployment, pipeline_spec
+        return deployment
 
     def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
@@ -200,6 +211,7 @@ class Compiler:
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 settings=config.settings,
+                tags=config.tags,
                 extra=config.extra,
                 model=config.model,
                 parameters=config.parameters,
@@ -296,16 +308,22 @@ class Compiler:
         return default_settings
 
     @staticmethod
-    def _verify_run_name(run_name: str) -> None:
+    def _verify_run_name(
+        run_name: str,
+        substitutions: Dict[str, str],
+    ) -> None:
         """Verifies that the run name contains only valid placeholders.
 
         Args:
             run_name: The run name to verify.
+            substitutions: The substitutions to be used in the run name.
 
         Raises:
             ValueError: If the run name contains invalid placeholders.
         """
-        valid_placeholder_names = {"date", "time"}
+        valid_placeholder_names = {"date", "time"}.union(
+            set(substitutions.keys())
+        )
         placeholders = {
             v[1] for v in string.Formatter().parse(run_name) if v[1]
         }
@@ -441,6 +459,9 @@ class Compiler:
                 step_config, runtime_parameters=invocation.parameters
             )
 
+        convert_component_shortcut_settings_keys(
+            step.configuration.settings, stack=stack
+        )
         step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
@@ -473,18 +494,6 @@ class Compiler:
             parameters_to_ignore=parameters_to_ignore
         )
         return Step(spec=step_spec, config=complete_step_configuration)
-
-    @staticmethod
-    def _get_default_run_name(pipeline_name: str) -> str:
-        """Gets the default name for a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline which will be run.
-
-        Returns:
-            Run name.
-        """
-        return f"{pipeline_name}-{{date}}-{{time}}"
 
     def _get_sorted_invocations(
         self,
@@ -584,8 +593,6 @@ class Compiler:
         Raises:
             ValueError: If the pipeline has no steps.
         """
-        from zenml.pipelines import BasePipeline
-
         if not step_specs:
             raise ValueError(
                 f"Pipeline '{pipeline.name}' cannot be compiled because it has "
@@ -595,12 +602,36 @@ class Compiler:
                 "https://docs.zenml.io/user-guide/starter-guide."
             )
 
-        additional_spec_args: Dict[str, Any] = {}
-        if isinstance(pipeline, BasePipeline):
-            # use older spec version for legacy pipelines
-            additional_spec_args["version"] = "0.3"
-        else:
-            additional_spec_args["source"] = pipeline.resolve()
-            additional_spec_args["parameters"] = pipeline._parameters
+        additional_spec_args: Dict[str, Any] = {
+            "source": pipeline.resolve(),
+            "parameters": pipeline._parameters,
+        }
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
+
+
+def convert_component_shortcut_settings_keys(
+    settings: Dict[str, "BaseSettings"], stack: "Stack"
+) -> None:
+    """Convert component shortcut settings keys.
+
+    Args:
+        settings: Dictionary of settings.
+        stack: The stack that the pipeline will run on.
+
+    Raises:
+        ValueError: If stack component settings were defined both using the
+            full and the shortcut key.
+    """
+    for component in stack.components.values():
+        shortcut_key = str(component.type)
+        if component_settings := settings.pop(shortcut_key, None):
+            key = settings_utils.get_stack_component_setting_key(component)
+            if key in settings:
+                raise ValueError(
+                    f"Duplicate settings provided for your {shortcut_key} "
+                    f"using the keys {shortcut_key} and {key}. Remove settings "
+                    "for one of them to fix this error."
+                )
+
+            settings[key] = component_settings

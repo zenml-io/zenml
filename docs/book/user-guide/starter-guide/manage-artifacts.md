@@ -167,6 +167,32 @@ def annotation_approach() -> (
     return "string"
 ```
 
+### Specify a type for your artifacts
+
+Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
+
+{% hint style="info" %}
+If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to
+save the artifact.
+{% endhint %}
+
+
+```python
+from typing_extensions import Annotated
+from zenml import ArtifactConfig, save_artifact, step
+from zenml.enums import ArtifactType
+
+# Assign an artifact type to a step output
+@step
+def trainer() -> Annotated[MyCustomModel, ArtifactConfig(artifact_type=ArtifactType.MODEL)]:
+    return MyCustomModel(...)
+
+
+# Assign an artifact type when manually saving artifacts
+model = ...
+save_artifact(model, name="model", artifact_type=ArtifactType.MODEL)
+```
+
 ### Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
@@ -194,7 +220,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
@@ -202,7 +228,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -240,7 +266,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
 {% endhint %}
 
 If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
@@ -301,9 +327,54 @@ Even if an artifact is created externally, it can be treated like any other arti
 It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use External Artifacts to load them instead.
 {% endhint %}
 
+### Linking existing data as a ZenML artifact
+
+Sometimes, data is produced completely outside of ZenML and can be conveniently stored on a given storage. A good example of this is the checkpoint files created as a side-effect of the Deep Learning model training. We know that the intermediate data of the deep learning frameworks is quite big and there is no good reason to move it around again and again, if it can be produced directly in the artifact store boundaries and later just linked to become an artifact of ZenML.
+Let's explore the Pytorch Lightning example to fit the model and store the checkpoints in a remote location.
+
+```python
+import os
+from zenml.client import Client
+from zenml import register_artifact
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from uuid import uuid4
+
+# Define where the model data should be saved
+# use active ArtifactStore
+prefix = Client().active_stack.artifact_store.path
+# keep data separable for future runs with uuid4 folder
+default_root_dir = os.path.join(prefix, uuid4().hex)
+
+# Define the model and fit it
+model = ...
+trainer = Trainer(
+    default_root_dir=default_root_dir,
+    callbacks=[
+        ModelCheckpoint(
+            every_n_epochs=1, save_top_k=-1, filename="checkpoint-{epoch:02d}"
+        )
+    ],
+)
+try:
+    trainer.fit(model)
+finally:
+    # We now link those checkpoints in ZenML as an artifact
+    # This will create a new artifact version
+    register_artifact(default_root_dir, name="all_my_model_checkpoints")
+```
+
+{% hint style="info" %}
+The artifact produced from the preexisting data will have a `pathlib.Path` type, once loaded or passed as input to another step.
+{% endhint %}
+
+Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
+
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md).
+
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
@@ -366,7 +437,7 @@ def model_finetuner_step(
     return model
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](../../how-to/model-management-metrics/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
 
 Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](../../how-to/handle-data-artifacts/) for more information.
 
@@ -411,7 +482,7 @@ def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
     ClassifierMixin,
-    ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"]),
+    ArtifactConfig(name="my_model", tags=["SVC", "trained"]),
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])

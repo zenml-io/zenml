@@ -17,7 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    ClassVar,
     Dict,
     Mapping,
     Optional,
@@ -29,66 +28,32 @@ from typing import (
 )
 
 from zenml.logger import get_logger
-from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
+    from zenml.steps import BaseStep
     from zenml.types import HookSpecification
 
-    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
+    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrSource",
-        Sequence["MaterializerClassOrSource"],
-        Mapping[str, "MaterializerClassOrSource"],
-        Mapping[str, Sequence["MaterializerClassOrSource"]],
+        MaterializerClassOrSource,
+        Sequence[MaterializerClassOrSource],
+        Mapping[str, MaterializerClassOrSource],
+        Mapping[str, Sequence[MaterializerClassOrSource]],
     ]
+    F = TypeVar("F", bound=Callable[..., Any])
 
-
-STEP_INNER_FUNC_NAME = "entrypoint"
-PARAM_STEP_NAME = "name"
-PARAM_ENABLE_CACHE = "enable_cache"
-PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
-PARAM_ENABLE_ARTIFACT_VISUALIZATION = "enable_artifact_visualization"
-PARAM_ENABLE_STEP_LOGS = "enable_step_logs"
-PARAM_STEP_OPERATOR = "step_operator"
-PARAM_EXPERIMENT_TRACKER = "experiment_tracker"
-CLASS_CONFIGURATION = "_CLASS_CONFIGURATION"
-PARAM_OUTPUT_ARTIFACTS = "output_artifacts"
-PARAM_OUTPUT_MATERIALIZERS = "output_materializers"
-PARAM_SETTINGS = "settings"
-PARAM_EXTRA_OPTIONS = "extra"
-PARAM_ON_FAILURE = "on_failure"
-PARAM_ON_SUCCESS = "on_success"
-PARAM_MODEL = "model"
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-class _DecoratedStep(BaseStep):
-    _CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        class_config = self._CLASS_CONFIGURATION or {}
-        kwargs = {**class_config, **kwargs}
-        super().__init__(*args, **kwargs)
-
-    @property
-    def source_object(self) -> Any:
-        """The source object of this step.
-
-        Returns:
-            The source object of this step.
-        """
-        return self.entrypoint
-
 
 @overload
-def step(_func: F) -> Type[BaseStep]: ...
+def step(_func: "F") -> "BaseStep": ...
 
 
 @overload
@@ -107,11 +72,13 @@ def step(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
-) -> Callable[[F], Type[BaseStep]]: ...
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+) -> Callable[["F"], "BaseStep"]: ...
 
 
 def step(
-    _func: Optional[F] = None,
+    _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
@@ -126,11 +93,10 @@ def step(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
-) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
-    """Outer decorator function for the creation of a ZenML step.
-
-    In order to be able to work with parameters such as `name`, it features a
-    nested decorator structure.
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
+    """Decorator to create a ZenML step.
 
     Args:
         _func: The decorated function.
@@ -158,55 +124,46 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model: configuration of the model version in the Model Control Plane.
+        model: configuration of the model in the Model Control Plane.
+        retry: configuration of step retry in case of step failure.
+        substitutions: Extra placeholders for the step name.
 
     Returns:
-        The inner decorator which creates the step class based on the
-        ZenML BaseStep
+        The step instance.
     """
 
-    def inner_decorator(func: F) -> Type[BaseStep]:
-        """Inner decorator function for the creation of a ZenML Step.
+    def inner_decorator(func: "F") -> "BaseStep":
+        from zenml.steps.decorated_step import _DecoratedStep
 
-        Args:
-            func: types.FunctionType, this function will be used as the
-                "process" method of the generated Step.
-
-        Returns:
-            The class of a newly generated ZenML Step.
-        """
-        step_name = name or func.__name__
-        logger.warning(
-            f"The `@step` decorator that you used to define your {step_name} "
-            "step is deprecated. Check out the 0.40.0 migration guide for more "
-            "information on how to migrate your steps to the new syntax: "
-            "https://docs.zenml.io/reference/migration-guide/migration-zero-forty"
-        )
-
-        return type(  # noqa
+        class_: Type["BaseStep"] = type(
             func.__name__,
             (_DecoratedStep,),
             {
-                STEP_INNER_FUNC_NAME: staticmethod(func),
-                CLASS_CONFIGURATION: {
-                    PARAM_STEP_NAME: name,
-                    PARAM_ENABLE_CACHE: enable_cache,
-                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
-                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
-                    PARAM_ENABLE_STEP_LOGS: enable_step_logs,
-                    PARAM_EXPERIMENT_TRACKER: experiment_tracker,
-                    PARAM_STEP_OPERATOR: step_operator,
-                    PARAM_OUTPUT_MATERIALIZERS: output_materializers,
-                    PARAM_SETTINGS: settings,
-                    PARAM_EXTRA_OPTIONS: extra,
-                    PARAM_ON_FAILURE: on_failure,
-                    PARAM_ON_SUCCESS: on_success,
-                    PARAM_MODEL: model,
-                },
+                "entrypoint": staticmethod(func),
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
             },
         )
+
+        step_instance = class_(
+            name=name or func.__name__,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
+            experiment_tracker=experiment_tracker,
+            step_operator=step_operator,
+            output_materializers=output_materializers,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+            model=model,
+            retry=retry,
+            substitutions=substitutions,
+        )
+
+        return step_instance
 
     if _func is None:
         return inner_decorator

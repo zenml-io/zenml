@@ -14,7 +14,17 @@ import logging
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import Annotated
@@ -26,12 +36,14 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     PluginSubType,
     SecretScope,
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
+from zenml.login.credentials_store import CredentialsStore
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -71,7 +83,11 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
+    PipelineUpdate,
     ResourceTypeModel,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateUpdate,
     SecretFilter,
     SecretRequest,
     ServiceAccountFilter,
@@ -81,8 +97,10 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    StackFilter,
     StackRequest,
     StepRunFilter,
+    StepRunResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
@@ -120,16 +138,8 @@ def int_plus_one_test_step(
 
 
 @pipeline(name="connected_two_step_pipeline")
-def connected_two_step_pipeline(step_1, step_2):
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-    step_2(step_1())
-
-
-pipeline_instance = connected_two_step_pipeline(
-    step_1=constant_int_output_test_step(),
-    step_2=int_plus_one_test_step(),
-)
+def pipeline_instance():
+    int_plus_one_test_step(constant_int_output_test_step())
 
 
 class PipelineRunContext:
@@ -144,11 +154,11 @@ class PipelineRunContext:
     def __enter__(self):
         self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
-            pipeline_instance.run(
+            pipeline_instance.with_options(
                 run_name=f"{self.pipeline_name}_{i}",
                 unlisted=True,
                 enable_step_logs=self.enable_step_logs,
-            )
+            )()
 
         # persist which runs, steps and artifact versions were produced.
         # In case the test ends up deleting some or all of these, this allows
@@ -156,14 +166,16 @@ class PipelineRunContext:
         self.runs = self.store.list_runs(
             PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
-        self.steps = []
+        self.steps: List[StepRunResponse] = []
         self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifact_versions += [a for a in s.outputs.values()]
+                self.artifact_versions += [
+                    av for avs in s.outputs.values() for av in avs
+                ]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -230,30 +242,41 @@ class UserContext:
         if self.login or self.existing_user:
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                username=self.user_name,
-                password=self.password,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    username=self.user_name,
+                    password=self.password,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_user
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if not self.existing_user and self.delete:
             try:
                 self.store.delete_user(self.created_user.id)
             except (KeyError, IllegalOperationError):
                 pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class ServiceAccountContext:
@@ -302,23 +325,30 @@ class ServiceAccountContext:
             )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
+            self.original_credentials = CredentialsStore.get_instance()
 
+            CredentialsStore.reset_instance()
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            self.client = Client()
-            store_config = StoreConfiguration(
-                url=self.original_config.store.url,
-                type=self.original_config.store.type,
-                api_key=self.api_key.key,
-                secrets_store=self.original_config.store.secrets_store,
-            )
-            GlobalConfiguration().set_store(config=store_config)
+            try:
+                self.client = Client()
+                store_config = StoreConfiguration(
+                    url=self.original_config.store.url,
+                    type=self.original_config.store.type,
+                    api_key=self.api_key.key,
+                    secrets_store=self.original_config.store.secrets_store,
+                )
+                GlobalConfiguration().set_store(config=store_config)
+            except Exception:
+                self.cleanup()
+                raise
         return self.created_service_account
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         if self.login or self.existing_account:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            CredentialsStore.reset_instance(self.original_credentials)
             _ = Client().zen_store
         if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
@@ -332,6 +362,9 @@ class ServiceAccountContext:
                 )
             except (KeyError, IllegalOperationError):
                 pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class LoginContext:
@@ -348,23 +381,33 @@ class LoginContext:
     def __enter__(self):
         self.original_config = GlobalConfiguration.get_instance()
         self.original_client = Client.get_instance()
-
+        self.original_credentials = CredentialsStore.get_instance()
+        CredentialsStore.reset_instance()
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        store_config = StoreConfiguration(
-            url=self.original_config.store.url,
-            type=self.original_config.store.type,
-            api_key=self.api_key,
-            username=self.user_name,
-            password=self.password,
-            secrets_store=self.original_config.store.secrets_store,
-        )
-        GlobalConfiguration().set_store(config=store_config)
+        try:
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                api_key=self.api_key,
+                username=self.user_name,
+                password=self.password,
+                secrets_store=self.original_config.store.secrets_store,
+            )
+            GlobalConfiguration().set_store(config=store_config)
+        except Exception:
+            self.cleanup()
+            raise
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         GlobalConfiguration._reset_instance(self.original_config)
         Client._reset_instance(self.original_client)
+        CredentialsStore.reset_instance(self.original_credentials)
+
         _ = Client().zen_store
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.cleanup()
 
 
 class StackContext:
@@ -646,6 +689,7 @@ class ModelContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        artifact_types: Optional[List[ArtifactType]] = None,
         delete: bool = True,
     ):
         client = Client()
@@ -662,6 +706,13 @@ class ModelContext:
         self.prs = []
         self.deployments = []
         self.delete = delete
+
+        if create_artifacts > 0:
+            artifact_types = artifact_types or [
+                ArtifactType.DATA for _ in range(create_artifacts)
+            ]
+            assert len(artifact_types) == create_artifacts
+            self.artifact_types = artifact_types
 
     def __enter__(self):
         client = Client()
@@ -685,7 +736,7 @@ class ModelContext:
                     )
                 )
 
-        for _ in range(self.create_artifacts):
+        for i in range(self.create_artifacts):
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
@@ -700,10 +751,11 @@ class ModelContext:
                     version=1,
                     data_type="module.class",
                     materializer="module.class",
-                    type=ArtifactType.DATA,
+                    type=self.artifact_types[i],
                     uri="",
                     user=user.id,
                     workspace=ws.id,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
             self.artifact_versions.append(artifact_version)
@@ -883,7 +935,9 @@ class CrudTestConfig:
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
         supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
-        conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
+        conditional_entities: Optional[
+            Dict[str, Union["CrudTestConfig", List["CrudTestConfig"]]]
+        ] = None,
     ):
         """Initializes a CrudTestConfig.
 
@@ -895,7 +949,8 @@ class CrudTestConfig:
             supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
-                field in the `create_model` to corresponding `CrudTestConfig`.
+                field in the `create_model` to corresponding `CrudTestConfig`
+                (or list of them if target value is a list of ids).
         """
         self.create_model = create_model
         self.update_model = update_model
@@ -968,13 +1023,19 @@ class CrudTestConfig:
                     parent_model = parent_model[name]
                 else:
                     parent_model = getattr(parent_model, name)
+
+            value = (
+                conditional_entity.create().id
+                if isinstance(conditional_entity, CrudTestConfig)
+                else [c.create().id for c in conditional_entity]
+            )
             if isinstance(parent_model, dict):
-                parent_model[field_names[-1]] = conditional_entity.create().id
+                parent_model[field_names[-1]] = value
             else:
                 setattr(
                     parent_model,
                     field_names[-1],
-                    conditional_entity.create().id,
+                    value,
                 )
         # Create the entity itself
         response = self.create_method(create_model)
@@ -1011,7 +1072,11 @@ class CrudTestConfig:
         if self.id:
             self.delete()
         for conditional_entity in self.conditional_entities.values():
-            conditional_entity.cleanup()
+            if isinstance(conditional_entity, CrudTestConfig):
+                conditional_entity.cleanup()
+            else:
+                for c in conditional_entity:
+                    c.cleanup()
 
 
 workspace_crud_test_config = CrudTestConfig(
@@ -1055,14 +1120,11 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        version="1",
-        version_hash="abc123",
+        description="Pipeline description",
     ),
-    # Updating pipelines is not doing anything at the moment
-    # update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    update_model=PipelineUpdate(description="Updated pipeline description"),
     filter_model=PipelineFilter,
     entity_name="pipeline",
 )
@@ -1104,6 +1166,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         uri="",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
+        save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
     filter_model=ArtifactVersionFilter,
     update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),
@@ -1119,6 +1182,44 @@ secret_crud_test_config = CrudTestConfig(
     filter_model=SecretFilter,
     entity_name="secret",
 )
+remote_orchestrator_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_orchestrator"),
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="kubernetes",
+        configuration={},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_artifact_store_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_artifact_store"),
+        type=StackComponentType.ARTIFACT_STORE,
+        flavor="s3",
+        configuration={"path": "s3://bucket"},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_stack_crud_test_config = CrudTestConfig(
+    create_model=StackRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("remote_stack"),
+        components={},
+    ),
+    filter_model=StackFilter,
+    entity_name="stack",
+    conditional_entities={
+        "components.orchestrator": [remote_orchestrator_crud_test_config],
+        "components.artifact_store": [remote_artifact_store_crud_test_config],
+    },
+)
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
@@ -1129,6 +1230,7 @@ build_crud_test_config = CrudTestConfig(
     ),
     filter_model=PipelineBuildFilter,
     entity_name="build",
+    conditional_entities={"stack": remote_stack_crud_test_config},
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
@@ -1139,6 +1241,8 @@ deployment_crud_test_config = CrudTestConfig(
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
     ),
     filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
@@ -1209,6 +1313,40 @@ model_crud_test_config = CrudTestConfig(
     filter_model=ModelFilter,
     entity_name="model",
 )
+remote_deployment_crud_test_config = CrudTestConfig(
+    create_model=PipelineDeploymentRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        stack=uuid.uuid4(),
+        build=uuid.uuid4(),  # will be overridden in create()
+        run_name_template="template",
+        pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
+    ),
+    filter_model=PipelineDeploymentFilter,
+    entity_name="deployment",
+    conditional_entities={
+        "build": deepcopy(build_crud_test_config),
+    },
+)
+run_template_test_config = CrudTestConfig(
+    create_model=RunTemplateRequest(
+        name=sample_name("run_template"),
+        description="Test run template.",
+        source_deployment_id=uuid.uuid4(),  # will be overridden in create()
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
+    filter_model=RunTemplateFilter,
+    entity_name="run_template",
+    conditional_entities={
+        "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
+    },
+)
 event_source_crud_test_config = CrudTestConfig(
     create_model=EventSourceRequest(
         name=sample_name("blupus_cat_cam"),
@@ -1231,7 +1369,7 @@ action_crud_test_config = CrudTestConfig(
         name=sample_name("blupus_feeder"),
         description="Feeds blupus when he meows.",
         service_account_id=uuid.uuid4(),  # will be overridden in create()
-        configuration={"pipeline_deployment_id": uuid.uuid4()},
+        configuration={"template_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
         user=uuid.uuid4(),
@@ -1243,9 +1381,7 @@ action_crud_test_config = CrudTestConfig(
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
         "service_account_id": deepcopy(service_account_crud_test_config),
-        "configuration.pipeline_deployment_id": deepcopy(
-            deployment_crud_test_config
-        ),
+        "configuration.template_id": deepcopy(run_template_test_config),
     },
 )
 trigger_crud_test_config = CrudTestConfig(
@@ -1302,6 +1438,7 @@ list_of_entities = [
     code_repository_crud_test_config,
     service_connector_crud_test_config,
     model_crud_test_config,
+    run_template_test_config,
     event_source_crud_test_config,
     action_crud_test_config,
     trigger_crud_test_config,

@@ -267,11 +267,11 @@ class BaseArtifactStore(StackComponent):
 
     # --- User interface ---
     @abstractmethod
-    def open(self, name: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
 
         Args:
-            name: The path of the file to open.
+            path: The path of the file to open.
             mode: The mode to open the file.
 
         Returns:
@@ -474,6 +474,17 @@ class BaseArtifactStore(StackComponent):
         )
 
         default_filesystem_registry.register(filesystem_class)
+
+    def _remove_previous_file_versions(self, path: PathType) -> None:
+        """Remove all file versions but the latest in the given path.
+
+        Method is useful for logs stored in versioned file systems
+        like AWS S3.
+
+        Args:
+            path: The path to the file.
+        """
+        return
 
 
 class BaseArtifactStoreFlavor(Flavor):

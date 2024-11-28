@@ -13,20 +13,13 @@ When using a stack with remote storage, nothing changes except the fact that the
 <figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-```shell
-zenml stack deploy --provider aws
-```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
-
-```shell
-zenml stack register <STACK_NAME> --provider aws
-```
+Check out the
+[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Terraform modules](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
 ## Provisioning and registering a remote artifact store
@@ -112,7 +105,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% tab title="Other" %}
 You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../component-guide/artifact-stores/artifact-stores.md).
 
-It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
+It is also relatively simple to create a [custom stack component flavor](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
 {% endtabs %}
 
@@ -137,7 +130,7 @@ this process:
 
 {% tabs %}
 {% tab title="AWS" %}
-There are [many ways to create an AWS service connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../how-to/auth-management/aws-service-connector.md#aws-iam-role).
+There are [many ways to create an AWS service connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#aws-iam-role).
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
@@ -145,7 +138,7 @@ AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --typ
 {% endtab %}
 
 {% tab title="GCP" %}
-There are [many ways to create a GCP service connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../how-to/auth-management/gcp-service-connector.md#gcp-service-account).
+There are [many ways to create a GCP service connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#gcp-service-account).
 
 ```shell
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
@@ -153,7 +146,7 @@ zenml service-connector register cloud_connector --type gcp --auth-method servic
 {% endtab %}
 
 {% tab title="Azure" %}
-There are [many ways to create an Azure service connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../how-to/auth-management/azure-service-connector.md#azure-service-principal).
+There are [many ways to create an Azure service connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#azure-service-principal).
 
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
@@ -207,7 +200,7 @@ You can list your artifact versions as follows:
 {% tab title="CLI" %}
 ```shell
 # This will give you the artifacts from the last 15 minutes
-zenml artifact version list --created="gte:$(date -d '15 minutes ago' '+%Y-%m-%d %H:%M:%S')"
+zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
 {% endtab %}
 

@@ -1,0 +1,36 @@
+# Environment configuration
+settings:
+  docker:
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.70.0-py3.11-azure"
+    skip_build: True
+    requirements: requirements.txt
+  # Uncomment the following lines to specify the accelerator for your azureml orchestrator
+#  orchestrator.azureml:
+#    mode: "compute-instance"
+#    compute_name: compute_name   # Insert the name of your preconfigured compute instance
+
+# Model Control Plane configuration
+model:
+  name: YeOldeEnglishTranslator
+  description: Model to translate from old to modern english
+  tags: ["quickstart", "llm", "t5"]
+
+# Configure the pipeline
+parameters:
+  data_url: 'https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt'
+  # model_type: "t5-small"  # Choose between t5-small and t5-large
+  num_train_epochs: 2
+  per_device_train_batch_size: 16
+  gradient_accumulation_steps: 4
+  dataloader_num_workers: 0
+
+
+# Per step configuration
+steps:
+  split_dataset:
+    parameters:
+      subset_size: 0.5  # only use 50% of all available data
+      train_size: 0.7
+      test_size: 0.1
+      eval_size: 0.2
+      random_state: 42

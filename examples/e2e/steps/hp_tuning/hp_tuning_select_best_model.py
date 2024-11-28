@@ -47,10 +47,10 @@ def hp_tuning_select_best_model(
     best_metric = -1
     # consume artifacts attached to current model version in Model Control Plane
     for step_name in step_names:
-        hp_output = model.get_data_artifact("hp_result")
+        hp_output = model.get_artifact("hp_result")
         model_: ClassifierMixin = hp_output.load()
         # fetch metadata we attached earlier
-        metric = float(hp_output.run_metadata["metric"].value)
+        metric = float(hp_output.run_metadata["metric"])
         if best_model is None or best_metric < metric:
             best_model = model_
     ### YOUR CODE ENDS HERE ###

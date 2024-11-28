@@ -1,0 +1,11 @@
+# environment configuration
+settings:
+  docker:
+    required_integrations:
+      - sklearn
+      - pandas
+    requirements:
+      - pyarrow
+
+# pipeline configuration
+test_size: 0.35

@@ -13,10 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
-
-if TYPE_CHECKING:
-    from zenml.steps import BaseParameters
+from typing import Dict, Optional
 
 
 class ZenMLBaseException(Exception):
@@ -48,6 +45,17 @@ class InitializationException(ZenMLBaseException):
 
 class AuthorizationException(ZenMLBaseException):
     """Raised when an authorization error occurred while trying to access a ZenML resource ."""
+
+
+class CredentialsNotValid(AuthorizationException):
+    """Raised when the credentials provided are invalid.
+
+    This is a subclass of AuthorizationException and should only be raised when
+    the authentication credentials are invalid (e.g. expired API token, invalid
+    username/password, invalid signature). If caught by the ZenML client, it
+    will trigger an invalidation of the currently cached API token and a
+    re-authentication flow.
+    """
 
 
 class DoesNotExistException(ZenMLBaseException):
@@ -132,43 +140,6 @@ class PipelineConfigurationError(ZenMLBaseException):
     """Raises exceptions when a pipeline configuration contains invalid values."""
 
 
-class MissingStepParameterError(ZenMLBaseException):
-    """Raises exceptions when a step parameter is missing when running a pipeline."""
-
-    def __init__(
-        self,
-        step_name: str,
-        missing_parameters: List[str],
-        parameters_class: Type["BaseParameters"],
-    ):
-        """Initializes a MissingStepParameterError object.
-
-        Args:
-            step_name: Name of the step for which one or more parameters
-                are missing.
-            missing_parameters: Names of all parameters which are missing.
-            parameters_class: Class of the parameters object for which
-                the parameters are missing.
-        """
-        import textwrap
-
-        message = textwrap.fill(
-            textwrap.dedent(
-                f"""
-            Missing parameters {missing_parameters} for '{step_name}' step.
-            There are three ways to solve this issue:
-            (1) Specify a default value in the parameters class
-            `{parameters_class.__name__}`
-            (2) Specify the parameters in code when creating the pipeline:
-            `my_pipeline({step_name}(params={parameters_class.__name__}(...))`
-            (3) Specify the parameters in a yaml configuration file and pass
-            it to the pipeline: `my_pipeline(...).run(config_path='path_to_yaml')`
-            """
-            )
-        )
-        super().__init__(message)
-
-
 class IntegrationError(ZenMLBaseException):
     """Raises exceptions when a requested integration can not be activated."""
 
@@ -195,6 +166,10 @@ class ValidationError(ZenMLBaseException):
 
 class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
+
+
+class EntityCreationError(ZenMLBaseException, RuntimeError):
+    """Raised when failing to create an entity."""
 
 
 class ActionExistsError(EntityExistsError):

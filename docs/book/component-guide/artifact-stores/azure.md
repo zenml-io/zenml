@@ -21,6 +21,15 @@ You should use the Azure Artifact Store when you decide to keep your ZenML artif
 
 ### How do you deploy it?
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including an Azure Artifact Store? Check out the
+[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Azure Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 The Azure Artifact Store flavor is provided by the Azure ZenML integration, you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
 
 ```shell
@@ -43,7 +52,7 @@ Depending on your use case, however, you may also need to provide additional con
 
 #### Authentication Methods
 
-Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](../../how-to/auth-management/azure-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Azure Artifact Store with other remote stack components also running in Azure.
+Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Azure Artifact Store with other remote stack components also running in Azure.
 
 You will need the following information to configure Azure credentials for ZenML, depending on which type of Azure credentials you want to use:
 
@@ -72,12 +81,12 @@ The implicit authentication method also needs to be coordinated with other stack
 * [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
 * [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
 
-To enable these use cases, it is recommended to use [an Azure Service Connector](../../how-to/auth-management/azure-service-connector.md) to link your Azure Artifact Store to the remote Azure Blob storage container.
+To enable these use cases, it is recommended to use [an Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md) to link your Azure Artifact Store to the remote Azure Blob storage container.
 {% endhint %}
 {% endtab %}
 
 {% tab title="Azure Service Connector (recommended)" %}
-To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](../../how-to/auth-management/azure-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an Azure Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an Azure Service Connector that can be used to access more than one Azure blob storage container or even more than one type of Azure resource:
 
@@ -103,7 +112,7 @@ Successfully registered service connector `azure-blob-demo` with access to the f
 ```
 {% endcode %}
 
-> **Note**: Please remember to grant the Azure service principal permissions to read and write to your Azure Blob storage container as well as to list accessible storage accounts and Blob containers. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [Azure Service Connector Blob storage container resource type documentation](../../how-to/auth-management/azure-service-connector.md#azure-blob-storage-container) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../how-to/auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the Azure service principal permissions to read and write to your Azure Blob storage container as well as to list accessible storage accounts and Blob containers. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [Azure Service Connector Blob storage container resource type documentation](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#azure-blob-storage-container) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Azure Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Azure Blob storage container you want to use for your Azure Artifact Store by running e.g.:
 
@@ -113,7 +122,7 @@ zenml service-connector list-resources --resource-type blob-container
 
 {% code title="Example Command Output" %}
 ```
-The following 'blob-container' resources can be accessed by service connectors configured in your workspace:
+The following 'blob-container' resources can be accessed by service connectors:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE     │ RESOURCE NAMES               ┃
 ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────┼──────────────────────────────┨

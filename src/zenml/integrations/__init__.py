@@ -36,6 +36,7 @@ from zenml.integrations.gitlab import GitLabIntegration  # noqa
 from zenml.integrations.great_expectations import (  # noqa
     GreatExpectationsIntegration,
 )
+from zenml.integrations.lightning import LightningIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.hyperai import HyperAIIntegration  # noqa
 from zenml.integrations.kaniko import KanikoIntegration  # noqa
@@ -44,12 +45,16 @@ from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
 from zenml.integrations.langchain import LangchainIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
+
 # from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
+from zenml.integrations.modal import ModalIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
+from zenml.integrations.numpy import NumpyIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
-from zenml.integrations.pigeon import PigeonIntegration # noqa
+from zenml.integrations.pandas import PandasIntegration  # noqa
+from zenml.integrations.pigeon import PigeonIntegration  # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.polars import PolarsIntegration  # noqa
 from zenml.integrations.prodigy import ProdigyIntegration  # noqa
@@ -66,6 +71,7 @@ from zenml.integrations.skypilot_aws import SkypilotAWSIntegration  # noqa
 from zenml.integrations.skypilot_gcp import SkypilotGCPIntegration  # noqa
 from zenml.integrations.skypilot_azure import SkypilotAzureIntegration  # noqa
 from zenml.integrations.skypilot_lambda import SkypilotLambdaIntegration  # noqa
+from zenml.integrations.skypilot_kubernetes import SkypilotKubernetesIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
@@ -74,3 +80,4 @@ from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
+from zenml.integrations.vllm import VLLMIntegration  # noqa

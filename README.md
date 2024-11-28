@@ -1,6 +1,6 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
+  <h1 align="center">Connecting data science teams seamlessly to cloud infrastructure.
 </h1>
 </div>
 
@@ -86,7 +86,7 @@ Thank you for your support! 🌟
 ## 🤸 Quickstart
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 
-[Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
+[Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.9 - 3.12 is required:
 
 ```bash
 pip install "zenml[server]" notebook
@@ -228,22 +228,28 @@ And finally, here are some other examples and use cases for inspiration:
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
 
+## 📚 Learn from Books
+
+<div align="center">
+  <a href="https://www.amazon.com/LLM-Engineers-Handbook-engineering-production/dp/1836200072">
+    <img src="docs/book/.gitbook/assets/llm_engineering_handbook_cover.jpg" alt="LLM Engineer's Handbook Cover" width="200"/></img>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
+    <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/></img>
+  </a>
+  </br></br>
+</div>
+
+ZenML is featured in these comprehensive guides to modern MLOps and LLM engineering. Learn how to build production-ready machine learning systems with real-world examples and best practices.
+
 ## 🔋 Deploy ZenML
 
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-Currently, there are two main ways to deploy ZenML:
+Read more about various deployment options [here](https://docs.zenml.io/getting-started/deploying-zenml).
 
-- **ZenML Pro**: [ZenML Pro](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
-offers a SaaS version which comes with a control plane to create and manage multiple ZenML servers.
-These servers are managed and maintained by ZenML’s dedicated team, alleviating
-the burden of server management from your end. They also come with additional features like RBAC, a Model Control Plane
-and [much more](https://zenml-io.gitbook.io/zenml-documentation/getting-started/zenml-pro.
-- **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
-ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
-This can be achieved through various methods, including using our CLI, Docker,
-Helm, or HuggingFace Spaces.
+Or, sign up for [ZenML Pro to get a fully managed server on a free trial](https://cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
 
 ## Use ZenML with VS Code
 
@@ -327,7 +333,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.62.0 is out. Check out the release notes
+    🎉 Version 0.70.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

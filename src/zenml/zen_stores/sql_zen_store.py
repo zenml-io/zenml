@@ -18,9 +18,11 @@ import json
 import logging
 import math
 import os
+import random
 import re
 import sys
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -52,7 +54,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc, case, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -85,6 +87,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
+from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -93,9 +96,10 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
-    ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -107,6 +111,7 @@ from zenml.enums import (
     DatabaseBackupStrategy,
     ExecutionStatus,
     LoggingLevels,
+    MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
     SecretScope,
@@ -115,7 +120,6 @@ from zenml.enums import (
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
-    StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
 )
@@ -123,6 +127,7 @@ from zenml.exceptions import (
     ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
+    EntityCreationError,
     EntityExistsError,
     EventSourceExistsError,
     IllegalOperationError,
@@ -133,6 +138,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -176,7 +182,6 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
-    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -206,9 +211,6 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
-    PipelineNamespaceFilter,
-    PipelineNamespaceResponse,
-    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -216,9 +218,11 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -281,7 +285,6 @@ from zenml.models import (
     WorkspaceUpdate,
 )
 from zenml.models.v2.core.component import InternalComponentRequest
-from zenml.models.v2.core.stack import InternalStackRequest
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -294,6 +297,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str, validate_name
+from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -322,6 +326,7 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSchema,
     RunMetadataSchema,
+    RunTemplateSchema,
     ScheduleSchema,
     SecretSchema,
     ServerSettingsSchema,
@@ -367,6 +372,25 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+
+def exponential_backoff_with_jitter(
+    attempt: int, base_duration: float = 0.05
+) -> float:
+    """Exponential backoff with jitter.
+
+    Implemented the `Full jitter` algorithm described in
+    https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+
+    Args:
+        attempt: The backoff attempt.
+        base_duration: The backoff base duration.
+
+    Returns:
+        The backoff duration.
+    """
+    exponential_backoff = base_duration * 1.5**attempt
+    return random.uniform(0, exponential_backoff)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -972,6 +996,7 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
+        query = query.distinct()
 
         # Get the total amount of items in the database for a given query
         custom_fetch_result: Optional[Sequence[Any]] = None
@@ -991,16 +1016,7 @@ class SqlZenStore(BaseZenStore):
                 total = 0
 
         # Sorting
-        column, operand = filter_model.sorting_params
-        if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
-        else:
-            sort_clause = asc(getattr(table, column))
-
-        # We always add the `id` column as a tiebreaker to ensure a stable,
-        # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        query = filter_model.apply_sorting(query=query, table=table)
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -1040,7 +1056,9 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model(include_metadata=hydrate))
+                items.append(
+                    to_model(include_metadata=hydrate, include_resources=True)
+                )
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -1589,9 +1607,10 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = settings.server_id
+        model.name = settings.server_name
         model.active = settings.active
-        if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
-            model.analytics_enabled = settings.enable_analytics
+        model.last_user_activity = settings.last_user_activity
+        model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -1649,7 +1668,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
-            return settings.to_model(include_metadata=hydrate)
+            return settings.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def update_server_settings(
         self, settings_update: ServerSettingsUpdate
@@ -1690,7 +1711,32 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(settings)
 
-            return settings.to_model(include_metadata=True)
+            return settings.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _update_last_user_activity_timestamp(
+        self, last_user_activity: datetime
+    ) -> None:
+        """Update the last user activity timestamp.
+
+        Args:
+            last_user_activity: The timestamp of latest user activity
+                traced by server instance.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            if last_user_activity < settings.last_user_activity.replace(
+                tzinfo=timezone.utc
+            ):
+                return
+
+            settings.last_user_activity = last_user_activity
+            # `updated` kept intentionally unchanged here
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
 
     def get_onboarding_state(self) -> List[str]:
         """Get the server onboarding state.
@@ -1916,7 +1962,7 @@ class SqlZenStore(BaseZenStore):
             action = self._get_action(action_id=action_id, session=session)
 
             return action.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_actions(
@@ -2106,7 +2152,9 @@ class SqlZenStore(BaseZenStore):
             session.add(new_api_key)
             session.commit()
 
-            api_key_model = new_api_key.to_model(include_metadata=True)
+            api_key_model = new_api_key.to_model(
+                include_metadata=True, include_resources=True
+            )
             api_key_model.set_key(key_value)
             return api_key_model
 
@@ -2134,7 +2182,9 @@ class SqlZenStore(BaseZenStore):
                 api_key_name_or_id=api_key_name_or_id,
                 session=session,
             )
-            return api_key.to_model(include_metadata=hydrate)
+            return api_key.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def get_internal_api_key(
         self, api_key_id: UUID, hydrate: bool = True
@@ -2158,7 +2208,9 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if api_key is None:
                 raise KeyError(f"API key with ID {api_key_id} not found.")
-            return api_key.to_internal_model(hydrate=hydrate)
+            return api_key.to_internal_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_api_keys(
         self,
@@ -2248,7 +2300,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(include_metadata=True)
+            return api_key.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def update_internal_api_key(
         self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
@@ -2279,7 +2333,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(include_metadata=True)
+            return api_key.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def rotate_api_key(
         self,
@@ -2427,7 +2483,7 @@ class SqlZenStore(BaseZenStore):
                     "service with this ID found."
                 )
             return service.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_services(
@@ -2547,7 +2603,9 @@ class SqlZenStore(BaseZenStore):
 
             session.add(artifact_schema)
             session.commit()
-            return artifact_schema.to_model(include_metadata=True)
+            return artifact_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_artifact(
         self, artifact_id: UUID, hydrate: bool = True
@@ -2574,7 +2632,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get artifact with ID {artifact_id}: No "
                     "artifact with this ID found."
                 )
-            return artifact.to_model(include_metadata=hydrate)
+            return artifact.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_artifacts(
         self, filter_model: ArtifactFilter, hydrate: bool = False
@@ -2641,7 +2701,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact)
             session.commit()
             session.refresh(existing_artifact)
-            return existing_artifact.to_model(include_metadata=True)
+            return existing_artifact.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.
@@ -2663,79 +2725,237 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Artifact Versions --------------------
 
+    def _get_or_create_artifact_for_name(
+        self,
+        name: str,
+        has_custom_name: bool,
+    ) -> ArtifactSchema:
+        """Get or create an artifact with a specific name.
+
+        Args:
+            name: The artifact name.
+            has_custom_name: Whether the artifact has a custom name.
+
+        Returns:
+            Schema of the artifact.
+        """
+        with Session(self.engine) as session:
+            artifact_query = select(ArtifactSchema).where(
+                ArtifactSchema.name == name
+            )
+            artifact = session.exec(artifact_query).first()
+
+            if artifact is None:
+                try:
+                    with session.begin_nested():
+                        artifact_request = ArtifactRequest(
+                            name=name,
+                            has_custom_name=has_custom_name,
+                        )
+                        artifact = ArtifactSchema.from_request(
+                            artifact_request
+                        )
+                        session.add(artifact)
+                        session.commit()
+                    session.refresh(artifact)
+                except IntegrityError:
+                    # We failed to create the artifact due to the unique constraint
+                    # for artifact names -> The artifact was already created, we can
+                    # just fetch it from the DB now
+                    artifact = session.exec(artifact_query).one()
+
+            if artifact.has_custom_name is False and has_custom_name:
+                # If a new version with custom name was created for an artifact
+                # that previously had no custom name, we update it.
+                artifact.has_custom_name = True
+                session.commit()
+                session.refresh(artifact)
+
+            return artifact
+
+    def _get_next_numeric_version_for_artifact(
+        self, session: Session, artifact_id: UUID
+    ) -> int:
+        """Get the next numeric version for an artifact.
+
+        Args:
+            session: DB session.
+            artifact_id: ID of the artifact for which to get the next numeric
+                version.
+
+        Returns:
+            The next numeric version.
+        """
+        current_max_version = session.exec(
+            select(func.max(ArtifactVersionSchema.version_number)).where(
+                ArtifactVersionSchema.artifact_id == artifact_id
+            )
+        ).first()
+
+        if current_max_version is None:
+            return 1
+        else:
+            return int(current_max_version) + 1
+
     def create_artifact_version(
         self, artifact_version: ArtifactVersionRequest
     ) -> ArtifactVersionResponse:
-        """Creates an artifact version.
+        """Create an artifact version.
 
         Args:
             artifact_version: The artifact version to create.
 
+        Raises:
+            EntityExistsError: If an artifact version with the same name
+                already exists.
+            EntityCreationError: If the artifact version creation failed.
+
         Returns:
             The created artifact version.
-
-        Raises:
-            EntityExistsError: if an artifact with the same name and version
-                already exists.
         """
-        with Session(self.engine) as session:
-            # Check if an artifact with the given name and version exists
-            def _check(tolerance: int = 0) -> None:
-                query = session.exec(
-                    select(ArtifactVersionSchema)
-                    .where(
-                        ArtifactVersionSchema.artifact_id
-                        == artifact_version.artifact_id
-                    )
-                    .where(
-                        ArtifactVersionSchema.version
-                        == artifact_version.version
-                    )
-                )
-                existing_artifact = query.fetchmany(tolerance + 1)
-                if (
-                    existing_artifact is not None
-                    and len(existing_artifact) > tolerance
-                ):
-                    raise EntityExistsError(
-                        f"Unable to create artifact with name "
-                        f"'{existing_artifact[0].artifact.name}' and version "
-                        f"'{artifact_version.version}': An artifact with the same "
-                        "name and version already exists."
-                    )
-
-            _check()
-            # Create the artifact version.
-            artifact_version_schema = ArtifactVersionSchema.from_request(
-                artifact_version
+        if artifact_name := artifact_version.artifact_name:
+            artifact_schema = self._get_or_create_artifact_for_name(
+                name=artifact_name,
+                has_custom_name=artifact_version.has_custom_name,
             )
-            session.add(artifact_version_schema)
+            artifact_version.artifact_id = artifact_schema.id
 
-            # Save visualizations of the artifact.
+        assert artifact_version.artifact_id
+
+        artifact_version_id = None
+
+        if artifact_version.version is None:
+            # No explicit version in the request -> We will try to
+            # auto-increment the numeric version of the artifact version
+            remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+            while remaining_tries > 0:
+                remaining_tries -= 1
+                try:
+                    with Session(self.engine) as session:
+                        artifact_version.version = str(
+                            self._get_next_numeric_version_for_artifact(
+                                session=session,
+                                artifact_id=artifact_version.artifact_id,
+                            )
+                        )
+
+                        artifact_version_schema = (
+                            ArtifactVersionSchema.from_request(
+                                artifact_version
+                            )
+                        )
+                        session.add(artifact_version_schema)
+                        session.commit()
+                        artifact_version_id = artifact_version_schema.id
+                except IntegrityError:
+                    if remaining_tries == 0:
+                        raise EntityCreationError(
+                            f"Failed to create version for artifact "
+                            f"{artifact_schema.name}. This is most likely "
+                            "caused by multiple parallel requests that try "
+                            "to create versions for this artifact in the "
+                            "database."
+                        )
+                    else:
+                        attempt = (
+                            MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                            - remaining_tries
+                        )
+                        sleep_duration = exponential_backoff_with_jitter(
+                            attempt=attempt
+                        )
+
+                        logger.debug(
+                            "Failed to create artifact version %s "
+                            "(version %s) due to an integrity error. "
+                            "Retrying in %f seconds.",
+                            artifact_schema.name,
+                            artifact_version.version,
+                            sleep_duration,
+                        )
+                        time.sleep(sleep_duration)
+                else:
+                    break
+        else:
+            # An explicit version was specified for the artifact version.
+            # We don't do any incrementing and fail immediately if the
+            # version already exists.
+            with Session(self.engine) as session:
+                try:
+                    artifact_version_schema = (
+                        ArtifactVersionSchema.from_request(artifact_version)
+                    )
+                    session.add(artifact_version_schema)
+                    session.commit()
+                    artifact_version_id = artifact_version_schema.id
+                except IntegrityError:
+                    raise EntityExistsError(
+                        f"Unable to create artifact version "
+                        f"{artifact_schema.name} (version "
+                        f"{artifact_version.version}): An artifact with the "
+                        "same name and version already exists."
+                    )
+
+        assert artifact_version_id
+
+        with Session(self.engine) as session:
+            # Save visualizations of the artifact
             if artifact_version.visualizations:
                 for vis in artifact_version.visualizations:
                     vis_schema = ArtifactVisualizationSchema.from_model(
                         artifact_visualization_request=vis,
-                        artifact_version_id=artifact_version_schema.id,
+                        artifact_version_id=artifact_version_id,
                     )
                     session.add(vis_schema)
 
-            # Save tags of the artifact.
+            # Save tags of the artifact
             if artifact_version.tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
-                    resource_id=artifact_version_schema.id,
+                    resource_id=artifact_version_id,
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
-            try:
-                _check(1)
-                session.commit()
-            except EntityExistsError as e:
-                session.rollback()
-                raise e
+            # Save metadata of the artifact
+            if artifact_version.metadata:
+                for key, value in artifact_version.metadata.items():
+                    run_metadata_schema = RunMetadataSchema(
+                        workspace_id=artifact_version.workspace,
+                        user_id=artifact_version.user,
+                        resource_id=artifact_version_id,
+                        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+                        key=key,
+                        value=json.dumps(value),
+                        type=get_metadata_type(value),
+                    )
+                    session.add(run_metadata_schema)
 
-            return artifact_version_schema.to_model(include_metadata=True)
+            session.commit()
+            artifact_version_schema = session.exec(
+                select(ArtifactVersionSchema).where(
+                    ArtifactVersionSchema.id == artifact_version_id
+                )
+            ).one()
+
+            return artifact_version_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return [
+            self.create_artifact_version(artifact_version)
+            for artifact_version in artifact_versions
+        ]
 
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
@@ -2766,7 +2986,7 @@ class SqlZenStore(BaseZenStore):
                     f"found."
                 )
             return artifact_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_artifact_versions(
@@ -2845,7 +3065,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact_version)
             session.commit()
             session.refresh(existing_artifact_version)
-            return existing_artifact_version.to_model(include_metadata=True)
+            return existing_artifact_version.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_artifact_version(self, artifact_version_id: UUID) -> None:
         """Deletes an artifact version.
@@ -2952,7 +3174,9 @@ class SqlZenStore(BaseZenStore):
                     f"{artifact_visualization_id}: "
                     f"No artifact visualization with this ID found."
                 )
-            return artifact_visualization.to_model(include_metadata=hydrate)
+            return artifact_visualization.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     # ------------------------ Code References ------------------------
 
@@ -2984,7 +3208,9 @@ class SqlZenStore(BaseZenStore):
                     f"{code_reference_id}: "
                     f"No code reference with this ID found."
                 )
-            return code_reference.to_model(include_metadata=hydrate)
+            return code_reference.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     # --------------------------- Code Repositories ---------------------------
 
@@ -3025,7 +3251,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_repo)
 
-            return new_repo.to_model(include_metadata=True)
+            return new_repo.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_code_repository(
         self, code_repository_id: UUID, hydrate: bool = True
@@ -3056,7 +3284,9 @@ class SqlZenStore(BaseZenStore):
                     "ID found."
                 )
 
-            return repo.to_model(include_metadata=hydrate)
+            return repo.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_code_repositories(
         self,
@@ -3117,7 +3347,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_repo)
             session.commit()
 
-            return existing_repo.to_model(include_metadata=True)
+            return existing_repo.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_code_repository(self, code_repository_id: UUID) -> None:
         """Deletes a code repository.
@@ -3172,6 +3404,27 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            is_default_stack_component = (
+                component.name == DEFAULT_STACK_AND_COMPONENT_NAME
+                and component.type
+                in {
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                }
+            )
+            # We have to skip the validation of the default components
+            # as it creates a loop of initialization.
+            if not is_default_stack_component:
+                from zenml.stack.utils import validate_stack_component_config
+
+                validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor=component.flavor,
+                    component_type=component.type,
+                    zen_store=self,
+                    validate_custom_flavors=False,
+                )
+
             service_connector: Optional[ServiceConnectorSchema] = None
             if component.connector:
                 service_connector = session.exec(
@@ -3202,29 +3455,18 @@ class SqlZenStore(BaseZenStore):
                     not in skypilot_regions
                 ):
                     logger.warning(
-                        f"Region `{component.configuration['region']}` is not enabled in Skypilot "
-                        f"by default. Supported regions by default are: {skypilot_regions}. "
-                        "Check the Skypilot documentation to learn how to enable regions rather "
-                        "than default ones. (If you have already extended your configuration - "
+                        f"Region `{component.configuration['region']}` is "
+                        "not enabled in Skypilot by default. Supported regions "
+                        f"by default are: {skypilot_regions}. Check the "
+                        "Skypilot documentation to learn how to enable "
+                        "regions rather than default ones. (If you have "
+                        "already extended your configuration - "
                         "simply ignore this warning)"
                     )
 
             # Create the component
-            new_component = StackComponentSchema(
-                name=component.name,
-                workspace_id=component.workspace,
-                user_id=component.user,
-                component_spec_path=component.component_spec_path,
-                type=component.type,
-                flavor=component.flavor,
-                configuration=base64.b64encode(
-                    json.dumps(component.configuration).encode("utf-8")
-                ),
-                labels=base64.b64encode(
-                    json.dumps(component.labels).encode("utf-8")
-                ),
-                connector=service_connector,
-                connector_resource_id=component.connector_resource_id,
+            new_component = StackComponentSchema.from_request(
+                request=component, service_connector=service_connector
             )
 
             session.add(new_component)
@@ -3232,7 +3474,9 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(new_component)
 
-            return new_component.to_model(include_metadata=True)
+            return new_component.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_stack_component(
         self, component_id: UUID, hydrate: bool = True
@@ -3262,7 +3506,9 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-            return stack_component.to_model(include_metadata=hydrate)
+            return stack_component.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_stack_components(
         self,
@@ -3324,6 +3570,17 @@ class SqlZenStore(BaseZenStore):
                     f"existing component with this id."
                 )
 
+            if component_update.configuration is not None:
+                from zenml.stack.utils import validate_stack_component_config
+
+                validate_stack_component_config(
+                    configuration_dict=component_update.configuration,
+                    flavor=existing_component.flavor,
+                    component_type=StackComponentType(existing_component.type),
+                    zen_store=self,
+                    validate_custom_flavors=False,
+                )
+
             if (
                 existing_component.name == DEFAULT_STACK_AND_COMPONENT_NAME
                 and existing_component.type
@@ -3374,7 +3631,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_component)
             session.commit()
 
-            return existing_component.to_model(include_metadata=True)
+            return existing_component.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -3515,7 +3774,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_device)
 
-            device_model = new_device.to_internal_model(hydrate=True)
+            device_model = new_device.to_internal_model(
+                include_metadata=True, include_resources=True
+            )
             # Replace the hashed user code with the original user code
             device_model.user_code = user_code
             # Replace the hashed device code with the original device code
@@ -3551,7 +3812,9 @@ class SqlZenStore(BaseZenStore):
                     "this ID found."
                 )
 
-            return device.to_model(include_metadata=hydrate)
+            return device.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def get_internal_authorized_device(
         self,
@@ -3597,7 +3860,9 @@ class SqlZenStore(BaseZenStore):
                     "device with this client ID found."
                 )
 
-            return device.to_internal_model(hydrate=hydrate)
+            return device.to_internal_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_authorized_devices(
         self,
@@ -3657,7 +3922,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_device)
             session.commit()
 
-            return existing_device.to_model(include_metadata=True)
+            return existing_device.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def update_internal_authorized_device(
         self, device_id: UUID, update: OAuthDeviceInternalUpdate
@@ -3695,7 +3962,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_device)
             session.commit()
 
-            device_model = existing_device.to_internal_model(hydrate=True)
+            device_model = existing_device.to_internal_model(
+                include_metadata=True, include_resources=True
+            )
             if user_code:
                 # Replace the hashed user code with the original user code
                 device_model.user_code = user_code
@@ -3811,7 +4080,9 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_flavor)
                 session.commit()
 
-                return new_flavor.to_model(include_metadata=True)
+                return new_flavor.to_model(
+                    include_metadata=True, include_resources=True
+                )
 
     def get_flavor(
         self, flavor_id: UUID, hydrate: bool = True
@@ -3835,7 +4106,9 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if flavor_in_db is None:
                 raise KeyError(f"Flavor with ID {flavor_id} not found.")
-            return flavor_in_db.to_model(include_metadata=hydrate)
+            return flavor_in_db.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_flavors(
         self,
@@ -3892,7 +4165,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_flavor)
-            return existing_flavor.to_model(include_metadata=True)
+            return existing_flavor.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -3959,7 +4234,9 @@ class SqlZenStore(BaseZenStore):
                     f"{logs_id}: "
                     f"No logs with this ID found."
                 )
-            return logs.to_model(include_metadata=hydrate)
+            return logs.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     # ----------------------------- Pipelines -----------------------------
 
@@ -3980,27 +4257,29 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
-            # Check if pipeline with the given name already exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version_hash == pipeline.version_hash)
-                .where(PipelineSchema.workspace_id == pipeline.workspace)
-            ).first()
-            if existing_pipeline is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name and "
-                    f"version already exists."
+            new_pipeline = PipelineSchema.from_request(pipeline)
+
+            if pipeline.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline.tags,
+                    resource_id=new_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
                 )
 
-            # Create the pipeline
-            new_pipeline = PipelineSchema.from_request(pipeline)
             session.add(new_pipeline)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with the name "
+                    f"{pipeline.name} already exists."
+                )
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model(include_metadata=True)
+            return new_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -4029,80 +4308,8 @@ class SqlZenStore(BaseZenStore):
                     "No pipeline with this ID found."
                 )
 
-            return pipeline.to_model(include_metadata=hydrate)
-
-    def list_pipeline_namespaces(
-        self,
-        filter_model: PipelineNamespaceFilter,
-        hydrate: bool = False,
-    ) -> Page[PipelineNamespaceResponse]:
-        """List all pipeline namespaces matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all pipeline namespaces matching the filter criteria.
-        """
-
-        def _custom_conversion(
-            row: Tuple[str, UUID, str],
-        ) -> PipelineNamespaceResponse:
-            name, latest_run_id, latest_run_status = row
-
-            body = PipelineNamespaceResponseBody(
-                latest_run_id=latest_run_id,
-                latest_run_status=latest_run_status,
-            )
-
-            return PipelineNamespaceResponse(name=name, body=body)
-
-        def _custom_fetch(
-            session: Session,
-            query: Union[Select[Any], SelectOfScalar[Any]],
-            filter: BaseFilter,
-        ) -> Sequence[Any]:
-            return session.exec(query).all()
-
-        with Session(self.engine) as session:
-            max_date_subquery = (
-                select(
-                    PipelineSchema.name,
-                    func.max(PipelineRunSchema.created).label("max_created"),
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                )
-                .group_by(PipelineSchema.name)
-                .subquery()
-            )
-
-            query = (
-                select(
-                    max_date_subquery.c.name,
-                    PipelineRunSchema.id,
-                    PipelineRunSchema.status,
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineRunSchema.created  # type: ignore[arg-type]
-                    == max_date_subquery.c.max_created,
-                )
-                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
-            )
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSchema,
-                filter_model=filter_model,
-                hydrate=hydrate,
-                custom_fetch=_custom_fetch,
-                custom_schema_to_model_conversion=_custom_conversion,
+            return pipeline.to_model(
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_pipelines(
@@ -4121,14 +4328,69 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
+        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
+        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
+
+        column, operand = pipeline_filter_model.sorting_params
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            with Session(self.engine) as session:
+                max_date_subquery = (
+                    # If no run exists for the pipeline yet, we use the pipeline
+                    # creation date as a fallback, otherwise newly created
+                    # pipeline would always be at the top/bottom
+                    select(
+                        PipelineSchema.id,
+                        case(
+                            (
+                                func.max(PipelineRunSchema.created).is_(None),
+                                PipelineSchema.created,
+                            ),
+                            else_=func.max(PipelineRunSchema.created),
+                        ).label("run_or_created"),
+                    )
+                    .outerjoin(
+                        PipelineRunSchema,
+                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
+                    )
+                    .group_by(col(PipelineSchema.id))
+                    .subquery()
+                )
+
+                if operand == SorterOps.DESCENDING:
+                    sort_clause = desc
+                else:
+                    sort_clause = asc
+
+                query = (
+                    # We need to include the subquery in the select here to
+                    # make this query work with the distinct statement. This
+                    # result will be removed in the custom conversion function
+                    # applied later
+                    select(PipelineSchema, max_date_subquery.c.run_or_created)
+                    .where(PipelineSchema.id == max_date_subquery.c.id)
+                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
+                    # We always add the `id` column as a tiebreaker to ensure a
+                    # stable, repeatable order of items, otherwise subsequent
+                    # pages might contain the same items.
+                    .order_by(col(PipelineSchema.id))
+                )
+
+            def _custom_conversion(row: Any) -> PipelineResponse:
+                return cast(
+                    PipelineResponse,
+                    row[0].to_model(
+                        include_metadata=hydrate, include_resources=True
+                    ),
+                )
+
         with Session(self.engine) as session:
-            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
@@ -4172,13 +4434,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline with this ID found."
                 )
 
-            # Update the pipeline
-            existing_pipeline.update(pipeline_update)
+            if pipeline_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_update.add_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.add_tags = None
+            if pipeline_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=pipeline_update.remove_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.remove_tags = None
 
+            existing_pipeline.update(pipeline_update)
             session.add(existing_pipeline)
             session.commit()
+            session.refresh(existing_pipeline)
 
-            return existing_pipeline.to_model(include_metadata=True)
+            return existing_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -4224,7 +4502,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_build)
 
-            return new_build.to_model(include_metadata=True)
+            return new_build.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_build(
         self, build_id: UUID, hydrate: bool = True
@@ -4255,7 +4535,9 @@ class SqlZenStore(BaseZenStore):
                     "No build with this ID found."
                 )
 
-            return build.to_model(include_metadata=hydrate)
+            return build.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_builds(
         self,
@@ -4308,24 +4590,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> NoReturn:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError(
-            "Running a build is not possible with a local store."
-        )
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -4354,7 +4618,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_deployment)
 
-            return new_deployment.to_model(include_metadata=True)
+            return new_deployment.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_deployment(
         self, deployment_id: UUID, hydrate: bool = True
@@ -4385,7 +4651,9 @@ class SqlZenStore(BaseZenStore):
                     "No deployment with this ID found."
                 )
 
-            return deployment.to_model(include_metadata=hydrate)
+            return deployment.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_deployments(
         self,
@@ -4436,37 +4704,235 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(deployment)
+            session.commit()
 
-            # Look for all pipeline builds that reference this deployment
-            # and remove the reference
-            pipeline_builds = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.template_deployment_id == deployment_id
+    # -------------------- Run templates --------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_RUN_TEMPLATE)
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+            ValueError: If the source deployment does not exist or does not
+                have an associated build.
+        """
+        with Session(self.engine) as session:
+            existing_template = session.exec(
+                select(RunTemplateSchema)
+                .where(RunTemplateSchema.name == template.name)
+                .where(RunTemplateSchema.workspace_id == template.workspace)
+            ).first()
+            if existing_template is not None:
+                raise EntityExistsError(
+                    f"Unable to create run template in workspace "
+                    f"'{existing_template.workspace.name}': A run template "
+                    f"with the name '{template.name}' already exists."
+                )
+
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id
+                    == template.source_deployment_id
+                )
+            ).first()
+            if not deployment:
+                raise ValueError(
+                    f"Source deployment {template.source_deployment_id} not "
+                    "found."
+                )
+
+            template_utils.validate_deployment_is_templatable(deployment)
+
+            template_schema = RunTemplateSchema.from_request(request=template)
+
+            if template.tags:
+                self._attach_tags_to_resource(
+                    tag_names=template.tags,
+                    resource_id=template_schema.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+
+            session.add(template_schema)
+            session.commit()
+            session.refresh(template_schema)
+
+            return template_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to get run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            return template.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(RunTemplateSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunTemplateSchema,
+                filter_model=template_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to update run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            if template_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=template_update.add_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.add_tags = None
+
+            if template_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=template_update.remove_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.remove_tags = None
+
+            template.update(template_update)
+            session.add(template)
+            session.commit()
+            session.refresh(template)
+
+            return template.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to delete run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            session.delete(template)
+            # We set the reference of all deployments to this template to null
+            # manually as we can't have a foreign key there to avoid a cycle
+            deployments = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.template_id == template_id
                 )
             ).all()
-
-            for pipeline_build in pipeline_builds:
-                pipeline_build.template_deployment_id = None
-                session.add(pipeline_build)
+            for deployment in deployments:
+                deployment.template_id = None
+                session.add(deployment)
 
             session.commit()
 
-    def run_deployment(
+    def run_template(
         self,
-        deployment_id: UUID,
+        template_id: UUID,
         run_configuration: Optional[PipelineRunConfiguration] = None,
     ) -> NoReturn:
-        """Run a pipeline from a deployment.
+        """Run a template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.
         """
         raise NotImplementedError(
-            "Running a deployment is not possible with a local store."
+            "Running a template is not possible with a local store."
         )
 
     # -------------------- Event Sources  --------------------
@@ -4563,7 +5029,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def list_event_sources(
         self,
@@ -4652,6 +5118,26 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
+    def _pipeline_run_exists(self, workspace_id: UUID, name: str) -> bool:
+        """Check if a pipeline name with a certain name exists.
+
+        Args:
+            workspace_id: The workspace to check.
+            name: The run name.
+
+        Returns:
+            If a pipeline run with the given name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(PipelineRunSchema.id)
+                    .where(PipelineRunSchema.workspace_id == workspace_id)
+                    .where(PipelineRunSchema.name == name)
+                ).first()
+                is not None
+            )
+
     def create_run(
         self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
@@ -4667,24 +5153,37 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
-            # Check if pipeline run with same name already exists.
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with name "
-                    f"'{pipeline_run.name}' already exists."
-                )
-
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
-            session.add(new_run)
-            session.commit()
 
-            return new_run.to_model(include_metadata=True)
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=new_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
+            session.add(new_run)
+            try:
+                session.commit()
+            except IntegrityError:
+                if self._pipeline_run_exists(
+                    workspace_id=pipeline_run.workspace, name=pipeline_run.name
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create pipeline run: A pipeline run with "
+                        f"name '{pipeline_run.name}' already exists."
+                    )
+                else:
+                    raise EntityExistsError(
+                        "Unable to create pipeline run: A pipeline run with "
+                        "the same deployment_id and orchestrator_run_id "
+                        "already exists."
+                    )
+
+            return new_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -4702,7 +5201,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def _replace_placeholder_run(
         self,
@@ -4733,7 +5232,7 @@ class SqlZenStore(BaseZenStore):
                 # orchestrator_run_id.
                 # Note: This only locks a single row if the where clause of
                 # the query is indexed (we have a unique index due to the
-                # unique constraint on those columns). Otherwise this will lock
+                # unique constraint on those columns). Otherwise, this will lock
                 # multiple rows or even the complete table which we want to
                 # avoid.
                 .with_for_update()
@@ -4751,10 +5250,20 @@ class SqlZenStore(BaseZenStore):
             if pre_replacement_hook:
                 pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=run_schema.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(run_schema)
             session.commit()
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
@@ -4788,7 +5297,9 @@ class SqlZenStore(BaseZenStore):
                     f"{orchestrator_run_id} and deployment ID {deployment_id}."
                 )
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_or_create_run(
         self,
@@ -4820,6 +5331,19 @@ class SqlZenStore(BaseZenStore):
                 "Unable to get or create run for request with missing "
                 "orchestrator run ID."
             )
+
+        try:
+            # We first try the most likely case that the run was already
+            # created by a previous step in the same pipeline run.
+            return (
+                self._get_run_by_orchestrator_run_id(
+                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                    deployment_id=pipeline_run.deployment,
+                ),
+                False,
+            )
+        except KeyError:
+            pass
 
         try:
             return (
@@ -4860,21 +5384,14 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
             return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError) as create_error:
-            # Creating the run failed with an
-            # - IntegrityError: This happens when we violated a unique
-            #   constraint, which in turn means a run with the same
-            #   deployment_id and orchestrator_run_id exists. We now fetch and
-            #   return that run.
-            # - EntityExistsError: This happens when a run with the same name
-            #   already exists. This could be either a different run (in which
-            #   case we want to fail) or a run created by a step of the same
-            #   pipeline run (in which case we want to return it).
-            # Note: The IntegrityError might also be raised when other unique
-            # constraints get violated. The only other such constraint is the
-            # primary key constraint on the run ID, which means we randomly
-            # generated an existing UUID. In this case the call below will fail,
-            # but the chance of that happening is so low we don't handle it.
+        except EntityExistsError as create_error:
+            # Creating the run failed because
+            # - a run with the same deployment_id and orchestrator_run_id
+            #   exists. We now fetch and return that run.
+            # - a run with the same name already exists. This could be either a
+            #   different run (in which case we want to fail) or a run created
+            #   by a step of the same pipeline run (in which case we want to
+            #   return it).
             try:
                 return (
                     self._get_run_by_orchestrator_run_id(
@@ -4884,18 +5401,11 @@ class SqlZenStore(BaseZenStore):
                     False,
                 )
             except KeyError:
-                if isinstance(create_error, EntityExistsError):
-                    # There was a run with the same name which does not share
-                    # the deployment_id and orchestrator_run_id -> We fail with
-                    # the error that run names must be unique.
-                    raise create_error from None
-
-                # This should never happen as the run creation failed with an
-                # IntegrityError which means a run with the deployment_id and
-                # orchestrator_run_id exists.
-                raise RuntimeError(
-                    f"Failed to get or create run: {create_error}"
-                )
+                # We should only get here if the run creation failed because
+                # of a name conflict. We raise the error that happened during
+                # creation in any case to forward the error message to the
+                # user.
+                raise create_error
 
     def list_runs(
         self,
@@ -4949,13 +5459,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run
+            if run_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=run_update.add_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.add_tags = None
+            if run_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=run_update.remove_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.remove_tags = None
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model(include_metadata=True)
+            return existing_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -4996,9 +5522,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -5007,7 +5531,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return_value: List[RunMetadataResponse] = []
         with Session(self.engine) as session:
             for key, value in run_metadata.values.items():
                 type_ = run_metadata.types[key]
@@ -5023,66 +5546,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(
-                    run_metadata_schema.to_model(include_metadata=True)
-                )
-        return return_value
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
-        """
-        with Session(self.engine) as session:
-            run_metadata = session.exec(
-                select(RunMetadataSchema).where(
-                    RunMetadataSchema.id == run_metadata_id
-                )
-            ).first()
-            if run_metadata is None:
-                raise KeyError(
-                    f"Unable to get run metadata with ID "
-                    f"{run_metadata_id}: "
-                    f"No run metadata with this ID found."
-                )
-            return run_metadata.to_model(include_metadata=hydrate)
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        with Session(self.engine) as session:
-            query = select(RunMetadataSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RunMetadataSchema,
-                filter_model=run_metadata_filter_model,
-                hydrate=hydrate,
-            )
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
@@ -5099,7 +5563,9 @@ class SqlZenStore(BaseZenStore):
             new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
-            return new_schedule.to_model(include_metadata=True)
+            return new_schedule.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_schedule(
         self, schedule_id: UUID, hydrate: bool = True
@@ -5127,7 +5593,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get schedule with ID '{schedule_id}': "
                     "No schedule with this ID found."
                 )
-            return schedule.to_model(include_metadata=hydrate)
+            return schedule.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_schedules(
         self,
@@ -5187,7 +5655,9 @@ class SqlZenStore(BaseZenStore):
             existing_schedule = existing_schedule.update(schedule_update)
             session.add(existing_schedule)
             session.commit()
-            return existing_schedule.to_model(include_metadata=True)
+            return existing_schedule.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_schedule(self, schedule_id: UUID) -> None:
         """Deletes a schedule.
@@ -5653,7 +6123,9 @@ class SqlZenStore(BaseZenStore):
             session.add(new_secret)
             session.commit()
 
-            secret_model = new_secret.to_model(include_metadata=True)
+            secret_model = new_secret.to_model(
+                include_metadata=True, include_resources=True
+            )
 
         try:
             # Set the secret values in the configured secrets store
@@ -5693,7 +6165,9 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-            secret_model = secret_in_db.to_model(include_metadata=hydrate)
+            secret_model = secret_in_db.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
         secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
 
@@ -5796,7 +6270,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_secret)
-            secret_model = existing_secret.to_model(include_metadata=True)
+            secret_model = existing_secret.to_model(
+                include_metadata=True, include_resources=True
+            )
 
         if secret_update.values is not None:
             # Update the secret values in the configured secrets store
@@ -6012,7 +6488,9 @@ class SqlZenStore(BaseZenStore):
             # on commit an IntegrityError may arise we let it bubble up
             session.commit()
 
-            return new_account.to_service_account_model(include_metadata=True)
+            return new_account.to_service_account_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_service_account(
         self,
@@ -6039,7 +6517,9 @@ class SqlZenStore(BaseZenStore):
                 service_account=True,
             )
 
-            return account.to_service_account_model(include_metadata=hydrate)
+            return account.to_service_account_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_service_accounts(
         self,
@@ -6066,7 +6546,7 @@ class SqlZenStore(BaseZenStore):
                     table=UserSchema,
                     filter_model=filter_model,
                     custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                        include_metadata=hydrate
+                        include_metadata=hydrate, include_resources=True
                     ),
                     hydrate=hydrate,
                 )
@@ -6128,7 +6608,7 @@ class SqlZenStore(BaseZenStore):
             # Refresh the Model that was just created
             session.refresh(existing_service_account)
             return existing_service_account.to_service_account_model(
-                include_metadata=True
+                include_metadata=True, include_resources=True
             )
 
     def delete_service_account(
@@ -6235,7 +6715,9 @@ class SqlZenStore(BaseZenStore):
 
                 raise
 
-            connector = new_service_connector.to_model(include_metadata=True)
+            connector = new_service_connector.to_model(
+                include_metadata=True, include_resources=True
+            )
             self._populate_connector_type(connector)
 
             return connector
@@ -6269,7 +6751,9 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
 
-            connector = service_connector.to_model(include_metadata=hydrate)
+            connector = service_connector.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
             self._populate_connector_type(connector)
             return connector
 
@@ -6483,7 +6967,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_connector)
             session.commit()
 
-            connector = existing_connector.to_model(include_metadata=True)
+            connector = existing_connector.to_model(
+                include_metadata=True, include_resources=True
+            )
             self._populate_connector_type(connector)
             return connector
 
@@ -6962,74 +7448,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequest) -> StackResponse:
-        """Register a new stack.
-
-        Args:
-            stack: The stack to register.
-
-        Returns:
-            The registered stack.
-        """
-        validate_name(stack)
-        with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(
-                stack_name=stack.name,
-                workspace_id=stack.workspace,
-                session=session,
-            )
-
-            # Get the Schemas of all components mentioned
-            component_ids = (
-                [
-                    component_id
-                    for list_of_component_ids in stack.components.values()
-                    for component_id in list_of_component_ids
-                ]
-                if stack.components is not None
-                else []
-            )
-            filters = [
-                (StackComponentSchema.id == component_id)
-                for component_id in component_ids
-            ]
-
-            defined_components = session.exec(
-                select(StackComponentSchema).where(or_(*filters))
-            ).all()
-
-            new_stack_schema = StackSchema(
-                workspace_id=stack.workspace,
-                user_id=stack.user,
-                stack_spec_path=stack.stack_spec_path,
-                name=stack.name,
-                description=stack.description,
-                components=defined_components,
-                labels=base64.b64encode(
-                    json.dumps(stack.labels).encode("utf-8")
-                ),
-            )
-
-            session.add(new_stack_schema)
-            session.commit()
-            session.refresh(new_stack_schema)
-
-            for component in defined_components:
-                if component.type == StackComponentType.ORCHESTRATOR:
-                    if component.flavor not in {"local", "local_docker"}:
-                        self._update_onboarding_state(
-                            completed_steps={
-                                OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
-                            },
-                            session=session,
-                        )
-
-            return new_stack_schema.to_model(include_metadata=True)
-
-    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
         """Register a full stack.
 
         Args:
-            full_stack: The full stack configuration.
+            stack: The full stack configuration.
 
         Returns:
             The registered stack.
@@ -7037,249 +7459,306 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If the full stack creation fails, due to the corrupted
                 input.
-            RuntimeError: If the full stack creation fails, due to unforeseen
+            Exception: If the full stack creation fails, due to unforeseen
                 errors.
         """
-        # For clean-up purposes, each created entity is tracked here
-        service_connectors_created_ids: List[UUID] = []
-        components_created_ids: List[UUID] = []
+        with Session(self.engine) as session:
+            # For clean-up purposes, each created entity is tracked here
+            service_connectors_created_ids: List[UUID] = []
+            components_created_ids: List[UUID] = []
 
-        try:
-            # Validate the name of the new stack
-            validate_name(full_stack)
+            try:
+                # Validate the name of the new stack
+                validate_name(stack)
 
-            if full_stack.labels is None:
-                full_stack.labels = {}
+                if stack.labels is None:
+                    stack.labels = {}
 
-            full_stack.labels.update({"zenml:full_stack": True})
+                # Service Connectors
+                service_connectors: List[ServiceConnectorResponse] = []
 
-            # Service Connectors
-            service_connectors: List[ServiceConnectorResponse] = []
+                orchestrator_components = stack.components[
+                    StackComponentType.ORCHESTRATOR
+                ]
+                for orchestrator_component in orchestrator_components:
+                    if isinstance(orchestrator_component, UUID):
+                        orchestrator = self.get_stack_component(
+                            orchestrator_component,
+                            hydrate=False,
+                        )
+                        need_to_generate_permanent_tokens = (
+                            orchestrator.flavor_name.startswith("vm_")
+                        )
+                    else:
+                        need_to_generate_permanent_tokens = (
+                            orchestrator_component.flavor.startswith("vm_")
+                        )
 
-            need_to_generate_permanent_tokens = False
-            orchestrator_component = full_stack.components[
-                StackComponentType.ORCHESTRATOR
-            ]
-            if isinstance(orchestrator_component, UUID):
-                orchestrator = self.get_stack_component(
-                    orchestrator_component,
-                    hydrate=False,
-                )
-                need_to_generate_permanent_tokens = (
-                    orchestrator.flavor.startswith("vm_")
-                )
-            else:
-                need_to_generate_permanent_tokens = (
-                    orchestrator_component.flavor.startswith("vm_")
-                )
+                for connector_id_or_info in stack.service_connectors:
+                    # Fetch an existing service connector
+                    if isinstance(connector_id_or_info, UUID):
+                        existing_service_connector = (
+                            self.get_service_connector(connector_id_or_info)
+                        )
+                        if need_to_generate_permanent_tokens:
+                            if (
+                                existing_service_connector.configuration.get(
+                                    "generate_temporary_tokens", None
+                                )
+                                is not False
+                            ):
+                                connector_config = (
+                                    existing_service_connector.configuration
+                                )
+                                connector_config[
+                                    "generate_temporary_tokens"
+                                ] = False
+                                self.update_service_connector(
+                                    existing_service_connector.id,
+                                    ServiceConnectorUpdate(
+                                        configuration=connector_config
+                                    ),
+                                )
+                        service_connectors.append(
+                            self.get_service_connector(connector_id_or_info)
+                        )
+                    # Create a new service connector
+                    else:
+                        connector_name = stack.name
+                        connector_config = connector_id_or_info.configuration
+                        connector_config[
+                            "generate_temporary_tokens"
+                        ] = not need_to_generate_permanent_tokens
 
-            for connector_id_or_info in full_stack.service_connectors:
-                # Fetch an existing service connector
-                if isinstance(connector_id_or_info, UUID):
-                    existing_service_connector = self.get_service_connector(
-                        connector_id_or_info
-                    )
-                    if need_to_generate_permanent_tokens:
-                        if (
-                            existing_service_connector.configuration.get(
-                                "generate_temporary_tokens", None
-                            )
-                            is not False
-                        ):
-                            self.update_service_connector(
-                                existing_service_connector.id,
-                                ServiceConnectorUpdate(
-                                    configuration=existing_service_connector.configuration.update(
-                                        {"generate_temporary_tokens": False}
-                                    )
-                                ),
-                            )
-                    service_connectors.append(
-                        self.get_service_connector(connector_id_or_info)
-                    )
-                # Create a new service connector
-                else:
-                    connector_name = full_stack.name
-                    while True:
-                        try:
-                            service_connector_request = ServiceConnectorRequest(
-                                name=connector_name,
-                                connector_type=connector_id_or_info.type,
-                                auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration.update(
-                                    {
-                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
-                                    }
-                                ),
-                                user=full_stack.user,
-                                workspace=full_stack.workspace,
-                                labels={
-                                    k: str(v)
-                                    for k, v in full_stack.labels.items()
-                                },
-                            )
-                            service_connector_response = (
-                                self.create_service_connector(
+                        while True:
+                            try:
+                                service_connector_request = ServiceConnectorRequest(
+                                    name=connector_name,
+                                    connector_type=connector_id_or_info.type,
+                                    auth_method=connector_id_or_info.auth_method,
+                                    configuration=connector_config,
+                                    user=stack.user,
+                                    workspace=stack.workspace,
+                                    labels={
+                                        k: str(v)
+                                        for k, v in stack.labels.items()
+                                    },
+                                )
+                                service_connector_response = self.create_service_connector(
                                     service_connector=service_connector_request
                                 )
-                            )
-                            service_connectors.append(
-                                service_connector_response
-                            )
-                            service_connectors_created_ids.append(
-                                service_connector_response.id
-                            )
-                            break
-                        except EntityExistsError:
-                            connector_name = (
-                                f"{full_stack.name}-{random_str(4)}".lower()
-                            )
-                            continue
+                                service_connectors.append(
+                                    service_connector_response
+                                )
+                                service_connectors_created_ids.append(
+                                    service_connector_response.id
+                                )
+                                break
+                            except EntityExistsError:
+                                connector_name = (
+                                    f"{stack.name}-{random_str(4)}".lower()
+                                )
+                                continue
 
-            # Stack Components
-            components_mapping: Dict[StackComponentType, List[UUID]] = {}
-            for (
-                component_type,
-                component_info,
-            ) in full_stack.components.items():
-                # Fetch an existing component
-                if isinstance(component_info, UUID):
-                    component = self.get_stack_component(
-                        component_id=component_info
-                    )
-                # Create a new component
-                else:
-                    flavor_list = self.list_flavors(
-                        flavor_filter_model=FlavorFilter(
-                            name=component_info.flavor,
-                            type=component_type,
-                        )
-                    )
-                    if not len(flavor_list):
-                        raise ValueError(
-                            f"Flavor '{component_info.flavor}' not found "
-                            f"for component type '{component_type}'."
-                        )
-
-                    flavor_model = flavor_list[0]
-
-                    component_name = full_stack.name
-                    while True:
-                        try:
-                            component_request = ComponentRequest(
-                                name=component_name,
-                                type=component_type,
-                                flavor=component_info.flavor,
-                                configuration=component_info.configuration,
-                                user=full_stack.user,
-                                workspace=full_stack.workspace,
-                                labels=full_stack.labels,
+                # Stack Components
+                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                for (
+                    component_type,
+                    components,
+                ) in stack.components.items():
+                    for component_info in components:
+                        # Fetch an existing component
+                        if isinstance(component_info, UUID):
+                            component = self.get_stack_component(
+                                component_id=component_info
                             )
-                            component = self.create_stack_component(
-                                component=component_request
+                        # Create a new component
+                        else:
+                            flavor_list = self.list_flavors(
+                                flavor_filter_model=FlavorFilter(
+                                    name=component_info.flavor,
+                                    type=component_type,
+                                )
                             )
-                            components_created_ids.append(component.id)
-                            break
-                        except EntityExistsError:
-                            component_name = (
-                                f"{full_stack.name}-{random_str(4)}".lower()
-                            )
-                            continue
+                            if not len(flavor_list):
+                                raise ValueError(
+                                    f"Flavor '{component_info.flavor}' not found "
+                                    f"for component type '{component_type}'."
+                                )
 
-                    if component_info.service_connector_index is not None:
-                        service_connector = service_connectors[
-                            component_info.service_connector_index
+                            flavor_model = flavor_list[0]
+
+                            component_name = stack.name
+                            while True:
+                                try:
+                                    component_request = ComponentRequest(
+                                        name=component_name,
+                                        type=component_type,
+                                        flavor=component_info.flavor,
+                                        configuration=component_info.configuration,
+                                        user=stack.user,
+                                        workspace=stack.workspace,
+                                        labels=stack.labels,
+                                    )
+                                    component = self.create_stack_component(
+                                        component=component_request
+                                    )
+                                    components_created_ids.append(component.id)
+                                    break
+                                except EntityExistsError:
+                                    component_name = (
+                                        f"{stack.name}-{random_str(4)}".lower()
+                                    )
+                                    continue
+
+                            if (
+                                component_info.service_connector_index
+                                is not None
+                            ):
+                                service_connector = service_connectors[
+                                    component_info.service_connector_index
+                                ]
+
+                                requirements = (
+                                    flavor_model.connector_requirements
+                                )
+
+                                if not requirements:
+                                    raise ValueError(
+                                        f"The '{flavor_model.name}' implementation "
+                                        "does not support using a service "
+                                        "connector to connect to resources."
+                                    )
+
+                                if component_info.service_connector_resource_id:
+                                    resource_id = component_info.service_connector_resource_id
+                                else:
+                                    resource_id = None
+                                    resource_type = requirements.resource_type
+                                    if (
+                                        requirements.resource_id_attr
+                                        is not None
+                                    ):
+                                        resource_id = (
+                                            component_info.configuration.get(
+                                                requirements.resource_id_attr
+                                            )
+                                        )
+
+                                satisfied, msg = requirements.is_satisfied_by(
+                                    connector=service_connector,
+                                    component=component,
+                                )
+
+                                if not satisfied:
+                                    raise ValueError(
+                                        "Please pick a connector that is "
+                                        "compatible with the component flavor and "
+                                        "try again.."
+                                    )
+
+                                if not resource_id:
+                                    if service_connector.resource_id:
+                                        resource_id = (
+                                            service_connector.resource_id
+                                        )
+                                    elif service_connector.supports_instances:
+                                        raise ValueError(
+                                            f"Multiple {resource_type} resources "
+                                            "are available for the selected "
+                                            "connector. Please use a `resource_id` "
+                                            "to configure a "
+                                            f"{resource_type} resource."
+                                        )
+
+                                component_update = ComponentUpdate(
+                                    connector=service_connector.id,
+                                    connector_resource_id=resource_id,
+                                )
+                                self.update_stack_component(
+                                    component_id=component.id,
+                                    component_update=component_update,
+                                )
+
+                        components_mapping[component_type] = [
+                            component.id,
                         ]
 
-                        requirements = flavor_model.connector_requirements
+                # Stack
+                assert stack.workspace is not None
 
-                        if not requirements:
-                            raise ValueError(
-                                f"The '{flavor_model.name}' implementation "
-                                "does not support using a service connector to "
-                                "connect to resources."
-                            )
+                self._fail_if_stack_with_name_exists(
+                    stack_name=stack.name,
+                    workspace_id=stack.workspace,
+                    session=session,
+                )
 
-                        if component_info.service_connector_resource_id:
-                            resource_id = (
-                                component_info.service_connector_resource_id
-                            )
-                        else:
-                            resource_id = None
-                            resource_type = requirements.resource_type
-                            if requirements.resource_id_attr is not None:
-                                resource_id = component_info.configuration.get(
-                                    requirements.resource_id_attr
-                                )
-
-                        satisfied, msg = requirements.is_satisfied_by(
-                            connector=service_connector,
-                            component=component,
-                        )
-
-                        if not satisfied:
-                            raise ValueError(
-                                "Please pick a connector that is "
-                                "compatible with the component flavor and "
-                                "try again.."
-                            )
-
-                        if not resource_id:
-                            if service_connector.resource_id:
-                                resource_id = service_connector.resource_id
-                            elif service_connector.supports_instances:
-                                raise ValueError(
-                                    f"Multiple {resource_type} resources "
-                                    "are available for the selected "
-                                    "connector. Please use a `resource_id` "
-                                    "to configure a "
-                                    f"{resource_type} resource."
-                                )
-
-                        component_update = ComponentUpdate(
-                            connector=service_connector.id,
-                            connector_resource_id=resource_id,
-                        )
-                        self.update_stack_component(
-                            component_id=component.id,
-                            component_update=component_update,
-                        )
-
-                components_mapping[component_type] = [
-                    component.id,
+                component_ids = (
+                    [
+                        component_id
+                        for list_of_component_ids in components_mapping.values()
+                        for component_id in list_of_component_ids
+                    ]
+                    if stack.components is not None
+                    else []
+                )
+                filters = [
+                    (StackComponentSchema.id == component_id)
+                    for component_id in component_ids
                 ]
 
-            # Stack
-            stack_name = full_stack.name
-            while True:
-                try:
-                    stack_request = StackRequest(
-                        user=full_stack.user,
-                        workspace=full_stack.workspace,
-                        name=stack_name,
-                        description=full_stack.description,
-                        components=components_mapping,
-                        labels=full_stack.labels,
-                    )
-                    stack_response = self.create_stack(stack_request)
+                defined_components = session.exec(
+                    select(StackComponentSchema).where(or_(*filters))
+                ).all()
 
-                    break
-                except EntityExistsError:
-                    stack_name = f"{full_stack.name}-{random_str(4)}".lower()
-
-            return stack_response
-
-        except Exception as e:
-            for component_id in components_created_ids:
-                self.delete_stack_component(component_id=component_id)
-            for service_connector_id in service_connectors_created_ids:
-                self.delete_service_connector(
-                    service_connector_id=service_connector_id
+                new_stack_schema = StackSchema(
+                    workspace_id=stack.workspace,
+                    user_id=stack.user,
+                    stack_spec_path=stack.stack_spec_path,
+                    name=stack.name,
+                    description=stack.description,
+                    components=defined_components,
+                    labels=base64.b64encode(
+                        json.dumps(stack.labels).encode("utf-8")
+                    ),
                 )
-            raise RuntimeError(
-                f"Full Stack creation has failed {e}. Cleaning up the "
-                f"created entities."
-            ) from e
+
+                session.add(new_stack_schema)
+                session.commit()
+                session.refresh(new_stack_schema)
+
+                for defined_component in defined_components:
+                    if (
+                        defined_component.type
+                        == StackComponentType.ORCHESTRATOR
+                    ):
+                        if defined_component.flavor not in {
+                            "local",
+                            "local_docker",
+                        }:
+                            self._update_onboarding_state(
+                                completed_steps={
+                                    OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                                },
+                                session=session,
+                            )
+
+                return new_stack_schema.to_model(
+                    include_metadata=True, include_resources=True
+                )
+
+            except Exception:
+                for component_id in components_created_ids:
+                    self.delete_stack_component(component_id=component_id)
+                for service_connector_id in service_connectors_created_ids:
+                    self.delete_service_connector(
+                        service_connector_id=service_connector_id
+                    )
+                logger.error(
+                    "Stack creation has failed. Cleaned up the entities "
+                    "that are created in the process."
+                )
+                raise
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -7302,7 +7781,9 @@ class SqlZenStore(BaseZenStore):
 
             if stack is None:
                 raise KeyError(f"Stack with ID {stack_id} not found.")
-            return stack.to_model(include_metadata=hydrate)
+            return stack.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_stacks(
         self,
@@ -7394,7 +7875,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_stack)
 
-            return existing_stack.to_model(include_metadata=True)
+            return existing_stack.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
@@ -7494,7 +7977,6 @@ class SqlZenStore(BaseZenStore):
             logger.info(
                 f"Creating default stack in workspace {workspace.name}..."
             )
-
             orchestrator = self.create_stack_component(
                 component=InternalComponentRequest(
                     # Passing `None` for the user here means the orchestrator
@@ -7527,9 +8009,7 @@ class SqlZenStore(BaseZenStore):
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
 
-            stack = InternalStackRequest(
-                # Passing `None` for the user here means the stack is owned by
-                # the server, which for RBAC indicates that everyone can read it
+            stack = StackRequest(
                 user=None,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
@@ -7684,25 +8164,35 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            session.commit()
+            session.refresh(step_schema)
+
+            step_model = step_schema.to_model(include_metadata=True)
+
             # Save input artifact IDs into the database.
             for input_name, artifact_version_id in step_run.inputs.items():
+                input_type = self._get_step_run_input_type(
+                    input_name=input_name,
+                    step_config=step_model.config,
+                    step_spec=step_model.spec,
+                )
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
                     artifact_version_id=artifact_version_id,
                     name=input_name,
-                    input_type=StepRunInputArtifactType.DEFAULT,
+                    input_type=input_type,
                     session=session,
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_version_id in step_run.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_schema.id,
-                    artifact_version_id=artifact_version_id,
-                    name=output_name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
+            for name, artifact_version_ids in step_run.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_schema.id,
+                        artifact_version_id=artifact_version_id,
+                        name=name,
+                        session=session,
+                    )
 
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
@@ -7710,8 +8200,11 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.commit()
+            session.refresh(step_schema)
 
-            return step_schema.to_model(include_metadata=True)
+            return step_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_run_step(
         self, step_run_id: UUID, hydrate: bool = True
@@ -7739,7 +8232,7 @@ class SqlZenStore(BaseZenStore):
                     "run with this ID found."
                 )
             return step_run.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_run_steps(
@@ -7800,28 +8293,15 @@ class SqlZenStore(BaseZenStore):
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
-            # Update the output artifacts.
-            for name, artifact_version_id in step_run_update.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=name,
-                    output_type=StepRunOutputArtifactType.DEFAULT,
-                    session=session,
-                )
-
-            # Update saved artifacts
-            for (
-                artifact_name,
-                artifact_version_id,
-            ) in step_run_update.saved_artifact_versions.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=artifact_name,
-                    output_type=StepRunOutputArtifactType.MANUAL,
-                    session=session,
-                )
+            # Update the artifacts.
+            for name, artifact_version_ids in step_run_update.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_run_id,
+                        artifact_version_id=artifact_version_id,
+                        name=name,
+                        session=session,
+                    )
 
             # Update loaded artifacts.
             for (
@@ -7844,7 +8324,37 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model(include_metadata=True)
+            return existing_step_run.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_step_run_input_type(
+        self,
+        input_name: str,
+        step_config: StepConfiguration,
+        step_spec: StepSpec,
+    ) -> StepRunInputArtifactType:
+        """Get the input type of an artifact.
+
+        Args:
+            input_name: The name of the input artifact.
+            step_config: The step config.
+            step_spec: The step spec.
+
+        Returns:
+            The input type of the artifact.
+        """
+        if input_name in step_spec.inputs:
+            return StepRunInputArtifactType.STEP_OUTPUT
+        if input_name in step_config.external_input_artifacts:
+            return StepRunInputArtifactType.EXTERNAL
+        elif (
+            input_name in step_config.model_artifacts_or_metadata
+            or input_name in step_config.client_lazy_loaders
+        ):
+            return StepRunInputArtifactType.LAZY_LOADED
+        else:
+            return StepRunInputArtifactType.MANUAL
 
     @staticmethod
     def _set_run_step_parent_step(
@@ -7964,7 +8474,6 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         artifact_version_id: UUID,
         name: str,
-        output_type: StepRunOutputArtifactType,
         session: Session,
     ) -> None:
         """Sets an artifact as an output of a step run.
@@ -7973,7 +8482,6 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run.
             artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
-            output_type: In which way the artifact was saved by the step.
             session: The database session to use.
 
         Raises:
@@ -8017,7 +8525,6 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=output_type.value,
         )
         session.add(assignment)
 
@@ -8055,6 +8562,14 @@ class SqlZenStore(BaseZenStore):
             num_steps=num_steps,
         )
 
+        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
+            # If the pipeline run is a placeholder run, no step has been started
+            # for the run yet. This means the orchestrator hasn't started
+            # running yet, and this method is most likely being called as
+            # part of the creation of some cached steps. In this case, we don't
+            # update the status unless the run is finished.
+            return
+
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
             if new_status in {
@@ -8087,6 +8602,7 @@ class SqlZenStore(BaseZenStore):
                 ) as analytics_handler:
                     analytics_handler.metadata = {
                         "pipeline_run_id": pipeline_run_id,
+                        "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
                         "num_steps": num_steps,
                         "start_time": start_time_str,
@@ -8183,7 +8699,7 @@ class SqlZenStore(BaseZenStore):
             if trigger is None:
                 raise KeyError(f"Trigger with ID {trigger_id} not found.")
             return trigger.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_triggers(
@@ -8498,6 +9014,10 @@ class SqlZenStore(BaseZenStore):
                 # For Python versions <3.9, leave out the third parameter to
                 # _evaluate
                 target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            elif sys.version_info >= (3, 12, 4):
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, recursive_guard=frozenset()
+                )
             else:
                 target_schema = schema_ref._evaluate(
                     vars(zenml_schemas), {}, frozenset()
@@ -8648,7 +9168,9 @@ class SqlZenStore(BaseZenStore):
                     },
                 )
 
-            return new_user.to_model(include_metadata=True)
+            return new_user.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_user(
         self,
@@ -8695,7 +9217,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             return user.to_model(
-                include_private=include_private, include_metadata=hydrate
+                include_private=include_private,
+                include_metadata=hydrate,
+                include_resources=True,
             )
 
     def get_auth_user(
@@ -8823,7 +9347,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_user)
-            updated_user = existing_user.to_model(include_metadata=True)
+            updated_user = existing_user.to_model(
+                include_metadata=True, include_resources=True
+            )
 
             survey_finished_after = (
                 FINISHED_ONBOARDING_SURVEY_KEY in updated_user.user_metadata
@@ -8903,10 +9429,9 @@ class SqlZenStore(BaseZenStore):
         * server deployments that set the `auto_activate` server
         setting explicitly to `True`. This includes:
             * local ZenML server deployments: the server is deployed locally
-            with `zenml up`
+            with `zenml login --local`
             * local ZenML docker deployments: the server is deployed locally
-            with `zenml up --docker`
-        * legacy dashboard deployments
+            with `zenml login --local --docker`
 
         For all other cases, or if the external authentication scheme is used,
         no default admin user is created. The user must activate the server and
@@ -8927,7 +9452,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_activate or config.use_legacy_dashboard:
+            if config.auto_activate:
                 return True
 
         else:
@@ -9001,7 +9526,9 @@ class SqlZenStore(BaseZenStore):
             # Explicitly refresh the new_workspace schema
             session.refresh(new_workspace)
 
-            workspace_model = new_workspace.to_model(include_metadata=True)
+            workspace_model = new_workspace.to_model(
+                include_metadata=True, include_resources=True
+            )
 
         self._get_or_create_default_stack(workspace=workspace_model)
         return workspace_model
@@ -9023,7 +9550,9 @@ class SqlZenStore(BaseZenStore):
             workspace = self._get_workspace_schema(
                 workspace_name_or_id, session=session
             )
-        return workspace.to_model(include_metadata=hydrate)
+        return workspace.to_model(
+            include_metadata=hydrate, include_resources=True
+        )
 
     def list_workspaces(
         self,
@@ -9095,7 +9624,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_workspace)
-            return existing_workspace.to_model(include_metadata=True)
+            return existing_workspace.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
         """Deletes a workspace.
@@ -9513,19 +10044,10 @@ class SqlZenStore(BaseZenStore):
             The newly created model.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model with the given name already exists.
         """
         validate_name(model)
         with Session(self.engine) as session:
-            existing_model = session.exec(
-                select(ModelSchema).where(ModelSchema.name == model.name)
-            ).first()
-            if existing_model is not None:
-                raise EntityExistsError(
-                    f"Unable to create model {model.name}: "
-                    "A model with this name already exists."
-                )
-
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -9535,8 +10057,17 @@ class SqlZenStore(BaseZenStore):
                     resource_id=model_schema.id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
-            session.commit()
-            return model_schema.to_model(include_metadata=True)
+            try:
+                session.commit()
+            except IntegrityError:
+                raise EntityExistsError(
+                    f"Unable to create model {model.name}: "
+                    "A model with this name already exists."
+                )
+
+            return model_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_model(
         self,
@@ -9565,7 +10096,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get model with ID `{model_name_or_id}`: "
                     f"No model with this ID found."
                 )
-            return model.to_model(include_metadata=hydrate)
+            return model.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_models(
         self,
@@ -9661,9 +10194,55 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_model)
-            return existing_model.to_model(include_metadata=True)
+            return existing_model.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     # ----------------------------- Model Versions -----------------------------
+
+    def _get_next_numeric_version_for_model(
+        self, session: Session, model_id: UUID
+    ) -> int:
+        """Get the next numeric version for a model.
+
+        Args:
+            session: DB session.
+            model_id: ID of the model for which to get the next numeric
+                version.
+
+        Returns:
+            The next numeric version.
+        """
+        current_max_version = session.exec(
+            select(func.max(ModelVersionSchema.number)).where(
+                ModelVersionSchema.model_id == model_id
+            )
+        ).first()
+
+        if current_max_version is None:
+            return 1
+        else:
+            return int(current_max_version) + 1
+
+    def _model_version_exists(self, model_id: UUID, version: str) -> bool:
+        """Check if a model version with a certain version exists.
+
+        Args:
+            model_id: The model ID of the version.
+            version: The version name.
+
+        Returns:
+            If a model version with the given version name exists.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(ModelVersionSchema.id)
+                    .where(ModelVersionSchema.model_id == model_id)
+                    .where(ModelVersionSchema.name == version)
+                ).first()
+                is not None
+            )
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
@@ -9679,67 +10258,94 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model version with the given name already
+                exists.
+            EntityCreationError: If the model version creation failed.
         """
         if model_version.number is not None:
             raise ValueError(
                 "`number` field  must be None during model version creation."
             )
-        with Session(self.engine) as session:
-            model_version_ = model_version.model_copy()
-            model = self.get_model(model_version_.model)
 
-            def _check(tolerance: int = 0) -> None:
-                query = session.exec(
-                    select(ModelVersionSchema)
-                    .where(ModelVersionSchema.model_id == model.id)
-                    .where(ModelVersionSchema.name == model_version_.name)
-                )
-                existing_model_version = query.fetchmany(tolerance + 1)
-                if (
-                    existing_model_version is not None
-                    and len(existing_model_version) > tolerance
-                ):
-                    raise EntityExistsError(
-                        f"Unable to create model version {model_version_.name}: "
-                        f"A model version with this name already exists in {model.name} model."
-                    )
+        model = self.get_model(model_version.model)
 
-            _check()
-            all_versions = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
-            ).first()
+        has_custom_name = model_version.name is not None
+        if has_custom_name:
+            validate_name(model_version)
 
-            model_version_.number = (
-                all_versions.number + 1 if all_versions else 1
-            )
+        model_version_id = None
 
-            if model_version_.name is None:
-                model_version_.name = str(model_version_.number)
-            else:
-                validate_name(model_version_)
-
-            model_version_schema = ModelVersionSchema.from_request(
-                model_version_
-            )
-            session.add(model_version_schema)
-
-            if model_version_.tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_version_.tags,
-                    resource_id=model_version_schema.id,
-                    resource_type=TaggableResourceTypes.MODEL_VERSION,
-                )
+        remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+        while remaining_tries > 0:
+            remaining_tries -= 1
             try:
-                _check(1)
-                session.commit()
-            except EntityExistsError as e:
-                session.rollback()
-                raise e
+                with Session(self.engine) as session:
+                    model_version.number = (
+                        self._get_next_numeric_version_for_model(
+                            session=session,
+                            model_id=model.id,
+                        )
+                    )
+                    if not has_custom_name:
+                        model_version.name = str(model_version.number)
 
-            return model_version_schema.to_model(include_metadata=True)
+                    model_version_schema = ModelVersionSchema.from_request(
+                        model_version
+                    )
+                    session.add(model_version_schema)
+                    session.commit()
+
+                    model_version_id = model_version_schema.id
+                break
+            except IntegrityError:
+                if has_custom_name and self._model_version_exists(
+                    model_id=model.id, version=cast(str, model_version.name)
+                ):
+                    # We failed not because of a version number conflict,
+                    # but because the user requested a version name that
+                    # is already taken -> We don't retry anymore but fail
+                    # immediately.
+                    raise EntityExistsError(
+                        f"Unable to create model version "
+                        f"{model.name} (version "
+                        f"{model_version.name}): A model with the "
+                        "same name and version already exists."
+                    )
+                elif remaining_tries == 0:
+                    raise EntityCreationError(
+                        f"Failed to create version for model "
+                        f"{model.name}. This is most likely "
+                        "caused by multiple parallel requests that try "
+                        "to create versions for this model in the "
+                        "database."
+                    )
+                else:
+                    attempt = (
+                        MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                        - remaining_tries
+                    )
+                    sleep_duration = exponential_backoff_with_jitter(
+                        attempt=attempt
+                    )
+                    logger.debug(
+                        "Failed to create model version %s "
+                        "(version %s) due to an integrity error. "
+                        "Retrying in %f seconds.",
+                        model.name,
+                        model_version.number,
+                        sleep_duration,
+                    )
+                    time.sleep(sleep_duration)
+
+        assert model_version_id
+        if model_version.tags:
+            self._attach_tags_to_resource(
+                tag_names=model_version.tags,
+                resource_id=model_version_id,
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
+            )
+
+        return self.get_model_version(model_version_id)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
@@ -9772,7 +10378,7 @@ class SqlZenStore(BaseZenStore):
                     f"ID found."
                 )
             return model_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_model_versions(
@@ -9964,7 +10570,7 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_artifact_link_schema)
             session.commit()
             return model_version_artifact_link_schema.to_model(
-                include_metadata=True
+                include_metadata=True, include_resources=True
             )
 
     def list_model_version_artifact_links(
@@ -10125,7 +10731,7 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_pipeline_run_link_schema)
             session.commit()
             return model_version_pipeline_run_link_schema.to_model(
-                include_metadata=True
+                include_metadata=True, include_resources=True
             )
 
     def list_model_version_pipeline_run_links(
@@ -10289,7 +10895,9 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_schema)
 
             session.commit()
-            return tag_schema.to_model(include_metadata=True)
+            return tag_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_tag(
         self,
@@ -10340,7 +10948,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get tag with ID `{tag_name_or_id}`: "
                     f"No tag with this ID found."
                 )
-            return tag.to_model(include_metadata=hydrate)
+            return tag.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_tags(
         self,
@@ -10398,7 +11008,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the tag that was just created
             session.refresh(tag)
-            return tag.to_model(include_metadata=True)
+            return tag.to_model(include_metadata=True, include_resources=True)
 
     ####################
     # Tags <> resources
@@ -10441,7 +11051,9 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_resource_schema)
 
             session.commit()
-            return tag_resource_schema.to_model(include_metadata=True)
+            return tag_resource_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_tag_resource(
         self,

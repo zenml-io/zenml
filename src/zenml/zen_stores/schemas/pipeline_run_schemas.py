@@ -18,11 +18,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -32,6 +37,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
@@ -48,10 +54,12 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionPipelineRunSchema,
+        ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class PipelineRunSchema(NamedSchema, table=True):
@@ -63,6 +71,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             "deployment_id",
             "orchestrator_run_id",
             name="unique_orchestrator_run_id_for_deployment_id",
+        ),
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_run_name_in_workspace",
         ),
     )
 
@@ -108,6 +121,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=MODEL_VERSION_TABLENAME,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     # Relationships
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
@@ -135,6 +156,9 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    model_version: "ModelVersionSchema" = Relationship(
+        back_populates="pipeline_runs",
     )
 
     # Temporary fields and foreign keys to be deprecated
@@ -187,6 +211,15 @@ class PipelineRunSchema(NamedSchema, table=True):
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
     )
+    tags: List["TagResourceSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
+    )
+
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -213,6 +246,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
+            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -242,7 +276,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
 
         run_metadata = {
-            metadata_schema.key: metadata_schema.to_model()
+            metadata_schema.key: json.loads(metadata_schema.value)
             for metadata_schema in self.run_metadata
         }
 
@@ -250,6 +284,10 @@ class PipelineRunSchema(NamedSchema, table=True):
             deployment = self.deployment.to_model()
 
             config = deployment.pipeline_configuration
+            new_substitutions = config._get_full_substitutions(self.start_time)
+            config = config.model_copy(
+                update={"substitutions": new_substitutions}
+            )
             client_environment = deployment.client_environment
 
             stack = deployment.stack
@@ -289,17 +327,33 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             schedule=schedule,
             code_reference=code_reference,
-            trigger_execution=self.trigger_execution.to_model()
-            if self.trigger_execution
-            else None,
+            trigger_execution=(
+                self.trigger_execution.to_model()
+                if self.trigger_execution
+                else None
+            ),
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
+            model_version_id=self.model_version_id,
         )
         metadata = None
         if include_metadata:
+            is_templatable = False
+            if (
+                self.deployment
+                and self.deployment.build
+                and not self.deployment.build.is_local
+                and self.deployment.build.stack
+            ):
+                is_templatable = True
+
             steps = {step.name: step.to_model() for step in self.step_runs}
 
+            steps_substitutions = {
+                step_name: step.config.substitutions
+                for step_name, step in steps.items()
+            }
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=run_metadata,
@@ -310,15 +364,25 @@ class PipelineRunSchema(NamedSchema, table=True):
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
+                code_path=self.deployment.code_path
+                if self.deployment
+                else None,
+                template_id=self.deployment.template_id
+                if self.deployment
+                else None,
+                is_templatable=is_templatable,
+                steps_substitutions=steps_substitutions,
             )
 
         resources = None
         if include_resources:
             model_version = None
-            if config.model and config.model.model_version_id:
-                model_version = config.model._get_model_version(hydrate=False)
+            if self.model_version:
+                model_version = self.model_version.to_model()
+
             resources = PipelineRunResponseResources(
-                model_version=model_version
+                model_version=model_version,
+                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return PipelineRunResponse(
@@ -341,6 +405,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
+        if run_update.model_version_id and self.model_version_id is None:
+            self.model_version_id = run_update.model_version_id
 
         self.updated = datetime.utcnow()
         return self
@@ -362,10 +428,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if (
-            self.orchestrator_run_id
-            or self.status != ExecutionStatus.INITIALIZING
-        ):
+        if not self.is_placeholder_run():
             raise RuntimeError(
                 f"Unable to replace pipeline run {self.id} which is not a "
                 "placeholder run."
@@ -389,3 +452,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
 
         return self
+
+    def is_placeholder_run(self) -> bool:
+        """Whether the pipeline run is a placeholder run.
+
+        Returns:
+            Whether the pipeline run is a placeholder run.
+        """
+        return (
+            self.orchestrator_run_id is None
+            and self.status == ExecutionStatus.INITIALIZING
+        )

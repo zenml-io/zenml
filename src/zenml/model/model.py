@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
-import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,11 +25,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.pipelines.pipeline_context import get_pipeline_context
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
         ModelResponse,
         ModelVersionResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
     )
 
 logger = get_logger(__name__)
@@ -58,11 +57,11 @@ class Model(BaseModel):
     ethics: The ethical implications of the model.
     tags: Tags associated with the model.
     version: The version name, version number or stage is optional and points model context
-        to a specific version/stage. If skipped new version will be created.
+        to a specific version/stage. If skipped new version will be created. `version`
+        also supports placeholders: standard `{date}` and `{time}` and any custom placeholders
+        that are passed as substitutions in the pipeline or step decorators.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    model_version_id: The ID of a specific Model Version, if given - it will override
-        `name` and `version` settings. Used mostly internally.
     """
 
     name: str
@@ -78,13 +77,13 @@ class Model(BaseModel):
         default=None, union_mode="smart"
     )
     save_models_to_registry: bool = True
+
+    # technical attributes
     model_version_id: Optional[UUID] = None
-
     suppress_class_validation_warnings: bool = False
-    was_created_in_this_run: bool = False
-
     _model_id: UUID = PrivateAttr(None)
-    _number: int = PrivateAttr(None)
+    _number: Optional[int] = PrivateAttr(None)
+    _created_model_version: bool = PrivateAttr(False)
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -142,15 +141,20 @@ class Model(BaseModel):
                 doesn't exist and can only be read given current
                 config (you used stage name or number as
                 a version name).
+
+        Raises:
+            KeyError: if model version doesn't exist and
+                cannot be fetched from the Model Control Plane.
         """
         if self._number is None:
             try:
-                self._get_or_create_model_version()
-            except RuntimeError:
-                logger.info(
+                mv = self._get_or_create_model_version()
+                self._number = mv.number
+            except RuntimeError as e:
+                raise KeyError(
                     f"Version `{self.version}` of `{self.name}` model doesn't "
                     "exist and cannot be fetched from the Model Control Plane."
-                )
+                ) from e
         return self._number
 
     @property
@@ -341,7 +345,7 @@ class Model(BaseModel):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+    def run_metadata(self) -> Dict[str, "MetadataType"]:
         """Get model version run metadata.
 
         Returns:
@@ -351,17 +355,13 @@ class Model(BaseModel):
             RuntimeError: If the model version run metadata cannot be fetched.
         """
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
-        from zenml.new.pipelines.pipeline_context import (
-            get_pipeline_context,
-        )
 
         try:
             get_pipeline_context()
             # avoid exposing too much of internal details by keeping the return type
             return RunMetadataLazyGetter(  # type: ignore[return-value]
-                self,
-                None,
-                None,
+                self.name,
+                self._lazy_version,
             )
         except RuntimeError:
             pass
@@ -372,20 +372,6 @@ class Model(BaseModel):
                 "Failed to fetch metadata of this model version."
             )
         return response.run_metadata
-
-    # TODO: deprecate me
-    @property
-    def metadata(self) -> Dict[str, "MetadataType"]:
-        """DEPRECATED, use `run_metadata` instead.
-
-        Returns:
-            The model version run metadata.
-        """
-        logger.warning(
-            "Model `metadata` property is deprecated. Please use "
-            "`run_metadata` instead."
-        )
-        return {k: v.value for k, v in self.run_metadata.items()}
 
     def delete_artifact(
         self,
@@ -458,7 +444,6 @@ class Model(BaseModel):
         name: str,
         version: Optional[str] = None,
     ) -> Optional["ArtifactVersionResponse"]:
-        from zenml import get_pipeline_context
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,
         )
@@ -468,9 +453,8 @@ class Model(BaseModel):
             return LazyArtifactVersionResponse(
                 lazy_load_name=name,
                 lazy_load_version=version,
-                lazy_load_model=Model(
-                    name=self.name, version=self.version or self.number
-                ),
+                lazy_load_model_name=self.name,
+                lazy_load_model_version=self._lazy_version,
             )
         except RuntimeError:
             pass
@@ -507,10 +491,21 @@ class Model(BaseModel):
 
         Returns:
             Dict of validated values.
+
+        Raises:
+            ValueError: If the model version id, but call is not internal.
         """
         suppress_class_validation_warnings = data.get(
-            "suppress_class_validation_warnings", False
+            "suppress_class_validation_warnings",
+            False,
         )
+        if not suppress_class_validation_warnings and data.get(
+            "model_version_id", None
+        ):
+            raise ValueError(
+                "`model_version_id` field is for internal use only"
+            )
+
         version = data.get("version", None)
 
         if (
@@ -529,14 +524,6 @@ class Model(BaseModel):
         data["suppress_class_validation_warnings"] = True
         return data
 
-    def _validate_config_in_runtime(self) -> "ModelVersionResponse":
-        """Validate that config doesn't conflict with runtime environment.
-
-        Returns:
-            The model version based on configuration.
-        """
-        return self._get_or_create_model_version()
-
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
 
@@ -549,6 +536,8 @@ class Model(BaseModel):
         from zenml.models import ModelRequest
 
         zenml_client = Client()
+        # backup logic, if the Model class is used directly from the code
+        self.name = format_name_template(self.name, substitutions={})
         if self.model_version_id:
             mv = zenml_client.get_model_version(
                 model_version_name_or_number_or_id=self.model_version_id,
@@ -569,7 +558,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    tags=self.tags,
                     user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,
@@ -677,53 +665,11 @@ class Model(BaseModel):
 
         model = self._get_or_create_model()
 
-        zenml_client = Client()
-        model_version_request = ModelVersionRequest(
-            user=zenml_client.active_user.id,
-            workspace=zenml_client.active_workspace.id,
-            name=str(self.version) if self.version else None,
-            description=self.description,
-            model=model.id,
-            tags=self.tags,
-        )
-        mv_request = ModelVersionRequest.model_validate(model_version_request)
-        try:
-            if not self.version:
-                try:
-                    from zenml import get_step_context
+        # backup logic, if the Model class is used directly from the code
+        if isinstance(self.version, str):
+            self.version = format_name_template(self.version, substitutions={})
 
-                    context = get_step_context()
-                except RuntimeError:
-                    pass
-                else:
-                    # if inside a step context we loop over all
-                    # model version configuration to find, if the
-                    # model version for current model was already
-                    # created in the current run, not to create
-                    # new model versions
-                    pipeline_mv = context.pipeline_run.config.model
-                    if (
-                        pipeline_mv
-                        and pipeline_mv.was_created_in_this_run
-                        and pipeline_mv.name == self.name
-                        and pipeline_mv.version is not None
-                    ):
-                        self.version = pipeline_mv.version
-                        self.model_version_id = pipeline_mv.model_version_id
-                    else:
-                        for step in context.pipeline_run.steps.values():
-                            step_mv = step.config.model
-                            if (
-                                step_mv
-                                and step_mv.was_created_in_this_run
-                                and step_mv.name == self.name
-                                and step_mv.version is not None
-                            ):
-                                self.version = step_mv.version
-                                self.model_version_id = (
-                                    step_mv.model_version_id
-                                )
-                                break
+        try:
             if self.version or self.model_version_id:
                 model_version = self._get_model_version()
             else:
@@ -752,55 +698,33 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list -n {self.name}` CLI command."
                 )
-            retries_made = 0
-            for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
-                try:
-                    model_version = (
-                        zenml_client.zen_store.create_model_version(
-                            model_version=mv_request
-                        )
-                    )
-                    break
-                except EntityExistsError as e:
-                    if i == MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION - 1:
-                        raise RuntimeError(
-                            f"Failed to create model version "
-                            f"`{self.version if self.version else 'new'}` "
-                            f"in model `{self.name}`. Retried {retries_made} times. "
-                            "This could be driven by exceptionally high concurrency of "
-                            "pipeline runs. Please, reach out to us on ZenML Slack for support."
-                        ) from e
-                    # smoothed exponential back-off, it will go as 0.2, 0.3,
-                    # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
-                    sleep = 0.2 * 1.5**i
-                    logger.debug(
-                        f"Failed to create new model version for "
-                        f"model `{self.name}`. Retrying in {sleep}..."
-                    )
-                    time.sleep(sleep)
-                    retries_made += 1
-            self.version = model_version.name
-            self.was_created_in_this_run = True
 
-            logger.info(f"New model version `{self.version}` was created.")
+            client = Client()
+            model_version_request = ModelVersionRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name=str(self.version) if self.version else None,
+                description=self.description,
+                model=model.id,
+                tags=self.tags,
+            )
+            model_version = client.zen_store.create_model_version(
+                model_version=model_version_request
+            )
 
+            self._created_model_version = True
+
+            logger.info(
+                "Created new model version `%s` for model `%s`.",
+                model_version.name,
+                self.name,
+            )
+
+        self.version = model_version.name
         self.model_version_id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version
-
-    def _merge(self, model: "Model") -> None:
-        self.license = self.license or model.license
-        self.description = self.description or model.description
-        self.audience = self.audience or model.audience
-        self.use_cases = self.use_cases or model.use_cases
-        self.limitations = self.limitations or model.limitations
-        self.trade_offs = self.trade_offs or model.trade_offs
-        self.ethics = self.ethics or model.ethics
-        if model.tags is not None:
-            self.tags = list(
-                {t for t in self.tags or []}.union(set(model.tags))
-            )
 
     def __hash__(self) -> int:
         """Get hash of the `Model`.
@@ -819,3 +743,21 @@ class Model(BaseModel):
                 )
             )
         )
+
+    @property
+    def _lazy_version(self) -> Optional[str]:
+        """Get version name for lazy loader.
+
+        This getter ensures that new model version
+        creation is never triggered here.
+
+        Returns:
+            Version name or None if it was not set
+        """
+        if self._number is not None:
+            return str(self._number)
+        elif self.version is not None:
+            if isinstance(self.version, ModelStages):
+                return self.version.value
+            return str(self.version)
+        return None

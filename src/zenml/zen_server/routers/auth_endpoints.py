@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from datetime import datetime, timedelta
 from typing import Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
@@ -40,17 +39,17 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import (
+    APITokenType,
     AuthScheme,
+    ExecutionStatus,
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyInternalResponse,
     OAuthDeviceAuthorizationResponse,
     OAuthDeviceInternalRequest,
-    OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
@@ -63,9 +62,9 @@ from zenml.zen_server.auth import (
     authenticate_device,
     authenticate_external_user,
     authorize,
+    generate_access_token,
 )
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.rate_limit import rate_limit_requests
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
@@ -116,6 +115,8 @@ class OAuthLoginRequestForm:
         Raises:
             HTTPException: If the request is invalid.
         """
+        config = server_config()
+
         if not grant_type:
             # Detect the grant type from the form data
             if username is not None:
@@ -124,8 +125,21 @@ class OAuthLoginRequestForm:
                 self.grant_type = OAuthGrantTypes.ZENML_API_KEY
             elif device_code:
                 self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
-            else:
+            elif config.auth_scheme == AuthScheme.EXTERNAL:
                 self.grant_type = OAuthGrantTypes.ZENML_EXTERNAL
+            elif config.auth_scheme in [
+                AuthScheme.OAUTH2_PASSWORD_BEARER,
+                AuthScheme.NO_AUTH,
+                AuthScheme.HTTP_BASIC,
+            ]:
+                # For no auth and basic HTTP auth schemes, we also allow the
+                # password grant type to be used for backwards compatibility
+                self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request: grant type is required.",
+                )
         else:
             if grant_type not in OAuthGrantTypes.values():
                 logger.info(
@@ -137,10 +151,15 @@ class OAuthLoginRequestForm:
                 )
             self.grant_type = OAuthGrantTypes(grant_type)
 
-        config = server_config()
-
         if self.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
-            if config.auth_scheme != AuthScheme.OAUTH2_PASSWORD_BEARER:
+            # For the no auth and basic HTTP auth schemes, we also allow the
+            # password grant type to be used for compatibility with other
+            # auth schemes
+            if config.auth_scheme not in [
+                AuthScheme.OAUTH2_PASSWORD_BEARER,
+                AuthScheme.NO_AUTH,
+                AuthScheme.HTTP_BASIC,
+            ]:
                 logger.info(
                     f"Request with unsupported grant type: {self.grant_type}"
                 )
@@ -191,68 +210,6 @@ class OAuthLoginRequestForm:
                 )
 
 
-def generate_access_token(
-    user_id: UUID,
-    response: Response,
-    device: Optional[OAuthDeviceInternalResponse] = None,
-    api_key: Optional[APIKeyInternalResponse] = None,
-) -> OAuthTokenResponse:
-    """Generates an access token for the given user.
-
-    Args:
-        user_id: The ID of the user.
-        response: The FastAPI response object.
-        device: The device used for authentication.
-        api_key: The service account API key used for authentication.
-
-    Returns:
-        An authentication response with an access token.
-    """
-    config = server_config()
-
-    # The JWT tokens are set to expire according to the values configured
-    # in the server config. Device tokens are handled separately from regular
-    # user tokens.
-    expires: Optional[datetime] = None
-    expires_in: Optional[int] = None
-    if device:
-        # If a device was used for authentication, the token will expire
-        # at the same time as the device.
-        expires = device.expires
-        if expires:
-            expires_in = max(
-                int(expires.timestamp() - datetime.utcnow().timestamp()), 0
-            )
-    elif config.jwt_token_expire_minutes:
-        expires = datetime.utcnow() + timedelta(
-            minutes=config.jwt_token_expire_minutes
-        )
-        expires_in = config.jwt_token_expire_minutes * 60
-
-    access_token = JWTToken(
-        user_id=user_id,
-        device_id=device.id if device else None,
-        api_key_id=api_key.id if api_key else None,
-    ).encode(expires=expires)
-
-    if not device:
-        # Also set the access token as an HTTP only cookie in the response
-        response.set_cookie(
-            key=config.get_auth_cookie_name(),
-            value=access_token,
-            httponly=True,
-            samesite="lax",
-            max_age=config.jwt_token_expire_minutes * 60
-            if config.jwt_token_expire_minutes
-            else None,
-            domain=config.auth_cookie_domain,
-        )
-
-    return OAuthTokenResponse(
-        access_token=access_token, expires_in=expires_in, token_type="bearer"
-    )
-
-
 @router.post(
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
@@ -280,6 +237,7 @@ def token(
     Raises:
         ValueError: If the grant type is invalid.
     """
+    config = server_config()
     if auth_form_data.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
         auth_context = authenticate_credentials(
             user_name_or_id=auth_form_data.username,
@@ -297,8 +255,6 @@ def token(
         )
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
-        config = server_config()
-
         assert config.external_cookie_name is not None
         assert config.external_login_url is not None
 
@@ -399,8 +355,11 @@ def device_authorization(
     config = server_config()
     store = zen_store()
 
-    # Use this opportunity to delete expired devices
-    store.delete_expired_authorized_devices()
+    try:
+        # Use this opportunity to delete expired devices
+        store.delete_expired_authorized_devices()
+    except Exception:
+        logger.exception("Failed to delete expired devices")
 
     # Fetch additional details about the client from the user-agent header
     user_agent_header = request.headers.get("User-Agent")
@@ -492,45 +451,74 @@ def device_authorization(
 )
 @handle_exceptions
 def api_token(
-    pipeline_id: Optional[UUID] = None,
+    token_type: APITokenType = APITokenType.GENERIC,
     schedule_id: Optional[UUID] = None,
-    expires_minutes: Optional[int] = None,
+    pipeline_run_id: Optional[UUID] = None,
+    step_run_id: Optional[UUID] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> str:
-    """Get a workload API token for the current user.
+    """Generate an API token for the current user.
+
+    Use this endpoint to generate an API token for the current user. Two types
+    of API tokens are supported:
+
+    * Generic API token: This token is short-lived and can be used for
+    generic automation tasks.
+    * Workload API token: This token is scoped to a specific pipeline run, step
+    run or schedule and is used by pipeline workloads to authenticate with the
+    server. A pipeline run ID, step run ID or schedule ID must be provided and
+    the generated token will only be valid for the indicated pipeline run, step
+    run or schedule. No time limit is imposed on the validity of the token.
+    A workload API token can be used to authenticate and generate another
+    workload API token, but only for the same schedule, pipeline run ID or step
+    run ID, in that order.
 
     Args:
-        pipeline_id: The ID of the pipeline to get the API token for.
-        schedule_id: The ID of the schedule to get the API token for.
-        expires_minutes: The number of minutes for which the API token should
-            be valid. If not provided, the API token will be valid indefinitely.
+        token_type: The type of API token to generate.
+        schedule_id: The ID of the schedule to scope the workload API token to.
+        pipeline_run_id: The ID of the pipeline run to scope the workload API
+            token to.
+        step_run_id: The ID of the step run to scope the workload API token to.
         auth_context: The authentication context.
 
     Returns:
         The API token.
 
     Raises:
-        HTTPException: If the user is not authenticated.
-        AuthorizationException: If trying to scope the API token to a different
-            pipeline/schedule than the token used to authorize this request.
+        AuthorizationException: If not authorized to generate the API token.
+        ValueError: If the request is invalid.
     """
     token = auth_context.access_token
     if not token or not auth_context.encoded_access_token:
         # Should not happen
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated.",
-        )
+        raise AuthorizationException("Not authenticated.")
+
+    if token_type == APITokenType.GENERIC:
+        if schedule_id or pipeline_run_id or step_run_id:
+            raise ValueError(
+                "Generic API tokens cannot be scoped to a schedule, pipeline "
+                "run or step run."
+            )
+
+        config = server_config()
+
+        return generate_access_token(
+            user_id=token.user_id,
+            expires_in=config.generic_api_token_lifetime,
+        ).access_token
 
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
 
-    if pipeline_id and token.pipeline_id and pipeline_id != token.pipeline_id:
-        raise AuthorizationException(
-            f"Unable to scope API token to pipeline {pipeline_id}. The "
-            f"token used to authorize this request is already scoped to "
-            f"pipeline {token.pipeline_id}."
+    schedule_id = schedule_id or token.schedule_id
+    pipeline_run_id = pipeline_run_id or token.pipeline_run_id
+    step_run_id = step_run_id or token.step_run_id
+
+    if not pipeline_run_id and not schedule_id and not step_run_id:
+        raise ValueError(
+            "Workload API tokens must be scoped to a schedule, pipeline run "
+            "or step run."
         )
 
     if schedule_id and token.schedule_id and schedule_id != token.schedule_id:
@@ -540,21 +528,87 @@ def api_token(
             f"schedule {token.schedule_id}."
         )
 
-    if not token.device_id and not token.api_key_id:
-        # If not authenticated with a device or a service account, the current
-        # API token is returned as is, without any modifications. Issuing
-        # workload tokens is only supported for device authenticated users and
-        # service accounts, because device tokens can be revoked at any time and
-        # service accounts can be disabled.
-        return auth_context.encoded_access_token
+    if (
+        pipeline_run_id
+        and token.pipeline_run_id
+        and pipeline_run_id != token.pipeline_run_id
+    ):
+        raise AuthorizationException(
+            f"Unable to scope API token to pipeline run {pipeline_run_id}. The "
+            f"token used to authorize this request is already scoped to "
+            f"pipeline run {token.pipeline_run_id}."
+        )
 
-    # If authenticated with a device, a new API token is generated for the
-    # pipeline and/or schedule.
-    if pipeline_id:
-        token.pipeline_id = pipeline_id
+    if step_run_id and token.step_run_id and step_run_id != token.step_run_id:
+        raise AuthorizationException(
+            f"Unable to scope API token to step run {step_run_id}. The "
+            f"token used to authorize this request is already scoped to "
+            f"step run {token.step_run_id}."
+        )
+
     if schedule_id:
-        token.schedule_id = schedule_id
-    expires: Optional[datetime] = None
-    if expires_minutes:
-        expires = datetime.utcnow() + timedelta(minutes=expires_minutes)
-    return token.encode(expires=expires)
+        # The schedule must exist
+        try:
+            schedule = zen_store().get_schedule(schedule_id, hydrate=False)
+        except KeyError:
+            raise ValueError(
+                f"Schedule {schedule_id} does not exist and API tokens cannot "
+                "be generated for non-existent schedules for security reasons."
+            )
+
+        if not schedule.active:
+            raise ValueError(
+                f"Schedule {schedule_id} is not active and API tokens cannot "
+                "be generated for inactive schedules for security reasons."
+            )
+
+    if pipeline_run_id:
+        # The pipeline run must exist and the run must not be concluded
+        try:
+            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=False)
+        except KeyError:
+            raise ValueError(
+                f"Pipeline run {pipeline_run_id} does not exist and API tokens "
+                "cannot be generated for non-existent pipeline runs for "
+                "security reasons."
+            )
+
+        if pipeline_run.status in [
+            ExecutionStatus.FAILED,
+            ExecutionStatus.COMPLETED,
+        ]:
+            raise ValueError(
+                f"The execution of pipeline run {pipeline_run_id} has already "
+                "concluded and API tokens can no longer be generated for it "
+                "for security reasons."
+            )
+
+    if step_run_id:
+        # The step run must exist and the step must not be concluded
+        try:
+            step_run = zen_store().get_run_step(step_run_id, hydrate=False)
+        except KeyError:
+            raise ValueError(
+                f"Step run {step_run_id} does not exist and API tokens cannot "
+                "be generated for non-existent step runs for security reasons."
+            )
+
+        if step_run.status in [
+            ExecutionStatus.FAILED,
+            ExecutionStatus.COMPLETED,
+        ]:
+            raise ValueError(
+                f"The execution of step run {step_run_id} has already "
+                "concluded and API tokens can no longer be generated for it "
+                "for security reasons."
+            )
+
+    return generate_access_token(
+        user_id=token.user_id,
+        # Keep the original API key and device token scopes
+        api_key=auth_context.api_key,
+        device=auth_context.device,
+        schedule_id=schedule_id,
+        pipeline_run_id=pipeline_run_id,
+        step_run_id=step_run_id,
+    ).access_token

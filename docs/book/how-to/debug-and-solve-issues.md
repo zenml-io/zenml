@@ -1,8 +1,9 @@
 ---
+icon: bug
 description: A guide to debug common issues and get help.
 ---
 
-# 🐞 Debug and solve issues
+#  Debug and solve issues
 
 If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
@@ -12,11 +13,11 @@ We suggest going through the following checklist before asking for help:
 
 *   Search on Slack using the built-in Slack search function at the top of the page.
 
-    ![Searching on Slack.](../.gitbook/assets/slack\_search\_bar.png)
+    ![Searching on Slack.](../.gitbook/assets/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
 *   Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 
-    ![Searching on docs page.](../.gitbook/assets/doc\_search\_bar.png)
+    ![Searching on docs page.](../.gitbook/assets/doc_search_bar.png)
 * Check out the [common errors](debug-and-solve-issues.md#most-common-errors) section below.
 * Understand the problem by studying the [additional logs](debug-and-solve-issues.md#41-additional-logs) and [client/server logs](debug-and-solve-issues.md#client-and-server-logs).
 
@@ -54,7 +55,6 @@ ZENML_ACTIVE_REPOSITORY_ROOT: /Users/my_username/coding/zenml/repos/zenml
 PYTHON_VERSION: 3.9.13
 ENVIRONMENT: native
 SYSTEM_INFO: {'os': 'mac', 'mac_version': '13.2'}
-ACTIVE_WORKSPACE: default
 ACTIVE_STACK: default
 ACTIVE_USER: some_user
 TELEMETRY_STATUS: disabled
@@ -149,7 +149,7 @@ RuntimeError: Error initializing rest store with URL 'http://127.0.0.1:8237': HT
 NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9abb198550>: Failed to establish a new connection: [Errno 61] Connection refused'))
 ```
 
-If you restarted your machine after deploying ZenML then you have to run `zenml up` again after each restart. Local ZenML deployments don't survive machine restarts.
+If you restarted your machine after starting the local ZenML server with `zenml login --local`, then you have to run `zenml login --local` again after each restart. Local ZenML deployments don't survive machine restarts.
 
 #### Column 'step\_configuration' cannot be null
 

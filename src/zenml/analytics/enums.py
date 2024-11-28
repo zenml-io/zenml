@@ -48,6 +48,10 @@ class AnalyticsEvent(str, Enum):
     CREATED_TRIGGER = "Trigger created"
     UPDATED_TRIGGER = "Trigger updated"
 
+    # Templates
+    CREATED_RUN_TEMPLATE = "Run template created"
+    EXECUTED_RUN_TEMPLATE = "Run templated executed"
+
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"
@@ -76,30 +80,11 @@ class AnalyticsEvent(str, Enum):
     # Service account and API keys
     CREATED_SERVICE_ACCOUNT = "Service account created"
 
-    # Stack recipes
-    RUN_STACK_RECIPE = "Stack recipe ran"
-    DEPLOY_STACK = "Stack deployed"
-    DESTROY_STACK = "Stack destroyed"
-
-    # Stack component deploy
-    DEPLOY_STACK_COMPONENT = "Stack component deployed"
-    DESTROY_STACK_COMPONENT = "Stack component destroyed"
-
     # Full stack infrastructure deployment
     DEPLOY_FULL_STACK = "Full stack deployed"
 
     # Tag created
     CREATED_TAG = "Tag created"
-
-    # ZenML server events
-    ZENML_SERVER_DEPLOYED = "ZenML server deployed"
-    ZENML_SERVER_DESTROYED = "ZenML server destroyed"
-
-    # ZenML Hub events
-    ZENML_HUB_PLUGIN_INSTALL = "ZenML Hub plugin installed"
-    ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
-    ZENML_HUB_PLUGIN_CLONE = "ZenML Hub plugin pulled"
-    ZENML_HUB_PLUGIN_SUBMIT = "ZenML Hub plugin pushed"
 
     # Server Settings
     SERVER_SETTINGS_UPDATED = "Server Settings Updated"

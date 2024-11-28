@@ -29,7 +29,7 @@ from zenml.models import (
 )
 from zenml.pipelines import pipeline
 from zenml.stack import Stack
-from zenml.steps import BaseStep, step
+from zenml.steps import step
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -70,36 +70,6 @@ def test_pipeline_delete(clean_client_with_run: Client):
     assert len(updated_runs) == len(existing_runs)
 
 
-def test_pipeline_delete_all_versions(mocker, clean_client: Client):
-    """Test that zenml pipeline delete can delete all versions."""
-    pipeline_instance.run()
-    mocker.patch.object(
-        BaseStep,
-        "source_code",
-        new_callable=mocker.PropertyMock,
-        return_value="random",
-    )
-    pipeline_instance.run()
-
-    existing_pipelines = clean_client.list_pipelines()
-    assert len(existing_pipelines) == 2
-    pipeline_name = existing_pipelines[0].name
-    runner = CliRunner()
-    delete_command = cli.commands["pipeline"].commands["delete"]
-    result = runner.invoke(
-        delete_command, [pipeline_name, "--all-versions", "-y"]
-    )
-    assert result.exit_code == 0
-
-    # Ensure the specific pipeline no longer exists
-    with pytest.raises(KeyError):
-        clean_client.get_pipeline(name_id_or_prefix=pipeline_name)
-
-    # Ensure there are no other pipelines after deletion
-    updated_pipelines = clean_client.list_pipelines()
-    assert len(updated_pipelines) == 0
-
-
 def test_pipeline_run_list(clean_client_with_run):
     """Test that zenml pipeline runs list does not fail."""
     runner = CliRunner()
@@ -110,7 +80,7 @@ def test_pipeline_run_list(clean_client_with_run):
 
 def test_pipeline_run_delete(clean_client_with_run):
     """Test that zenml pipeline runs delete works as expected."""
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
     runner = CliRunner()
@@ -121,7 +91,7 @@ def test_pipeline_run_delete(clean_client_with_run):
     assert result.exit_code == 0
     with pytest.raises(KeyError):
         clean_client_with_run.get_pipeline_run(run_name)
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_runs) == 0
 
 
@@ -158,12 +128,13 @@ def s() -> None:
 
 
 @pipeline
-def p(s1):
-    s1()
+def pipeline_instance():
+    s()
 
 
-step_instance = s()
-pipeline_instance = p(step_instance)
+# Use the step module here as the pipeline decorator does not create a class
+# in the target module
+pipeline_instance_source = f"{s.__module__}.pipeline_instance"
 
 
 def test_pipeline_registration_without_repo(clean_client):
@@ -171,9 +142,7 @@ def test_pipeline_registration_without_repo(clean_client):
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
 
-    result = runner.invoke(
-        register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
-    )
+    result = runner.invoke(register_command, [pipeline_instance_source])
     assert result.exit_code == 0
 
 
@@ -199,11 +168,9 @@ def test_pipeline_registration_with_repo(clean_client: "Client"):
     assert result.exit_code == 1
 
     # Correct source
-    result = runner.invoke(
-        register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
-    )
+    result = runner.invoke(register_command, [pipeline_instance_source])
     assert result.exit_code == 0
-    assert clean_client.list_pipelines(name="p").total == 1
+    assert clean_client.list_pipelines(name="pipeline_instance").total == 1
 
 
 def test_pipeline_build_without_repo(clean_client):
@@ -211,23 +178,20 @@ def test_pipeline_build_without_repo(clean_client):
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
-    pipeline_instance.register()
-
-    result = runner.invoke(build_command, [pipeline_instance.name])
+    result = runner.invoke(build_command, [pipeline_instance_source])
     assert result.exit_code == 0
 
 
-def test_pipeline_build_with_nonexistent_name_fails(clean_client: "Client"):
-    """Tests that the build command fails if no pipeline with the given name
-    exists."""
+def test_pipeline_build_with_invalid_pipeline_source__fails(
+    clean_client: "Client",
+):
+    """Tests that the build command fails if the pipeline source is invalid."""
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
-    pipeline_instance.register()
-
     # name of unregistered pipeline
     assert (
-        runner.invoke(build_command, ["not_a_registered_pipeline"]).exit_code
+        runner.invoke(build_command, ["nonexistent_module.pipeline"]).exit_code
         == 1
     )
 
@@ -250,11 +214,9 @@ def test_pipeline_build_writes_output_file(
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
-    pipeline_instance.register()
-
     output_path = str(tmp_path / "output.yaml")
     result = runner.invoke(
-        build_command, [pipeline_instance.name, "--output", output_path]
+        build_command, [pipeline_instance_source, "--output", output_path]
     )
     assert result.exit_code == 0
 
@@ -274,11 +236,9 @@ def test_pipeline_build_doesnt_write_output_file_if_no_build_needed(
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
-    pipeline_instance.register()
-
     output_path = tmp_path / "output.yaml"
     result = runner.invoke(
-        build_command, [pipeline_instance.name, "--output", str(output_path)]
+        build_command, [pipeline_instance_source, "--output", str(output_path)]
     )
     assert result.exit_code == 0
     assert not output_path.exists()
@@ -295,8 +255,6 @@ def test_pipeline_build_with_config_file(
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
-    pipeline_instance.register().id
-
     config_path = tmp_path / "config.yaml"
     config = PipelineRunConfiguration(
         settings={"docker": DockerSettings(parent_image="custom_parent_image")}
@@ -304,7 +262,7 @@ def test_pipeline_build_with_config_file(
     config_path.write_text(config.yaml())
 
     result = runner.invoke(
-        build_command, [pipeline_instance.name, "--config", str(config_path)]
+        build_command, [pipeline_instance_source, "--config", str(config_path)]
     )
     assert result.exit_code == 0
 
@@ -341,7 +299,7 @@ def test_pipeline_build_with_different_stack(clean_client: "Client", mocker):
     pipeline_id = pipeline_instance.register().id
 
     result = runner.invoke(
-        build_command, [pipeline_instance.name, "--stack", str(new_stack.id)]
+        build_command, [pipeline_instance_source, "--stack", str(new_stack.id)]
     )
     assert result.exit_code == 0
 
@@ -355,23 +313,17 @@ def test_pipeline_run_without_repo(clean_client):
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
 
-    pipeline_instance.register()
-
-    result = runner.invoke(run_command, [pipeline_instance.name])
+    result = runner.invoke(run_command, [pipeline_instance_source])
     assert result.exit_code == 0
 
 
-def test_pipeline_run_with_nonexistent_name_fails(clean_client: "Client"):
-    """Tests that the run command fails if no pipeline with the given name
-    exists."""
+def test_pipeline_run_with_wrong_source_fails(clean_client: "Client"):
+    """Tests that the run command fails if the pipeline source is invalid."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
-
-    pipeline_instance.register()
-
     # name of unregistered pipeline
     assert (
-        runner.invoke(run_command, ["not_a_registered_pipeline"]).exit_code
+        runner.invoke(run_command, ["nonexistent_module.pipeline"]).exit_code
         == 1
     )
 
@@ -388,7 +340,7 @@ def test_pipeline_run_with_config_file(clean_client: "Client", tmp_path):
     config_path.write_text(run_config.yaml())
 
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--config", str(config_path)]
+        run_command, [pipeline_instance_source, "--config", str(config_path)]
     )
     assert result.exit_code == 0
 
@@ -411,7 +363,7 @@ def test_pipeline_run_with_different_stack(clean_client: "Client"):
     new_stack = Client().create_stack(name="new", components=components)
 
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--stack", str(new_stack.id)]
+        run_command, [pipeline_instance_source, "--stack", str(new_stack.id)]
     )
     assert result.exit_code == 0
 
@@ -428,13 +380,13 @@ def test_pipeline_run_with_invalid_build_id_fails(clean_client: "Client"):
     pipeline_instance.register().id
 
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--build", "not_a_build_id"]
+        run_command, [pipeline_instance_source, "--build", "not_a_build_id"]
     )
     assert result.exit_code == 1
 
     # not a registered build ID
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--build", str(uuid4())]
+        run_command, [pipeline_instance_source, "--build", str(uuid4())]
     )
     assert result.exit_code == 1
 
@@ -456,7 +408,7 @@ def test_pipeline_run_with_custom_build_id(clean_client: "Client"):
     build = Client().zen_store.create_build(request)
 
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--build", str(build.id)]
+        run_command, [pipeline_instance_source, "--build", str(build.id)]
     )
     assert result.exit_code == 0
 
@@ -481,7 +433,7 @@ def test_pipeline_run_with_custom_build_file(clean_client: "Client", tmp_path):
     build_path.write_text(build.yaml())
 
     result = runner.invoke(
-        run_command, [pipeline_instance.name, "--build", str(build_path)]
+        run_command, [pipeline_instance_source, "--build", str(build_path)]
     )
     assert result.exit_code == 0
 

@@ -1,4 +1,9 @@
-zenml[server]>=0.50.0
+zenml[server]==0.70.0
 notebook
-scikit-learn
 pyarrow
+datasets
+transformers
+transformers[torch]
+torch
+sentencepiece
+protobuf

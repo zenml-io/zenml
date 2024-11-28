@@ -14,6 +14,7 @@
 """Integration tests for pipeline run models."""
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
@@ -24,27 +25,26 @@ from zenml.environment import get_run_environment_dict
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.pipelines.base_pipeline import BasePipeline
 
 
 def test_pipeline_run_artifacts(
     clean_client: "Client", connected_two_step_pipeline
 ):
     """Integration test for `run.artifacts` property."""
-    pipeline_instance: BasePipeline = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
 
     # Non-cached run created two artifacts, one per step
-    pipeline_instance.run()
+    pipeline_instance()
     assert len(pipeline_instance.model.last_run.artifact_versions) == 2
     assert (
         len(pipeline_instance.model.last_run.produced_artifact_versions) == 2
     )
 
     # Cached run did not produce any artifacts
-    pipeline_instance.run()
+    pipeline_instance()
     assert len(pipeline_instance.model.last_run.artifact_versions) == 2
     assert (
         len(pipeline_instance.model.last_run.produced_artifact_versions) == 0
@@ -56,10 +56,10 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
 ):
     """Test that the run has correct client and orchestrator environments."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
-    pipeline_instance.run()
+    pipeline_instance()
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
@@ -73,11 +73,16 @@ def test_scheduled_pipeline_run_has_schedule_id(
 ):
     """Test that a scheduled pipeline run has a schedule ID."""
     pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
     )
     schedule = Schedule(cron_expression="*/5 * * * *")
-    pipeline_instance.run(schedule=schedule)
+    with patch(
+        "zenml.orchestrators.base_orchestrator.BaseOrchestratorConfig.is_schedulable",
+        new_callable=lambda: True,
+    ):
+        pipeline_instance.with_options(schedule=schedule)()
+
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]

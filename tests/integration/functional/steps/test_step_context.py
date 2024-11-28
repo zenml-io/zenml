@@ -6,7 +6,7 @@ import pytest
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
-from zenml import get_step_context, log_artifact_metadata, pipeline, step
+from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ArtifactType
@@ -92,7 +92,9 @@ def test_step_can_access_step_context():
 
 @step
 def output_metadata_logging_step() -> Annotated[int, "my_output"]:
-    log_artifact_metadata(metadata={"some_key": "some_value"})
+    log_metadata(
+        metadata={"some_key": "some_value"}, artifact_name="my_output"
+    )
     return 42
 
 
@@ -100,7 +102,7 @@ def output_metadata_logging_step() -> Annotated[int, "my_output"]:
 def step_context_metadata_reader_step(my_input: int) -> None:
     step_context = get_step_context()
     my_input_metadata = step_context.inputs["my_input"].run_metadata
-    assert my_input_metadata["some_key"].value == "some_value"
+    assert my_input_metadata["some_key"] == "some_value"
 
 
 def test_input_artifacts_property():
@@ -202,17 +204,12 @@ def test_metadata_and_tags_set_from_context(
     _pipeline()
 
     av = clean_client.get_artifact_version(full_name)
-    artifact = clean_client.get_artifact(full_name)
     for k, v in metadata.items():
         assert k in av.run_metadata
-        assert av.run_metadata[k].value == v
+        assert av.run_metadata[k] == v
 
     if full_name == "custom_name":
-        assert av.run_metadata["config_metadata"].value == "bar"
+        assert av.run_metadata["config_metadata"] == "bar"
         assert {t.name for t in av.tags} == set(tags).union({"config_tags"})
-        assert {t.name for t in artifact.tags} == set(tags).union(
-            {"config_tags"}
-        )
     else:
         assert set(tags) == {t.name for t in av.tags}
-        assert set(tags) == {t.name for t in artifact.tags}

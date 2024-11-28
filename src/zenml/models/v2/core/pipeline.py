@@ -13,27 +13,46 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
 
-from zenml.config.pipeline_spec import PipelineSpec
-from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import (
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
+    WorkspaceScopedTaggableFilter,
 )
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from sqlalchemy.sql.elements import ColumnElement
 
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 # ------------------ Request Model ------------------
 
@@ -45,20 +64,15 @@ class PipelineRequest(WorkspaceScopedRequest):
         title="The name of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    version: str = Field(
-        title="The version of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    version_hash: str = Field(
-        title="The version hash of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    docstring: Optional[str] = Field(
-        title="The docstring of the pipeline.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
+    description: Optional[str] = Field(
         default=None,
+        title="The description of the pipeline.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    spec: PipelineSpec = Field(title="The spec of the pipeline.")
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the pipeline.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -67,29 +81,16 @@ class PipelineRequest(WorkspaceScopedRequest):
 class PipelineUpdate(BaseUpdate):
     """Update model for pipelines."""
 
-    name: Optional[str] = Field(
-        title="The name of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    description: Optional[str] = Field(
         default=None,
-    )
-    version: Optional[str] = Field(
-        title="The version of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    version_hash: Optional[str] = Field(
-        title="The version hash of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    docstring: Optional[str] = Field(
-        title="The docstring of the pipeline.",
+        title="The description of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
-        default=None,
     )
-    spec: Optional[PipelineSpec] = Field(
-        title="The spec of the pipeline.",
-        default=None,
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the pipeline."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the pipeline."
     )
 
 
@@ -99,32 +100,31 @@ class PipelineUpdate(BaseUpdate):
 class PipelineResponseBody(WorkspaceScopedResponseBody):
     """Response body for pipelines."""
 
-    status: Optional[List[ExecutionStatus]] = Field(
-        default=None, title="The status of the last 3 Pipeline Runs."
+    latest_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the latest run of the pipeline.",
     )
-    version: str = Field(
-        title="The version of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    latest_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        title="The status of the latest run of the pipeline.",
     )
 
 
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipelines."""
 
-    version_hash: str = Field(
-        title="The version hash of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    spec: PipelineSpec = Field(title="The spec of the pipeline.")
-    docstring: Optional[str] = Field(
-        title="The docstring of the pipeline.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
+    description: Optional[str] = Field(
         default=None,
+        title="The description of the pipeline.",
     )
 
 
 class PipelineResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline.",
+    )
 
 
 class PipelineResponse(
@@ -224,74 +224,55 @@ class PipelineResponse(
             )
         return runs[0]
 
-    # Body and metadata properties
     @property
-    def status(self) -> Optional[List[ExecutionStatus]]:
-        """The `status` property.
+    def latest_run_id(self) -> Optional[UUID]:
+        """The `latest_run_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().status
+        return self.get_body().latest_run_id
 
     @property
-    def version(self) -> str:
-        """The `version` property.
+    def latest_run_status(self) -> Optional[ExecutionStatus]:
+        """The `latest_run_status` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().version
+        return self.get_body().latest_run_status
 
     @property
-    def spec(self) -> PipelineSpec:
-        """The `spec` property.
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().spec
-
-    @property
-    def version_hash(self) -> str:
-        """The `version_hash` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().version_hash
-
-    @property
-    def docstring(self) -> Optional[str]:
-        """The `docstring` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().docstring
+        return self.get_resources().tags
 
 
 # ------------------ Filter Model ------------------
 
 
-class PipelineFilter(WorkspaceScopedFilter):
+class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
+
+    CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "user",
+        "latest_run_status",
+    ]
 
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
     )
-    version: Optional[str] = Field(
+    latest_run_status: Optional[str] = Field(
         default=None,
-        description="Version of the Pipeline",
-    )
-    version_hash: Optional[str] = Field(
-        default=None,
-        description="Version hash of the Pipeline",
-    )
-    docstring: Optional[str] = Field(
-        default=None,
-        description="Docstring of the Pipeline",
+        description="Filter by the status of the latest run of a pipeline. "
+        "This will always be applied as an `AND` filter for now.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -303,3 +284,115 @@ class PipelineFilter(WorkspaceScopedFilter):
         description="User of the Pipeline",
         union_mode="left_to_right",
     )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the pipeline.",
+    )
+
+    def apply_filter(
+        self, query: AnyQuery, table: Type["AnySchema"]
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query, table)
+
+        from sqlmodel import and_, col, func, select
+
+        from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
+
+        if self.latest_run_status:
+            latest_pipeline_run_subquery = (
+                select(
+                    PipelineRunSchema.pipeline_id,
+                    func.max(PipelineRunSchema.created).label("created"),
+                )
+                .where(col(PipelineRunSchema.pipeline_id).is_not(None))
+                .group_by(col(PipelineRunSchema.pipeline_id))
+                .subquery()
+            )
+
+            query = (
+                query.join(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                )
+                .join(
+                    latest_pipeline_run_subquery,
+                    and_(
+                        PipelineRunSchema.pipeline_id
+                        == latest_pipeline_run_subquery.c.pipeline_id,
+                        PipelineRunSchema.created
+                        == latest_pipeline_run_subquery.c.created,
+                    ),
+                )
+                .where(
+                    self.generate_custom_query_conditions_for_column(
+                        value=self.latest_run_status,
+                        table=PipelineRunSchema,
+                        column="status",
+                    )
+                )
+            )
+
+        return query
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            PipelineSchema,
+            UserSchema,
+        )
+
+        if self.user:
+            user_filter = and_(
+                PipelineSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        column, _ = self.sorting_params
+
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            # If sorting by the latest run, the sorting is already done in the
+            # base query in `SqlZenStore.list_pipelines(...)` and we don't need
+            # to to anything here
+            return query
+        else:
+            return super().apply_sorting(query=query, table=table)

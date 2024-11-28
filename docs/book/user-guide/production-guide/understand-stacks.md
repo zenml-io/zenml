@@ -14,10 +14,12 @@ A `stack` is the configuration of tools and infrastructure that your pipelines c
 
 As visualized in the diagram above, there are two separate domains that are connected through ZenML. The left side shows the code domain. The user's Python code is translated into a ZenML pipeline. On the right side, you can see the infrastructure domain, in this case, an instance of the `default` stack. By separating these two domains, it is easy to switch the environment that the pipeline runs on without making any changes in the code. It also allows domain experts to write code/configure infrastructure without worrying about the other domain.
 
+{% hint style="info" %}
+You can get the `pip` requirements of your stack by running the `zenml stack export-requirements <STACK-NAME>` CLI command.
+{% endhint %}
+
 ### The `default` stack
 
-{% tabs %}
-{% tab title="CLI" %}
 `zenml stack describe` lets you find out details about your active stack:
 
 ```bash
@@ -50,8 +52,6 @@ Stack 'default' with id '...' is owned by user default and is 'private'.
 {% hint style="info" %}
 As you can see a stack can be **active** on your **client**. This simply means that any pipeline you run will be using the **active stack** as its environment.
 {% endhint %}
-{% endtab %}
-{% endtabs %}
 
 ## Components of a stack
 
@@ -61,8 +61,6 @@ As you can see in the section above, a stack consists of multiple components. Al
 
 The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple Python thread on your machine. Let's explore this default orchestrator.
 
-{% tabs %}
-{% tab title="CLI" %}
 `zenml orchestrator list` lets you see all orchestrators that are registered in your zenml deployment.
 
 ```bash
@@ -72,15 +70,11 @@ The **orchestrator** is responsible for executing the pipeline code. In the simp
 ┃   👉   │ default │ ...          │ local  │ ➖     │ default ┃
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
-{% endtab %}
-{% endtabs %}
 
 ### Artifact store
 
 The **artifact store** is responsible for persisting the step outputs. As we learned in the previous section, the step outputs are not passed along in memory, rather the outputs of each step are stored in the **artifact store** and then loaded from there when the next step needs them. By default this will also be on your own machine:
 
-{% tabs %}
-{% tab title="CLI" %}
 `zenml artifact-store list` lets you see all artifact stores that are registered in your zenml deployment.
 
 ```bash
@@ -90,8 +84,6 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 ┃   👉   │ default │ ...          │ local  │ ➖     │ default ┃
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
-{% endtab %}
-{% endtabs %}
 
 ### Other stack components
 
@@ -105,8 +97,6 @@ Just to illustrate how to interact with stacks, let's create an alternate local 
 
 ### Create an artifact store
 
-{% tabs %}
-{% tab title="CLI" %}
 ```bash
 zenml artifact-store register my_artifact_store --flavor=local 
 ```
@@ -122,7 +112,6 @@ This will be the output that you can expect from the command above.
 
 ```bash
 Using the default local database.
-Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered artifact_store `my_artifact_store`.bash
 ```
@@ -132,15 +121,11 @@ To see the new artifact store that you just registered, just run:
 ```bash
 zenml artifact-store describe my_artifact_store
 ```
-{% endtab %}
-{% endtabs %}
 
 ### Create a local stack
 
 With the artifact store created, we can now create a new stack with this artifact store.
 
-{% tabs %}
-{% tab title="CLI" %}
 ```bash
 zenml stack register a_new_local_stack -o default -a my_artifact_store
 ```
@@ -155,7 +140,6 @@ The output for the command should look something like this:
 
 ```bash
 Using the default local database.
-Running with active workspace: 'default' (repository)
 Stack 'a_new_local_stack' successfully registered!
 ```
 
@@ -179,8 +163,6 @@ Which will give you an output like this:
            'a_new_local_stack' stack           
 Stack 'a_new_local_stack' with id '...' is owned by user default and is 'private'.
 ```
-{% endtab %}
-{% endtabs %}
 
 ### Switch stacks with our VS Code extension
 
@@ -213,11 +195,11 @@ pip install -r requirements.txt
 
 <summary>Above doesn't work? Here is an alternative</summary>
 
-The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
+The starter template is the same as the [ZenML mlops starter example](https://github.com/zenml-io/zenml/tree/main/examples/mlops_starter). You can clone it like so:
 
 ```bash
 git clone --depth 1 git@github.com:zenml-io/zenml.git
-cd zenml/examples/quickstart
+cd zenml/examples/mlops_starter
 pip install -r requirements.txt
 zenml init
 ```

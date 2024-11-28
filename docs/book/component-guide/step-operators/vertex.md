@@ -56,7 +56,7 @@ You have three different options to provide GCP credentials to the step operator
         --service_account_path=<SERVICE_ACCOUNT_PATH> \
     #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
     ```
-*   (recommended) configure [a GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+*   (recommended) configure [a GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
 
     ```shell
     zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@<SERVICE_ACCOUNT_PATH> --resource-type gcp-generic
@@ -85,14 +85,14 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator= <NAME>)
+@step(step_operator=<NAME>)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Vertex.
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration
@@ -115,24 +115,24 @@ For additional configuration of the Vertex step operator, you can pass `VertexSt
 from zenml import step
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
 
-@step(step_operator= <NAME>, settings=settings= {"step_operator.vertex": vertex_operator_settings = VertexStepOperatorSettings(
-    accelerator_type  = "NVIDIA_TESLA_T4" # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-    accelerator_count = 1
-    machine_type = "n1-standard-2"        # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-    disk_type = "pd-ssd"                  # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-types
-    disk_size_gb = 100                    # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-size
-    )})
+@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
+    accelerator_type= "NVIDIA_TESLA_T4",  # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+    accelerator_count = 1,
+    machine_type = "n1-standard-2",       # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    disk_type = "pd-ssd",                 # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-types
+    disk_size_gb = 100,                   # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-size
+)})
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Vertex.
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Vertex step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.step\_operators.vertex\_step\_operator.VertexStepOperator) .
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

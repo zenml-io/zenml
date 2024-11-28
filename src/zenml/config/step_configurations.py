@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,6 +32,7 @@ from pydantic import (
     model_validator,
 )
 
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
@@ -48,6 +50,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
+    from zenml.config.pipeline_configurations import PipelineConfiguration
 
 logger = get_logger(__name__)
 
@@ -55,10 +58,11 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[Tuple[Source, ...]] = None
+    materializer_source: Optional[Tuple[SourceWithValidator, ...]] = None
     # TODO: This could be moved to the `PipelineDeployment` as it's the same
     # for all steps/outputs
-    default_materializer_source: Optional[Source] = None
+    default_materializer_source: Optional[SourceWithValidator] = None
+    artifact_config: Optional[ArtifactConfig] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -109,7 +113,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: Tuple[Source, ...]
+    materializer_source: Tuple[SourceWithValidator, ...]
 
     @field_validator("materializer_source", mode="before")
     @classmethod
@@ -137,7 +141,6 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
-    name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
@@ -151,12 +154,9 @@ class StepConfigurationUpdate(StrictBaseModel):
     success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     retry: Optional[StepRetryConfig] = None
+    substitutions: Dict[str, str] = {}
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "name"
-    )
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):
@@ -239,6 +239,24 @@ class StepConfiguration(PartialStepConfiguration):
         if isinstance(model_or_dict, BaseSettings):
             model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
+
+    def _get_full_substitutions(
+        self,
+        pipeline_config: "PipelineConfiguration",
+        start_time: Optional[datetime],
+    ) -> Dict[str, str]:
+        """Get the full set of substitutions for this step configuration.
+
+        Args:
+            pipeline_config: The pipeline configuration.
+            start_time: The start time of the pipeline run.
+
+        Returns:
+            The full set of substitutions for this step configuration.
+        """
+        ret = pipeline_config._get_full_substitutions(start_time)
+        ret.update(self.substitutions)
+        return ret
 
 
 class InputSpec(StrictBaseModel):

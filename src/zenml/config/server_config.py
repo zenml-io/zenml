@@ -19,16 +19,18 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
@@ -40,7 +42,6 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
-    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -64,6 +65,9 @@ def generate_jwt_secret_key() -> str:
 
 class ServerConfiguration(BaseModel):
     """ZenML Server configuration attributes.
+
+    All these attributes can be set through the environment with the `ZENML_SERVER_`-Prefix.
+    The value of the `ZENML_SERVER_DEPLOYMENT_TYPE` environment variable will be extracted to deployment_type.
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
@@ -116,6 +120,8 @@ class ServerConfiguration(BaseModel):
             time of the JWT tokens issued to clients after they have
             authenticated with the ZenML server using an OAuth 2.0 device
             that has been marked as trusted.
+        generic_api_token_lifetime: The lifetime in seconds that generic
+            short-lived API tokens issued for automation purposes are valid.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
@@ -214,9 +220,6 @@ class ServerConfiguration(BaseModel):
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `Permissions-Policy` header will not be
             included in responses.
-        use_legacy_dashboard: Whether to use the legacy dashboard. If set to
-            `True`, the dashboard will be used with the old UI. If set to
-            `False`, the new dashboard will be used.
         server_name: The name of the ZenML server. Used only during initial
             deployment. Can be changed later as a part of the server settings.
         display_announcements: Whether to display announcements about ZenML in
@@ -228,6 +231,14 @@ class ServerConfiguration(BaseModel):
         auto_activate: Whether to automatically activate the server and create a
             default admin user account with an empty password during the initial
             deployment.
+        max_request_body_size_in_bytes: The maximum size of the request body in
+            bytes. If not specified, the default value of 256 Kb will be used.
+        memcache_max_capacity: The maximum number of entries that the memory
+            cache can hold. If not specified, the default value of 1000 will be
+            used.
+        memcache_default_expiry: The default expiry time in seconds for cache
+            entries. If not specified, the default value of 30 seconds will be
+            used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -254,6 +265,10 @@ class ServerConfiguration(BaseModel):
     )
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
+
+    generic_api_token_lifetime: PositiveInt = (
+        DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME
+    )
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
@@ -307,7 +322,6 @@ class ServerConfiguration(BaseModel):
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
         union_mode="left_to_right",
     )
-    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
     server_name: str = DEFAULT_ZENML_SERVER_NAME
     display_announcements: bool = True
@@ -315,6 +329,13 @@ class ServerConfiguration(BaseModel):
     auto_activate: bool = False
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+
+    max_request_body_size_in_bytes: int = (
+        DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
+    )
+
+    memcache_max_capacity: int = 1000
+    memcache_default_expiry: int = 30
 
     _deployment_id: Optional[UUID] = None
 
@@ -377,6 +398,36 @@ class ServerConfiguration(BaseModel):
                 if v.lower() in ["enabled", "yes", "true", "on"]:
                     # Revert to the default value if the header is enabled
                     del data[k]
+
+        # Handle merging of user-defined secure_headers_csp value with the default value
+        if "secure_headers_csp" in data:
+            user_defined_csp = data["secure_headers_csp"]
+            if isinstance(user_defined_csp, str):
+                # Parse the user-defined CSP string into a dictionary
+                user_defined_csp_dict = {}
+                for directive in user_defined_csp.split(";"):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        user_defined_csp_dict[key] = value.strip("'\"")
+
+                # Merge the user-defined CSP dictionary with the default CSP dictionary
+                default_csp_dict = {}
+                for directive in DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP.split(
+                    ";"
+                ):
+                    directive = directive.strip()
+                    if directive:
+                        key, value = directive.split(" ", 1)
+                        default_csp_dict[key] = value.strip("'\"")
+
+                merged_csp_dict = {**default_csp_dict, **user_defined_csp_dict}
+
+                # Convert the merged CSP dictionary back to a string
+                merged_csp_str = "; ".join(
+                    f"{key} {value}" for key, value in merged_csp_dict.items()
+                )
+                data["secure_headers_csp"] = merged_csp_str
 
         return data
 

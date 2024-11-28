@@ -18,10 +18,10 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models.v2.core.service_connector import ServiceConnectorRequest
-from zenml.models.v2.misc.full_stack import (
+from zenml.models import (
     ResourcesInfo,
     ServiceConnectorInfo,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesInfo,
 )
 from zenml.utils.pagination_utils import depaginate
@@ -290,7 +290,8 @@ def get_resources_options_from_resource_model_for_full_stack(
                             resource_ids=each.resource_ids,
                             stack_component_type=StackComponentType.ARTIFACT_STORE,
                             flavor="gcp",
-                            required_configuration={},
+                            required_configuration={"path": "Path"},
+                            use_resource_value_as_fixed_config=True,
                             flavor_display_name="GCS Bucket",
                         )
                     )
@@ -350,7 +351,8 @@ def get_resources_options_from_resource_model_for_full_stack(
                             resource_ids=each.resource_ids,
                             stack_component_type=StackComponentType.ARTIFACT_STORE,
                             flavor="azure",
-                            required_configuration={},
+                            required_configuration={"path": "Path"},
+                            use_resource_value_as_fixed_config=True,
                             flavor_display_name="Blob container",
                         )
                     )
@@ -364,6 +366,20 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor="vm_azure",
                             required_configuration={"region": "region name"},
                             flavor_display_name="Skypilot (VM)",
+                        )
+                    )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="azureml",
+                            required_configuration={
+                                "subscription_id": "subscription ID",
+                                "resource_group": "resource group",
+                                "workspace": "workspace",
+                            },
+                            flavor_display_name="AzureML",
                         )
                     )
 

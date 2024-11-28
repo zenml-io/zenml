@@ -58,7 +58,7 @@ class ResourceType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     PIPELINE_DEPLOYMENT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
-    USER = "user"
+    RUN_TEMPLATE = "run_template"
     SERVICE = "service"
     RUN_METADATA = "run_metadata"
     SECRET = "secret"
@@ -69,7 +69,9 @@ class ResourceType(StrEnum):
     TAG = "tag"
     TRIGGER = "trigger"
     TRIGGER_EXECUTION = "trigger_execution"
-    WORKSPACE = "workspace"
+    # Deactivated for now
+    # USER = "user"
+    # WORKSPACE = "workspace"
 
 
 class Resource(BaseModel):

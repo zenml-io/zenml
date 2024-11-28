@@ -3,7 +3,9 @@
 import multiprocessing
 import os
 import shutil
+import tempfile
 import zipfile
+from pathlib import Path
 from typing import Optional, Tuple
 from unittest.mock import patch
 
@@ -13,11 +15,14 @@ from typing_extensions import Annotated
 from zenml import (
     load_artifact,
     log_artifact_metadata,
+    log_metadata,
     pipeline,
     save_artifact,
     step,
 )
+from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
+from zenml.enums import ArtifactSaveType
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -116,23 +121,25 @@ def test_save_load_artifact_in_run(clean_client):
     )
 
 
-def test_log_artifact_metadata_existing(clean_client):
+def test_log_metadata_existing(clean_client):
     """Test logging artifact metadata for existing artifacts."""
     save_artifact(42, "meaning_of_life")
-    log_artifact_metadata(
-        {"description": "Aria is great!"}, artifact_name="meaning_of_life"
+    log_metadata(
+        metadata={"description": "Aria is great!"},
+        artifact_name="meaning_of_life",
     )
     save_artifact(43, "meaning_of_life", version="43")
-    log_artifact_metadata(
-        {"description_2": "Blupus is great!"}, artifact_name="meaning_of_life"
+    log_metadata(
+        metadata={"description_2": "Blupus is great!"},
+        artifact_name="meaning_of_life",
     )
-    log_artifact_metadata(
-        {"description_3": "Axl is great!"},
+    log_metadata(
+        metadata={"description_3": "Axl is great!"},
         artifact_name="meaning_of_life",
         artifact_version="1",
     )
-    log_artifact_metadata(
-        {
+    log_metadata(
+        metadata={
             "float": 1.0,
             "int": 1,
             "str": "1.0",
@@ -147,22 +154,19 @@ def test_log_artifact_metadata_existing(clean_client):
         "meaning_of_life", version="1"
     )
     assert "description" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["description"].value == "Aria is great!"
+    assert artifact_1.run_metadata["description"] == "Aria is great!"
     assert "description_3" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["description_3"].value == "Axl is great!"
+    assert artifact_1.run_metadata["description_3"] == "Axl is great!"
     assert "float" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["float"].value - 1.0 < 10e-6
+    assert artifact_1.run_metadata["float"] - 1.0 < 10e-6
     assert "int" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["int"].value == 1
+    assert artifact_1.run_metadata["int"] == 1
     assert "str" in artifact_1.run_metadata
-    assert artifact_1.run_metadata["str"].value == "1.0"
+    assert artifact_1.run_metadata["str"] == "1.0"
     assert "list_str" in artifact_1.run_metadata
-    assert (
-        len(set(artifact_1.run_metadata["list_str"].value) - {"1.0", "2.0"})
-        == 0
-    )
+    assert len(set(artifact_1.run_metadata["list_str"]) - {"1.0", "2.0"}) == 0
     assert "list_floats" in artifact_1.run_metadata
-    for each in artifact_1.run_metadata["list_floats"].value:
+    for each in artifact_1.run_metadata["list_floats"]:
         if 0.99 < each < 1.01:
             assert each - 1.0 < 10e-6
         else:
@@ -172,7 +176,7 @@ def test_log_artifact_metadata_existing(clean_client):
         "meaning_of_life", version="43"
     )
     assert "description_2" in artifact_2.run_metadata
-    assert artifact_2.run_metadata["description_2"].value == "Blupus is great!"
+    assert artifact_2.run_metadata["description_2"] == "Blupus is great!"
 
 
 @step
@@ -182,11 +186,11 @@ def artifact_metadata_logging_step() -> str:
         "description": "Aria is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(output_metadata)
+    log_artifact_metadata(metadata=output_metadata)
     return "42"
 
 
-def test_log_artifact_metadata_single_output(clean_client):
+def test_log_metadata_single_output(clean_client):
     """Test logging artifact metadata for a single output."""
 
     @pipeline
@@ -197,9 +201,9 @@ def test_log_artifact_metadata_single_output(clean_client):
     run_ = artifact_metadata_logging_pipeline.model.last_run
     output = run_.steps["artifact_metadata_logging_step"].output
     assert "description" in output.run_metadata
-    assert output.run_metadata["description"].value == "Aria is great!"
+    assert output.run_metadata["description"] == "Aria is great!"
     assert "metrics" in output.run_metadata
-    assert output.run_metadata["metrics"].value == {"accuracy": 0.9}
+    assert output.run_metadata["metrics"] == {"accuracy": 0.9}
 
 
 @step
@@ -211,11 +215,11 @@ def artifact_multi_output_metadata_logging_step() -> (
         "description": "Blupus is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(metadata=output_metadata, artifact_name="int_output")
+    log_metadata(metadata=output_metadata, artifact_name="int_output")
     return "42", 42
 
 
-def test_log_artifact_metadata_multi_output(clean_client):
+def test_log_metadata_multi_output(clean_client):
     """Test logging artifact metadata for multiple outputs."""
 
     @pipeline
@@ -225,14 +229,14 @@ def test_log_artifact_metadata_multi_output(clean_client):
     artifact_metadata_logging_pipeline()
     run_ = artifact_metadata_logging_pipeline.model.last_run
     step_ = run_.steps["artifact_multi_output_metadata_logging_step"]
-    str_output = step_.outputs["str_output"]
+    str_output = step_.outputs["str_output"][0]
     assert "description" not in str_output.run_metadata
     assert "metrics" not in str_output.run_metadata
-    int_output = step_.outputs["int_output"]
+    int_output = step_.outputs["int_output"][0]
     assert "description" in int_output.run_metadata
-    assert int_output.run_metadata["description"].value == "Blupus is great!"
+    assert int_output.run_metadata["description"] == "Blupus is great!"
     assert "metrics" in int_output.run_metadata
-    assert int_output.run_metadata["metrics"].value == {"accuracy": 0.9}
+    assert int_output.run_metadata["metrics"] == {"accuracy": 0.9}
 
 
 @step
@@ -248,10 +252,10 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def test_log_artifact_metadata_raises_error_if_output_name_unclear(
+def test_log_metadata_raises_error_if_output_name_unclear(
     clean_client,
 ):
-    """Test that `log_artifact_metadata` raises an error if the output name is unclear."""
+    """Test that `log_metadata` raises an error if the output name is unclear."""
 
     @pipeline
     def artifact_metadata_logging_pipeline():
@@ -266,7 +270,7 @@ def test_download_artifact_files_from_response(
 ):
     """Test that we can download artifact files from an artifact version."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)
@@ -293,7 +297,7 @@ def test_download_artifact_files_from_response_fails_if_exists(
 
     Failure when the file already exists and `overwrite` is False."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
-        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+        name_id_or_prefix="connected_two_step_pipeline::constant_int_output_test_step::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
     av = clean_client_with_run.get_artifact_version(artifact_version_id)
@@ -362,10 +366,98 @@ def test_parallel_artifact_creation(clean_client: Client):
         name="meaning_of_life", size=min(1000, process_count * 10)
     )
     assert len(avs) == process_count
-    print(
-        {str(i) for i in range(1, process_count + 1)}
-        - {av.version for av in avs}
-    )
     assert {av.version for av in avs} == {
         str(i) for i in range(1, process_count + 1)
     }
+
+
+def test_register_artifact(clean_client: Client):
+    """Tests that a folder can be linked as an artifact in local setting."""
+
+    uri_prefix = os.path.join(
+        clean_client.active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    with open(os.path.join(uri_prefix, "test.txt"), "w") as f:
+        f.write("test")
+
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
+
+    artifact = clean_client.get_artifact_version(
+        name_id_or_prefix="test_folder", version=1
+    )
+    assert artifact
+    assert artifact.uri == uri_prefix
+    assert artifact.save_type == ArtifactSaveType.PREEXISTING
+
+    loaded_dir = artifact.load()
+    assert isinstance(loaded_dir, Path)
+
+    with open(loaded_dir / "test.txt", "r") as f:
+        assert f.read() == "test"
+
+
+def test_register_artifact_out_of_bounds(clean_client: Client):
+    """Tests that a folder cannot be linked as an artifact if out of bounds."""
+
+    uri_prefix = tempfile.mkdtemp()
+    try:
+        with pytest.raises(FileNotFoundError):
+            register_artifact(
+                folder_or_file_uri=uri_prefix, name="test_folder"
+            )
+    finally:
+        os.rmdir(uri_prefix)
+
+
+@step(enable_cache=False)
+def register_artifact_step_1() -> None:
+    # find out where to save some data
+    uri_prefix = os.path.join(
+        Client().active_stack.artifact_store.path, "test_folder"
+    )
+    os.makedirs(uri_prefix, exist_ok=True)
+    # generate dat to validate in register_artifact_step_2
+    test_file = os.path.join(uri_prefix, "test.txt")
+    with open(test_file, "w") as f:
+        f.write("test")
+
+    register_artifact(folder_or_file_uri=uri_prefix, name="test_folder")
+
+    register_artifact(folder_or_file_uri=test_file, name="test_file")
+
+
+@step(enable_cache=False)
+def register_artifact_step_2(
+    inp_folder: Path,
+) -> None:
+    # step should receive a path pointing to the folder
+    # from register_artifact_step_1
+    with open(inp_folder / "test.txt", "r") as f:
+        assert f.read() == "test"
+    # at the same time the input artifact is no longer inside the
+    # artifact store, but in the temporary folder of local file system
+    assert not str(inp_folder.absolute()).startswith(
+        Client().active_stack.artifact_store.path
+    )
+
+    file_artifact_path = Client().get_artifact_version("test_file").load()
+
+    with open(file_artifact_path, "r") as f:
+        assert f.read() == "test"
+
+
+def test_register_artifact_between_steps(clean_client: Client):
+    """Tests that a folder can be linked as an artifact and used in pipelines."""
+
+    @pipeline(enable_cache=False)
+    def register_artifact_pipeline():
+        register_artifact_step_1()
+        register_artifact_step_2(
+            clean_client.get_artifact_version(
+                name_id_or_prefix="test_folder", version=1
+            ),
+            after=["register_artifact_step_1"],
+        )
+
+    register_artifact_pipeline()

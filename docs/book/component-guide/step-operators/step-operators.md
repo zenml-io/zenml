@@ -1,4 +1,5 @@
 ---
+icon: arrow-progress
 description: Executing individual steps in specialized environments.
 ---
 
@@ -30,10 +31,12 @@ Step operators to execute steps on one of the big cloud providers are provided b
 
 | Step Operator                      | Flavor      | Integration | Notes                                                                    |
 |------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
-| [SageMaker](sagemaker.md)          | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
-| [Vertex](vertex.md)                | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
 | [AzureML](azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
+| [Kubernetes](kubernetes.md)              | `kubernetes`   | `kubernetes`     | Uses Kubernetes Pods to execute steps                      |
+| [Modal](modal.md)                    | `modal`       | `modal`         | Uses Modal to execute steps                                      |
+| [SageMaker](sagemaker.md)          | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
 | [Spark](spark-kubernetes.md)       | `spark`     | `spark`     | Uses Spark on Kubernetes to execute steps in a distributed manner        |
+| [Vertex](vertex.md)                | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
 | [Custom Implementation](custom.md) | _custom_    |             | Extend the step operator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of step operators, you can use the command:
@@ -60,12 +63,12 @@ def my_step(...) -> ...:
 #### Specifying per-step resources
 
 If your steps require additional hardware resources, you can specify them on your steps as
-described [here](../../how-to/training-with-gpus/training-with-gpus.md).
+described [here](../../how-to/advanced-topics/training-with-gpus/README.md).
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to
-follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure 
+follow [the instructions on this page](../../how-to/advanced-topics/training-with-gpus/README.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

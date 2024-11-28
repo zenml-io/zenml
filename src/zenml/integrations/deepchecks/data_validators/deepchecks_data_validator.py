@@ -17,6 +17,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -28,9 +29,8 @@ import pandas as pd
 from deepchecks.core.checks import BaseCheck
 from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Dataset as TabularData
+from deepchecks.tabular import ModelComparisonSuite
 from deepchecks.tabular import Suite as TabularSuite
-
-# not part of deepchecks.tabular.checks
 from deepchecks.tabular.suites import full_suite as full_tabular_suite
 from deepchecks.vision import Suite as VisionSuite
 from deepchecks.vision import VisionData
@@ -102,7 +102,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         comparison_dataset: Optional[
             Union[pd.DataFrame, DataLoader[Any]]
         ] = None,
-        model: Optional[Union[ClassifierMixin, Module]] = None,
+        models: Optional[List[Union[ClassifierMixin, Module]]] = None,
         check_list: Optional[Sequence[str]] = None,
         dataset_kwargs: Dict[str, Any] = {},
         check_kwargs: Dict[str, Dict[str, Any]] = {},
@@ -123,7 +123,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 validation.
             comparison_dataset: Optional secondary (comparison) dataset argument
                 used during comparison checks.
-            model: Optional model argument used during validation.
+            models: Optional model argument used during validation.
             check_list: Optional list of ZenML Deepchecks check identifiers
                 specifying the list of Deepchecks checks to be performed.
             dataset_kwargs: Additional keyword arguments to be passed to the
@@ -149,6 +149,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         # arguments and the check list.
         is_tabular = False
         is_vision = False
+        is_multi_model = False
         for dataset in [reference_dataset, comparison_dataset]:
             if dataset is None:
                 continue
@@ -163,7 +164,18 @@ class DeepchecksDataValidator(BaseDataValidator):
                     f"data and {str(DataLoader)} for computer vision data."
                 )
 
-        if model:
+        if models:
+            # if there's more than one models, we should set the
+            # is_multi_model to True
+            if len(models) > 1:
+                is_multi_model = True
+            # if the models are of different types, raise an error
+            # only the same type of models can be used for comparison
+            if len(set(type(model) for model in models)) > 1:
+                raise TypeError(
+                    "Models used for comparison checks must be of the same type."
+                )
+            model = models[0]
             if isinstance(model, ClassifierMixin):
                 is_tabular = True
             elif isinstance(model, Module):
@@ -190,8 +202,18 @@ class DeepchecksDataValidator(BaseDataValidator):
         if not check_list:
             # default to executing all the checks listed in the supplied
             # checks enum type if a custom check list is not supplied
+            # don't include the TABULAR_PERFORMANCE_BIAS check enum value
+            # as it requires a protected feature name to be set
+            checks_to_exclude = [
+                DeepchecksModelValidationCheck.TABULAR_PERFORMANCE_BIAS
+            ]
+            check_enum_values = [
+                check.value
+                for check in check_enum
+                if check not in checks_to_exclude
+            ]
             tabular_checks, vision_checks = cls._split_checks(
-                check_enum.values()
+                check_enum_values
             )
             if is_tabular:
                 check_list = tabular_checks
@@ -254,6 +276,10 @@ class DeepchecksDataValidator(BaseDataValidator):
             suite_class = VisionSuite
             full_suite = full_vision_suite()
 
+        # if is_multi_model is True, we need to use the ModelComparisonSuite
+        if is_multi_model:
+            suite_class = ModelComparisonSuite
+
         train_dataset = dataset_class(reference_dataset, **dataset_kwargs)
         test_dataset = None
         if comparison_dataset is not None:
@@ -294,13 +320,28 @@ class DeepchecksDataValidator(BaseDataValidator):
                     continue
                 condition_method(**condition_kwargs)
 
-            suite.add(check)
-        return suite.run(
-            train_dataset=train_dataset,
-            test_dataset=test_dataset,
-            model=model,
-            **run_kwargs,
-        )
+            # if the check is supported by the suite, add it
+            if isinstance(check, suite.supported_checks()):
+                suite.add(check)
+            else:
+                logger.warning(
+                    f"Check {check_name} is not supported by the {suite_class} "
+                    "suite. Ignoring the check."
+                )
+
+        if isinstance(suite, ModelComparisonSuite):
+            return suite.run(
+                models=models,
+                train_datasets=train_dataset,
+                test_datasets=test_dataset,
+            )
+        else:
+            return suite.run(
+                train_dataset=train_dataset,
+                test_dataset=test_dataset,
+                model=models[0] if models else None,
+                **run_kwargs,
+            )
 
     def data_validation(
         self,
@@ -389,7 +430,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         """Run one or more Deepchecks model validation checks.
 
         Call this method to perform model validation checks (e.g. confusion
-        matrix validation, performance reports, model error analyses, etc).
+        matrix validation, performance reports, model error analyzes, etc).
         A second dataset is required for model performance comparison tests
         (i.e. tests that identify changes in a model behavior by comparing how
         it performs on two different datasets).
@@ -444,7 +485,7 @@ class DeepchecksDataValidator(BaseDataValidator):
             check_enum=check_enum,
             reference_dataset=dataset,
             comparison_dataset=comparison_dataset,
-            model=model,
+            models=[model],
             check_list=check_list,
             dataset_kwargs=dataset_kwargs,
             check_kwargs=check_kwargs,

@@ -1,8 +1,9 @@
 ---
+icon: robot
 description: Leverage the power of LLMs in your MLOps workflows with ZenML.
 ---
 
-# 🦜 LLMOps guide
+# LLMOps guide
 
 Welcome to the ZenML LLMOps Guide, where we dive into the exciting world of Large Language Models (LLMs) and how to integrate them seamlessly into your MLOps pipelines using ZenML. This guide is designed for ML practitioners and MLOps engineers looking to harness the potential of LLMs while maintaining the robustness and scalability of their workflows.
 
@@ -26,8 +27,18 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Understanding reranking](reranking/understanding-reranking.md)
   * [Implementing reranking in ZenML](reranking/implementing-reranking.md)
   * [Evaluating reranking performance](reranking/evaluating-reranking-performance.md)
-* [Improve retrieval by finetuning embeddings](finetuning-embeddings.md)
-* [Finetuning LLMs with ZenML](finetuning-llms.md)
+* [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
+  * [Synthetic data generation](finetuning-embeddings/synthetic-data-generation.md)
+  * [Finetuning embeddings with Sentence Transformers](finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
+  * [Evaluating finetuned embeddings](finetuning-embeddings/evaluating-finetuned-embeddings.md)
+* [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
+  * [Finetuning in 100 lines of code](finetuning-llms/finetuning-100-loc.md)
+  * [Why and when to finetune LLMs](finetuning-llms/why-and-when-to-finetune-llms.md)
+  * [Starter choices with finetuning](finetuning-llms/starter-choices-for-finetuning-llms.md)
+  * [Finetuning with 🤗 Accelerate](finetuning-llms/finetuning-with-accelerate.md)
+  * [Evaluation for finetuning](finetuning-llms/evaluation-for-finetuning.md)
+  * [Deploying finetuned models](finetuning-llms/deploying-finetuned-models.md)
+  * [Next steps](finetuning-llms/next-steps.md)
 
 To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/README.md) and [Production Guide](../production-guide/README.md) is recommended.
 

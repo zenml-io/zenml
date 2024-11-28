@@ -13,22 +13,20 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
-from zenml.config.pipeline_spec import PipelineSpec
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.enums import TaggableResourceTypes
 from zenml.models import (
     PipelineRequest,
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineResponseResources,
     PipelineUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -45,25 +43,22 @@ if TYPE_CHECKING:
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
     __tablename__ = "pipeline"
-
-    # Fields
-    version: str
-    version_hash: str
-    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=False,
-        )
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_pipeline_name_in_workspace",
+        ),
     )
+    # Fields
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     workspace_id: UUID = build_foreign_key_field(
@@ -90,12 +85,22 @@ class PipelineSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="pipeline")
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline",
+        sa_relationship_kwargs={"order_by": "PipelineRunSchema.created"},
+    )
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
+    )
+    tags: List["TagResourceSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
     )
 
     @classmethod
@@ -113,21 +118,15 @@ class PipelineSchema(NamedSchema, table=True):
         """
         return cls(
             name=pipeline_request.name,
-            version=pipeline_request.version,
-            version_hash=pipeline_request.version_hash,
+            description=pipeline_request.description,
             workspace_id=pipeline_request.workspace,
             user_id=pipeline_request.user,
-            docstring=pipeline_request.docstring,
-            spec=json.dumps(
-                pipeline_request.spec.model_dump(mode="json"), sort_keys=True
-            ),
         )
 
     def to_model(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        last_x_runs: int = 3,
         **kwargs: Any,
     ) -> "PipelineResponse":
         """Convert a `PipelineSchema` to a `PipelineResponse`.
@@ -136,25 +135,29 @@ class PipelineSchema(NamedSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
-            last_x_runs: How many runs to use for the execution status
 
         Returns:
             The created PipelineResponse.
         """
         body = PipelineResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=[run.status for run in self.runs[:last_x_runs]],
+            latest_run_id=self.runs[-1].id if self.runs else None,
+            latest_run_status=self.runs[-1].status if self.runs else None,
             created=self.created,
             updated=self.updated,
-            version=self.version,
         )
+
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
-                version_hash=self.version_hash,
-                spec=PipelineSpec.model_validate_json(self.spec),
-                docstring=self.docstring,
+                description=self.description,
+            )
+
+        resources = None
+        if include_resources:
+            resources = PipelineResponseResources(
+                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return PipelineResponse(
@@ -162,6 +165,7 @@ class PipelineSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, pipeline_update: "PipelineUpdate") -> "PipelineSchema":
@@ -173,5 +177,6 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineSchema`.
         """
+        self.description = pipeline_update.description
         self.updated = datetime.utcnow()
         return self

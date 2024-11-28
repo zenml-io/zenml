@@ -15,6 +15,15 @@ You should use the Azure container registry if:
 
 ### How to deploy it
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including an Azure container registry? Check out the
+[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Azure Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location, and registry name. Then click on `Review + Create` and to create your container registry.
 
 ### How to find the registry URI
@@ -56,7 +65,7 @@ You also need to set up [authentication](azure.md#authentication-methods) requir
 
 #### Authentication Methods
 
-Integrating and using an Azure Container Registry in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](../../how-to/auth-management/azure-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Azure Container Registry with other remote stack components also running in Azure.
+Integrating and using an Azure Container Registry in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Azure Container Registry with other remote stack components also running in Azure.
 
 {% tabs %}
 {% tab title="Local Authentication" %}
@@ -71,12 +80,12 @@ az acr login --name=<REGISTRY_NAME>
 ```
 
 {% hint style="warning" %}
-Stacks using the Azure Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [an Azure Service Connector](../../how-to/auth-management/azure-service-connector.md) to link your Azure Container Registry to the remote ACR registry.
+Stacks using the Azure Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [an Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md) to link your Azure Container Registry to the remote ACR registry.
 {% endhint %}
 {% endtab %}
 
 {% tab title="Azure Service Connector (recommended)" %}
-To set up the Azure Container Registry to authenticate to Azure and access an ACR registry, it is recommended to leverage the many features provided by [the Azure Service Connector](../../how-to/auth-management/azure-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Azure Container Registry to authenticate to Azure and access an ACR registry, it is recommended to leverage the many features provided by [the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an Azure Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an Azure Service Connector that can be used to access a ACR registry or even more than one type of Azure resource:
 
@@ -103,7 +112,7 @@ Successfully registered service connector `azure-demo` with access to the follow
 ```
 {% endcode %}
 
-> **Note**: Please remember to grant the entity associated with your Azure credentials permissions to read and write to your ACR registry as well as to list accessible ACR registries. For a full list of permissions required to use an Azure Service Connector to access a ACR registry, please refer to the [Azure Service Connector ACR registry resource type documentation](../../how-to/auth-management/azure-service-connector.md#acr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../how-to/auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+> **Note**: Please remember to grant the entity associated with your Azure credentials permissions to read and write to your ACR registry as well as to list accessible ACR registries. For a full list of permissions required to use an Azure Service Connector to access a ACR registry, please refer to the [Azure Service Connector ACR registry resource type documentation](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#acr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more Azure Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the ACR registry you want to use for your Azure Container Registry by running e.g.:
 
@@ -113,7 +122,7 @@ zenml service-connector list-resources --connector-type azure --resource-type do
 
 {% code title="Example Command Output" %}
 ```
-The following 'docker-registry' resources can be accessed by 'azure' service connectors configured in your workspace:
+The following 'docker-registry' resources can be accessed by 'azure' service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                        ┃
 ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────────────────────────┨
@@ -159,7 +168,7 @@ zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 ```
 
 {% hint style="info" %}
-Linking the Azure Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../how-to/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+Linking the Azure Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
 
 ```sh
 zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry --resource-id <CONTAINER_REGISTRY_URI>

@@ -37,6 +37,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationError,
     field_validator,
     model_validator,
 )
@@ -56,6 +57,7 @@ from zenml.constants import (
     ARTIFACT_VERSIONS,
     ARTIFACT_VISUALIZATIONS,
     ARTIFACTS,
+    BATCH,
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
@@ -67,7 +69,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
-    FULL_STACK,
     GET_OR_CREATE,
     INFO,
     LOGIN,
@@ -80,6 +81,7 @@ from zenml.constants import (
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
     RUN_METADATA,
+    RUN_TEMPLATES,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -108,13 +110,24 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.enums import (
+    APITokenType,
     OAuthGrantTypes,
     StackDeploymentProvider,
     StoreType,
 )
-from zenml.exceptions import AuthorizationException, MethodNotAllowedError
+from zenml.exceptions import (
+    AuthorizationException,
+    CredentialsNotValid,
+    MethodNotAllowedError,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.login.credentials import APIToken
+from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.utils import (
+    get_troubleshooting_instructions,
+    is_zenml_pro_server_url,
+)
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -155,7 +168,6 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
-    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -174,6 +186,7 @@ from zenml.models import (
     OAuthDeviceFilter,
     OAuthDeviceResponse,
     OAuthDeviceUpdate,
+    OAuthTokenResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -189,9 +202,11 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -253,6 +268,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -278,10 +294,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         api_key: The service account API key to use to connect to the Zen
-            server.
-        api_token: The API token to use to connect to the Zen server. Generated
-            by the client and stored in the configuration file on the first
-            login and every time the API key is refreshed.
+            server. This is only set if the API key is configured explicitly via
+            environment variables or the ZenML global configuration file. API
+            keys configured via the CLI are stored in the credentials store
+            instead.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
@@ -291,31 +307,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    username: Optional[str] = None
-    password: Optional[str] = None
-    api_key: Optional[str] = None
-    api_token: Optional[str] = None
-    verify_ssl: Union[bool, str] = Field(True, union_mode="left_to_right")
+    verify_ssl: Union[bool, str] = Field(
+        default=True, union_mode="left_to_right"
+    )
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
-
-    @model_validator(mode="after")
-    def validate_credentials(self) -> "RestZenStoreConfiguration":
-        """Validates the credentials provided in the values dictionary.
-
-        Raises:
-            ValueError: If neither api_token nor username nor api_key is set.
-
-        Returns:
-            The values dictionary.
-        """
-        # Check if the values dictionary contains either an API token, an API
-        # key or a username as non-empty strings.
-        if self.api_token or self.username or self.api_key:
-            return self
-        raise ValueError(
-            "Neither api_token nor username nor api_key is set in the "
-            "store config."
-        )
 
     @field_validator("url")
     @classmethod
@@ -403,13 +398,47 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _move_credentials(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Moves credentials (API keys, API tokens, passwords) from the config to the credentials store.
+
+        Args:
+            data: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict without credentials.
+        """
+        url = data.get("url")
+        if not url:
+            return data
+
+        url = replace_localhost_with_internal_hostname(url)
+
+        if api_token := data.pop("api_token", None):
+            credentials_store = get_credentials_store()
+            credentials_store.set_bare_token(url, api_token)
+
+        username = data.pop("username", None)
+        password = data.pop("password", None)
+        if username is not None and password is not None:
+            credentials_store = get_credentials_store()
+            credentials_store.set_password(url, username, password)
+
+        if api_key := data.pop("api_key", None):
+            credentials_store = get_credentials_store()
+            credentials_store.set_api_key(url, api_key)
+
+        return data
+
     model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the `verify_ssl` attribute can be expanded to the contents
         # of the certificate file.
         validate_assignment=False,
-        # Forbid extra attributes set in the class.
-        extra="forbid",
+        # Ignore extra attributes set in the class.
+        extra="ignore",
     )
 
 
@@ -419,7 +448,7 @@ class RestZenStore(BaseZenStore):
     config: RestZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.REST
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
-    _api_token: Optional[str] = None
+    _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
 
     # ====================================
@@ -431,9 +460,54 @@ class RestZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the REST store."""
-        client_version = zenml.__version__
-        server_version = self.get_store_info().version
+        """Initialize the REST store.
+
+        Raises:
+            RuntimeError: If the store cannot be initialized.
+            AuthorizationException: If the store cannot be initialized due to
+                authentication errors.
+        """
+        try:
+            client_version = zenml.__version__
+            server_version = self.get_store_info().version
+
+        # Handle cases where the ZenML server is not available
+        except ConnectionError as e:
+            error_message = (
+                f"Cannot connect to the ZenML server at {self.url}."
+            )
+            if urlparse(self.url).hostname in [
+                "localhost",
+                "127.0.0.1",
+                "host.docker.internal",
+            ]:
+                recommendation = (
+                    "Please run `zenml login --local --restart` to restart the "
+                    "server."
+                )
+            else:
+                recommendation = (
+                    f"Please run `zenml login {self.url}` to reconnect to the "
+                    "server."
+                )
+            raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
+        except AuthorizationException as e:
+            raise AuthorizationException(
+                f"Authorization failed for store at '{self.url}'. Please check "
+                f"your credentials: {str(e)}"
+            )
+
+        except Exception as e:
+            zenml_pro_extra = ""
+            if is_zenml_pro_server_url(self.url):
+                zenml_pro_extra = (
+                    "\nHINT: " + get_troubleshooting_instructions(self.url)
+                )
+            raise RuntimeError(
+                f"Error connecting to URL "
+                f"'{self.url}': {str(e)}" + zenml_pro_extra
+            ) from e
 
         if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
             server_version != client_version
@@ -635,20 +709,6 @@ class RestZenStore(BaseZenStore):
             response_model=APIKeyResponse,
             params={"hydrate": hydrate},
         )
-
-    def set_api_key(self, api_key: str) -> None:
-        """Set the API key to use for authentication.
-
-        Args:
-            api_key: The API key to use for authentication.
-        """
-        self.config.api_key = api_key
-        self.clear_session()
-        # TODO: find a way to persist the API key in the configuration file
-        #  without calling _write_config() here.
-        # This is the only place where we need to explicitly call
-        # _write_config() to persist the global configuration.
-        GlobalConfiguration()._write_config()
 
     def list_api_keys(
         self,
@@ -927,6 +987,23 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=artifact_version,
+            response_model=ArtifactVersionResponse,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def batch_create_artifact_versions(
+        self, artifact_versions: List[ArtifactVersionRequest]
+    ) -> List[ArtifactVersionResponse]:
+        """Creates a batch of artifact versions.
+
+        Args:
+            artifact_versions: The artifact versions to create.
+
+        Returns:
+            The created artifact versions.
+        """
+        return self._batch_create_resources(
+            resources=artifact_versions,
             response_model=ArtifactVersionResponse,
             route=ARTIFACT_VERSIONS,
         )
@@ -1524,35 +1601,6 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            RuntimeError: If the server does not support running a build.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        run_configuration = run_configuration or PipelineRunConfiguration()
-        try:
-            response_body = self.post(
-                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
-            )
-        except MethodNotAllowedError as e:
-            raise RuntimeError(
-                "Running a build is not supported for this server."
-            ) from e
-
-        return PipelineRunResponse.model_validate(response_body)
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -1627,19 +1675,114 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_DEPLOYMENTS,
         )
 
-    def run_deployment(
+    # -------------------- Run templates --------------------
+
+    def create_run_template(
         self,
-        deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a deployment.
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=template,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+        """
+        return self._get_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            filter_model=template_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+        """
+        return self._update_resource(
+            resource_id=template_id,
+            resource_update=template_update,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+        """
+        self._delete_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+        )
+
+    def run_template(
+        self,
+        template_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a template.
+
+        Args:
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Raises:
-            RuntimeError: If the server does not support running a deployment.
+            RuntimeError: If the server does not support running a template.
 
         Returns:
             Model of the pipeline run.
@@ -1648,12 +1791,12 @@ class RestZenStore(BaseZenStore):
 
         try:
             response_body = self.post(
-                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                f"{RUN_TEMPLATES}/{template_id}/runs",
                 body=run_configuration,
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
-                "Running a deployment is not supported for this server."
+                "Running a template is not supported for this server."
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)
@@ -1870,9 +2013,7 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Run Metadata -----------------------------
 
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequest
-    ) -> List[RunMetadataResponse]:
+    def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
         """Creates run metadata.
 
         Args:
@@ -1882,55 +2023,8 @@ class RestZenStore(BaseZenStore):
             The created run metadata.
         """
         route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
-        response_body = self.post(f"{route}", body=run_metadata)
-        result: List[RunMetadataResponse] = []
-        if isinstance(response_body, list):
-            for metadata in response_body or []:
-                result.append(RunMetadataResponse.model_validate(metadata))
-        return result
-
-    def get_run_metadata(
-        self, run_metadata_id: UUID, hydrate: bool = True
-    ) -> RunMetadataResponse:
-        """Gets run metadata with the given ID.
-
-        Args:
-            run_metadata_id: The ID of the run metadata to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._get_resource(
-            resource_id=run_metadata_id,
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilter,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        return self._list_paginated_resources(
-            route=RUN_METADATA,
-            response_model=RunMetadataResponse,
-            filter_model=run_metadata_filter_model,
-            params={"hydrate": hydrate},
-        )
+        self.post(f"{route}", body=run_metadata)
+        return None
 
     # ----------------------------- Schedules -----------------------------
 
@@ -2761,27 +2855,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_workspace_scoped_resource(
-            resource=stack,
-            route=STACKS,
-            response_model=StackResponse,
-        )
-
-    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
-        """Register a full-stack.
-
-        Args:
-            full_stack: The full stack configuration.
-
-        Returns:
-            The registered stack.
-        """
-        assert full_stack.workspace is not None
+        assert stack.workspace is not None
 
         return self._create_resource(
-            resource=full_stack,
+            resource=stack,
             response_model=StackResponse,
-            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
+            route=f"{WORKSPACES}/{str(stack.workspace)}{STACKS}",
         )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
@@ -3593,10 +3672,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created model version to artifact link.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model_version_artifact_link,
             response_model=ModelVersionArtifactResponse,
-            route=f"{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
+            route=MODEL_VERSION_ARTIFACTS,
         )
 
     def list_model_version_artifact_links(
@@ -3673,10 +3752,10 @@ class RestZenStore(BaseZenStore):
             - Otherwise, returns the newly created model version to pipeline
                 run link.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model_version_pipeline_run_link,
             response_model=ModelVersionPipelineRunResponse,
-            route=f"{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
+            route=MODEL_VERSION_PIPELINE_RUNS,
         )
 
     def list_model_version_pipeline_run_links(
@@ -3794,17 +3873,16 @@ class RestZenStore(BaseZenStore):
 
     def get_api_token(
         self,
-        pipeline_id: Optional[UUID] = None,
         schedule_id: Optional[UUID] = None,
-        expires_minutes: Optional[int] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token for a workload.
 
         Args:
-            pipeline_id: The ID of the pipeline to get a token for.
             schedule_id: The ID of the schedule to get a token for.
-            expires_minutes: The number of minutes for which the token should
-                be valid. If not provided, the token will be valid indefinitely.
+            pipeline_run_id: The ID of the pipeline run to get a token for.
+            step_run_id: The ID of the step run to get a token for.
 
         Returns:
             The API token.
@@ -3812,13 +3890,16 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: if the server response is not valid.
         """
-        params: Dict[str, Any] = {}
-        if pipeline_id:
-            params["pipeline_id"] = pipeline_id
+        params: Dict[str, Any] = {
+            # Python clients may only request workload tokens.
+            "token_type": APITokenType.WORKLOAD.value,
+        }
         if schedule_id:
             params["schedule_id"] = schedule_id
-        if expires_minutes:
-            params["expires_minutes"] = expires_minutes
+        if pipeline_run_id:
+            params["pipeline_run_id"] = pipeline_run_id
+        if step_run_id:
+            params["step_run_id"] = step_run_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(
@@ -3925,120 +4006,272 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
-    def _get_auth_token(self) -> str:
-        """Get the authentication token for the REST store.
+    def get_or_generate_api_token(self) -> str:
+        """Get or generate an API token.
 
         Returns:
-            The authentication token.
+            The API token.
 
         Raises:
-            ValueError: if the response from the server isn't in the right
-                format.
+            CredentialsNotValid: if an API token cannot be fetched or
+                generated because the client credentials are not valid.
         """
-        if self._api_token is None:
-            # Check if the API token is already stored in the config
-            if self.config.api_token:
-                self._api_token = self.config.api_token
-            # Check if the username and password are provided in the config
-            elif (
-                self.config.username is not None
-                and self.config.password is not None
-                or self.config.api_key is not None
-            ):
-                data: Optional[Dict[str, str]] = None
-                if self.config.api_key is not None:
-                    data = {
-                        "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
-                        "password": self.config.api_key,
-                    }
-                elif (
-                    self.config.username is not None
-                    and self.config.password is not None
-                ):
-                    data = {
-                        "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
-                        "username": self.config.username,
-                        "password": self.config.password,
-                    }
+        if self._api_token is None or self._api_token.expired:
+            # Check if a valid API token is already in the cache
+            credentials_store = get_credentials_store()
+            credentials = credentials_store.get_credentials(self.url)
+            token = credentials.api_token if credentials else None
+            if credentials and token and not token.expired:
+                self._api_token = token
 
-                response = self._handle_response(
-                    requests.post(
-                        self.url + API + VERSION_1 + LOGIN,
-                        data=data,
-                        verify=self.config.verify_ssl,
-                        timeout=self.config.http_timeout,
-                    )
-                )
-                if (
-                    not isinstance(response, dict)
-                    or "access_token" not in response
-                ):
-                    raise ValueError(
-                        f"Bad API Response. Expected access token dict, got "
-                        f"{type(response)}"
-                    )
-                self._api_token = response["access_token"]
-                self.config.api_token = self._api_token
+                # Populate the server info in the credentials store if it is
+                # not already present
+                if not credentials.server_id:
+                    try:
+                        server_info = self.get_store_info()
+                    except Exception as e:
+                        logger.warning(f"Failed to get server info: {e}.")
+                    else:
+                        credentials_store.update_server_info(
+                            self.url, server_info
+                        )
+
+                return self._api_token.access_token
+
+            # Token is expired or not found in the cache. Time to get a new one.
+
+            if not token:
+                logger.debug(f"Authenticating to {self.url}")
             else:
-                raise ValueError(
-                    "No API token, API key or username/password provided. "
-                    "Please provide either an API token, an API key or a "
-                    "username and password in the ZenML config."
+                logger.debug(
+                    f"Authentication token for {self.url} expired; refreshing..."
                 )
-        return self._api_token
+
+            data: Optional[Dict[str, str]] = None
+            headers: Dict[str, str] = {}
+
+            # Check if an API key is configured
+            api_key = credentials_store.get_api_key(self.url)
+
+            # Check if username and password are configured
+            username, password = credentials_store.get_password(self.url)
+
+            api_key_hint = (
+                "\nHint: If you're getting this error in an automated, "
+                "non-interactive workload like a pipeline run or a CI/CD job, "
+                "you should use a service account API key to authenticate to "
+                "the server instead of temporary CLI login credentials. For "
+                "more information, see "
+                "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+            )
+
+            if api_key is not None:
+                # An API key is configured. Use it as a password to
+                # authenticate.
+                data = {
+                    "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
+                    "password": api_key,
+                }
+            elif username is not None and password is not None:
+                # Username and password are configured. Use them to authenticate.
+                data = {
+                    "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
+                    "username": username,
+                    "password": password,
+                }
+            elif is_zenml_pro_server_url(self.url):
+                # ZenML Pro tenants use a proprietary authorization grant
+                # where the ZenML Pro API session token is exchanged for a
+                # regular ZenML server access token.
+
+                # Get the ZenML Pro API session token, if cached and valid
+                pro_token = credentials_store.get_pro_token(allow_expired=True)
+                if not pro_token:
+                    raise CredentialsNotValid(
+                        "You need to be logged in to ZenML Pro in order to "
+                        f"access the ZenML Pro server '{self.url}'. Please run "
+                        "'zenml login' to log in or choose a different server."
+                        + api_key_hint
+                    )
+
+                elif pro_token.expired:
+                    raise CredentialsNotValid(
+                        "Your ZenML Pro login session has expired. "
+                        "Please log in again using 'zenml login'."
+                        + api_key_hint
+                    )
+
+                data = {
+                    "grant_type": OAuthGrantTypes.ZENML_EXTERNAL.value,
+                }
+                headers.update(
+                    {"Authorization": "Bearer " + pro_token.access_token}
+                )
+            else:
+                if not token:
+                    raise CredentialsNotValid(
+                        "No valid credentials found. Please run 'zenml login "
+                        f"--url {self.url}' to connect to the current server."
+                        + api_key_hint
+                    )
+                elif token.expired:
+                    raise CredentialsNotValid(
+                        "Your authentication to the current server has expired. "
+                        "Please log in again using 'zenml login --url "
+                        f"{self.url}'." + api_key_hint
+                    )
+
+            response = self._handle_response(
+                requests.post(
+                    self.url + API + VERSION_1 + LOGIN,
+                    data=data,
+                    verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
+                    headers=headers,
+                )
+            )
+            try:
+                token_response = OAuthTokenResponse.model_validate(response)
+            except ValidationError as e:
+                raise CredentialsNotValid(
+                    "Unexpected response received while authenticating to "
+                    f"the server {e}"
+                ) from e
+
+            # Cache the token
+            self._api_token = credentials_store.set_token(
+                self.url, token_response
+            )
+
+            # Update the server info in the credentials store with the latest
+            # information from the server.
+            # NOTE: this is the best place to do this because we know that
+            # the token is valid and the server is reachable.
+            try:
+                server_info = self.get_store_info()
+            except Exception as e:
+                logger.warning(f"Failed to get server info: {e}.")
+            else:
+                credentials_store.update_server_info(self.url, server_info)
+
+        return self._api_token.access_token
 
     @property
     def session(self) -> requests.Session:
-        """Authenticate to the ZenML server.
+        """Initialize and return a requests session.
 
         Returns:
-            A requests session with the authentication token.
+            A requests session.
         """
         if self._session is None:
+            # We only need to initialize the session once over the lifetime
+            # of the client. We can swap the token out when it expires.
             if self.config.verify_ssl is False:
                 urllib3.disable_warnings(
                     urllib3.exceptions.InsecureRequestWarning
                 )
 
             self._session = requests.Session()
-            retries = Retry(backoff_factor=0.1, connect=5)
+            # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
+            # OPTIONS and DELETE) on specific HTTP status codes:
+            #
+            #     500: Internal Server Error.
+            #     502: Bad Gateway.
+            #     503: Service Unavailable.
+            #     504: Gateway Timeout.
+            #
+            # This also handles connection level errors, if a connection attempt
+            # fails due to transient issues like:
+            #
+            #     DNS resolution errors.
+            #     Connection timeouts.
+            #     Network disruptions.
+            #
+            # Additional errors retried:
+            #
+            #     Read Timeouts: If the server does not send a response within
+            #     the timeout period.
+            #     Connection Refused: If the server refuses the connection.
+            #
+            retries = Retry(
+                connect=5,
+                read=8,
+                redirect=3,
+                status=10,
+                allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
+                status_forcelist=[
+                    408,  # Request Timeout
+                    429,  # Too Many Requests
+                    500,  # Internal Server Error
+                    502,  # Bad Gateway
+                    503,  # Service Unavailable
+                    504,  # Gateway Timeout
+                ],
+                other=3,
+                backoff_factor=0.5,
+            )
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
-            token = self._get_auth_token()
-            self._session.headers.update({"Authorization": "Bearer " + token})
-            logger.debug("Authenticated to ZenML server.")
+
+        # Note that we return an unauthenticated session here. An API token
+        # is only fetched and set in the authorization header when and if it is
+        # needed.
         return self._session
 
-    def clear_session(self) -> None:
-        """Clear the authentication session and any cached API tokens.
+    def authenticate(self, force: bool = False) -> None:
+        """Authenticate or re-authenticate to the ZenML server.
 
-        Raises:
-            AuthorizationException: If the API token can't be reset because
-                the store configuration does not contain username and password
-                or an API key to fetch a new token.
+        Args:
+            force: If True, force a re-authentication even if a valid API token
+                is currently cached. This is useful when the current API token
+                is known to be invalid or expired.
         """
-        self._session = None
+        # This is called to trigger an authentication flow, either because
+        # the current API token is expired or no longer valid, or because
+        # a configuration change has happened or merely because an
+        # authentication was never attempted before.
+        #
+        # 1. Drop the API token currently being used, if any.
+        # 2. If force=True, clear the current API token from the credentials
+        # store, if any, otherwise it will just be re-used on the next call.
+        # 3. Get a new API token
+
+        # The authentication token could have expired or invalidated through
+        # other means; refresh it and try again. This will clear any cached
+        # token and trigger a new authentication flow.
+        if self._api_token and not force:
+            if self._api_token.expired:
+                logger.info(
+                    "Authentication session expired; attempting to "
+                    "re-authenticate."
+                )
+            else:
+                logger.info(
+                    "Authentication session was invalidated by the server; "
+                    "This can happen for example if the user's permissions "
+                    "have been revoked or if the server has been restarted "
+                    "and lost its session state. Attempting to "
+                    "re-authenticate."
+                )
+        else:
+            if force:
+                # Clear the current API token from the credentials store, if
+                # any, to force a new authentication flow.
+                get_credentials_store().clear_token(self.url)
+            # Never authenticated since the client was created or the API token
+            # was explicitly cleared.
+            logger.debug(f"Authenticating to {self.url}...")
+
         self._api_token = None
-        # Clear the configured API token only if it's possible to fetch a new
-        # one from the server using other credentials (username/password or
-        # service account API key).
-        if (
-            self.config.username is not None
-            and self.config.password is not None
-            or self.config.api_key is not None
-        ):
-            self.config.api_token = None
-        elif self.config.api_token:
-            raise AuthorizationException(
-                "Unable to refresh invalid API token. This is probably "
-                "because you're connected to your ZenML server with device "
-                "authentication. Rerunning `zenml connect --url "
-                f"{self.config.url}` should solve this issue. "
-                "If you're seeing this error from an automated workload, "
-                "you should probably use a service account to start that "
-                "workload to prevent this error."
-            )
+
+        new_api_token = self.get_or_generate_api_token()
+
+        # Set or refresh the authentication token
+        self.session.headers.update(
+            {"Authorization": "Bearer " + new_api_token}
+        )
+        logger.debug(f"Authenticated to {self.url}")
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -4102,8 +4335,8 @@ class RestZenStore(BaseZenStore):
             The parsed response.
 
         Raises:
-            AuthorizationException: if the request fails due to an expired
-                authentication token.
+            CredentialsNotValid: if the request fails due to invalid
+                client credentials.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
 
@@ -4122,12 +4355,18 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException:
-            # The authentication token could have expired; refresh it and try
-            # again. This will clear any cached token and trigger a new
-            # authentication flow.
-            self.clear_session()
-            logger.info("Authentication token expired; refreshing...")
+        except CredentialsNotValid:
+            # NOTE: CredentialsNotValid is raised only when the server
+            # explicitly indicates that the credentials are not valid and they
+            # can be thrown away.
+
+            # We authenticate or re-authenticate here and then try the request
+            # again, this time with a valid API token in the header.
+            self.authenticate(
+                # If the last request was authenticated with an API token,
+                # we force a re-authentication to get a fresh token.
+                force=self._api_token is not None
+            )
 
         try:
             return self._handle_response(
@@ -4140,11 +4379,11 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException:
-            logger.info(
-                "Your authentication token has expired. Please re-authenticate."
-            )
-            raise
+        except CredentialsNotValid as e:
+            raise CredentialsNotValid(
+                "The current credentials are no longer valid. Please log in "
+                "again using 'zenml login'."
+            ) from e
 
     def get(
         self,
@@ -4224,7 +4463,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            data=body.model_dump_json(),
+            json=body.model_dump(mode="json"),
             params=params,
             timeout=timeout,
             **kwargs,
@@ -4251,11 +4490,13 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
-        data = body.model_dump_json(exclude_unset=True) if body else None
+        json = (
+            body.model_dump(mode="json", exclude_unset=True) if body else None
+        )
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=data,
+            json=json,
             params=params,
             timeout=timeout,
             **kwargs,
@@ -4283,6 +4524,40 @@ class RestZenStore(BaseZenStore):
         response_body = self.post(f"{route}", body=resource, params=params)
 
         return response_model.model_validate(response_body)
+
+    def _batch_create_resources(
+        self,
+        resources: List[AnyRequest],
+        response_model: Type[AnyResponse],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> List[AnyResponse]:
+        """Create a new batch of resources.
+
+        Args:
+            resources: The resources to create.
+            response_model: The response model of an individual resource.
+            route: The resource REST route to use.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            List of response models.
+        """
+        json_data = [
+            resource.model_dump(mode="json") for resource in resources
+        ]
+        response = self._request(
+            "POST",
+            self.url + API + VERSION_1 + route + BATCH,
+            json=json_data,
+            params=params,
+        )
+        assert isinstance(response, list)
+
+        return [
+            response_model.model_validate(model_data)
+            for model_data in response
+        ]
 
     def _create_workspace_scoped_resource(
         self,

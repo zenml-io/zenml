@@ -18,7 +18,10 @@ from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
-from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
+from zenml.stack_deployments.stack_deployment import (
+    STACK_DEPLOYMENT_TERRAFORM,
+    ZenMLCloudStackDeployment,
+)
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
 
@@ -67,11 +70,12 @@ and are aware of any potential costs:
 
 - A GCS bucket registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/gcp).
 - A Google Artifact Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/gcp).
-- Vertex AI registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex).
+- Vertex AI registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex)
+and as a [ZenML step operator](https://docs.zenml.io/stack-components/step-operators/vertex).
 - GCP Cloud Build registered as a [ZenML image builder](https://docs.zenml.io/stack-components/image-builders/gcp).
 - A GCP Service Account with the minimum necessary permissions to access the
 above resources.
-- An GCP Service Account access key used to give access to ZenML to connect to
+- A GCP Service Account access key used to give access to ZenML to connect to
 the above resources through a [ZenML service connector](https://docs.zenml.io/how-to/auth-management/gcp-service-connector).
 
 The Deployment Manager deployment will automatically create a GCP Service
@@ -231,15 +235,16 @@ GCP project and to clean up the resources created by the stack by using
         URL query parameters as possible.
         * a textual description of the URL
         * some deployment providers may require additional configuration
-        parameters to be passed to the cloud provider in addition to the
-        deployment URL query parameters. Where that is the case, this method
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
         should also return a string that the user can copy and paste into the
         cloud provider console to deploy the ZenML stack (e.g. a set of
-        environment variables, or YAML configuration snippet etc.).
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
 
         Returns:
-            The configuration to deploy the ZenML stack to the specified cloud
-            provider.
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
         """
         params = dict(
             cloudshell_git_repo="https://github.com/zenml-io/zenml",
@@ -254,7 +259,42 @@ GCP project and to clean up the resources created by the stack by using
             f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
         )
 
-        config = f"""
+        if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
+            config = f"""terraform {{
+    required_providers {{
+        google = {{
+            source  = "hashicorp/google"
+        }}
+        zenml = {{
+            source = "zenml-io/zenml"
+        }}
+    }}
+}}
+
+provider "google" {{
+    region  = "{self.location or "europe-west3"}"
+    project = your GCP project name
+}}
+
+provider "zenml" {{
+    server_url = "{self.zenml_server_url}"
+    api_token = "{self.zenml_server_api_token}"
+}}
+
+module "zenml_stack" {{
+    source  = "zenml-io/zenml-stack/gcp"
+
+    zenml_stack_name = "{self.stack_name}"
+    zenml_stack_deployment = "{self.deployment_type}"
+}}
+output "zenml_stack_id" {{
+    value = module.zenml_stack.zenml_stack_id
+}}
+output "zenml_stack_name" {{
+    value = module.zenml_stack.zenml_stack_name
+}}"""
+        else:
+            config = f"""
 ### BEGIN CONFIGURATION ###
 ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
@@ -262,8 +302,14 @@ ZENML_SERVER_URL={self.zenml_server_url}
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
 ### END CONFIGURATION ###"""
 
+        instructions = (
+            "You will be asked to provide the following configuration values "
+            "during the deployment process:"
+        )
+
         return StackDeploymentConfig(
             deployment_url=url,
             deployment_url_text="GCP Cloud Shell Console",
             configuration=config,
+            instructions=instructions,
         )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import uuid
 from datetime import datetime
-from typing import Any, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 from uuid import UUID
 
 import pytest
@@ -24,6 +24,7 @@ from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps, SorterOps
 from zenml.models.v2.base.filter import (
     BaseFilter,
+    DatetimeFilter,
     Filter,
     NumericFilter,
     StrFilter,
@@ -45,6 +46,7 @@ def _test_filter_model(
     filter_class: Type[Filter],
     filter_value: Any,
     expected_value: Optional[Any] = None,
+    ignore_operators: Optional[List[GenericFilterOps]] = None,
 ) -> None:
     """Test filter model creation.
 
@@ -60,11 +62,16 @@ def _test_filter_model(
         filter_value: The value that `filter_field` should be set to.
         expected_value: The expected value of `list_of_filters[0].value` after
             the model has been created, if different from `filter_value`.
+        ignore_operators: Filter operators to ignore.
     """
+    ignore_operators = ignore_operators or []
     if expected_value is None:
         expected_value = filter_value
 
     for filter_op in GenericFilterOps.values():
+        if filter_op in ignore_operators:
+            continue
+
         filter_str = f"{filter_op}:{filter_value}"
         filter_kwargs = {filter_field: filter_str}
 
@@ -72,7 +79,7 @@ def _test_filter_model(
         if filter_op not in filter_class.ALLOWED_OPS:
             with pytest.raises(ValueError):
                 model_instance = SomeFilterModel(**filter_kwargs)
-            return
+            continue
 
         # Succeed and correctly set filter attributes for compatible operations.
         model_instance = SomeFilterModel(**filter_kwargs)
@@ -172,9 +179,22 @@ def test_datetime_filter_model():
     expected_value = datetime.strptime(filter_value, FILTERING_DATETIME_FORMAT)
     _test_filter_model(
         filter_field="datetime_field",
-        filter_class=NumericFilter,
+        filter_class=DatetimeFilter,
         filter_value=filter_value,
         expected_value=expected_value,
+        ignore_operators=[GenericFilterOps.IN, GenericFilterOps.ONEOF],
+    )
+
+
+def test_datetime_filter_in_operator_requires_two_values():
+    """Test that the in operator requires two comma separated values."""
+    filter_value = "2022-12-12 08:00:00"
+
+    with pytest.raises(ValueError):
+        SomeFilterModel(datetime_field=f"{GenericFilterOps.IN}:{filter_value}")
+
+    SomeFilterModel(
+        datetime_field=f"{GenericFilterOps.IN}:{filter_value},{filter_value}"
     )
 
 
@@ -210,7 +230,8 @@ def test_uuid_filter_model():
         filter_field="uuid_field",
         filter_class=UUIDFilter,
         filter_value=filter_value,
-        expected_value=str(filter_value),
+        expected_value=str(filter_value).replace("-", ""),
+        ignore_operators=[GenericFilterOps.ONEOF],
     )
 
 
@@ -225,7 +246,10 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     """Test filtering with other UUID operations is possible with non-UUIDs."""
     filter_value = "a92k34"
     for filter_op in UUIDFilter.ALLOWED_OPS:
-        if filter_op == GenericFilterOps.EQUALS:
+        if (
+            filter_op == GenericFilterOps.EQUALS
+            or filter_op == GenericFilterOps.ONEOF
+        ):
             continue
         filter_model = SomeFilterModel(
             uuid_field=f"{filter_op}:{filter_value}"
@@ -244,4 +268,5 @@ def test_string_filter_model():
         filter_field="str_field",
         filter_class=StrFilter,
         filter_value="a_random_string",
+        ignore_operators=[GenericFilterOps.ONEOF],
     )

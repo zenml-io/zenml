@@ -12,7 +12,7 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 ruff check $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
-ruff check $TESTS_EXAMPLES --extend-ignore D
+ruff check $TESTS_EXAMPLES --extend-ignore D --extend-exclude "*.ipynb"
 
 # Flag check for skipping yamlfix
 if [ "$OS" = "windows-latest" ]; then
@@ -30,11 +30,11 @@ fi
 
 # checks for yaml formatting errors
 if [ "$SKIP_YAMLFIX" = false ]; then
-    yamlfix --check .github tests --exclude "dependabot.yml"
+    yamlfix --check .github tests -e "dependabot.yml" -e "workflows/release_prepare.yml" -e "workflows/release_finalize.yml" -e "workflows/integration-test-fast-services.yml" -e "workflows/integration-test-slow-services.yml"
 fi
 
 # autoflake replacement: checks for unused imports and variables
-ruff check $SRC --select F401,F841 --exclude "__init__.py" --isolated
+ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
 
 ruff format $SRC  --check
 

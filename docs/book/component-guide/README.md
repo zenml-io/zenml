@@ -1,12 +1,13 @@
 ---
+icon: scroll
 description: Overview of categories of MLOps components and third-party integrations.
 ---
 
-# 📜 Overview
+# Overview
 
 If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your toolchain in a more precise manner.
 
-ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](../user-guide/production-guide/understand-stacks.md). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](../how-to/stack-deployment/implement-a-custom-stack-component.md), or use one of the many built-in [integrations](README.md) that implement these abstractions for you.
+ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](../user-guide/production-guide/understand-stacks.md). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), or use one of the many built-in [integrations](README.md) that implement these abstractions for you.
 
 Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
 
@@ -29,7 +30,7 @@ Each pipeline run that you execute with ZenML will require a **stack** and each 
 
 ## Writing custom component flavors
 
-You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](../how-to/stack-deployment/implement-a-custom-stack-component.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
+You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
 
 ## Integrations
 
@@ -69,9 +70,13 @@ You can run `zenml integration --help` to see a full list of CLI commands that Z
 
 Note, that you can also install your dependencies directly, but please note that there is no guarantee that ZenML internals with work with any arbitrary version of any external library.
 
-#### Experimental: Use `uv` for package installation
+#### Use `uv` for package installation
 
-You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstallations. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`. We will monitor how this performs and update as `uv` becomes more stable.
+You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstalls. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`.
+
+Full documentation for how it works with PyTorch can be found on Astral's docs
+website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers
+some of the particular gotchas and details you might need to know.
 
 ### Upgrade ZenML integrations
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML."""
 
-# Define ROOT_DIR
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,35 +26,29 @@ from zenml.logger import init_logging  # noqa
 
 init_logging()
 
-# The following code is needed for `zenml.hub` subpackages to be found
-from pkgutil import extend_path
-
-__path__ = extend_path(__path__, __name__)
 
 # Need to import zenml.models before zenml.config to avoid circular imports
 from zenml.models import *  # noqa: F401
 
 # Define public Python API
-from zenml.api import show
+from zenml.zen_server.utils import show_dashboard as show
 from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
     load_artifact,
+    register_artifact,
 )
 from zenml.model.utils import (
     log_model_metadata,
     link_artifact_to_model,
-    log_model_version_metadata,
 )
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model import Model
-from zenml.model.model_version import ModelVersion # TODO: deprecate me
-from zenml.new.pipelines.pipeline_context import get_pipeline_context
-from zenml.new.pipelines.pipeline_decorator import pipeline
-from zenml.new.steps.step_decorator import step
-from zenml.new.steps.step_context import get_step_context
+from zenml.pipelines import get_pipeline_context, pipeline
+from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
+from zenml.utils.metadata_utils import log_metadata
 from zenml.entrypoints import entrypoint
 
 __all__ = [
@@ -64,15 +57,15 @@ __all__ = [
     "get_pipeline_context",
     "get_step_context",
     "load_artifact",
+    "log_metadata",
     "log_artifact_metadata",
     "log_model_metadata",
-    "log_model_version_metadata",
     "log_step_metadata",
     "Model",
-    "ModelVersion", # TODO: deprecate me
     "link_artifact_to_model",
     "pipeline",
     "save_artifact",
+    "register_artifact",
     "show",
     "step",
     "entrypoint",

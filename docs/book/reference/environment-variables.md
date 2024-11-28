@@ -1,8 +1,9 @@
 ---
+icon: earth-africa
 description: How to control ZenML behavior with environmental variables.
 ---
 
-# 🌎 Environment Variables
+# Environment Variables
 
 There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:
 
@@ -16,7 +17,7 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
 ## Disable step logs
 
-Usually, ZenML [stores step logs in the artifact store](../how-to/control-logging/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
+Usually, ZenML [stores step logs in the artifact store](../how-to/advanced-topics/control-logging/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
 
 If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
 
@@ -72,15 +73,15 @@ Set to `false` to disable the [`rich` traceback](https://rich.readthedocs.io/en/
 export ZENML_ENABLE_RICH_TRACEBACK=true
 ```
 
-## Disable colourful logging
+## Disable colorful logging
 
-If you wish to disable colourful logging, set the following environment variable:
+If you wish to disable colorful logging, set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](../how-to/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
+Note that setting this on the [client environment](../how-to/infrastructure-deployment/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})

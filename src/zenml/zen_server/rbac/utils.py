@@ -404,7 +404,7 @@ def get_resource_type_for_model(
         PipelineDeploymentResponse,
         PipelineResponse,
         PipelineRunResponse,
-        RunMetadataResponse,
+        RunTemplateResponse,
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
@@ -413,8 +413,6 @@ def get_resource_type_for_model(
         TagResponse,
         TriggerExecutionResponse,
         TriggerResponse,
-        UserResponse,
-        WorkspaceResponse,
     )
 
     mapping: Dict[
@@ -434,12 +432,12 @@ def get_resource_type_for_model(
         ModelVersionResponse: ResourceType.MODEL_VERSION,
         ArtifactResponse: ResourceType.ARTIFACT,
         ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
-        WorkspaceResponse: ResourceType.WORKSPACE,
-        UserResponse: ResourceType.USER,
-        RunMetadataResponse: ResourceType.RUN_METADATA,
+        # WorkspaceResponse: ResourceType.WORKSPACE,
+        # UserResponse: ResourceType.USER,
         PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
+        RunTemplateResponse: ResourceType.RUN_TEMPLATE,
         TagResponse: ResourceType.TAG,
         TriggerResponse: ResourceType.TRIGGER,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
@@ -492,8 +490,12 @@ def get_subresources_for_model(
     # We previously used `dict(model)` here, but that lead to issues with
     # models overwriting `__getattr__`, this `model.__iter__()` has the same
     # results though.
-    for _, value in model.__iter__():
-        resources.update(_get_subresources_for_value(value))
+    if isinstance(model, Page):
+        for item in model:
+            resources.update(_get_subresources_for_value(item))
+    else:
+        for _, value in model.__iter__():
+            resources.update(_get_subresources_for_value(value))
 
     return resources
 
@@ -556,6 +558,7 @@ def get_schema_for_resource_type(
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
+        RunTemplateSchema,
         SecretSchema,
         ServiceConnectorSchema,
         ServiceSchema,
@@ -565,7 +568,6 @@ def get_schema_for_resource_type(
         TriggerExecutionSchema,
         TriggerSchema,
         UserSchema,
-        WorkspaceSchema,
     )
 
     mapping: Dict[ResourceType, Type["BaseSchema"]] = {
@@ -583,12 +585,13 @@ def get_schema_for_resource_type(
         ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
-        ResourceType.WORKSPACE: WorkspaceSchema,
+        # ResourceType.WORKSPACE: WorkspaceSchema,
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
+        ResourceType.RUN_TEMPLATE: RunTemplateSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
-        ResourceType.USER: UserSchema,
+        # ResourceType.USER: UserSchema,
         ResourceType.ACTION: ActionSchema,
         ResourceType.EVENT_SOURCE: EventSourceSchema,
         ResourceType.TRIGGER: TriggerSchema,

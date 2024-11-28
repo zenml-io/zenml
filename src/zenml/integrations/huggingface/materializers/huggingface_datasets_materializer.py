@@ -15,7 +15,6 @@
 
 import os
 from collections import defaultdict
-from tempfile import TemporaryDirectory, mkdtemp
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,9 +30,11 @@ from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.integrations.pandas.materializers.pandas_materializer import (
+    PandasMaterializer,
+)
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.utils import io_utils
 
 if TYPE_CHECKING:
@@ -86,12 +87,12 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        temp_dir = mkdtemp()
-        io_utils.copy_dir(
-            os.path.join(self.uri, DEFAULT_DATASET_DIR),
-            temp_dir,
-        )
-        return load_from_disk(temp_dir)
+        with self.get_temporary_directory(delete_at_exit=False) as temp_dir:
+            io_utils.copy_dir(
+                os.path.join(self.uri, DEFAULT_DATASET_DIR),
+                temp_dir,
+            )
+            return load_from_disk(temp_dir)
 
     def save(self, ds: Union[Dataset, DatasetDict]) -> None:
         """Writes a Dataset to the specified dir.
@@ -99,16 +100,13 @@ class HFDatasetMaterializer(BaseMaterializer):
         Args:
             ds: The Dataset to write.
         """
-        temp_dir = TemporaryDirectory()
-        path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
-        try:
+        with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
+            path = os.path.join(temp_dir, DEFAULT_DATASET_DIR)
             ds.save_to_disk(path)
             io_utils.copy_dir(
                 path,
                 os.path.join(self.uri, DEFAULT_DATASET_DIR),
             )
-        finally:
-            fileio.rmtree(temp_dir.name)
 
     def extract_metadata(
         self, ds: Union[Dataset, DatasetDict]

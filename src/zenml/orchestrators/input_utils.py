@@ -18,22 +18,24 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactVersionResponse
+    from zenml.models import PipelineRunResponse
+    from zenml.models.v2.core.step_run import StepRunInputResponse
 
 
 def resolve_step_inputs(
     step: "Step",
-    run_id: UUID,
-) -> Tuple[Dict[str, "ArtifactVersionResponse"], List[UUID]]:
+    pipeline_run: "PipelineRunResponse",
+) -> Tuple[Dict[str, "StepRunInputResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
-        run_id: The ID of the current pipeline run.
+        pipeline_run: The current pipeline run.
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -45,16 +47,17 @@ def resolve_step_inputs(
         The IDs of the input artifact versions and the IDs of parent steps of
             the current step.
     """
-    from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+    from zenml.models import ArtifactVersionResponse
+    from zenml.models.v2.core.step_run import StepRunInputResponse
 
     current_run_steps = {
         run_step.name: run_step
         for run_step in pagination_utils.depaginate(
-            Client().list_run_steps, pipeline_run_id=run_id
+            Client().list_run_steps, pipeline_run_id=pipeline_run.id
         )
     }
 
-    input_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
+    input_artifacts: Dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]
@@ -64,70 +67,108 @@ def resolve_step_inputs(
             )
 
         try:
-            artifact = step_run.outputs[input_.output_name]
+            outputs = step_run.outputs[input_.output_name]
         except KeyError:
             raise InputResolutionError(
-                f"No output `{input_.output_name}` found for step "
+                f"No step output `{input_.output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
-        input_artifacts[name] = artifact
+        step_outputs = [
+            output
+            for output in outputs
+            if output.save_type == ArtifactSaveType.STEP_OUTPUT
+        ]
+        if len(step_outputs) > 2:
+            # This should never happen, there can only be a single regular step
+            # output for a name
+            raise InputResolutionError(
+                f"Too many step outputs for output `{input_.output_name}` of "
+                f"step `{input_.step_name}`."
+            )
+        elif len(step_outputs) == 0:
+            raise InputResolutionError(
+                f"No step output `{input_.output_name}` found for step "
+                f"`{input_.step_name}`."
+            )
+
+        input_artifacts[name] = StepRunInputResponse(
+            input_type=StepRunInputArtifactType.STEP_OUTPUT,
+            **step_outputs[0].model_dump(),
+        )
 
     for (
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
         artifact_version_id = external_artifact.get_artifact_version_id()
-        input_artifacts[name] = Client().get_artifact_version(
-            artifact_version_id
+        input_artifacts[name] = StepRunInputResponse(
+            input_type=StepRunInputArtifactType.EXTERNAL,
+            **Client().get_artifact_version(artifact_version_id).model_dump(),
         )
 
     for name, config_ in step.config.model_artifacts_or_metadata.items():
-        issue_found = False
+        err_msg = ""
         try:
-            if config_.metadata_name is None and config_.artifact_name:
-                if artifact_ := config_.model.get_artifact(
-                    config_.artifact_name, config_.artifact_version
-                ):
-                    input_artifacts[name] = artifact_
-                else:
-                    issue_found = True
-            elif config_.artifact_name is None and config_.metadata_name:
+            context_model_version = config_._get_model_response(
+                pipeline_run=pipeline_run
+            )
+        except RuntimeError as e:
+            err_msg = str(e)
+        else:
+            if (
+                config_.artifact_name is None
+                and config_.metadata_name
+                and context_model_version.run_metadata is not None
+            ):
                 # metadata values should go directly in parameters, as primitive types
-                step.config.parameters[name] = config_.model.run_metadata[
-                    config_.metadata_name
-                ].value
-            elif config_.metadata_name and config_.artifact_name:
-                # metadata values should go directly in parameters, as primitive types
-                if artifact_ := config_.model.get_artifact(
-                    config_.artifact_name, config_.artifact_version
-                ):
-                    step.config.parameters[name] = artifact_.run_metadata[
-                        config_.metadata_name
-                    ].value
-                else:
-                    issue_found = True
+                step.config.parameters[name] = (
+                    context_model_version.run_metadata[config_.metadata_name]
+                )
+            elif config_.artifact_name is None:
+                err_msg = (
+                    "Cannot load artifact from model version, "
+                    "no artifact name specified."
+                )
             else:
-                issue_found = True
-        except KeyError:
-            issue_found = True
-
-        if issue_found:
+                if artifact_ := context_model_version.get_artifact(
+                    config_.artifact_name, config_.artifact_version
+                ):
+                    if config_.metadata_name is None:
+                        input_artifacts[name] = StepRunInputResponse(
+                            input_type=StepRunInputArtifactType.LAZY_LOADED,
+                            **artifact_.model_dump(),
+                        )
+                    elif config_.metadata_name:
+                        # metadata values should go directly in parameters, as primitive types
+                        try:
+                            step.config.parameters[name] = (
+                                artifact_.run_metadata[config_.metadata_name]
+                            )
+                        except KeyError:
+                            err_msg = (
+                                f"Artifact run metadata `{config_.metadata_name}` "
+                                "could not be found in artifact "
+                                f"`{config_.artifact_name}::{config_.artifact_version}`."
+                            )
+                else:
+                    err_msg = (
+                        f"Artifact `{config_.artifact_name}::{config_.artifact_version}` "
+                        f"not found in model `{context_model_version.model.name}` "
+                        f"version `{context_model_version.name}`."
+                    )
+        if err_msg:
             raise ValueError(
-                "Cannot fetch requested information from model "
-                f"`{config_.model.name}` version "
-                f"`{config_.model.version}` given artifact "
-                f"`{config_.artifact_name}`, artifact version "
-                f"`{config_.artifact_version}`, and metadata "
-                f"key `{config_.metadata_name}` passed into "
-                f"the step `{step.config.name}`."
+                f"Failed to lazy load model version data in step `{step.config.name}`: "
+                + err_msg
             )
     for name, cll_ in step.config.client_lazy_loaders.items():
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
-            input_artifacts[name] = value_
-        elif isinstance(value_, RunMetadataResponse):
-            step.config.parameters[name] = value_.value
+            input_artifacts[name] = StepRunInputResponse(
+                input_type=StepRunInputArtifactType.LAZY_LOADED,
+                **value_.model_dump(),
+            )
         else:
             step.config.parameters[name] = value_
 

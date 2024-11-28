@@ -136,9 +136,11 @@ from zenml.models import (
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
-    RunMetadataFilter,
     RunMetadataRequest,
-    RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleResponse,
     SecretFilter,
@@ -186,6 +188,7 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
+from zenml.models.v2.core.step_run import StepRunUpdate
 from zenml.services.service import ServiceConfig
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
@@ -342,6 +345,8 @@ class Client(metaclass=ClientMetaClass):
     """
 
     _active_user: Optional["UserResponse"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_stack: Optional["StackResponse"] = None
 
     def __init__(
         self,
@@ -864,7 +869,6 @@ class Client(metaclass=ClientMetaClass):
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
-        updated_hub_token: Optional[str] = None,
         updated_password: Optional[str] = None,
         old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
@@ -879,7 +883,6 @@ class Client(metaclass=ClientMetaClass):
             updated_full_name: The new full name of the user.
             updated_email: The new email of the user.
             updated_email_opt_in: The new email opt-in status of the user.
-            updated_hub_token: Update the hub token
             updated_password: The new password of the user.
             old_password: The old password of the user. Required for password
                 update.
@@ -907,8 +910,6 @@ class Client(metaclass=ClientMetaClass):
             )
         if updated_email_opt_in is not None:
             user_update.email_opted_in = updated_email_opt_in
-        if updated_hub_token is not None:
-            user_update.hub_token = updated_hub_token
         if updated_password is not None:
             user_update.password = updated_password
             if old_password is None:
@@ -1113,9 +1114,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
-        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
-            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
-            return self.get_workspace(workspace_id)
+        if workspace_id := os.environ.get(ENV_ZENML_ACTIVE_WORKSPACE_ID):
+            if not self._active_workspace or self._active_workspace.id != UUID(
+                workspace_id
+            ):
+                self._active_workspace = self.get_workspace(workspace_id)
+
+            return self._active_workspace
 
         from zenml.constants import DEFAULT_WORKSPACE_NAME
 
@@ -1236,6 +1241,8 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1252,6 +1259,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
+            user: The name/ID of the user to filter by.
+            component: The name/ID of the component to filter by.
             name: The name of the stack to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -1267,6 +1276,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             component_id=component_id,
+            user=user,
+            component=component,
             name=name,
             description=description,
             id=id,
@@ -1459,8 +1470,13 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+        if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
+            if not self._active_stack or self._active_stack.id != UUID(
+                env_stack_id
+            ):
+                self._active_stack = self.get_stack(env_stack_id)
+
+            return self._active_stack
 
         stack_id: Optional[UUID] = None
 
@@ -1522,25 +1538,25 @@ class Client(metaclass=ClientMetaClass):
             stack: The stack to validate.
 
         Raises:
-            KeyError: If the stack references missing components.
             ValidationError: If the stack configuration is invalid.
         """
         local_components: List[str] = []
         remote_components: List[str] = []
         assert stack.components is not None
-        for component_type, component_ids in stack.components.items():
-            for component_id in component_ids:
-                try:
-                    component = self.get_stack_component(
-                        name_id_or_prefix=component_id,
+        for component_type, components in stack.components.items():
+            component_flavor: Union[FlavorResponse, str]
+
+            for component in components:
+                if isinstance(component, UUID):
+                    component_response = self.get_stack_component(
+                        name_id_or_prefix=component,
                         component_type=component_type,
                     )
-                except KeyError as e:
-                    raise KeyError(
-                        f"Cannot register stack '{stack.name}' since it has an "
-                        f"unregistered {component_type} with id "
-                        f"'{component_id}'."
-                    ) from e
+                    component_config = component_response.configuration
+                    component_flavor = component_response.flavor
+                else:
+                    component_config = component.configuration
+                    component_flavor = component.flavor
 
                 # Create and validate the configuration
                 from zenml.stack.utils import (
@@ -1549,9 +1565,9 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 configuration = validate_stack_component_config(
-                    configuration_dict=component.configuration,
-                    flavor_name=component.flavor,
-                    component_type=component.type,
+                    configuration_dict=component_config,
+                    flavor=component_flavor,
+                    component_type=component_type,
                     # Always enforce validation of custom flavors
                     validate_custom_flavors=True,
                 )
@@ -1559,13 +1575,18 @@ class Client(metaclass=ClientMetaClass):
                 # `validate_custom_flavors=True` above
                 assert configuration is not None
                 warn_if_config_server_mismatch(configuration)
+                flavor_name = (
+                    component_flavor.name
+                    if isinstance(component_flavor, FlavorResponse)
+                    else component_flavor
+                )
                 if configuration.is_local:
                     local_components.append(
-                        f"{component.type.value}: {component.name}"
+                        f"{component_type.value}: {flavor_name}"
                     )
                 elif configuration.is_remote:
                     remote_components.append(
-                        f"{component.type.value}: {component.name}"
+                        f"{component_type.value}: {flavor_name}"
                     )
 
         if local_components and remote_components:
@@ -1902,6 +1923,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
@@ -1921,6 +1943,7 @@ class Client(metaclass=ClientMetaClass):
             connector_id: The id of the connector to filter by.
             stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
+            user: The ID of name of the user to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1942,6 +1965,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
+            user=user,
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
 
@@ -1978,7 +2002,7 @@ class Client(metaclass=ClientMetaClass):
 
         validated_config = validate_stack_component_config(
             configuration_dict=configuration,
-            flavor_name=flavor,
+            flavor=flavor,
             component_type=component_type,
             # Always enforce validation of custom flavors
             validate_custom_flavors=True,
@@ -2079,7 +2103,7 @@ class Client(metaclass=ClientMetaClass):
 
             validated_config = validate_stack_component_config(
                 configuration_dict=existing_configuration,
-                flavor_name=component.flavor,
+                flavor=component.flavor,
                 component_type=component.type,
                 # Always enforce validation of custom flavors
                 validate_custom_flavors=True,
@@ -2350,11 +2374,11 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        version: Optional[str] = None,
-        version_hash: Optional[str] = None,
-        docstring: Optional[str] = None,
+        latest_run_status: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2368,11 +2392,12 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the pipeline to filter by.
-            version: The version of the pipeline to filter by.
-            version_hash: The version hash of the pipeline to filter by.
-            docstring: The docstring of the pipeline to filter by.
+            latest_run_status: Filter by the status of the latest run of a
+                pipeline.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            user: The name/ID of the user to filter by.
+            tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2388,11 +2413,11 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            version=version,
-            version_hash=version_hash,
-            docstring=docstring,
+            latest_run_status=latest_run_status,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
+            tag=tag,
         )
         pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_pipelines(
@@ -2403,124 +2428,83 @@ class Client(metaclass=ClientMetaClass):
     def get_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
         hydrate: bool = True,
     ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If not specified, the latest
-                version is returned.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The pipeline.
         """
-        return self._get_entity_version_by_id_or_name_or_prefix(
+        return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_pipeline,
             list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
-            version=version,
             hydrate=hydrate,
         )
 
     def delete_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
-        all_versions: bool = False,
     ) -> None:
         """Delete a pipeline.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If left empty, will delete
-                the latest version.
-            all_versions: If `True`, delete all versions of the pipeline.
-
-        Raises:
-            ValueError: If an ID is supplied when trying to delete all versions
-                of a pipeline.
         """
-        if all_versions:
-            if is_valid_uuid(name_id_or_prefix):
-                raise ValueError(
-                    "You need to supply a name (not an ID) when trying to "
-                    "delete all versions of a pipeline."
-                )
-
-            for pipeline in depaginate(
-                Client().list_pipelines, name=name_id_or_prefix
-            ):
-                Client().delete_pipeline(pipeline.id)
-        else:
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=name_id_or_prefix, version=version
-            )
-            self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        pipeline_version: Optional[str] = None,
         run_configuration: Optional[PipelineRunConfiguration] = None,
         config_path: Optional[str] = None,
-        deployment_id: Optional[UUID] = None,
-        build_id: Optional[UUID] = None,
+        template_id: Optional[UUID] = None,
         stack_name_or_id: Union[str, UUID, None] = None,
         synchronous: bool = False,
     ) -> PipelineRunResponse:
         """Trigger a pipeline from the server.
 
         Usage examples:
-        * Run the latest runnable build for the latest version of a pipeline:
+        * Run the latest runnable template for a pipeline:
         ```python
         Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
         ```
-        * Run the latest runnable build for a specific version of a pipeline:
+        * Run the latest runnable template for a pipeline on a specific stack:
         ```python
         Client().trigger_pipeline(
             pipeline_name_or_id=<NAME>,
-            pipeline_version=<VERSION>
+            stack_name_or_id=<STACK_NAME_OR_ID>
         )
         ```
-        * Run a specific pipeline version on a specific stack:
+        * Run a specific template:
         ```python
-        Client().trigger_pipeline(
-            pipeline_name_or_id=<ID>,
-            stack_name_or_id=<ID>
-        )
-        ```
-        * Run a specific deployment:
-        ```python
-        Client().trigger_pipeline(deployment_id=<ID>)
-        ```
-        * Run a specific build:
-        ```python
-        Client().trigger_pipeline(build_id=<ID>)
+        Client().trigger_pipeline(template_id=<ID>)
         ```
 
         Args:
-            pipeline_name_or_id: Name or ID of the pipeline. If not given,
-                either the build or deployment that should be run needs to be
-                specified.
-            pipeline_version: Version of the pipeline. This is only used if a
-                pipeline name is given.
+            pipeline_name_or_id: Name or ID of the pipeline. If this is
+                specified, the latest runnable template for this pipeline will
+                be used for the run (Runnable here means that the build
+                associated with the template is for a remote stack without any
+                custom flavor stack components). If not given, a template ID
+                that should be run needs to be specified.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
                 parsed as a `PipelineRunConfiguration` object. Either this or
                 the configuration in code can be specified.
-            deployment_id: ID of the deployment to run. Either this or a build
-                to run can be specified.
-            build_id: ID of the build to run. Either this or a deployment to
-                run can be specified.
+            template_id: ID of the template to run. Either this or a pipeline
+                can be specified.
             stack_name_or_id: Name or ID of the stack on which to run the
                 pipeline. If not specified, this method will try to find a
-                runnable build on any stack.
+                runnable template on any stack.
             synchronous: If `True`, this method will wait until the triggered
                 run is finished.
 
@@ -2530,16 +2514,16 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Model of the pipeline run.
         """
-        from zenml.new.pipelines.run_utils import (
+        from zenml.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
+        if Counter([template_id, pipeline_name_or_id])[None] != 1:
             raise RuntimeError(
-                "You need to specify exactly one of pipeline, build or "
-                "deployment to trigger."
+                "You need to specify exactly one of pipeline or template "
+                "to trigger."
             )
 
         if run_configuration and config_path:
@@ -2553,32 +2537,20 @@ class Client(metaclass=ClientMetaClass):
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        if deployment_id:
+        if template_id:
             if stack_name_or_id:
                 logger.warning(
-                    "Deployment ID and stack specified, ignoring the stack and "
-                    "using stack from deployment instead."
+                    "Template ID and stack specified, ignoring the stack and "
+                    "using stack associated with the template instead."
                 )
 
-            run = self.zen_store.run_deployment(
-                deployment_id=deployment_id,
+            run = self.zen_store.run_template(
+                template_id=template_id,
                 run_configuration=run_configuration,
-            )
-        elif build_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Build ID and stack specified, ignoring the stack and "
-                    "using stack from build instead."
-                )
-
-            run = self.zen_store.run_build(
-                build_id=build_id, run_configuration=run_configuration
             )
         else:
             assert pipeline_name_or_id
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
-            )
+            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
 
             stack = None
             if stack_name_or_id:
@@ -2589,34 +2561,36 @@ class Client(metaclass=ClientMetaClass):
                     zen_store=self.zen_store, stack=stack
                 )
 
-            builds = depaginate(
-                self.list_builds,
+            templates = depaginate(
+                self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
             )
 
-            for build in builds:
-                if not build.template_deployment_id:
+            for template in templates:
+                if not template.build:
                     continue
 
-                if not build.stack:
+                stack = template.build.stack
+                if not stack:
                     continue
 
                 try:
                     validate_stack_is_runnable_from_server(
-                        zen_store=self.zen_store, stack=build.stack
+                        zen_store=self.zen_store, stack=stack
                     )
                 except ValueError:
                     continue
 
-                run = self.zen_store.run_build(
-                    build_id=build.id, run_configuration=run_configuration
+                run = self.zen_store.run_template(
+                    template_id=template.id,
+                    run_configuration=run_configuration,
                 )
                 break
             else:
                 raise RuntimeError(
-                    "Unable to find a runnable build for the given stack and "
-                    "pipeline."
+                    "Unable to find a runnable template for the given stack "
+                    "and pipeline."
                 )
 
         if synchronous:
@@ -3400,6 +3374,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
+        template_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineDeploymentResponse]:
         """List all deployments.
@@ -3417,6 +3392,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
+            template_id: The ID of the template to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3436,6 +3412,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
+            template_id=template_id,
         )
         deployment_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_deployments(
@@ -3449,8 +3426,196 @@ class Client(metaclass=ClientMetaClass):
         Args:
             id_or_prefix: The id or id prefix of the deployment.
         """
-        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        deployment = self.get_deployment(
+            id_or_prefix=id_or_prefix, hydrate=False
+        )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    # ------------------------------ Run templates -----------------------------
+
+    def create_run_template(
+        self,
+        name: str,
+        deployment_id: UUID,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> RunTemplateResponse:
+        """Create a run template.
+
+        Args:
+            name: The name of the run template.
+            deployment_id: ID of the deployment which this template should be
+                based off of.
+            description: The description of the run template.
+            tags: Tags associated with the run template.
+
+        Returns:
+            The created run template.
+        """
+        return self.zen_store.create_run_template(
+            template=RunTemplateRequest(
+                name=name,
+                description=description,
+                source_deployment_id=deployment_id,
+                tags=tags,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+        )
+
+    def get_run_template(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> RunTemplateResponse:
+        """Get a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The run template.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_run_template,
+            list_method=self.list_run_templates,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            hydrate=hydrate,
+        )
+
+    def list_run_templates(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        tag: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        code_repository_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        stack: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """Get a page of run templates.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            created: Filter by the creation date.
+            updated: Filter by the last updated date.
+            name: Filter by run template name.
+            tag: Filter by run template tags.
+            workspace_id: Filter by workspace ID.
+            user_id: Filter by user ID.
+            pipeline_id: Filter by pipeline ID.
+            build_id: Filter by build ID.
+            stack_id: Filter by stack ID.
+            code_repository_id: Filter by code repository ID.
+            user: Filter by user name/ID.
+            pipeline: Filter by pipeline name/ID.
+            stack: Filter by stack name/ID.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of run templates.
+        """
+        filter = RunTemplateFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
+            name=name,
+            tag=tag,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            build_id=build_id,
+            stack_id=stack_id,
+            code_repository_id=code_repository_id,
+            user=user,
+            pipeline=pipeline,
+            stack=stack,
+        )
+
+        return self.zen_store.list_run_templates(
+            template_filter_model=filter, hydrate=hydrate
+        )
+
+    def update_run_template(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> RunTemplateResponse:
+        """Update a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to update.
+            name: The new name of the run template.
+            description: The new description of the run template.
+            add_tags: Tags to add to the run template.
+            remove_tags: Tags to remove from the run template.
+
+        Returns:
+            The updated run template.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            template_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            template_id = self.get_run_template(
+                name_id_or_prefix, hydrate=False
+            ).id
+
+        return self.zen_store.update_run_template(
+            template_id=template_id,
+            template_update=RunTemplateUpdate(
+                name=name,
+                description=description,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
+        )
+
+    def delete_run_template(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to delete.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            template_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            template_id = self.get_run_template(
+                name_id_or_prefix, hydrate=False
+            ).id
+
+        self.zen_store.delete_run_template(template_id=template_id)
 
     # ------------------------------- Schedules --------------------------------
 
@@ -3620,12 +3785,23 @@ class Client(metaclass=ClientMetaClass):
         build_id: Optional[Union[str, UUID]] = None,
         deployment_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
+        template_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
+        templatable: Optional[bool] = None,
+        tag: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        code_repository: Optional[Union[UUID, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
+        stack: Optional[Union[UUID, str]] = None,
+        stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3640,13 +3816,16 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
-            pipeline_name: The name of the pipeline to filter by.
+            pipeline_name: DEPRECATED. Use `pipeline` instead to filter by
+                pipeline name.
             user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
             deployment_id: The id of the deployment to filter by.
             code_repository_id: The id of the code repository to filter by.
+            template_id: The ID of the template to filter by.
+            model_version_id: The ID of the model version to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -3654,6 +3833,15 @@ class Client(metaclass=ClientMetaClass):
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
+            templatable: If the runs should be templatable or not.
+            tag: Tag to filter by.
+            user: The name/ID of the user to filter by.
+            run_metadata: The run_metadata of the run to filter by.
+            pipeline: The name/ID of the pipeline to filter by.
+            code_repository: Filter by code repository name/ID.
+            model: Filter by model name/ID.
+            stack: Filter by stack name/ID.
+            stack_component: Filter by stack component name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3676,6 +3864,8 @@ class Client(metaclass=ClientMetaClass):
             build_id=build_id,
             deployment_id=deployment_id,
             code_repository_id=code_repository_id,
+            template_id=template_id,
+            model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,
@@ -3683,28 +3873,22 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             num_steps=num_steps,
+            tag=tag,
             unlisted=unlisted,
+            user=user,
+            run_metadata=run_metadata,
+            pipeline=pipeline,
+            code_repository=code_repository,
+            stack=stack,
+            model=model,
+            stack_component=stack_component,
+            templatable=templatable,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
             hydrate=hydrate,
         )
-
-    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
-        """(Deprecated) List all pipeline runs.
-
-        Args:
-            **kwargs: The filter arguments passed to `list_pipeline_runs`.
-
-        Returns:
-            A page with Pipeline Runs fitting the filter description
-        """
-        logger.warning(
-            "`Client.list_runs()` is deprecated and will be removed in a "
-            "future release. Please use `Client.list_pipeline_runs()` instead."
-        )
-        return self.list_pipeline_runs(**kwargs)
 
     def delete_pipeline_run(
         self,
@@ -3752,17 +3936,18 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        entrypoint_name: Optional[str] = None,
-        code_hash: Optional[str] = None,
         cache_key: Optional[str] = None,
+        code_hash: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         pipeline_run_id: Optional[Union[str, UUID]] = None,
+        deployment_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-        num_outputs: Optional[Union[int, str]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
+        model: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -3779,14 +3964,15 @@ class Client(metaclass=ClientMetaClass):
             end_time: Use to filter by the time when the step finished running
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
-            pipeline_run_id: The  id of the pipeline run to filter by.
-            original_step_run_id: The  id of the pipeline run to filter by.
-            name: The name of the run to filter by.
-            entrypoint_name: The entrypoint_name of the run to filter by.
-            code_hash: The code_hash of the run to filter by.
-            cache_key: The cache_key of the run to filter by.
+            pipeline_run_id: The id of the pipeline run to filter by.
+            deployment_id: The id of the deployment to filter by.
+            original_step_run_id: The id of the original step run to filter by.
+            model_version_id: The ID of the model version to filter by.
+            model: Filter by model name/ID.
+            name: The name of the step run to filter by.
+            cache_key: The cache key of the step run to filter by.
+            code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
-            num_outputs: The number of outputs for the step run
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3799,10 +3985,10 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             logical_operator=logical_operator,
             id=id,
-            entrypoint_name=entrypoint_name,
-            code_hash=code_hash,
             cache_key=cache_key,
+            code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
+            deployment_id=deployment_id,
             original_step_run_id=original_step_run_id,
             status=status,
             created=created,
@@ -3812,7 +3998,8 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
-            num_outputs=num_outputs,
+            model_version_id=model_version_id,
+            model=model,
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
@@ -3983,6 +4170,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        from zenml import get_step_context
+
         if cll := client_lazy_loader(
             method_name="get_artifact_version",
             name_id_or_prefix=name_id_or_prefix,
@@ -3990,13 +4179,26 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         ):
             return cll  # type: ignore[return-value]
-        return self._get_entity_version_by_id_or_name_or_prefix(
+
+        artifact = self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,
             name_id_or_prefix=name_id_or_prefix,
             version=version,
             hydrate=hydrate,
         )
+        try:
+            step_run = get_step_context().step_run
+            client = Client()
+            client.zen_store.update_run_step(
+                step_run_id=step_run.id,
+                step_run_update=StepRunUpdate(
+                    loaded_artifact_versions={artifact.name: artifact.id}
+                ),
+            )
+        except RuntimeError:
+            pass  # Cannot link to step run if called outside a step
+        return artifact
 
     def list_artifact_versions(
         self,
@@ -4018,10 +4220,15 @@ class Client(metaclass=ClientMetaClass):
         materializer: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
-        hydrate: bool = False,
+        user: Optional[Union[UUID, str]] = None,
+        model: Optional[Union[UUID, str]] = None,
+        pipeline_run: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
         tag: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
 
@@ -4043,13 +4250,18 @@ class Client(metaclass=ClientMetaClass):
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
+            model_version_id: Filter by model version ID.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
+            tag: A tag to filter by.
+            user: Filter by user name or ID.
+            model: Filter by model name or ID.
+            pipeline_run: Filter by pipeline run name or ID.
+            run_metadata: Filter by run metadata.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: A tag to filter by.
 
         Returns:
             A list of artifact versions.
@@ -4073,9 +4285,13 @@ class Client(metaclass=ClientMetaClass):
             materializer=materializer,
             workspace_id=workspace_id,
             user_id=user_id,
+            model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,
+            user=user,
+            model=model,
+            pipeline_run=pipeline_run,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -4225,7 +4441,7 @@ class Client(metaclass=ClientMetaClass):
         resource_id: UUID,
         resource_type: MetadataResourceTypes,
         stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponse]:
+    ) -> None:
         """Create run metadata.
 
         Args:
@@ -4238,7 +4454,7 @@ class Client(metaclass=ClientMetaClass):
                 the metadata.
 
         Returns:
-            The created metadata, as string to model dictionary.
+            None
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -4273,74 +4489,8 @@ class Client(metaclass=ClientMetaClass):
             values=values,
             types=types,
         )
-        return self.zen_store.create_run_metadata(run_metadata)
-
-    def list_run_metadata(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        resource_id: Optional[UUID] = None,
-        resource_type: Optional[MetadataResourceTypes] = None,
-        stack_component_id: Optional[UUID] = None,
-        key: Optional[str] = None,
-        value: Optional["MetadataType"] = None,
-        type: Optional[str] = None,
-        hydrate: bool = False,
-    ) -> Page[RunMetadataResponse]:
-        """List run metadata.
-
-        Args:
-            sort_by: The field to sort the results by.
-            page: The page number to return.
-            size: The number of results to return per page.
-            logical_operator: The logical operator to use for filtering.
-            id: The ID of the metadata.
-            created: The creation time of the metadata.
-            updated: The last update time of the metadata.
-            workspace_id: The ID of the workspace the metadata belongs to.
-            user_id: The ID of the user that created the metadata.
-            resource_id: The ID of the resource the metadata belongs to.
-            resource_type: The type of the resource the metadata belongs to.
-            stack_component_id: The ID of the stack component that produced
-                the metadata.
-            key: The key of the metadata.
-            value: The value of the metadata.
-            type: The type of the metadata.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The run metadata.
-        """
-        metadata_filter_model = RunMetadataFilter(
-            sort_by=sort_by,
-            page=page,
-            size=size,
-            logical_operator=logical_operator,
-            id=id,
-            created=created,
-            updated=updated,
-            workspace_id=workspace_id,
-            user_id=user_id,
-            resource_id=resource_id,
-            resource_type=resource_type,
-            stack_component_id=stack_component_id,
-            key=key,
-            value=value,
-            type=type,
-        )
-        metadata_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_run_metadata(
-            metadata_filter_model,
-            hydrate=hydrate,
-        )
+        self.zen_store.create_run_metadata(run_metadata)
+        return None
 
     # -------------------------------- Secrets ---------------------------------
 
@@ -5972,6 +6122,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ModelResponse]:
@@ -5985,6 +6136,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the model to filter by.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag of the model to filter by.
@@ -6001,6 +6153,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             tag=tag,
+            user=user,
         )
 
         return self.zen_store.list_models(
@@ -6180,6 +6333,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ModelVersionResponse]:
@@ -6197,6 +6351,7 @@ class Client(metaclass=ClientMetaClass):
             name: name or id of the model version.
             number: number of the model version.
             stage: stage of the model version.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag to filter by.
@@ -6215,6 +6370,7 @@ class Client(metaclass=ClientMetaClass):
             number=number,
             stage=stage,
             tag=tag,
+            user=user,
         )
 
         return self.zen_store.list_model_versions(
@@ -6282,9 +6438,6 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         artifact_version_id: Optional[Union[UUID, str]] = None,
         artifact_name: Optional[str] = None,
@@ -6292,6 +6445,7 @@ class Client(metaclass=ClientMetaClass):
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
         has_custom_name: Optional[bool] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -6303,9 +6457,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             artifact_version_id: Use the artifact id for filtering
             artifact_name: Use the artifact name for filtering
@@ -6313,6 +6464,7 @@ class Client(metaclass=ClientMetaClass):
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
             has_custom_name: Filter artifacts with/without custom names.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6327,9 +6479,6 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 artifact_version_id=artifact_version_id,
                 artifact_name=artifact_name,
@@ -6337,6 +6486,7 @@ class Client(metaclass=ClientMetaClass):
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
                 has_custom_name=has_custom_name,
+                user=user,
             ),
             hydrate=hydrate,
         )
@@ -6400,12 +6550,10 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
@@ -6417,12 +6565,10 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
             pipeline_run_name: Use the pipeline run name for filtering
+            user: Filter by user name or ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response
 
@@ -6437,12 +6583,10 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,
+                user=user,
             ),
             hydrate=hydrate,
         )
@@ -7063,6 +7207,7 @@ class Client(metaclass=ClientMetaClass):
             NotImplementedError: If the client is not connected to a ZenML
                 server.
         """
+        from zenml.login.credentials_store import get_credentials_store
         from zenml.zen_stores.rest_zen_store import RestZenStore
 
         zen_store = self.zen_store
@@ -7071,8 +7216,15 @@ class Client(metaclass=ClientMetaClass):
                 "API key configuration is only supported if connected to a "
                 "ZenML server."
             )
+
+        credentials_store = get_credentials_store()
         assert isinstance(zen_store, RestZenStore)
-        zen_store.set_api_key(api_key=key)
+
+        credentials_store.set_api_key(server_url=zen_store.url, api_key=key)
+
+        # Force a re-authentication to start using the new API key
+        # right away.
+        zen_store.authenticate(force=True)
 
     def list_api_keys(
         self,

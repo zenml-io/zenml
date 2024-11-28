@@ -23,23 +23,19 @@ from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
+    BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import StrFilter
-from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-)
+from zenml.models.v2.base.filter import BaseFilter, StrFilter
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 # ------------------ Request Model ------------------
 
 
-class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
+class ModelVersionPipelineRunRequest(BaseRequest):
     """Request model for links between model versions and pipeline runs."""
 
-    model: UUID
     model_version: UUID
     pipeline_run: UUID
 
@@ -62,7 +58,6 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
 class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and pipeline runs."""
 
-    model: UUID
     model_version: UUID
     pipeline_run: PipelineRunResponse
 
@@ -88,16 +83,6 @@ class ModelVersionPipelineRunResponse(
 ):
     """Response model for links between model versions and pipeline runs."""
 
-    # Body and metadata properties
-    @property
-    def model(self) -> UUID:
-        """The `model` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model
-
     @property
     def model_version(self) -> UUID:
         """The `model_version` property.
@@ -120,39 +105,21 @@ class ModelVersionPipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
+class ModelVersionPipelineRunFilter(BaseFilter):
     """Model version pipeline run links filter model."""
 
-    # Pipeline run name is not a DB field and needs to be handled separately
     FILTER_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_name",
+        "user",
     ]
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "model_id",
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "model_version_id",
-        "user_id",
-        "workspace_id",
         "updated",
         "id",
     ]
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The workspace of the Model Version",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The user of the Model Version",
-        union_mode="left_to_right",
-    )
-    model_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Filter by model ID",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Filter by model version ID",
@@ -166,6 +133,10 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
     pipeline_run_name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline run",
+    )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the pipeline run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -186,11 +157,10 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas.model_schemas import (
+        from zenml.zen_stores.schemas import (
             ModelVersionPipelineRunSchema,
-        )
-        from zenml.zen_stores.schemas.pipeline_run_schemas import (
             PipelineRunSchema,
+            UserSchema,
         )
 
         if self.pipeline_run_name:
@@ -208,5 +178,18 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
                 filter_.generate_query_conditions(PipelineRunSchema),
             )
             custom_filters.append(pipeline_run_name_filter)
+
+        if self.user:
+            user_filter = and_(
+                ModelVersionPipelineRunSchema.pipeline_run_id
+                == PipelineRunSchema.id,
+                PipelineRunSchema.user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(user_filter)
 
         return custom_filters

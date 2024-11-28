@@ -6,12 +6,11 @@ from zenml import (
     Model,
     get_pipeline_context,
     get_step_context,
+    log_metadata,
     pipeline,
     step,
 )
-from zenml.artifacts.utils import log_artifact_metadata
 from zenml.client import Client
-from zenml.model.utils import log_model_version_metadata
 
 
 @step
@@ -94,24 +93,32 @@ def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not
     clean_client: "Client",
 ):
     producer_pipe(False)
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         consumer_pipe()
 
 
 @step
 def producer() -> Annotated[str, "bar"]:
     """Produce artifact with metadata and attach metadata to model version."""
-    ver = get_step_context().model.version
-    log_model_version_metadata(metadata={"foobar": "model_meta_" + ver})
-    log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
-    return "artifact_data_" + ver
+    model = get_step_context().model
+
+    log_metadata(
+        metadata={"foobar": "model_meta_" + model.version},
+        model_name=model.name,
+        model_version=model.version,
+    )
+    log_metadata(
+        metadata={"foobar": "artifact_meta_" + model.version},
+        artifact_name="bar",
+    )
+    return "artifact_data_" + model.version
 
 
 @step
 def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
     """Assert that passed in values are loaded in lazy mode.
 
-    They do not exists before actual run of the pipeline.
+    They do not exist before actual run of the pipeline.
     """
     ver = get_step_context().model.version
     assert artifact == "artifact_data_" + ver

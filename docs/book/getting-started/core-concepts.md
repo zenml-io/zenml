@@ -1,8 +1,11 @@
 ---
+icon: lightbulb
 description: Discovering the core concepts behind ZenML.
 ---
 
-# 🪄 Core concepts
+# Core concepts
+
+![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 
@@ -63,7 +66,7 @@ if __name__ == "__main__":
 
 Artifacts represent the data that goes through your steps as inputs and outputs and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed they are written to storage, and when a new step gets executed they are loaded from storage.
 
-The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/handle-data-artifacts/handle-custom-data-types.md).
+The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md).
 
 #### Models
 
@@ -73,7 +76,7 @@ Models are used to represent the outputs of a training process along with all me
 
 Materializers define how artifacts live in between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
 
-All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/handle-data-artifacts/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
+All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
 
 #### Parameters & Settings
 
@@ -133,7 +136,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/README.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
 
 #### Metadata Tracking
 

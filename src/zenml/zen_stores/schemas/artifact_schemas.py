@@ -13,16 +13,18 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
 from zenml.enums import (
+    ArtifactSaveType,
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
@@ -65,6 +67,12 @@ class ArtifactSchema(NamedSchema, table=True):
     """SQL Model for artifacts."""
 
     __tablename__ = "artifact"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_artifact_name",
+        ),
+    )
 
     # Fields
     has_custom_name: bool
@@ -167,6 +175,13 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     """SQL Model for artifact versions."""
 
     __tablename__ = "artifact_version"
+    __table_args__ = (
+        UniqueConstraint(
+            "version",
+            "artifact_id",
+            name="unique_version_for_artifact_id",
+        ),
+    )
 
     # Fields
     version: str
@@ -183,6 +198,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
+    save_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
     # Foreign keys
     artifact_id: UUID = build_foreign_key_field(
@@ -263,9 +279,15 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Args:
             artifact_version_request: The request model to convert.
 
+        Raises:
+            ValueError: If the request does not specify a version number.
+
         Returns:
             The converted schema.
         """
+        if not artifact_version_request.version:
+            raise ValueError("Missing version for artifact version request.")
+
         try:
             version_number = int(artifact_version_request.version)
         except ValueError:
@@ -281,6 +303,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             uri=artifact_version_request.uri,
             materializer=artifact_version_request.materializer.model_dump_json(),
             data_type=artifact_version_request.data_type.model_dump_json(),
+            save_type=artifact_version_request.save_type.value,
         )
 
     def to_model(
@@ -329,8 +352,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
+        artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
-            artifact=self.artifact.to_model(),
+            artifact=artifact,
             version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
@@ -341,6 +365,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
+            save_type=ArtifactSaveType(self.save_type),
+            artifact_store_id=self.artifact_store_id,
         )
 
         # Create the metadata of the model
@@ -348,10 +374,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
-                artifact_store_id=self.artifact_store_id,
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
-                run_metadata={m.key: m.to_model() for m in self.run_metadata},
+                run_metadata={
+                    m.key: json.loads(m.value) for m in self.run_metadata
+                },
             )
 
         resources = None

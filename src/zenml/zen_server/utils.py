@@ -17,8 +17,10 @@ import inspect
 import os
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    List,
     Optional,
     Tuple,
     Type,
@@ -27,31 +29,37 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
+    API,
     ENV_ZENML_SERVER,
+    INFO,
+    VERSION_1,
 )
-from zenml.enums import ServerProviderType
+from zenml.enums import StoreType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
-from zenml.zen_server.deploy.deployment import ServerDeployment
-from zenml.zen_server.deploy.local.local_zen_server import (
-    LocalServerDeploymentConfig,
+from zenml.zen_server.cache import MemoryCache
+from zenml.zen_server.deploy.deployment import (
+    LocalServerDeployment,
 )
+from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
-from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
-from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 logger = get_logger(__name__)
 
@@ -60,7 +68,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional[secure.Secure] = None
+_memcache: Optional[MemoryCache] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -216,102 +224,29 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> secure.Secure:
-    """Return the secure headers component.
+def initialize_memcache(max_capacity: int, default_expiry: int) -> None:
+    """Initialize the memory cache.
+
+    Args:
+        max_capacity: The maximum capacity of the cache.
+        default_expiry: The default expiry time in seconds.
+    """
+    global _memcache
+    _memcache = MemoryCache(max_capacity, default_expiry)
+
+
+def memcache() -> MemoryCache:
+    """Return the memory cache.
 
     Returns:
-        The secure headers component.
+        The memory cache.
 
     Raises:
-        RuntimeError: If the secure headers component is not initialized.
+        RuntimeError: If the memory cache is not initialized.
     """
-    global _secure_headers
-    if _secure_headers is None:
-        raise RuntimeError("Secure headers component not initialized")
-    return _secure_headers
-
-
-def initialize_secure_headers() -> None:
-    """Initialize the secure headers component."""
-    global _secure_headers
-
-    config = server_config()
-
-    # For each of the secure headers supported by the `secure` library, we
-    # check if the corresponding configuration is set in the server
-    # configuration:
-    #
-    # - if set to `True`, we use the default value for the header
-    # - if set to a string, we use the string as the value for the header
-    # - if set to `False`, we don't set the header
-
-    server: Optional[secure.Server] = None
-    if config.secure_headers_server:
-        server = secure.Server()
-        if isinstance(config.secure_headers_server, str):
-            server.set(config.secure_headers_server)
-        else:
-            server.set(str(config.deployment_id))
-
-    hsts: Optional[secure.StrictTransportSecurity] = None
-    if config.secure_headers_hsts:
-        hsts = secure.StrictTransportSecurity()
-        if isinstance(config.secure_headers_hsts, str):
-            hsts.set(config.secure_headers_hsts)
-
-    xfo: Optional[secure.XFrameOptions] = None
-    if config.secure_headers_xfo:
-        xfo = secure.XFrameOptions()
-        if isinstance(config.secure_headers_xfo, str):
-            xfo.set(config.secure_headers_xfo)
-
-    xxp: Optional[secure.XXSSProtection] = None
-    if config.secure_headers_xxp:
-        xxp = secure.XXSSProtection()
-        if isinstance(config.secure_headers_xxp, str):
-            xxp.set(config.secure_headers_xxp)
-
-    csp: Optional[secure.ContentSecurityPolicy] = None
-    if config.secure_headers_csp:
-        csp = secure.ContentSecurityPolicy()
-        if isinstance(config.secure_headers_csp, str):
-            csp.set(config.secure_headers_csp)
-
-    content: Optional[secure.XContentTypeOptions] = None
-    if config.secure_headers_content:
-        content = secure.XContentTypeOptions()
-        if isinstance(config.secure_headers_content, str):
-            content.set(config.secure_headers_content)
-
-    referrer: Optional[secure.ReferrerPolicy] = None
-    if config.secure_headers_referrer:
-        referrer = secure.ReferrerPolicy()
-        if isinstance(config.secure_headers_referrer, str):
-            referrer.set(config.secure_headers_referrer)
-
-    cache: Optional[secure.CacheControl] = None
-    if config.secure_headers_cache:
-        cache = secure.CacheControl()
-        if isinstance(config.secure_headers_cache, str):
-            cache.set(config.secure_headers_cache)
-
-    permissions: Optional[secure.PermissionsPolicy] = None
-    if config.secure_headers_permissions:
-        permissions = secure.PermissionsPolicy()
-        if isinstance(config.secure_headers_permissions, str):
-            permissions.value = config.secure_headers_permissions
-
-    _secure_headers = secure.Secure(
-        server=server,
-        hsts=hsts,
-        xfo=xfo,
-        xxp=xxp,
-        csp=csp,
-        content=content,
-        referrer=referrer,
-        cache=cache,
-        permissions=permissions,
-    )
+    if _memcache is None:
+        raise RuntimeError("Memory cache not initialized")
+    return _memcache
 
 
 _server_config: Optional[ServerConfiguration] = None
@@ -329,86 +264,84 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
+def get_local_server() -> Optional["LocalServerDeployment"]:
+    """Get the active local server.
 
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
+    Call this function to retrieve the local server deployed on this machine.
 
     Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
+        The local server deployment or None, if no local server deployment was
+        found.
     """
-    from zenml.zen_server.deploy.deployer import ServerDeployer
+    from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
-    deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
-    if not servers:
+    deployer = LocalServerDeployer()
+    try:
+        return deployer.get_server()
+    except ServerDeploymentNotFoundError:
         return None
 
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
 
-    return None
-
-
-def get_active_server_details() -> Tuple[str, Optional[int]]:
-    """Get the URL of the current ZenML Server.
-
-    When multiple servers are present, the following precedence is used to
-    determine which server to use:
-    - If the client is connected to a server, that server has precedence.
-    - If no server is connected, a server that was deployed remotely has
-        precedence over a server that was deployed locally.
+def connected_to_local_server() -> bool:
+    """Check if the client is connected to a local server.
 
     Returns:
-        The URL and port of the currently active server.
+        True if the client is connected to a local server, False otherwise.
+    """
+    from zenml.zen_server.deploy.deployer import LocalServerDeployer
+
+    deployer = LocalServerDeployer()
+    return deployer.is_connected_to_server()
+
+
+def show_dashboard(
+    local: bool = False,
+    ngrok_token: Optional[str] = None,
+) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        local: Whether to show the dashboard for the local server or the
+            one for the active server.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML
+            dashboard on a public domain. Primarily used for accessing the
+            dashboard in Colab.
 
     Raises:
-        RuntimeError: If no server is active.
+        RuntimeError: If no server is connected.
     """
-    # Check for connected servers first
-    gc = GlobalConfiguration()
-    if not gc.uses_default_store():
-        logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store_configuration.url)
-        return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
-    # Else, check for deployed servers
-    server = get_active_deployment(local=False)
-    if server:
-        logger.debug("Getting URL of remote server.")
-    else:
-        server = get_active_deployment(local=True)
-        logger.debug("Getting URL of local server.")
+    from zenml.utils.dashboard_utils import show_dashboard
+    from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
 
-    if server and server.status and server.status.url:
-        if isinstance(server.config, LocalServerDeploymentConfig):
-            return server.status.url, server.config.port
-        return server.status.url, None
+    url: Optional[str] = None
+    if not local:
+        gc = GlobalConfiguration()
+        if gc.store_configuration.type == StoreType.REST:
+            url = gc.store_configuration.url
 
-    raise RuntimeError(
-        "ZenML is not connected to any server right now. Please use "
-        "`zenml connect` to connect to a server or spin up a new local server "
-        "via `zenml up`."
-    )
+    if not url:
+        # Else, check for local servers
+        server = get_local_server()
+        if server and server.status and server.status.url:
+            url = server.status.url
+
+    if not url:
+        raise RuntimeError(
+            "ZenML is not connected to any server right now. Please use "
+            "`zenml login` to connect to a server or spin up a new local server "
+            "via `zenml login --local`."
+        )
+
+    if ngrok_token:
+        parsed_url = urlparse(url)
+
+        ngrok_url = get_or_create_ngrok_tunnel(
+            ngrok_token=ngrok_token, port=parsed_url.port or 80
+        )
+        logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
+        url = ngrok_url
+
+    show_dashboard(url)
 
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -570,3 +503,70 @@ def verify_admin_status_if_no_rbac(
                 "without RBAC enabled.",
             )
     return
+
+
+def is_user_request(request: "Request") -> bool:
+    """Determine if the incoming request is a user request.
+
+    This function checks various aspects of the request to determine
+    if it's a user-initiated request or a system request.
+
+    Args:
+        request: The incoming FastAPI request object.
+
+    Returns:
+        True if it's a user request, False otherwise.
+    """
+    # Define system paths that should be excluded
+    system_paths: List[str] = [
+        "/health",
+        "/metrics",
+        "/system",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    ]
+
+    user_prefix = f"{API}{VERSION_1}"
+    excluded_user_apis = [INFO]
+    # Check if this is not an excluded endpoint
+    if request.url.path in [
+        user_prefix + suffix for suffix in excluded_user_apis
+    ]:
+        return False
+
+    # Check if this is other user request
+    if request.url.path.startswith(user_prefix):
+        return True
+
+    # Exclude system paths
+    if any(request.url.path.startswith(path) for path in system_paths):
+        return False
+
+    # Exclude requests with specific headers
+    if request.headers.get("X-System-Request") == "true":
+        return False
+
+    # Exclude requests from certain user agents (e.g., monitoring tools)
+    user_agent = request.headers.get("User-Agent", "").lower()
+    system_agents = ["prometheus", "datadog", "newrelic", "pingdom"]
+    if any(agent in user_agent for agent in system_agents):
+        return False
+
+    # Check for internal IP addresses
+    client_host = request.client.host if request.client else None
+    if client_host and (
+        client_host.startswith("10.") or client_host.startswith("192.168.")
+    ):
+        return False
+
+    # Exclude OPTIONS requests (often used for CORS preflight)
+    if request.method == "OPTIONS":
+        return False
+
+    # Exclude specific query parameters that might indicate system requests
+    if request.query_params.get("system_check"):
+        return False
+
+    # If none of the above conditions are met, consider it a user request
+    return True

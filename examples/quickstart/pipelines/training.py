@@ -14,68 +14,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from typing import Optional
-from uuid import UUID
-
-from steps import model_evaluator, model_promoter, model_trainer
-
-from pipelines import (
-    feature_engineering,
+import materializers
+from steps import (
+    evaluate_model,
+    load_data,
+    split_dataset,
+    test_model,
+    tokenize_data,
+    train_model,
 )
+from steps.model_trainer import T5_Model
+
 from zenml import pipeline
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+assert materializers  # Ensure materializers are loaded
+
 
 @pipeline
-def training(
-    train_dataset_id: Optional[UUID] = None,
-    test_dataset_id: Optional[UUID] = None,
-    target: Optional[str] = "target",
-    model_type: Optional[str] = "sgd",
+def english_translation_pipeline(
+    data_url: str,
+    model_type: T5_Model,
+    per_device_train_batch_size: int,
+    gradient_accumulation_steps: int,
+    dataloader_num_workers: int,
+    num_train_epochs: int = 5,
 ):
-    """
-    Model training pipeline.
-
-    This is a pipeline that loads the data from a preprocessing pipeline,
-    trains a model on it and evaluates the model. If it is the first model
-    to be trained, it will be promoted to production. If not, it will be
-    promoted only if it has a higher accuracy than the current production
-    model version.
-
-    Args:
-        train_dataset_id: ID of the train dataset produced by feature engineering.
-        test_dataset_id: ID of the test dataset produced by feature engineering.
-        target: Name of target column in dataset.
-        model_type: The type of model to train.
-    """
-    # Link all the steps together by calling them and passing the output
-    # of one step as the input of the next step.
-
-    # Execute Feature Engineering Pipeline
-    if train_dataset_id is None or test_dataset_id is None:
-        dataset_trn, dataset_tst = feature_engineering()
-    else:
-        client = Client()
-        dataset_trn = client.get_artifact_version(
-            name_id_or_prefix=train_dataset_id
-        )
-        dataset_tst = client.get_artifact_version(
-            name_id_or_prefix=test_dataset_id
-        )
-
-    model = model_trainer(
-        dataset_trn=dataset_trn, target=target, model_type=model_type
+    """Define a pipeline that connects the steps."""
+    full_dataset = load_data(data_url)
+    tokenized_dataset, tokenizer = tokenize_data(
+        dataset=full_dataset, model_type=model_type
     )
-
-    acc = model_evaluator(
+    tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = (
+        split_dataset(tokenized_dataset)
+    )
+    model = train_model(
+        tokenized_dataset=tokenized_train_dataset,
+        model_type=model_type,
+        num_train_epochs=num_train_epochs,
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        dataloader_num_workers=dataloader_num_workers,
+    )
+    evaluate_model(model=model, tokenized_dataset=tokenized_eval_dataset)
+    test_model(
         model=model,
-        dataset_trn=dataset_trn,
-        dataset_tst=dataset_tst,
-        target=target,
+        tokenized_test_dataset=tokenized_test_dataset,
+        tokenizer=tokenizer,
     )
-
-    model_promoter(accuracy=acc)

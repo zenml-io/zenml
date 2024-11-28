@@ -46,14 +46,10 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import RequestLimiter
-from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_create_entity,
-)
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
-    get_allowed_resource_ids,
     get_schema_for_resource_type,
     update_resource_membership,
     verify_permission_for_model,
@@ -112,17 +108,18 @@ def list_users(
     Returns:
         A list of all users.
     """
-    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.USER)
-    if allowed_ids is not None:
-        # Make sure users can see themselves
-        allowed_ids.add(auth_context.user.id)
-    else:
-        if not auth_context.user.is_admin and not server_config().rbac_enabled:
-            allowed_ids = {auth_context.user.id}
-
-    user_filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id, id=allowed_ids
-    )
+    # allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.USER)
+    # if allowed_ids is not None:
+    #     # Make sure users can see themselves
+    #     allowed_ids.add(auth_context.user.id)
+    # else:
+    #     if not auth_context.user.is_admin and not server_config().rbac_enabled:
+    #         allowed_ids = {auth_context.user.id}
+    if not auth_context.user.is_admin and not server_config().rbac_enabled:
+        user_filter_model.configure_rbac(
+            authenticated_user_id=auth_context.user.id,
+            id={auth_context.user.id},
+        )
 
     page = zen_store().list_users(
         user_filter_model=user_filter_model, hydrate=hydrate
@@ -175,11 +172,12 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             auth_context.user.is_admin, "create user"
         )
 
-        new_user = verify_permissions_and_create_entity(
-            request_model=user,
-            resource_type=ResourceType.USER,
-            create_method=zen_store().create_user,
-        )
+        # new_user = verify_permissions_and_create_entity(
+        #     request_model=user,
+        #     resource_type=ResourceType.USER,
+        #     create_method=zen_store().create_user,
+        # )
+        new_user = zen_store().create_user(user)
 
         # add back the original unhashed activation token, if generated, to
         # send it back to the client
@@ -217,10 +215,10 @@ def get_user(
         verify_admin_status_if_no_rbac(
             auth_context.user.is_admin, "get other user"
         )
-        verify_permission_for_model(
-            user,
-            action=Action.READ,
-        )
+        # verify_permission_for_model(
+        #     user,
+        #     action=Action.READ,
+        # )
 
     return dehydrate_response_model(user)
 
@@ -286,7 +284,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # - active
         # - password
         # - email_opted_in + email
-        # - hub_token
         #
         safe_user_update = user_update.create_copy(
             exclude={
@@ -298,7 +295,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "old_password",
                 "email_opted_in",
                 "email",
-                "hub_token",
             },
         )
 
@@ -306,10 +302,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             verify_admin_status_if_no_rbac(
                 auth_context.user.is_admin, "update other user account"
             )
-            verify_permission_for_model(
-                user,
-                action=Action.UPDATE,
-            )
+            # verify_permission_for_model(
+            #     user,
+            #     action=Action.UPDATE,
+            # )
 
         # Validate a password change
         if user_update.password is not None:
@@ -387,7 +383,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         if (
             user_update.email_opted_in is not None
             or user_update.email is not None
-            or user_update.hub_token is not None
         ):
             if user.id != auth_context.user.id:
                 raise IllegalOperationError(
@@ -399,8 +394,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             if safe_user_update.email_opted_in is not None:
                 safe_user_update.email_opted_in = user_update.email_opted_in
                 safe_user_update.email = user_update.email
-            if safe_user_update.hub_token is not None:
-                safe_user_update.hub_token = user_update.hub_token
 
         updated_user = zen_store().update_user(
             user_id=user.id,
@@ -444,7 +437,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # - is_admin
         # - active
         # - old_password
-        # - hub_token
         #
         safe_user_update = user_update.create_copy(
             exclude={
@@ -453,7 +445,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "is_admin",
                 "active",
                 "old_password",
-                "hub_token",
             },
         )
 
@@ -504,10 +495,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         verify_admin_status_if_no_rbac(
             auth_context.user.is_admin, "deactivate user"
         )
-        verify_permission_for_model(
-            user,
-            action=Action.UPDATE,
-        )
+        # verify_permission_for_model(
+        #     user,
+        #     action=Action.UPDATE,
+        # )
 
         user_update = UserUpdate(
             active=False,
@@ -555,10 +546,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             verify_admin_status_if_no_rbac(
                 auth_context.user.is_admin, "delete user"
             )
-            verify_permission_for_model(
-                user,
-                action=Action.DELETE,
-            )
+            # verify_permission_for_model(
+            #     user,
+            #     action=Action.DELETE,
+            # )
 
         zen_store().delete_user(user_name_or_id=user_name_or_id)
 
@@ -753,7 +744,7 @@ if server_config().rbac_enabled:
             KeyError: If no resource with the given type and ID exists.
         """
         user = zen_store().get_user(user_name_or_id)
-        verify_permission_for_model(user, action=Action.READ)
+        # verify_permission_for_model(user, action=Action.READ)
 
         if user.id == auth_context.user.id:
             raise ValueError(

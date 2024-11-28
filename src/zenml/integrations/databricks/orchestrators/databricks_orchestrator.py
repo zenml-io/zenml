@@ -52,6 +52,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
+from zenml.utils.package_utils import clean_requirements
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -229,6 +230,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
         """
+        settings = cast(
+            DatabricksOrchestratorSettings, self.get_settings(deployment)
+        )
         if deployment.schedule:
             if (
                 deployment.schedule.catchup
@@ -246,7 +250,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 )
             if (
                 deployment.schedule.cron_expression
-                and self.settings_class().schedule_timezone is None
+                and settings.schedule_timezone is None
             ):
                 raise ValueError(
                     "Property `schedule_timezone` must be set when passing "
@@ -321,7 +325,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     f"{deployment_id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
-                    requirements,
+                    clean_requirements(requirements),
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
                     job_cluster_key=job_cluster_key,
@@ -366,7 +370,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
-        spark_env_vars = self.settings_class().spark_env_vars
+        spark_env_vars = settings.spark_env_vars
         if spark_env_vars:
             for key, value in spark_env_vars.items():
                 env_vars[key] = value
@@ -385,6 +389,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         job_cluster_key = self.sanitize_name(f"{deployment_id}")
         self._upload_and_run_pipeline(
             pipeline_name=orchestrator_run_name,
+            settings=settings,
             tasks=_construct_databricks_pipeline(
                 databricks_wheel_path, job_cluster_key
             ),
@@ -396,6 +401,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
+        settings: DatabricksOrchestratorSettings,
         tasks: List[DatabricksTask],
         env_vars: Dict[str, str],
         job_cluster_key: str,
@@ -409,6 +415,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             env_vars: The environment variables.
             job_cluster_key: The ID of the Databricks job cluster.
             schedule: The schedule to run the pipeline
+            settings: The settings for the Databricks orchestrator.
 
         Raises:
             ValueError: If the `Job Compute` policy is not found.
@@ -416,12 +423,12 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         """
         databricks_client = self._get_databricks_client()
-        spark_conf = self.settings_class().spark_conf or {}
+        spark_conf = settings.spark_conf or {}
         spark_conf[
             "spark.databricks.driver.dbfsLibraryInstallationAllowed"
         ] = "true"
 
-        policy_id = self.settings_class().policy_id or None
+        policy_id = settings.policy_id or None
         for policy in databricks_client.cluster_policies.list():
             if policy.name == "Job Compute":
                 policy_id = policy.policy_id
@@ -432,17 +439,16 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         job_cluster = JobCluster(
             job_cluster_key=job_cluster_key,
             new_cluster=ClusterSpec(
-                spark_version=self.settings_class().spark_version
+                spark_version=settings.spark_version
                 or DATABRICKS_SPARK_DEFAULT_VERSION,
-                num_workers=self.settings_class().num_workers,
-                node_type_id=self.settings_class().node_type_id
-                or "Standard_D4s_v5",
+                num_workers=settings.num_workers,
+                node_type_id=settings.node_type_id or "Standard_D4s_v5",
                 policy_id=policy_id,
                 autoscale=AutoScale(
-                    min_workers=self.settings_class().autoscale[0],
-                    max_workers=self.settings_class().autoscale[1],
+                    min_workers=settings.autoscale[0],
+                    max_workers=settings.autoscale[1],
                 ),
-                single_user_name=self.settings_class().single_user_name,
+                single_user_name=settings.single_user_name,
                 spark_env_vars=env_vars,
                 spark_conf=spark_conf,
                 workload_type=WorkloadType(
@@ -451,7 +457,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ),
         )
         if schedule and schedule.cron_expression:
-            schedule_timezone = self.settings_class().schedule_timezone
+            schedule_timezone = settings.schedule_timezone
             if schedule_timezone:
                 databricks_schedule = CronSchedule(
                     quartz_cron_expression=schedule.cron_expression,
