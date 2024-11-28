@@ -14,10 +14,10 @@
 """Utils for strings."""
 
 import base64
-import datetime
 import functools
 import random
 import string
+from datetime import datetime
 from typing import Any, Callable, Dict, TypeVar, cast
 
 from pydantic import BaseModel
@@ -147,7 +147,7 @@ def validate_name(model: BaseModel) -> None:
 
 def format_name_template(
     name_template: str,
-    **kwargs: str,
+    substitutions: Dict[str, str],
 ) -> str:
     """Formats a name template with the given arguments.
 
@@ -157,20 +157,38 @@ def format_name_template(
 
     Args:
         name_template: The name template to format.
-        **kwargs: The arguments to replace in the template.
+        substitutions: A dictionary of substitutions to use in the template.
 
     Returns:
         The formatted name template.
+
+    Raises:
+        KeyError: If a key in template is missing in the kwargs.
     """
-    kwargs["date"] = kwargs.get(
-        "date",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%Y_%m_%d"),
-    )
-    kwargs["time"] = kwargs.get(
-        "time",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
-    )
-    return name_template.format(**kwargs)
+    if ("date" not in substitutions and "{date}" in name_template) or (
+        "time" not in substitutions and "{time}" in name_template
+    ):
+        from zenml import get_step_context
+
+        try:
+            pr = get_step_context().pipeline_run
+            start_time = pr.start_time
+            substitutions.update(pr.config.substitutions)
+        except RuntimeError:
+            start_time = None
+
+        if start_time is None:
+            start_time = datetime.utcnow()
+        substitutions.setdefault("date", start_time.strftime("%Y_%m_%d"))
+        substitutions.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
+
+    try:
+        return name_template.format(**substitutions)
+    except KeyError as e:
+        raise KeyError(
+            f"Could not format the name template `{name_template}`. "
+            f"Missing key: {e}"
+        )
 
 
 def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:

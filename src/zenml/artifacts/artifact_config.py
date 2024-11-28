@@ -21,6 +21,7 @@ from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.string_utils import format_name_template
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,13 @@ class ArtifactConfig(BaseModel):
     ```
 
     Attributes:
-        name: The name of the artifact.
+        name: The name of the artifact:
+            - static string e.g. "name"
+            - dynamic string e.g. "name_{date}_{time}_{custom_placeholder}"
+            If you use any placeholders besides `date` and `time`,
+            you need to provide the values for them in the `substitutions`
+            argument of the step decorator or the `substitutions` argument
+            of `with_options` of the step.
         version: The version of the artifact.
         tags: The tags of the artifact.
         run_metadata: Metadata to add to the artifact.
@@ -111,3 +118,16 @@ class ArtifactConfig(BaseModel):
             data.setdefault("artifact_type", ArtifactType.SERVICE)
 
         return data
+
+    def _evaluated_name(self, substitutions: Dict[str, str]) -> Optional[str]:
+        """Evaluated name of the artifact.
+
+        Args:
+            substitutions: Extra placeholders to use in the name template.
+
+        Returns:
+            The evaluated name of the artifact.
+        """
+        if self.name:
+            return format_name_template(self.name, substitutions=substitutions)
+        return self.name

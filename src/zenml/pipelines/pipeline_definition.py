@@ -135,6 +135,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        substitutions: Optional[Dict[str, str]] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -157,6 +158,7 @@ class Pipeline:
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
+            substitutions: Extra placeholders to use in the name templates.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -177,6 +179,7 @@ class Pipeline:
                 on_failure=on_failure,
                 on_success=on_success,
                 model=model,
+                substitutions=substitutions,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -297,6 +300,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
+        substitutions: Optional[Dict[str, str]] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -333,6 +337,7 @@ class Pipeline:
                 method for an example.
             model: configuration of the model version in the Model Control Plane.
             parameters: input parameters for the pipeline.
+            substitutions: Extra placeholders to use in the name templates.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -365,6 +370,7 @@ class Pipeline:
                 "success_hook_source": success_hook_source,
                 "model": model,
                 "parameters": parameters,
+                "substitutions": substitutions,
             }
         )
         if not self.__suppress_warnings_flag__:
@@ -656,7 +662,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 schedule_name = schedule.name
             else:
                 schedule_name = format_name_template(
-                    deployment.run_name_template
+                    deployment.run_name_template,
+                    substitutions=deployment.pipeline_configuration.substitutions,
                 )
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]

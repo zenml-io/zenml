@@ -363,6 +363,7 @@ def deployment_request_from_template(
                     "external_input_artifacts",
                     "model_artifacts_or_metadata",
                     "client_lazy_loaders",
+                    "substitutions",
                     "outputs",
                 }
             ),

@@ -66,16 +66,21 @@ def create_placeholder_run(
 
     if deployment.schedule:
         return None
-
+    start_time = datetime.utcnow()
     run_request = PipelineRunRequest(
-        name=get_run_name(run_name_template=deployment.run_name_template),
+        name=get_run_name(
+            run_name_template=deployment.run_name_template,
+            substitutions=deployment.pipeline_configuration._get_full_substitutions(
+                start_time
+            ),
+        ),
         # We set the start time on the placeholder run already to
         # make it consistent with the {time} placeholder in the
         # run name. This means the placeholder run will usually
         # have longer durations than scheduled runs, as for them
         # the start_time is only set once the first step starts
         # running.
-        start_time=datetime.utcnow(),
+        start_time=start_time,
         orchestrator_run_id=None,
         user=deployment.user.id,
         workspace=deployment.workspace.id,

@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 
 def publish_successful_step_run(
-    step_run_id: "UUID", output_artifact_ids: Dict[str, "UUID"]
+    step_run_id: "UUID", output_artifact_ids: Dict[str, List["UUID"]]
 ) -> "StepRunResponse":
     """Publishes a successful step run.
 

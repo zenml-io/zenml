@@ -57,7 +57,9 @@ class Model(BaseModel):
     ethics: The ethical implications of the model.
     tags: Tags associated with the model.
     version: The version name, version number or stage is optional and points model context
-        to a specific version/stage. If skipped new version will be created.
+        to a specific version/stage. If skipped new version will be created. `version`
+        also supports placeholders: standard `{date}` and `{time}` and any custom placeholders
+        that are passed as substitutions in the pipeline or step decorators.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     """
@@ -538,6 +540,8 @@ class Model(BaseModel):
         from zenml.models import ModelRequest
 
         zenml_client = Client()
+        # backup logic, if the Model class is used directly from the code
+        self.name = format_name_template(self.name, substitutions={})
         if self.model_version_id:
             mv = zenml_client.get_model_version(
                 model_version_name_or_number_or_id=self.model_version_id,
@@ -667,7 +671,7 @@ class Model(BaseModel):
 
         # backup logic, if the Model class is used directly from the code
         if isinstance(self.version, str):
-            self.version = format_name_template(self.version)
+            self.version = format_name_template(self.version, substitutions={})
 
         try:
             if self.version or self.model_version_id:

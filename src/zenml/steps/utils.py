@@ -18,7 +18,15 @@ import ast
 import contextlib
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -95,7 +103,8 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 
 
 def parse_return_type_annotations(
-    func: Callable[..., Any], enforce_type_annotations: bool = False
+    func: Callable[..., Any],
+    enforce_type_annotations: bool = False,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -229,9 +238,12 @@ def get_artifact_config_from_annotation_metadata(
 
     error_message = (
         "Artifact annotation should only contain two elements: the artifact "
-        "type, and either an output name or an `ArtifactConfig`, e.g.: "
-        "`Annotated[int, 'output_name']` or "
-        "`Annotated[int, ArtifactConfig(name='output_name'), ...]`."
+        "type, and one of the following: { a static or dynamic name || "
+        "an `ArtifactConfig` }, e.g.: "
+        "`Annotated[int, 'output_name']` || "
+        "`Annotated[int, 'output_{placeholder}']` || "
+        "`Annotated[int, ArtifactConfig(name='output_{placeholder}')]` ||"
+        "`Annotated[int, ArtifactConfig(name='output_name')]`."
     )
 
     if len(metadata) > 2:

@@ -52,7 +52,8 @@ redirects:
   how-to/build-pipelines/schedule-a-pipeline: how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md
   how-to/build-pipelines/delete-a-pipeline: how-to/pipeline-development/build-pipelines/delete-a-pipeline.md
   how-to/build-pipelines/compose-pipelines: how-to/pipeline-development/build-pipelines/compose-pipelines.md
-  how-to/build-pipelines/dynamically-assign-artifact-names: how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names.md
+  how-to/build-pipelines/dynamically-assign-artifact-names: how-to/data-artifact-management/handle-data-artifacts/artifacts-naming.md
+  how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names: how-to/data-artifact-management/handle-data-artifacts/artifacts-naming.md
   how-to/build-pipelines/retry-steps: how-to/pipeline-development/build-pipelines/retry-steps.md
   how-to/build-pipelines/run-pipelines-asynchronously: how-to/pipeline-development/build-pipelines/run-pipelines-asynchronously.md
   how-to/build-pipelines/control-execution-order-of-steps: how-to/pipeline-development/build-pipelines/control-execution-order-of-steps.md
