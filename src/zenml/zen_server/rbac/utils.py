@@ -199,6 +199,7 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
         }
     )
 
+from zenml.models import ServiceConnectorResponse
 
 def batch_verify_permissions_for_models(
     models: Sequence[AnyResponse],
@@ -222,6 +223,13 @@ def batch_verify_permissions_for_models(
         permission_model = get_surrogate_permission_model_for_model(
             model, action=action
         )
+
+        if isinstance(model, ServiceConnectorResponse):
+            if not custom_has_permissions_for_service_connector(service_connector=model, user=get_auth_context().user):
+                raise IllegalOperationError("Not allowed")
+            else:
+                continue
+
 
         if resource := get_resource_for_model(permission_model):
             resources.add(resource)
@@ -618,3 +626,37 @@ def update_resource_membership(
     rbac().update_resource_membership(
         user=user, resource=resource, actions=actions
     )
+
+
+def custom_has_permissions_for_service_connector(
+    service_connector: "ServiceConnectorResponse", user: UserResponse
+) -> bool:
+    from zenml.zen_server.utils import zen_store
+
+    if not service_connector.user or service_connector.user.id == user.id:
+        return True
+
+    stack_ids, component_ids, owner_ids = (
+        zen_store()._get_stacks_and_components_for_service_connector(service_connector_id=service_connector.id)
+    )
+
+    if None in owner_ids or user.id in owner_ids:
+        return True
+
+    full_stack_access, allowed_stack_ids = rbac().list_allowed_resource_ids(
+        user=user,
+        resource=Resource(type=ResourceType.STACK),
+        action=Action.READ,
+    )
+    if full_stack_access or stack_ids.intersection(allowed_stack_ids):
+        return True
+
+    full_component_access, allowed_component_ids = (
+        rbac().list_allowed_resource_ids(user=user, resource=Resource(type=ResourceType.STACK_COMPONENT), action=Action.READ)
+    )
+    if full_component_access or component_ids.intersection(
+        allowed_component_ids
+    ):
+        return True
+
+    return False

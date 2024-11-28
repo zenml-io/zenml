@@ -45,7 +45,6 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
-    verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
@@ -102,12 +101,32 @@ def list_service_connectors(
     Returns:
         Page with list of service connectors for a specific type.
     """
-    connectors = verify_permissions_and_list_entities(
-        filter_model=connector_filter_model,
-        resource_type=ResourceType.SERVICE_CONNECTOR,
-        list_method=zen_store().list_service_connectors,
-        hydrate=hydrate,
+    allowed_connector_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SERVICE_CONNECTOR
     )
+    allowed_component_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.STACK_COMPONENT
+    )
+    allowed_stack_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.STACK
+    )
+
+    connector_filter_model.configure_rbac(
+        _.user.id,
+        service_connectors=allowed_connector_ids,
+        components=allowed_component_ids,
+        stacks=allowed_stack_ids,
+    )
+    connectors = zen_store().list_service_connectors(
+        connector_filter_model, hydrate=hydrate
+    )
+
+    # connectors = verify_permissions_and_list_entities(
+    #     filter_model=connector_filter_model,
+    #     resource_type=ResourceType.SERVICE_CONNECTOR,
+    #     list_method=zen_store().list_service_connectors,
+    #     hydrate=hydrate,
+    # )
 
     if expand_secrets:
         # This will be `None` if the user is allowed to read secret values

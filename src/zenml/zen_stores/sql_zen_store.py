@@ -11087,3 +11087,71 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(tag_model)
             session.commit()
+
+    def _get_stacks_for_component(
+        self, service_connector_id: UUID
+    ) -> Set[UUID]:
+        from zenml.zen_stores.schemas import StackCompositionSchema
+
+        with Session(self.engine) as session:
+            query = (
+                select(StackSchema.id, StackSchema.user_id)
+                .join(
+                    StackCompositionSchema,
+                    StackSchema.id == StackCompositionSchema.stack_id,
+                )
+                .join(
+                    StackComponentSchema,
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id,
+                )
+                .join(
+                    ServiceConnectorSchema,
+                    StackComponentSchema.connector_id == service_connector_id,
+                )
+            )
+            result = session.exec(query).all()
+
+            stack_ids, owner_ids = zip(*result)
+            return set(stack_ids), set(owner_ids)
+
+    def _get_stacks_and_components_for_service_connector(
+        self, service_connector_id: UUID
+    ) -> Tuple[Set[UUID], Set[UUID], Set[UUID]]:
+        from zenml.zen_stores.schemas import StackCompositionSchema
+
+        with Session(self.engine) as session:
+            query = (
+                select(
+                    StackSchema.id,
+                    StackSchema.user_id,
+                    StackComponentSchema.id,
+                    StackComponentSchema.user_id,
+                )
+                .join(
+                    StackCompositionSchema,
+                    StackSchema.id == StackCompositionSchema.stack_id,
+                )
+                .join(
+                    StackComponentSchema,
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id,
+                )
+                .join(
+                    ServiceConnectorSchema,
+                    StackComponentSchema.connector_id == service_connector_id,
+                )
+            )
+            result = session.exec(query).all()
+
+            stack_ids, stack_owners, component_ids, component_owners = zip(
+                *result
+            )
+
+        return (
+            set(stack_ids),
+            set(component_ids),
+            set(stack_owners + component_owners),
+        )
+        # if owners has `None` in it, there is no owner which means everyone
+        # owns it

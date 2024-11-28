@@ -15,10 +15,20 @@
 
 import json
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field, SecretStr, ValidationError, model_validator
+from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -35,6 +45,11 @@ from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypeModel,
 )
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
 
@@ -881,6 +896,76 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
             self.labels_str = json.dumps(self.labels)
 
         return self
+
+    def generate_rbac_filter(
+        self, table: type["AnySchema"]
+    ) -> Optional[ColumnElement[bool]]:
+        from sqlmodel import and_, col, or_
+
+        if not self._rbac_configuration:
+            return None
+
+        user_id = self._rbac_configuration[0]
+        stack_ids = self._rbac_configuration[1]["stacks"]
+        component_ids = self._rbac_configuration[1]["components"]
+        service_connector_ids = self._rbac_configuration[1][
+            "service_connectors"
+        ]
+
+        if service_connector_ids is None:
+            # Full access, return immediately
+            return None
+        else:
+            from zenml.zen_stores.schemas import (
+                ServiceConnectorSchema,
+                StackComponentSchema,
+                StackCompositionSchema,
+                StackSchema,
+            )
+
+            direct_access = or_(
+                col(ServiceConnectorSchema.id).in_(service_connector_ids),
+                col(ServiceConnectorSchema.user_id).in_([None, user_id]),
+            )
+
+            if component_ids is None:
+                # Full component access
+                access_via_component = (
+                    ServiceConnectorSchema.id
+                    == StackComponentSchema.connector_id
+                )
+            else:
+                access_via_component = and_(
+                    ServiceConnectorSchema.id
+                    == StackComponentSchema.connector_id,
+                    or_(
+                        col(StackComponentSchema.id).in_(component_ids),
+                        col(StackComponentSchema.user_id).in_([None, user_id]),
+                    ),
+                )
+
+            if stack_ids is None:
+                access_via_stack = and_(
+                    ServiceConnectorSchema.id
+                    == StackComponentSchema.connector_id,
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id,
+                    StackCompositionSchema.stack_id == StackSchema.id,
+                )
+            else:
+                access_via_stack = and_(
+                    ServiceConnectorSchema.id
+                    == StackComponentSchema.connector_id,
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id,
+                    StackCompositionSchema.stack_id == StackSchema.id,
+                    or_(
+                        col(StackSchema.id).in_(stack_ids),
+                        col(StackSchema.user_id).in_([None, user_id]),
+                    ),
+                )
+
+            return or_(direct_access, access_via_component, access_via_stack)
 
 
 # ------------------ Helper Functions ------------------
