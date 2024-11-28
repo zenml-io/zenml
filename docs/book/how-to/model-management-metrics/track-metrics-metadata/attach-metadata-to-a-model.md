@@ -37,20 +37,16 @@ def train_model(dataset: pd.DataFrame) -> Annotated[
     classifier = RandomForestClassifier().fit(dataset)
     accuracy, precision, recall = ...
     
-    step_context = get_step_context()
-    
-    if step_context.model:
-       # Log metadata for the model
-       log_metadata(
-           metadata={
-               "evaluation_metrics": {
-                   "accuracy": accuracy,
-                   "precision": precision,
-                   "recall": recall
-               }
-           },
-           model_version_id=step_context.model.id,
-       )
+    log_metadata(
+        metadata={
+            "evaluation_metrics": {
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall
+            }
+        },
+        infer_model=True,
+    )
 
     return classifier
 ```
@@ -60,21 +56,17 @@ specific classifier artifact. This is particularly useful when the metadata
 reflects an aggregation or summary of various steps and artifacts in the
 pipeline.
 
-{% hint style="info" %}
-You can use the `get_step_context()` function to get fetch the model and model 
-version that the step is using.
-{% endhint %}
 
 ### Selecting Models with `log_metadata`
 
-When using `log_metadata` with a model, ZenML provides flexible options to
-attach metadata accurately:
+When using `log_metadata`, ZenML provides flexible options of attaching 
+metadata to model versions:
 
-1. **Model Name and Version Provided**: If both a model name and version are
+1. **Using `infer_model`**: If used within a step, ZenML will use the step
+   context to infer the model it is using and attach the metadata to it.
+2. **Model Name and Version Provided**: If both a model name and version are
    provided, ZenML will use these to identify and attach metadata to the
    specific model version.
-2. **Model Name Only**: If only a model name is provided, ZenML will attach
-   metadata to the latest version of the model.
 3. **Model Version ID Provided**: If a model version ID is directly provided,
    ZenML will use it to fetch and attach the metadata to that specific model
    version.

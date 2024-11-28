@@ -26,8 +26,6 @@ value, including ZenML custom types like `Uri`, `Path`, `DType`, and
 Here's an example of logging metadata for an artifact:
 
 ```python
-from typing import Annotated
-
 import pandas as pd
 
 from zenml import step, log_metadata
@@ -35,21 +33,19 @@ from zenml.metadata.metadata_types import StorageSize
 
 
 @step
-def process_data_step(dataframe: pd.DataFrame) -> Annotated[
-    pd.DataFrame, "processed_data"
-]:
+def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Process a dataframe and log metadata about the result."""
     processed_dataframe = ...
 
     # Log metadata about the processed dataframe
     log_metadata(
-        artifact_name="processed_data",
         metadata={
             "row_count": len(processed_dataframe),
             "columns": list(processed_dataframe.columns),
             "storage_size": StorageSize(
                 processed_dataframe.memory_usage().sum())
-        }
+        },
+        infer_artifact=True,
     )
     return processed_dataframe
 ```
@@ -59,17 +55,15 @@ def process_data_step(dataframe: pd.DataFrame) -> Annotated[
 When using `log_metadata` with an artifact name, ZenML provides flexible 
 options to attach metadata to the correct artifact:
 
-1. **Name and Version Provided**: If both an artifact name and version are 
+1. **Using `infer_artifact`**: If used within a step, ZenML will use the step
+context to infer the outputs artifacts of the step. If the step has only one 
+output, this artifact will be selected. However, if you additionally 
+provide an `artifact_name`, ZenML will search for this name in the output space
+of the step (useful for step with multiple outputs).
+2. **Name and Version Provided**: If both an artifact name and version are 
 provided, ZenML will use these to identify and attach metadata to the 
 specific artifact version.
-2. **Name Only, Within a Step**: If only a name is provided and 
-`log_metadata` is called within a step, ZenML will try to locate the 
-corresponding output artifact within the step and attach the metadata to it. If 
-an output with the provided name does not exist in the step, check scenario 3.
-3. **Name Only, Outside a Step**: If only a name is provided and 
-`log_metadata` is called outside a step, ZenML will attach metadata to the 
-latest version of the artifact.
-4. **Artifact Version ID Provided**: If an artifact version ID is provided 
+3. **Artifact Version ID Provided**: If an artifact version ID is provided 
 directly, ZenML will use it to fetch and attach the metadata to that 
 specific artifact version.
 
@@ -120,10 +114,11 @@ log_metadata(
         }
     },
     artifact_name="my_artifact",
+    artifact_version="version",
 )
 ```
 
-In the ZenML dashboard, "model_metrics" and "data_details" would appear as 
+In the ZenML dashboard, `model_metrics` and `data_details` would appear as 
 separate cards, each containing their respective key-value pairs.
 
 <!-- For scarf -->

@@ -23,7 +23,6 @@ log_metadata(
         },
         "processed_data_size": StorageSize(2500000)
     },
-    artifact_name="my_artifact",
 )
 ```
 

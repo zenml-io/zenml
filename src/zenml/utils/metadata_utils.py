@@ -268,8 +268,8 @@ def log_metadata(
         if artifact_name is not None:
             # If a name provided, ensure it is in the outputs
             assert artifact_name in step_output_names, (
-                f"The provided `artifact_name` does not exist in the "
-                f"step outputs: {step_output_names}."
+                f"The provided artifact name`{artifact_name}` does not exist "
+                f"in the step outputs: {step_output_names}."
             )
         else:
             # If no name provided, ensure there is only one output

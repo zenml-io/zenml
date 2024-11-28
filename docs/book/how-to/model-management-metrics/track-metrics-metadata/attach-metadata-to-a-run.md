@@ -14,7 +14,7 @@ custom types like `Uri`, `Path`, `DType`, and `StorageSize`.
 
 If you are logging metadata from within a step that’s part of a pipeline run, 
 calling `log_metadata` will attach the specified metadata to the current 
-pipeline run where the metadata key will have the `step_name:metadata_key` 
+pipeline run where the metadata key will have the `step_name::metadata_key` 
 pattern. This allows you to use the same metadata key from different steps 
 while the run's still executing.
 
