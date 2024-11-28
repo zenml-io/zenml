@@ -444,7 +444,7 @@ def log_artifact_metadata(
             "Deprecation warning! Currently, you are calling "
             "`log_artifact_metadata` from a context, where we use the "
             "`artifact_name` to fetch it and link the metadata to its "
-            "latest version. This behaviour is deprecated and will be "
+            "latest version. This behavior is deprecated and will be "
             "removed in the future. To circumvent this, please check"
             "the `log_metadata` function."
         )
