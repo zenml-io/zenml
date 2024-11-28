@@ -23,6 +23,7 @@ from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
@@ -163,6 +164,9 @@ class StepRunSchema(NamedSchema, table=True):
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
         },
     )
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        back_populates="step_runs"
+    )
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
@@ -247,6 +251,21 @@ class StepRunSchema(NamedSchema, table=True):
             if self.name in step_configuration:
                 full_step_config = Step.model_validate(
                     step_configuration[self.name]
+                )
+                new_substitutions = (
+                    full_step_config.config._get_full_substitutions(
+                        PipelineConfiguration.model_validate_json(
+                            self.deployment.pipeline_configuration
+                        ),
+                        self.pipeline_run.start_time,
+                    )
+                )
+                full_step_config = full_step_config.model_copy(
+                    update={
+                        "config": full_step_config.config.model_copy(
+                            update={"substitutions": new_substitutions}
+                        )
+                    }
                 )
             elif not self.step_configuration:
                 raise ValueError(

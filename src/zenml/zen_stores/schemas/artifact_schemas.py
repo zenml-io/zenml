@@ -352,8 +352,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
+        artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
-            artifact=self.artifact.to_model(),
+            artifact=artifact,
             version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,

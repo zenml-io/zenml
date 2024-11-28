@@ -211,7 +211,8 @@ class EntrypointFunctionDefinition(NamedTuple):
 
 
 def validate_entrypoint_function(
-    func: Callable[..., Any], reserved_arguments: Sequence[str] = ()
+    func: Callable[..., Any],
+    reserved_arguments: Sequence[str] = (),
 ) -> EntrypointFunctionDefinition:
     """Validates a step entrypoint function.
 
@@ -258,7 +259,8 @@ def validate_entrypoint_function(
         inputs[key] = parameter
 
     outputs = parse_return_type_annotations(
-        func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
+        func=func,
+        enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS,
     )
 
     return EntrypointFunctionDefinition(
