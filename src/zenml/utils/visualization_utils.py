@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Optional
 
-from IPython.core.display import HTML, Image, JSON, Markdown, display
+from IPython.core.display import HTML, JSON, Image, Markdown, display
 
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import VisualizationType
