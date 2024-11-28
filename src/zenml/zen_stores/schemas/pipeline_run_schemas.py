@@ -28,7 +28,6 @@ from zenml.enums import (
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
-from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -50,6 +49,7 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
-class PipelineRunSchema(NamedSchema, table=True):
+class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for pipeline runs."""
 
     __tablename__ = "pipeline_run"
@@ -260,18 +260,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             a dictionary, where the key is the key of the metadata entry
                 and the values represent the list of entries with this key.
         """
-        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
-
         # Fetch the metadata related to this run
-        for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_collection:
-                metadata_collection[rm.run_metadata.key] = []
-            metadata_collection[rm.run_metadata.key].append(
-                RunMetadataEntry(
-                    value=json.loads(rm.run_metadata.value),
-                    created=rm.run_metadata.created,
-                )
-            )
+        metadata_collection = super().fetch_metadata_collection()
 
         # Fetch the metadata related to the steps of this run
         for s in self.step_runs:
@@ -280,19 +270,6 @@ class PipelineRunSchema(NamedSchema, table=True):
                 metadata_collection[f"{s.name}::{k}"] = v
 
         return metadata_collection
-
-    def fetch_metadata(self) -> Dict[str, MetadataType]:
-        """Fetches the latest metadata entry related to the pipeline run.
-
-        Returns:
-            a dictionary, where the key is the key of the metadata entry
-                and the values represent the latest entry with this key.
-        """
-        metadata_collection = self.fetch_metadata_collection()
-        return {
-            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
-            for k, v in metadata_collection.items()
-        }
 
     def to_model(
         self,

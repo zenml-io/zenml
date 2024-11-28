@@ -30,9 +30,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     StepRunInputArtifactType,
 )
-from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
-    RunMetadataEntry,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -44,7 +42,9 @@ from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
     StepRunResponseResources,
 )
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.base_schemas import (
+    NamedSchema,
+)
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
@@ -52,6 +52,7 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -63,7 +64,7 @@ if TYPE_CHECKING:
     )
 
 
-class StepRunSchema(NamedSchema, table=True):
+class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for steps of pipeline runs."""
 
     __tablename__ = "step_run"
@@ -202,41 +203,6 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
             model_version_id=request.model_version_id,
         )
-
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
-        """Fetches all the metadata entries related to the step run.
-
-        Returns:
-            a dictionary, where the key is the key of the metadata entry
-                and the values represent the list of entries with this key.
-        """
-        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
-
-        # Fetch the metadata related to this step
-        for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_collection:
-                metadata_collection[rm.run_metadata.key] = []
-            metadata_collection[rm.run_metadata.key].append(
-                RunMetadataEntry(
-                    value=json.loads(rm.run_metadata.value),
-                    created=rm.run_metadata.created,
-                )
-            )
-
-        return metadata_collection
-
-    def fetch_metadata(self) -> Dict[str, MetadataType]:
-        """Fetches the latest metadata entry related to the step run.
-
-        Returns:
-            a dictionary, where the key is the key of the metadata entry
-                and the values represent the latest entry with this key.
-        """
-        metadata_collection = self.fetch_metadata_collection()
-        return {
-            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
-            for k, v in metadata_collection.items()
-        }
 
     def to_model(
         self,

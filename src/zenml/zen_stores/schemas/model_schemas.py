@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
@@ -27,7 +26,6 @@ from zenml.enums import (
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
-from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
     BaseResponseMetadata,
     ModelRequest,
@@ -47,10 +45,12 @@ from zenml.models import (
     ModelVersionResponseMetadata,
     ModelVersionResponseResources,
     Page,
-    RunMetadataEntry,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
-from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.base_schemas import (
+    BaseSchema,
+    NamedSchema,
+)
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import (
@@ -59,7 +59,10 @@ from zenml.zen_stores.schemas.run_metadata_schemas import (
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import get_page_from_list
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    get_page_from_list,
+)
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -223,7 +226,7 @@ class ModelSchema(NamedSchema, table=True):
         return self
 
 
-class ModelVersionSchema(NamedSchema, table=True):
+class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for model version."""
 
     __tablename__ = MODEL_VERSION_TABLENAME
@@ -347,41 +350,6 @@ class ModelVersionSchema(NamedSchema, table=True):
             description=model_version_request.description,
             stage=model_version_request.stage,
         )
-
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
-        """Fetches all the metadata entries related to the model version.
-
-        Returns:
-            a dictionary, where the key is the key of the metadata entry
-                and the values represent the list of entries with this key.
-        """
-        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
-
-        # Fetch the metadata related to this step
-        for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_collection:
-                metadata_collection[rm.run_metadata.key] = []
-            metadata_collection[rm.run_metadata.key].append(
-                RunMetadataEntry(
-                    value=json.loads(rm.run_metadata.value),
-                    created=rm.run_metadata.created,
-                )
-            )
-
-        return metadata_collection
-
-    def fetch_metadata(self) -> Dict[str, MetadataType]:
-        """Fetches the latest metadata entry related to the model version.
-
-        Returns:
-            a dictionary, where the key is the key of the metadata entry
-                and the values represent the latest entry with this key.
-        """
-        metadata_collection = self.fetch_metadata_collection()
-        return {
-            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
-            for k, v in metadata_collection.items()
-        }
 
     def to_model(
         self,
