@@ -457,7 +457,7 @@ def log_artifact_metadata(
             "the `log_metadata` function."
         )
         artifact_version_model = client.get_artifact_version(
-            name_id_or_prefix=artifact_name, version=artifact_version
+            name_id_or_prefix=artifact_name
         )
         log_metadata(
             metadata=metadata,
