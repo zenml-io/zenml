@@ -979,7 +979,8 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     from zenml.client import Client
 
     log_metadata(
-        metadata={"some_meta": "meta_new_one"}, infer_artifact=True,
+        metadata={"some_meta": "meta_new_one"},
+        infer_artifact=True,
     )
 
     client = Client()
