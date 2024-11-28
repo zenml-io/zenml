@@ -132,7 +132,7 @@ def test_log_metadata_existing(clean_client):
     log_metadata(
         metadata={"description_2": "Blupus is great!"},
         artifact_name="meaning_of_life",
-        artifact_version="43"
+        artifact_version="43",
     )
     log_metadata(
         metadata={"description_3": "Axl is great!"},
