@@ -34,5 +34,6 @@ class MarkdownString(str):
 class CSVString(str):
     """Special string class to indicate a CSV string."""
 
+
 class JSONString(str):
     """Special string class to indicate a JSON string."""

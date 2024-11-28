@@ -414,11 +414,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for entry in metadata:
                 self.artifact_store.rmtree(entry["path"])
             raise e
-        
+
     # save dict type objects to JSON file with JSON visualization type
-    def save_visualizations(
-        self, data: Any
-    ) -> Dict[str, "VisualizationType"]:
+    def save_visualizations(self, data: Any) -> Dict[str, "VisualizationType"]:
         """Save visualizations for the given data.
 
         Args:
@@ -428,7 +426,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         # dict/list type objects are always saved as JSON files
-        # doesn't work for non-serializable types as they 
+        # doesn't work for non-serializable types as they
         # are saved as list of lists in different files
         if _is_serializable(data):
             return {self.data_path: VisualizationType.JSON}
