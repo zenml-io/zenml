@@ -160,6 +160,7 @@ def model_trainer(
     log_metadata(
         metadata={"metrics": eval_results},
         artifact_name="model",
+        infer_artifact=True,
     )
     ### YOUR CODE ENDS HERE ###
 
