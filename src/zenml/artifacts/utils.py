@@ -31,7 +31,6 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from zenml import log_metadata
 from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
@@ -417,6 +416,8 @@ def log_artifact_metadata(
         "The `log_artifact_metadata` function is deprecated and will soon be "
         "removed. Please use `log_metadata` instead."
     )
+
+    from zenml import log_metadata
 
     if artifact_name and artifact_version:
         assert artifact_name is not None

@@ -16,7 +16,6 @@
 from typing import Dict, Optional, Union
 from uuid import UUID
 
-from zenml import log_metadata
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -56,6 +55,8 @@ def log_model_metadata(
         "The `log_model_metadata` function is deprecated and will soon be "
         "removed. Please use `log_metadata` instead."
     )
+
+    from zenml import log_metadata
 
     if model_name and model_version:
         log_metadata(
