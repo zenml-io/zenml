@@ -1,5 +1,5 @@
 ---
-description: Create and run a template using the ZenML CLI
+description: Create a template using the ZenML CLI
 ---
 
 {% hint style="success" %}
