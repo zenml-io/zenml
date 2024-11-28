@@ -55,6 +55,9 @@ class RunMetadataRequest(WorkspaceScopedRequest):
 
         Returns:
             self
+
+        Raises:
+            ValueError: if one of the key in the metadata contains `:`
         """
         invalid_keys = [key for key in self.values.keys() if ":" in key]
         if invalid_keys:

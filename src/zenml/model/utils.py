@@ -50,6 +50,9 @@ def log_model_metadata(
         model_version: The version of the model to log metadata for. Can
             be omitted when being called inside a step with configured
             `model` in decorator.
+
+    Raises:
+        ValueError: If the function is not called with proper input.
     """
     logger.warning(
         "The `log_model_metadata` function is deprecated and will soon be "
@@ -64,10 +67,15 @@ def log_model_metadata(
             model_version=model_version,
             model_name=model_name,
         )
-    else:
+    elif model_name is None and model_version is None:
         log_metadata(
             metadata=metadata,
             infer_model=True,
+        )
+    else:
+        raise ValueError(
+            "You can call `log_model_metadata` by either providing both "
+            "`model_name` and `model_version` or keeping both of them None."
         )
 
 
