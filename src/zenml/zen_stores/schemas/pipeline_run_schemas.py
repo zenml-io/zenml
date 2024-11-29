@@ -141,7 +141,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
     run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="pipeline_run",
+        back_populates="pipeline_runs",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",

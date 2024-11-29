@@ -304,7 +304,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
     run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="model_version",
+        back_populates="model_versions",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
             cascade="delete",

@@ -110,31 +110,31 @@ class RunMetadataResourceSchema(SQLModel, table=True):
     run_metadata: RunMetadataSchema = Relationship(back_populates="resources")
 
     # Relationship to link specific resource types
-    pipeline_run: List["PipelineRunSchema"] = Relationship(
+    pipeline_runs: List["PipelineRunSchema"] = Relationship(
         back_populates="run_metadata_resources",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
-            overlaps="run_metadata_resources,step_run,artifact_version,model_version",
+            overlaps="run_metadata_resources,step_runs,artifact_versions,model_versions",
         ),
     )
-    step_run: List["StepRunSchema"] = Relationship(
+    step_runs: List["StepRunSchema"] = Relationship(
         back_populates="run_metadata_resources",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
-            overlaps="run_metadata_resources,pipeline_run,artifact_version,model_version",
+            overlaps="run_metadata_resources,pipeline_runs,artifact_versions,model_versions",
         ),
     )
-    artifact_version: List["ArtifactVersionSchema"] = Relationship(
+    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="run_metadata_resources",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            overlaps="run_metadata_resources,pipeline_run,step_run,model_version",
+            overlaps="run_metadata_resources,pipeline_runs,step_runs,model_versions",
         ),
     )
-    model_version: List["ModelVersionSchema"] = Relationship(
+    model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="run_metadata_resources",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
-            overlaps="run_metadata_resources,pipeline_run,step_run,artifact_version",
+            overlaps="run_metadata_resources,pipeline_runs,step_runs,artifact_versions",
         ),
     )

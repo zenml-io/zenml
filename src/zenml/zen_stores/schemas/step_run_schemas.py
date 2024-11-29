@@ -144,7 +144,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="step_runs"
     )
     run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="step_run",
+        back_populates="step_runs",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",

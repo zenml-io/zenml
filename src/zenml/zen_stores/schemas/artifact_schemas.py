@@ -245,7 +245,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_versions"
     )
     run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="artifact_version",
+        back_populates="artifact_versions",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
             cascade="delete",
