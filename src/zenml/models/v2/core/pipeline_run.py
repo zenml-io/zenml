@@ -551,6 +551,15 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def step_substitutions(self) -> Dict[str, Dict[str, str]]:
+        """The `step_substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().step_substitutions
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
