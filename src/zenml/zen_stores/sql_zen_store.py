@@ -54,7 +54,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, case, desc, func
+from sqlalchemy import func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -99,7 +99,6 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
-    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -116,7 +115,6 @@ from zenml.enums import (
     OnboardingStep,
     SecretScope,
     SecretsStoreType,
-    SorterOps,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -4328,69 +4326,14 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
-        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
-        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
-
-        column, operand = pipeline_filter_model.sorting_params
-        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
-            with Session(self.engine) as session:
-                max_date_subquery = (
-                    # If no run exists for the pipeline yet, we use the pipeline
-                    # creation date as a fallback, otherwise newly created
-                    # pipeline would always be at the top/bottom
-                    select(
-                        PipelineSchema.id,
-                        case(
-                            (
-                                func.max(PipelineRunSchema.created).is_(None),
-                                PipelineSchema.created,
-                            ),
-                            else_=func.max(PipelineRunSchema.created),
-                        ).label("run_or_created"),
-                    )
-                    .outerjoin(
-                        PipelineRunSchema,
-                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                    )
-                    .group_by(col(PipelineSchema.id))
-                    .subquery()
-                )
-
-                if operand == SorterOps.DESCENDING:
-                    sort_clause = desc
-                else:
-                    sort_clause = asc
-
-                query = (
-                    # We need to include the subquery in the select here to
-                    # make this query work with the distinct statement. This
-                    # result will be removed in the custom conversion function
-                    # applied later
-                    select(PipelineSchema, max_date_subquery.c.run_or_created)
-                    .where(PipelineSchema.id == max_date_subquery.c.id)
-                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
-                    # We always add the `id` column as a tiebreaker to ensure a
-                    # stable, repeatable order of items, otherwise subsequent
-                    # pages might contain the same items.
-                    .order_by(col(PipelineSchema.id))
-                )
-
-            def _custom_conversion(row: Any) -> PipelineResponse:
-                return cast(
-                    PipelineResponse,
-                    row[0].to_model(
-                        include_metadata=hydrate, include_resources=True
-                    ),
-                )
-
         with Session(self.engine) as session:
+            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
-                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:

@@ -583,7 +583,15 @@ class PipelineRunResponse(
 class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
-    CUSTOM_SORTING_OPTIONS = ["stack"]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "tag",
+        "stack",
+        "pipeline",
+        "model",
+        "model_version",
+    ]
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",

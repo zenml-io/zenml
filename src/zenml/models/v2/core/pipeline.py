@@ -255,11 +255,15 @@ class PipelineResponse(
 class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
 
-    CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        SORT_PIPELINES_BY_LATEST_RUN_KEY,
+    ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
     ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
@@ -338,12 +342,44 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        column, _ = self.sorting_params
+        from sqlmodel import asc, case, col, desc, func, select
 
-        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
-            # If sorting by the latest run, the sorting is already done in the
-            # base query in `SqlZenStore.list_pipelines(...)` and we don't need
-            # to do anything here
-            return query
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            # Subquery to find the latest run per pipeline
+            latest_run_subquery = (
+                select(
+                    PipelineRunSchema.pipeline_id,
+                    case(
+                        (
+                            func.max(PipelineRunSchema.created).is_(None),
+                            PipelineSchema.created,
+                        ),
+                        else_=func.max(PipelineRunSchema.created),
+                    ).label("latest_run"),
+                )
+                .group_by(col(PipelineRunSchema.pipeline_id))
+                .subquery()
+            )
+
+            # Join the subquery with the pipelines
+            query = query.outerjoin(
+                latest_run_subquery,
+                PipelineSchema.id == latest_run_subquery.c.pipeline_id,
+            )
+
+            if operand == SorterOps.ASCENDING:
+                return query.order_by(
+                    asc(latest_run_subquery.c.latest_run)
+                ).order_by(col(PipelineSchema.id))
+            else:
+                return query.order_by(
+                    desc(latest_run_subquery.c.latest_run)
+                ).order_by(col(PipelineSchema.id))
+
         else:
             return super().apply_sorting(query=query, table=table)
