@@ -17,7 +17,7 @@
 
 from typing import Any, Dict
 
-from zenml import get_step_context, log_model_metadata, step
+from zenml import get_step_context, log_metadata, step
 
 
 @step(enable_cache=False)
@@ -39,4 +39,9 @@ def log_metadata_from_step_artifact(
 
     metadata = {artifact_name: metadata_dict}
 
-    log_model_metadata(metadata)
+    if context.model:
+        log_metadata(
+            metadata=metadata,
+            model_name=context.model.name,
+            model_version=context.model.version,
+        )

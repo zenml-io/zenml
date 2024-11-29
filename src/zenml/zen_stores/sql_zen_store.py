@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -219,6 +220,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineUpdate,
     RunMetadataRequest,
+    RunMetadataResource,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -325,6 +327,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
@@ -353,6 +356,9 @@ from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -2918,17 +2924,41 @@ class SqlZenStore(BaseZenStore):
 
             # Save metadata of the artifact
             if artifact_version.metadata:
+                values: Dict[str, "MetadataType"] = {}
+                types: Dict[str, "MetadataTypeEnum"] = {}
                 for key, value in artifact_version.metadata.items():
-                    run_metadata_schema = RunMetadataSchema(
-                        workspace_id=artifact_version.workspace,
-                        user_id=artifact_version.user,
-                        resource_id=artifact_version_id,
-                        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-                        key=key,
-                        value=json.dumps(value),
-                        type=get_metadata_type(value),
+                    # Skip metadata that is too large to be stored in the DB.
+                    if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is too large to be "
+                            "stored in the database. Skipping."
+                        )
+                        continue
+                    # Skip metadata that is not of a supported type.
+                    try:
+                        metadata_type = get_metadata_type(value)
+                    except ValueError as e:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is not of a "
+                            f"supported type. Skipping. Full error: {e}"
+                        )
+                        continue
+                    values[key] = value
+                    types[key] = metadata_type
+                self.create_run_metadata(
+                    RunMetadataRequest(
+                        workspace=artifact_version.workspace,
+                        user=artifact_version.user,
+                        resources=[
+                            RunMetadataResource(
+                                id=artifact_version_id,
+                                type=MetadataResourceTypes.ARTIFACT_VERSION,
+                            )
+                        ],
+                        values=values,
+                        types=types,
                     )
-                    session.add(run_metadata_schema)
+                )
 
             session.commit()
             artifact_version_schema = session.exec(
@@ -5532,20 +5562,29 @@ class SqlZenStore(BaseZenStore):
             The created run metadata.
         """
         with Session(self.engine) as session:
-            for key, value in run_metadata.values.items():
-                type_ = run_metadata.types[key]
-                run_metadata_schema = RunMetadataSchema(
-                    workspace_id=run_metadata.workspace,
-                    user_id=run_metadata.user,
-                    resource_id=run_metadata.resource_id,
-                    resource_type=run_metadata.resource_type.value,
-                    stack_component_id=run_metadata.stack_component_id,
-                    key=key,
-                    value=json.dumps(value),
-                    type=type_,
-                )
-                session.add(run_metadata_schema)
-                session.commit()
+            if run_metadata.resources:
+                for key, value in run_metadata.values.items():
+                    type_ = run_metadata.types[key]
+                    run_metadata_schema = RunMetadataSchema(
+                        workspace_id=run_metadata.workspace,
+                        user_id=run_metadata.user,
+                        stack_component_id=run_metadata.stack_component_id,
+                        key=key,
+                        value=json.dumps(value),
+                        type=type_,
+                        publisher_step_id=run_metadata.publisher_step_id,
+                    )
+                    session.add(run_metadata_schema)
+                    session.commit()
+
+                    for resource in run_metadata.resources:
+                        rm_resource_link = RunMetadataResourceSchema(
+                            resource_id=resource.id,
+                            resource_type=resource.type.value,
+                            run_metadata_id=run_metadata_schema.id,
+                        )
+                        session.add(rm_resource_link)
+                        session.commit()
         return None
 
     # ----------------------------- Schedules -----------------------------
@@ -8155,6 +8194,46 @@ class SqlZenStore(BaseZenStore):
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
                 session.add(log_entry)
+
+            # If cached, attach metadata of the original step
+            if (
+                step_run.status == ExecutionStatus.CACHED
+                and step_run.original_step_run_id is not None
+            ):
+                original_metadata_links = session.exec(
+                    select(RunMetadataResourceSchema)
+                    .where(
+                        RunMetadataResourceSchema.run_metadata_id
+                        == RunMetadataSchema.id
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_id
+                        == step_run.original_step_run_id
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_type
+                        == MetadataResourceTypes.STEP_RUN
+                    )
+                    .where(
+                        RunMetadataSchema.publisher_step_id
+                        == step_run.original_step_run_id
+                    )
+                ).all()
+
+                # Create new links in a batch
+                new_links = [
+                    RunMetadataResourceSchema(
+                        resource_id=step_schema.id,
+                        resource_type=link.resource_type,
+                        run_metadata_id=link.run_metadata_id,
+                    )
+                    for link in original_metadata_links
+                ]
+                # Add all new links in a single operation
+                session.add_all(new_links)
+                # Commit the changes
+                session.commit()
+                session.refresh(step_schema)
 
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:

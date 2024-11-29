@@ -107,10 +107,18 @@ class TagContext:
 @step
 def step_metadata_logging_functional(mdl_name: str):
     """Functional logging using implicit Model from context."""
-    log_metadata({"foo": "bar"})
+    model = get_step_context().model
+
+    log_metadata(
+        metadata={"foo": "bar"},
+        model_name=model.name,
+        model_version=model.version,
+    )
     assert get_step_context().model.run_metadata["foo"] == "bar"
     log_metadata(
-        metadata={"foo": "bar"}, model_name=mdl_name, model_version="other"
+        metadata={"foo": "bar"},
+        model_name=mdl_name,
+        model_version="other",
     )
 
 
