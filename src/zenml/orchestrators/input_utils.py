@@ -67,18 +67,19 @@ def resolve_step_inputs(
                 f"No step `{input_.step_name}` found in current run."
             )
 
+        # Try to get the substitutions from the pipeline run first, as we
+        # already have a hydrated version of that. In the unlikely case
+        # that the pipeline run is outdated, we fetch it from the step
+        # run instead which will costs us one hydration call.
+        substitutions = (
+            pipeline_run.steps_substitutions.get(step_run.name)
+            or step_run.config.substitutions
+        )
+        output_name = string_utils.format_name_template(
+            input_.output_name, substitutions=substitutions
+        )
+
         try:
-            # Try to get the substitutions from the pipeline run first, as we
-            # already have a hydrated version of that. In the unlikely case
-            # that the pipeline run is outdated, we fetch it from the step
-            # run instead which will costs us one hydration call.
-            substitutions = (
-                pipeline_run.steps_substitutions.get(step_run.name)
-                or step_run.config.substitutions
-            )
-            output_name = string_utils.format_name_template(
-                input_.output_name, substitutions=substitutions
-            )
             outputs = step_run.outputs[output_name]
         except KeyError:
             raise InputResolutionError(
