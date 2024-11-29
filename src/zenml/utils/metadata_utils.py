@@ -193,10 +193,19 @@ def log_metadata(
 
     # Log metadata to a model version by name and version
     elif model_name is not None and model_version is not None:
-        from zenml import Model
-
-        mv = Model(name=model_name, version=model_version)
-        mv.log_metadata(metadata)
+        model_version_model = client.get_model_version(
+            model_name_or_id=model_name,
+            model_version_name_or_number_or_id=model_version,
+        )
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=[
+                RunMetadataResource(
+                    id=model_version_model.id,
+                    type=MetadataResourceTypes.MODEL_VERSION,
+                )
+            ],
+        )
 
     # Log metadata to a model version by id
     elif model_version_id is not None:
@@ -221,8 +230,15 @@ def log_metadata(
                 "Otherwise, you can provide a `model_version_id` or a "
                 "combination of `model_name` and `model_version`."
             )
-        mv = step_context.model
-        mv.log_metadata(metadata)
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=[
+                RunMetadataResource(
+                    id=step_context.model_version.id,
+                    type=MetadataResourceTypes.MODEL_VERSION,
+                )
+            ],
+        )
 
     # Log metadata to an artifact version by its name and version
     elif artifact_name is not None and artifact_version is not None:
