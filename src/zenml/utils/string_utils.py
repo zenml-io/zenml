@@ -18,7 +18,7 @@ import functools
 import random
 import string
 from datetime import datetime
-from typing import Any, Callable, Dict, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -147,13 +147,12 @@ def validate_name(model: BaseModel) -> None:
 
 def format_name_template(
     name_template: str,
-    substitutions: Dict[str, str],
+    substitutions: Optional[Dict[str, str]] = None,
 ) -> str:
     """Formats a name template with the given arguments.
 
-    By default, ZenML support Date and Time placeholders.
-    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
-    Extra placeholders need to be explicitly passed in as kwargs.
+    By default, ZenML supports Date and Time placeholders. For example,
+    `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
 
     Args:
         name_template: The name template to format.
@@ -164,7 +163,10 @@ def format_name_template(
 
     Raises:
         KeyError: If a key in template is missing in the kwargs.
+        ValueError: If the formatted name is empty.
     """
+    substitutions = substitutions or {}
+
     if ("date" not in substitutions and "{date}" in name_template) or (
         "time" not in substitutions and "{time}" in name_template
     ):
@@ -183,12 +185,17 @@ def format_name_template(
         substitutions.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
 
     try:
-        return name_template.format(**substitutions)
+        formatted_name = name_template.format(**substitutions)
     except KeyError as e:
         raise KeyError(
             f"Could not format the name template `{name_template}`. "
             f"Missing key: {e}"
         )
+
+    if not formatted_name:
+        raise ValueError("Empty names are not allowed.")
+
+    return formatted_name
 
 
 def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
