@@ -151,18 +151,18 @@ def format_name_template(
 ) -> str:
     """Formats a name template with the given arguments.
 
-    By default, ZenML supports Date and Time placeholders. For example,
-    `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
+    Default substitutions for `{date}` and `{time}` placeholders will be used if
+    not included in the provided substitutions.
 
     Args:
         name_template: The name template to format.
-        substitutions: A dictionary of substitutions to use in the template.
+        substitutions: Substitutions to use in the template.
 
     Returns:
         The formatted name template.
 
     Raises:
-        KeyError: If a key in template is missing in the kwargs.
+        KeyError: If a key in template is missing in the substitutions.
         ValueError: If the formatted name is empty.
     """
     substitutions = substitutions or {}
