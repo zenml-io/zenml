@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
-from typing import Dict, Optional, Union, overload
+from typing import Dict, List, Optional, Union, overload
 from uuid import UUID
 
 from zenml.client import Client
@@ -150,16 +150,16 @@ def log_metadata(
     """
     client = Client()
 
+    resources: List[RunMetadataResource] = []
+    publisher_step_id = None
+
     # Log metadata to a step by ID
     if step_id is not None:
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=step_id, type=MetadataResourceTypes.STEP_RUN
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=step_id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ]
 
     # Log metadata to a step by name and run ID
     elif step_name is not None and run_id_name_or_prefix is not None:
@@ -168,28 +168,22 @@ def log_metadata(
             .steps[step_name]
             .id
         )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=step_model_id, type=MetadataResourceTypes.STEP_RUN
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=step_model_id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ]
 
     # Log metadata to a run by ID
     elif run_id_name_or_prefix is not None:
         run_model = client.get_pipeline_run(
             name_id_or_prefix=run_id_name_or_prefix
         )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=run_model.id, type=MetadataResourceTypes.PIPELINE_RUN
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=run_model.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ]
 
     # Log metadata to a model version by name and version
     elif model_name is not None and model_version is not None:
@@ -197,27 +191,21 @@ def log_metadata(
             model_name_or_id=model_name,
             model_version_name_or_number_or_id=model_version,
         )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=model_version_model.id,
-                    type=MetadataResourceTypes.MODEL_VERSION,
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=model_version_model.id,
+                type=MetadataResourceTypes.MODEL_VERSION,
+            )
+        ]
 
     # Log metadata to a model version by id
     elif model_version_id is not None:
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=model_version_id,
-                    type=MetadataResourceTypes.MODEL_VERSION,
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=model_version_id,
+                type=MetadataResourceTypes.MODEL_VERSION,
+            )
+        ]
 
     # Log metadata to a model through the step context
     elif infer_model is True:
@@ -230,42 +218,33 @@ def log_metadata(
                 "Otherwise, you can provide a `model_version_id` or a "
                 "combination of `model_name` and `model_version`."
             )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=step_context.model_version.id,
-                    type=MetadataResourceTypes.MODEL_VERSION,
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=step_context.model_version.id,
+                type=MetadataResourceTypes.MODEL_VERSION,
+            )
+        ]
 
     # Log metadata to an artifact version by its name and version
     elif artifact_name is not None and artifact_version is not None:
         artifact_version_model = client.get_artifact_version(
             name_id_or_prefix=artifact_name, version=artifact_version
         )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=artifact_version_model.id,
-                    type=MetadataResourceTypes.ARTIFACT_VERSION,
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=artifact_version_model.id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
+        ]
 
     # Log metadata to an artifact version by its ID
     elif artifact_version_id is not None:
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=artifact_version_id,
-                    type=MetadataResourceTypes.ARTIFACT_VERSION,
-                )
-            ],
-        )
+        resources = [
+            RunMetadataResource(
+                id=artifact_version_id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
+        ]
 
     # Log metadata to an artifact version through the step context
     elif infer_artifact is True:
@@ -305,6 +284,7 @@ def log_metadata(
         step_context.add_output_metadata(
             metadata=metadata, output_name=artifact_name
         )
+        return
 
     # If every additional value is None, that means we are calling it bare bones
     # and this call needs to happen during a step execution. We will use the
@@ -333,16 +313,14 @@ def log_metadata(
                 "of the step execution, please provide the required "
                 "identifiers."
             )
-        client.create_run_metadata(
-            metadata=metadata,
-            resources=[
-                RunMetadataResource(
-                    id=step_context.step_run.id,
-                    type=MetadataResourceTypes.STEP_RUN,
-                )
-            ],
-            publisher_step_id=step_context.step_run.id,
-        )
+
+        resources = [
+            RunMetadataResource(
+                id=step_context.step_run.id,
+                type=MetadataResourceTypes.STEP_RUN,
+            )
+        ]
+        publisher_step_id = (step_context.step_run.id,)
 
     else:
         raise ValueError(
@@ -376,3 +354,9 @@ def log_metadata(
             log_metadata(metadata={}, artifact_version_id=...)
             """
         )
+
+    client.create_run_metadata(
+        metadata=metadata,
+        resources=resources,
+        publisher_step_id=publisher_step_id,
+    )
