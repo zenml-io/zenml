@@ -218,6 +218,12 @@ def log_metadata(
                 "Otherwise, you can provide a `model_version_id` or a "
                 "combination of `model_name` and `model_version`."
             )
+
+        if step_context.model_version is None:
+            raise ValueError(
+                "The step context does not feature any model versions."
+            )
+
         resources = [
             RunMetadataResource(
                 id=step_context.model_version.id,
