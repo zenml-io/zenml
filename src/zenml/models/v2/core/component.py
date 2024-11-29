@@ -81,11 +81,6 @@ class ComponentBase(BaseModel):
         title="The stack component labels.",
     )
 
-    component_spec_path: Optional[str] = Field(
-        default=None,
-        title="The path to the component spec used for mlstacks deployments.",
-    )
-
 
 # ------------------ Request Model ------------------
 
@@ -155,10 +150,6 @@ class ComponentUpdate(BaseUpdate):
         title="The stack component labels.",
         default=None,
     )
-    component_spec_path: Optional[str] = Field(
-        title="The path to the component spec used for mlstacks deployments.",
-        default=None,
-    )
     connector: Optional[UUID] = Field(
         title="The service connector linked to this stack component.",
         default=None,
@@ -200,10 +191,6 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack component labels.",
-    )
-    component_spec_path: Optional[str] = Field(
-        default=None,
-        title="The path to the component spec used for mlstacks deployments.",
     )
     connector_resource_id: Optional[str] = Field(
         default=None,
@@ -324,15 +311,6 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_metadata().labels
-
-    @property
-    def component_spec_path(self) -> Optional[str]:
-        """The `component_spec_path` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().component_spec_path
 
     @property
     def connector_resource_id(self) -> Optional[str]:
