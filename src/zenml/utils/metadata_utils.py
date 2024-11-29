@@ -267,16 +267,22 @@ def log_metadata(
 
         if artifact_name is not None:
             # If a name provided, ensure it is in the outputs
-            assert artifact_name in step_output_names, (
-                f"The provided artifact name`{artifact_name}` does not exist "
-                f"in the step outputs: {step_output_names}."
-            )
+            if artifact_name not in step_output_names:
+                raise ValueError(
+                    f"The provided artifact name`{artifact_name}` does not "
+                    f"exist in the step outputs: {step_output_names}."
+                )
         else:
             # If no name provided, ensure there is only one output
-            assert len(step_output_names) == 1, (
-                "There is mode than one output. If you would like to use the "
-                "`infer_artifact` option, you need to define an artifact_name."
-            )
+            if len(step_output_names) > 1:
+                raise ValueError(
+                    "There is more than one output. If you would like to use "
+                    "the `infer_artifact` option, you need to define an "
+                    "`artifact_name`."
+                )
+
+            if len(step_output_names) == 0:
+                raise ValueError("The step does not have any outputs.")
 
             artifact_name = step_output_names[0]
 
