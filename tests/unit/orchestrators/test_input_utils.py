@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from uuid import uuid4
 
 import pytest
 
 from zenml.config.step_configurations import Step
 from zenml.enums import StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
-from zenml.models import Page, PipelineRunResponse
+from zenml.models import Page
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import input_utils
@@ -29,6 +28,7 @@ def test_input_resolution(
     mocker,
     sample_artifact_version_model: ArtifactVersionResponse,
     create_step_run,
+    sample_pipeline_run,
 ):
     """Tests that input resolution works if the correct models exist in the
     zen store."""
@@ -60,7 +60,7 @@ def test_input_resolution(
     )
 
     input_artifacts, parent_ids = input_utils.resolve_step_inputs(
-        step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+        step=step, pipeline_run=sample_pipeline_run
     )
     assert input_artifacts == {
         "input_name": StepRunInputResponse(
@@ -71,7 +71,7 @@ def test_input_resolution(
     assert parent_ids == [step_run.id]
 
 
-def test_input_resolution_with_missing_step_run(mocker):
+def test_input_resolution_with_missing_step_run(mocker, sample_pipeline_run):
     """Tests that input resolution fails if the upstream step run is missing."""
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
@@ -97,11 +97,13 @@ def test_input_resolution_with_missing_step_run(mocker):
 
     with pytest.raises(InputResolutionError):
         input_utils.resolve_step_inputs(
-            step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+            step=step, pipeline_run=sample_pipeline_run
         )
 
 
-def test_input_resolution_with_missing_artifact(mocker, create_step_run):
+def test_input_resolution_with_missing_artifact(
+    mocker, create_step_run, sample_pipeline_run
+):
     """Tests that input resolution fails if the upstream step run output
     artifact is missing."""
     step_run = create_step_run(
@@ -132,12 +134,12 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
 
     with pytest.raises(InputResolutionError):
         input_utils.resolve_step_inputs(
-            step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+            step=step, pipeline_run=sample_pipeline_run
         )
 
 
 def test_input_resolution_fetches_all_run_steps(
-    mocker, sample_artifact_version_model, create_step_run
+    mocker, sample_artifact_version_model, create_step_run, sample_pipeline_run
 ):
     """Tests that input resolution fetches all step runs of the pipeline run."""
     step_run = create_step_run(
@@ -178,7 +180,7 @@ def test_input_resolution_fetches_all_run_steps(
     )
 
     input_utils.resolve_step_inputs(
-        step=step, pipeline_run=PipelineRunResponse(id=uuid4(), name="foo")
+        step=step, pipeline_run=sample_pipeline_run
     )
 
     # `resolve_step_inputs(...)` depaginates the run steps so we fetch all
