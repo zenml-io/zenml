@@ -20,7 +20,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Creates the 'run_metadata_resource' table and migrates data."""
-    # Create the `run_metadata_resource` table
     op.create_table(
         "run_metadata_resource",
         sa.Column(
