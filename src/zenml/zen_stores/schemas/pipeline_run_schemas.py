@@ -297,8 +297,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             else {}
         )
 
-        run_metadata = self.fetch_metadata()
-
         if self.deployment is not None:
             deployment = self.deployment.to_model()
 
@@ -375,7 +373,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             }
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
-                run_metadata=run_metadata,
+                run_metadata=self.fetch_metadata(),
                 config=config,
                 steps=steps,
                 start_time=self.start_time,

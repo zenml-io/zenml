@@ -228,8 +228,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        run_metadata = self.fetch_metadata()
-
         input_artifacts = {
             artifact.name: StepRunInputResponse(
                 input_type=StepRunInputArtifactType(artifact.type),
@@ -316,7 +314,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
                 parent_step_ids=[p.parent_id for p in self.parents],
-                run_metadata=run_metadata,
+                run_metadata=self.fetch_metadata(),
             )
 
         resources = None
