@@ -1129,14 +1129,12 @@ def export_stack(
 def _import_stack_component(
     component_type: StackComponentType,
     component_dict: Dict[str, Any],
-    component_spec_path: Optional[str] = None,
 ) -> UUID:
     """Import a single stack component with given type/config.
 
     Args:
         component_type: The type of component to import.
         component_dict: Dict representation of the component to import.
-        component_spec_path: Path to the component spec file.
 
     Returns:
         The ID of the imported component.
@@ -1172,7 +1170,6 @@ def _import_stack_component(
         component_type=component_type,
         flavor=flavor,
         configuration=config,
-        component_spec_path=component_spec_path,
     )
     return component.id
 

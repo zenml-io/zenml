@@ -56,7 +56,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import materializer_utils, source_utils
+from zenml.utils import materializer_utils, source_utils, string_utils
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
@@ -292,16 +292,15 @@ class StepRunner:
         """
         collections.append(output_annotations)
         for k, v in list(output_annotations.items()):
-            _evaluated_name = None
-            if v.artifact_config:
-                _evaluated_name = v.artifact_config._evaluated_name(
-                    step_run.config.substitutions
+            name = k
+            if v.artifact_config and v.artifact_config.name:
+                name = string_utils.format_name_template(
+                    v.artifact_config.name,
+                    substitutions=step_run.config.substitutions,
                 )
-            if _evaluated_name is None:
-                _evaluated_name = k
 
             for d in collections:
-                d[_evaluated_name] = d.pop(k)
+                d[name] = d.pop(k)
 
     def _load_step(self) -> "BaseStep":
         """Load the step instance.

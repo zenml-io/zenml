@@ -56,7 +56,6 @@ class StackComponentSchema(NamedSchema, table=True):
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
-    component_spec_path: Optional[str]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -135,7 +134,6 @@ class StackComponentSchema(NamedSchema, table=True):
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
-            component_spec_path=request.component_spec_path,
             type=request.type,
             flavor=request.flavor,
             configuration=base64.b64encode(
@@ -218,7 +216,6 @@ class StackComponentSchema(NamedSchema, table=True):
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels
                 else None,
-                component_spec_path=self.component_spec_path,
                 connector_resource_id=self.connector_resource_id,
                 connector=self.connector.to_model()
                 if self.connector

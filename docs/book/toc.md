@@ -108,6 +108,7 @@
     * [Get past pipeline/step runs](how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs.md)
   * [Trigger a pipeline](how-to/pipeline-development/trigger-pipelines/README.md)
     * [Use templates: Python SDK](how-to/pipeline-development/trigger-pipelines/use-templates-python.md)
+    * [Use templates: CLI](how-to/pipeline-development/trigger-pipelines/use-templates-cli.md)
     * [Use templates: Dashboard](how-to/pipeline-development/trigger-pipelines/use-templates-dashboard.md)
     * [Use templates: Rest API](how-to/pipeline-development/trigger-pipelines/use-templates-rest-api.md)
   * [Use configuration files](how-to/pipeline-development/use-configuration-files/README.md)
