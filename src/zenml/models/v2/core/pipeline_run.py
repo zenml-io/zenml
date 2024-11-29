@@ -237,7 +237,7 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         default=False,
         description="Whether a template can be created from this run.",
     )
-    steps_substitutions: Dict[str, Dict[str, str]] = Field(
+    step_substitutions: Dict[str, Dict[str, str]] = Field(
         title="Substitutions used in the step runs of this pipeline run.",
         default_factory=dict,
     )

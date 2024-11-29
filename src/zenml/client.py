@@ -1979,7 +1979,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
-        component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
@@ -1987,7 +1986,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack component.
             flavor: The flavor of the stack component.
-            component_spec_path: The path to the stack spec file.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
@@ -2016,7 +2014,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
-            component_spec_path=component_spec_path,
             configuration=configuration,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
@@ -2033,7 +2030,6 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
-        component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         disconnect: Optional[bool] = None,
@@ -2047,7 +2043,6 @@ class Client(metaclass=ClientMetaClass):
                 update.
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
-            component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             disconnect: Whether to disconnect the stack component from its
@@ -2072,7 +2067,6 @@ class Client(metaclass=ClientMetaClass):
         update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            component_spec_path=component_spec_path,
         )
 
         if name is not None:
