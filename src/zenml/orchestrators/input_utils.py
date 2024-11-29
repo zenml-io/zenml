@@ -72,7 +72,7 @@ def resolve_step_inputs(
         # that the pipeline run is outdated, we fetch it from the step
         # run instead which will costs us one hydration call.
         substitutions = (
-            pipeline_run.steps_substitutions.get(step_run.name)
+            pipeline_run.step_substitutions.get(step_run.name)
             or step_run.config.substitutions
         )
         output_name = string_utils.format_name_template(
