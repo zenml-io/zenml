@@ -86,7 +86,6 @@ def upgrade() -> None:
     op.drop_column("run_metadata", "resource_id")
     op.drop_column("run_metadata", "resource_type")
 
-    # Add the cached column to the database table
     op.add_column(
         "run_metadata",
         sa.Column(
