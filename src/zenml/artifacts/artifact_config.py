@@ -21,7 +21,6 @@ from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.utils.string_utils import format_name_template
 
 logger = get_logger(__name__)
 
@@ -118,16 +117,3 @@ class ArtifactConfig(BaseModel):
             data.setdefault("artifact_type", ArtifactType.SERVICE)
 
         return data
-
-    def _evaluated_name(self, substitutions: Dict[str, str]) -> Optional[str]:
-        """Evaluated name of the artifact.
-
-        Args:
-            substitutions: Extra placeholders to use in the name template.
-
-        Returns:
-            The evaluated name of the artifact.
-        """
-        if self.name:
-            return format_name_template(self.name, substitutions=substitutions)
-        return self.name

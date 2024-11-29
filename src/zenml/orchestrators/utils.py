@@ -32,7 +32,6 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
-from zenml.utils.string_utils import format_name_template
 
 logger = get_logger(__name__)
 
@@ -194,29 +193,6 @@ def get_config_environment_vars(
     )
 
     return environment_vars
-
-
-def get_run_name(run_name_template: str, substitutions: Dict[str, str]) -> str:
-    """Fill out the run name template to get a complete run name.
-
-    Args:
-        run_name_template: The run name template to fill out.
-        substitutions: The substitutions to use in the template.
-
-    Raises:
-        ValueError: If the run name is empty.
-
-    Returns:
-        The run name derived from the template.
-    """
-    run_name = format_name_template(
-        run_name_template, substitutions=substitutions
-    )
-
-    if run_name == "":
-        raise ValueError("Empty run names are not allowed.")
-
-    return run_name
 
 
 class register_artifact_store_filesystem:

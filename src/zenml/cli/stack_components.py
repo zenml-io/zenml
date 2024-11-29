@@ -573,7 +573,6 @@ def generate_stack_component_copy_command(
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
                 labels=component_to_copy.labels,
-                component_spec_path=component_to_copy.component_spec_path,
             )
             print_model_url(get_component_url(copied_component))
 
