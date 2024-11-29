@@ -119,12 +119,12 @@ def log_metadata(
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
-    infer_artifact: Optional[bool] = None,
+    infer_artifact: bool = False,
     # Models
     model_version_id: Optional[UUID] = None,
     model_name: Optional[str] = None,
     model_version: Optional[Union[ModelStages, int, str]] = None,
-    infer_model: Optional[bool] = None,
+    infer_model: bool = False,
 ) -> None:
     """Logs metadata for various resource types in a generalized way.
 
