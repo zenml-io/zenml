@@ -1152,14 +1152,14 @@ class TestArtifact:
             artifact_name="preexisting",
             artifact_version="1.2.3",
         )
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version("new_one")
+        dummy()
         log_metadata(
             metadata={"some_meta": "meta_preexisting"},
             model_name="aria",
             model_version="model_version",
         )
-        with pytest.raises(KeyError):
-            clean_client.get_artifact_version("new_one")
-        dummy()
 
 
 class TestModel:
