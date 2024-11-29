@@ -79,7 +79,6 @@ def upgrade() -> None:
             resource_data,
         )
 
-    # Drop the old `resource_id` and `resource_type` columns from `run_metadata`
     op.drop_column("run_metadata", "resource_id")
     op.drop_column("run_metadata", "resource_type")
 
