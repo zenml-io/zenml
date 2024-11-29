@@ -1,7 +1,7 @@
 """Separate run metadata into resource link table with new UUIDs.
 
 Revision ID: cc269488e5a9
-Revises: ec6307720f92
+Revises: b73bc71f1106
 Create Date: 2024-11-12 09:46:46.587478
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "cc269488e5a9"
-down_revision = "ec6307720f92"
+down_revision = "b73bc71f1106"
 branch_labels = None
 depends_on = None
 
