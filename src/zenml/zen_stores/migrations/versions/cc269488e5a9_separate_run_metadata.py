@@ -38,7 +38,6 @@ def upgrade() -> None:
         ),
     )
 
-    # Migrate existing data from `run_metadata` to `run_metadata_resource`
     connection = op.get_bind()
 
     run_metadata_data = connection.execute(
