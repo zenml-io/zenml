@@ -446,16 +446,6 @@ class PipelineBuildResponse(
 class PipelineBuildFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        description="Workspace for this pipeline build.",
-        default=None,
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        description="User that produced this pipeline build.",
-        default=None,
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,

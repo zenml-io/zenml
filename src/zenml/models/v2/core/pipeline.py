@@ -21,7 +21,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -45,8 +44,6 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -261,10 +258,8 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
     CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "user",
         "latest_run_status",
     ]
-
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
@@ -273,20 +268,6 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Filter by the status of the latest run of a pipeline. "
         "This will always be applied as an `AND` filter for now.",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the Pipeline",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the Pipeline",
-        union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the pipeline.",
     )
 
     def apply_filter(
@@ -343,36 +324,6 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
 
         return query
 
-    def get_custom_filters(
-        self,
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters()
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            PipelineSchema,
-            UserSchema,
-        )
-
-        if self.user:
-            user_filter = and_(
-                PipelineSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
-
-        return custom_filters
-
     def apply_sorting(
         self,
         query: AnyQuery,
@@ -392,7 +343,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
             # If sorting by the latest run, the sorting is already done in the
             # base query in `SqlZenStore.list_pipelines(...)` and we don't need
-            # to to anything here
+            # to do anything here
             return query
         else:
             return super().apply_sorting(query=query, table=table)

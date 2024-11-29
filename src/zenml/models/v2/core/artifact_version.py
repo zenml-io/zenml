@@ -471,7 +471,6 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "name",
         "only_unused",
         "has_custom_name",
-        "user",
         "model",
         "pipeline_run",
         "model_version_id",
@@ -516,19 +515,10 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Artifact store for this artifact",
         union_mode="left_to_right",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace for this artifact",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that produced this artifact",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="ID of the model version that is associated with this artifact version.",
+        description="ID of the model version that is associated with this "
+        "artifact version.",
         union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
@@ -580,7 +570,6 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
             StepRunSchema,
-            UserSchema,
         )
 
         if self.name:
@@ -627,17 +616,6 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 ArtifactSchema.has_custom_name == self.has_custom_name,
             )
             custom_filters.append(custom_name_filter)
-
-        if self.user:
-            user_filter = and_(
-                ArtifactVersionSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.model:
             model_filter = and_(

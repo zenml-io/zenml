@@ -37,7 +37,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
@@ -376,16 +375,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the service",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the service",
-        union_mode="left_to_right",
-    )
     type: Optional[str] = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
@@ -457,9 +446,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         "config",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "user_id",
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "flavor",
         "type",
         "pipeline_step_name",
