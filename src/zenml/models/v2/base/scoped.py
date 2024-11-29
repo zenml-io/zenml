@@ -241,12 +241,16 @@ class UserScopedFilter(BaseFilter):
         if sort_by == "user":
             column = UserSchema.name
 
-            query = query.join(UserSchema, table.user_id == UserSchema.id)
+            query = query.join(
+                UserSchema, getattr(table, "user_id") == UserSchema.id
+            )
 
             if operand == SorterOps.ASCENDING:
-                return query.order_by(asc(column))
+                query = query.order_by(asc(column))
             else:
-                return query.order_by(desc(column))
+                query = query.order_by(desc(column))
+
+            return query
 
         return super().apply_sorting(query=query, table=table)
 
@@ -440,13 +444,16 @@ class WorkspaceScopedFilter(UserScopedFilter):
             column = WorkspaceSchema.name
 
             query = query.join(
-                WorkspaceSchema, table.workspace_id == WorkspaceSchema.id
+                WorkspaceSchema,
+                getattr(table, "workspace_id") == WorkspaceSchema.id,
             )
 
             if operand == SorterOps.ASCENDING:
-                return query.order_by(asc(column))
+                query = query.order_by(asc(column))
             else:
-                return query.order_by(desc(column))
+                query = query.order_by(desc(column))
+
+            return query
 
         return super().apply_sorting(query=query, table=table)
 
@@ -568,7 +575,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
             )
 
             if operand == SorterOps.ASCENDING:
-                return query.order_by(
+                query = query.order_by(
                     asc(
                         func.group_concat(TagSchema.name, ",").label(
                             "tags_list"
@@ -576,12 +583,14 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
                     )
                 )
             else:
-                return query.order_by(
+                query = query.order_by(
                     desc(
                         func.group_concat(TagSchema.name, ",").label(
                             "tags_list"
                         )
                     )
                 )
+
+            return query
 
         return super().apply_sorting(query=query, table=table)

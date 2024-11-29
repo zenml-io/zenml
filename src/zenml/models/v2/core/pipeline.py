@@ -373,13 +373,14 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
             )
 
             if operand == SorterOps.ASCENDING:
-                return query.order_by(
+                query = query.order_by(
                     asc(latest_run_subquery.c.latest_run)
                 ).order_by(col(PipelineSchema.id))
             else:
-                return query.order_by(
+                query = query.order_by(
                     desc(latest_run_subquery.c.latest_run)
                 ).order_by(col(PipelineSchema.id))
 
+            return query
         else:
             return super().apply_sorting(query=query, table=table)

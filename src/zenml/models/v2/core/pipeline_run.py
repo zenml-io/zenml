@@ -967,6 +967,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             return super().apply_sorting(query=query, table=table)
 
         if operand == SorterOps.ASCENDING:
-            return query.order_by(asc(column))
+            query = query.order_by(asc(column))
         else:
-            return query.order_by(desc(column))
+            query = query.order_by(desc(column))
+
+        return query
