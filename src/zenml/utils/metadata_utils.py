@@ -320,7 +320,7 @@ def log_metadata(
                 type=MetadataResourceTypes.STEP_RUN,
             )
         ]
-        publisher_step_id = (step_context.step_run.id,)
+        publisher_step_id = step_context.step_run.id
 
     else:
         raise ValueError(
