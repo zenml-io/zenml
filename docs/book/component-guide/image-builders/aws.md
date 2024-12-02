@@ -221,7 +221,7 @@ which is a Docker image that includes both Docker-in-Docker and the AWS CLI.
 
 
 {% hint style="info" %}
-If you are running into Dockerhub rate-limits, it might be a good idea to copy this image to your own container registry and customize the `build_image` attribute to point to your own image.
+If you are running into Docker Hub rate-limits, it might be a good idea to copy this image to your own container registry and customize the `build_image` attribute to point to your own image.
 {% endhint %}
 
 * `compute_type`: The compute type used for the CodeBuild project. The default is `BUILD_GENERAL1_SMALL`.
