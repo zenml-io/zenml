@@ -83,7 +83,7 @@ The user must take care that the **Service Role** attached to the CodeBuild proj
 }
 ```
 
-* Recommended: grant ZenML access to trigger AWS CodeBuild builds by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) with the proper credentials and permissions, as covered in the [Authentication Methods](aws.md#authentication-methods) section. If not provided, then the AWS credentials will be inferred from the environment where the pipeline is triggered.
+* Recommended: Grant ZenML access to trigger AWS CodeBuild builds by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) with the proper credentials and permissions, as covered in the [Authentication Methods](aws.md#authentication-methods) section. If not provided, the AWS credentials will be inferred from the environment where the pipeline is triggered.
 
 We can register the image builder and use it in our active stack:
 
