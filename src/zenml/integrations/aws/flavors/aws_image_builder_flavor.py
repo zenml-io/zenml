@@ -22,7 +22,6 @@ from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
 )
 from zenml.models import ServiceConnectorRequirements
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.image_builders import AWSImageBuilder
@@ -34,33 +33,24 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
     Attributes:
         code_build_project: The name of the AWS CodeBuild project to use to
             build the image.
-        aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
-            If not provided, the value from the default AWS config will be used.
-        aws_secret_access_key: The AWS secret access key to use to authenticate
-            to AWS. If not provided, the value from the default AWS config will
-            be used.
-        aws_auth_role_arn: The ARN of an intermediate IAM role to assume when
-            authenticating to AWS.
         region: The AWS region where the processing job will be run. If not
             provided, the value from the default AWS config will be used.
-        implicit_auth: Whether to use implicit authentication to authenticate
-            the AWS Code Build build to the container registry. If set to False,
-            the container registry credentials must be explicitly configured for
-            the container registry stack component or the container registry
-            stack component must be linked to a service connector.
-            NOTE: When implicit_auth is set to False, the container registry
-            credentials will be passed to the AWS Code Build build as
-            environment variables. This is not recommended for production use
-            unless your service connector is configured to generate short-lived
-            credentials.
+        implicit_container_registry_auth: Whether to use implicit authentication
+            to authenticate the AWS Code Build build to the container registry
+            when pushing container images. If set to False, the container
+            registry credentials must be explicitly configured for the container
+            registry stack component or the container registry stack component
+            must be linked to a service connector.
+            NOTE: When implicit_container_registry_auth is set to False, the
+            container registry credentials will be passed to the AWS Code Build
+            build as environment variables. This is not recommended for
+            production use unless your service connector is configured to
+            generate short-lived credentials.
     """
 
     code_build_project: str
-    aws_access_key_id: Optional[str] = SecretField(default=None)
-    aws_secret_access_key: Optional[str] = SecretField(default=None)
-    aws_auth_role_arn: Optional[str] = None
     region: Optional[str] = None
-    implicit_auth: bool = True
+    implicit_container_registry_auth: bool = True
 
 
 class AWSImageBuilderFlavor(BaseImageBuilderFlavor):

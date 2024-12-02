@@ -18,7 +18,7 @@ import tarfile
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import IO, Any, Dict, Optional
+from typing import IO, Any, Dict
 
 from zenml.io import fileio
 from zenml.utils.enum_utils import StrEnum
@@ -103,7 +103,7 @@ class Archivable(ABC):
         """
         files = self.get_files()
         extra_files = self.get_extra_files()
-        intermediate_fileobj: Optional[Any] = None
+        close_fileobj: bool = False
         fileobj: Any = output_file
 
         if archive_type == ArchiveType.ZIP:
@@ -118,7 +118,8 @@ class Archivable(ABC):
                 # file to be different each time. We use this hash to avoid
                 # duplicate uploads, which is why we pass empty values for filename
                 # and mtime here.
-                fileobj = intermediate_fileobj = GzipFile(
+                close_fileobj = True
+                fileobj = GzipFile(
                     filename="", mode="wb", fileobj=output_file, mtime=0.0
                 )
             fileobj = tarfile.open(mode="w", fileobj=fileobj)
@@ -154,8 +155,8 @@ class Archivable(ABC):
                         info.size = len(contents_encoded)
                         af.addfile(info, io.BytesIO(contents_encoded))
         finally:
-            if intermediate_fileobj:
-                intermediate_fileobj.close()
+            if close_fileobj:
+                fileobj.close()
 
         output_file.seek(0)
 

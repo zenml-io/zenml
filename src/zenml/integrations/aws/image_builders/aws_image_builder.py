@@ -112,27 +112,11 @@ class AWSImageBuilder(BaseImageBuilder):
                     f"Expected to receive a `boto3.Session` object from the "
                     f"linked connector, but got type `{type(boto_session)}`."
                 )
-        # Option 2: Explicit or implicit configuration
+        # Option 2: Implicit configuration
         else:
             boto_session = boto3.Session(
-                aws_access_key_id=self.config.aws_access_key_id,
-                aws_secret_access_key=self.config.aws_secret_access_key,
                 region_name=self.config.region,
             )
-            # If a role ARN is provided for authentication, assume the role
-            if self.config.aws_auth_role_arn:
-                sts = boto_session.client("sts")
-                response = sts.assume_role(
-                    RoleArn=self.config.aws_auth_role_arn,
-                    RoleSessionName="zenml-code-build-session",
-                )
-                credentials = response["Credentials"]
-                boto_session = boto3.Session(
-                    aws_access_key_id=credentials["AccessKeyId"],
-                    aws_secret_access_key=credentials["SecretAccessKey"],
-                    aws_session_token=credentials["SessionToken"],
-                    region_name=self.config.region,
-                )
 
         self._code_build_client = boto_session.client("codebuild")
         return self._code_build_client
@@ -186,7 +170,7 @@ class AWSImageBuilder(BaseImageBuilder):
         # is disabled
         environment_variables_override = []
         pre_build_commands = []
-        if not self.config.implicit_auth:
+        if not self.config.implicit_container_registry_auth:
             credentials = container_registry.credentials
             if credentials:
                 environment_variables_override = [
