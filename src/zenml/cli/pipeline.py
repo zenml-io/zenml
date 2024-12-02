@@ -66,6 +66,8 @@ def _import_pipeline(source: str) -> Pipeline:
             "object."
         )
 
+    return pipeline_instance
+
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
