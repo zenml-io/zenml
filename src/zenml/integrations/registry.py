@@ -111,7 +111,7 @@ class IntegrationRegistry(object):
                 )
             else:
                 raise KeyError(
-                    f"Version {integration_name} does not exist. "
+                    f"Integration {integration_name} does not exist. "
                     f"Currently the following integrations are implemented. "
                     f"{self.list_integration_names}"
                 )
@@ -148,7 +148,7 @@ class IntegrationRegistry(object):
                 ].get_uninstall_requirements(target_os=target_os)
             else:
                 raise KeyError(
-                    f"Version {integration_name} does not exist. "
+                    f"Integration {integration_name} does not exist. "
                     f"Currently the following integrations are implemented. "
                     f"{self.list_integration_names}"
                 )
