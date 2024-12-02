@@ -169,23 +169,15 @@ class AWSImageBuilder(BaseImageBuilder):
         # Pass authentication credentials as environment variables, if
         # the container registry has credentials and if implicit authentication
         # is disabled
-        environment_variables_override = []
+        environment_variables_override: Dict[str, str] = {}
         pre_build_commands = []
         if not self.config.implicit_container_registry_auth:
             credentials = container_registry.credentials
             if credentials:
-                environment_variables_override = [
-                    {
-                        "name": "CONTAINER_REGISTRY_USERNAME",
-                        "value": credentials[0],
-                        "type": "PLAINTEXT",
-                    },
-                    {
-                        "name": "CONTAINER_REGISTRY_PASSWORD",
-                        "value": credentials[1],
-                        "type": "PLAINTEXT",
-                    },
-                ]
+                environment_variables_override = {
+                    "CONTAINER_REGISTRY_USERNAME": credentials[0],
+                    "CONTAINER_REGISTRY_PASSWORD": credentials[1],
+                }
                 pre_build_commands = [
                     "echo Logging in to container registry",
                     'echo "$CONTAINER_REGISTRY_PASSWORD" | docker login --username "$CONTAINER_REGISTRY_USERNAME" --password-stdin '
@@ -244,24 +236,41 @@ artifacts:
         - '**/*'
 """
 
+        if self.config.custom_env_vars:
+            environment_variables_override.update(self.config.custom_env_vars)
+
+        environment_variables_override_list = [
+            {
+                "name": key,
+                "value": value,
+                "type": "PLAINTEXT",
+            }
+            for key, value in environment_variables_override.items()
+        ]
+
         # Override the build project with the parameters needed to run a
         # docker-in-docker build, as covered here: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-section.html
         response = self.code_build_client.start_build(
             projectName=self.config.code_build_project,
             environmentTypeOverride="LINUX_CONTAINER",
-            imageOverride="bentolor/docker-dind-awscli",
-            computeTypeOverride="BUILD_GENERAL1_SMALL",
+            imageOverride=self.config.build_image,
+            computeTypeOverride=self.config.compute_type,
             privilegedModeOverride=False,
             sourceTypeOverride="S3",
             sourceLocationOverride=f"{bucket}/{object_path}",
             buildspecOverride=buildspec,
-            environmentVariablesOverride=environment_variables_override,
+            environmentVariablesOverride=environment_variables_override_list,
             # no artifacts
             artifactsOverride={"type": "NO_ARTIFACTS"},
         )
 
-        logs_url = response["build"]["logs"]["deepLink"]
+        build_arn = response["build"]["arn"]
 
+        # Parse the AWS region, account, codebuild project and build name from the ARN
+        aws_region, aws_account, build = build_arn.split(":", maxsplit=5)[3:6]
+        codebuild_project = build.split("/")[1].split(":")[0]
+
+        logs_url = f"https://{aws_region}.console.aws.amazon.com/codesuite/codebuild/{aws_account}/projects/{codebuild_project}/{build}/log"
         logger.info(
             f"Running Code Build to build the Docker image. Cloud Build logs: `{logs_url}`",
         )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS Code Build image builder flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.aws import (
@@ -27,6 +27,10 @@ if TYPE_CHECKING:
     from zenml.integrations.aws.image_builders import AWSImageBuilder
 
 
+DEFAULT_CLOUDBUILD_IMAGE = "bentolor/docker-dind-awscli"
+DEFAULT_CLOUDBUILD_COMPUTE_TYPE = "BUILD_GENERAL1_SMALL"
+
+
 class AWSImageBuilderConfig(BaseImageBuilderConfig):
     """AWS Code Build image builder configuration.
 
@@ -35,6 +39,15 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
             to build the image. The CodeBuild project must exist in the AWS
             account and region inferred from the AWS service connector
             credentials or implicitly from the local AWS config.
+        build_image: The Docker image to use for the AWS CodeBuild environment.
+            The image must have Docker installed and be able to run Docker
+            commands. The default image is bentolor/docker-dind-awscli.
+            This can be customized to use a mirror, if needed, in case the
+            Dockerhub image is not accessible or rate-limited.
+        custom_env_vars: Custom environment variables to pass to the AWS
+            CodeBuild build.
+        compute_type: The compute type to use for the AWS CodeBuild build.
+            The default is BUILD_GENERAL1_SMALL.
         implicit_container_registry_auth: Whether to use implicit authentication
             to authenticate the AWS Code Build build to the container registry
             when pushing container images. If set to False, the container
@@ -49,6 +62,9 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
     """
 
     code_build_project: str
+    build_image: str = DEFAULT_CLOUDBUILD_IMAGE
+    custom_env_vars: Optional[Dict[str, str]] = None
+    compute_type: str = DEFAULT_CLOUDBUILD_COMPUTE_TYPE
     implicit_container_registry_auth: bool = True
 
 
