@@ -335,6 +335,7 @@ class WorkspaceScopedFilter(UserScopedFilter):
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "workspace_id",
+        "workspace",
         "scope_workspace",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
