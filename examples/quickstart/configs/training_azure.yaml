@@ -4,6 +4,8 @@ settings:
     parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.70.0-py3.11-azure"
     skip_build: True
     requirements: requirements.txt
+    environment:
+      WANDB_DISABLED: "true"
   # Uncomment the following lines to specify the accelerator for your azureml orchestrator
 #  orchestrator.azureml:
 #    mode: "compute-instance"
