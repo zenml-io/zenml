@@ -134,6 +134,17 @@ class KubernetesOrchestratorConfig(
         """
         return True
 
+    @property
+    def supports_client_side_caching(self) -> bool:
+        """Whether the orchestrator supports client side caching.
+
+        Returns:
+            Whether the orchestrator supports client side caching.
+        """
+        # The Kubernetes orchestrator starts step pods from a pipeline pod.
+        # This is currently not supported when using client-side caching.
+        return False
+
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
     """Kubernetes orchestrator flavor."""
