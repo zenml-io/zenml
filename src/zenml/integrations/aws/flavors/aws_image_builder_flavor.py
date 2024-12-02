@@ -31,10 +31,10 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
     """AWS Code Build image builder configuration.
 
     Attributes:
-        code_build_project: The name of the AWS CodeBuild project to use to
-            build the image.
-        region: The AWS region where the processing job will be run. If not
-            provided, the value from the default AWS config will be used.
+        code_build_project: The name of an existing AWS CodeBuild project to use
+            to build the image. The CodeBuild project must exist in the AWS
+            account and region inferred from the AWS service connector
+            credentials or implicitly from the local AWS config.
         implicit_container_registry_auth: Whether to use implicit authentication
             to authenticate the AWS Code Build build to the container registry
             when pushing container images. If set to False, the container
@@ -49,7 +49,6 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
     """
 
     code_build_project: str
-    region: Optional[str] = None
     implicit_container_registry_auth: bool = True
 
 

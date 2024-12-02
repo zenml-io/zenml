@@ -95,6 +95,9 @@ class AWSImageBuilder(BaseImageBuilder):
 
         Returns:
             The authenticated AWS Code Build client.
+
+        Raises:
+            RuntimeError: If the AWS Code Build client cannot be created.
         """
         if (
             self._code_build_client is not None
@@ -114,9 +117,7 @@ class AWSImageBuilder(BaseImageBuilder):
                 )
         # Option 2: Implicit configuration
         else:
-            boto_session = boto3.Session(
-                region_name=self.config.region,
-            )
+            boto_session = boto3.Session()
 
         self._code_build_client = boto_session.client("codebuild")
         return self._code_build_client
@@ -248,7 +249,7 @@ artifacts:
         response = self.code_build_client.start_build(
             projectName=self.config.code_build_project,
             environmentTypeOverride="LINUX_CONTAINER",
-            imageOverride="bentolor/docker-dind-awscli",  # "docker:dind",
+            imageOverride="bentolor/docker-dind-awscli",
             computeTypeOverride="BUILD_GENERAL1_SMALL",
             privilegedModeOverride=False,
             sourceTypeOverride="S3",
