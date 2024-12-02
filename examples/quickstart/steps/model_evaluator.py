@@ -20,7 +20,7 @@ from transformers import (
     T5ForConditionalGeneration,
 )
 
-from zenml import get_step_context, log_metadata, step
+from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -50,11 +50,4 @@ def evaluate_model(
     avg_loss = total_loss / num_batches
     print(f"Average loss on the dataset: {avg_loss}")
 
-    step_context = get_step_context()
-
-    if step_context.model:
-        log_metadata(
-            metadata={"Average Loss": avg_loss},
-            model_name=step_context.model.name,
-            model_version=step_context.model.version,
-        )
+    log_metadata(metadata={"Average Loss": avg_loss}, infer_model=True)

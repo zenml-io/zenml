@@ -52,29 +52,31 @@ def log_model_metadata(
             `model` in decorator.
 
     Raises:
-        ValueError: If no model name/version is provided and the function is not
-            called inside a step with configured `model` in decorator.
+        ValueError: If the function is not called with proper input.
     """
     logger.warning(
         "The `log_model_metadata` function is deprecated and will soon be "
         "removed. Please use `log_metadata` instead."
     )
 
+    from zenml import log_metadata
+
     if model_name and model_version:
-        from zenml import Model
-
-        mv = Model(name=model_name, version=model_version)
+        log_metadata(
+            metadata=metadata,
+            model_version=model_version,
+            model_name=model_name,
+        )
+    elif model_name is None and model_version is None:
+        log_metadata(
+            metadata=metadata,
+            infer_model=True,
+        )
     else:
-        try:
-            step_context = get_step_context()
-        except RuntimeError:
-            raise ValueError(
-                "Model name and version must be provided unless the function is "
-                "called inside a step with configured `model` in decorator."
-            )
-        mv = step_context.model
-
-    mv.log_metadata(metadata)
+        raise ValueError(
+            "You can call `log_model_metadata` by either providing both "
+            "`model_name` and `model_version` or keeping both of them None."
+        )
 
 
 def link_artifact_version_to_model_version(
@@ -107,7 +109,7 @@ def link_artifact_to_model(
         model: The model to link to.
 
     Raises:
-        RuntimeError: If called outside of a step.
+        RuntimeError: If called outside a step.
     """
     if not model:
         is_issue = False

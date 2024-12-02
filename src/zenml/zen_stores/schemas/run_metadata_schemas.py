@@ -14,15 +14,16 @@
 """SQLModel implementation of pipeline run metadata tables."""
 
 from typing import TYPE_CHECKING, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import TEXT, VARCHAR, Column
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import MetadataResourceTypes
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
@@ -30,7 +31,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class RunMetadataSchema(BaseSchema, table=True):
@@ -38,35 +38,10 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    resource_id: UUID
-    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    pipeline_run: List["PipelineRunSchema"] = Relationship(
+    # Relationship to link to resources
+    resources: List["RunMetadataResourceSchema"] = Relationship(
         back_populates="run_metadata",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
-            overlaps="run_metadata,step_run,artifact_version,model_version",
-        ),
-    )
-    step_run: List["StepRunSchema"] = Relationship(
-        back_populates="run_metadata",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
-            overlaps="run_metadata,pipeline_run,artifact_version,model_version",
-        ),
-    )
-    artifact_version: List["ArtifactVersionSchema"] = Relationship(
-        back_populates="run_metadata",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
-            overlaps="run_metadata,pipeline_run,step_run,model_version",
-        ),
-    )
-    model_version: List["ModelVersionSchema"] = Relationship(
-        back_populates="run_metadata",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ModelVersionSchema.id)",
-            overlaps="run_metadata,pipeline_run,step_run,artifact_version",
-        ),
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -103,3 +78,63 @@ class RunMetadataSchema(BaseSchema, table=True):
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str
+
+    publisher_step_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="publisher_step_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+
+class RunMetadataResourceSchema(SQLModel, table=True):
+    """Table for linking resources to run metadata entries."""
+
+    __tablename__ = "run_metadata_resource"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    resource_id: UUID
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    run_metadata_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RunMetadataSchema.__tablename__,
+        source_column="run_metadata_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+
+    # Relationship back to the base metadata table
+    run_metadata: RunMetadataSchema = Relationship(back_populates="resources")
+
+    # Relationship to link specific resource types
+    pipeline_runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="run_metadata_resources",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
+            overlaps="run_metadata_resources,step_runs,artifact_versions,model_versions",
+        ),
+    )
+    step_runs: List["StepRunSchema"] = Relationship(
+        back_populates="run_metadata_resources",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
+            overlaps="run_metadata_resources,pipeline_runs,artifact_versions,model_versions",
+        ),
+    )
+    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
+        back_populates="run_metadata_resources",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            overlaps="run_metadata_resources,pipeline_runs,step_runs,model_versions",
+        ),
+    )
+    model_versions: List["ModelVersionSchema"] = Relationship(
+        back_populates="run_metadata_resources",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
+            overlaps="run_metadata_resources,pipeline_runs,step_runs,artifact_versions",
+        ),
+    )

@@ -637,6 +637,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             ModelVersionSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
         )
 
@@ -645,10 +646,12 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == ModelVersionSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id
+                    == ModelVersionSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,

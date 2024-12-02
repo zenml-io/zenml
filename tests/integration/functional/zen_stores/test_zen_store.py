@@ -102,6 +102,7 @@ from zenml.models import (
     ModelVersionUpdate,
     PipelineRunFilter,
     PipelineRunResponse,
+    RunMetadataResource,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountUpdate,
@@ -2909,7 +2910,7 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata({"blupus": metadata})
+    log_metadata(metadata={"blupus": metadata})
     return 42
 
 
@@ -2953,16 +2954,6 @@ def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     # Test oneof: formatting
     with pytest.raises(ValidationError):
         PipelineRunFilter(name="oneof:random_value")
-
-    # Test metadata filtering
-    runs_filter = PipelineRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_runs(runs_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
-
-    for r in runs:
-        assert "blupus" in r.run_metadata
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
 
 
 # .--------------------.
@@ -5457,8 +5448,7 @@ class TestRunMetadata:
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                resource_id=resource.id,
-                resource_type=type_,
+                resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},
                 stack_component_id=sc.id

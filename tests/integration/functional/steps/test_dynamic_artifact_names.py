@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from contextlib import ExitStack as does_not_raise
 from typing import Callable, Tuple
 
 import pytest
@@ -120,6 +121,11 @@ def mixed_with_unannotated_returns() -> (
         "str_namer_custom",
         "unannotated",
     )
+
+
+@step
+def step_with_string_input(input_: str) -> None:
+    pass
 
 
 @pytest.mark.parametrize(
@@ -362,3 +368,17 @@ def test_that_overrides_work_as_expected(clean_client: "Client"):
     assert p2_step_subs["date"] == "step_level"
     assert p1_step_subs["funny_name"] == "pipeline_level"
     assert p2_step_subs["funny_name"] == "step_level"
+
+
+def test_dynamically_named_artifacts_in_downstream_steps(
+    clean_client: "Client",
+):
+    """Test that dynamically named artifacts can be used in downstream steps."""
+
+    @pipeline(enable_cache=False)
+    def _inner(ret: str):
+        artifact = dynamic_single_string_standard()
+        step_with_string_input(artifact)
+
+    with does_not_raise():
+        _inner("output_1")

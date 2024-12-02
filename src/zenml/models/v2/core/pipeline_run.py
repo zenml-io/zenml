@@ -559,6 +559,15 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def step_substitutions(self) -> Dict[str, Dict[str, str]]:
+        """The `step_substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().step_substitutions
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
@@ -728,6 +737,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
@@ -891,10 +901,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == PipelineRunSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id
+                    == PipelineRunSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.PIPELINE_RUN,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,

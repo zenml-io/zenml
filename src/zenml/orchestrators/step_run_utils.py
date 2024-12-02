@@ -309,6 +309,9 @@ def create_cached_step_runs(
         for invocation_id in cache_candidates:
             visited_invocations.add(invocation_id)
 
+            # Make sure the request factory has the most up to date pipeline
+            # run to avoid hydration calls
+            request_factory.pipeline_run = pipeline_run
             try:
                 step_run_request = request_factory.create_request(
                     invocation_id
