@@ -335,6 +335,7 @@ prepare for you based on your cloud provider:
 
 - An S3 bucket that will be used as a ZenML Artifact Store.
 - An ECR container registry that will be used as a ZenML Container Registry.
+- A CloudBuild project that will be used as a ZenML Image Builder.
 - Permissions to use SageMaker as a ZenML Orchestrator and Step Operator.
 - An IAM user and IAM role with the minimum necessary permissions to access 
 the resources listed above.
@@ -358,6 +359,24 @@ following AWS permissions in your AWS account:
   * ecr:DescribeRepositories
   * ecr:ListRepositories
   * ecr:DescribeRegistry
+  * ecr:BatchGetImage
+  * ecr:DescribeImages
+  * ecr:BatchCheckLayerAvailability
+  * ecr:GetDownloadUrlForLayer
+  * ecr:InitiateLayerUpload
+  * ecr:UploadLayerPart
+  * ecr:CompleteLayerUpload
+  * ecr:PutImage
+  * ecr:GetAuthorizationToken
+* CloudBuild (Client):
+  * codebuild:CreateProject
+  * codebuild:BatchGetBuilds
+* CloudBuild (Service):
+  * s3:GetObject
+  * s3:GetObjectVersion
+  * logs:CreateLogGroup
+  * logs:CreateLogStream
+  * logs:PutLogEvents
   * ecr:BatchGetImage
   * ecr:DescribeImages
   * ecr:BatchCheckLayerAvailability
