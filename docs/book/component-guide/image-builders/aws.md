@@ -12,7 +12,7 @@ You should use the AWS image builder if:
 
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using AWS.
-* your stack is mainly composed of other AWS components such as the [S3 Artifact Store](../artifact-stores/s3.md) or the [Sagemaker Orchestrator](../orchestrators/sagemaker.md).
+* your stack is mainly composed of other AWS components such as the [S3 Artifact Store](../artifact-stores/s3.md) or the [SageMaker Orchestrator](../orchestrators/sagemaker.md).
 
 ### How to deploy it
 
