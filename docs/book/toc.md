@@ -293,6 +293,7 @@
 * [Image Builders](component-guide/image-builders/image-builders.md)
   * [Local Image Builder](component-guide/image-builders/local.md)
   * [Kaniko Image Builder](component-guide/image-builders/kaniko.md)
+  * [AWS Image Builder](component-guide/image-builders/aws.md)
   * [Google Cloud Image Builder](component-guide/image-builders/gcp.md)
   * [Develop a Custom Image Builder](component-guide/image-builders/custom.md)
 * [Annotators](component-guide/annotators/annotators.md)
