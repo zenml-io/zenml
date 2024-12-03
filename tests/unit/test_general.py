@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 import os
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
-from pathlib import Path
 
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_DEBUG
