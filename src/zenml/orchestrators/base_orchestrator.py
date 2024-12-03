@@ -84,6 +84,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
         """
         return False
 
+    @property
+    def supports_client_side_caching(self) -> bool:
+        """Whether the orchestrator supports client side caching.
+
+        Returns:
+            Whether the orchestrator supports client side caching.
+        """
+        return True
+
 
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators.
@@ -205,6 +214,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         if (
             placeholder_run
+            and self.config.supports_client_side_caching
             and not deployment.schedule
             and not prevent_client_side_caching
         ):
@@ -232,6 +242,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 self._cleanup_run()
                 logger.info("All steps of the pipeline run were cached.")
                 return
+        else:
+            logger.debug("Skipping client-side caching.")
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(
