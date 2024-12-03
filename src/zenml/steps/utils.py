@@ -42,6 +42,7 @@ from zenml.enums import (
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import RunMetadataResource
 from zenml.steps.step_context import get_step_context
 from zenml.utils import settings_utils, source_code_utils, typing_utils
 
@@ -489,8 +490,11 @@ def log_step_metadata(
         step_run_id = pipeline_run.steps[step_name].id
     client.create_run_metadata(
         metadata=metadata,
-        resource_id=step_run_id,
-        resource_type=MetadataResourceTypes.STEP_RUN,
+        resources=[
+            RunMetadataResource(
+                id=step_run_id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ],
     )
 
 

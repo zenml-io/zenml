@@ -4062,7 +4062,7 @@ class RestZenStore(BaseZenStore):
                 "you should use a service account API key to authenticate to "
                 "the server instead of temporary CLI login credentials. For "
                 "more information, see "
-                "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+                "https://docs.zenml.io/how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account"
             )
 
             if api_key is not None:

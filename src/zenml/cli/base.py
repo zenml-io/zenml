@@ -79,19 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.11.20",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.11.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.10.30",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.11.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.10.30",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.11.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.11.08",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.11.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -264,7 +264,7 @@ def init(
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/user-guide/starter-guide/understand-stacks."
+        f"https://docs.zenml.io/user-guide/production-guide/understand-stacks."
     )
 
 
