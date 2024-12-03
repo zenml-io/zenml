@@ -40,6 +40,35 @@ from zenml.utils.yaml_utils import write_yaml
 logger = get_logger(__name__)
 
 
+def _import_pipeline(source: str) -> Pipeline:
+    """Import a pipeline.
+
+    Args:
+        source: The pipeline source.
+
+    Returns:
+        The pipeline.
+    """
+    try:
+        pipeline_instance = source_utils.load(source)
+    except ModuleNotFoundError as e:
+        source_root = source_utils.get_source_root()
+        cli_utils.error(
+            f"Unable to import module `{e.name}`. Make sure the source path is "
+            f"relative to your source root `{source_root}`."
+        )
+    except AttributeError as e:
+        cli_utils.error("Unable to load attribute from module: " + str(e))
+
+    if not isinstance(pipeline_instance, Pipeline):
+        cli_utils.error(
+            f"The given source path `{source}` does not resolve to a pipeline "
+            "object."
+        )
+
+    return pipeline_instance
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
     """Interact with pipelines, runs and schedules."""
@@ -85,22 +114,7 @@ def register_pipeline(
             "source code root."
         )
 
-    try:
-        pipeline_instance = source_utils.load(source)
-    except ModuleNotFoundError as e:
-        source_root = source_utils.get_source_root()
-        cli_utils.error(
-            f"Unable to import module `{e.name}`. Make sure the source path is "
-            f"relative to your source root `{source_root}`."
-        )
-    except AttributeError as e:
-        cli_utils.error("Unable to load attribute from module: " + str(e))
-
-    if not isinstance(pipeline_instance, Pipeline):
-        cli_utils.error(
-            f"The given source path `{source}` does not resolve to a pipeline "
-            "object."
-        )
+    pipeline_instance = _import_pipeline(source=source)
 
     parameters: Dict[str, Any] = {}
     if parameters_path:
@@ -176,24 +190,9 @@ def build_pipeline(
             "your source code root."
         )
 
-    try:
-        pipeline_instance = source_utils.load(source)
-    except ModuleNotFoundError as e:
-        source_root = source_utils.get_source_root()
-        cli_utils.error(
-            f"Unable to import module `{e.name}`. Make sure the source path is "
-            f"relative to your source root `{source_root}`."
-        )
-    except AttributeError as e:
-        cli_utils.error("Unable to load attribute from module: " + str(e))
-
-    if not isinstance(pipeline_instance, Pipeline):
-        cli_utils.error(
-            f"The given source path `{source}` does not resolve to a pipeline "
-            "object."
-        )
-
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path
         )
@@ -277,42 +276,92 @@ def run_pipeline(
             "your source code root."
         )
 
-    try:
-        pipeline_instance = source_utils.load(source)
-    except ModuleNotFoundError as e:
-        source_root = source_utils.get_source_root()
-        cli_utils.error(
-            f"Unable to import module `{e.name}`. Make sure the source path is "
-            f"relative to your source root `{source_root}`."
-        )
-    except AttributeError as e:
-        cli_utils.error("Unable to load attribute from module: " + str(e))
-
-    if not isinstance(pipeline_instance, Pipeline):
-        cli_utils.error(
-            f"The given source path `{source}` does not resolve to a pipeline "
-            "object."
-        )
-
-    build: Union[str, PipelineBuildBase, None] = None
-    if build_path_or_id:
-        if uuid_utils.is_valid_uuid(build_path_or_id):
-            build = build_path_or_id
-        elif os.path.exists(build_path_or_id):
-            build = PipelineBuildBase.from_yaml(build_path_or_id)
-        else:
-            cli_utils.error(
-                f"The specified build {build_path_or_id} is not a valid UUID "
-                "or file path."
-            )
-
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        build: Union[str, PipelineBuildBase, None] = None
+        if build_path_or_id:
+            if uuid_utils.is_valid_uuid(build_path_or_id):
+                build = build_path_or_id
+            elif os.path.exists(build_path_or_id):
+                build = PipelineBuildBase.from_yaml(build_path_or_id)
+            else:
+                cli_utils.error(
+                    f"The specified build {build_path_or_id} is not a valid UUID "
+                    "or file path."
+                )
+
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,
             build=build,
             prevent_build_reuse=prevent_build_reuse,
         )
         pipeline_instance()
+
+
+@pipeline.command(
+    "create-run-template",
+    help="Create a run template for a pipeline. The SOURCE argument needs to "
+    "be an importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+@click.option(
+    "--name",
+    "-n",
+    type=str,
+    required=True,
+    help="Name for the template",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the build.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the build.",
+)
+def create_run_template(
+    source: str,
+    name: str,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Create a run template for a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        name: Name of the run template.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack for which the template should
+            be created.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline create-run-template` command "
+            "without a ZenML repository. Your current working directory will "
+            "be used as the source root relative to which the registered step "
+            "classes will be resolved. To silence this warning, run `zenml "
+            "init` at your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        template = pipeline_instance.create_run_template(name=name)
+
+    cli_utils.declare(f"Created run template `{template.id}`.")
 
 
 @pipeline.command("list", help="List all registered pipelines.")

@@ -20,7 +20,8 @@ from typing import Optional
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
-from zenml import log_artifact_metadata, step
+from zenml import log_metadata, step
+from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -79,27 +80,31 @@ def model_evaluator(
         dataset_tst.drop(columns=[target]),
         dataset_tst[target],
     )
-    logger.info(f"Train accuracy={trn_acc*100:.2f}%")
-    logger.info(f"Test accuracy={tst_acc*100:.2f}%")
+    logger.info(f"Train accuracy={trn_acc * 100:.2f}%")
+    logger.info(f"Test accuracy={tst_acc * 100:.2f}%")
 
     messages = []
     if trn_acc < min_train_accuracy:
         messages.append(
-            f"Train accuracy {trn_acc*100:.2f}% is below {min_train_accuracy*100:.2f}% !"
+            f"Train accuracy {trn_acc * 100:.2f}% is below {min_train_accuracy * 100:.2f}% !"
         )
     if tst_acc < min_test_accuracy:
         messages.append(
-            f"Test accuracy {tst_acc*100:.2f}% is below {min_test_accuracy*100:.2f}% !"
+            f"Test accuracy {tst_acc * 100:.2f}% is below {min_test_accuracy * 100:.2f}% !"
         )
     else:
         for message in messages:
             logger.warning(message)
 
-    log_artifact_metadata(
+    client = Client()
+    latest_classifier = client.get_artifact_version("sklearn_classifier")
+
+    log_metadata(
         metadata={
             "train_accuracy": float(trn_acc),
             "test_accuracy": float(tst_acc),
         },
-        artifact_name="sklearn_classifier",
+        artifact_version_id=latest_classifier.id,
     )
+
     return float(tst_acc)

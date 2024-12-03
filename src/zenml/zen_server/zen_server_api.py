@@ -95,6 +95,7 @@ from zenml.zen_server.secure_headers import (
 )
 from zenml.zen_server.utils import (
     initialize_feature_gate,
+    initialize_memcache,
     initialize_plugins,
     initialize_rbac,
     initialize_workload_manager,
@@ -179,7 +180,15 @@ class RequestBodyLimit(BaseHTTPMiddleware):
         if content_length := request.headers.get("content-length"):
             if int(content_length) > self.max_bytes:
                 return Response(status_code=413)  # Request Entity Too Large
-        return await call_next(request)
+
+        try:
+            return await call_next(request)
+        except Exception:
+            logger.exception("An error occurred while processing the request")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "An unexpected error occurred."},
+            )
 
 
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
@@ -219,7 +228,15 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
                         "detail": "File uploads are not allowed on this endpoint."
                     },
                 )
-        return await call_next(request)
+
+        try:
+            return await call_next(request)
+        except Exception:
+            logger.exception("An error occurred while processing the request")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "An unexpected error occurred."},
+            )
 
 
 ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
@@ -251,13 +268,21 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     Returns:
         The response with secure headers set.
     """
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
+
     # If the request is for the openAPI docs, don't set secure headers
     if request.url.path.startswith("/docs") or request.url.path.startswith(
         "/redoc"
     ):
-        return await call_next(request)
+        return response
 
-    response = await call_next(request)
     secure_headers().framework.fastapi(response)
     return response
 
@@ -297,7 +322,15 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
         zen_store()._update_last_user_activity_timestamp(
             last_user_activity=last_user_activity
         )
-    return await call_next(request)
+
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
 
 
 @app.middleware("http")
@@ -329,15 +362,23 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
         )
         source_context.set(SourceContextTypes.API)
 
-    return await call_next(request)
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
 
 
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
+    cfg = server_config()
     # Set the maximum number of worker threads
     to_thread.current_default_thread_limiter().total_tokens = (
-        server_config().thread_pool_size
+        cfg.thread_pool_size
     )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
@@ -347,6 +388,7 @@ def initialize() -> None:
     initialize_workload_manager()
     initialize_plugins()
     initialize_secure_headers()
+    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
 
 
 DASHBOARD_REDIRECT_URL = None

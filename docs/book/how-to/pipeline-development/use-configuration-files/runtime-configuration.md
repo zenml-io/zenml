@@ -10,8 +10,8 @@ Stack Component Config vs Settings in ZenML
 
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](../training-with-gpus/training-with-gpus.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](../customize-docker-builds/README.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](../../advanced-topics/training-with-gpus/training-with-gpus.md#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](../../infrastructure-deployment/customize-docker-builds/README.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -37,7 +37,7 @@ Settings are categorized into two types:
 
 For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue`, etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [`MLflow Experiment Tracker`](../../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [`MLflow Experiment Tracker`](../../../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
@@ -47,7 +47,7 @@ This means that all pipelines that run using this experiment tracker use nested 
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. If you specify just the category (e.g. `step_operator` or `orchestrator`), ZenML will try to apply those settings to whatever flavor of component is in your stack when running a pipeline. If your settings don't apply to this flavor, they will be ignored.
 
-For example, the [SagemakerStepOperator](../../component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
+For example, the [SagemakerStepOperator](../../../component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
 
 ```python
 @step(step_operator="nameofstepoperator", settings= {"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})

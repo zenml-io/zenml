@@ -51,10 +51,22 @@ Parameters:
     Description: "The value of the tag to apply to all resources"
     Default: "zenml"
 
+  CodeBuild:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: |
+      Whether to provision a CodeBuild project as the image builder for the
+      stack. Only supported for ZenML Server versions above 0.70.0.
+    Default: false
+
 Conditions:
   RegisterZenMLStack: !And
     - !Not [ !Equals [ !Ref ZenMLServerURL, "" ] ]
     - !Not [ !Equals [ !Ref ZenMLServerAPIToken, "" ] ]
+
+  RegisterCodeBuild: !Equals [ !Ref CodeBuild, true ]
 
 Resources:
   S3Bucket:
@@ -73,6 +85,28 @@ Resources:
       Tags:
         - Key: !Ref TagName
           Value: !Sub TagValue
+
+  CodeBuildProject:
+    Condition: RegisterCodeBuild
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ResourceName}'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: bentolor/docker-dind-awscli
+        PrivilegedMode: false
+      Source:
+        Type: S3
+        Location: !Sub '${S3Bucket}/codebuild'
+      TimeoutInMinutes: 20
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Sub '/aws/codebuild/${ResourceName}'
           
   IAMUser:
     Type: AWS::IAM::User
@@ -176,6 +210,19 @@ Resources:
               - Effect: Allow
                 Action: iam:PassRole
                 Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ResourceName}-sagemaker'
+        - !If
+          - RegisterCodeBuild
+          - PolicyName: CodeBuildPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                # Allow this role to start and monitor CodeBuild project builds
+                - Effect: Allow
+                  Action:
+                    - 'codebuild:StartBuild'
+                    - 'codebuild:BatchGetBuilds'
+                  Resource: !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ResourceName}'
+          - !Ref 'AWS::NoValue'
 
   SageMakerRuntimeRole:
     Type: AWS::IAM::Role
@@ -204,6 +251,53 @@ Resources:
                   - !Sub '${S3Bucket.Arn}/*'
       ManagedPolicyArns: 
         - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Condition: RegisterCodeBuild
+    Properties:
+      RoleName: !Sub '${ResourceName}-codebuild'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ResourceName}'
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ResourceName}:*'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                Resource:
+                  - !Sub '${S3Bucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:UploadLayerPart'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:PutImage'
+                Resource: !Sub '${ECRRepository.Arn}'
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                Resource: '*'
 
   InvokeZenMLAPIFunction:
     Type: AWS::Serverless::Function
@@ -308,63 +402,77 @@ Resources:
     Properties:
       ServiceToken: !GetAtt InvokeZenMLAPIFunction.Arn
       ServiceTimeout: 300
-      Payload: !Sub |
-        {
-          "name": "${AWS::StackName}",
-          "description": "Deployed by AWS CloudFormation stack ${AWS::StackName} in the ${AWS::AccountId} account and ${AWS::Region} region.",
-          "labels": {
-            "zenml:provider": "aws",
-            "zenml:deployment": "cloud-formation"
-          },
-          "service_connectors": [
+      Payload: !Join
+        - ''
+        - - !Sub |
             {
-              "type": "aws",
-              "auth_method": "iam-role",
-              "configuration": {
-                "aws_access_key_id": "${IAMUserAccessKey}",
-                "aws_secret_access_key": "${IAMUserAccessKey.SecretAccessKey}",
-                "role_arn": "${StackAccessRole.Arn}",
-                "region": "${AWS::Region}"
+              "name": "${AWS::StackName}",
+              "description": "Deployed by AWS CloudFormation stack ${AWS::StackName} in the ${AWS::AccountId} account and ${AWS::Region} region.",
+              "labels": {
+                "zenml:provider": "aws",
+                "zenml:deployment": "cloud-formation"
+              },
+              "service_connectors": [
+                {
+                  "type": "aws",
+                  "auth_method": "iam-role",
+                  "configuration": {
+                    "aws_access_key_id": "${IAMUserAccessKey}",
+                    "aws_secret_access_key": "${IAMUserAccessKey.SecretAccessKey}",
+                    "role_arn": "${StackAccessRole.Arn}",
+                    "region": "${AWS::Region}"
+                  }
+                }
+              ],
+              "components": {
+                "artifact_store": [{
+                  "flavor": "s3",
+                  "service_connector_index": 0,
+                  "configuration": {
+                    "path": "s3://${S3Bucket}"
+                  }
+                }],
+                "container_registry":[{
+                  "flavor": "aws",
+                  "service_connector_index": 0,
+                  "configuration": {
+                    "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
+                    "default_repository": "${ECRRepository}"
+                  }
+                }],
+                "orchestrator": [{
+                  "flavor": "sagemaker",
+                  "service_connector_index": 0,
+                  "configuration": {
+                    "execution_role": "${SageMakerRuntimeRole.Arn}",
+                    "output_data_s3_uri": "s3://${S3Bucket}/sagemaker"
+                  }
+                }],
+                "step_operator": [{
+                  "flavor": "sagemaker",
+                  "service_connector_index": 0,
+                  "configuration": {
+                    "role": "${SageMakerRuntimeRole.Arn}",
+                    "bucket": "${S3Bucket}"
+                  }
+                }],
+          - !If
+            - RegisterCodeBuild
+            - !Sub |
+                "image_builder": [{
+                  "flavor": "aws",
+                  "service_connector_index": 0,
+                  "configuration": {
+                    "code_build_project": "${CodeBuildProject}"
+                  }
+                }]
+            - |
+                "image_builder": [{
+                  "flavor": "local"
+                }]
+          - |
               }
-            }
-          ],
-          "components": {
-            "artifact_store": [{
-              "flavor": "s3",
-              "service_connector_index": 0,
-              "configuration": {
-                "path": "s3://${S3Bucket}"
               }
-            }],
-            "container_registry":[{
-              "flavor": "aws",
-              "service_connector_index": 0,
-              "configuration": {
-                "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
-                "default_repository": "${ECRRepository}"
-              }
-            }],
-            "orchestrator": [{
-              "flavor": "sagemaker",
-              "service_connector_index": 0,
-              "configuration": {
-                "execution_role": "${SageMakerRuntimeRole.Arn}",
-                "output_data_s3_uri": "s3://${S3Bucket}/sagemaker"
-              }
-            }],
-            "step_operator": [{
-              "flavor": "sagemaker",
-              "service_connector_index": 0,
-              "configuration": {
-                "role": "${SageMakerRuntimeRole.Arn}",
-                "bucket": "${S3Bucket}"
-              }
-            }],
-            "image_builder": [{
-              "flavor": "local"
-            }]
-          }
-        }
 
 Outputs:
   AWSRegion:
@@ -387,62 +495,3 @@ Outputs:
     Description: "SageMaker execution IAM Role ARN"
     Value: !GetAtt SageMakerRuntimeRole.Arn
 
-  ZenMLStack:
-    Description: "ZenML Stack JSON (can be imported with `zenml stack import`)"
-    Value: !Sub |
-      {
-        "name": "${AWS::StackName}",
-        "description": "Deployed by AWS CloudFormation stack ${AWS::StackName} in the ${AWS::AccountId} account and ${AWS::Region} region.",
-        "labels": {
-          "zenml:provider": "aws",
-          "zenml:deployment": "aws-cloud-formation"
-        },
-        "service_connectors": [
-          {
-            "type": "aws",
-            "auth_method": "iam-role",
-            "configuration": {
-              "aws_access_key_id": "${IAMUserAccessKey}",
-              "aws_secret_access_key": "${IAMUserAccessKey.SecretAccessKey}",
-              "role_arn": "${StackAccessRole.Arn}",
-              "region": "${AWS::Region}"
-            }
-          }
-        ],
-        "components": {
-          "artifact_store": [{
-            "flavor": "s3",
-            "service_connector_index": 0,
-            "configuration": {
-              "path": "s3://${S3Bucket}"
-            }
-          }],
-          "container_registry":[{
-            "flavor": "aws",
-            "service_connector_index": 0,
-            "configuration": {
-              "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
-              "default_repository": "${ECRRepository}"
-            }
-          }],
-          "orchestrator": [{
-            "flavor": "sagemaker",
-            "service_connector_index": 0,
-            "configuration": {
-              "execution_role": "${SageMakerRuntimeRole.Arn}",
-              "output_data_s3_uri": "s3://${S3Bucket}/sagemaker"
-            }
-          }],
-          "step_operator": [{
-            "flavor": "sagemaker",
-            "service_connector_index": 0,
-            "configuration": {
-              "role": "${SageMakerRuntimeRole.Arn}",
-              "bucket": "${S3Bucket}"
-            }
-          }],
-          "image_builder": [{
-            "flavor": "local"
-          }]
-        }
-      }

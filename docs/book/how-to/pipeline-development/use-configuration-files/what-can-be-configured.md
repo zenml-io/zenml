@@ -121,7 +121,7 @@ enable_step_logs: True
 
 ### `build` ID
 
-The UUID of the [`build`](../customize-docker-builds/README.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
+The UUID of the [`build`](../../infrastructure-deployment/customize-docker-builds/README.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ```yaml
 build: <INSERT-BUILD-ID-HERE>
@@ -129,7 +129,7 @@ build: <INSERT-BUILD-ID-HERE>
 
 ### Configuring the `model`
 
-Specifies the ZenML [Model](../../user-guide/starter-guide/track-ml-models.md) to use for this pipeline.
+Specifies the ZenML [Model](../../../user-guide/starter-guide/track-ml-models.md) to use for this pipeline.
 
 ```yaml
 model:
@@ -141,7 +141,7 @@ model:
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](../build-pipelines/use-pipeline-step-parameters.md) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](../../pipeline-development/build-pipelines/use-pipeline-step-parameters.md) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:
@@ -175,7 +175,7 @@ Important note, in the above case, the value of the step would be the one define
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 {% hint style="info" %}
-Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../handle-data-artifacts/handle-custom-data-types.md) handle their persistence in the [artifact store](../../component-guide/artifact-stores/artifact-stores.md)).
+Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) handle their persistence in the [artifact store](../../../component-guide/artifact-stores/artifact-stores.md)).
 {% endhint %}
 
 ### Setting the `run_name`
@@ -207,7 +207,7 @@ settings:
 ```
 
 {% hint style="info" %}
-Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](../customize-docker-builds/README.md).
+Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](../../infrastructure-deployment/customize-docker-builds/README.md).
 {% endhint %}
 
 ### Resource Settings
@@ -226,14 +226,14 @@ please refer to the specific orchestrator docs.
 
 ### `failure_hook_source` and `success_hook_source`
 
-The `source` of the [failure and success hooks](../build-pipelines/use-failure-success-hooks.md) can be specified.
+The `source` of the [failure and success hooks](../../pipeline-development/build-pipelines/use-failure-success-hooks.md) can be specified.
 
 ### Step-specific configuration
 
 A lot of pipeline-level configuration can also be applied at a step level (as we have already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
-* `experiment_tracker`: Name of the [experiment\_tracker](../../component-guide/experiment-trackers/experiment-trackers.md) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
-* `step_operator`: Name of the [step\_operator](../../component-guide/step-operators/step-operators.md) to enable for this step. This step\_operator should be defined in the active stack with the same name.
-* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../handle-data-artifacts/return-multiple-outputs-from-a-step.md)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).
+* `experiment_tracker`: Name of the [experiment\_tracker](../../../component-guide/experiment-trackers/experiment-trackers.md) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
+* `step_operator`: Name of the [step\_operator](../../../component-guide/step-operators/step-operators.md) to enable for this step. This step\_operator should be defined in the active stack with the same name.
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../../data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step.md)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

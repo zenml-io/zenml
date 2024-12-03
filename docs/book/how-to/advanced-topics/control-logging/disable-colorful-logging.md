@@ -10,7 +10,7 @@ By default, ZenML uses colorful logging to make it easier to read logs. However,
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote pipeline runs. If you wish to only disable it locally, but turn on for remote pipeline runs, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your pipeline runs environment as follows:
+Note that setting this on the [client environment](../../infrastructure-deployment/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote pipeline runs. If you wish to only disable it locally, but turn on for remote pipeline runs, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your pipeline runs environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})

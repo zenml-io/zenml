@@ -16,7 +16,6 @@
 from typing import Dict, Optional, Union
 from uuid import UUID
 
-from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -53,60 +52,48 @@ def log_model_metadata(
             `model` in decorator.
 
     Raises:
-        ValueError: If no model name/version is provided and the function is not
-            called inside a step with configured `model` in decorator.
+        ValueError: If the function is not called with proper input.
     """
     logger.warning(
         "The `log_model_metadata` function is deprecated and will soon be "
         "removed. Please use `log_metadata` instead."
     )
 
+    from zenml import log_metadata
+
     if model_name and model_version:
-        from zenml import Model
-
-        mv = Model(name=model_name, version=model_version)
+        log_metadata(
+            metadata=metadata,
+            model_version=model_version,
+            model_name=model_name,
+        )
+    elif model_name is None and model_version is None:
+        log_metadata(
+            metadata=metadata,
+            infer_model=True,
+        )
     else:
-        try:
-            step_context = get_step_context()
-        except RuntimeError:
-            raise ValueError(
-                "Model name and version must be provided unless the function is "
-                "called inside a step with configured `model` in decorator."
-            )
-        mv = step_context.model
-
-    mv.log_metadata(metadata)
+        raise ValueError(
+            "You can call `log_model_metadata` by either providing both "
+            "`model_name` and `model_version` or keeping both of them None."
+        )
 
 
 def link_artifact_version_to_model_version(
     artifact_version: ArtifactVersionResponse,
     model_version: ModelVersionResponse,
-    artifact_config: Optional[ArtifactConfig] = None,
 ) -> None:
     """Link an artifact version to a model version.
 
     Args:
         artifact_version: The artifact version to link.
         model_version: The model version to link.
-        artifact_config: Output artifact configuration.
     """
-    if artifact_config:
-        is_model_artifact = artifact_config.is_model_artifact
-        is_deployment_artifact = artifact_config.is_deployment_artifact
-    else:
-        is_model_artifact = False
-        is_deployment_artifact = False
-
     client = Client()
     client.zen_store.create_model_version_artifact_link(
         ModelVersionArtifactRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
             artifact_version=artifact_version.id,
-            model=model_version.model.id,
             model_version=model_version.id,
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
         )
     )
 
@@ -114,19 +101,15 @@ def link_artifact_version_to_model_version(
 def link_artifact_to_model(
     artifact_version: ArtifactVersionResponse,
     model: Optional["Model"] = None,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
 ) -> None:
     """Link the artifact to the model.
 
     Args:
         artifact_version: The artifact version to link.
         model: The model to link to.
-        is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is a deployment artifact.
 
     Raises:
-        RuntimeError: If called outside of a step.
+        RuntimeError: If called outside a step.
     """
     if not model:
         is_issue = False
@@ -145,14 +128,9 @@ def link_artifact_to_model(
             )
 
     model_version = model._get_or_create_model_version()
-    artifact_config = ArtifactConfig(
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
-    )
     link_artifact_version_to_model_version(
         artifact_version=artifact_version,
         model_version=model_version,
-        artifact_config=artifact_config,
     )
 
 

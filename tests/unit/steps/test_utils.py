@@ -18,6 +18,7 @@ from numpy import ndarray
 from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.enums import ArtifactType
 from zenml.orchestrators.step_runner import OutputSignature
 from zenml.steps.utils import (
     parse_return_type_annotations,
@@ -101,7 +102,9 @@ def func_with_multiple_annotated_outputs_and_model_artifact_config() -> (
     Tuple[
         Annotated[
             int,
-            ArtifactConfig(name="custom_output", is_model_artifact=True),
+            ArtifactConfig(
+                name="custom_output", artifact_type=ArtifactType.MODEL
+            ),
         ],
         int,
     ]
@@ -113,7 +116,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
     Tuple[
         Annotated[
             int,
-            ArtifactConfig(name="custom_output", is_deployment_artifact=True),
+            ArtifactConfig(
+                name="custom_output", artifact_type=ArtifactType.SERVICE
+            ),
         ],
         int,
     ]
@@ -246,7 +251,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
                 "custom_output": OutputSignature(
                     resolved_annotation=int,
                     artifact_config=ArtifactConfig(
-                        name="custom_output", is_model_artifact=True
+                        name="custom_output", artifact_type=ArtifactType.MODEL
                     ),
                     has_custom_name=True,
                 ),
@@ -263,7 +268,8 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
                 "custom_output": OutputSignature(
                     resolved_annotation=int,
                     artifact_config=ArtifactConfig(
-                        name="custom_output", is_deployment_artifact=True
+                        name="custom_output",
+                        artifact_type=ArtifactType.SERVICE,
                     ),
                     has_custom_name=True,
                 ),
@@ -277,7 +283,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
     ],
 )
 def test_step_output_annotation_parsing(func, expected_output):
-    assert parse_return_type_annotations(func) == expected_output
+    assert parse_return_type_annotations(func, {}) == expected_output
 
 
 def func_with_multiple_annotations() -> Annotated[int, "a", "b"]:
@@ -323,4 +329,4 @@ def func_with_duplicate_output_name() -> (
 )
 def test_invalid_step_output_annotations(func, exception):
     with pytest.raises(exception):
-        parse_return_type_annotations(func)
+        parse_return_type_annotations(func, {})

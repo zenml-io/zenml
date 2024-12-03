@@ -109,7 +109,7 @@ training_pipeline()
 ```
 
 Note that pipeline names must be unique. For more information on this feature,
-see the [documentation on naming pipeline runs](../build-pipelines/name-your-pipeline-and-runs.md).
+see the [documentation on naming pipeline runs](../../pipeline-development/build-pipelines/name-your-pipeline-and-runs.md).
 
 ## Models
 
@@ -117,7 +117,7 @@ Models are something that you have to explicitly register or pass in as you
 define your pipeline, so to run a pipeline without it being attached to a model
 is fairly straightforward: simply don't do the things specified in our
 [documentation on registering
-models](../use-the-model-control-plane/register-a-model.md).
+models](../../model-management-metrics/model-control-plane/register-a-model.md).
 
 In order to delete a model or a specific model version, you can use the CLI or
 Python SDK to accomplish this. As an example, to delete all versions of a model,
@@ -127,7 +127,7 @@ you can use:
 zenml model delete <MODEL_NAME>
 ```
 
-See the full documentation on [how to delete models](../use-the-model-control-plane/delete-a-model.md).
+See the full documentation on [how to delete models](../../model-management-metrics/model-control-plane/delete-a-model.md).
 
 ## Artifacts
 
@@ -142,7 +142,7 @@ zenml artifact prune
 
 By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. You can control this behavior by using the `--only-artifact` and `--only-metadata` flags.
 
-For more information, see the [documentation for this artifact pruning feature](../handle-data-artifacts/delete-an-artifact.md).
+For more information, see the [documentation for this artifact pruning feature](../../data-artifact-management/handle-data-artifacts/delete-an-artifact.md).
 
 ## Cleaning your environment
 

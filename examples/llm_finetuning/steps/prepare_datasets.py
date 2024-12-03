@@ -22,7 +22,7 @@ from materializers.directory_materializer import DirectoryMaterializer
 from typing_extensions import Annotated
 from utils.tokenizer import generate_and_tokenize_prompt, load_tokenizer
 
-from zenml import log_model_metadata, step
+from zenml import log_metadata, step
 from zenml.materializers import BuiltInMaterializer
 from zenml.utils.cuda_utils import cleanup_gpu_memory
 
@@ -49,11 +49,12 @@ def prepare_data(
 
     cleanup_gpu_memory(force=True)
 
-    log_model_metadata(
-        {
+    log_metadata(
+        metadata={
             "system_prompt": system_prompt,
             "base_model_id": base_model_id,
-        }
+        },
+        infer_model=True,
     )
 
     tokenizer = load_tokenizer(base_model_id, False, use_fast)

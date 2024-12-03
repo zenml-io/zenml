@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -34,6 +34,7 @@ from zenml.models import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunUpdate,
+    RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -48,6 +49,7 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -56,13 +58,15 @@ if TYPE_CHECKING:
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
     )
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataResourceSchema,
+    )
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
-class PipelineRunSchema(NamedSchema, table=True):
+class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for pipeline runs."""
 
     __tablename__ = "pipeline_run"
@@ -136,12 +140,12 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="pipeline_run",
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
+        back_populates="pipeline_runs",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     logs: Optional["LogsSchema"] = Relationship(
@@ -249,6 +253,24 @@ class PipelineRunSchema(NamedSchema, table=True):
             model_version_id=request.model_version_id,
         )
 
+    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+        """Fetches all the metadata entries related to the pipeline run.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the list of entries with this key.
+        """
+        # Fetch the metadata related to this run
+        metadata_collection = super().fetch_metadata_collection()
+
+        # Fetch the metadata related to the steps of this run
+        for s in self.step_runs:
+            step_metadata = s.fetch_metadata_collection()
+            for k, v in step_metadata.items():
+                metadata_collection[f"{s.name}::{k}"] = v
+
+        return metadata_collection
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -275,15 +297,14 @@ class PipelineRunSchema(NamedSchema, table=True):
             else {}
         )
 
-        run_metadata = {
-            metadata_schema.key: json.loads(metadata_schema.value)
-            for metadata_schema in self.run_metadata
-        }
-
         if self.deployment is not None:
             deployment = self.deployment.to_model()
 
             config = deployment.pipeline_configuration
+            new_substitutions = config._get_full_substitutions(self.start_time)
+            config = config.model_copy(
+                update={"substitutions": new_substitutions}
+            )
             client_environment = deployment.client_environment
 
             stack = deployment.stack
@@ -323,9 +344,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             schedule=schedule,
             code_reference=code_reference,
-            trigger_execution=self.trigger_execution.to_model()
-            if self.trigger_execution
-            else None,
+            trigger_execution=(
+                self.trigger_execution.to_model()
+                if self.trigger_execution
+                else None
+            ),
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
@@ -344,9 +367,13 @@ class PipelineRunSchema(NamedSchema, table=True):
 
             steps = {step.name: step.to_model() for step in self.step_runs}
 
+            step_substitutions = {
+                step_name: step.config.substitutions
+                for step_name, step in steps.items()
+            }
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
-                run_metadata=run_metadata,
+                run_metadata=self.fetch_metadata(),
                 config=config,
                 steps=steps,
                 start_time=self.start_time,
@@ -361,6 +388,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
+                step_substitutions=step_substitutions,
             )
 
         resources = None

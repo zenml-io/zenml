@@ -711,11 +711,6 @@ def print_stack_component_configuration(
 
         console.print(rich_table)
 
-    if component.component_spec_path:
-        declare(
-            f"Component spec path for `mlstacks`: {component.component_spec_path}"
-        )
-
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
     """Expands the value of an argument pointing to a file into the contents of that file.

@@ -135,6 +135,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        substitutions: Optional[Dict[str, str]] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -157,6 +158,7 @@ class Pipeline:
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
+            substitutions: Extra placeholders to use in the name templates.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -177,6 +179,7 @@ class Pipeline:
                 on_failure=on_failure,
                 on_success=on_success,
                 model=model,
+                substitutions=substitutions,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -297,6 +300,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
+        substitutions: Optional[Dict[str, str]] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -333,6 +337,7 @@ class Pipeline:
                 method for an example.
             model: configuration of the model version in the Model Control Plane.
             parameters: input parameters for the pipeline.
+            substitutions: Extra placeholders to use in the name templates.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -365,6 +370,7 @@ class Pipeline:
                 "success_hook_source": success_hook_source,
                 "model": model,
                 "parameters": parameters,
+                "substitutions": substitutions,
             }
         )
         if not self.__suppress_warnings_flag__:
@@ -534,11 +540,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
-            deployment, _, _ = self._compile(
-                config_path=config_path,
-                steps=step_configurations,
-                settings=settings,
-            )
+
+            compile_args = self._run_args.copy()
+            compile_args.pop("unlisted", None)
+            compile_args.pop("prevent_build_reuse", None)
+            if config_path:
+                compile_args["config_path"] = config_path
+            if step_configurations:
+                compile_args["step_configurations"] = step_configurations
+            if settings:
+                compile_args["settings"] = settings
+
+            deployment, _, _ = self._compile(**compile_args)
             pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
@@ -570,6 +583,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
+        skip_schedule_registration: bool = False,
     ) -> PipelineDeploymentResponse:
         """Create a pipeline deployment.
 
@@ -596,6 +610,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 to any pipeline).
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
+            skip_schedule_registration: Whether to skip schedule registration.
 
         Returns:
             The pipeline deployment.
@@ -636,7 +651,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         stack.validate()
 
         schedule_id = None
-        if schedule:
+        if schedule and not skip_schedule_registration:
             if not stack.orchestrator.config.is_schedulable:
                 raise ValueError(
                     f"Stack {stack.name} does not support scheduling. "
@@ -649,7 +664,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 schedule_name = schedule.name
             else:
                 schedule_name = format_name_template(
-                    deployment.run_name_template
+                    deployment.run_name_template,
+                    substitutions=deployment.pipeline_configuration.substitutions,
                 )
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
@@ -1431,7 +1447,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             The created run template.
         """
         self._prepare_if_possible()
-        deployment = self._create_deployment(**self._run_args)
+        deployment = self._create_deployment(
+            **self._run_args, skip_schedule_registration=True
+        )
 
         return Client().create_run_template(
             name=name, deployment_id=deployment.id, **kwargs

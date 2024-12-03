@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Utils for schemas."""
 
+import json
 import math
-from typing import List, Type, TypeVar
+from typing import Dict, List, Type, TypeVar
 
-from zenml.models.v2.base.base import BaseResponse
-from zenml.models.v2.base.page import Page
+from sqlmodel import Relationship
+
+from zenml.metadata.metadata_types import MetadataType
+from zenml.models import BaseResponse, Page, RunMetadataEntry
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 S = TypeVar("S", bound=BaseSchema)
@@ -67,3 +70,44 @@ def get_page_from_list(
         total=total,
         items=page_items,
     )
+
+
+class RunMetadataInterface:
+    """The interface for entities with run metadata."""
+
+    run_metadata_resources = Relationship()
+
+    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+        """Fetches all the metadata entries related to the artifact version.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the list of entries with this key.
+        """
+        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
+
+        # Fetch the metadata related to this step
+        for rm in self.run_metadata_resources:
+            if rm.run_metadata.key not in metadata_collection:
+                metadata_collection[rm.run_metadata.key] = []
+            metadata_collection[rm.run_metadata.key].append(
+                RunMetadataEntry(
+                    value=json.loads(rm.run_metadata.value),
+                    created=rm.run_metadata.created,
+                )
+            )
+
+        return metadata_collection
+
+    def fetch_metadata(self) -> Dict[str, MetadataType]:
+        """Fetches the latest metadata entry related to the artifact version.
+
+        Returns:
+            a dictionary, where the key is the key of the metadata entry
+                and the values represent the latest entry with this key.
+        """
+        metadata_collection = self.fetch_metadata_collection()
+        return {
+            k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
+            for k, v in metadata_collection.items()
+        }

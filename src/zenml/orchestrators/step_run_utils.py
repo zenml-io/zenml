@@ -14,12 +14,12 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
-from zenml.config.step_configurations import ArtifactConfiguration, Step
+from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactSaveType, ExecutionStatus
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -309,6 +309,9 @@ def create_cached_step_runs(
         for invocation_id in cache_candidates:
             visited_invocations.add(invocation_id)
 
+            # Make sure the request factory has the most up to date pipeline
+            # run to avoid hydration calls
+            request_factory.pipeline_run = pipeline_run
             try:
                 step_run_request = request_factory.create_request(
                     invocation_id
@@ -344,7 +347,6 @@ def create_cached_step_runs(
             if model_version := step_model_version or pipeline_model_version:
                 link_output_artifacts_to_model_version(
                     artifacts=step_run.outputs,
-                    output_configurations=step_run.config.outputs,
                     model_version=model_version,
                 )
 
@@ -355,13 +357,16 @@ def create_cached_step_runs(
 
 
 def get_or_create_model_version_for_pipeline_run(
-    model: "Model", pipeline_run: PipelineRunResponse
+    model: "Model",
+    pipeline_run: PipelineRunResponse,
+    substitutions: Dict[str, str],
 ) -> Tuple[ModelVersionResponse, bool]:
     """Get or create a model version as part of a pipeline run.
 
     Args:
         model: The model to get or create.
         pipeline_run: The pipeline run for which the model should be created.
+        substitutions: Substitutions to apply to the model version name.
 
     Returns:
         The model version and a boolean indicating whether it was newly created
@@ -375,12 +380,14 @@ def get_or_create_model_version_for_pipeline_run(
         return model._get_model_version(), False
     elif model.version:
         if isinstance(model.version, str):
-            start_time = pipeline_run.start_time or datetime.utcnow()
             model.version = string_utils.format_name_template(
                 model.version,
-                date=start_time.strftime("%Y_%m_%d"),
-                time=start_time.strftime("%H_%M_%S_%f"),
+                substitutions=substitutions,
             )
+        model.name = string_utils.format_name_template(
+            model.name,
+            substitutions=substitutions,
+        )
 
         return (
             model._get_or_create_model_version(),
@@ -461,7 +468,9 @@ def prepare_pipeline_run_model_version(
         model_version = pipeline_run.model_version
     elif config_model := pipeline_run.config.model:
         model_version, _ = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
+            model=config_model,
+            pipeline_run=pipeline_run,
+            substitutions=pipeline_run.config.substitutions,
         )
         pipeline_run = Client().zen_store.update_run(
             run_id=pipeline_run.id,
@@ -493,7 +502,9 @@ def prepare_step_run_model_version(
         model_version = step_run.model_version
     elif config_model := step_run.config.model:
         model_version, created = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
+            model=config_model,
+            pipeline_run=pipeline_run,
+            substitutions=step_run.config.substitutions,
         )
         step_run = Client().zen_store.update_run_step(
             step_run_id=step_run.id,
@@ -519,10 +530,15 @@ def log_model_version_dashboard_url(
     Args:
         model_version: The model version for which to log the dashboard URL.
     """
-    from zenml.utils.cloud_utils import try_get_model_version_url
+    from zenml.utils.dashboard_utils import get_model_version_url
 
-    if model_version_url_logs := try_get_model_version_url(model_version):
-        logger.info(model_version_url_logs)
+    if model_version_url := get_model_version_url(model_version.id):
+        logger.info(
+            "Dashboard URL for Model Version `%s (%s)`:\n%s",
+            model_version.model.name,
+            model_version.name,
+            model_version_url,
+        )
     else:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Pro. Sign up "
@@ -542,10 +558,7 @@ def link_pipeline_run_to_model_version(
     client = Client()
     client.zen_store.create_model_version_pipeline_run_link(
         ModelVersionPipelineRunRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
             pipeline_run=pipeline_run.id,
-            model=model_version.model.id,
             model_version=model_version.id,
         )
     )
@@ -553,26 +566,17 @@ def link_pipeline_run_to_model_version(
 
 def link_output_artifacts_to_model_version(
     artifacts: Dict[str, List[ArtifactVersionResponse]],
-    output_configurations: Mapping[str, ArtifactConfiguration],
     model_version: ModelVersionResponse,
 ) -> None:
     """Link the outputs of a step run to a model version.
 
     Args:
         artifacts: The step output artifacts.
-        output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
-    for output_name, output_artifacts in artifacts.items():
+    for output_artifacts in artifacts.values():
         for output_artifact in output_artifacts:
-            artifact_config = None
-            if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT and (
-                output_config := output_configurations.get(output_name, None)
-            ):
-                artifact_config = output_config.artifact_config
-
             link_artifact_version_to_model_version(
                 artifact_version=output_artifact,
                 model_version=model_version,
-                artifact_config=artifact_config,
             )

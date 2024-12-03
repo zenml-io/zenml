@@ -14,11 +14,11 @@
 """Utils for strings."""
 
 import base64
-import datetime
 import functools
 import random
 import string
-from typing import Any, Callable, Dict, TypeVar, cast
+from datetime import datetime
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -147,30 +147,55 @@ def validate_name(model: BaseModel) -> None:
 
 def format_name_template(
     name_template: str,
-    **kwargs: str,
+    substitutions: Optional[Dict[str, str]] = None,
 ) -> str:
     """Formats a name template with the given arguments.
 
-    By default, ZenML support Date and Time placeholders.
-    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
-    Extra placeholders need to be explicitly passed in as kwargs.
+    Default substitutions for `{date}` and `{time}` placeholders will be used if
+    not included in the provided substitutions.
 
     Args:
         name_template: The name template to format.
-        **kwargs: The arguments to replace in the template.
+        substitutions: Substitutions to use in the template.
 
     Returns:
         The formatted name template.
+
+    Raises:
+        KeyError: If a key in template is missing in the substitutions.
+        ValueError: If the formatted name is empty.
     """
-    kwargs["date"] = kwargs.get(
-        "date",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%Y_%m_%d"),
-    )
-    kwargs["time"] = kwargs.get(
-        "time",
-        datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
-    )
-    return name_template.format(**kwargs)
+    substitutions = substitutions or {}
+
+    if ("date" not in substitutions and "{date}" in name_template) or (
+        "time" not in substitutions and "{time}" in name_template
+    ):
+        from zenml import get_step_context
+
+        try:
+            pr = get_step_context().pipeline_run
+            start_time = pr.start_time
+            substitutions.update(pr.config.substitutions)
+        except RuntimeError:
+            start_time = None
+
+        if start_time is None:
+            start_time = datetime.utcnow()
+        substitutions.setdefault("date", start_time.strftime("%Y_%m_%d"))
+        substitutions.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
+
+    try:
+        formatted_name = name_template.format(**substitutions)
+    except KeyError as e:
+        raise KeyError(
+            f"Could not format the name template `{name_template}`. "
+            f"Missing key: {e}"
+        )
+
+    if not formatted_name:
+        raise ValueError("Empty names are not allowed.")
+
+    return formatted_name
 
 
 def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:

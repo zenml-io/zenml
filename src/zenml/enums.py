@@ -60,6 +60,7 @@ class VisualizationType(StrEnum):
     HTML = "html"
     IMAGE = "image"
     MARKDOWN = "markdown"
+    JSON = "json"
 
 
 class ZenMLServiceType(StrEnum):
@@ -243,6 +244,13 @@ class OAuthDeviceStatus(StrEnum):
     VERIFIED = "verified"
     ACTIVE = "active"
     LOCKED = "locked"
+
+
+class APITokenType(StrEnum):
+    """The API token type."""
+
+    GENERIC = "generic"
+    WORKLOAD = "workload"
 
 
 class GenericFilterOps(StrEnum):

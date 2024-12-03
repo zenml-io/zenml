@@ -56,7 +56,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import materializer_utils, source_utils
+from zenml.utils import materializer_utils, source_utils, string_utils
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
@@ -150,6 +150,15 @@ class StepRunner:
 
             output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint
+            )
+
+            self._evaluate_artifact_names_in_collections(
+                step_run,
+                output_annotations,
+                [
+                    output_artifact_uris,
+                    output_materializers,
+                ],
             )
 
             self._stack.prepare_step_run(info=step_run_info)
@@ -247,7 +256,6 @@ class StepRunner:
                                 artifacts={
                                     k: [v] for k, v in output_artifacts.items()
                                 },
-                                output_configurations=step_run.config.outputs,
                                 model_version=model_version,
                             )
                 finally:
@@ -258,13 +266,41 @@ class StepRunner:
 
             # Update the status and output artifacts of the step run.
             output_artifact_ids = {
-                output_name: artifact.id
+                output_name: [
+                    artifact.id,
+                ]
                 for output_name, artifact in output_artifacts.items()
             }
             publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
             )
+
+    def _evaluate_artifact_names_in_collections(
+        self,
+        step_run: "StepRunResponse",
+        output_annotations: Dict[str, OutputSignature],
+        collections: List[Dict[str, Any]],
+    ) -> None:
+        """Evaluates the artifact names in the collections.
+
+        Args:
+            step_run: The step run.
+            output_annotations: The output annotations of the step function
+                (also evaluated).
+            collections: The collections to evaluate.
+        """
+        collections.append(output_annotations)
+        for k, v in list(output_annotations.items()):
+            name = k
+            if v.artifact_config and v.artifact_config.name:
+                name = string_utils.format_name_template(
+                    v.artifact_config.name,
+                    substitutions=step_run.config.substitutions,
+                )
+
+            for d in collections:
+                d[name] = d.pop(k)
 
     def _load_step(self) -> "BaseStep":
         """Load the step instance.
@@ -401,7 +437,7 @@ class StepRunner:
                 **artifact.get_hydrated_version().model_dump()
             )
 
-        if data_type is Any or is_union(get_origin(data_type)):
+        if data_type in (None, Any) or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
@@ -577,9 +613,11 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             artifact_config = output_annotations[output_name].artifact_config
 
+            artifact_type = None
             if artifact_config is not None:
                 has_custom_name = bool(artifact_config.name)
                 version = artifact_config.version
+                artifact_type = artifact_config.artifact_type
             else:
                 has_custom_name, version = False, None
 
@@ -605,6 +643,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,

@@ -57,7 +57,7 @@ zenml integration export-requirements INTEGRATION_NAME
 You can then amend and tweak those requirements as you see fit. Note that if you
 are using a remote orchestrator, you would then have to place the updated
 versions for the dependencies in a `DockerSettings` object (described in detail
-[here](../customize-docker-builds/docker-settings-on-a-pipeline.md))
+[here](../../infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline.md))
 which will then make sure everything is working as you need.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

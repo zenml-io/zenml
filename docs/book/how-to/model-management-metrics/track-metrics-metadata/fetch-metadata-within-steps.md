@@ -11,6 +11,7 @@ To find information about the pipeline or step that is currently running, you ca
 ```python
 from zenml import step, get_step_context
 
+
 @step
 def my_step():
     step_context = get_step_context()
@@ -19,9 +20,12 @@ def my_step():
     step_name = step_context.step_run.name
 ```
 
-Furthermore, you can also use the `StepContext` to find out where the outputs of your current step will be stored and which [Materializer](../handle-data-artifacts/handle-custom-data-types.md) class will be used to save them:
+Furthermore, you can also use the `StepContext` to find out where the outputs of your current step will be stored and which [Materializer](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) class will be used to save them:
 
 ```python
+from zenml import step, get_step_context
+
+
 @step
 def my_step():
     step_context = get_step_context()

@@ -24,11 +24,11 @@ High-level overview of the changes:
 
 ## ZenML takes over the Metadata Store role
 
-ZenML can now run [as a server](../../user-guide/getting-started/core-concepts.md#zenml-server-and-dashboard) that can be accessed via a REST API and also comes with a visual user interface (called the ZenML Dashboard). This server can be deployed in arbitrary environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports user management, workspace scoping, and more.
+ZenML can now run [as a server](../../../../getting-started/core-concepts.md#zenml-server-and-dashboard) that can be accessed via a REST API and also comes with a visual user interface (called the ZenML Dashboard). This server can be deployed in arbitrary environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports user management, workspace scoping, and more.
 
 The release introduces a series of commands to facilitate managing the lifecycle of the ZenML server and to access the pipeline and pipeline run information:
 
-* `zenml connect / disconnect / down / up / logs / status` can be used to configure your client to connect to a ZenML server, to start a local ZenML Dashboard or to deploy a ZenML server to a cloud environment. For more information on how to use these commands, see [the ZenML deployment documentation](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
+* `zenml connect / disconnect / down / up / logs / status` can be used to configure your client to connect to a ZenML server, to start a local ZenML Dashboard or to deploy a ZenML server to a cloud environment. For more information on how to use these commands, see [the ZenML deployment documentation](../../../../user-guide/production-guide/deploying-zenml.md).
 * `zenml pipeline list / runs / delete` can be used to display information and about and manage your pipelines and pipeline runs.
 
 In ZenML 0.13.2 and earlier versions, information about pipelines and pipeline runs used to be stored in a separate stack component called the Metadata Store. Starting with 0.20.0, the role of the Metadata Store is now taken over by ZenML itself. This means that the Metadata Store is no longer a separate component in the ZenML architecture, but rather a part of the ZenML core, located wherever ZenML is deployed: locally on your machine or running remotely as a server.

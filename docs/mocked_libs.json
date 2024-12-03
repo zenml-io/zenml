@@ -254,5 +254,9 @@
     "IPython.core.display",
     "IPython.core.display_functions",
     "ipywidgets",
+    "modal",
+    "modal.cli",
+    "modal.cli.run",
+    "modal_proto",
     "lightning_sdk"
 ]

@@ -576,10 +576,6 @@ class ModelVersionResponse(
             force=force,
         )
 
-    # TODO in https://zenml.atlassian.net/browse/OSS-2433
-    # def generate_model_card(self, template_name: str) -> str:
-    #     """Return HTML/PDF based on input template"""
-
 
 # ------------------ Filter Model ------------------
 
@@ -656,6 +652,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             ModelVersionSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             UserSchema,
         )
@@ -676,10 +673,12 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == ModelVersionSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id
+                    == ModelVersionSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,

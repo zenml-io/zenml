@@ -26,7 +26,7 @@ to deploy a cloud stack with ZenML with minimal knowledge of Terraform or cloud
 infrastructure for that matter.
 
 If you have the required infrastructure pieces already deployed on your cloud, 
-you can also use [the stack wizard to seamlessly register your stack](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md).
+you can also use [the stack wizard to seamlessly register your stack](../../infrastructure-deployment/stack-deployment/register-a-cloud-stack.md).
 {% endhint %}
 
 ## Pre-requisites
@@ -37,12 +37,12 @@ be a local server started via `zenml login --local`). If you do not already have
 one set up, you can fast-track to trying out a ZenML Pro server by simply
 running `zenml login --pro` or [register for a free ZenML Pro account](https://cloud.zenml.io/signup).
 If you prefer to host your own, you can learn about self-hosting a ZenML server
-[here](../../getting-started/deploying-zenml/README.md).
+[here](../../../getting-started/deploying-zenml/README.md).
 
 Once you are connected to your deployed ZenML server, you need to create
 a service account and an API key for it. You will use the API key to give the
 Terraform module programmatic access to your ZenML server. You can find more
-about service accounts and API keys [here](../connecting-to-zenml/connect-with-a-service-account.md).
+about service accounts and API keys [here](../../project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md).
 but the process is as simple as running the following CLI command while
 connected to your ZenML server:
 
@@ -249,7 +249,8 @@ following components:
   * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the SageMaker Step Operator to selectively run some steps locally and some on SageMaker.
   * if `orchestrator` is set to `sagemaker` (default): a SageMaker Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
   * if `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
-4. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+4. an AWS CodeBuild Image Builder linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+5. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 

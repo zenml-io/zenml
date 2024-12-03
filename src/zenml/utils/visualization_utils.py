@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for dashboard visualizations."""
 
+import json
 from typing import TYPE_CHECKING, Optional
 
-from IPython.core.display import HTML, Image, Markdown, display
+from IPython.core.display import HTML, JSON, Image, Markdown, display
 
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import VisualizationType
@@ -63,6 +64,8 @@ def visualize_artifact(
             assert isinstance(visualization.value, str)
             table = format_csv_visualization_as_html(visualization.value)
             display(HTML(table))
+        elif visualization.type == VisualizationType.JSON:
+            display(JSON(json.loads(visualization.value)))
         else:
             display(visualization.value)
 

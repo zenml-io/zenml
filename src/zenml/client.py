@@ -60,7 +60,6 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
-    MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
     PluginSubType,
@@ -137,6 +136,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunResponse,
     RunMetadataRequest,
+    RunMetadataResource,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -1979,7 +1979,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
-        component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
@@ -1987,7 +1986,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack component.
             flavor: The flavor of the stack component.
-            component_spec_path: The path to the stack spec file.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
@@ -2016,7 +2014,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
-            component_spec_path=component_spec_path,
             configuration=configuration,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
@@ -2033,7 +2030,6 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
-        component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         disconnect: Optional[bool] = None,
@@ -2047,7 +2043,6 @@ class Client(metaclass=ClientMetaClass):
                 update.
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
-            component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             disconnect: Whether to disconnect the stack component from its
@@ -2072,7 +2067,6 @@ class Client(metaclass=ClientMetaClass):
         update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            component_spec_path=component_spec_path,
         )
 
         if name is not None:
@@ -4220,6 +4214,7 @@ class Client(metaclass=ClientMetaClass):
         materializer: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        model_version_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -4249,7 +4244,8 @@ class Client(metaclass=ClientMetaClass):
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
+            model_version_id: Filter by model version ID.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
@@ -4283,6 +4279,7 @@ class Client(metaclass=ClientMetaClass):
             materializer=materializer,
             workspace_id=workspace_id,
             user_id=user_id,
+            model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,
@@ -4435,23 +4432,20 @@ class Client(metaclass=ClientMetaClass):
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        resource_id: UUID,
-        resource_type: MetadataResourceTypes,
+        resources: List[RunMetadataResource],
         stack_component_id: Optional[UUID] = None,
+        publisher_step_id: Optional[UUID] = None,
     ) -> None:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            resource_id: The ID of the resource for which the
-                metadata was produced.
-            resource_type: The type of the resource for which the
+            resources: The list of IDs and types of the resources for that the
                 metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
-
-        Returns:
-            None
+            publisher_step_id: The ID of the step execution that publishes
+                this metadata automatically.
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -4480,14 +4474,13 @@ class Client(metaclass=ClientMetaClass):
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            resource_id=resource_id,
-            resource_type=resource_type,
+            resources=resources,
             stack_component_id=stack_component_id,
+            publisher_step_id=publisher_step_id,
             values=values,
             types=types,
         )
         self.zen_store.create_run_metadata(run_metadata)
-        return None
 
     # -------------------------------- Secrets ---------------------------------
 
@@ -6435,9 +6428,6 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         artifact_version_id: Optional[Union[UUID, str]] = None,
         artifact_name: Optional[str] = None,
@@ -6457,9 +6447,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             artifact_version_id: Use the artifact id for filtering
             artifact_name: Use the artifact name for filtering
@@ -6482,9 +6469,6 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 artifact_version_id=artifact_version_id,
                 artifact_name=artifact_name,
@@ -6556,9 +6540,6 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[UUID, str]] = None,
-        user_id: Optional[Union[UUID, str]] = None,
-        model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
@@ -6574,9 +6555,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: Use the workspace id for filtering
-            user_id: Use the user id for filtering
-            model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
             pipeline_run_name: Use the pipeline run name for filtering
@@ -6595,9 +6573,6 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 created=created,
                 updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                model_id=model_id,
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,

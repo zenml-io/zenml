@@ -95,8 +95,7 @@ jobs:
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
     # TODO: add Windows testing for Python 3.11 and 3.12 back in
-    # TODO: add macos testing back in
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'macos-13' || inputs.os == 'macos-latest')  }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') }}
     defaults:
       run:
         shell: bash
@@ -162,37 +161,6 @@ jobs:
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
         run: brew install libomp
-      - name: Unbreak Python in GHA for 3.9-3.10
-        if: runner.os=='macOS' && inputs.python-version != '3.11'
-        # github actions overwrites brew's python. Force it to reassert itself, by
-        # running in a separate step.
-        # Workaround GitHub Actions Python issues
-        # see https://github.com/Homebrew/homebrew-core/issues/165793#issuecomment-1989441193
-        run: |
-          find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
-          sudo rm -rf /Library/Frameworks/Python.framework/
-          brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
-      - name: Unbreak Python in GHA for 3.11
-        if: runner.os=='macOS' && inputs.python-version == '3.11'
-        run: |
-          # Unlink and re-link to prevent errors when github mac runner images
-          # https://github.com/actions/setup-python/issues/577
-          brew list -1 | grep python | while read formula; do brew unlink $formula; brew link --overwrite $formula; done
-      - name: Install Docker and Colima on MacOS
-        if: runner.os=='macOS'
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew install docker colima
-          brew reinstall --force qemu
-
-          # We need to mount the /private/tmp/zenml-test/ folder because
-          # this folder is also mounted in the Docker containers that are
-          # started by local ZenML orchestrators.
-          colima start --mount /private/tmp/zenml-test/:w
-
-          # This is required for the Docker Python SDK to work
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Install kubectl on Linux
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"

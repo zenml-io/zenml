@@ -4,7 +4,7 @@
 The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
 {% endhint %}
 
-When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../configure-python-environments/README.md#-configure-python-environments) component of your stack.
+When a [pipeline is run with a remote orchestrator](../../infrastructure-deployment/configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../../infrastructure-deployment/configure-python-environments/README.md#-configure-python-environments) component of your stack.
 
 For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
 
@@ -58,7 +58,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../component-guide/README.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../../component-guide/README.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
@@ -133,5 +133,9 @@ def my_pipeline(...):
 {% hint style="info" %}
 `uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
 {% endhint %}
+
+Full documentation for how `uv` works with PyTorch can be found on Astral Docs
+website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers
+some of the particular gotchas and details you might need to know.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

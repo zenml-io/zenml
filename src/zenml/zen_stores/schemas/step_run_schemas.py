@@ -23,6 +23,7 @@ from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
@@ -50,16 +51,19 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataResourceSchema,
+    )
 
 
-class StepRunSchema(NamedSchema, table=True):
+class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for steps of pipeline runs."""
 
     __tablename__ = "step_run"
@@ -139,12 +143,12 @@ class StepRunSchema(NamedSchema, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="step_run",
+    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
+        back_populates="step_runs",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",
-            overlaps="run_metadata",
+            overlaps="run_metadata_resources",
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
@@ -163,8 +167,14 @@ class StepRunSchema(NamedSchema, table=True):
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
         },
     )
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        back_populates="step_runs"
+    )
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
+    )
+    original_step_run: Optional["StepRunSchema"] = Relationship(
+        sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
@@ -218,11 +228,6 @@ class StepRunSchema(NamedSchema, table=True):
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        run_metadata = {
-            metadata_schema.key: json.loads(metadata_schema.value)
-            for metadata_schema in self.run_metadata
-        }
-
         input_artifacts = {
             artifact.name: StepRunInputResponse(
                 input_type=StepRunInputArtifactType(artifact.type),
@@ -247,6 +252,21 @@ class StepRunSchema(NamedSchema, table=True):
             if self.name in step_configuration:
                 full_step_config = Step.model_validate(
                     step_configuration[self.name]
+                )
+                new_substitutions = (
+                    full_step_config.config._get_full_substitutions(
+                        PipelineConfiguration.model_validate_json(
+                            self.deployment.pipeline_configuration
+                        ),
+                        self.pipeline_run.start_time,
+                    )
+                )
+                full_step_config = full_step_config.model_copy(
+                    update={
+                        "config": full_step_config.config.model_copy(
+                            update={"substitutions": new_substitutions}
+                        )
+                    }
                 )
             elif not self.step_configuration:
                 raise ValueError(
@@ -294,7 +314,7 @@ class StepRunSchema(NamedSchema, table=True):
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
                 parent_step_ids=[p.parent_id for p in self.parents],
-                run_metadata=run_metadata,
+                run_metadata=self.fetch_metadata(),
             )
 
         resources = None

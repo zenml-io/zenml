@@ -294,7 +294,6 @@ class StepLauncher:
                     ):
                         step_run_utils.link_output_artifacts_to_model_version(
                             artifacts=step_run.outputs,
-                            output_configurations=step_run.config.outputs,
                             model_version=model_version,
                         )
 
@@ -310,8 +309,12 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        run_name = orchestrator_utils.get_run_name(
-            run_name_template=self._deployment.run_name_template
+        start_time = datetime.utcnow()
+        run_name = string_utils.format_name_template(
+            name_template=self._deployment.run_name_template,
+            substitutions=self._deployment.pipeline_configuration._get_full_substitutions(
+                start_time
+            ),
         )
 
         logger.debug("Creating pipeline run %s", run_name)
@@ -330,7 +333,7 @@ class StepLauncher:
             ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
-            start_time=datetime.utcnow(),
+            start_time=start_time,
             tags=self._deployment.pipeline_configuration.tags,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
@@ -422,7 +425,8 @@ class StepLauncher:
             )
         )
         environment = orchestrator_utils.get_config_environment_vars(
-            deployment=self._deployment
+            pipeline_run_id=step_run_info.run_id,
+            step_run_id=step_run_info.step_run_id,
         )
         if last_retry:
             environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)

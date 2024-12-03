@@ -469,7 +469,7 @@ def logs(
     if server is None:
         cli_utils.error(
             "The local ZenML dashboard is not running. Please call `zenml "
-            "up` first to start the ZenML dashboard locally."
+            "login --local` first to start the ZenML dashboard locally."
         )
 
     from zenml.zen_server.deploy.deployer import LocalServerDeployer

@@ -23,9 +23,8 @@ from zenml.models import (
     StackResponse,
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
-from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
-from zenml.utils import code_utils, notebook_utils, source_utils
+from zenml.utils import code_utils, notebook_utils, source_utils, string_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -66,16 +65,21 @@ def create_placeholder_run(
 
     if deployment.schedule:
         return None
-
+    start_time = datetime.utcnow()
     run_request = PipelineRunRequest(
-        name=get_run_name(run_name_template=deployment.run_name_template),
+        name=string_utils.format_name_template(
+            name_template=deployment.run_name_template,
+            substitutions=deployment.pipeline_configuration._get_full_substitutions(
+                start_time
+            ),
+        ),
         # We set the start time on the placeholder run already to
         # make it consistent with the {time} placeholder in the
         # run name. This means the placeholder run will usually
         # have longer durations than scheduled runs, as for them
         # the start_time is only set once the first step starts
         # running.
-        start_time=datetime.utcnow(),
+        start_time=start_time,
         orchestrator_run_id=None,
         user=deployment.user.id,
         workspace=deployment.workspace.id,
