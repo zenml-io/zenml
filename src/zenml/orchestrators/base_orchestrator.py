@@ -242,6 +242,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 self._cleanup_run()
                 logger.info("All steps of the pipeline run were cached.")
                 return
+        else:
+            logger.debug("Skipping client-side caching.")
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(
