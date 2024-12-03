@@ -249,7 +249,8 @@ following components:
   * a local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the SageMaker Step Operator to selectively run some steps locally and some on SageMaker.
   * if `orchestrator` is set to `sagemaker` (default): a SageMaker Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
   * if `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
-4. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+4. an AWS CodeBuild Image Builder linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+5. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 
