@@ -15,6 +15,7 @@
 import os
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
+from pathlib import Path
 
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_DEBUG
@@ -95,7 +96,7 @@ def _test_materializer(
             assert len(visualizations) > 0
         for uri, value in visualizations.items():
             assert isinstance(uri, str)
-            assert "\\" not in uri
+            assert "\\" not in Path(uri).as_posix()
             assert isinstance(value, VisualizationType)
             assert os.path.exists(uri)
 
