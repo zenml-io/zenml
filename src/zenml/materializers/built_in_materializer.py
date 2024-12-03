@@ -429,7 +429,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # doesn't work for non-serializable types as they
         # are saved as list of lists in different files
         if _is_serializable(data):
-            return {self.data_path: VisualizationType.JSON}
+            return {self.data_path.replace("\\", "/"): VisualizationType.JSON}
         return {}
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
