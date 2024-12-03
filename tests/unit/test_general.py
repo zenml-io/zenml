@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import os
-from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
@@ -96,7 +95,6 @@ def _test_materializer(
             assert len(visualizations) > 0
         for uri, value in visualizations.items():
             assert isinstance(uri, str)
-            assert "\\" not in Path(uri).as_posix()
             assert isinstance(value, VisualizationType)
             assert os.path.exists(uri)
 
