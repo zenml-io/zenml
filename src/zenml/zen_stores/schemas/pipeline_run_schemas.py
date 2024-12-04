@@ -373,7 +373,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             step_substitutions = {}
             for step_name, step in steps.items():
                 step_substitutions[step_name] = step.config.substitutions
-                # We fetch the steps hydrated before, but won't them unhydrated
+                # We fetch the steps hydrated before, but want them unhydrated
                 # in the response -> We need to reset the metadata here
                 step.metadata = None
 
