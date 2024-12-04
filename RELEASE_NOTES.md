@@ -2,6 +2,54 @@
 
 # 0.71.0
 
+## New Feature: Modal Step Operator Integration
+
+ZenML now [integrates with Modal](https://modal.com/), bringing lightning-fast 
+cloud execution capabilities to your ML pipelines. This new step operator[ 
+https://docs.zenml.io/stack-components/step-operators/modal] allows you to 
+execute individual pipeline steps on Modal's specialized compute instances, 
+offering notable speed particularly for Docker image building and hardware 
+provisioning. With simple configuration options, you can precisely specify 
+hardware requirements like GPU type, CPU count, and memory for each step, 
+making it ideal for resource-intensive ML workloads.
+
+## Other Highlights
+
+- **Workload API Token Management:** Refactored token management for improved 
+security with a generic API token dispenser.
+- **Dashboard Enhancements:** 
+  - Introduced service account management capabilities.
+  - Added API key creation and integration features.
+- **Dynamic Artifact Naming:** Introduced capability to dynamically name 
+artifacts.
+- **Visualization Enhancements:** Made dictionaries and lists visualizable, 
+added JSON visualization type.
+
+## Additional Features and Improvements
+
+- Improved error messages for Docker daemon connectivity
+- Enhanced SageMaker URL handling
+- Simplified model version artifact linkage
+- Added testing for pipeline templates
+- Improved Kubernetes pod and label length management
+- Allowed skipping type annotations for step inputs
+- Enabled using feature service instances instead of just names
+
+## Bug Fixes
+
+- Fixed issues with getting out of an inaccessible active stack
+- Fixed race conditions in the service connector type registry
+- Resolved migration test complications
+- Corrected documentation links
+- Fixed artifact store and artifact URI handling
+- Addressed various scalability and compatibility issues
+
+## Documentation Updates
+
+- Added documentation redirects
+- Updated PyTorch documentation links
+- Improved service connector documentation
+
 ## What's Changed
 * Refactored workload API token management for better security and implemented generic API token dispenser by @stefannica in https://github.com/zenml-io/zenml/pull/3154
 * Add 0.70.0 to the migration tests by @avishniakov in https://github.com/zenml-io/zenml/pull/3190
@@ -52,9 +100,7 @@
 * Materializer test fix on Windows by @bcdurak in https://github.com/zenml-io/zenml/pull/3238
 * Fix GET step run endpoint to return unhydrated response if requested by @schustmi in https://github.com/zenml-io/zenml/pull/3240
 
-
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.70.0...0.71.0
-
 
 # 0.70.0
 
