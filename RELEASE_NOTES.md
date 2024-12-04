@@ -108,6 +108,7 @@ added JSON visualization type.
 * Fix artifact uris for artifacts with name placeholders by @schustmi in https://github.com/zenml-io/zenml/pull/3237
 * Materializer test fix on Windows by @bcdurak in https://github.com/zenml-io/zenml/pull/3238
 * Fix GET step run endpoint to return unhydrated response if requested by @schustmi in https://github.com/zenml-io/zenml/pull/3240
+* Pipeline run API token fixes and improvements by @stefannica in https://github.com/zenml-io/zenml/pull/3242
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.70.0...0.71.0
 
