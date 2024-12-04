@@ -142,9 +142,15 @@ def get_step(
     Returns:
         The step.
     """
-    step = zen_store().get_run_step(step_id, hydrate=hydrate)
+    # We always fetch the step hydrated because we need the pipeline_run_id
+    # for the permission checks. If the user requested an unhydrated response,
+    # we later remove the metadata
+    step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    if hydrate is False:
+        step.metadata = None
 
     return dehydrate_response_model(step)
 
