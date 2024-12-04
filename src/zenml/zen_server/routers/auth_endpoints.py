@@ -452,6 +452,7 @@ def device_authorization(
 @handle_exceptions
 def api_token(
     token_type: APITokenType = APITokenType.GENERIC,
+    expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
     step_run_id: Optional[UUID] = None,
@@ -463,7 +464,8 @@ def api_token(
     of API tokens are supported:
 
     * Generic API token: This token is short-lived and can be used for
-    generic automation tasks.
+    generic automation tasks. The expiration can be set by the user, but the
+    server will impose a maximum expiration time.
     * Workload API token: This token is scoped to a specific pipeline run, step
     run or schedule and is used by pipeline workloads to authenticate with the
     server. A pipeline run ID, step run ID or schedule ID must be provided and
@@ -475,6 +477,10 @@ def api_token(
 
     Args:
         token_type: The type of API token to generate.
+        expires_in: The expiration time of the generic API token in seconds.
+            If not set, the server will use the default expiration time for
+            generic API tokens. The server also imposes a maximum expiration
+            time.
         schedule_id: The ID of the schedule to scope the workload API token to.
         pipeline_run_id: The ID of the pipeline run to scope the workload API
             token to.
@@ -501,6 +507,16 @@ def api_token(
             )
 
         config = server_config()
+
+        if not expires_in:
+            expires_in = config.generic_api_token_lifetime
+
+        if expires_in > config.generic_api_token_max_lifetime:
+            raise ValueError(
+                f"The maximum expiration time for generic API tokens allowed "
+                f"by this server is {config.generic_api_token_max_lifetime} "
+                "seconds."
+            )
 
         return generate_access_token(
             user_id=token.user_id,

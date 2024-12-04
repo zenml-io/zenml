@@ -3873,13 +3873,17 @@ class RestZenStore(BaseZenStore):
 
     def get_api_token(
         self,
+        token_type: APITokenType = APITokenType.WORKLOAD,
+        expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
     ) -> str:
-        """Get an API token for a workload.
+        """Get an API token.
 
         Args:
+            token_type: The type of the token to get.
+            expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
             step_run_id: The ID of the step run to get a token for.
@@ -3891,9 +3895,10 @@ class RestZenStore(BaseZenStore):
             ValueError: if the server response is not valid.
         """
         params: Dict[str, Any] = {
-            # Python clients may only request workload tokens.
-            "token_type": APITokenType.WORKLOAD.value,
+            "token_type": token_type.value,
         }
+        if expires_in:
+            params["expires_in"] = expires_in
         if schedule_id:
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
