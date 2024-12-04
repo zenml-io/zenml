@@ -2,6 +2,8 @@
 
 # 0.71.0
 
+ZenML version 0.71.0 delivers a new Modal step operator integration as its core feature, enabling efficient cloud execution for ML pipelines with granular hardware configuration options. The release strengthens enterprise capabilities through improved token management and dashboard features, while expanding artifact handling with dynamic naming and enhanced visualization support. Additionally, it includes various infrastructure improvements and bug fixes that enhance the platform's stability and usability, particularly around Docker connectivity, Kubernetes management, and service connector operations.
+
 ## New Feature: Modal Step Operator Integration
 
 ZenML now [integrates with Modal](https://modal.com/), bringing lightning-fast 
