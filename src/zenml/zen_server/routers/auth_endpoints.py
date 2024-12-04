@@ -520,7 +520,7 @@ def api_token(
 
         return generate_access_token(
             user_id=token.user_id,
-            expires_in=config.generic_api_token_lifetime,
+            expires_in=expires_in,
         ).access_token
 
     verify_permission(
