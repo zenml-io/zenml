@@ -821,7 +821,10 @@ def generate_access_token(
         response: The FastAPI response object.
         device: The device used for authentication.
         api_key: The service account API key used for authentication.
-        expires_in: The number of seconds until the token expires.
+        expires_in: The number of seconds until the token expires. If not set,
+            the default value is determined automatically based on the server
+            configuration and type of token. If set to 0, the token will not
+            expire.
         schedule_id: The ID of the schedule to scope the token to.
         pipeline_run_id: The ID of the pipeline run to scope the token to.
         step_run_id: The ID of the step run to scope the token to.
@@ -835,7 +838,9 @@ def generate_access_token(
     # according to the values configured in the server config. Device tokens are
     # handled separately from regular user tokens.
     expires: Optional[datetime] = None
-    if expires_in:
+    if expires_in == 0:
+        expires_in = None
+    elif expires_in is not None:
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
     elif device:
         # If a device was used for authentication, the token will expire

@@ -611,4 +611,6 @@ def api_token(
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,
+        # Never expire the token
+        expires_in=0,
     ).access_token
