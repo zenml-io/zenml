@@ -703,16 +703,10 @@ class BaseFilter(BaseModel):
 
         conditions = []
 
-        try:
-            filter_ = FilterGenerator(table).define_filter(
-                column="id", value=value, operator=operator
-            )
-            conditions.append(filter_.generate_query_conditions(table=table))
-        except ValueError:
-            # UUID filter with equal operators and no full UUID fail with
-            # a ValueError. In this case, we already know that the filter
-            # will not produce any result and can simply ignore it.
-            pass
+        filter_ = FilterGenerator(table).define_filter(
+            column="id", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
 
         filter_ = FilterGenerator(table).define_filter(
             column="name", value=value, operator=operator
@@ -1099,19 +1093,7 @@ class FilterGenerator:
 
         Returns:
             A Filter object.
-
-        Raises:
-            ValueError: If the value is not a valid UUID.
         """
-        # For equality checks, ensure that the value is a valid UUID.
-        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
-            try:
-                UUID(value)
-            except ValueError as e:
-                raise ValueError(
-                    "Invalid value passed as UUID query parameter."
-                ) from e
-
         # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
             raise ValueError(ONEOF_ERROR)
