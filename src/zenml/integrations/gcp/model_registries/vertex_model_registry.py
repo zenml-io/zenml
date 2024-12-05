@@ -14,6 +14,7 @@
 """Vertex AI model registry integration for ZenML."""
 
 from datetime import datetime
+import re
 from typing import Any, Dict, List, Optional, cast
 
 from google.cloud import aiplatform
@@ -141,6 +142,17 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """Register a model version to the Vertex AI model registry."""
         self.setup_aiplatform()
         metadata_dict = metadata.model_dump() if metadata else {}
+        # Truncate all label values to 63 characters
+        metadata_dict = {
+            key.lower(): value[:63].lower() for key, value in metadata_dict.items()
+        }
+        # In both keys and values, keep letters, numbers, dashes and
+        # underscores, replace all other characters with dashes
+        metadata_dict = {
+            re.sub(r"[^a-z0-9-_]", "-", key): re.sub(r"[^a-z0-9-_]", "-", value)
+            for key, value in metadata_dict.items()
+        }
+
         serving_container_image_uri = metadata_dict.get(
             "serving_container_image_uri",
             None

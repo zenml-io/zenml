@@ -110,6 +110,7 @@ class VertexDeploymentService(BaseDeploymentService):
     status: VertexServiceStatus = Field(
         default_factory=lambda: VertexServiceStatus()
     )
+    _logging_client: Optional[vertex_logging.Client] = None
 
     def _initialize_gcp_clients(self) -> None:
         """Initialize GCP clients with consistent credentials."""
@@ -136,7 +137,7 @@ class VertexDeploymentService(BaseDeploymentService):
         )
 
         # Initialize logging client
-        self.logging_client = vertex_logging.Client(
+        self._logging_client = vertex_logging.Client(
             project=project_id, credentials=credentials
         )
 
@@ -179,6 +180,19 @@ class VertexDeploymentService(BaseDeploymentService):
     def provision(self) -> None:
         """Provision or update remote Vertex AI deployment instance."""
         try:
+            # Then get the model
+            filter_expr = f'display_name="{self.config.model_id}"'
+            models = aiplatform.Model.list(filter=filter_expr, location=self.config.location)
+            model = models[0] if models else None
+            if not model:
+                raise RuntimeError(
+                    f"Model {self.config.model_id} not found in the project."
+                )
+
+            logger.info(
+                f"Found existing model to deploy: {model.resource_name} to the endpoint."
+            )
+
             if self.config.existing_endpoint:
                 # Use the existing endpoint
                 endpoint = aiplatform.Endpoint(
@@ -201,18 +215,6 @@ class VertexDeploymentService(BaseDeploymentService):
                     f"Vertex AI inference endpoint created: {endpoint.resource_name}"
                 )
 
-            # Then get the model
-            model = aiplatform.Model(
-                model_name=self.config.model_id,
-                location=self.config.location,
-            )
-            logger.info(
-                f"Found existing model to deploy: {model.resource_name} to the endpoint."
-            )
-            if not model:
-                raise RuntimeError(
-                    f"Model {self.config.model_id} not found in the project."
-                )
 
             # Deploy the model to the endpoint
             endpoint.deploy(
@@ -400,7 +402,7 @@ class VertexDeploymentService(BaseDeploymentService):
                 filter_str += f" limit {tail}"
 
             # Get log iterator
-            iterator = self.logging_client.list_entries(
+            iterator = self._logging_client.list_entries(
                 filter_=filter_str, order_by=vertex_logging.DESCENDING
             )
 
@@ -412,7 +414,7 @@ class VertexDeploymentService(BaseDeploymentService):
             if follow:
                 while True:
                     time.sleep(2)  # Poll every 2 seconds
-                    for entry in self.logging_client.list_entries(
+                    for entry in self._logging_client.list_entries(
                         filter_=filter_str,
                         order_by=vertex_logging.DESCENDING,
                         page_size=1,

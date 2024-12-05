@@ -22,10 +22,17 @@ import pandas as pd
 from typing_extensions import Annotated
 
 from zenml import get_step_context, step
-from zenml.integrations.mlflow.services.mlflow_deployment import (
-    MLFlowDeploymentService,
-)
 from zenml.logger import get_logger
+
+mlflow_enabled = False
+try:
+    from zenml.integrations.mlflow.services.mlflow_deployment import (
+        MLFlowDeploymentService,
+    )
+
+    mlflow_enabled = True
+except ImportError:
+    pass
 
 logger = get_logger(__name__)
 

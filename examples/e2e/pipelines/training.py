@@ -25,6 +25,7 @@ from steps import (
     hp_tuning_select_best_model,
     hp_tuning_single_search,
     model_evaluator,
+    model_register,
     model_trainer,
     notify_on_failure,
     notify_on_success,
@@ -109,6 +110,7 @@ def e2e_use_case_training(
         model=best_model,
         target=target,
     )
+    model_register(after=["model_trainer"])
     model_evaluator(
         model=model,
         dataset_trn=dataset_trn,

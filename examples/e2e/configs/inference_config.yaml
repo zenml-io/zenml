@@ -18,14 +18,11 @@
 # environment configuration
 settings:
   docker:
+    parent_image: public.ecr.aws/f7g3v0f1/zenml:stefan
+    python_package_installer: uv
     required_integrations:
-      - aws
-      - evidently
-      - kubeflow
-      - kubernetes
-      - mlflow
       - sklearn
-      - slack
+      - pandas
 
 # configuration of steps  
 steps:
