@@ -1093,8 +1093,10 @@ class FilterGenerator:
 
         Returns:
             A Filter object.
+
+        Raises:
+            ValueError: If the value for a oneof filter is not a list.
         """
-        # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
             raise ValueError(ONEOF_ERROR)
 
