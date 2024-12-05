@@ -436,7 +436,6 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-
     id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Id for this resource",
@@ -491,13 +490,13 @@ class BaseFilter(BaseModel):
                 )
                 value = column
 
-        if column in cls.FILTER_EXCLUDE_FIELDS:
+        if column in cls.CUSTOM_SORTING_OPTIONS:
+            return value
+        elif column in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
                 f"This resource can not be sorted by this field: '{value}'"
             )
-        elif column in cls.model_fields:
-            return value
-        elif column in cls.CUSTOM_SORTING_OPTIONS:
+        if column in cls.model_fields:
             return value
         else:
             raise ValueError(

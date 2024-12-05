@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-from typing import Any, Dict, Optional, Union
-from uuid import UUID
+from typing import Any, Dict, Optional
 
 from pydantic import Field
 
@@ -188,14 +187,4 @@ class CodeRepositoryFilter(WorkspaceScopedFilter):
     name: Optional[str] = Field(
         description="Name of the code repository.",
         default=None,
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        description="Workspace of the code repository.",
-        default=None,
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        description="User that created the code repository.",
-        default=None,
-        union_mode="left_to_right",
     )

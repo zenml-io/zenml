@@ -801,7 +801,6 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
         default=None,
         description="The type to scope this query to.",
     )
-
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",
@@ -809,16 +808,6 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
     connector_type: Optional[str] = Field(
         default=None,
         description="The type of service connector to filter by",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace to filter by",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User to filter by",
-        union_mode="left_to_right",
     )
     auth_method: Optional[str] = Field(
         default=None,
