@@ -195,9 +195,9 @@ def trainer(training_df: pd.DataFrame) -> Annotated["model", torch.nn.Module]:
 
 ![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
 
-### Purpose built for machine learning with integration to you favorite tools
+### Purpose built for machine learning with integrations to your favorite tools
 
-While ZenML brings a lot of value of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
+While ZenML brings a lot of value out of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
 
 ```python
 from bentoml._internal.bento import bento
