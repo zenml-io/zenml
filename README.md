@@ -147,7 +147,7 @@ Or, through our CLI command:
 zenml stack deploy --provider aws
 ```
 
-Alternatively, if the necessary pieces of infrastructure is already deployed, you can register a cloud stack seamlessly through the stack wizard:
+Alternatively, if the necessary pieces of infrastructure are already deployed, you can register a cloud stack seamlessly through the stack wizard:
 
 ```bash
 zenml stack register <STACK_NAME> --provider aws
