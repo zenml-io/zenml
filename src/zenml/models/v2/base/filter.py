@@ -113,7 +113,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["ColumnElement[bool]"]:
+    ) -> "ColumnElement[bool]":
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -291,11 +291,19 @@ class UUIDFilter(StrFilter):
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
+        from zenml.utils import uuid_utils
+
         # For equality checks, compare the UUID directly
         if self.operation == GenericFilterOps.EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return False
+
             return column == self.value
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return True
+
             return column != self.value
 
         # For all other operations, cast and handle the column as string
