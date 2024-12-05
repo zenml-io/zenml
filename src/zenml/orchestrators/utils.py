@@ -26,10 +26,12 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
+    ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
+    ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
-from zenml.enums import AuthScheme, StackComponentType, StoreType
+from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
 
@@ -137,37 +139,63 @@ def get_config_environment_vars(
         url = global_config.store_configuration.url
         api_token = credentials_store.get_token(url, allow_expired=False)
         if schedule_id or pipeline_run_id or step_run_id:
-            # When connected to an authenticated ZenML server, if a schedule ID,
-            # pipeline run ID or step run ID is supplied, we need to fetch a new
-            # workload API token scoped to the schedule, pipeline run or step
-            # run.
             assert isinstance(global_config.zen_store, RestZenStore)
 
-            # If only a schedule is given, the pipeline run credentials will
-            # be valid for the entire duration of the schedule.
-            api_key = credentials_store.get_api_key(url)
-            if not api_key and not pipeline_run_id and not step_run_id:
+            # The user has the option to manually set an expiration for the API
+            # token generated for a pipeline run. In this case, we generate a new
+            # generic API token that will be valid for the indicated duration.
+            if (
+                pipeline_run_id
+                and ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION != 0
+            ):
                 logger.warning(
-                    "An API token without an expiration time will be generated "
-                    "and used to run this pipeline on a schedule. This is very "
-                    "insecure because the API token will be valid for the "
-                    "entire lifetime of the schedule and can be used to access "
-                    "your user account if accidentally leaked. When deploying "
-                    "a pipeline on a schedule, it is strongly advised to use a "
-                    "service account API key to authenticate to the ZenML "
-                    "server instead of your regular user account. For more "
-                    "information, see "
-                    "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+                    f"An unscoped API token will be generated for this pipeline "
+                    f"run that will expire after "
+                    f"{ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION} "
+                    f"seconds instead of being scoped to the pipeline run "
+                    f"and not having an expiration time. This is more insecure "
+                    f"because the API token will remain valid even after the "
+                    f"pipeline run completes its execution. This option has "
+                    "been explicitly enabled by setting the "
+                    f"{ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION} environment "
+                    f"variable"
+                )
+                new_api_token = global_config.zen_store.get_api_token(
+                    token_type=APITokenType.GENERIC,
+                    expires_in=ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
                 )
 
-            # The schedule, pipeline run or step run credentials are scoped to
-            # the schedule, pipeline run or step run and will only be valid for
-            # the duration of the schedule/pipeline run/step run.
-            new_api_token = global_config.zen_store.get_api_token(
-                schedule_id=schedule_id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-            )
+            else:
+                # If a schedule ID, pipeline run ID or step run ID is supplied,
+                # we need to fetch a new workload API token scoped to the
+                # schedule, pipeline run or step run.
+
+                # If only a schedule is given, the pipeline run credentials will
+                # be valid for the entire duration of the schedule.
+                api_key = credentials_store.get_api_key(url)
+                if not api_key and not pipeline_run_id and not step_run_id:
+                    logger.warning(
+                        "An API token without an expiration time will be generated "
+                        "and used to run this pipeline on a schedule. This is very "
+                        "insecure because the API token will be valid for the "
+                        "entire lifetime of the schedule and can be used to access "
+                        "your user account if accidentally leaked. When deploying "
+                        "a pipeline on a schedule, it is strongly advised to use a "
+                        "service account API key to authenticate to the ZenML "
+                        "server instead of your regular user account. For more "
+                        "information, see "
+                        "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+                    )
+
+                # The schedule, pipeline run or step run credentials are scoped to
+                # the schedule, pipeline run or step run and will only be valid for
+                # the duration of the schedule/pipeline run/step run.
+                new_api_token = global_config.zen_store.get_api_token(
+                    token_type=APITokenType.WORKLOAD,
+                    schedule_id=schedule_id,
+                    pipeline_run_id=pipeline_run_id,
+                    step_run_id=step_run_id,
+                )
 
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 new_api_token

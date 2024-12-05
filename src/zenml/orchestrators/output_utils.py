@@ -19,6 +19,7 @@ from uuid import uuid4
 
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -75,10 +76,13 @@ def prepare_output_artifact_uris(
     artifact_store = stack.artifact_store
     output_artifact_uris: Dict[str, str] = {}
     for output_name in step.config.outputs.keys():
+        substituted_output_name = string_utils.format_name_template(
+            output_name, substitutions=step_run.config.substitutions
+        )
         artifact_uri = generate_artifact_uri(
             artifact_store=stack.artifact_store,
             step_run=step_run,
-            output_name=output_name,
+            output_name=substituted_output_name,
         )
         if artifact_store.exists(artifact_uri):
             raise RuntimeError("Artifact already exists")
