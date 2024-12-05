@@ -198,19 +198,19 @@ def main(
     )
     e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
 
-    # # Execute Batch Inference Pipeline
-    # run_args_inference = {}
-    # pipeline_args["config_path"] = os.path.join(
-    #     os.path.dirname(os.path.realpath(__file__)),
-    #     "configs",
-    #     "inference_config.yaml",
-    # )
-    # pipeline_args["run_name"] = (
-    #     f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    # )
-    # e2e_use_case_batch_inference.with_options(**pipeline_args)(
-    #     **run_args_inference
-    # )
+    # Execute Batch Inference Pipeline
+    run_args_inference = {}
+    pipeline_args["config_path"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "configs",
+        "inference_config.yaml",
+    )
+    pipeline_args["run_name"] = (
+        f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    )
+    e2e_use_case_batch_inference.with_options(**pipeline_args)(
+        **run_args_inference
+    )
 
 
 if __name__ == "__main__":

@@ -358,11 +358,11 @@ class VertexDeploymentService(BaseDeploymentService):
             # Add proper prediction parameters and handle sync/async
             predictions = endpoint.predict(
                 instances=instances,
-                deployed_model_id=self.status.endpoint.deployed_model_id.split(
-                    "/"
-                )[-1]
-                if self.status.endpoint.deployed_model_id
-                else None,
+                # deployed_model_id=self.status.endpoint.deployed_model_id.split(
+                #     "/"
+                # )[-1]
+                # if self.status.endpoint.deployed_model_id
+                # else None,
                 timeout=30,  # Add reasonable timeout
             )
 
