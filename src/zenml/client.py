@@ -2663,6 +2663,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        container_registry_id: Optional[Union[UUID, str]] = None,
         is_local: Optional[bool] = None,
         contains_code: Optional[bool] = None,
         zenml_version: Optional[str] = None,
@@ -2684,6 +2685,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            container_registry_id: The id of the container registry to
+                filter by.
             is_local: Use to filter local builds.
             contains_code: Use to filter builds that contain code.
             zenml_version: The version of ZenML to filter by.
@@ -2707,6 +2710,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            container_registry_id=container_registry_id,
             is_local=is_local,
             contains_code=contains_code,
             zenml_version=zenml_version,

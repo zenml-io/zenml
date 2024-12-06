@@ -249,6 +249,11 @@ def find_existing_build(
     client = Client()
     stack = client.active_stack
 
+    if not stack.container_registry:
+        # There can be no non-local builds that we can reuse if there is no
+        # container registry in the stack.
+        return
+
     python_version_prefix = ".".join(platform.python_version_tuple()[:2])
     required_builds = stack.get_docker_builds(deployment=deployment)
 
@@ -263,6 +268,13 @@ def find_existing_build(
         sort_by="desc:created",
         size=1,
         stack_id=stack.id,
+        # Until we implement stack versioning, users can still update their
+        # stack to update/remove the container registry. In that case, we might
+        # try to pull an image from a container registry that we don't have
+        # access to. This is why we add an additional check for the container
+        # registry ID here. (This is still not perfect as users can update the
+        # container registry URI or config, but the best we can do)
+        container_registry_id=stack.container_registry.id,
         # The build is local and it's not clear whether the images
         # exist on the current machine or if they've been overwritten.
         # TODO: Should we support this by storing the unique Docker ID for
