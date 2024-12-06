@@ -252,7 +252,7 @@ def find_existing_build(
     if not stack.container_registry:
         # There can be no non-local builds that we can reuse if there is no
         # container registry in the stack.
-        return
+        return None
 
     python_version_prefix = ".".join(platform.python_version_tuple()[:2])
     required_builds = stack.get_docker_builds(deployment=deployment)
