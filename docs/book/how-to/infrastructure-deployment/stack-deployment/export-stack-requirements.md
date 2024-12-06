@@ -2,6 +2,11 @@
 description: Export stack requirements
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 You can get the `pip` requirements of your stack by running the `zenml stack export-requirements <STACK-NAME>` CLI command.
 
 To install those requirements, it's best to write them to a file and then install them like this:

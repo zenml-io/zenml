@@ -2,6 +2,11 @@
 description: A guide on managing user roles and responsibilities in ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Access Management and Roles in ZenML
 
 Effective access management is crucial for maintaining security and efficiency in your ZenML projects. This guide will help you understand the different roles within a ZenML server and how to manage access for your team members.

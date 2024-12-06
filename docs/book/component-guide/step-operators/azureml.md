@@ -2,6 +2,11 @@
 description: Executing individual steps in AzureML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AzureML
 
 [AzureML](https://azure.microsoft.com/en-us/products/machine-learning/) offers specialized compute instances to run your training jobs and has a comprehensive UI to track and manage your models and logs. ZenML's AzureML step operator allows you to submit individual steps to be run on AzureML compute instances.
