@@ -413,10 +413,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if pipeline_run_status in [
-                ExecutionStatus.FAILED,
-                ExecutionStatus.COMPLETED,
-            ]:
+            if pipeline_run_status.is_finished:
                 error = (
                     f"The execution of pipeline run "
                     f"{decoded_token.pipeline_run_id} has already concluded and "
@@ -461,10 +458,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if step_run_status in [
-                ExecutionStatus.FAILED,
-                ExecutionStatus.COMPLETED,
-            ]:
+            if step_run_status.is_finished:
                 error = (
                     f"The execution of step run "
                     f"{decoded_token.step_run_id} has already concluded and "
