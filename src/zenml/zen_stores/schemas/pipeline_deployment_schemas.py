@@ -228,13 +228,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentResponse`.
         """
-        pipeline_configuration = PipelineConfiguration.model_validate_json(
-            self.pipeline_configuration
-        )
-        step_configurations = json.loads(self.step_configurations)
-        for s, c in step_configurations.items():
-            step_configurations[s] = Step.model_validate(c)
-
         body = PipelineDeploymentResponseBody(
             user=self.user.to_model() if self.user else None,
             created=self.created,
@@ -242,6 +235,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            pipeline_configuration = PipelineConfiguration.model_validate_json(
+                self.pipeline_configuration
+            )
+            step_configurations = json.loads(self.step_configurations)
+            for s, c in step_configurations.items():
+                step_configurations[s] = Step.model_validate(c)
+
             metadata = PipelineDeploymentResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_name_template=self.run_name_template,

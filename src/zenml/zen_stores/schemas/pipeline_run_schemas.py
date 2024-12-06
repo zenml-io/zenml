@@ -163,6 +163,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="pipeline_runs",
+        sa_relationship_kwargs={
+            "foreign_keys": "[PipelineRunSchema.model_version_id]"
+        },
     )
 
     # Temporary fields and foreign keys to be deprecated

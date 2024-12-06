@@ -298,7 +298,11 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.utils.string_utils import random_str, validate_name
+from zenml.utils.string_utils import (
+    format_name_template,
+    random_str,
+    validate_name,
+)
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -5211,6 +5215,20 @@ class SqlZenStore(BaseZenStore):
                         "already exists."
                     )
 
+            if model_version := self._get_or_create_model_version_for_run(
+                new_run
+            ):
+                new_run.model_version_id = model_version.id
+                session.add(new_run)
+                session.commit()
+
+                self.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequest(
+                        model_version=model_version.id, pipeline_run=new_run.id
+                    )
+                )
+                session.refresh(new_run)
+
             return new_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -8281,6 +8299,21 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(step_schema)
 
+            if model_version := self._get_or_create_model_version_for_run(
+                step_schema
+            ):
+                step_schema.model_version_id = model_version.id
+                session.add(step_schema)
+                session.commit()
+
+                self.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequest(
+                        model_version=model_version.id,
+                        pipeline_run=step_schema.pipeline_run_id,
+                    )
+                )
+                session.refresh(step_schema)
+
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -10326,6 +10359,216 @@ class SqlZenStore(BaseZenStore):
                 ).first()
                 is not None
             )
+
+    def _get_model_version_id_for_producer_run(
+        self, model_id: UUID, producer_run_id: UUID
+    ) -> Optional[UUID]:
+        """Get the ID of the numeric model version created for a pipeline run.
+
+        Args:
+            model_id: The model ID.
+            producer_run_id: The ID of the producer pipeline run.
+
+        Returns:
+            ID of the numeric model version that was created for the pipeline
+            run, or None if no numeric model version was created yet.
+        """
+        with Session(self.engine) as session:
+            query = select(ModelVersionSchema.id).where(
+                ModelVersionSchema.producer_run_id == producer_run_id,
+                ModelVersionSchema.is_numeric.is_(True),
+                ModelVersionSchema.model_id == model_id,
+            )
+
+            return session.exec(query).one_or_none()
+
+    def _get_or_create_model_version_for_run(
+        self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
+    ) -> Optional[ModelVersionResponse]:
+        """Get or create a model version for a pipeline or step run.
+
+        Args:
+            pipeline_or_step_run: The pipeline or step run for which to create
+                the model version.
+
+        Returns:
+            The model version.
+        """
+        if isinstance(pipeline_or_step_run, PipelineRunSchema):
+            producer_run_id = pipeline_or_step_run.id
+            pipeline_run = pipeline_or_step_run.to_model(include_metadata=True)
+            configured_model = pipeline_run.config.model
+            substitutions = pipeline_run.config.substitutions
+        else:
+            producer_run_id = pipeline_or_step_run.pipeline_run_id
+            step_run = pipeline_or_step_run.to_model(include_metadata=True)
+            configured_model = step_run.config.model
+            substitutions = step_run.config.substitutions
+
+        if not configured_model:
+            return None
+
+        model_request = ModelRequest(
+            name=format_name_template(
+                configured_model.name, substitutions=substitutions
+            ),
+            license=configured_model.license,
+            description=configured_model.description,
+            audience=configured_model.audience,
+            use_cases=configured_model.use_cases,
+            limitations=configured_model.limitations,
+            trade_offs=configured_model.trade_offs,
+            ethics=configured_model.ethics,
+            save_models_to_registry=configured_model.save_models_to_registry,
+            user=pipeline_or_step_run.user_id,
+            workspace=pipeline_or_step_run.workspace_id,
+        )
+
+        try:
+            model_response = self.create_model(model_request)
+        except EntityExistsError:
+            model_response = self.get_model(model_request.name)
+
+        version_name = None
+        if configured_model.version is not None:
+            version_name = format_name_template(
+                str(configured_model.version), substitutions=substitutions
+            )
+
+        model_version_request = ModelVersionRequest(
+            model=model_response.id,
+            name=version_name,
+            description=configured_model.description,
+            tags=configured_model.tags,
+            user=pipeline_or_step_run.user_id,
+            workspace=pipeline_or_step_run.workspace_id,
+        )
+
+        return self._create_model_version_or_get_from_producer_run(
+            model_version=model_version_request,
+            producer_run_id=producer_run_id,
+        )
+
+
+    # TODO: figure out analytics
+    def _create_model_version_or_get_from_producer_run(
+        self,
+        model_version: ModelVersionRequest,
+        producer_run_id: Optional[UUID] = None,
+    ) -> ModelVersionResponse:
+        """Creates a new model version.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+
+        Raises:
+            ValueError: If `number` is not None during model version creation.
+            EntityExistsError: If a model version with the given name already
+                exists.
+            EntityCreationError: If the model version creation failed.
+        """
+        if model_version.number is not None:
+            raise ValueError(
+                "The model version number can't be explicitly specified."
+            )
+
+        if model_version.name and model_version.name.isnumeric():
+            raise ValueError(
+                "Custom numeric model version names are now allowed."
+            )
+
+        model = self.get_model(model_version.model)
+
+        has_custom_name = model_version.name is not None
+        if has_custom_name:
+            validate_name(model_version)
+
+        model_version_id = None
+
+        remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+        while remaining_tries > 0:
+            remaining_tries -= 1
+            try:
+                with Session(self.engine) as session:
+                    model_version.number = (
+                        self._get_next_numeric_version_for_model(
+                            session=session,
+                            model_id=model.id,
+                        )
+                    )
+                    if not has_custom_name:
+                        model_version.name = str(model_version.number)
+
+                    model_version_schema = ModelVersionSchema.from_request(
+                        model_version
+                    )
+                    model_version_schema.producer_run_id = producer_run_id
+                    session.add(model_version_schema)
+                    session.commit()
+
+                    model_version_id = model_version_schema.id
+                break
+            except IntegrityError:
+                if has_custom_name and self._model_version_exists(
+                    model_id=model.id, version=cast(str, model_version.name)
+                ):
+                    # We failed not because of a version number conflict,
+                    # but because the user requested a version name that
+                    # is already taken -> We don't retry anymore but fail
+                    # immediately.
+                    raise EntityExistsError(
+                        f"Unable to create model version "
+                        f"{model.name} (version "
+                        f"{model_version.name}): A model with the "
+                        "same name and version already exists."
+                    )
+                elif producer_run_id and (
+                    model_version_id
+                    := self._get_model_version_id_for_producer_run(
+                        model_id=model.id, producer_run_id=producer_run_id
+                    )
+                ):
+                    # There is a numeric model version for the same model and
+                    # producer run already -> We return that one
+                    break
+                elif remaining_tries == 0:
+                    raise EntityCreationError(
+                        f"Failed to create version for model "
+                        f"{model.name}. This is most likely "
+                        "caused by multiple parallel requests that try "
+                        "to create versions for this model in the "
+                        "database."
+                    )
+                else:
+                    attempt = (
+                        MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                        - remaining_tries
+                    )
+                    sleep_duration = exponential_backoff_with_jitter(
+                        attempt=attempt
+                    )
+                    logger.debug(
+                        "Failed to create model version %s "
+                        "(version %s) due to an integrity error. "
+                        "Retrying in %f seconds.",
+                        model.name,
+                        model_version.number,
+                        sleep_duration,
+                    )
+                    time.sleep(sleep_duration)
+
+        assert model_version_id
+        if model_version.tags:
+            self._attach_tags_to_resource(
+                tag_names=model_version.tags,
+                resource_id=model_version_id,
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
+            )
+
+        return self.get_model_version(model_version_id)
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
