@@ -23,7 +23,7 @@ from typing import (
     cast,
 )
 
-from pydantic import field_validator
+from pydantic import field_validator, BaseModel
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -60,18 +60,26 @@ class WandbExperimentTrackerSettings(BaseSettings):
         Args:
             value: The settings.
 
+        Raises:
+            ValueError: If converting the settings failed.
+
         Returns:
             Dict representation of the settings.
         """
         import wandb
 
         if isinstance(value, wandb.Settings):
-            # Depending on the wandb version, either `make_static` or `to_dict`
-            # is available to convert the settings to a dictionary
-            if hasattr(value, "make_static"):
+            # Depending on the wandb version, either `model_dump`, 
+            # `make_static` or `to_dict` is available to convert the settings 
+            # to a dictionary
+            if isinstance(value, BaseModel):
+                return value.model_dump()
+            elif hasattr(value, "make_static"):
                 return cast(Dict[str, Any], value.make_static())
-            else:
+            elif hasattr(value, "to_dict"):
                 return value.to_dict()
+            else:
+                raise ValueError("Unable to convert wandb settings to dict.")
         else:
             return value
 
