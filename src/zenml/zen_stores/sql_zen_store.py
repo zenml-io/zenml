@@ -5211,6 +5211,12 @@ class SqlZenStore(BaseZenStore):
                         "already exists."
                     )
 
+            if model_version_id := self._do_something(new_run):
+                new_run.model_version_id = model_version_id
+                session.add(new_run)
+                session.commit()
+                session.refresh(new_run)
+
             return new_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -8281,6 +8287,12 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(step_schema)
 
+            if model_version_id := self._do_something(step_schema):
+                step_schema.model_version_id = model_version_id
+                session.add(step_schema)
+                session.commit()
+                session.refresh(step_schema)
+
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -11170,3 +11182,202 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(tag_model)
             session.commit()
+
+    def _get_or_create_model(self, model: ModelRequest) -> ModelResponse:
+        try:
+            return self.create_model(model)
+        except EntityExistsError:
+            return self.get_model(model.name)
+
+    def _fetch_model_version_by_producer_run(
+        self, model_id: UUID, producer_run_id: UUID
+    ) -> UUID:
+        with Session(self.engine) as session:
+            query = select(ModelVersionSchema.id).where(
+                ModelVersionSchema.producer_run_id == producer_run_id,
+                ModelVersionSchema.is_numeric.is_(True),
+                ModelVersionSchema.model_id == model_id,
+            )
+
+            result = session.exec(query).one_or_none()
+
+            if not result:
+                raise KeyError("Mv not found")
+
+            return result
+
+    def _create_model_version_for_run(
+        self, model_version: ModelVersionRequest, producer_run_id: UUID
+    ) -> UUID:
+        try:
+            return self._create_model_version(
+                model_version, producer_run_id=producer_run_id
+            ).id
+        except EntityExistsError:
+            return self._fetch_model_version_by_producer_run(
+                model_id=model_version.model, producer_run_id=producer_run_id
+            )
+
+    def _do_something(
+        self, obj: Union[PipelineRunSchema, StepRunSchema]
+    ) -> Optional[UUID]:
+        if isinstance(obj, PipelineRunSchema):
+            producer_run_id = obj.id
+            model = obj.deployment.to_model(
+                include_metadata=True
+            ).pipeline_configuration.model
+        else:
+            producer_run_id = obj.pipeline_run_id
+            model = (
+                obj.deployment.to_model(include_metadata=True)
+                .step_configurations[obj.name]
+                .config.model
+            )
+
+        if not model:
+            return None
+
+        model_request = ModelRequest(
+            # TODO: Format name
+            name=model.name,
+            license=model.license,
+            description=model.description,
+            audience=model.audience,
+            use_cases=model.use_cases,
+            limitations=model.limitations,
+            trade_offs=model.trade_offs,
+            ethics=model.ethics,
+            save_models_to_registry=model.save_models_to_registry,
+            user=obj.user_id,
+            workspace=obj.workspace_id,
+        )
+
+        model_response = self._get_or_create_model(model_request)
+        model_version_request = ModelVersionRequest(
+            model=model_response.id,
+            name=str(model.version) if model.version else None,
+            description=model.description,
+            tags=model.tags,
+            user=obj.user_id,
+            workspace=obj.workspace_id,
+        )
+
+        print("Creating mv server side")
+        if model_version_request.name:
+            return self.create_model_version(model_version_request).id
+        else:
+            return self._create_model_version_for_run(
+                model_version_request, producer_run_id=producer_run_id
+            )
+
+    def _create_model_version(
+        self,
+        model_version: ModelVersionRequest,
+        producer_run_id: Optional[UUID] = None,
+    ) -> ModelVersionResponse:
+        """Creates a new model version.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+
+        Raises:
+            ValueError: If `number` is not None during model version creation.
+            EntityExistsError: If a model version with the given name already
+                exists.
+            EntityCreationError: If the model version creation failed.
+        """
+        if model_version.number is not None:
+            raise ValueError(
+                "`number` field  must be None during model version creation."
+            )
+
+        model = self.get_model(model_version.model)
+
+        has_custom_name = model_version.name is not None
+        if has_custom_name:
+            validate_name(model_version)
+
+        model_version_id = None
+
+        remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+        while remaining_tries > 0:
+            remaining_tries -= 1
+            try:
+                with Session(self.engine) as session:
+                    model_version.number = (
+                        self._get_next_numeric_version_for_model(
+                            session=session,
+                            model_id=model.id,
+                        )
+                    )
+                    if not has_custom_name:
+                        model_version.name = str(model_version.number)
+
+                    model_version_schema = ModelVersionSchema.from_request(
+                        model_version
+                    )
+                    model_version_schema.producer_run_id = producer_run_id
+                    session.add(model_version_schema)
+                    session.commit()
+
+                    model_version_id = model_version_schema.id
+                break
+            except IntegrityError:
+                if has_custom_name and self._model_version_exists(
+                    model_id=model.id, version=cast(str, model_version.name)
+                ):
+                    # We failed not because of a version number conflict,
+                    # but because the user requested a version name that
+                    # is already taken -> We don't retry anymore but fail
+                    # immediately.
+                    raise EntityExistsError(
+                        f"Unable to create model version "
+                        f"{model.name} (version "
+                        f"{model_version.name}): A model with the "
+                        "same name and version already exists."
+                    )
+                elif (
+                    producer_run_id
+                    and self._fetch_model_version_by_producer_run(
+                        model_id=model.id, producer_run_id=producer_run_id
+                    )
+                ):
+                    raise EntityExistsError("todo")
+                elif remaining_tries == 0:
+                    raise EntityCreationError(
+                        f"Failed to create version for model "
+                        f"{model.name}. This is most likely "
+                        "caused by multiple parallel requests that try "
+                        "to create versions for this model in the "
+                        "database."
+                    )
+                else:
+                    attempt = (
+                        MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
+                        - remaining_tries
+                    )
+                    sleep_duration = exponential_backoff_with_jitter(
+                        attempt=attempt
+                    )
+                    logger.debug(
+                        "Failed to create model version %s "
+                        "(version %s) due to an integrity error. "
+                        "Retrying in %f seconds.",
+                        model.name,
+                        model_version.number,
+                        sleep_duration,
+                    )
+                    time.sleep(sleep_duration)
+
+        assert model_version_id
+        if model_version.tags:
+            self._attach_tags_to_resource(
+                tag_names=model_version.tags,
+                resource_id=model_version_id,
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
+            )
+
+        return self.get_model_version(model_version_id)

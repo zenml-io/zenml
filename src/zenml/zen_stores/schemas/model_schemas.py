@@ -223,6 +223,9 @@ class ModelSchema(NamedSchema, table=True):
         return self
 
 
+from sqlalchemy import Boolean, Computed, Index, text
+
+
 class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for model version."""
 
@@ -242,6 +245,15 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             "name",
             "model_id",
             name="unique_version_for_model_id",
+        ),
+        Index(
+            "test",
+            "model_id",
+            "is_numeric",
+            text(
+                "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END"
+            ),
+            unique=True,
         ),
     )
 
@@ -317,6 +329,20 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="model_version"
     )
+
+    is_numeric: str = Field(
+        sa_column=Column(Boolean, Computed("name == number"))
+    )
+
+    producer_run_id: Optional[UUID] = None
+    # build_foreign_key_field(
+    #     source=__tablename__,
+    #     target=PipelineRunSchema.__tablename__,
+    #     source_column="producer_run_id",
+    #     target_column="id",
+    #     ondelete="SET NULL",
+    #     nullable=True,
+    # )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
