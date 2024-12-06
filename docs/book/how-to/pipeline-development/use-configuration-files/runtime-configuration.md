@@ -2,6 +2,11 @@
 description: Using settings to configure runtime configuration.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stack component specific configuration
 
 {% embed url="https://www.youtube.com/embed/AdwW6DlCWFE" %}

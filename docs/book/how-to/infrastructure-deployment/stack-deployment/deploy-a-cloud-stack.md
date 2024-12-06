@@ -2,6 +2,11 @@
 description: Deploy a cloud stack from scratch with a single click
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy a cloud stack with a single click
 
 In ZenML, the [stack](../../../user-guide/production-guide/understand-stacks.md) 

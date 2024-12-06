@@ -2,6 +2,11 @@
 description: Best practices for using IaC with ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Architecting ML Infrastructure with ZenML and Terraform
 
 ## The Challenge

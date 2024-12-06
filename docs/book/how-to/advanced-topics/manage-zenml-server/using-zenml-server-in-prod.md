@@ -3,6 +3,11 @@ description: >
   Learn about best practices for using ZenML server in production environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Using ZenML server in production
 
 Setting up a ZenML server for testing is a quick process. However, most people have to move beyond so-called 'day zero' operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.

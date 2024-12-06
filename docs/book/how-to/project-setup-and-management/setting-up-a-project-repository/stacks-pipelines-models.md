@@ -2,6 +2,11 @@
 description: A guide on how to organize stacks, pipelines, models, and artifacts in ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Organizing Stacks, Pipelines, Models, and Artifacts
 
 In ZenML, pipelines, stacks and models form a crucial part of your project's
