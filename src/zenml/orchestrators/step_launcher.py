@@ -180,11 +180,13 @@ class StepLauncher:
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
 
-                pipeline_model_version, pipeline_run = (
-                    step_run_utils.prepare_pipeline_run_model_version(
-                        pipeline_run
+                    pipeline_model_version, pipeline_run = (
+                        step_run_utils.prepare_pipeline_run_model_version(
+                            pipeline_run
+                        )
                     )
-                )
+                else:
+                    pipeline_model_version = pipeline_run.model_version
 
                 request_factory = step_run_utils.StepRunRequestFactory(
                     deployment=self._deployment,
