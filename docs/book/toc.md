@@ -83,7 +83,6 @@
     * [Migration guide 0.23.0 → 0.30.0](how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-thirty.md)
     * [Migration guide 0.39.1 → 0.41.0](how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-forty.md)
     * [Migration guide 0.58.2 → 0.60.0](how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-sixty.md)
-
 * [Project Setup and Management](how-to/project-setup-and-management/README.md)
   * [Set up a ZenML project](how-to/project-setup-and-management/setting-up-a-project-repository/README.md)
     * [Set up a repository](how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md)
@@ -151,7 +150,7 @@
   * [How to reuse builds](how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md)
   * [Define where an image is built](how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built.md)
 * [Data and Artifact Management](how-to/data-artifact-management/README.md)
-  * [Handle Data/Artifacts](how-to/data-artifact-management/handle-data-artifacts/README.md)
+  * [Understand ZenML artifacts](how-to/data-artifact-management/handle-data-artifacts/README.md)
     * [How ZenML stores data](how-to/data-artifact-management/handle-data-artifacts/artifact-versioning.md)
     * [Return multiple outputs from a step](how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step.md)
     * [Delete an artifact](how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact.md)
@@ -160,6 +159,7 @@
     * [Get arbitrary artifacts in a step](how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
     * [Handle custom data types](how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md)
     * [Load artifacts into memory](how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md)
+  * [Complex use-cases](how-to/data-artifact-management/handle-data-artifacts/README.md)
     * [Datasets in ZenML](how-to/data-artifact-management/handle-data-artifacts/datasets.md)
     * [Manage big data](how-to/data-artifact-management/handle-data-artifacts/manage-big-data.md)
     * [Skipping materialization](how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts.md)
@@ -224,9 +224,9 @@
   * [Kubernetes](how-to/popular-integrations/kubernetes.md)
   * [MLflow](how-to/popular-integrations/mlflow.md)
   * [Skypilot](how-to/popular-integrations/skypilot.md)
-* [Debug and solve issues](how-to/debug-and-solve-issues.md)
 * [Contribute to/Extend ZenML](how-to/contribute-to-zenml/README.md)
   * [Implement a custom integration](how-to/contribute-to-zenml/implement-a-custom-integration.md)
+* [Debug and solve issues](how-to/debug-and-solve-issues.md)
 
 ## Stack Components
 
