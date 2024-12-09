@@ -10393,9 +10393,14 @@ class SqlZenStore(BaseZenStore):
             query = query.where(ModelVersionSchema.number == version_number)
 
         if version_stage:
-            query = query.where(
-                ModelVersionSchema.stage == version_stage.value
-            )
+            if version_stage == ModelStages.LATEST:
+                query = query.order_by(desc(ModelVersionSchema.number)).limit(
+                    1
+                )
+            else:
+                query = query.where(
+                    ModelVersionSchema.stage == version_stage.value
+                )
 
         if producer_run_id:
             query = query.where(
@@ -10469,16 +10474,18 @@ class SqlZenStore(BaseZenStore):
                     f"No version with number {configured_model.version} found "
                     f"for model {model_response.name}."
                 )
-        elif isinstance(configured_model.version, ModelStages):
+            return model_version_id
+        elif configured_model.version in ModelStages.values():
             model_version_id = self._get_model_version_id(
                 model_id=model_response.id,
-                version_stage=configured_model.version,
+                version_stage=ModelStages(configured_model.version),
             )
             if not model_version_id:
                 raise KeyError(
                     f"No {configured_model.version} stage version found for "
                     f"model {model_response.name}."
                 )
+            return model_version_id
 
         version_name = None
         if isinstance(configured_model.version, str):
@@ -10534,11 +10541,6 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: If an auto-incremented model version already exists
                 for the producer run.
         """
-        if model_version.number is not None:
-            raise ValueError(
-                "The model version number can't be explicitly specified."
-            )
-
         has_custom_name = False
         if model_version.name:
             has_custom_name = True

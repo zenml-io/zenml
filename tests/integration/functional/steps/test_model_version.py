@@ -905,3 +905,54 @@ def test_model_version_creation(clean_client: "Client"):
         pipeline_run_id=run_3.id
     )
     assert len(links) == 3
+
+
+def test_model_version_fetching_by_stage(clean_client: "Client"):
+    """Tests that model versions get created correctly for a pipeline run."""
+    model_name = random_resource_name()
+
+    @pipeline(model=Model(name=model_name), enable_cache=False)
+    def _creator_pipeline():
+        noop()
+
+    @pipeline(model=Model(name=model_name, version=1), enable_cache=False)
+    def _fetch_by_version_number_pipeline():
+        noop()
+
+    @pipeline(
+        model=Model(name=model_name, version="latest"), enable_cache=False
+    )
+    def _fetch_latest_version_pipeline():
+        noop()
+
+    @pipeline(
+        model=Model(name=model_name, version="production"), enable_cache=False
+    )
+    def _fetch_prod_version_pipeline():
+        noop()
+
+    with pytest.raises(KeyError):
+        _fetch_by_version_number_pipeline()
+
+    with pytest.raises(KeyError):
+        _fetch_latest_version_pipeline()
+
+    with pytest.raises(KeyError):
+        _fetch_prod_version_pipeline()
+
+    _creator_pipeline()
+    _creator_pipeline()
+
+    versions = clean_client.list_model_versions(model_name)
+    assert len(versions) == 2
+    mv_1, mv_2 = versions
+    mv_1.set_stage("production")
+
+    run = _fetch_by_version_number_pipeline()
+    assert run.model_version_id == mv_1.id
+
+    run = _fetch_latest_version_pipeline()
+    assert run.model_version_id == mv_2.id
+
+    run = _fetch_prod_version_pipeline()
+    assert run.model_version_id == mv_1.id
