@@ -370,12 +370,17 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, model_version_request: ModelVersionRequest
+        cls,
+        model_version_request: ModelVersionRequest,
+        model_version_number: int,
+        producer_run_id: Optional[UUID] = None,
     ) -> "ModelVersionSchema":
         """Convert an `ModelVersionRequest` to an `ModelVersionSchema`.
 
         Args:
             model_version_request: The request model version to convert.
+            model_version_number: The model version number.
+            producer_run_id: The ID of the producer run.
 
         Returns:
             The converted schema.
@@ -385,7 +390,8 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=model_version_request.user,
             model_id=model_version_request.model,
             name=model_version_request.name,
-            number=model_version_request.number,
+            number=model_version_number,
+            producer_run_id=producer_run_id,
             description=model_version_request.description,
             stage=model_version_request.stage,
         )

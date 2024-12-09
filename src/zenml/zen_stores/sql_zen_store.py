@@ -10527,11 +10527,11 @@ class SqlZenStore(BaseZenStore):
             The newly created model version.
 
         Raises:
-            ValueError: If `number` is not None during model version creation.
+            ValueError: If the requested version name is invalid.
             EntityExistsError: If a model version with the given name already
                 exists.
             EntityCreationError: If the model version creation failed.
-            RuntimeError: If a auto-incremented model version already exists
+            RuntimeError: If an auto-incremented model version already exists
                 for the producer run.
         """
         if model_version.number is not None:
@@ -10564,19 +10564,20 @@ class SqlZenStore(BaseZenStore):
             remaining_tries -= 1
             try:
                 with Session(self.engine) as session:
-                    model_version.number = (
+                    model_version_number = (
                         self._get_next_numeric_version_for_model(
                             session=session,
                             model_id=model.id,
                         )
                     )
                     if not has_custom_name:
-                        model_version.name = str(model_version.number)
+                        model_version.name = str(model_version_number)
 
                     model_version_schema = ModelVersionSchema.from_request(
-                        model_version
+                        model_version,
+                        model_version_number=model_version_number,
+                        producer_run_id=producer_run_id,
                     )
-                    model_version_schema.producer_run_id = producer_run_id
                     session.add(model_version_schema)
                     session.commit()
 
@@ -10650,12 +10651,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created model version.
-
-        Raises:
-            ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a model version with the given name already
-                exists.
-            EntityCreationError: If the model version creation failed.
         """
         return self._create_model_version(model_version=model_version)
 
