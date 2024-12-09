@@ -333,9 +333,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
         back_populates="model_version",
-        sa_relationship_kwargs={
-            "primaryjoin": "ModelVersionSchema.id==PipelineRunSchema.model_version_id",
-        },
     )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="model_version"
@@ -345,14 +342,8 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(Boolean, Computed("name == number"))
     )
 
-    producer_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
-        source_column="producer_run_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
+    # Don't use a FK here to avoid a cycle
+    producer_run_id: Optional[UUID] = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
