@@ -14,7 +14,7 @@
 """Utilities for creating step runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -28,12 +28,10 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunResponse,
     StepRunRequest,
+    StepRunResponse,
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -328,6 +326,7 @@ def create_cached_step_runs(
                 continue
 
             step_run = Client().zen_store.create_run_step(step_run_request)
+            maybe_log_model_version_dashboard_url_for_run(step_run)
 
             if (
                 model_version := step_run.model_version
@@ -344,7 +343,20 @@ def create_cached_step_runs(
     return cached_invocations
 
 
-# TODO: re-add functionality of this function
+def maybe_log_model_version_dashboard_url_for_run(
+    run: Union[PipelineRunResponse, StepRunResponse],
+) -> None:
+    if not run.model_version:
+        return
+
+    if run.created > run.model_version.created:
+        # The model version was created before the pipeline/step run
+        # -> We don't log the dashboard URL
+        return
+
+    log_model_version_dashboard_url(model_version=run.model_version)
+
+
 def log_model_version_dashboard_url(
     model_version: ModelVersionResponse,
 ) -> None:

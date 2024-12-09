@@ -179,6 +179,9 @@ class StepLauncher:
                         pipeline_run_id=pipeline_run.id,
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
+                    step_run_utils.maybe_log_model_version_dashboard_url_for_run(
+                        pipeline_run
+                    )
 
                 request_factory = step_run_utils.StepRunRequestFactory(
                     deployment=self._deployment,
@@ -202,6 +205,9 @@ class StepLauncher:
                 finally:
                     step_run = Client().zen_store.create_run_step(
                         step_run_request
+                    )
+                    step_run_utils.maybe_log_model_version_dashboard_url_for_run(
+                        step_run
                     )
 
                 if not step_run.status.is_finished:
