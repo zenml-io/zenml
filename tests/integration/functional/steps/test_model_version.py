@@ -908,7 +908,7 @@ def test_model_version_creation(clean_client: "Client"):
 
 
 def test_model_version_fetching_by_stage(clean_client: "Client"):
-    """Tests that model versions get created correctly for a pipeline run."""
+    """Tests that model versions can be fetched by number or stage."""
     model_name = random_resource_name()
 
     @pipeline(model=Model(name=model_name), enable_cache=False)

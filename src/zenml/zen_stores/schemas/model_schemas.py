@@ -340,13 +340,13 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(BOOLEAN, Computed("name == number"))
     )
 
-    # Don't use a foreign here here to avoid a cycle
+    # Don't use a foreign key here here to avoid a cycle
     producer_run_id: Optional[UUID] = None
 
     # We want to make sure each pipeline run only creates a single numeric
     # version for each model. To solve this, we need to add a unique constraint.
     # If a value of a unique constraint is NULL it is ignored and the
-    # remaining values in the unqiue constraint have to be unique. In
+    # remaining values in the unique constraint have to be unique. In
     # our case however, we only want the unique constraint applied in
     # case there is a producer run. To solve this, we fallback to the
     # model version ID (which is the primary key and therefore unique)
