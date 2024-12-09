@@ -17,8 +17,17 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
+import sqlalchemy as sa
 from pydantic import ConfigDict
-from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column, UniqueConstraint
+from sqlalchemy import (
+    BOOLEAN,
+    INTEGER,
+    TEXT,
+    Column,
+    Computed,
+    Index,
+    UniqueConstraint,
+)
 from sqlmodel import Field, Relationship
 
 from zenml.enums import (
@@ -223,9 +232,6 @@ class ModelSchema(NamedSchema, table=True):
         return self
 
 
-from sqlalchemy import Boolean, Computed, Index, text
-
-
 class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for model version."""
 
@@ -252,15 +258,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             "unique_numeric_version_for_pipeline_run",
             "model_id",
             "is_numeric",
-            # If a value of a unique constraint is NULL it is ignored and the
-            # remaining values in the unqiue constraint have to be unique. In
-            # our case however, we only want the unique constraint applied in
-            # case there is a producer run. To solve this, we fallback to the
-            # model version ID (which is the primary key and therefore unique)
-            # in case there is no producer run.
-            text(
-                "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END"
-            ),
+            "producer_run_id_with_fallback",
             unique=True,
         ),
     )
@@ -338,12 +336,29 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="model_version"
     )
 
-    is_numeric: str = Field(
-        sa_column=Column(Boolean, Computed("name == number"))
+    is_numeric: bool = Field(
+        sa_column=Column(BOOLEAN, Computed("name == number"))
     )
 
-    # Don't use a FK here to avoid a cycle
+    # Don't use a foreign here here to avoid a cycle
     producer_run_id: Optional[UUID] = None
+
+    # We want to make sure each pipeline run only creates a single numeric
+    # version for each model. To solve this, we need to add a unique constraint.
+    # If a value of a unique constraint is NULL it is ignored and the
+    # remaining values in the unqiue constraint have to be unique. In
+    # our case however, we only want the unique constraint applied in
+    # case there is a producer run. To solve this, we fallback to the
+    # model version ID (which is the primary key and therefore unique)
+    # in case there is no producer run.
+    producer_run_id_with_fallback: UUID = Field(
+        sa_column=Column(
+            sa.UUID,
+            Computed(
+                "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END"
+            ),
+        )
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
