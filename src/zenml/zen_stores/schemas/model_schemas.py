@@ -337,7 +337,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     is_numeric: bool = Field(
-        sa_column=Column(BOOLEAN, Computed("name == number"))
+        sa_column=Column(BOOLEAN, Computed("name = number"))
     )
 
     # Don't use a foreign key here here to avoid a cycle
@@ -351,9 +351,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     # case there is a producer run. To solve this, we fallback to the
     # model version ID (which is the primary key and therefore unique)
     # in case there is no producer run.
-    producer_run_id_with_fallback: UUID = Field(
+    producer_run_id_with_fallback: str = Field(
         sa_column=Column(
-            sa.UUID,
+            sa.CHAR(32),
             Computed(
                 "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END"
             ),

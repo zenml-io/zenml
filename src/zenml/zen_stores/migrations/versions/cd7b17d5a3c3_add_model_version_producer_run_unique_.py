@@ -39,7 +39,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "producer_run_id_with_fallback",
-                sa.UUID(),
+                sa.CHAR(32),
                 sa.Computed(
                     "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END",
                 ),
