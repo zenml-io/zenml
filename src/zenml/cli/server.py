@@ -587,25 +587,6 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
             accessible_pro_servers = client.tenant.list(member_only=not all)
         except AuthorizationException as e:
             cli_utils.warning(f"ZenML Pro authorization error: {e}")
-        else:
-            if not all:
-                accessible_pro_servers = [
-                    s
-                    for s in accessible_pro_servers
-                    if s.status == TenantStatus.AVAILABLE
-                ]
-
-            if not accessible_pro_servers:
-                cli_utils.declare(
-                    "No ZenML Pro servers that are accessible to the current "
-                    "user could be found."
-                )
-                if not all:
-                    cli_utils.declare(
-                        "Hint: use the `--all` flag to show all ZenML servers, "
-                        "including those that the client is not currently "
-                        "authorized to access or are not running."
-                    )
 
         # We update the list of stored ZenML Pro servers with the ones that the
         # client is a member of
@@ -632,6 +613,25 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
                 )
                 stored_server.update_server_info(accessible_server)
                 pro_servers.append(stored_server)
+
+        if not all:
+            accessible_pro_servers = [
+                s
+                for s in accessible_pro_servers
+                if s.status == TenantStatus.AVAILABLE
+            ]
+
+        if not accessible_pro_servers:
+            cli_utils.declare(
+                "No ZenML Pro servers that are accessible to the current "
+                "user could be found."
+            )
+            if not all:
+                cli_utils.declare(
+                    "Hint: use the `--all` flag to show all ZenML servers, "
+                    "including those that the client is not currently "
+                    "authorized to access or are not running."
+                )
 
     elif pro_servers:
         cli_utils.warning(
