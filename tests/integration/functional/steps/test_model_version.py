@@ -845,13 +845,13 @@ def test_model_version_creation(clean_client: "Client"):
     custom_version = custom_versions[-1]
 
     assert run_1.model_version_id == implicit_version.id
-    for name, step in run_1.steps.items():
+    for name, step_ in run_1.steps.items():
         if name == "shared":
-            assert step.model_version_id == implicit_version.id
+            assert step_.model_version_id == implicit_version.id
         elif name == "custom_version":
-            assert step.model_version_id == explicit_version.id
+            assert step_.model_version_id == explicit_version.id
         else:
-            assert step.model_version_id == custom_version.id
+            assert step_.model_version_id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_1.id
     )

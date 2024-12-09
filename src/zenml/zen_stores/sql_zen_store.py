@@ -10394,9 +10394,9 @@ class SqlZenStore(BaseZenStore):
 
         if version_stage:
             if version_stage == ModelStages.LATEST:
-                query = query.order_by(desc(ModelVersionSchema.number)).limit(
-                    1
-                )
+                query = query.order_by(
+                    desc(col(ModelVersionSchema.number))
+                ).limit(1)
             else:
                 query = query.where(
                     ModelVersionSchema.stage == version_stage.value
@@ -10624,10 +10624,9 @@ class SqlZenStore(BaseZenStore):
                     )
                     logger.debug(
                         "Failed to create model version %s "
-                        "(version %s) due to an integrity error. "
+                        "due to an integrity error. "
                         "Retrying in %f seconds.",
                         model.name,
-                        model_version.number,
                         sleep_duration,
                     )
                     time.sleep(sleep_duration)
