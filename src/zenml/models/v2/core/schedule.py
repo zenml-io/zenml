@@ -279,16 +279,6 @@ class ScheduleResponse(
 class ScheduleFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace scope of the schedule.",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created the schedule",
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",

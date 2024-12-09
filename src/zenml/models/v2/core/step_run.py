@@ -553,16 +553,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that produced this step run",
-        union_mode="left_to_right",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of this step run",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Model version associated with the step run.",
@@ -576,7 +566,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="The run_metadata to filter the step runs by.",
     )
-
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(

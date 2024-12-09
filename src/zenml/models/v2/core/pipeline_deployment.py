@@ -358,16 +358,6 @@ class PipelineDeploymentResponse(
 class PipelineDeploymentFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline deployments."""
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace for this deployment.",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created this deployment.",
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the deployment.",

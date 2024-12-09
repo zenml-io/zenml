@@ -310,16 +310,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name of the run template.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace associated with the template.",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created the template.",
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the template.",
@@ -339,10 +329,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Code repository associated with the template.",
         union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the template.",
     )
     pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -371,7 +357,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
             PipelineSchema,
             RunTemplateSchema,
             StackSchema,
-            UserSchema,
         )
 
         if self.code_repository_id:
@@ -408,17 +393,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
-
-        if self.user:
-            user_filter = and_(
-                RunTemplateSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.pipeline:
             pipeline_filter = and_(
