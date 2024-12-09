@@ -5215,16 +5215,16 @@ class SqlZenStore(BaseZenStore):
                         "already exists."
                     )
 
-            if model_version := self._get_or_create_model_version_for_run(
+            if model_version_id := self._get_or_create_model_version_for_run(
                 new_run
             ):
-                new_run.model_version_id = model_version.id
+                new_run.model_version_id = model_version_id
                 session.add(new_run)
                 session.commit()
 
                 self.create_model_version_pipeline_run_link(
                     ModelVersionPipelineRunRequest(
-                        model_version=model_version.id, pipeline_run=new_run.id
+                        model_version=model_version_id, pipeline_run=new_run.id
                     )
                 )
                 session.refresh(new_run)
@@ -8299,16 +8299,16 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(step_schema)
 
-            if model_version := self._get_or_create_model_version_for_run(
+            if model_version_id := self._get_or_create_model_version_for_run(
                 step_schema
             ):
-                step_schema.model_version_id = model_version.id
+                step_schema.model_version_id = model_version_id
                 session.add(step_schema)
                 session.commit()
 
                 self.create_model_version_pipeline_run_link(
                     ModelVersionPipelineRunRequest(
-                        model_version=model_version.id,
+                        model_version=model_version_id,
                         pipeline_run=step_schema.pipeline_run_id,
                     )
                 )
@@ -10382,9 +10382,29 @@ class SqlZenStore(BaseZenStore):
 
             return session.exec(query).one_or_none()
 
+    def _get_model_version_id_for_name(
+        self, model_id: UUID, version_name: str
+    ) -> UUID:
+        """Get the model version ID by name
+
+        Args:
+            model_id: The ID of the model.
+            version_name: The name of the model version.
+
+        Returns:
+            The ID of the model version.
+        """
+        with Session(self.engine) as session:
+            query = select(ModelVersionSchema.id).where(
+                ModelVersionSchema.model_id == model_id,
+                ModelVersionSchema.name == version_name,
+            )
+
+        return session.exec(query).one()
+
     def _get_or_create_model_version_for_run(
         self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
-    ) -> Optional[ModelVersionResponse]:
+    ) -> Optional[UUID]:
         """Get or create a model version for a pipeline or step run.
 
         Args:
@@ -10448,16 +10468,11 @@ class SqlZenStore(BaseZenStore):
             return self._create_model_version_or_get_from_producer_run(
                 model_version=model_version_request,
                 producer_run_id=producer_run_id,
-            )
+            ).id
         except EntityExistsError:
-            with Session(self.engine) as session:
-                assert version_name
-                query = select(ModelVersionSchema).where(
-                    ModelVersionSchema.model_id == model_response.id,
-                    ModelVersionSchema.name == version_name,
-                )
-
-            return session.exec(query).one_or_none()
+            return self._get_model_version_id_for_name(
+                model_id=model_response.id, version_name=version_name
+            )
 
     # TODO: figure out analytics
     def _create_model_version_or_get_from_producer_run(
