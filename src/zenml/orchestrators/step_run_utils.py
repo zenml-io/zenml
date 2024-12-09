@@ -346,6 +346,12 @@ def create_cached_step_runs(
 def maybe_log_model_version_dashboard_url_for_run(
     run: Union[PipelineRunResponse, StepRunResponse],
 ) -> None:
+    """Log the model version dashboard URL if it was created by the run.
+
+    Args:
+        run: The pipeline or step run that potentially created the model
+            version.
+    """
     if not run.model_version:
         return
 
