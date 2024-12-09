@@ -1,4 +1,4 @@
-"""Add model version producer run unique constraint [cd7b17d5a3c3].
+"""Add model version producer run index [cd7b17d5a3c3].
 
 Revision ID: cd7b17d5a3c3
 Revises: 0.71.0
@@ -28,7 +28,7 @@ def upgrade() -> None:
                 sa.Computed(
                     "name == number",
                 ),
-                nullable=True,
+                nullable=False,
             )
         )
         batch_op.add_column(
@@ -43,7 +43,7 @@ def upgrade() -> None:
                 sa.Computed(
                     "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END",
                 ),
-                nullable=True,
+                nullable=False,
             )
         )
         batch_op.create_index(
