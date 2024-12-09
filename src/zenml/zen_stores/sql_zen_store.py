@@ -10444,11 +10444,20 @@ class SqlZenStore(BaseZenStore):
             workspace=pipeline_or_step_run.workspace_id,
         )
 
-        return self._create_model_version_or_get_from_producer_run(
-            model_version=model_version_request,
-            producer_run_id=producer_run_id,
-        )
+        try:
+            return self._create_model_version_or_get_from_producer_run(
+                model_version=model_version_request,
+                producer_run_id=producer_run_id,
+            )
+        except EntityExistsError:
+            with Session(self.engine) as session:
+                assert version_name
+                query = select(ModelVersionSchema).where(
+                    ModelVersionSchema.model_id == model_response.id,
+                    ModelVersionSchema.name == version_name,
+                )
 
+            return session.exec(query).one_or_none()
 
     # TODO: figure out analytics
     def _create_model_version_or_get_from_producer_run(
