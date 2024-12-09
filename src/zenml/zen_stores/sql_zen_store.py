@@ -10400,7 +10400,7 @@ class SqlZenStore(BaseZenStore):
         if producer_run_id:
             query = query.where(
                 ModelVersionSchema.producer_run_id == producer_run_id,
-                ModelVersionSchema.is_numeric.is_(True),
+                col(ModelVersionSchema.is_numeric).is_(True),
             )
 
         with Session(self.engine) as session:
@@ -10596,11 +10596,8 @@ class SqlZenStore(BaseZenStore):
                         f"{model_version.name}): A model with the "
                         "same name and version already exists."
                     )
-                elif (
-                    producer_run_id
-                    and self._get_model_version_id_for_producer_run(
-                        model_id=model.id, producer_run_id=producer_run_id
-                    )
+                elif producer_run_id and self._get_model_version_id(
+                    model_id=model.id, producer_run_id=producer_run_id
                 ):
                     raise RuntimeError(
                         "Auto-incremented model version already exists for "
