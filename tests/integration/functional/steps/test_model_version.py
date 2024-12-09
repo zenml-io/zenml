@@ -22,7 +22,7 @@ from typing_extensions import Annotated
 from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import ModelStages
+from zenml.enums import ExecutionStatus, ModelStages
 from zenml.model.model import Model
 
 
@@ -812,3 +812,96 @@ def test_templated_names_for_model_version(clean_client: "Client"):
     assert "{time}" not in versions[1].version
     assert len(versions[1]._get_model_version().data_artifact_ids["data"]) == 2
     assert versions[1].version != first_version_name
+
+
+@step
+def noop() -> None:
+    pass
+
+
+def test_model_version_creation(clean_client: "Client"):
+    """Tests that model versions get created correctly for a pipeline run."""
+    shared_model_name = random_resource_name()
+    custom_model_name = random_resource_name()
+
+    @pipeline(model=Model(name=shared_model_name), enable_cache=False)
+    def _inner_pipeline():
+        noop.with_options(model=Model(name=shared_model_name))(id="shared")
+        noop.with_options(
+            model=Model(name=shared_model_name, version="custom")
+        )(id="custom_version")
+        noop.with_options(model=Model(name=custom_model_name))(
+            id="custom_model"
+        )
+
+    run_1 = _inner_pipeline()
+    shared_versions = clean_client.list_model_versions(shared_model_name)
+    assert len(shared_versions) == 2
+    implicit_version = shared_versions[-2]
+    explicit_version = shared_versions[-1]
+
+    custom_versions = clean_client.list_model_versions(custom_model_name)
+    assert len(custom_versions) == 1
+    custom_version = custom_versions[-1]
+
+    assert run_1.model_version_id == implicit_version.id
+    for name, step in run_1.steps.items():
+        if name == "shared":
+            assert step.model_version_id == implicit_version.id
+        elif name == "custom_version":
+            assert step.model_version_id == explicit_version.id
+        else:
+            assert step.model_version_id == custom_version.id
+    links = clean_client.list_model_version_pipeline_run_links(
+        pipeline_run_id=run_1.id
+    )
+    assert len(links) == 3
+
+    run_2 = _inner_pipeline()
+    shared_versions = clean_client.list_model_versions(shared_model_name)
+    assert len(shared_versions) == 3
+    implicit_version = shared_versions[-1]
+    explicit_version = shared_versions[-2]
+
+    custom_versions = clean_client.list_model_versions(custom_model_name)
+    assert len(custom_versions) == 2
+    custom_version = custom_versions[-1]
+
+    assert run_2.model_version_id == implicit_version.id
+    for name, step in run_2.steps.items():
+        if name == "shared":
+            assert step.model_version_id == implicit_version.id
+        elif name == "custom_version":
+            assert step.model_version_id == explicit_version.id
+        else:
+            assert step.model_version_id == custom_version.id
+    links = clean_client.list_model_version_pipeline_run_links(
+        pipeline_run_id=run_2.id
+    )
+    assert len(links) == 3
+
+    # Run with caching enabled to see if everything still works
+    run_3 = _inner_pipeline.with_options(enable_cache=True)()
+    shared_versions = clean_client.list_model_versions(shared_model_name)
+    assert len(shared_versions) == 4
+    implicit_version = shared_versions[-1]
+    explicit_version = shared_versions[-3]
+
+    custom_versions = clean_client.list_model_versions(custom_model_name)
+    assert len(custom_versions) == 3
+    custom_version = custom_versions[-1]
+
+    assert run_3.model_version_id == implicit_version.id
+    for name, step in run_3.steps.items():
+        assert step.status == ExecutionStatus.CACHED
+
+        if name == "shared":
+            assert step.model_version_id == implicit_version.id
+        elif name == "custom_version":
+            assert step.model_version_id == explicit_version.id
+        else:
+            assert step.model_version_id == custom_version.id
+    links = clean_client.list_model_version_pipeline_run_links(
+        pipeline_run_id=run_3.id
+    )
+    assert len(links) == 3
