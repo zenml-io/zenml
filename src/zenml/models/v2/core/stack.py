@@ -323,7 +323,6 @@ class StackFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
-        "user",
         "component",
     ]
 
@@ -334,24 +333,10 @@ class StackFilter(WorkspaceScopedFilter):
     description: Optional[str] = Field(
         default=None, description="Description of the stack"
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the stack",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the stack",
-        union_mode="left_to_right",
-    )
     component_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Component in the stack",
         union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the stack.",
     )
     component: Optional[Union[UUID, str]] = Field(
         default=None, description="Name/ID of a component in the stack."
@@ -369,7 +354,6 @@ class StackFilter(WorkspaceScopedFilter):
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
-            UserSchema,
         )
 
         if self.component_id:
@@ -378,17 +362,6 @@ class StackFilter(WorkspaceScopedFilter):
                 StackCompositionSchema.component_id == self.component_id,
             )
             custom_filters.append(component_id_filter)
-
-        if self.user:
-            user_filter = and_(
-                StackSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.component:
             component_filter = and_(
