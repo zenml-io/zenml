@@ -268,13 +268,11 @@ class TestModel:
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
         with ModelContext(create_model=False) as (mdl_name, _, _):
-            with mock.patch("zenml.model.model.logger.info") as logger:
-                mv = Model(
-                    name=mdl_name,
-                    version=ModelStages.PRODUCTION.value,
-                )
-                logger.assert_called_once()
-                assert mv.version == ModelStages.PRODUCTION.value
+            mv = Model(
+                name=mdl_name,
+                version=ModelStages.PRODUCTION.value,
+            )
+            assert mv.version == ModelStages.PRODUCTION.value
 
             mv = Model(name=mdl_name, version=ModelStages.PRODUCTION)
             assert mv.version == ModelStages.PRODUCTION

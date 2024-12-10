@@ -355,7 +355,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(
             sa.CHAR(32),
             Computed(
-                "CASE WHEN producer_run_id IS NOT NULL THEN producer_run_id ELSE id END"
+                "CASE WHEN producer_run_id IS NOT NULL AND is_numeric = TRUE THEN producer_run_id ELSE id END"
             ),
             nullable=False,
         )

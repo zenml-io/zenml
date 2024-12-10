@@ -10464,10 +10464,13 @@ class SqlZenStore(BaseZenStore):
 
         # If the model version was specified to be a numeric version or stage
         # we don't create it but try to fetch it instead
-        if isinstance(configured_model.version, int):
+        if isinstance(configured_model.version, int) or (
+            isinstance(configured_model.version, str)
+            and configured_model.version.isnumeric()
+        ):
             model_version_id = self._get_model_version_id(
                 model_id=model_response.id,
-                version_number=configured_model.version,
+                version_number=int(configured_model.version),
             )
             if not model_version_id:
                 raise KeyError(
@@ -10509,6 +10512,10 @@ class SqlZenStore(BaseZenStore):
             ).id
             track(event=AnalyticsEvent.CREATED_MODEL_VERSION)
             return model_version_id
+        except EntityCreationError:
+            # Need to explicitly reraise this here as otherwise the catching
+            # of the RuntimeError would include this
+            raise
         except RuntimeError:
             return self._get_model_version_id(
                 model_id=model_response.id, producer_run_id=producer_run_id

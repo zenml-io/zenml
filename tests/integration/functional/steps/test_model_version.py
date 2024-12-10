@@ -571,7 +571,7 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
     # this will run all steps, including one requesting new version
     run_1 = f"run_{uuid4()}"
     # model is configured with latest stage, so a warm-up needed
-    with pytest.raises(RuntimeError):
+    with pytest.raises(KeyError):
         _inner_pipeline.with_options(run_name=run_1)()
     run_2 = f"run_{uuid4()}"
     Model(name="step")._get_or_create_model_version()
