@@ -77,10 +77,6 @@ class ModelVersionRequest(WorkspaceScopedRequest):
         default=None,
     )
 
-    number: Optional[int] = Field(
-        description="The number of the model version",
-        default=None,
-    )
     model: UUID = Field(
         description="The ID of the model containing version",
     )
