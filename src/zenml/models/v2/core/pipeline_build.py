@@ -14,7 +14,7 @@
 """Models representing pipeline builds."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -31,6 +31,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.misc.build_item import BuildItem
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.stack import StackResponse
 
@@ -446,6 +448,11 @@ class PipelineBuildResponse(
 class PipelineBuildFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "container_registry_id",
+    ]
+
     workspace_id: Optional[Union[UUID, str]] = Field(
         description="Workspace for this pipeline build.",
         default=None,
@@ -462,7 +469,12 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
         union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        description="Stack used for the Pipeline Run",
+        description="Stack associated with the pipeline build.",
+        default=None,
+        union_mode="left_to_right",
+    )
+    container_registry_id: Optional[Union[UUID, str]] = Field(
+        description="Container registry associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
@@ -484,3 +496,39 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
     checksum: Optional[str] = Field(
         description="The build checksum.", default=None
     )
+    stack_checksum: Optional[str] = Field(
+        description="The stack checksum.", default=None
+    )
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.enums import StackComponentType
+        from zenml.zen_stores.schemas import (
+            PipelineBuildSchema,
+            StackComponentSchema,
+            StackCompositionSchema,
+            StackSchema,
+        )
+
+        if self.container_registry_id:
+            container_registry_filter = and_(
+                PipelineBuildSchema.stack_id == StackSchema.id,
+                StackSchema.id == StackCompositionSchema.stack_id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+                StackComponentSchema.type
+                == StackComponentType.CONTAINER_REGISTRY.value,
+                StackComponentSchema.id == self.container_registry_id,
+            )
+            custom_filters.append(container_registry_filter)
+
+        return custom_filters
