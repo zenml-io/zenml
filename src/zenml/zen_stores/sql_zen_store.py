@@ -10462,39 +10462,36 @@ class SqlZenStore(BaseZenStore):
         except EntityExistsError:
             model_response = self.get_model(model_request.name)
 
-        # If the model version was specified to be a numeric version or stage
-        # we don't create it but try to fetch it instead
-        if isinstance(configured_model.version, int) or (
-            isinstance(configured_model.version, str)
-            and configured_model.version.isnumeric()
-        ):
-            model_version_id = self._get_model_version_id(
-                model_id=model_response.id,
-                version_number=int(configured_model.version),
-            )
-            if not model_version_id:
-                raise KeyError(
-                    f"No version with number {configured_model.version} found "
-                    f"for model {model_response.name}."
-                )
-            return model_version_id
-        elif configured_model.version in ModelStages.values():
-            model_version_id = self._get_model_version_id(
-                model_id=model_response.id,
-                version_stage=ModelStages(configured_model.version),
-            )
-            if not model_version_id:
-                raise KeyError(
-                    f"No {configured_model.version} stage version found for "
-                    f"model {model_response.name}."
-                )
-            return model_version_id
-
         version_name = None
-        if isinstance(configured_model.version, str):
+        if configured_model.version is not None:
             version_name = format_name_template(
                 str(configured_model.version), substitutions=substitutions
             )
+
+            # If the model version was specified to be a numeric version or
+            # stage we don't create it but try to fetch it instead
+            if version_name.isnumeric():
+                model_version_id = self._get_model_version_id(
+                    model_id=model_response.id,
+                    version_number=int(version_name),
+                )
+                if not model_version_id:
+                    raise KeyError(
+                        f"No version with number {version_name} found "
+                        f"for model {model_response.name}."
+                    )
+                return model_version_id
+            elif version_name in ModelStages.values():
+                model_version_id = self._get_model_version_id(
+                    model_id=model_response.id,
+                    version_stage=ModelStages(version_name),
+                )
+                if not model_version_id:
+                    raise KeyError(
+                        f"No {version_name} stage version found for "
+                        f"model {model_response.name}."
+                    )
+                return model_version_id
 
         model_version_request = ModelVersionRequest(
             model=model_response.id,

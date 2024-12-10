@@ -257,8 +257,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         Index(
             "unique_numeric_version_for_pipeline_run",
             "model_id",
-            "is_numeric",
-            "producer_run_id_with_fallback",
+            "producer_run_id_if_numeric",
             unique=True,
         ),
     )
@@ -348,10 +347,10 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     # If a value of a unique constraint is NULL it is ignored and the
     # remaining values in the unique constraint have to be unique. In
     # our case however, we only want the unique constraint applied in
-    # case there is a producer run. To solve this, we fallback to the
-    # model version ID (which is the primary key and therefore unique)
-    # in case there is no producer run.
-    producer_run_id_with_fallback: str = Field(
+    # case there is a producer run and only for numeric versions. To solve this,
+    # we fall back to the model version ID (which is the primary key and
+    # therefore unique) in case there is no producer run.
+    producer_run_id_if_numeric: str = Field(
         sa_column=Column(
             sa.CHAR(32),
             Computed(

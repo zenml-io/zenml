@@ -38,7 +38,7 @@ def upgrade() -> None:
         )
         batch_op.add_column(
             sa.Column(
-                "producer_run_id_with_fallback",
+                "producer_run_id_if_numeric",
                 sa.CHAR(32),
                 sa.Computed(
                     "CASE WHEN producer_run_id IS NOT NULL AND is_numeric = TRUE THEN producer_run_id ELSE id END",
@@ -48,7 +48,7 @@ def upgrade() -> None:
         )
         batch_op.create_index(
             "unique_numeric_version_for_pipeline_run",
-            ["model_id", "is_numeric", "producer_run_id_with_fallback"],
+            ["model_id", "producer_run_id_if_numeric"],
             unique=True,
         )
 
