@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 import click
 
+from zenml import __version__
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import StackComponentType
@@ -643,7 +644,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         # Parse metadata
         metadata = dict(metadata) if metadata else {}
         registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
-        registered_metadata.zenml_version = zenml_version
+        registered_metadata.zenml_version = zenml_version or __version__
         registered_metadata.zenml_run_name = zenml_run_name
         registered_metadata.zenml_pipeline_name = zenml_pipeline_name
         registered_metadata.zenml_step_name = zenml_step_name
