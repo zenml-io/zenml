@@ -20,9 +20,16 @@ from uuid import UUID
 
 import yaml
 
+from zenml.constants import (
+    ENV_ZENML_ALLOW_NON_ASCII_MATERIALIZERS_DUMPS,
+    handle_bool_env_var,
+)
 from zenml.io import fileio
 from zenml.utils import io_utils
 
+ZENML_ALLOW_NON_ASCII_MATERIALIZERS_DUMPS = handle_bool_env_var(
+    ENV_ZENML_ALLOW_NON_ASCII_MATERIALIZERS_DUMPS, False
+)
 
 def write_yaml(
     file_path: str,
@@ -142,6 +149,7 @@ def write_json(
         file_path,
         json.dumps(
             contents,
+            ensure_ascii=not ZENML_ALLOW_NON_ASCII_MATERIALIZERS_DUMPS,
             cls=encoder,
         ),
     )
