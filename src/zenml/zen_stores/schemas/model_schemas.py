@@ -336,7 +336,11 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     is_numeric: bool = Field(
-        sa_column=Column(BOOLEAN, Computed("name = number"), nullable=False)
+        sa_column=Column(
+            BOOLEAN,
+            Computed("name = CAST(number AS CHAR(50))"),
+            nullable=False,
+        )
     )
 
     # Don't use a foreign key here here to avoid a cycle
@@ -354,7 +358,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(
             sa.CHAR(32),
             Computed(
-                "CASE WHEN producer_run_id IS NOT NULL AND is_numeric = TRUE THEN producer_run_id ELSE id END"
+                "CASE WHEN (producer_run_id IS NOT NULL AND is_numeric = TRUE) THEN producer_run_id ELSE id END"
             ),
             nullable=False,
         )

@@ -26,7 +26,7 @@ def upgrade() -> None:
                 "is_numeric",
                 sa.Boolean(),
                 sa.Computed(
-                    "name == number",
+                    "name = CAST(number AS CHAR(50))",
                 ),
                 nullable=False,
             )
