@@ -542,7 +542,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         sort_by, operand = self.sorting_params
 
         if sort_by == "tag":
-            from sqlmodel import asc, desc, func
+            from sqlmodel import and_, asc, desc, func
 
             from zenml.enums import SorterOps, TaggableResourceTypes
             from zenml.zen_stores.schemas import (
@@ -570,10 +570,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
             query = (
                 query.outerjoin(
                     TagResourceSchema,
-                    (table.id == TagResourceSchema.resource_id)
-                    & (
+                    and_(
+                        table.id == TagResourceSchema.resource_id,
                         TagResourceSchema.resource_type
-                        == resource_type_mapping[table]
+                        == resource_type_mapping[table],
                     ),
                 )
                 .outerjoin(TagSchema, TagResourceSchema.tag_id == TagSchema.id)
