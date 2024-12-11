@@ -571,3 +571,48 @@ def is_user_request(request: "Request") -> bool:
 
     # If none of the above conditions are met, consider it a user request
     return True
+
+
+def is_same_or_subdomain(source_domain: str, target_domain: str) -> bool:
+    """Check if the source domain is the same or a subdomain of the target domain.
+
+    Examples:
+        is_same_or_subdomain("example.com", "example.com") -> True
+        is_same_or_subdomain("alpha.example.com", "example.com") -> True
+        is_same_or_subdomain("alpha.example.com", ".example.com") -> True
+        is_same_or_subdomain("example.com", "alpha.example.com") -> False
+        is_same_or_subdomain("alpha.beta.example.com", "beta.example.com") -> True
+        is_same_or_subdomain("alpha.beta.example.com", "alpha.example.com") -> False
+        is_same_or_subdomain("alphabeta.gamma.example", "beta.gamma.example") -> False
+
+    Args:
+        source_domain: The source domain to check.
+        target_domain: The target domain to compare against.
+
+    Returns:
+        True if the source domain is the same or a subdomain of the target
+        domain, False otherwise.
+    """
+    import tldextract
+
+    # Extract the registered domain and suffix for both
+    src_parts = tldextract.extract(source_domain)
+    tgt_parts = tldextract.extract(target_domain)
+
+    if src_parts == tgt_parts:
+        return True  # Same domain
+
+    # Reconstruct the base domains (e.g., example.com)
+    src_base_domain = f"{src_parts.domain}.{src_parts.suffix}"
+    tgt_base_domain = f"{tgt_parts.domain}.{tgt_parts.suffix}"
+
+    if src_base_domain != tgt_base_domain:
+        return False  # Different base domains
+
+    if tgt_parts.subdomain == "":
+        return True  # Subdomain
+
+    if src_parts.subdomain.endswith(f".{tgt_parts.subdomain.lstrip('.')}"):
+        return True  # Subdomain of subdomain
+
+    return False
