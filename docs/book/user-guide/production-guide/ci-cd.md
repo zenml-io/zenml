@@ -69,8 +69,8 @@ This step is optional, all you'll need for certain is a stack that runs remotely
 storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
 for the respective environments. You can also use different [configuration files](../../how-to/configuring-zenml/configuring-zenml.md)
 for the different environments to configure the [Model](../../how-to/model-management-metrics/model-control-plane/README.md), the 
-[DockerSettings](../../how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
-accelerators](../../how-to/advanced-topics/training-with-gpus/README.md) differently for the different environments.
+[DockerSettings](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
+accelerators](../../how-to/pipeline-development/training-with-gpus/README.md) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 

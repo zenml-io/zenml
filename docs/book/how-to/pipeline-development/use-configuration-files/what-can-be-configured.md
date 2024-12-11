@@ -110,7 +110,7 @@ These are boolean flags for various configurations:
 * `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
 * `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../../data-artifact-management/visualize-artifacts/README.md).
 * `enable_cache`: Utilize [caching](../build-pipelines/control-caching-behavior.md) or not.
-* `enable_step_logs`: Enable tracking [step logs](../../advanced-topics/control-logging/enable-or-disable-logs-storing.md).
+* `enable_step_logs`: Enable tracking [step logs](../../control-logging/enable-or-disable-logs-storing.md).
 
 ```yaml
 enable_artifact_metadata: True
