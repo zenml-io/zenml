@@ -14,7 +14,7 @@
 """Implementation of the VertexAI experiment tracker for ZenML."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Type, cast
+from typing import TYPE_CHECKING, Dict, Optional, Type, cast
 
 from google.api_core import exceptions
 from google.cloud import aiplatform
@@ -116,12 +116,15 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         """
         return self._format_name(info.run_name)
 
-    def _get_tensorboard_resource_name(self, experiment: str) -> str | None:
+    def _get_tensorboard_resource_name(self, experiment: str) -> Optional[str]:
         resource = aiplatform.Experiment(
             experiment
         ).get_backing_tensorboard_resource()
-        if resource is not None:
-            return resource.resource_name
+        resource_name = (
+            str(resource.resource_name) if resource is not None
+            else None
+        )
+        return resource_name
 
     def _initialize_vertex(self, info: "StepRunInfo") -> None:
         """Initializes a VertexAI run.
@@ -136,7 +139,8 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         run_name = self._get_run_name(info=info)
         credentials, project = self._get_authentication()
         logger.info(
-            f"Initializing VertexAI with experiment name {experiment} and run name {run_name}."
+            f"Initializing VertexAI with experiment name {experiment} "
+            f"and run name {run_name}."
         )
 
         aiplatform.init(
