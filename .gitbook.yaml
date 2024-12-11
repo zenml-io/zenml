@@ -206,3 +206,4 @@ redirects:
   # Manage ZenML Server redirects
   how-to/advanced-topics/manage-zenml-server/: how-to/manage-zenml-server/README.md
   how-to/project-setup-and-management/connecting-to-zenml/: how-to/manage-zenml-server/connecting-to-zenml/README.md
+  how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive.md: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
