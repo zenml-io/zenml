@@ -20,7 +20,7 @@ from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, string_utils
-from zenml.utils.archivable import Archivable
+from zenml.utils.archivable import Archivable, ArchiveType
 
 logger = get_logger(__name__)
 
@@ -69,28 +69,19 @@ class BuildContext(Archivable):
         return None
 
     def write_archive(
-        self, output_file: IO[bytes], use_gzip: bool = True
+        self,
+        output_file: IO[bytes],
+        archive_type: ArchiveType = ArchiveType.TAR_GZ,
     ) -> None:
         """Writes an archive of the build context to the given file.
 
         Args:
             output_file: The file to write the archive to.
-            use_gzip: Whether to use `gzip` to compress the file.
+            archive_type: The type of archive to create.
         """
-        from docker.utils import build as docker_build_utils
+        super().write_archive(output_file, archive_type)
 
-        files = self.get_files()
-        extra_files = self.get_extra_files()
-
-        context_archive = docker_build_utils.create_archive(
-            fileobj=output_file,
-            root=self._root,
-            files=sorted(files.keys()),
-            gzip=use_gzip,
-            extra_files=list(extra_files.items()),
-        )
-
-        build_context_size = os.path.getsize(context_archive.name)
+        build_context_size = os.path.getsize(output_file.name)
         if (
             self._root
             and build_context_size > 50 * 1024 * 1024

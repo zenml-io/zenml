@@ -147,7 +147,7 @@ Or, through our CLI command:
 zenml stack deploy --provider aws
 ```
 
-Alternatively, if the necessary pieces of infrastructure is already deployed, you can register a cloud stack seamlessly through the stack wizard:
+Alternatively, if the necessary pieces of infrastructure are already deployed, you can register a cloud stack seamlessly through the stack wizard:
 
 ```bash
 zenml stack register <STACK_NAME> --provider aws
@@ -195,9 +195,9 @@ def trainer(training_df: pd.DataFrame) -> Annotated["model", torch.nn.Module]:
 
 ![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
 
-### Purpose built for machine learning with integration to you favorite tools
+### Purpose built for machine learning with integrations to your favorite tools
 
-While ZenML brings a lot of value of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
+While ZenML brings a lot of value out of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
 
 ```python
 from bentoml._internal.bento import bento
@@ -333,7 +333,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.70.0 is out. Check out the release notes
+    🎉 Version 0.71.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

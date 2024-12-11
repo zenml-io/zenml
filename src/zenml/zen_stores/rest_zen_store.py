@@ -3873,13 +3873,17 @@ class RestZenStore(BaseZenStore):
 
     def get_api_token(
         self,
+        token_type: APITokenType = APITokenType.WORKLOAD,
+        expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
     ) -> str:
-        """Get an API token for a workload.
+        """Get an API token.
 
         Args:
+            token_type: The type of the token to get.
+            expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
             step_run_id: The ID of the step run to get a token for.
@@ -3891,9 +3895,10 @@ class RestZenStore(BaseZenStore):
             ValueError: if the server response is not valid.
         """
         params: Dict[str, Any] = {
-            # Python clients may only request workload tokens.
-            "token_type": APITokenType.WORKLOAD.value,
+            "token_type": token_type.value,
         }
+        if expires_in:
+            params["expires_in"] = expires_in
         if schedule_id:
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
@@ -4344,46 +4349,74 @@ class RestZenStore(BaseZenStore):
             {source_context.name: source_context.get().value}
         )
 
-        try:
-            return self._handle_response(
-                self.session.request(
-                    method,
-                    url,
-                    params=params,
-                    verify=self.config.verify_ssl,
-                    timeout=timeout or self.config.http_timeout,
-                    **kwargs,
+        # If the server replies with a credentials validation (401 Unauthorized)
+        # error, we (re-)authenticate and retry the request here in the
+        # following cases:
+        #
+        # 1. initial authentication: the last request was not authenticated
+        # with an API token.
+        # 2. re-authentication: the last request was authenticated with an API
+        # token that was rejected by the server. This is to cover the case
+        # of expired tokens that can be refreshed by the client automatically
+        # without user intervention from other sources (e.g. API keys).
+        #
+        # NOTE: it can happen that the same request is retried here for up to
+        # two times: once after initial authentication and once after
+        # re-authentication.
+        re_authenticated = False
+        while True:
+            try:
+                return self._handle_response(
+                    self.session.request(
+                        method,
+                        url,
+                        params=params,
+                        verify=self.config.verify_ssl,
+                        timeout=timeout or self.config.http_timeout,
+                        **kwargs,
+                    )
                 )
-            )
-        except CredentialsNotValid:
-            # NOTE: CredentialsNotValid is raised only when the server
-            # explicitly indicates that the credentials are not valid and they
-            # can be thrown away.
+            except CredentialsNotValid as e:
+                # NOTE: CredentialsNotValid is raised only when the server
+                # explicitly indicates that the credentials are not valid and
+                # they can be thrown away or when the request is not
+                # authenticated at all.
 
-            # We authenticate or re-authenticate here and then try the request
-            # again, this time with a valid API token in the header.
-            self.authenticate(
-                # If the last request was authenticated with an API token,
-                # we force a re-authentication to get a fresh token.
-                force=self._api_token is not None
-            )
-
-        try:
-            return self._handle_response(
-                self.session.request(
-                    method,
-                    url,
-                    params=params,
-                    verify=self.config.verify_ssl,
-                    timeout=self.config.http_timeout,
-                    **kwargs,
-                )
-            )
-        except CredentialsNotValid as e:
-            raise CredentialsNotValid(
-                "The current credentials are no longer valid. Please log in "
-                "again using 'zenml login'."
-            ) from e
+                if self._api_token is None:
+                    # The last request was not authenticated with an API
+                    # token at all. We authenticate here and then try the
+                    # request again, this time with a valid API token in the
+                    # header.
+                    logger.debug(
+                        f"The last request was not authenticated: {e}\n"
+                        "Re-authenticating and retrying..."
+                    )
+                    self.authenticate()
+                elif not re_authenticated:
+                    # The last request was authenticated with an API token
+                    # that was rejected by the server. We attempt a
+                    # re-authentication here and then retry the request.
+                    logger.debug(
+                        "The last request was authenticated with an API token "
+                        f"that was rejected by the server: {e}\n"
+                        "Re-authenticating and retrying..."
+                    )
+                    re_authenticated = True
+                    self.authenticate(
+                        # Ignore the current token and force a re-authentication
+                        force=True
+                    )
+                else:
+                    # The last request was made after re-authenticating but
+                    # still failed. Bailing out.
+                    logger.debug(
+                        f"The last request failed after re-authenticating: {e}\n"
+                        "Bailing out..."
+                    )
+                    raise CredentialsNotValid(
+                        "The current credentials are no longer valid. Please "
+                        "log in again using 'zenml login'."
+                    ) from e
 
     def get(
         self,

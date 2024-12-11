@@ -41,7 +41,6 @@ from zenml.constants import (
 from zenml.enums import (
     APITokenType,
     AuthScheme,
-    ExecutionStatus,
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
@@ -452,6 +451,7 @@ def device_authorization(
 @handle_exceptions
 def api_token(
     token_type: APITokenType = APITokenType.GENERIC,
+    expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
     step_run_id: Optional[UUID] = None,
@@ -463,7 +463,8 @@ def api_token(
     of API tokens are supported:
 
     * Generic API token: This token is short-lived and can be used for
-    generic automation tasks.
+    generic automation tasks. The expiration can be set by the user, but the
+    server will impose a maximum expiration time.
     * Workload API token: This token is scoped to a specific pipeline run, step
     run or schedule and is used by pipeline workloads to authenticate with the
     server. A pipeline run ID, step run ID or schedule ID must be provided and
@@ -475,6 +476,10 @@ def api_token(
 
     Args:
         token_type: The type of API token to generate.
+        expires_in: The expiration time of the generic API token in seconds.
+            If not set, the server will use the default expiration time for
+            generic API tokens. The server also imposes a maximum expiration
+            time.
         schedule_id: The ID of the schedule to scope the workload API token to.
         pipeline_run_id: The ID of the pipeline run to scope the workload API
             token to.
@@ -502,9 +507,19 @@ def api_token(
 
         config = server_config()
 
+        if not expires_in:
+            expires_in = config.generic_api_token_lifetime
+
+        if expires_in > config.generic_api_token_max_lifetime:
+            raise ValueError(
+                f"The maximum expiration time for generic API tokens allowed "
+                f"by this server is {config.generic_api_token_max_lifetime} "
+                "seconds."
+            )
+
         return generate_access_token(
             user_id=token.user_id,
-            expires_in=config.generic_api_token_lifetime,
+            expires_in=expires_in,
         ).access_token
 
     verify_permission(
@@ -573,10 +588,7 @@ def api_token(
                 "security reasons."
             )
 
-        if pipeline_run.status in [
-            ExecutionStatus.FAILED,
-            ExecutionStatus.COMPLETED,
-        ]:
+        if pipeline_run.status.is_finished:
             raise ValueError(
                 f"The execution of pipeline run {pipeline_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "
@@ -593,10 +605,7 @@ def api_token(
                 "be generated for non-existent step runs for security reasons."
             )
 
-        if step_run.status in [
-            ExecutionStatus.FAILED,
-            ExecutionStatus.COMPLETED,
-        ]:
+        if step_run.status.is_finished:
             raise ValueError(
                 f"The execution of step run {step_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "
@@ -611,4 +620,6 @@ def api_token(
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,
+        # Never expire the token
+        expires_in=0,
     ).access_token

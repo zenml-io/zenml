@@ -8576,7 +8576,11 @@ class SqlZenStore(BaseZenStore):
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
-        num_steps = len(pipeline_run.deployment.to_model().step_configurations)
+        num_steps = len(
+            pipeline_run.deployment.to_model(
+                include_metadata=True
+            ).step_configurations
+        )
         new_status = get_pipeline_run_status(
             step_statuses=[
                 ExecutionStatus(step_run.status) for step_run in step_runs
