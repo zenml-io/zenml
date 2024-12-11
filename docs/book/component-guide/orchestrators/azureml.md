@@ -80,7 +80,7 @@ assign it the correct permissions and use it to [register a ZenML Azure Service 
 For each pipeline run, ZenML will build a Docker image called 
 `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code 
 and use it to run your pipeline steps in AzureML. Check out 
-[this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to 
+[this page](../../how-to/customize-docker-builds/README.md) if you want to 
 learn more about how ZenML builds these images and how you can customize them.
 
 ## AzureML UI
