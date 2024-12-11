@@ -310,7 +310,7 @@ If you would like to disable artifact metadata extraction altogether, you can se
 
 ## Skipping materialization
 
-You can learn more about skipping materialization [here](unmaterialized-artifacts.md).
+You can learn more about skipping materialization [here](../complex-usecases/unmaterialized-artifacts.md).
 
 ## Interaction with custom artifact stores
 
