@@ -10316,6 +10316,22 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    def _get_or_create_model(
+        self, model_request: ModelRequest
+    ) -> Tuple[bool, ModelResponse]:
+        """Get or create a model.
+
+        Args:
+            model_request: The model request.
+
+        Returns:
+            A boolean whether the model was created or not, and the model.
+        """
+        try:
+            return True, self.create_model(model_request)
+        except EntityExistsError:
+            return False, self.get_model(model_request.name)
+
     def _get_next_numeric_version_for_model(
         self, session: Session, model_id: UUID
     ) -> int:
@@ -10340,67 +10356,29 @@ class SqlZenStore(BaseZenStore):
         else:
             return int(current_max_version) + 1
 
-    def _model_version_exists(self, model_id: UUID, version: str) -> bool:
+    def _model_version_exists(
+        self,
+        model_id: UUID,
+        version: Optional[str] = None,
+        producer_run_id: Optional[UUID] = None,
+    ) -> bool:
         """Check if a model version with a certain version exists.
 
         Args:
             model_id: The model ID of the version.
             version: The version name.
+            producer_run_id: The producer run ID. If given, checks if a numeric
+                version for the producer run exists.
 
         Returns:
-            If a model version with the given version name exists.
-        """
-        with Session(self.engine) as session:
-            return (
-                session.exec(
-                    select(ModelVersionSchema.id)
-                    .where(ModelVersionSchema.model_id == model_id)
-                    .where(ModelVersionSchema.name == version)
-                ).first()
-                is not None
-            )
-
-    def _get_model_version_id(
-        self,
-        model_id: UUID,
-        version_name: Optional[str] = None,
-        version_number: Optional[int] = None,
-        version_stage: Optional[ModelStages] = None,
-        producer_run_id: Optional[UUID] = None,
-    ) -> Optional[UUID]:
-        """Get the model version ID.
-
-        Args:
-            model_id: The ID of the model.
-            version_name: The name of the model version.
-            version_number: The number of the model version.
-            version_stage: The stage of the model version.
-            producer_run_id: The ID of the producer pipeline run. If this is
-                set, only numeric versions created as part of the pipeline run
-                will be returned.
-
-        Returns:
-            The ID of the model version.
+            If a model version for the given arguments exists.
         """
         query = select(ModelVersionSchema.id).where(
             ModelVersionSchema.model_id == model_id
         )
 
-        if version_name:
-            query = query.where(ModelVersionSchema.name == version_name)
-
-        if version_number:
-            query = query.where(ModelVersionSchema.number == version_number)
-
-        if version_stage:
-            if version_stage == ModelStages.LATEST:
-                query = query.order_by(
-                    desc(col(ModelVersionSchema.number))
-                ).limit(1)
-            else:
-                query = query.where(
-                    ModelVersionSchema.stage == version_stage.value
-                )
+        if version:
+            query = query.where(ModelVersionSchema.name == version)
 
         if producer_run_id:
             query = query.where(
@@ -10409,7 +10387,124 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            return session.exec(query).one_or_none()
+            return session.exec(query).first() is not None
+
+    def _get_model_version(
+        self,
+        model_id: UUID,
+        version_name: Optional[str] = None,
+        producer_run_id: Optional[UUID] = None,
+    ) -> ModelVersionResponse:
+        """Get a model version.
+
+        Args:
+            model_id: The ID of the model.
+            version_name: The name of the model version.
+            producer_run_id: The ID of the producer pipeline run. If this is
+                set, only numeric versions created as part of the pipeline run
+                will be returned.
+
+        Raises:
+            ValueError: If no version name or producer run ID was provided.
+
+        Returns:
+            The model version.
+        """
+        query = select(ModelVersionSchema).where(
+            ModelVersionSchema.model_id == model_id
+        )
+
+        if version_name:
+            if version_name.isnumeric():
+                query = query.where(
+                    ModelVersionSchema.number == int(version_name)
+                )
+                error_text = (
+                    f"No version with number {version_name} found "
+                    f"for model {model_id}."
+                )
+            elif version_name in ModelStages.values():
+                if version_name == ModelStages.LATEST:
+                    query = query.order_by(
+                        desc(col(ModelVersionSchema.number))
+                    ).limit(1)
+                else:
+                    query = query.where(
+                        ModelVersionSchema.stage == version_name
+                    )
+                error_text = (
+                    f"No {version_name} stage version found for "
+                    f"model {model_id}."
+                )
+            else:
+                query = query.where(ModelVersionSchema.name == version_name)
+                error_text = (
+                    f"No {version_name} version found for model {model_id}."
+                )
+
+        elif producer_run_id:
+            query = query.where(
+                ModelVersionSchema.producer_run_id == producer_run_id,
+                col(ModelVersionSchema.is_numeric).is_(True),
+            )
+            error_text = (
+                f"No numeric model version found for model {model_id} "
+                f"and producer run {producer_run_id}."
+            )
+        else:
+            raise ValueError(
+                "Version name or producer run id need to be specified."
+            )
+
+        with Session(self.engine) as session:
+            schema = session.exec(query).one_or_none()
+
+            if not schema:
+                raise KeyError(error_text)
+
+            return schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_or_create_model_version(
+        self,
+        model_version_request: ModelVersionRequest,
+        producer_run_id: Optional[UUID] = None,
+    ) -> Tuple[bool, ModelVersionResponse]:
+        """Get or create a model version.
+
+        Args:
+            model_version_request: The model version request.
+            producer_run_id: ID of the producer pipeline run.
+
+        Raises:
+            EntityCreationError: If the model version creation failed.
+
+        Returns:
+            A boolean whether the model version was created or not, and the
+            model version.
+        """
+        try:
+            model_version = self._create_model_version(
+                model_version=model_version_request,
+                producer_run_id=producer_run_id,
+            )
+            track(event=AnalyticsEvent.CREATED_MODEL_VERSION)
+            return True, model_version
+        except EntityCreationError:
+            # Need to explicitly re-raise this here as otherwise the catching
+            # of the RuntimeError would include this
+            raise
+        except RuntimeError:
+            return False, self._get_model_version(
+                model_id=model_version_request.model,
+                producer_run_id=producer_run_id,
+            )
+        except EntityExistsError:
+            return False, self._get_model_version(
+                model_id=model_version_request.model,
+                version_name=model_version_request.name,
+            )
 
     def _get_or_create_model_version_for_run(
         self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
@@ -10457,10 +10552,9 @@ class SqlZenStore(BaseZenStore):
             workspace=pipeline_or_step_run.workspace_id,
         )
 
-        try:
-            model_response = self.create_model(model_request)
-        except EntityExistsError:
-            model_response = self.get_model(model_request.name)
+        _, model_response = self._get_or_create_model(
+            model_request=model_request
+        )
 
         version_name = None
         if configured_model.version is not None:
@@ -10469,29 +10563,15 @@ class SqlZenStore(BaseZenStore):
             )
 
             # If the model version was specified to be a numeric version or
-            # stage we don't create it but try to fetch it instead
-            if version_name.isnumeric():
-                model_version_id = self._get_model_version_id(
-                    model_id=model_response.id,
-                    version_number=int(version_name),
-                )
-                if not model_version_id:
-                    raise KeyError(
-                        f"No version with number {version_name} found "
-                        f"for model {model_response.name}."
-                    )
-                return model_version_id
-            elif version_name in ModelStages.values():
-                model_version_id = self._get_model_version_id(
-                    model_id=model_response.id,
-                    version_stage=ModelStages(version_name),
-                )
-                if not model_version_id:
-                    raise KeyError(
-                        f"No {version_name} stage version found for "
-                        f"model {model_response.name}."
-                    )
-                return model_version_id
+            # stage we don't try to create it (which will fail because it is not
+            # allowed) but try to fetch it immediately
+            if (
+                version_name.isnumeric()
+                or version_name in ModelStages.values()
+            ):
+                return self._get_model_version(
+                    model_id=model_response.id, version_name=version_name
+                ).id
 
         model_version_request = ModelVersionRequest(
             model=model_response.id,
@@ -10502,25 +10582,11 @@ class SqlZenStore(BaseZenStore):
             workspace=pipeline_or_step_run.workspace_id,
         )
 
-        try:
-            model_version_id = self._create_model_version(
-                model_version=model_version_request,
-                producer_run_id=producer_run_id,
-            ).id
-            track(event=AnalyticsEvent.CREATED_MODEL_VERSION)
-            return model_version_id
-        except EntityCreationError:
-            # Need to explicitly reraise this here as otherwise the catching
-            # of the RuntimeError would include this
-            raise
-        except RuntimeError:
-            return self._get_model_version_id(
-                model_id=model_response.id, producer_run_id=producer_run_id
-            )
-        except EntityExistsError:
-            return self._get_model_version_id(
-                model_id=model_response.id, version_name=version_name
-            )
+        _, model_version_response = self._get_or_create_model_version(
+            model_version_request=model_version_request,
+            producer_run_id=producer_run_id,
+        )
+        return model_version_response.id
 
     def _create_model_version(
         self,
@@ -10603,7 +10669,7 @@ class SqlZenStore(BaseZenStore):
                         f"{model_version.name}): A model with the "
                         "same name and version already exists."
                     )
-                elif producer_run_id and self._get_model_version_id(
+                elif producer_run_id and self._model_version_exists(
                     model_id=model.id, producer_run_id=producer_run_id
                 ):
                     raise RuntimeError(
