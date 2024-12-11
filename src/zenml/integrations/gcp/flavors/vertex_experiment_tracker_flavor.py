@@ -93,13 +93,28 @@ class VertexExperimentTrackerConfig(
             ``projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key``.
             The key needs to be in the same region as where the compute
             resource is created.
+        api_endpoint (str):
+                Optional. The desired API endpoint,
+                e.g., us-central1-aiplatform.googleapis.com
+        api_key (str):
+            Optional. The API key to use for service calls.
+            NOTE: Not all services support API keys.
+        api_transport (str):
+            Optional. The transport method which is either 'grpc' or 'rest'.
+            NOTE: "rest" transport functionality is currently in a
+            beta state (preview).
+        request_metadata:
+            Optional. Additional gRPC metadata to send with every client request.
     """
-
     location: Optional[str] = None
     staging_bucket: Optional[str] = None
     network: Optional[str] = None
     service_account: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
+    api_endpoint: Optional[str] = None
+    api_key: Optional[str] = None
+    api_transport: Optional[str] = None
+    request_metadata: Optional[dict] = None
 
 
 class VertexExperimentTrackerFlavor(BaseExperimentTrackerFlavor):

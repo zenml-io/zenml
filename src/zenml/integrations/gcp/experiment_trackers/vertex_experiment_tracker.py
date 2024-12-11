@@ -148,6 +148,10 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
             credentials=credentials,
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             network=self.config.network,
+            api_endpoint=self.config.api_endpoint,
+            api_key=self.config.api_key,
+            api_transport=self.config.api_transport,
+            request_metadata=self.config.request_metadata,
         )
 
         try:
