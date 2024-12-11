@@ -120,7 +120,7 @@ While you can go ahead and [run your pipeline on your stack](remote-storage.md#r
 First, let's understand what a service connector does. In simple words, a
 service connector contains credentials that grant stack components access to
 cloud infrastructure. These credentials are stored in the form of a
-[secret](../../how-to/interact-with-secrets.md),
+[secret](../../how-to/project-setup-and-management/interact-with-secrets.md),
 and are available to the ZenML server to use. Using these credentials, the
 service connector brokers a short-lived token and grants temporary permissions
 to the stack component to access that infrastructure. This diagram represents

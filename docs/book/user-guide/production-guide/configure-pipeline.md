@@ -148,7 +148,7 @@ steps:
 
 {% hint style="info" %}
 Read more about settings in ZenML [here](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) and
-[here](../../how-to/advanced-topics/training-with-gpus/README.md)
+[here](../../how-to/pipeline-development/training-with-gpus/README.md)
 {% endhint %}
 
 Now let's run the pipeline again:
@@ -159,6 +159,6 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md), including the ability to [attach a GPU](../../how-to/advanced-topics/training-with-gpus/README.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md), including the ability to [attach a GPU](../../how-to/pipeline-development/training-with-gpus/README.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

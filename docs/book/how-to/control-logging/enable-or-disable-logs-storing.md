@@ -15,7 +15,7 @@ def my_step() -> None:
 
 These logs are stored within the respective artifact store of your stack. You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
+![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
 
 {% hint style="warning" %}
 Note that if you are not connected to a cloud artifact store with a service connector configured then you will not
@@ -37,7 +37,7 @@ If you do not want to store the logs in your artifact store, you can:
     def my_pipeline():
         ...
     ```
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](../../infrastructure-deployment/configure-python-environments/README.md#execution-environments), i.e., on the orchestrator level:
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](../pipeline-development/configure-python-environments/README.md#execution-environments), i.e., on the orchestrator level:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})

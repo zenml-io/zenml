@@ -55,7 +55,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../how-to/interact-with-secrets.md) to store the Weights & Biases tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -79,7 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../how-to/interact-with-secrets.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../how-to/project-setup-and-management/interact-with-secrets.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
