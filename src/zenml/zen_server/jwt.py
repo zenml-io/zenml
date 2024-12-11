@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Authentication module for ZenML server."""
+"""JWT utilities module for ZenML server."""
 
 from datetime import datetime, timedelta
 from typing import (
@@ -45,6 +45,7 @@ class JWTToken(BaseModel):
             issued.
         step_run_id: The id of the step run for which the token was
             issued.
+        session_id: The id of the authenticated session (used for CSRF).
         claims: The original token claims.
     """
 
@@ -54,6 +55,7 @@ class JWTToken(BaseModel):
     schedule_id: Optional[UUID] = None
     pipeline_run_id: Optional[UUID] = None
     step_run_id: Optional[UUID] = None
+    session_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -156,6 +158,16 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
+        session_id: Optional[UUID] = None
+        if "session_id" in claims:
+            try:
+                session_id = UUID(claims.pop("session_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the session_id claim is not a valid "
+                    "UUID"
+                )
+
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
@@ -163,6 +175,7 @@ class JWTToken(BaseModel):
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
             step_run_id=step_run_id,
+            session_id=session_id,
             claims=claims,
         )
 
@@ -201,6 +214,8 @@ class JWTToken(BaseModel):
             claims["pipeline_run_id"] = str(self.pipeline_run_id)
         if self.step_run_id:
             claims["step_run_id"] = str(self.step_run_id)
+        if self.session_id:
+            claims["session_id"] = str(self.session_id)
 
         return jwt.encode(
             claims,

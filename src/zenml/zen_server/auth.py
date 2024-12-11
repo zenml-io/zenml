@@ -16,8 +16,8 @@
 from contextvars import ContextVar
 from datetime import datetime, timedelta
 from typing import Callable, Optional, Union
-from urllib.parse import urlencode
-from uuid import UUID
+from urllib.parse import urlencode, urlparse
+from uuid import UUID, uuid4
 
 import requests
 from fastapi import Depends, Response
@@ -63,9 +63,14 @@ from zenml.models import (
     UserUpdate,
 )
 from zenml.zen_server.cache import cache_result
+from zenml.zen_server.csrf import CSRFToken
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
-from zenml.zen_server.utils import server_config, zen_store
+from zenml.zen_server.utils import (
+    is_same_or_subdomain,
+    server_config,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
@@ -176,6 +181,7 @@ def authenticate_credentials(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     password: Optional[str] = None,
     access_token: Optional[str] = None,
+    csrf_token: Optional[str] = None,
     activation_token: Optional[str] = None,
 ) -> AuthContext:
     """Verify if user authentication credentials are valid.
@@ -194,6 +200,7 @@ def authenticate_credentials(
         user_name_or_id: The username or user ID.
         password: The password.
         access_token: The access token.
+        csrf_token: The CSRF token.
         activation_token: The activation token.
 
     Returns:
@@ -254,6 +261,22 @@ def authenticate_credentials(
             error = f"Authentication error: error decoding access token: {e}."
             logger.exception(error)
             raise CredentialsNotValid(error)
+
+        if decoded_token.session_id:
+            if not csrf_token:
+                error = "Authentication error: missing CSRF token"
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
+            decoded_csrf_token = CSRFToken.decode_token(csrf_token)
+
+            if decoded_csrf_token.session_id != decoded_token.session_id:
+                error = (
+                    "Authentication error: CSRF token does not match the "
+                    "access token"
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         try:
             user_model = zen_store().get_user(
@@ -820,6 +843,7 @@ def authenticate_api_key(
 def generate_access_token(
     user_id: UUID,
     response: Optional[Response] = None,
+    request: Optional[Request] = None,
     device: Optional[OAuthDeviceInternalResponse] = None,
     api_key: Optional[APIKeyInternalResponse] = None,
     expires_in: Optional[int] = None,
@@ -831,7 +855,11 @@ def generate_access_token(
 
     Args:
         user_id: The ID of the user.
-        response: The FastAPI response object.
+        response: The FastAPI response object. If passed, the access
+            token will also be set as an HTTP only cookie in the response.
+        request: The FastAPI request object. Used to determine the request
+            origin and to decide whether to use cross-site security measures for
+            the access token cookie.
         device: The device used for authentication.
         api_key: The service account API key used for authentication.
         expires_in: The number of seconds until the token expires. If not set,
@@ -869,6 +897,46 @@ def generate_access_token(
         )
         expires_in = config.jwt_token_expire_minutes * 60
 
+    # Figure out if this is a same-site request or a cross-site request
+    same_site = True
+    if response and request:
+        # Extract the origin domain from the request; use the referer as a
+        # fallback
+        origin_domain: Optional[str] = None
+        origin = request.headers.get("origin", request.headers.get("referer"))
+        if origin:
+            # If the request origin is known, we use it to determine whether
+            # this is a cross-site request and enable additional security
+            # measures.
+            origin_domain = urlparse(origin).netloc
+
+        server_domain: Optional[str] = config.auth_cookie_domain
+        # If the server's cookie domain is not explicitly set in the
+        # server's configuration, we use other sources to determine it:
+        #
+        # 1. the server's root URL, if set in the server's configuration
+        # 2. the X-Forwarded-Host header, if set by the reverse proxy
+        # 3. the request URL, if all else fails
+        if not server_domain and config.server_url:
+            server_domain = urlparse(config.server_url).netloc
+        if not server_domain:
+            server_domain = request.headers.get(
+                "x-forwarded-host", request.url.netloc
+            )
+
+        # Same-site requests can come from the same domain or from a
+        # subdomain of the domain used to issue cookies.
+        if origin_domain and server_domain:
+            same_site = is_same_or_subdomain(origin_domain, server_domain)
+
+    csrf_token: Optional[str] = None
+    session_id: Optional[UUID] = None
+    if not same_site:
+        # If responding to a cross-site login request, we need to generate and
+        # sign a CSRF token associated with the authentication session.
+        session_id = uuid4()
+        csrf_token = CSRFToken(session_id=session_id).encode()
+
     access_token = JWTToken(
         user_id=user_id,
         device_id=device.id if device else None,
@@ -876,15 +944,18 @@ def generate_access_token(
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,
+        # Set the session ID if this is a cross-site request
+        session_id=session_id,
     ).encode(expires=expires)
 
-    if not device and response:
+    if response:
         # Also set the access token as an HTTP only cookie in the response
         response.set_cookie(
             key=config.get_auth_cookie_name(),
             value=access_token,
             httponly=True,
-            samesite="lax",
+            secure=not same_site,
+            samesite="lax" if same_site else "none",
             max_age=config.jwt_token_expire_minutes * 60
             if config.jwt_token_expire_minutes
             else None,
@@ -892,7 +963,10 @@ def generate_access_token(
         )
 
     return OAuthTokenResponse(
-        access_token=access_token, expires_in=expires_in, token_type="bearer"
+        access_token=access_token,
+        expires_in=expires_in,
+        token_type="bearer",
+        csrf_token=csrf_token,
     )
 
 
@@ -953,19 +1027,24 @@ def oauth2_authentication(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
         )
     ),
+    request: Request = Depends(),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 JWT tokens.
 
     Args:
         token: The JWT bearer token to be authenticated.
+        request: The FastAPI request object.
 
     Returns:
         The authentication context reflecting the authenticated user.
 
     # noqa: DAR401
     """
+    csrf_token = request.headers.get("X-CSRF-Token")
     try:
-        auth_context = authenticate_credentials(access_token=token)
+        auth_context = authenticate_credentials(
+            access_token=token, csrf_token=csrf_token
+        )
     except CredentialsNotValid as e:
         # We want to be very explicit here and return a CredentialsNotValid
         # exception encoded as a 401 Unauthorized error encoded, so that the
