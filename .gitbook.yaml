@@ -202,3 +202,7 @@ redirects:
   docs/reference/how-do-i: reference/how-do-i.md
   docs/reference/community-and-content: reference/community-and-content.md
   docs/reference/faq: reference/faq.md
+  
+  # Manage ZenML Server redirects
+  how-to/advanced-topics/manage-zenml-server/: how-to/manage-zenml-server/README.md
+  how-to/project-setup-and-management/connecting-to-zenml/: how-to/manage-zenml-server/connecting-to-zenml/README.md
