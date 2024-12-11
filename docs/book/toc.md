@@ -87,7 +87,7 @@
   * [Set up a ZenML project](how-to/project-setup-and-management/setting-up-a-project-repository/README.md)
     * [Set up a repository](how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md)
     * [Connect your git repository](how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md)
-  * [Collaborate with your team](how-to/project-setup-and-management/setting-up-a-project-repository/README.md)
+  * [Collaborate with your team](how-to/project-setup-and-management/collaborate-with-team/README.md)
     * [Project templates](how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md)
       * [Create your own template](how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template.md)
     * [Shared components for teams](how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams.md)
