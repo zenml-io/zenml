@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -29,6 +29,12 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.filter import BaseFilter, StrFilter
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 # ------------------ Request Model ------------------
 
@@ -147,13 +153,18 @@ class ModelVersionPipelineRunFilter(BaseFilter):
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 

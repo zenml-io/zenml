@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -42,9 +43,11 @@ from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
-    from sqlmodel import SQLModel
 
     from zenml.models import FlavorResponse, ServiceConnectorResponse
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Base Model ------------------
 
@@ -397,7 +400,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         self.scope_type = component_type
 
     def generate_filter(
-        self, table: Type["SQLModel"]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 

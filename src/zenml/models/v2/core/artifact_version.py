@@ -20,6 +20,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -58,6 +60,10 @@ if TYPE_CHECKING:
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 logger = get_logger(__name__)
 
@@ -549,13 +555,18 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
     model_config = ConfigDict(protected_namespaces=())
 
-    def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_, or_, select
 

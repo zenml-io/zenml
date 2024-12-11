@@ -758,7 +758,7 @@ class BaseFilter(BaseModel):
         return self.size * (self.page - 1)
 
     def generate_filter(
-        self, table: Type[SQLModel]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
@@ -778,7 +778,7 @@ class BaseFilter(BaseModel):
             filters.append(
                 column_filter.generate_query_conditions(table=table)
             )
-        for custom_filter in self.get_custom_filters():
+        for custom_filter in self.get_custom_filters(table):
             filters.append(custom_filter)
         if self.logical_operator == LogicalOperators.OR:
             return or_(False, *filters)
@@ -787,11 +787,16 @@ class BaseFilter(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are
         not based on the columns of the underlying table.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.

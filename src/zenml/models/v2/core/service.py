@@ -15,19 +15,20 @@
 
 from datetime import datetime
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.sql.elements import ColumnElement
-from sqlmodel import SQLModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
@@ -40,6 +41,11 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Request Model ------------------
 
@@ -455,7 +461,7 @@ class ServiceFilter(WorkspaceScopedFilter):
     ]
 
     def generate_filter(
-        self, table: Type["SQLModel"]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 

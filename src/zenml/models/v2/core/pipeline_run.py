@@ -718,13 +718,17 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
     def get_custom_filters(
         self,
+        table: Type["AnySchema"],
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_, col, or_
 

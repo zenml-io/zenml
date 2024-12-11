@@ -188,25 +188,25 @@ class UserScopedFilter(BaseFilter):
         self.scope_user = user_id
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas import (
-            PipelineSchema,
-            UserSchema,
-        )
+        from zenml.zen_stores.schemas import UserSchema
 
         if self.user:
             user_filter = and_(
-                PipelineSchema.user_id == UserSchema.id,
+                getattr(table, "user_id") == UserSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.user,
                     table=UserSchema,
@@ -365,25 +365,25 @@ class WorkspaceScopedFilter(UserScopedFilter):
         self.scope_workspace = workspace_id
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas import (
-            PipelineSchema,
-            WorkspaceSchema,
-        )
+        from zenml.zen_stores.schemas import WorkspaceSchema
 
         if self.workspace:
             workspace_filter = and_(
-                PipelineSchema.user_id == WorkspaceSchema.id,
+                getattr(table, "workspace_id") == WorkspaceSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.workspace,
                     table=WorkspaceSchema,
@@ -502,15 +502,20 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         return query
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom tag filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
         from zenml.zen_stores.schemas import TagSchema
 
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
         if self.tag:
             custom_filters.append(
                 self.generate_custom_query_conditions_for_column(
@@ -534,24 +539,24 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, desc, func
-
-        from zenml.enums import SorterOps, TaggableResourceTypes
-        from zenml.zen_stores.schemas import (
-            ArtifactSchema,
-            ArtifactVersionSchema,
-            ModelSchema,
-            ModelVersionSchema,
-            PipelineRunSchema,
-            PipelineSchema,
-            RunTemplateSchema,
-            TagResourceSchema,
-            TagSchema,
-        )
-
         sort_by, operand = self.sorting_params
 
         if sort_by == "tag":
+            from sqlmodel import asc, desc, func
+
+            from zenml.enums import SorterOps, TaggableResourceTypes
+            from zenml.zen_stores.schemas import (
+                ArtifactSchema,
+                ArtifactVersionSchema,
+                ModelSchema,
+                ModelVersionSchema,
+                PipelineRunSchema,
+                PipelineSchema,
+                RunTemplateSchema,
+                TagResourceSchema,
+                TagSchema,
+            )
+
             resource_type_mapping = {
                 ArtifactSchema: TaggableResourceTypes.ARTIFACT,
                 ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
