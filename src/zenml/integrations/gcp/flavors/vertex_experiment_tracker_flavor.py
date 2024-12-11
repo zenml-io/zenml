@@ -43,7 +43,7 @@ class VertexExperimentTrackerSettings(BaseSettings):
     """
 
     experiment: Optional[str] = None
-    experiment_tensorboard: Optional[Union[str, bool]] = False
+    experiment_tensorboard: Optional[Union[str, bool]] = None
 
     @field_validator("experiment", mode="before")
     def _validate_experiment(cls, value: str) -> str:
