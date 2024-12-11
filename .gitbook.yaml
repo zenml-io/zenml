@@ -202,4 +202,66 @@ redirects:
   docs/reference/how-do-i: reference/how-do-i.md
   docs/reference/community-and-content: reference/community-and-content.md
   docs/reference/faq: reference/faq.md
+
+  # The new Manage ZenML Server redirects
+  how-to/advanced-topics/manage-zenml-server/: how-to/manage-zenml-server/README.md
+  how-to/project-setup-and-management/connecting-to-zenml/: how-to/manage-zenml-server/connecting-to-zenml/README.md
+  how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive.md: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
+  how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
+  how-to/advanced-topics/manage-zenml-server/upgrade-zenml-server.md: how-to/manage-zenml-server/upgrade-zenml-server.md
+  how-to/advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md: how-to/manage-zenml-server/best-practices-upgrading-zenml.md
+  how-to/advanced-topics/manage-zenml-server/using-zenml-server-in-prod.md: how-to/manage-zenml-server/using-zenml-server-in-prod.md
+  how-to/advanced-topics/manage-zenml-server/troubleshoot-your-deployed-server.md: how-to/manage-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/advanced-topics/manage-zenml-server/migration-guide/migration-guide.md: how-to/manage-zenml-server/migration-guide/migration-guide.md
+  how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-twenty.md: how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md
+  how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-thirty.md: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
+  how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-forty.md: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
+  how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-sixty.md: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
+
+  how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates.md: how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template.md: how-to/project-setup-and-management/collaborate-with-team/project-templates/create-your-own-template.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams.md: how-to/project-setup-and-management/collaborate-with-team/shared-components-for-teams.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models.md: how-to/project-setup-and-management/collaborate-with-team/stacks-pipelines-models.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/access-management.md: how-to/project-setup-and-management/collaborate-with-team/access-management.md
+  how-to/interact-with-secrets.md: how-to/project-setup-and-management/interact-with-secrets.md
+
+  how-to/project-setup-and-management/develop-locally/README.md: how-to/pipeline-development/develop-locally/README.md
+  how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants.md: how-to/pipeline-development/develop-locally/local-prod-pipeline-variants.md
+  how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean.md: how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean.md
+
+  how-to/advanced-topics/training-with-gpus/README.md: how-to/pipeline-development/training-with-gpus/README.md
+  how-to/advanced-topics/training-with-gpus/accelerate-distributed-training.md: how-to/pipeline-development/training-with-gpus/accelerate-distributed-training.md
+
+  how-to/advanced-topics/run-remote-notebooks/README.md: how-to/pipeline-development/run-remote-notebooks/README.md
+  how-to/advanced-topics/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells.md: how-to/pipeline-development/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells.md
+  how-to/advanced-topics/run-remote-notebooks/run-a-single-step-from-a-notebook.md: how-to/pipeline-development/run-remote-notebooks/run-a-single-step-from-a-notebook.md
+
+  how-to/infrastructure-deployment/configure-python-environments/README.md: how-to/pipeline-development/configure-python-environments/README.md
+  how-to/infrastructure-deployment/configure-python-environments/handling-dependencies.md: how-to/pipeline-development/configure-python-environments/handling-dependencies.md
+  how-to/infrastructure-deployment/configure-python-environments/configure-the-server-environment.md: how-to/pipeline-development/configure-python-environments/configure-the-server-environment.md
+
+  how-to/infrastructure-deployment/customize-docker-builds/README.md: how-to/customize-docker-builds/README.md
+  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline.md: how-to/customize-docker-builds/docker-settings-on-a-pipeline.md
+  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step.md: how-to/customize-docker-builds/docker-settings-on-a-step.md
+  how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image.md: how-to/customize-docker-builds/use-a-prebuilt-image.md
+  how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md: how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md
+  how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository.md: how-to/customize-docker-builds/how-to-use-a-private-pypi-repository.md
+  how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files.md: how-to/customize-docker-builds/use-your-own-docker-files.md
+  how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image.md: how-to/customize-docker-builds/which-files-are-built-into-the-image.md
+  how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md: how-to/customize-docker-builds/how-to-reuse-builds.md
+  how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built.md: how-to/customize-docker-builds/define-where-an-image-is-built.md
+
+  how-to/data-artifact-management/handle-data-artifacts/datasets.md: how-to/data-artifact-management/complex-usecases/datasets.md
+  how-to/data-artifact-management/handle-data-artifacts/manage-big-data.md: how-to/data-artifact-management/complex-usecases/manage-big-data.md
+  how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts.md: how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines.md: how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines.md
+  how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md: how-to/data-artifact-management/complex-usecases/registering-existing-data.md
+
+  how-to/advanced-topics/control-logging/README.md: how-to/control-logging/README.md
+  how-to/advanced-topics/control-logging/view-logs-on-the-dasbhoard.md: how-to/control-logging/view-logs-on-the-dasbhoard.md
+  how-to/advanced-topics/control-logging/enable-or-disable-logs-storing.md: how-to/control-logging/enable-or-disable-logs-storing.md
+  how-to/advanced-topics/control-logging/set-logging-verbosity.md: how-to/control-logging/set-logging-verbosity.md
+  how-to/advanced-topics/control-logging/disable-rich-traceback.md: how-to/control-logging/disable-rich-traceback.md
+  how-to/advanced-topics/control-logging/disable-colorful-logging.md: how-to/control-logging/disable-colorful-logging.md
+  
   
