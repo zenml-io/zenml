@@ -157,6 +157,9 @@ class PipelineSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = PipelineResponseResources(
+                latest_run_user=self.runs[-1].user.to_model()
+                if self.runs
+                else None,
                 tags=[t.tag.to_model() for t in self.tags],
             )
 

@@ -47,7 +47,7 @@ from zenml.models.v2.core.tag import TagResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from zenml.models import PipelineRunResponse, UserResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -122,6 +122,10 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""
 
+    latest_run_user: Optional["UserResponse"] = Field(
+        default=None,
+        title="The user that created the latest run of this pipeline.",
+    )
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline.",
     )
