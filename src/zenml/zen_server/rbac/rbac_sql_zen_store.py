@@ -51,6 +51,7 @@ class RBACSqlZenStore(SqlZenStore):
         Args:
             model_request: The model request.
 
+        # noqa: DAR401
         Raises:
             Exception: If the user is not allowed to create a model.
 
@@ -130,6 +131,7 @@ class RBACSqlZenStore(SqlZenStore):
             model_version_request: The model version request.
             producer_run_id: ID of the producer pipeline run.
 
+        # noqa: DAR401
         Raises:
             Exception: If the authenticated user is not allowed to
                 create a model version.

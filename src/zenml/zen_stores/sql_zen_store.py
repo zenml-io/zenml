@@ -10406,6 +10406,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If no version name or producer run ID was provided.
+            KeyError: If no model version was found.
 
         Returns:
             The model version.
@@ -10514,10 +10515,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             pipeline_or_step_run: The pipeline or step run for which to create
                 the model version.
-
-        Raises:
-            KeyError: If the configured model for the run specifies a version
-                number or stage for which no model version exists.
 
         Returns:
             The model version.
