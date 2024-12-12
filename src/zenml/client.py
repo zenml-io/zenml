@@ -2670,11 +2670,13 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        container_registry_id: Optional[Union[UUID, str]] = None,
         is_local: Optional[bool] = None,
         contains_code: Optional[bool] = None,
         zenml_version: Optional[str] = None,
         python_version: Optional[str] = None,
         checksum: Optional[str] = None,
+        stack_checksum: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -2692,11 +2694,14 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            container_registry_id: The id of the container registry to
+                filter by.
             is_local: Use to filter local builds.
             contains_code: Use to filter builds that contain code.
             zenml_version: The version of ZenML to filter by.
             python_version: The Python version to filter by.
             checksum: The build checksum to filter by.
+            stack_checksum: The stack checksum to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2716,11 +2721,13 @@ class Client(metaclass=ClientMetaClass):
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            container_registry_id=container_registry_id,
             is_local=is_local,
             contains_code=contains_code,
             zenml_version=zenml_version,
             python_version=python_version,
             checksum=checksum,
+            stack_checksum=stack_checksum,
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
@@ -3509,6 +3516,7 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
+        id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         tag: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -3531,6 +3539,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or].
             created: Filter by the creation date.
             updated: Filter by the last updated date.
+            id: Filter by run template ID.
             name: Filter by run template name.
             tag: Filter by run template tags.
             workspace_id: Filter by workspace ID.
@@ -3555,6 +3564,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
+            id=id,
             name=name,
             tag=tag,
             workspace_id=workspace_id,
