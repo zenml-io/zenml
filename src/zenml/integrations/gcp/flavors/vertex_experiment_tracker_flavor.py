@@ -24,10 +24,14 @@ from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
     BaseExperimentTrackerFlavor,
 )
-from zenml.integrations.gcp import GCP_VERTEX_EXPERIMENT_TRACKER_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_RESOURCE_TYPE,
+    GCP_VERTEX_EXPERIMENT_TRACKER_FLAVOR,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.models import ServiceConnectorRequirements
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -193,3 +197,20 @@ class VertexExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         )
 
         return VertexExperimentTracker
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=GCP_RESOURCE_TYPE,
+        )
