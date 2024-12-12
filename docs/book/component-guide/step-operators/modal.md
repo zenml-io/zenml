@@ -86,6 +86,12 @@ def my_modal_step():
     ...
 ```
 
+{% hint style="info" %}
+Note that the `cpu` parameter in `ResourceSettings` currently only accepts a single integer value. This specifies a soft minimum limit - Modal will guarantee at least this many physical cores, but the actual usage could be higher. The CPU cores/hour will also determine the minimum price paid for the compute resources.
+
+For example, with the configuration above (2 CPUs and 32GB memory), the minimum cost would be approximately $1.03 per hour ((0.135 * 2) + (0.024 * 32) = $1.03).
+{% endhint %}
+
 This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
 32GB of CPU memory.
 

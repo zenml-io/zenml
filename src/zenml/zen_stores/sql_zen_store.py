@@ -8185,24 +8185,16 @@ class SqlZenStore(BaseZenStore):
                     f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
-            # Check if the step name already exists in the pipeline run
-            existing_step_run = session.exec(
-                select(StepRunSchema)
-                .where(StepRunSchema.name == step_run.name)
-                .where(
-                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
-                )
-            ).first()
-            if existing_step_run is not None:
+            step_schema = StepRunSchema.from_request(step_run)
+            session.add(step_schema)
+            try:
+                session.commit()
+            except IntegrityError:
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
                     f"'{step_run.pipeline_run_id}'."
                 )
-
-            # Create the step
-            step_schema = StepRunSchema.from_request(step_run)
-            session.add(step_schema)
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:

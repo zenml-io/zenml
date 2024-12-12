@@ -4,7 +4,7 @@
 The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
 {% endhint %}
 
-When a [pipeline is run with a remote orchestrator](../../infrastructure-deployment/configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../../infrastructure-deployment/configure-python-environments/README.md#-configure-python-environments) component of your stack.
+When a [pipeline is run with a remote orchestrator](../pipeline-development/configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../pipeline-development/configure-python-environments/README.md#-configure-python-environments) component of your stack.
 
 For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
 
@@ -58,7 +58,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../../component-guide/README.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../component-guide/README.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY

@@ -122,7 +122,7 @@ secret store directly to the ZenML server that is managed by us. All ZenML
 secrets used by running pipelines to access infrastructure services and
 resources are stored in the customer secret store. This allows users to
 use [service connectors](../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md)
-and the [secrets API](../how-to/interact-with-secrets.md) to authenticate
+and the [secrets API](../how-to/project-setup-and-management/interact-with-secrets.md) to authenticate
 ZenML pipelines and the ZenML Pro to third-party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 {% endhint %}
