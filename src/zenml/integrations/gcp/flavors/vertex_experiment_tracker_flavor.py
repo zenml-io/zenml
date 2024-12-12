@@ -16,6 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Optional, Type, Union
 
+from google.cloud.aiplatform import utils
 from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
@@ -115,6 +116,19 @@ class VertexExperimentTrackerConfig(
     api_key: Optional[str] = None
     api_transport: Optional[str] = None
     request_metadata: Optional[dict] = None
+
+    @field_validator("location", mode="before")
+    def _validate_experiment(cls, value: str) -> str:
+        """Validates if provided location is valid.
+
+        Args:
+            value: The gcp location name.
+
+        Returns:
+            The location name.
+        """
+        utils.validate_region(value)
+        return value
 
 
 class VertexExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
