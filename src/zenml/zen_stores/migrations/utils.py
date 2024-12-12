@@ -206,6 +206,8 @@ class MigrationUtils(BaseModel):
             for table in metadata.sorted_tables:
                 # 1. extract the table creation statements
 
+                ignore_columns = set()
+
                 create_table_construct = CreateTable(table)
                 create_table_stmt = str(create_table_construct).strip()
                 for column in create_table_construct.columns:
@@ -220,6 +222,9 @@ class MigrationUtils(BaseModel):
                     create_table_stmt = create_table_stmt.replace(
                         f"\n\t{str(column)}", " ".join(words)
                     )
+                    if "GENERATED ALWAYS" in str(column):
+                        ignore_columns.add(str(column).split()[0])
+
                 # if any double quotes are used for column names, replace them
                 # with backticks
                 create_table_stmt = create_table_stmt.replace('"', "") + ";"
@@ -309,10 +314,18 @@ class MigrationUtils(BaseModel):
                             .offset(i)
                         ).fetchall()
 
+                        data = []
+                        for row in rows:
+                            row_dict = row._asdict()
+                            for column in ignore_columns:
+                                row_dict.pop(column, None)
+
+                            data.append(row_dict)
+
                         store_db_info(
                             dict(
                                 table=table.name,
-                                data=[row._asdict() for row in rows],
+                                data=data,
                             ),
                         )
 
