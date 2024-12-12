@@ -2669,6 +2669,7 @@ class Client(metaclass=ClientMetaClass):
         zenml_version: Optional[str] = None,
         python_version: Optional[str] = None,
         checksum: Optional[str] = None,
+        stack_checksum: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -2692,6 +2693,7 @@ class Client(metaclass=ClientMetaClass):
             zenml_version: The version of ZenML to filter by.
             python_version: The Python version to filter by.
             checksum: The build checksum to filter by.
+            stack_checksum: The stack checksum to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2716,6 +2718,7 @@ class Client(metaclass=ClientMetaClass):
             zenml_version=zenml_version,
             python_version=python_version,
             checksum=checksum,
+            stack_checksum=stack_checksum,
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
