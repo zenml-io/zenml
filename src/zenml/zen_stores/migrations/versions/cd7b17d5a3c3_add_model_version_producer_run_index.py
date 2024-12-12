@@ -1,7 +1,7 @@
 """Add model version producer run index [cd7b17d5a3c3].
 
 Revision ID: cd7b17d5a3c3
-Revises: 0.71.0
+Revises: 26351d482b9e
 Create Date: 2024-12-09 14:24:21.647321
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "cd7b17d5a3c3"
-down_revision = "0.71.0"
+down_revision = "26351d482b9e"
 branch_labels = None
 depends_on = None
 
