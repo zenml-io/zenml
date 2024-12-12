@@ -12,11 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import re
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from uuid import uuid4
 
 import pytest
+from mock import MagicMock
 
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp.experiment_trackers.vertex_experiment_tracker import (
@@ -30,7 +32,8 @@ from zenml.stack import Stack
 
 @pytest.fixture(scope="session")
 def vertex_experiment_tracker() -> VertexExperimentTracker:
-    yield VertexExperimentTracker(
+    """Returns a Vertex experiment tracker."""
+    return VertexExperimentTracker(
         name="",
         id=uuid4(),
         config=VertexExperimentTrackerConfig(),
@@ -67,3 +70,61 @@ def test_vertex_experiment_tracker_attributes(
         vertex_experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
     )
     assert vertex_experiment_tracker.flavor == "vertex"
+
+def is_valid_experiment_name(name: str) -> bool:
+    """Check if the experiment name matches the required regex."""
+    EXPERIMENT_NAME_REGEX = re.compile(r"^[a-z0-9][a-z0-9-]{0,127}$")
+    return bool(EXPERIMENT_NAME_REGEX.match(name))
+
+
+@pytest.mark.parametrize("input_name,expected_output", [
+    ("My Experiment Name", "my-experiment-name"),
+    ("My_Experiment_Name", "my-experiment-name"),
+    ("MyExperimentName123", "myexperimentname123"),
+    ("Name-With-Dashes---", "name-with-dashes"),
+    ("Invalid!Name", "invalid-name"),
+    ("   Whitespace Name  ", "whitespace-name"),
+    ("UPPERCASE", "uppercase"),
+    ("a" * 140, "a" * 128),  # Truncated to 128 chars
+    ("special&%_characters", "special---characters"),
+])
+def test_format_name(vertex_experiment_tracker, input_name, expected_output):
+    """Test the name formatting function."""
+    formatted_name = vertex_experiment_tracker._format_name(input_name)
+    assert formatted_name == expected_output, f"Failed for input: '{input_name}'"
+    assert is_valid_experiment_name(formatted_name), f"Formatted name '{formatted_name}' does not match the regex"
+
+
+@pytest.mark.parametrize("input_name,expected_output", [
+    ("My Experiment", "my-experiment"),
+    ("Another Experiment", "another-experiment"),
+    (None, "default-experiment"),
+    ("", "default-experiment"),
+])
+def test_get_experiment_name(vertex_experiment_tracker, input_name, expected_output):
+    """Test the experiment name generation function."""
+    mock_settings = MagicMock()
+    mock_settings.experiment = input_name
+    vertex_experiment_tracker.get_settings = MagicMock(return_value=mock_settings)
+
+    info = MagicMock()
+    info.pipeline.name = "default-experiment"
+
+    experiment_name = vertex_experiment_tracker._get_experiment_name(info)
+    assert experiment_name == expected_output, f"Failed for input: '{input_name}'"
+    assert is_valid_experiment_name(experiment_name), f"Generated experiment name '{experiment_name}' does not match the regex"
+
+
+@pytest.mark.parametrize("input_name,expected_output", [
+    ("Run-001", "run-001"),
+    ("AnotherRun", "anotherrun"),
+    ("run_with_special_chars!@#", "run-with-special-chars"),
+])
+def test_get_run_name(vertex_experiment_tracker, input_name, expected_output):
+    """Test the run name generation function."""
+    info = MagicMock()
+    info.run_name = input_name
+
+    run_name = vertex_experiment_tracker._get_run_name(info)
+    assert run_name == expected_output, f"Failed for input: '{input_name}'"
+    assert is_valid_experiment_name(run_name), f"Generated run name '{run_name}' does not match the regex"
