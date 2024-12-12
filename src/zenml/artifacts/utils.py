@@ -414,7 +414,9 @@ def log_artifact_metadata(
     """
     logger.warning(
         "The `log_artifact_metadata` function is deprecated and will soon be "
-        "removed. Please use `log_metadata` instead."
+        "removed. Instead, you can consider using: "
+        "`log_metadata(metadata={...}, infer_artifact=True)` instead. For more "
+        "info: https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact"
     )
 
     from zenml import log_metadata
