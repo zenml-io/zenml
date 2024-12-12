@@ -81,10 +81,13 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         Returns:
             A dictionary of metadata.
         """
+        experiment_name = self._get_experiment_name(info=info)
         run_name = self._get_run_name(info=info)
-        run_url = self._get_run_url(info=info)
+        tensorboard_resource_name = self._get_tensorboard_resource_name(experiment=experiment_name)
+        dashboard_url = self._get_dashboard_url(experiment=experiment_name)
         return {
-            METADATA_EXPERIMENT_TRACKER_URL: Uri(run_url),
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(dashboard_url),
+            "tensorboard_resource_name": tensorboard_resource_name or "",
             "vertex_run_name": run_name,
         }
 
@@ -116,9 +119,23 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         """
         return self._format_name(info.run_name)
 
+    def _get_dashboard_url(self, experiment: str) -> str:
+        """Gets the run URL.
+
+        Args:
+            experiment: The name of the experiment.
+
+        Returns:
+            The run URL.
+        """
+        resource = aiplatform.Experiment(
+            experiment_name=experiment
+        )
+        return resource.dashboard_url
+
     def _get_tensorboard_resource_name(self, experiment: str) -> Optional[str]:
         resource = aiplatform.Experiment(
-            experiment
+            experiment_name=experiment
         ).get_backing_tensorboard_resource()
         resource_name = (
             str(resource.resource_name) if resource is not None
@@ -171,30 +188,11 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
                 resume=False,
             )
 
+        logger.info(f"VertexAI experiment dashboard: {self._get_dashboard_url(experiment=experiment)}")
         logger.info(
             f"Tensorboard resource name: {self._get_tensorboard_resource_name(experiment=experiment)}"
         )
 
-    def _get_run_url(self, info: "StepRunInfo") -> str:
-        """Gets the run URL.
-
-        Args:
-            info: Info about the step that will be executed.
-
-        Returns:
-            The run URL.
-        """
-        settings = cast(
-            VertexExperimentTrackerSettings, self.get_settings(info)
-        )
-        experiment = settings.experiment or info.pipeline.name
-        run_name = self._get_run_name(info=info)
-        run_url = (
-            f"https://console.cloud.google.com/vertex-ai/experiments/locations/"
-            f"{self.config.location}/experiments/{experiment}/runs/"
-            f"{run_name}/charts?project={self.config.project}"
-        )
-        return run_url
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Stops the VertexAI run.
