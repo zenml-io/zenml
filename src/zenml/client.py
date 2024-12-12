@@ -3495,6 +3495,7 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
+        id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         tag: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -3517,6 +3518,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or].
             created: Filter by the creation date.
             updated: Filter by the last updated date.
+            id: Filter by run template ID.
             name: Filter by run template name.
             tag: Filter by run template tags.
             workspace_id: Filter by workspace ID.
@@ -3541,6 +3543,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
+            id=id,
             name=name,
             tag=tag,
             workspace_id=workspace_id,
