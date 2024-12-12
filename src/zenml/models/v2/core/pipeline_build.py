@@ -14,7 +14,17 @@
 """Models representing pipeline builds."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -38,7 +48,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
 
 
 # ------------------ Request Model ------------------
@@ -495,7 +504,8 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"],
+        self,
+        table: Type["AnySchema"],
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
