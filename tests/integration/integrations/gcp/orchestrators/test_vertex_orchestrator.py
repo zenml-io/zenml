@@ -141,11 +141,11 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "4", "gpu_limit": 4, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "resourceCount": "1",
-                    "resourceType": "NVIDIA_TESLA_K80",
+                    "count": "1",
+                    "type": "NVIDIA_TESLA_K80",
                 },
-                "resourceCpuLimit": "1.0",
-                "resourceMemoryLimit": "1G",
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
             },
         ),
         # No ResourceSettings, should take values from the orchestrator
@@ -154,11 +154,11 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "1.0", "gpu_limit": 1, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "resourceCount": "1",
-                    "resourceType": "NVIDIA_TESLA_K80",
+                    "count": "1",
+                    "type": "NVIDIA_TESLA_K80",
                 },
-                "resourceCpuLimit": "1.0",
-                "resourceMemoryLimit": "1G",
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
             },
         ),
         # GPU count is None, 1 gpu should be used (KFP default)
@@ -166,15 +166,15 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "resourceCpuLimit": "1.0",
-                "resourceMemoryLimit": "1G",
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
             },
         ),
         # GPU count is 0, should not be set in the resource spec
         (
             ResourceSettings(cpu_count=1, gpu_count=0, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
-            {"resourceCpuLimit": "1.0", "resourceMemoryLimit": "1G"},
+            {"cpuLimit": 1.0, "memoryLimit": 1.0},
         ),
     ],
 )
@@ -237,9 +237,9 @@ def test_vertex_orchestrator_configure_container_resources(
         if "count" in job_spec["resources"]["accelerator"]:
             expected_resources["accelerator"]["count"] = expected_resources[
                 "accelerator"
-            ]["resourceCount"]
+            ]["count"]
         if "type" in job_spec["resources"]["accelerator"]:
             expected_resources["accelerator"]["type"] = expected_resources[
                 "accelerator"
-            ]["resourceType"]
+            ]["type"]
     assert job_spec["resources"] == expected_resources
