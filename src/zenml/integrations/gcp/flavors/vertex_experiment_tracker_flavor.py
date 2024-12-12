@@ -14,7 +14,7 @@
 """Vertex experiment tracker flavor."""
 
 import re
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from google.cloud.aiplatform import utils
 from pydantic import field_validator
@@ -28,6 +28,7 @@ from zenml.integrations.gcp import GCP_VERTEX_EXPERIMENT_TRACKER_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.experiment_trackers import (
@@ -110,10 +111,10 @@ class VertexExperimentTrackerConfig(
     location: Optional[str] = None
     staging_bucket: Optional[str] = None
     network: Optional[str] = None
-    service_account: Optional[str] = None
-    encryption_spec_key_name: Optional[str] = None
-    api_endpoint: Optional[str] = None
-    api_key: Optional[str] = None
+    service_account: Optional[str] = SecretField(default=None)
+    encryption_spec_key_name: Optional[str] = SecretField(default=None)
+    api_endpoint: Optional[str] = SecretField(default=None)
+    request_metadata: Optional[Dict[str, Any]] = None
     api_transport: Optional[str] = None
     request_metadata: Optional[dict] = None
 
