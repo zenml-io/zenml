@@ -263,32 +263,21 @@ def token(
         cookie_response = None
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
-        assert config.external_cookie_name is not None
         assert config.external_login_url is not None
 
         authorization_url = config.external_login_url
 
-        # First, try to get the external access token from the external cookie
-        external_access_token = request.cookies.get(
-            config.external_cookie_name
-        )
-        if not external_access_token:
-            # Next, try to get the external access token from the authorization
-            # header
-            authorization_header = request.headers.get("Authorization")
-            if authorization_header:
-                scheme, _, token = authorization_header.partition(" ")
-                if token and scheme.lower() == "bearer":
-                    external_access_token = token
-                    logger.info(
-                        "External access token found in authorization header."
-                    )
-        else:
-            logger.info("External access token found in cookie.")
+        # Try to get the external session token or authorization token from the
+        # authorization header
+        authorization_header = request.headers.get("Authorization")
+        if authorization_header:
+            scheme, _, token = authorization_header.partition(" ")
+            if token and scheme.lower() == "bearer":
+                external_access_token = token
 
-        if not external_access_token:
+        if not authorization_header:
             logger.info(
-                "External access token not found. Redirecting to "
+                "External session or authorization token not found. Redirecting to "
                 "external authenticator."
             )
 

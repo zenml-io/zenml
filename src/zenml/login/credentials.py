@@ -44,7 +44,6 @@ class APIToken(BaseModel):
     expires_in: Optional[int] = None
     expires_at: Optional[datetime] = None
     leeway: Optional[int] = None
-    cookie_name: Optional[str] = None
     device_id: Optional[UUID] = None
     device_metadata: Optional[Dict[str, Any]] = None
 
