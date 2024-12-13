@@ -45,7 +45,6 @@ from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, UserResponse
-    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
