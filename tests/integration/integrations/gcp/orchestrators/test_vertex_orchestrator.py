@@ -143,9 +143,13 @@ def test_vertex_orchestrator_stack_validation(
                 "accelerator": {
                     "count": "1",
                     "type": "NVIDIA_TESLA_K80",
+                    "resourceCount": "1",
+                    "resourceType": "NVIDIA_TESLA_K80",
                 },
                 "cpuLimit": 1.0,
                 "memoryLimit": 1.0,
+                "resourceCpuLimit": "1.0",
+                "resourceMemoryLimit": "1G",
             },
         ),
         # No ResourceSettings, should take values from the orchestrator
@@ -156,9 +160,13 @@ def test_vertex_orchestrator_stack_validation(
                 "accelerator": {
                     "count": "1",
                     "type": "NVIDIA_TESLA_K80",
+                    "resourceCount": "1",
+                    "resourceType": "NVIDIA_TESLA_K80",
                 },
                 "cpuLimit": 1.0,
                 "memoryLimit": 1.0,
+                "resourceCpuLimit": "1.0",
+                "resourceMemoryLimit": "1G",
             },
         ),
         # GPU count is None, 1 gpu should be used (KFP default)
@@ -168,13 +176,20 @@ def test_vertex_orchestrator_stack_validation(
             {
                 "cpuLimit": 1.0,
                 "memoryLimit": 1.0,
+                "resourceCpuLimit": "1.0",
+                "resourceMemoryLimit": "1G",
             },
         ),
         # GPU count is 0, should not be set in the resource spec
         (
             ResourceSettings(cpu_count=1, gpu_count=0, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
-            {"cpuLimit": 1.0, "memoryLimit": 1.0},
+            {
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
+                "resourceCpuLimit": "1.0",
+                "resourceMemoryLimit": "1G",
+            },
         ),
     ],
 )
@@ -233,13 +248,16 @@ def test_vertex_orchestrator_configure_container_resources(
     job_spec = pipeline_json["deploymentSpec"]["executors"][
         f"exec-{step_name}"
     ]["container"]
+
     if "accelerator" in job_spec["resources"]:
-        if "count" in job_spec["resources"]["accelerator"]:
-            expected_resources["accelerator"]["count"] = expected_resources[
-                "accelerator"
-            ]["count"]
-        if "type" in job_spec["resources"]["accelerator"]:
-            expected_resources["accelerator"]["type"] = expected_resources[
-                "accelerator"
-            ]["type"]
+        if "resourceCount" not in job_spec["resources"]["accelerator"]:
+            expected_resources["accelerator"].pop("resourceCount", None)
+        if "resourceType" not in job_spec["resources"]["accelerator"]:
+            expected_resources["accelerator"].pop("resourceType", None)
+
+    if "resourceCpuLimit" not in job_spec["resources"]:
+        expected_resources.pop("resourceCpuLimit", None)
+    if "resourceMemoryLimit" not in job_spec["resources"]:
+        expected_resources.pop("resourceMemoryLimit", None)
+
     assert job_spec["resources"] == expected_resources
