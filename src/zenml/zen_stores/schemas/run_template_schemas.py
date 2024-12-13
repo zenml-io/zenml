@@ -41,7 +41,7 @@ if TYPE_CHECKING:
         PipelineDeploymentSchema,
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class RunTemplateSchema(BaseSchema, table=True):
@@ -110,11 +110,11 @@ class RunTemplateSchema(BaseSchema, table=True):
         }
     )
 
-    tags: List["TagResourceSchema"] = Relationship(
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
         ),
     )
 
@@ -253,7 +253,7 @@ class RunTemplateSchema(BaseSchema, table=True):
                 pipeline=pipeline,
                 build=build,
                 code_reference=code_reference,
-                tags=[t.tag.to_model() for t in self.tags],
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         return RunTemplateResponse(

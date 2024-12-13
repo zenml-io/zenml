@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -95,11 +95,11 @@ class PipelineSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
     )
-    tags: List["TagResourceSchema"] = Relationship(
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
         ),
     )
 
@@ -162,7 +162,7 @@ class PipelineSchema(NamedSchema, table=True):
                 latest_run_user=latest_run_user.to_model()
                 if latest_run_user
                 else None,
-                tags=[t.tag.to_model() for t in self.tags],
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         return PipelineResponse(
