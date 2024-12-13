@@ -317,8 +317,8 @@ class MigrationUtils(BaseModel):
                         data = []
                         for row in rows:
                             row_dict = row._asdict()
-                            for column in ignore_columns:
-                                row_dict.pop(column, None)
+                            for c in ignore_columns:
+                                row_dict.pop(c, None)
 
                             data.append(row_dict)
 

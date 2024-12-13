@@ -71,6 +71,7 @@ from sqlmodel import (
     col,
     create_engine,
     delete,
+    desc,
     or_,
     select,
 )
