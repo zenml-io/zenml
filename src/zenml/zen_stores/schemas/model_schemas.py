@@ -15,17 +15,14 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
-import sqlalchemy as sa
 from pydantic import ConfigDict
 from sqlalchemy import (
     BOOLEAN,
     INTEGER,
     TEXT,
     Column,
-    Computed,
-    Index,
     UniqueConstraint,
 )
 from sqlmodel import Field, Relationship
@@ -254,11 +251,10 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             "model_id",
             name="unique_version_for_model_id",
         ),
-        Index(
-            "unique_numeric_version_for_pipeline_run",
+        UniqueConstraint(
             "model_id",
             "producer_run_id_if_numeric",
-            unique=True,
+            name="unique_numeric_version_for_pipeline_run",
         ),
     )
 
@@ -335,17 +331,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="model_version"
     )
 
-    is_numeric: bool = Field(
-        sa_column=Column(
-            BOOLEAN,
-            Computed("name = CAST(number AS CHAR(50))"),
-            nullable=False,
-        )
-    )
-
-    # Don't use a foreign key here here to avoid a cycle
-    producer_run_id: Optional[UUID] = None
-
     # We want to make sure each pipeline run only creates a single numeric
     # version for each model. To solve this, we need to add a unique constraint.
     # If a value of a unique constraint is NULL it is ignored and the
@@ -353,16 +338,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     # our case however, we only want the unique constraint applied in
     # case there is a producer run and only for numeric versions. To solve this,
     # we fall back to the model version ID (which is the primary key and
-    # therefore unique) in case there is no producer run.
-    producer_run_id_if_numeric: str = Field(
-        sa_column=Column(
-            sa.CHAR(32),
-            Computed(
-                "CASE WHEN (producer_run_id IS NOT NULL AND is_numeric = TRUE) THEN producer_run_id ELSE id END"
-            ),
-            nullable=False,
-        )
-    )
+    # therefore unique) in case there is no producer run or the version is not
+    # numeric.
+    producer_run_id_if_numeric: UUID
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -389,15 +367,19 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The converted schema.
         """
+        id_ = uuid4()
+        is_numeric = str(model_version_number) == model_version_request.name
+
         return cls(
+            id=id_,
             workspace_id=model_version_request.workspace,
             user_id=model_version_request.user,
             model_id=model_version_request.model,
             name=model_version_request.name,
             number=model_version_number,
-            producer_run_id=producer_run_id,
             description=model_version_request.description,
             stage=model_version_request.stage,
+            producer_run_id_if_numeric=producer_run_id if is_numeric else id_,
         )
 
     def to_model(

@@ -10318,8 +10318,8 @@ class SqlZenStore(BaseZenStore):
 
         if producer_run_id:
             query = query.where(
-                ModelVersionSchema.producer_run_id == producer_run_id,
-                col(ModelVersionSchema.is_numeric).is_(True),
+                ModelVersionSchema.producer_run_id_if_numeric
+                == producer_run_id,
             )
 
         with Session(self.engine) as session:
@@ -10381,8 +10381,8 @@ class SqlZenStore(BaseZenStore):
 
         elif producer_run_id:
             query = query.where(
-                ModelVersionSchema.producer_run_id == producer_run_id,
-                col(ModelVersionSchema.is_numeric).is_(True),
+                ModelVersionSchema.producer_run_id_if_numeric
+                == producer_run_id,
             )
             error_text = (
                 f"No numeric model version found for model {model_id} "
