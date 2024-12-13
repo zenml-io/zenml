@@ -585,7 +585,6 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "user",
         "run_metadata",
     ]
 
@@ -597,24 +596,10 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="The number of the Model Version",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The workspace of the Model Version",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="The user of the Model Version",
-        union_mode="left_to_right",
-    )
     stage: Optional[Union[str, ModelStages]] = Field(
         description="The model version stage",
         default=None,
         union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the model version.",
     )
     run_metadata: Optional[Dict[str, str]] = Field(
         default=None,
@@ -639,14 +624,17 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         self._model_id = model_id
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
@@ -654,19 +642,7 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
             ModelVersionSchema,
             RunMetadataResourceSchema,
             RunMetadataSchema,
-            UserSchema,
         )
-
-        if self.user:
-            user_filter = and_(
-                ModelVersionSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.run_metadata is not None:
             from zenml.enums import MetadataResourceTypes

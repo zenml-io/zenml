@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Models representing pipeline templates."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -44,6 +54,11 @@ from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 # ------------------ Request Model ------------------
 
@@ -310,16 +325,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name of the run template.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace associated with the template.",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created the template.",
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the template.",
@@ -340,10 +345,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the template.",
-    )
     pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the pipeline associated with the template.",
@@ -354,14 +355,17 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
     )
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
@@ -371,7 +375,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
             PipelineSchema,
             RunTemplateSchema,
             StackSchema,
-            UserSchema,
         )
 
         if self.code_repository_id:
@@ -408,17 +411,6 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
-
-        if self.user:
-            user_filter = and_(
-                RunTemplateSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.pipeline:
             pipeline_filter = and_(

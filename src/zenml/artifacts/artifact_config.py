@@ -104,15 +104,18 @@ class ArtifactConfig(BaseModel):
             )
         elif is_model_artifact:
             logger.warning(
-                "`ArtifactConfig.is_model_artifact` is deprecated and will be "
-                "removed soon. Use `ArtifactConfig.artifact_type` instead."
+                "`ArtifactConfig(..., is_model_artifact=True)` is deprecated "
+                "and will be removed soon. Use `ArtifactConfig(..., "
+                "artifact_type=ArtifactType.MODEL)` instead. For more info: "
+                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts"
             )
             data.setdefault("artifact_type", ArtifactType.MODEL)
         elif is_deployment_artifact:
             logger.warning(
-                "`ArtifactConfig.is_deployment_artifact` is deprecated and "
-                "will be removed soon. Use `ArtifactConfig.artifact_type` "
-                "instead."
+                "`ArtifactConfig(..., is_deployment_artifact=True)` is "
+                "deprecated and will be removed soon. Use `ArtifactConfig(..., "
+                "artifact_type=ArtifactType.SERVICE)` instead. For more info: "
+                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts"
             )
             data.setdefault("artifact_type", ArtifactType.SERVICE)
 
