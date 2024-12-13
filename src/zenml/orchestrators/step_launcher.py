@@ -179,12 +179,10 @@ class StepLauncher:
                         pipeline_run_id=pipeline_run.id,
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
-
-                pipeline_model_version, pipeline_run = (
-                    step_run_utils.prepare_pipeline_run_model_version(
-                        pipeline_run
-                    )
-                )
+                    if model_version := pipeline_run.model_version:
+                        step_run_utils.log_model_version_dashboard_url(
+                            model_version=model_version
+                        )
 
                 request_factory = step_run_utils.StepRunRequestFactory(
                     deployment=self._deployment,
@@ -209,12 +207,10 @@ class StepLauncher:
                     step_run = Client().zen_store.create_run_step(
                         step_run_request
                     )
-
-                    step_model_version, step_run = (
-                        step_run_utils.prepare_step_run_model_version(
-                            step_run=step_run, pipeline_run=pipeline_run
+                    if model_version := step_run.model_version:
+                        step_run_utils.log_model_version_dashboard_url(
+                            model_version=model_version
                         )
-                    )
 
                 if not step_run.status.is_finished:
                     logger.info(f"Step `{self._step_name}` has started.")
@@ -289,8 +285,8 @@ class StepLauncher:
                         f"Using cached version of step `{self._step_name}`."
                     )
                     if (
-                        model_version := step_model_version
-                        or pipeline_model_version
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
                     ):
                         step_run_utils.link_output_artifacts_to_model_version(
                             artifacts=step_run.outputs,

@@ -15,10 +15,16 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import ConfigDict
-from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column, UniqueConstraint
+from sqlalchemy import (
+    BOOLEAN,
+    INTEGER,
+    TEXT,
+    Column,
+    UniqueConstraint,
+)
 from sqlmodel import Field, Relationship
 
 from zenml.enums import (
@@ -228,11 +234,13 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
     __tablename__ = MODEL_VERSION_TABLENAME
     __table_args__ = (
-        # We need two unique constraints here:
+        # We need three unique constraints here:
         # - The first to ensure that each model version for a
         #   model has a unique version number
         # - The second one to ensure that explicit names given by
         #   users are unique
+        # - The third one to ensure that a pipeline run only produces a single
+        #   auto-incremented version per model
         UniqueConstraint(
             "number",
             "model_id",
@@ -242,6 +250,11 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             "name",
             "model_id",
             name="unique_version_for_model_id",
+        ),
+        UniqueConstraint(
+            "model_id",
+            "producer_run_id_if_numeric",
+            name="unique_numeric_version_for_pipeline_run",
         ),
     )
 
@@ -312,11 +325,22 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="model_version"
+        back_populates="model_version",
     )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="model_version"
     )
+
+    # We want to make sure each pipeline run only creates a single numeric
+    # version for each model. To solve this, we need to add a unique constraint.
+    # If a value of a unique constraint is NULL it is ignored and the
+    # remaining values in the unique constraint have to be unique. In
+    # our case however, we only want the unique constraint applied in
+    # case there is a producer run and only for numeric versions. To solve this,
+    # we fall back to the model version ID (which is the primary key and
+    # therefore unique) in case there is no producer run or the version is not
+    # numeric.
+    producer_run_id_if_numeric: UUID
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -328,24 +352,36 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, model_version_request: ModelVersionRequest
+        cls,
+        model_version_request: ModelVersionRequest,
+        model_version_number: int,
+        producer_run_id: Optional[UUID] = None,
     ) -> "ModelVersionSchema":
         """Convert an `ModelVersionRequest` to an `ModelVersionSchema`.
 
         Args:
             model_version_request: The request model version to convert.
+            model_version_number: The model version number.
+            producer_run_id: The ID of the producer run.
 
         Returns:
             The converted schema.
         """
+        id_ = uuid4()
+        is_numeric = str(model_version_number) == model_version_request.name
+
         return cls(
+            id=id_,
             workspace_id=model_version_request.workspace,
             user_id=model_version_request.user,
             model_id=model_version_request.model,
             name=model_version_request.name,
-            number=model_version_request.number,
+            number=model_version_number,
             description=model_version_request.description,
             stage=model_version_request.stage,
+            producer_run_id_if_numeric=producer_run_id
+            if (producer_run_id and is_numeric)
+            else id_,
         )
 
     def to_model(
