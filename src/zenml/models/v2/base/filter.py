@@ -113,7 +113,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["ColumnElement[bool]"]:
+    ) -> "ColumnElement[bool]":
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -291,11 +291,19 @@ class UUIDFilter(StrFilter):
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
+        from zenml.utils import uuid_utils
+
         # For equality checks, compare the UUID directly
         if self.operation == GenericFilterOps.EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return False
+
             return column == self.value
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return True
+
             return column != self.value
 
         # For all other operations, cast and handle the column as string
@@ -702,16 +710,10 @@ class BaseFilter(BaseModel):
 
         conditions = []
 
-        try:
-            filter_ = FilterGenerator(table).define_filter(
-                column="id", value=value, operator=operator
-            )
-            conditions.append(filter_.generate_query_conditions(table=table))
-        except ValueError:
-            # UUID filter with equal operators and no full UUID fail with
-            # a ValueError. In this case, we already know that the filter
-            # will not produce any result and can simply ignore it.
-            pass
+        filter_ = FilterGenerator(table).define_filter(
+            column="id", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
 
         filter_ = FilterGenerator(table).define_filter(
             column="name", value=value, operator=operator
@@ -1105,18 +1107,8 @@ class FilterGenerator:
             A Filter object.
 
         Raises:
-            ValueError: If the value is not a valid UUID.
+            ValueError: If the value for a oneof filter is not a list.
         """
-        # For equality checks, ensure that the value is a valid UUID.
-        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
-            try:
-                UUID(value)
-            except ValueError as e:
-                raise ValueError(
-                    "Invalid value passed as UUID query parameter."
-                ) from e
-
-        # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
             raise ValueError(ONEOF_ERROR)
 
