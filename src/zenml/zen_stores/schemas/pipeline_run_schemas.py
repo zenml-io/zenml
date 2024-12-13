@@ -288,12 +288,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             RuntimeError: if the model creation fails.
         """
-        orchestrator_environment = (
-            json.loads(self.orchestrator_environment)
-            if self.orchestrator_environment
-            else {}
-        )
-
         if self.deployment is not None:
             deployment = self.deployment.to_model(include_metadata=True)
 
@@ -374,6 +368,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 # in the response -> We need to reset the metadata here
                 step.metadata = None
 
+            orchestrator_environment = (
+                json.loads(self.orchestrator_environment)
+                if self.orchestrator_environment
+                else {}
+            )
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=self.fetch_metadata(),
