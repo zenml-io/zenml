@@ -173,8 +173,7 @@ class VertexExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         Returns:
             The flavor logo.
         """
-        # TODO: replace with a proper logo
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/vertexai.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/vertexai.png"
 
     @property
     def config_class(self) -> Type[VertexExperimentTrackerConfig]:
