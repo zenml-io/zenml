@@ -379,7 +379,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             number=model_version_number,
             description=model_version_request.description,
             stage=model_version_request.stage,
-            producer_run_id_if_numeric=producer_run_id if is_numeric else id_,
+            producer_run_id_if_numeric=producer_run_id
+            if (producer_run_id and is_numeric)
+            else id_,
         )
 
     def to_model(
