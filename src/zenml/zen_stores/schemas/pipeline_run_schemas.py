@@ -58,12 +58,10 @@ if TYPE_CHECKING:
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
     )
-    from zenml.zen_stores.schemas.run_metadata_schemas import (
-        RunMetadataResourceSchema,
-    )
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -140,12 +138,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="pipeline_runs",
+    run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
-            cascade="delete",
-            overlaps="run_metadata_resources",
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     logs: Optional["LogsSchema"] = Relationship(
@@ -215,11 +213,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
     )
-    tags: List["TagResourceSchema"] = Relationship(
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
@@ -291,12 +291,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             RuntimeError: if the model creation fails.
         """
-        orchestrator_environment = (
-            json.loads(self.orchestrator_environment)
-            if self.orchestrator_environment
-            else {}
-        )
-
         if self.deployment is not None:
             deployment = self.deployment.to_model(include_metadata=True)
 
@@ -377,6 +371,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 # in the response -> We need to reset the metadata here
                 step.metadata = None
 
+            orchestrator_environment = (
+                json.loads(self.orchestrator_environment)
+                if self.orchestrator_environment
+                else {}
+            )
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=self.fetch_metadata(),
@@ -405,7 +404,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
             resources = PipelineRunResponseResources(
                 model_version=model_version,
-                tags=[t.tag.to_model() for t in self.tags],
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         return PipelineRunResponse(

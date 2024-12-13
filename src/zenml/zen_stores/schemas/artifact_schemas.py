@@ -59,10 +59,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionArtifactSchema,
     )
-    from zenml.zen_stores.schemas.run_metadata_schemas import (
-        RunMetadataResourceSchema,
-    )
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -82,12 +80,13 @@ class ArtifactSchema(NamedSchema, table=True):
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="artifact",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
@@ -136,7 +135,7 @@ class ArtifactSchema(NamedSchema, table=True):
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=[tag.to_model() for tag in self.tags],
             latest_version_name=latest_name,
             latest_version_id=latest_id,
         )
@@ -192,12 +191,13 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="artifact_version",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -244,12 +244,12 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     workspace: "WorkspaceSchema" = Relationship(
         back_populates="artifact_versions"
     )
-    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="artifact_versions",
+    run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            cascade="delete",
-            overlaps="run_metadata_resources",
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
@@ -365,7 +365,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             data_type=data_type,
             created=self.created,
             updated=self.updated,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=[tag.to_model() for tag in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
             save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,

@@ -78,32 +78,31 @@ class RunMetadataInterface:
     run_metadata_resources = Relationship()
 
     def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
-        """Fetches all the metadata entries related to the artifact version.
+        """Fetches all the metadata entries related to the entity.
 
         Returns:
-            a dictionary, where the key is the key of the metadata entry
+            A dictionary, where the key is the key of the metadata entry
                 and the values represent the list of entries with this key.
         """
         metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
 
-        # Fetch the metadata related to this step
-        for rm in self.run_metadata_resources:
-            if rm.run_metadata.key not in metadata_collection:
-                metadata_collection[rm.run_metadata.key] = []
-            metadata_collection[rm.run_metadata.key].append(
+        for rm in self.run_metadata:
+            if rm.key not in metadata_collection:
+                metadata_collection[rm.key] = []
+            metadata_collection[rm.key].append(
                 RunMetadataEntry(
-                    value=json.loads(rm.run_metadata.value),
-                    created=rm.run_metadata.created,
+                    value=json.loads(rm.value),
+                    created=rm.created,
                 )
             )
 
         return metadata_collection
 
     def fetch_metadata(self) -> Dict[str, MetadataType]:
-        """Fetches the latest metadata entry related to the artifact version.
+        """Fetches the latest metadata entry related to the entity.
 
         Returns:
-            a dictionary, where the key is the key of the metadata entry
+            A dictionary, where the key is the key of the metadata entry
                 and the values represent the latest entry with this key.
         """
         metadata_collection = self.fetch_metadata_collection()

@@ -56,11 +56,9 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.run_metadata_schemas import (
-    RunMetadataResourceSchema,
-)
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -114,12 +112,13 @@ class ModelSchema(NamedSchema, table=True):
     save_models_to_registry: bool = Field(
         sa_column=Column(BOOLEAN, nullable=False)
     )
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="model",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
@@ -168,7 +167,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-        tags = [t.tag.to_model() for t in self.tags]
+        tags = [tag.to_model() for tag in self.tags]
 
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]
@@ -299,12 +298,13 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="model_version",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
-            cascade="delete",
-            overlaps="tags",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
@@ -316,12 +316,12 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="model_versions",
+    run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
-            cascade="delete",
-            overlaps="run_metadata_resources",
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
@@ -471,7 +471,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             data_artifact_ids=data_artifact_ids,
             deployment_artifact_ids=deployment_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=[tag.to_model() for tag in self.tags],
         )
 
         return ModelVersionResponse(
