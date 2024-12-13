@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field, model_validator
@@ -39,6 +49,9 @@ if TYPE_CHECKING:
         ActionResponse,
     )
     from zenml.models.v2.core.event_source import EventSourceResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
@@ -358,9 +371,12 @@ class TriggerFilter(WorkspaceScopedFilter):
     )
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
@@ -373,7 +389,7 @@ class TriggerFilter(WorkspaceScopedFilter):
             TriggerSchema,
         )
 
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         if self.event_source_flavor:
             event_source_flavor_filter = and_(

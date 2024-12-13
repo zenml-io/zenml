@@ -15,7 +15,6 @@
 
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from uuid import UUID
 
 from pydantic import Field, SecretStr
 
@@ -253,22 +252,9 @@ class SecretFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the secret",
     )
-
     scope: Optional[Union[SecretScope, str]] = Field(
         default=None,
         description="Scope in which to filter secrets",
-        union_mode="left_to_right",
-    )
-
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the Secret",
-        union_mode="left_to_right",
-    )
-
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created the Secret",
         union_mode="left_to_right",
     )
 

@@ -14,7 +14,17 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field, model_validator
@@ -39,6 +49,9 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.component import ComponentResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
@@ -323,7 +336,6 @@ class StackFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
-        "user",
         "component",
     ]
 
@@ -334,42 +346,32 @@ class StackFilter(WorkspaceScopedFilter):
     description: Optional[str] = Field(
         default=None, description="Description of the stack"
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the stack",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the stack",
-        union_mode="left_to_right",
-    )
     component_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Component in the stack",
         union_mode="left_to_right",
     )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the stack.",
-    )
     component: Optional[Union[UUID, str]] = Field(
         default=None, description="Name/ID of a component in the stack."
     )
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
-            UserSchema,
         )
 
         if self.component_id:
@@ -378,17 +380,6 @@ class StackFilter(WorkspaceScopedFilter):
                 StackCompositionSchema.component_id == self.component_id,
             )
             custom_filters.append(component_id_filter)
-
-        if self.user:
-            user_filter = and_(
-                StackSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.component:
             component_filter = and_(

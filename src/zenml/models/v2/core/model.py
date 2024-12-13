@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,8 +30,6 @@ from zenml.models.v2.base.scoped import (
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
 
@@ -318,61 +316,7 @@ class ModelResponse(
 class ModelFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "user_id",
-    ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "user",
-    ]
-
     name: Optional[str] = Field(
         default=None,
         description="Name of the Model",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the Model",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the Model",
-        union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the model.",
-    )
-
-    def get_custom_filters(
-        self,
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters()
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            ModelSchema,
-            UserSchema,
-        )
-
-        if self.user:
-            user_filter = and_(
-                ModelSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
-
-        return custom_filters

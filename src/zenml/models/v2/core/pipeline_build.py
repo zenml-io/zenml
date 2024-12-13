@@ -14,7 +14,17 @@
 """Models representing pipeline builds."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -35,6 +45,9 @@ if TYPE_CHECKING:
 
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.stack import StackResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
@@ -453,16 +466,6 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
         "container_registry_id",
     ]
 
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        description="Workspace for this pipeline build.",
-        default=None,
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        description="User that produced this pipeline build.",
-        default=None,
-        union_mode="left_to_right",
-    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
@@ -502,13 +505,17 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
+        table: Type["AnySchema"],
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
