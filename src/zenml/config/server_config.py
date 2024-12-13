@@ -127,10 +127,6 @@ class ServerConfiguration(BaseModel):
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
             service to use with the `EXTERNAL` authentication scheme.
-        external_cookie_name: The name of the http-only cookie used to store the
-            bearer token used to authenticate with the external authenticator
-            service. Must be specified if the `EXTERNAL` authentication scheme
-            is used.
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
@@ -276,7 +272,6 @@ class ServerConfiguration(BaseModel):
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
-    external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
 
     rbac_implementation_source: Optional[str] = None
@@ -368,14 +363,6 @@ class ServerConfiguration(BaseModel):
                     "The external login and user info authenticator "
                     "URLs must be specified when using the EXTERNAL "
                     "authentication scheme."
-                )
-
-            # If the authentication scheme is set to `EXTERNAL`, the
-            # external cookie name must be specified.
-            if not data.get("external_cookie_name"):
-                raise ValueError(
-                    "The external cookie name must be specified when "
-                    "using the EXTERNAL authentication scheme."
                 )
 
         if cors_allow_origins := data.get("cors_allow_origins"):

@@ -194,7 +194,7 @@ class ZenMLCloudConnection:
         self._token_expires_at = None
 
     def _fetch_auth_token(self) -> str:
-        """Fetch an auth token for the Cloud API from auth0.
+        """Fetch an auth token from the Cloud API.
 
         Raises:
             RuntimeError: If the auth token can't be fetched.
@@ -210,7 +210,7 @@ class ZenMLCloudConnection:
         ):
             return self._token
 
-        # Get an auth token from auth0
+        # Get an auth token from the Cloud API
         login_url = f"{self._config.api_url}/auth/login"
         headers = {"content-type": "application/x-www-form-urlencoded"}
         payload = {
@@ -225,7 +225,9 @@ class ZenMLCloudConnection:
             )
             response.raise_for_status()
         except Exception as e:
-            raise RuntimeError(f"Error fetching auth token from auth0: {e}")
+            raise RuntimeError(
+                f"Error fetching auth token from the Cloud API: {e}"
+            )
 
         json_response = response.json()
         access_token = json_response.get("access_token", "")
@@ -237,7 +239,9 @@ class ZenMLCloudConnection:
             or not expires_in
             or not isinstance(expires_in, int)
         ):
-            raise RuntimeError("Could not fetch auth token from auth0.")
+            raise RuntimeError(
+                "Could not fetch auth token from the Cloud API."
+            )
 
         self._token = access_token
         self._token_expires_at = datetime.now(timezone.utc) + timedelta(

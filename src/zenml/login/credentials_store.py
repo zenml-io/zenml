@@ -468,7 +468,6 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             expires_in=token_response.expires_in,
             expires_at=expires_at,
             leeway=leeway,
-            cookie_name=token_response.cookie_name,
             device_id=token_response.device_id,
             device_metadata=token_response.device_metadata,
         )

@@ -121,7 +121,6 @@ class OAuthTokenResponse(BaseModel):
     refresh_token: Optional[str] = None
     csrf_token: Optional[str] = None
     scope: Optional[str] = None
-    cookie_name: Optional[str] = None
     device_id: Optional[UUID] = None
     device_metadata: Optional[Dict[str, Any]] = None
 
