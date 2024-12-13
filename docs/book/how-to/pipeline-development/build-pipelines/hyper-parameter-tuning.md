@@ -16,7 +16,7 @@ def my_pipeline(step_count: int) -> None:
     data = load_data_step()
     after = []
     for i in range(step_count):
-        train_step(data, learning_rate=i * 0.0001, name=f"train_step_{i}")
+        train_step(data, learning_rate=i * 0.0001, id=f"train_step_{i}")
         after.append(f"train_step_{i}")
     model = select_model_step(..., after=after)
 ```
