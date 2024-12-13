@@ -89,7 +89,8 @@ class RunMetadataResourceSchema(SQLModel, table=True):
     __tablename__ = "run_metadata_resource"
     __table_args__ = (
         Index(
-            "my_index" "resource_id",
+            "run_metadata_resource_index",
+            "resource_id",
             "resource_type",
         ),
     )
