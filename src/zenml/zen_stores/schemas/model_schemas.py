@@ -118,6 +118,7 @@ class ModelSchema(NamedSchema, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
@@ -303,6 +304,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
@@ -319,6 +321,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(

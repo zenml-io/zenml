@@ -143,6 +143,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     logs: Optional["LogsSchema"] = Relationship(
@@ -218,6 +219,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 

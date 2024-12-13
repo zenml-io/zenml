@@ -153,6 +153,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(

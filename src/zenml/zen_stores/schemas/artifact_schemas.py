@@ -86,6 +86,7 @@ class ArtifactSchema(NamedSchema, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
@@ -196,6 +197,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -247,6 +249,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            viewonly=True,
         ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(

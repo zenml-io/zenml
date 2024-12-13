@@ -116,6 +116,7 @@ class RunTemplateSchema(BaseSchema, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
+            viewonly=True,
         ),
     )
 
