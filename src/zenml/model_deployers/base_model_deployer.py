@@ -32,6 +32,7 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service import BaseDeploymentService
+from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
@@ -180,6 +181,12 @@ class BaseModelDeployer(StackComponent, ABC):
                 logger.info(
                     f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
                 )
+                status, _ = services[0].check_status()
+                if status != ServiceState.ACTIVE:
+                    logger.info(
+                        f"Service found for {config.name or config.model_name} is not active. Starting the service."
+                    )
+                    services[0].start(timeout=timeout)
                 return services[0]
         else:
             # Find existing model server
