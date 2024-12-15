@@ -114,9 +114,9 @@ def get_stack_deployment_config(
     assert token is not None
 
     # A new API token is generated for the stack deployment
-    expires = datetime.datetime.utcnow() + datetime.timedelta(
-        minutes=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION
-    )
+    expires = datetime.datetime.now(
+        datetime.timezone.utc
+    ) + datetime.timedelta(minutes=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION)
     api_token = token.encode(expires=expires)
 
     return stack_deployment_class(

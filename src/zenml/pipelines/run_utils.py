@@ -1,7 +1,7 @@
 """Utility functions for running pipelines."""
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
@@ -65,7 +65,7 @@ def create_placeholder_run(
 
     if deployment.schedule:
         return None
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
             name_template=deployment.run_name_template,

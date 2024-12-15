@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Service connector CLI commands."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
@@ -291,7 +291,9 @@ def prompt_expires_at(
     while True:
         default_str = ""
         if default is not None:
-            seconds = int((default - datetime.utcnow()).total_seconds())
+            seconds = int(
+                (default - datetime.now(timezone.utc)).total_seconds()
+            )
             default_str = (
                 f" [{str(default)} i.e. in "
                 f"{seconds_to_human_readable(seconds)}]"
@@ -307,14 +309,16 @@ def prompt_expires_at(
 
         assert expires_at is not None
         assert isinstance(expires_at, datetime)
-        if expires_at < datetime.utcnow():
+        if expires_at < datetime.now(timezone.utc):
             cli_utils.warning(
                 "The expiration time must be in the future. Please enter a "
                 "later date and time."
             )
             continue
 
-        seconds = int((expires_at - datetime.utcnow()).total_seconds())
+        seconds = int(
+            (expires_at - datetime.now(timezone.utc)).total_seconds()
+        )
 
         confirm = click.confirm(
             f"Credentials will be valid until {str(expires_at)} UTC (i.e. "

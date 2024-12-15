@@ -17,7 +17,7 @@ import getpass
 import re
 import time
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1576,7 +1576,7 @@ def deploy(
         ):
             raise click.Abort()
 
-        date_start = datetime.utcnow()
+        date_start = datetime.now(timezone.utc)
 
         webbrowser.open(deployment_config.deployment_url)
         console.print(
