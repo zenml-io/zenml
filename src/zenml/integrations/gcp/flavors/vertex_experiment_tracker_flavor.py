@@ -77,7 +77,7 @@ class VertexExperimentTrackerConfig(
 
     Attributes:
         location: Optional. The default location to use when making API calls. If not
-            set defaults to us-central-1.
+            set defaults to us-central1.
         staging_bucket: Optional. The default staging bucket to use to stage artifacts
             when making API calls. In the form gs://...
         network:
@@ -86,12 +86,6 @@ class VertexExperimentTrackerConfig(
             Private services access must already be configured for the network.
             If specified, all eligible jobs and resources created will be peered
             with this VPC.
-        service_account:
-            Optional. The service account used to launch jobs and deploy models.
-            Jobs that use service_account: BatchPredictionJob, CustomJob,
-            PipelineJob, HyperparameterTuningJob, CustomTrainingJob,
-            CustomPythonPackageTrainingJob, CustomContainerTrainingJob,
-            ModelEvaluationJob.
         encryption_spec_key_name:
             Optional. The Cloud KMS resource identifier of the customer
             managed encryption key used to protect a resource. Has the
@@ -115,12 +109,12 @@ class VertexExperimentTrackerConfig(
     location: Optional[str] = None
     staging_bucket: Optional[str] = None
     network: Optional[str] = None
-    service_account: Optional[str] = SecretField(default=None)
     encryption_spec_key_name: Optional[str] = SecretField(default=None)
     api_endpoint: Optional[str] = SecretField(default=None)
+    api_key: Optional[str] = SecretField(default=None)
+    api_transport: Optional[str] = None
     request_metadata: Optional[Dict[str, Any]] = None
     api_transport: Optional[str] = None
-    request_metadata: Optional[dict] = None
 
     @field_validator("location", mode="before")
     def _validate_experiment(cls, value: str) -> str:
