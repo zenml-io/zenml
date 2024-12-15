@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import (
+    SORT_BY_LATEST_VERSION_KEY,
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -32,6 +36,11 @@ from zenml.utils.pagination_utils import depaginate
 if TYPE_CHECKING:
     from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 # ------------------ Request Model ------------------
 
@@ -320,3 +329,71 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
         default=None,
         description="Name of the Model",
     )
+
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        SORT_BY_LATEST_VERSION_KEY,
+    ]
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query for Models.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, case, desc, func, select
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            ModelSchema,
+            ModelVersionSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == SORT_BY_LATEST_VERSION_KEY:
+            # Subquery to find the latest version per model
+            latest_version_subquery = (
+                select(
+                    ModelVersionSchema.model_id,
+                    case(
+                        (
+                            func.max(ModelVersionSchema.created).is_(None),
+                            ModelSchema.created,
+                        ),
+                        else_=func.max(ModelVersionSchema.created),
+                    ).label("latest_version_created"),
+                )
+                .group_by(ModelVersionSchema.model_id)
+                .subquery()
+            )
+
+            # Join the subquery with the main artifacts query
+            query = query.outerjoin(
+                latest_version_subquery,
+                ModelSchema.id == latest_version_subquery.c.model_id,
+            )
+
+            # Apply sorting based on the operand
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(
+                    asc(latest_version_subquery.c.latest_version_created),
+                    asc(ModelSchema.id),
+                )
+            else:
+                query = query.order_by(
+                    desc(latest_version_subquery.c.latest_version_created),
+                    desc(ModelSchema.id),
+                )
+            return query
+
+        # For other sorting cases, delegate to the parent class
+        return super().apply_sorting(query=query, table=table)

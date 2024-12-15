@@ -346,7 +346,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, case, col, desc, func, select
+        from sqlmodel import asc, case, desc, func, select
 
         from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
@@ -366,7 +366,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
                         else_=func.max(PipelineRunSchema.created),
                     ).label("latest_run"),
                 )
-                .group_by(col(PipelineRunSchema.pipeline_id))
+                .group_by(PipelineRunSchema.pipeline_id)
                 .subquery()
             )
 
@@ -378,13 +378,14 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
 
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(
-                    asc(latest_run_subquery.c.latest_run)
-                ).order_by(col(PipelineSchema.id))
+                    asc(latest_run_subquery.c.latest_run),
+                    asc(PipelineSchema.id),
+                )
             else:
                 query = query.order_by(
-                    desc(latest_run_subquery.c.latest_run)
-                ).order_by(col(PipelineSchema.id))
-
+                    desc(latest_run_subquery.c.latest_run),
+                    desc(PipelineSchema.id),
+                )
             return query
         else:
             return super().apply_sorting(query=query, table=table)
