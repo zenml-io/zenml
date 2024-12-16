@@ -14,7 +14,7 @@
 """SQL Model Implementations for code repositories."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import UUID
 
@@ -151,7 +151,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
         if update.logo_url:
             self.logo_url = update.logo_url
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
 

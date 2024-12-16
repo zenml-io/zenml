@@ -97,7 +97,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         """
         results = why.log(pandas=dataset)
         profile = results.profile()
-        dataset_timestamp = dataset_timestamp or datetime.datetime.utcnow()
+        dataset_timestamp = dataset_timestamp or datetime.datetime.now(
+            datetime.timezone.utc
+        )
         profile.set_dataset_timestamp(dataset_timestamp=dataset_timestamp)
         return profile.view()
 

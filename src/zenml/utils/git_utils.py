@@ -16,7 +16,7 @@
 import os
 from typing import Optional
 
-from git import GitCommandError
+from git.exc import GitCommandError
 from git.repo import Repo
 
 

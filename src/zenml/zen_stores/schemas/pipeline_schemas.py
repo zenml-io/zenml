@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -183,5 +183,5 @@ class PipelineSchema(NamedSchema, table=True):
             The updated `PipelineSchema`.
         """
         self.description = pipeline_update.description
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self

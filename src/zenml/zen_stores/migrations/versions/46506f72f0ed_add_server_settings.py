@@ -6,7 +6,7 @@ Create Date: 2024-04-17 14:17:08.142652
 
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -76,7 +76,7 @@ def upgrade() -> None:
                 "display_announcements": True,
                 "display_updates": True,
                 # Set the updated timestamp to the current time
-                "updated": datetime.utcnow(),
+                "updated": datetime.now(timezone.utc),
             },
         ],
     )

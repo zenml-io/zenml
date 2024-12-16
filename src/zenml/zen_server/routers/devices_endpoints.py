@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -219,7 +219,9 @@ def verify_authorized_device(
             )
 
         # Check if the device verification has expired.
-        if device_model.expires and device_model.expires < datetime.utcnow():
+        if device_model.expires and device_model.expires < datetime.now(
+            timezone.utc
+        ):
             raise ValueError(
                 "Invalid request: device verification expired.",
             )

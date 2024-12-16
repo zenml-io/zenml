@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -154,7 +154,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

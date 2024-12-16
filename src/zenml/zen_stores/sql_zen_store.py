@@ -8628,10 +8628,19 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.utcnow()
+                run_update.end_time = datetime.now(timezone.utc)
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):
+                    # We need to ensure both datetimes are timezone-aware to avoid TypeError when subtracting
+                    # Now calculate the duration time
+                    if pipeline_run.start_time.tzinfo is None:
+                        pipeline_run.start_time = (
+                            pipeline_run.start_time.replace(
+                                tzinfo=timezone.utc
+                            )
+                        )
+
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )

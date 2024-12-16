@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of user tables."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from secrets import token_hex
 from typing import Any, Optional, Tuple
 from uuid import UUID
@@ -100,7 +100,7 @@ class APIKeySchema(NamedSchema, table=True):
         """
         key = cls._generate_jwt_secret_key()
         hashed_key = cls._get_hashed_key(key)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return (
             cls(
                 name=request.name,
@@ -197,7 +197,7 @@ class APIKeySchema(NamedSchema, table=True):
             if hasattr(self, field):
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def internal_update(self, update: APIKeyInternalUpdate) -> "APIKeySchema":
@@ -230,7 +230,7 @@ class APIKeySchema(NamedSchema, table=True):
         Returns:
             The updated `APIKeySchema` and the new un-hashed key.
         """
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         self.previous_key = self.key
         self.retain_period = rotate_request.retain_period_minutes
         new_key = self._generate_jwt_secret_key()

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing API keys."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 from uuid import UUID
 
@@ -319,7 +319,7 @@ class APIKeyInternalResponse(APIKeyResponse):
             and self.retain_period_minutes > 0
         ):
             # check if the previous key is still valid
-            if datetime.utcnow() - self.last_rotated < timedelta(
+            if datetime.now(timezone.utc) - self.last_rotated < timedelta(
                 minutes=self.retain_period_minutes
             ):
                 key_hash = self.previous_key

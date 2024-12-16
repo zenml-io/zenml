@@ -14,7 +14,7 @@
 """SQLModel implementation of step run tables."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
@@ -360,7 +360,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if value and self.model_version_id is None:
                     self.model_version_id = value
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
 
         return self
 

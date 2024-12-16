@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -164,7 +164,7 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The updated `ArtifactSchema`.
         """
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         if artifact_update.name:
             self.name = artifact_update.name
             self.has_custom_name = True
@@ -401,5 +401,5 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             The updated `ArtifactVersionSchema`.
         """
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self

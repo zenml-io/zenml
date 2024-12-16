@@ -15,7 +15,7 @@
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -134,7 +134,7 @@ class StackSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

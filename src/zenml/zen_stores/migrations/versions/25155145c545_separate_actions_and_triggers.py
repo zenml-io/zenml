@@ -6,7 +6,7 @@ Create Date: 2024-05-16 11:29:53.341275
 
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -42,7 +42,7 @@ def migrate_actions() -> None:
         )
     ).fetchall()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     actions_to_insert = []
     trigger_updates = {}
