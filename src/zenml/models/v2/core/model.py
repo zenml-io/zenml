@@ -382,7 +382,7 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
 
             query = query.add_columns(
                 latest_version_subquery.c.latest_version_created,
-            )
+            ).where(ModelSchema.id == latest_version_subquery.c.id)
 
             # Apply sorting based on the operand
             if operand == SorterOps.ASCENDING:

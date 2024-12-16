@@ -376,7 +376,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
 
             query = query.add_columns(
                 latest_run_subquery.c.latest_run,
-            )
+            ).where(PipelineSchema.id == latest_run_subquery.c.id)
 
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(
