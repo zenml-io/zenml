@@ -466,6 +466,11 @@ class WorkspaceScopedFilter(UserScopedFilter):
 class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and tagging."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "tag",
+    ]
+
     tag: Optional[str] = Field(
         description="Tag to apply to the filter query.", default=None
     )
