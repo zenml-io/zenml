@@ -119,6 +119,14 @@ class ServerModel(BaseModel):
         # server ID is the same as the local client (user) ID.
         return self.id == GlobalConfiguration().user_id
 
+    def is_pro_server(self) -> bool:
+        """Return whether the server is a ZenML Pro server.
+
+        Returns:
+            True if the server is a ZenML Pro server, False otherwise.
+        """
+        return self.deployment_type == ServerDeploymentType.CLOUD
+
 
 class ServerLoadInfo(BaseModel):
     """Domain model for ZenML server load information."""

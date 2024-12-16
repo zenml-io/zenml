@@ -1022,12 +1022,12 @@ class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
 
 
 def oauth2_authentication(
+    request: Request,
     token: str = Depends(
         CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
         )
     ),
-    request: Request = Depends(),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 JWT tokens.
 
