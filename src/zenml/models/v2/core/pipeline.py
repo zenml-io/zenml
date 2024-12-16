@@ -346,7 +346,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, case, desc, func, select
+        from sqlmodel import asc, case, col, desc, func, select
 
         from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
@@ -357,7 +357,7 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
             # Subquery to find the latest run per pipeline
             latest_run_subquery = (
                 select(
-                    PipelineRunSchema.pipeline_id,
+                    PipelineSchema.id,
                     case(
                         (
                             func.max(PipelineRunSchema.created).is_(None),
@@ -366,14 +366,16 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
                         else_=func.max(PipelineRunSchema.created),
                     ).label("latest_run"),
                 )
-                .group_by(PipelineRunSchema.pipeline_id)
+                .outerjoin(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
+                )
+                .group_by(col(PipelineSchema.id))
                 .subquery()
             )
 
-            # Join the subquery with the pipelines
-            query = query.outerjoin(
-                latest_run_subquery,
-                PipelineSchema.id == latest_run_subquery.c.pipeline_id,
+            query = query.add_columns(
+                latest_run_subquery.c.latest_run,
             )
 
             if operand == SorterOps.ASCENDING:

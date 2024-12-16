@@ -208,7 +208,7 @@ class ArtifactFilter(WorkspaceScopedTaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, case, desc, func, select
+        from sqlmodel import asc, case, col, desc, func, select
 
         from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import (
@@ -222,7 +222,7 @@ class ArtifactFilter(WorkspaceScopedTaggableFilter):
             # Subquery to find the latest version per artifact
             latest_version_subquery = (
                 select(
-                    ArtifactVersionSchema.artifact_id,
+                    ArtifactSchema.id,
                     case(
                         (
                             func.max(ArtifactVersionSchema.created).is_(None),
@@ -231,14 +231,16 @@ class ArtifactFilter(WorkspaceScopedTaggableFilter):
                         else_=func.max(ArtifactVersionSchema.created),
                     ).label("latest_version_created"),
                 )
-                .group_by(ArtifactVersionSchema.artifact_id)
+                .outerjoin(
+                    ArtifactVersionSchema,
+                    ArtifactSchema.id == ArtifactVersionSchema.artifact_id,  # type: ignore[arg-type]
+                )
+                .group_by(col(ArtifactSchema.id))
                 .subquery()
             )
 
-            # Join the subquery with the main artifacts query
-            query = query.outerjoin(
-                latest_version_subquery,
-                ArtifactSchema.id == latest_version_subquery.c.artifact_id,
+            query = query.add_columns(
+                latest_version_subquery.c.latest_version_created,
             )
 
             # Apply sorting based on the operand

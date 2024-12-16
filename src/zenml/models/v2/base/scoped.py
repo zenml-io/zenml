@@ -245,6 +245,8 @@ class UserScopedFilter(BaseFilter):
                 UserSchema, getattr(table, "user_id") == UserSchema.id
             )
 
+            query = query.add_columns(UserSchema.name)
+
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(asc(column))
             else:
@@ -448,6 +450,8 @@ class WorkspaceScopedFilter(UserScopedFilter):
                 WorkspaceSchema,
                 getattr(table, "workspace_id") == WorkspaceSchema.id,
             )
+
+            query = query.add_columns(WorkspaceSchema.name)
 
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(asc(column))

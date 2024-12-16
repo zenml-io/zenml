@@ -349,7 +349,7 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, case, desc, func, select
+        from sqlmodel import asc, case, col, desc, func, select
 
         from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import (
@@ -363,7 +363,7 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
             # Subquery to find the latest version per model
             latest_version_subquery = (
                 select(
-                    ModelVersionSchema.model_id,
+                    ModelSchema.id,
                     case(
                         (
                             func.max(ModelVersionSchema.created).is_(None),
@@ -372,14 +372,16 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
                         else_=func.max(ModelVersionSchema.created),
                     ).label("latest_version_created"),
                 )
-                .group_by(ModelVersionSchema.model_id)
+                .outerjoin(
+                    ModelVersionSchema,
+                    ModelSchema.id == ModelVersionSchema.model_id,  # type: ignore[arg-type]
+                )
+                .group_by(col(ModelSchema.id))
                 .subquery()
             )
 
-            # Join the subquery with the main artifacts query
-            query = query.outerjoin(
-                latest_version_subquery,
-                ModelSchema.id == latest_version_subquery.c.model_id,
+            query = query.add_columns(
+                latest_version_subquery.c.latest_version_created,
             )
 
             # Apply sorting based on the operand
