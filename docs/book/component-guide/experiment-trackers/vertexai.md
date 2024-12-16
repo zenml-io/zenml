@@ -63,7 +63,7 @@ This configuration method assumes that you have authenticated locally to GCP usi
 
 > **Note**: This method is quick for local setups but is unsuitable for team collaborations or production environments due to its lack of portability.
 
-We can then register the orchestrator as follows:
+We can then register the experiment tracker as follows:
 
 ```shell
 # Register the Vertex AI Experiment Tracker
