@@ -131,7 +131,6 @@ zenml experiment-tracker register <EXPERIMENT_TRACKER_NAME> \
 
 # Register and set a stack with the new experiment tracker
 zenml experiment-tracker connect <EXPERIMENT_TRACKER_NAME> --connector <CONNECTOR_NAME>
-
 ```
 
 {% endtab %}
