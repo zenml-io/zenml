@@ -122,6 +122,7 @@ def write_json(
     file_path: str,
     contents: Any,
     encoder: Optional[Type[json.JSONEncoder]] = None,
+    **json_dump_args
 ) -> None:
     """Write contents as JSON format to file_path.
 
@@ -143,6 +144,7 @@ def write_json(
         json.dumps(
             contents,
             cls=encoder,
+            **json_dump_args
         ),
     )
 
