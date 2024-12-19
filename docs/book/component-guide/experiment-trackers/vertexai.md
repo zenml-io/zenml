@@ -32,7 +32,7 @@ To properly register the Vertex AI Experiment Tracker, you can provide several c
 
 * `project`: Optional. GCP project name. If `None` it will be inferred from the environment.
 * `location`: Optional. GCP location where your experiments will be created. If not set defaults to us-central1.
-* `staging_bucket`: Optional. The default staging bucket to use to stage artifacts and TesorBoard logs. In the form gs://...
+* `staging_bucket`: Optional. The default staging bucket to use to stage artifacts. In the form gs://...
 * `service_account_path`: Optional. A path to the service account credential json file to be used to interact with Vertex AI Experiment Tracker. Please check the [Authentication Methods](vertexai.md#authentication-methods) chapter for more details.
 
 With the project, location and staging_bucket, registering the Vertex AI Experiment Tracker can be done as follows:
@@ -138,35 +138,105 @@ zenml experiment-tracker connect <EXPERIMENT_TRACKER_NAME> --connector <CONNECTO
 
 ## How do you use it?
 
-To be able to log information from a ZenML pipeline step using the Verte AI Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then use Vertex AI's logging or auto-logging capabilities as you would normally do, e.g.:
+To be able to log information from a ZenML pipeline step using the Vertex AI Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then use Vertex AI's logging or auto-logging capabilities as you would normally do, e.g.
+
+Here are two examples demonstrating how to use the experiment tracker:
+
+### Example 1: Logging Metrics Using Built-in Methods
+
+This example demonstrates how to log time-series metrics using `aiplatform.log_time_series_metrics` from within a Keras callback, as well as using `aiplatform.log_metrics` to log specific metrics and `aiplatform.log_params` to log experiment parameters. The logged metrics can then be visualised in the UI of Vertex AI Experiment Tracker and integrated TensorBoard instance.
+
+```python
+from google.cloud import aiplatform
+
+class VertexAICallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        metrics = {key: value for key, value in logs.items() if isinstance(value, (int, float))}
+        aiplatform.log_time_series_metrics(metrics=metrics, step=epoch)
+
+
+@step(experiment_tracker="<VERTEXAI_TRACKER_STACK_COMPONENT_NAME>")
+def train_model(
+    config: TrainerConfig,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_val: np.ndarray,
+    y_val: np.ndarray,
+):
+    aiplatform.autolog()
+
+    ...
+
+    # Train the model, using the custom callback to log metrics into experiment tracker
+    model.fit(
+        x_train,
+        y_train,
+        validation_data=(x_test, y_test),
+        epochs=config.epochs,
+        batch_size=config.batch_size,
+        callbacks=[VertexAICallback()]
+    )
+
+    ...
+
+    # Log specific metrics and parameters
+    aiplatform.log_metrics(...)
+    aiplatform.log_params(...)
+```
+
+### Example 2: Uploading TensorBoard Logs
+
+This example demonstrates how to use an integrated TensorBoard instance to directly upload training logs. This is particularly useful if you're already using TensorBoard in your projects and want to benefit from its detailed visualizations during training. You can initiate the upload using `aiplatform.start_upload_tb_log` and conclude it with `aiplatform.end_upload_tb_log`. Similar to the first example, you can also log specific metrics and parameters directly.
 
 ```python
 from google.cloud import aiplatform
 
 
 @step(experiment_tracker="<VERTEXAI_TRACKER_STACK_COMPONENT_NAME>")
-def tf_trainer(
+def train_model(
+    config: TrainerConfig,
+    gcs_path: str,
     x_train: np.ndarray,
     y_train: np.ndarray,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
-
-    # compile model
-
+    x_val: np.ndarray,
+    y_val: np.ndarray,
+):
     aiplatform.autolog()
 
-    # train model
+    ...
 
-    # log additional information to Vertex AI explicitly if needed
+    experiment_name = ...
+    experiment_run_name = ...
 
-    aiplatform.log_params(...)
+    # define a TensorBoard callback, logs are written to gcs_path.
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=gcs_path,
+        histogram_freq=1
+    )
+    # start the TensorBoard log upload
+    aiplatform.start_upload_tb_log(
+        tensorboard_experiment_name=experiment_name,
+        logdir=gcs_path,
+        run_name_prefix=f"{experiment_run_name}_",
+    )
+    model.fit(
+        x_train,
+        y_train,
+        validation_data=(x_test, y_test),
+        epochs=config.epochs,
+        batch_size=config.batch_size,
+    )
+
+    ...
+
+    # end the TensorBoard log upload
+    aiplatform.end_upload_tb_log()
+
     aiplatform.log_metrics(...)
-    aiplatform.log_classification_metrics(...)
-    aiplatform.log_time_series_metrics(...)
-
-    return model
+    aiplatform.log_params(...)
 ```
+
 
 {% hint style="info" %}
 Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
@@ -199,9 +269,19 @@ print(tracking_url)
 
 This will be the URL of the corresponding experiment in Vertex AI Experiment Tracker.
 
+Below are examples of the UI for the Vertex AI Experiment Tracker and the integrated TensorBoard instance.
+
+**Vertex AI Experiment Tracker UI**
+![VerteAI UI](../../.gitbook/assets/vertexai_experiment_tracker_ui.png)
+
+**TensorBoard UI**
+![TensorBoard UI](../../.gitbook/assets/vertexai_experiment_tracker_tb.png)
+
 ### Additional configuration
 
 For additional configuration of the Vertex AI Experiment Tracker, you can pass `VertexExperimentTrackerSettings` to specify an experiment name or choose previously created TensorBoard instance.
+
+> **Note**: By default, Vertex AI will use the default TensorBoard instance in your project if you don't explicitly specify one.
 
 ```python
 import mlflow
