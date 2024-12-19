@@ -190,9 +190,6 @@ external_login_url: {{ .ZenML.auth.externalLoginURL | quote }}
 {{- if .ZenML.auth.externalUserInfoURL }}
 external_user_info_url: {{ .ZenML.auth.externalUserInfoURL | quote }}
 {{- end }}
-{{- if .ZenML.auth.externalCookieName }}
-external_cookie_name: {{ .ZenML.auth.externalCookieName | quote }}
-{{- end }}
 {{- if .ZenML.auth.externalServerID }}
 external_server_id: {{ .ZenML.auth.externalServerID | quote }}
 {{- end }}

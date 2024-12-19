@@ -145,6 +145,7 @@ def connect_to_server(
     api_key: Optional[str] = None,
     verify_ssl: Union[str, bool] = True,
     refresh: bool = False,
+    pro_server: bool = False,
 ) -> None:
     """Connect the client to a ZenML server or a SQL database.
 
@@ -154,6 +155,7 @@ def connect_to_server(
         verify_ssl: Whether to verify the server's TLS certificate. If a string
             is passed, it is interpreted as the path to a CA bundle file.
         refresh: Whether to force a new login flow with the ZenML server.
+        pro_server: Whether the server is a ZenML Pro server.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -170,7 +172,12 @@ def connect_to_server(
                 f"Authenticating to ZenML server '{url}' using an API key..."
             )
             credentials_store.set_api_key(url, api_key)
-        elif not is_zenml_pro_server_url(url):
+        elif pro_server:
+            # We don't have to do anything here assuming the user has already
+            # logged in to the ZenML Pro server using the ZenML Pro web login
+            # flow.
+            cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
+        else:
             if refresh or not credentials_store.has_valid_authentication(url):
                 cli_utils.declare(
                     f"Authenticating to ZenML server '{url}' using the web "
@@ -179,11 +186,6 @@ def connect_to_server(
                 web_login(url=url, verify_ssl=verify_ssl)
             else:
                 cli_utils.declare(f"Connecting to ZenML server '{url}'...")
-        else:
-            # We don't have to do anything here assuming the user has already
-            # logged in to the ZenML Pro server using the ZenML Pro web login
-            # flow.
-            cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
 
         rest_store_config = RestZenStoreConfiguration(
             url=url,
@@ -277,7 +279,7 @@ def connect_to_pro_server(
         # server to connect to.
         if api_key:
             if server_url:
-                connect_to_server(server_url, api_key=api_key)
+                connect_to_server(server_url, api_key=api_key, pro_server=True)
                 return
             else:
                 raise ValueError(
@@ -405,7 +407,7 @@ def connect_to_pro_server(
         f"Connecting to ZenML Pro server: {server.name} [{str(server.id)}] "
     )
 
-    connect_to_server(server.url, api_key=api_key)
+    connect_to_server(server.url, api_key=api_key, pro_server=True)
 
     # Update the stored server info with more accurate data taken from the
     # ZenML Pro tenant object.

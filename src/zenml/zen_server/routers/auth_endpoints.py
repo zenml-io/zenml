@@ -237,6 +237,8 @@ def token(
         ValueError: If the grant type is invalid.
     """
     config = server_config()
+    cookie_response: Optional[Response] = response
+
     if auth_form_data.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
         auth_context = authenticate_credentials(
             user_name_or_id=auth_form_data.username,
@@ -248,38 +250,34 @@ def token(
             client_id=auth_form_data.client_id,
             device_code=auth_form_data.device_code,
         )
+        # API tokens for authorized device are only meant for non-web clients
+        # and should not be stored as cookies
+        cookie_response = None
+
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_API_KEY:
         auth_context = authenticate_api_key(
             api_key=auth_form_data.api_key,
         )
+        # API tokens for API keys are only meant for non-web clients
+        # and should not be stored as cookies
+        cookie_response = None
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
-        assert config.external_cookie_name is not None
         assert config.external_login_url is not None
 
         authorization_url = config.external_login_url
 
-        # First, try to get the external access token from the external cookie
-        external_access_token = request.cookies.get(
-            config.external_cookie_name
-        )
-        if not external_access_token:
-            # Next, try to get the external access token from the authorization
-            # header
-            authorization_header = request.headers.get("Authorization")
-            if authorization_header:
-                scheme, _, token = authorization_header.partition(" ")
-                if token and scheme.lower() == "bearer":
-                    external_access_token = token
-                    logger.info(
-                        "External access token found in authorization header."
-                    )
-        else:
-            logger.info("External access token found in cookie.")
+        # Try to get the external session token or authorization token from the
+        # authorization header
+        authorization_header = request.headers.get("Authorization")
+        if authorization_header:
+            scheme, _, token = authorization_header.partition(" ")
+            if token and scheme.lower() == "bearer":
+                external_access_token = token
 
-        if not external_access_token:
+        if not authorization_header:
             logger.info(
-                "External access token not found. Redirecting to "
+                "External session or authorization token not found. Redirecting to "
                 "external authenticator."
             )
 
@@ -290,13 +288,18 @@ def token(
             external_access_token=external_access_token
         )
 
+        # TODO: no easy way to detect which type of client issued this request
+        # (web or non-web) in order to decide whether to store the access token
+        # as a cookie in the response or not. For now, we always assume a web
+        # client.
     else:
         # Shouldn't happen, because we verify all grants in the form data
         raise ValueError("Invalid grant type.")
 
     return generate_access_token(
         user_id=auth_context.user.id,
-        response=response,
+        response=cookie_response,
+        request=request,
         device=auth_context.device,
         api_key=auth_context.api_key,
     )
@@ -520,6 +523,8 @@ def api_token(
         return generate_access_token(
             user_id=token.user_id,
             expires_in=expires_in,
+            # Don't include the access token as a cookie in the response
+            response=None,
         ).access_token
 
     verify_permission(
@@ -620,6 +625,8 @@ def api_token(
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,
+        # Don't include the access token as a cookie in the response
+        response=None,
         # Never expire the token
         expires_in=0,
     ).access_token

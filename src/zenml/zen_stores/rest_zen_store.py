@@ -450,6 +450,7 @@ class RestZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
     _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
+    _server_info: Optional[ServerModel] = None
 
     # ====================================
     # ZenML Store interface implementation
@@ -469,7 +470,7 @@ class RestZenStore(BaseZenStore):
         """
         try:
             client_version = zenml.__version__
-            server_version = self.get_store_info().version
+            server_version = self.server_info.version
 
         # Handle cases where the ZenML server is not available
         except ConnectionError as e:
@@ -522,6 +523,17 @@ class RestZenStore(BaseZenStore):
                 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
             )
 
+    @property
+    def server_info(self) -> ServerModel:
+        """Get cached information about the server.
+
+        Returns:
+            Cached information about the server.
+        """
+        if self._server_info is None:
+            return self.get_store_info()
+        return self._server_info
+
     def get_store_info(self) -> ServerModel:
         """Get information about the server.
 
@@ -529,7 +541,8 @@ class RestZenStore(BaseZenStore):
             Information about the server.
         """
         body = self.get(INFO)
-        return ServerModel.model_validate(body)
+        self._server_info = ServerModel.model_validate(body)
+        return self._server_info
 
     def get_deployment_id(self) -> UUID:
         """Get the ID of the deployment.
@@ -537,7 +550,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The ID of the deployment.
         """
-        return self.get_store_info().id
+        return self.server_info.id
 
     # -------------------- Server Settings --------------------
 
@@ -4028,19 +4041,6 @@ class RestZenStore(BaseZenStore):
             token = credentials.api_token if credentials else None
             if credentials and token and not token.expired:
                 self._api_token = token
-
-                # Populate the server info in the credentials store if it is
-                # not already present
-                if not credentials.server_id:
-                    try:
-                        server_info = self.get_store_info()
-                    except Exception as e:
-                        logger.warning(f"Failed to get server info: {e}.")
-                    else:
-                        credentials_store.update_server_info(
-                            self.url, server_info
-                        )
-
                 return self._api_token.access_token
 
             # Token is expired or not found in the cache. Time to get a new one.
@@ -4084,7 +4084,7 @@ class RestZenStore(BaseZenStore):
                     "username": username,
                     "password": password,
                 }
-            elif is_zenml_pro_server_url(self.url):
+            elif self.server_info.is_pro_server():
                 # ZenML Pro tenants use a proprietary authorization grant
                 # where the ZenML Pro API session token is exchanged for a
                 # regular ZenML server access token.
