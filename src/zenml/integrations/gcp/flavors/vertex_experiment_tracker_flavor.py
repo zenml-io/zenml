@@ -106,6 +106,7 @@ class VertexExperimentTrackerConfig(
         request_metadata:
             Optional. Additional gRPC metadata to send with every client request.
     """
+
     location: Optional[str] = None
     staging_bucket: Optional[str] = None
     network: Optional[str] = None
@@ -114,7 +115,6 @@ class VertexExperimentTrackerConfig(
     api_key: Optional[str] = SecretField(default=None)
     api_transport: Optional[str] = None
     request_metadata: Optional[Dict[str, Any]] = None
-    api_transport: Optional[str] = None
 
     @field_validator("location", mode="before")
     def _validate_experiment(cls, value: str) -> str:

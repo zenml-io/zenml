@@ -83,7 +83,9 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         """
         experiment_name = self._get_experiment_name(info=info)
         run_name = self._get_run_name(info=info)
-        tensorboard_resource_name = self._get_tensorboard_resource_name(experiment=experiment_name)
+        tensorboard_resource_name = self._get_tensorboard_resource_name(
+            experiment=experiment_name
+        )
         dashboard_url = self._get_dashboard_url(experiment=experiment_name)
         return {
             METADATA_EXPERIMENT_TRACKER_URL: Uri(dashboard_url),
@@ -128,9 +130,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         Returns:
             The run URL.
         """
-        resource = aiplatform.Experiment(
-            experiment_name=experiment
-        )
+        resource = aiplatform.Experiment(experiment_name=experiment)
         return resource.dashboard_url
 
     def _get_tensorboard_resource_name(self, experiment: str) -> Optional[str]:
@@ -138,8 +138,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
             experiment_name=experiment
         ).get_backing_tensorboard_resource()
         resource_name = (
-            str(resource.resource_name) if resource is not None
-            else None
+            str(resource.resource_name) if resource is not None else None
         )
         return resource_name
 
@@ -188,11 +187,12 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
                 resume=False,
             )
 
-        logger.info(f"VertexAI experiment dashboard: {self._get_dashboard_url(experiment=experiment)}")
+        logger.info(
+            f"VertexAI experiment dashboard: {self._get_dashboard_url(experiment=experiment)}"
+        )
         logger.info(
             f"Tensorboard resource name: {self._get_tensorboard_resource_name(experiment=experiment)}"
         )
-
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Stops the VertexAI run.
