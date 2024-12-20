@@ -240,7 +240,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a connector is used that does not return a
-                `boto3.Session` object.
+                `boto3.Session` object, or if there are insufficient permissions
+                to create EventBridge rules.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
 
@@ -626,23 +627,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
             )
 
-            events_client.put_rule(
-                Name=rule_name,
-                ScheduleExpression=schedule_expr,
-                State="ENABLED",
-            )
-
-            # Add the SageMaker pipeline as target with the role
-            events_client.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {
-                        "Id": f"zenml-target-{deployment.pipeline_configuration.name}",
-                        "Arn": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
-                        "RoleArn": self.config.execution_role,
-                    }
-                ],
-            )
+            try:
+                events_client.put_rule(
+                    Name=rule_name,
+                    ScheduleExpression=schedule_expr,
+                    State="ENABLED",
+                )
+                # Add the SageMaker pipeline as target with the role
+                events_client.put_targets(
+                    Rule=rule_name,
+                    Targets=[
+                        {
+                            "Id": f"zenml-target-{deployment.pipeline_configuration.name}",
+                            "Arn": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
+                            "RoleArn": self.config.execution_role,
+                        }
+                    ],
+                )
+            except (ClientError, BotoCoreError) as e:
+                raise RuntimeError(
+                    f"Failed to create EventBridge target. Please ensure you have "
+                    f"sufficient permissions to create and manage EventBridge targets: {str(e)}"
+                ) from e
 
             logger.info(
                 f"Successfully scheduled pipeline with rule: {rule_name}\n"
