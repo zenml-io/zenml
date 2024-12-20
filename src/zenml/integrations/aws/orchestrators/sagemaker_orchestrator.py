@@ -243,9 +243,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 `boto3.Session` object.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
-            KeyError: If required fields are missing from schedule_info.
-            ClientError: If there's an AWS API error.
-            BotoCoreError: If there's an error in the AWS SDK.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
@@ -567,16 +564,17 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 logger.info(f"Created/Updated IAM policy: {policy_name}")
 
             except (ClientError, BotoCoreError) as e:
-                logger.error(
+                logger.warning(
                     f"Failed to update IAM policy: {e}. "
-                    f"Please ensure you have sufficient IAM permissions."
+                    f"Please ensure your execution role has sufficient permissions "
+                    f"to start pipeline executions."
                 )
-                raise
             except KeyError as e:
-                logger.error(
-                    f"Missing required field for IAM policy creation: {e}"
+                logger.warning(
+                    f"Missing required field for IAM policy creation: {e}. "
+                    f"Please ensure your execution role has sufficient permissions "
+                    f"to start pipeline executions."
                 )
-                raise
 
             # Create the EventBridge rule
             events_client = session.boto_session.client("events")
