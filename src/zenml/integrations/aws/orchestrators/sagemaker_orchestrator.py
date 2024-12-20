@@ -646,8 +646,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
             except (ClientError, BotoCoreError) as e:
                 raise RuntimeError(
-                    f"Failed to create EventBridge target. Please ensure you have "
-                    f"sufficient permissions to create and manage EventBridge targets: {str(e)}"
+                    f"Failed to create EventBridge rule or target. Please ensure you have "
+                    f"sufficient permissions to create and manage EventBridge rules and targets: {str(e)}"
                 ) from e
 
             logger.info(
