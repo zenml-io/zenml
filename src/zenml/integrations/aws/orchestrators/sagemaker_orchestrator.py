@@ -539,18 +539,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ],
             }
 
-            # Create the trust relationship document
-            trust_relationship = {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"Service": "events.amazonaws.com"},
-                        "Action": "sts:AssumeRole",
-                    }
-                ],
-            }
-
             try:
                 # Update the role policy (existing)
                 policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
@@ -560,15 +548,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     PolicyDocument=json.dumps(policy_document),
                 )
                 logger.info(f"Created/Updated IAM policy: {policy_name}")
-
-                # Update the trust relationship
-                iam_client.update_assume_role_policy(
-                    RoleName=role_name,
-                    PolicyDocument=json.dumps(trust_relationship),
-                )
-                logger.info(
-                    f"Updated trust relationship for role: {role_name}"
-                )
 
             except Exception as e:
                 logger.error(
