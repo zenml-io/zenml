@@ -490,21 +490,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Determine first execution time based on schedule type
             if deployment.schedule.cron_expression:
-                schedule_expr = f"cron({deployment.schedule.cron_expression})"
-                next_execution = (
-                    None  # Exact time calculation would require cron parsing
-                )
+                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
+                # Strip any "cron(" prefix if it exists
+                cron_exp = deployment.schedule.cron_expression.replace("cron(", "").replace(")", "")
+                schedule_expr = f"cron({cron_exp})"
+                next_execution = None
             elif deployment.schedule.interval_second:
-                minutes = (
-                    deployment.schedule.interval_second.total_seconds() / 60
-                )
-                schedule_expr = f"rate({int(minutes)} minutes)"
-                next_execution = (
-                    datetime.utcnow() + deployment.schedule.interval_second
-                )
+                minutes = max(1, int(deployment.schedule.interval_second.total_seconds() / 60))
+                schedule_expr = f"rate({minutes} minutes)"
+                next_execution = datetime.utcnow() + deployment.schedule.interval_second
             elif deployment.schedule.run_once_start_time:
-                schedule_expr = f"at({deployment.schedule.run_once_start_time.strftime('%Y-%m-%dT%H:%M:%S')})"
+                # Format for specific date/time: cron(Minutes Hours Day-of-month Month ? Year)
+                # Example: cron(0 12 1 1 ? 2024)
+                dt = deployment.schedule.run_once_start_time
+                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
                 next_execution = deployment.schedule.run_once_start_time
+
+            logger.info(f"Creating EventBridge rule with schedule expression: {schedule_expr}")
 
             events_client.put_rule(
                 Name=rule_name,
