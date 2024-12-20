@@ -126,7 +126,7 @@ class ServerCredentials(BaseModel):
         if self.url == ZENML_PRO_API_URL:
             return ServerType.PRO_API
         if self.url == self.pro_api_url:
-            return ServerType.PRO
+            return ServerType.PRO_API
         if self.organization_id or self.tenant_id:
             return ServerType.PRO
         if urlparse(self.url).hostname in [
