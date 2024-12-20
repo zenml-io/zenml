@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
+import json
 import os
 import re
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -29,7 +31,7 @@ from uuid import UUID
 
 import boto3
 import sagemaker
-from botocore.exceptions import WaiterError
+from botocore.exceptions import BotoCoreError, ClientError, WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -238,19 +240,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a connector is used that does not return a
-                `boto3.Session` object.
+                `boto3.Session` object, or if there are insufficient permissions
+                to create EventBridge rules.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        if deployment.schedule:
-            logger.warning(
-                "The Sagemaker Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
+        # Get the session and client
+        session = self._get_sagemaker_session()
 
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
@@ -459,7 +458,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             sagemaker_steps.append(sagemaker_step)
 
-        # construct the pipeline from the sagemaker_steps
+        # Create the pipeline
         pipeline = Pipeline(
             name=orchestrator_run_name,
             steps=sagemaker_steps,
@@ -479,38 +478,232 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if settings.pipeline_tags
             else None,
         )
-        execution = pipeline.start()
-        logger.warning(
-            "Steps can take 5-15 minutes to start running "
-            "when using the Sagemaker Orchestrator."
-        )
 
-        # Yield metadata based on the generated execution object
-        yield from self.compute_metadata(
-            execution=execution, settings=settings
-        )
+        # Handle scheduling if specified
+        if deployment.schedule:
+            if settings.synchronous:
+                logger.warning(
+                    "The 'synchronous' setting is ignored for scheduled pipelines since "
+                    "they run independently of the deployment process."
+                )
 
-        # mainly for testing purposes, we wait for the pipeline to finish
-        if settings.synchronous:
-            logger.info(
-                "Executing synchronously. Waiting for pipeline to finish... \n"
-                "At this point you can `Ctrl-C` out without cancelling the "
-                "execution."
-            )
+            events_client = session.boto_session.client("events")
+            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
+
+            # Determine first execution time based on schedule type
+            if deployment.schedule.cron_expression:
+                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
+                # Strip any "cron(" prefix if it exists
+                cron_exp = deployment.schedule.cron_expression.replace(
+                    "cron(", ""
+                ).replace(")", "")
+                schedule_expr = f"cron({cron_exp})"
+                next_execution = None
+            elif deployment.schedule.interval_second:
+                minutes = max(
+                    1,
+                    int(
+                        deployment.schedule.interval_second.total_seconds()
+                        / 60
+                    ),
+                )
+                schedule_expr = f"rate({minutes} minutes)"
+                next_execution = (
+                    datetime.utcnow() + deployment.schedule.interval_second
+                )
+            elif deployment.schedule.run_once_start_time:
+                # Convert local time to UTC for EventBridge
+                dt = deployment.schedule.run_once_start_time.astimezone(
+                    timezone.utc
+                )
+                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
+                next_execution = deployment.schedule.run_once_start_time
+
+            # Create IAM policy for EventBridge
+            iam_client = session.boto_session.client("iam")
+            role_name = self.config.execution_role.split("/")[
+                -1
+            ]  # Extract role name from ARN
+
+            # Create the policy document (existing)
+            policy_document = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": ["sagemaker:StartPipelineExecution"],
+                        "Resource": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
+                    }
+                ],
+            }
+
             try:
-                execution.wait(
-                    delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                # Update the role policy (existing)
+                policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
+                iam_client.put_role_policy(
+                    RoleName=role_name,
+                    PolicyName=policy_name,
+                    PolicyDocument=json.dumps(policy_document),
                 )
-                logger.info("Pipeline completed successfully.")
-            except WaiterError:
+                logger.info(f"Created/Updated IAM policy: {policy_name}")
+
+            except (ClientError, BotoCoreError) as e:
+                logger.warning(
+                    f"Failed to update IAM policy: {e}. "
+                    f"Please ensure your execution role has sufficient permissions "
+                    f"to start pipeline executions."
+                )
+            except KeyError as e:
+                logger.warning(
+                    f"Missing required field for IAM policy creation: {e}. "
+                    f"Please ensure your execution role has sufficient permissions "
+                    f"to start pipeline executions."
+                )
+
+            # Create the EventBridge rule
+            events_client = session.boto_session.client("events")
+            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
+
+            # Determine first execution time based on schedule type
+            if deployment.schedule.cron_expression:
+                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
+                # Strip any "cron(" prefix if it exists
+                cron_exp = deployment.schedule.cron_expression.replace(
+                    "cron(", ""
+                ).replace(")", "")
+                schedule_expr = f"cron({cron_exp})"
+                next_execution = None
+            elif deployment.schedule.interval_second:
+                minutes = max(
+                    1,
+                    int(
+                        deployment.schedule.interval_second.total_seconds()
+                        / 60
+                    ),
+                )
+                schedule_expr = f"rate({minutes} minutes)"
+                next_execution = (
+                    datetime.utcnow() + deployment.schedule.interval_second
+                )
+            elif deployment.schedule.run_once_start_time:
+                # Convert local time to UTC for EventBridge
+                dt = deployment.schedule.run_once_start_time.astimezone(
+                    timezone.utc
+                )
+                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
+                next_execution = deployment.schedule.run_once_start_time
+
+            logger.info(
+                f"Creating EventBridge rule with schedule expression: {schedule_expr}\n"
+                f"Note: AWS EventBridge schedules are always executed in UTC timezone.\n"
+                + (
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"({next_execution.astimezone().tzinfo}) / "
+                    f"{next_execution.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} (UTC)"
+                    if next_execution
+                    else f"Using cron expression: {deployment.schedule.cron_expression}"
+                )
+                + (
+                    f" (and every {int(minutes)} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
+                )
+            )
+
+            try:
+                events_client.put_rule(
+                    Name=rule_name,
+                    ScheduleExpression=schedule_expr,
+                    State="ENABLED",
+                )
+                # Add the SageMaker pipeline as target with the role
+                events_client.put_targets(
+                    Rule=rule_name,
+                    Targets=[
+                        {
+                            "Id": f"zenml-target-{deployment.pipeline_configuration.name}",
+                            "Arn": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
+                            "RoleArn": self.config.execution_role,
+                        }
+                    ],
+                )
+            except (ClientError, BotoCoreError) as e:
                 raise RuntimeError(
-                    "Timed out while waiting for pipeline execution to "
-                    "finish. For long-running pipelines we recommend "
-                    "configuring your orchestrator for asynchronous execution. "
-                    "The following command does this for you: \n"
-                    f"`zenml orchestrator update {self.name} "
-                    f"--synchronous=False`"
+                    f"Failed to create EventBridge rule or target. Please ensure you have "
+                    f"sufficient permissions to create and manage EventBridge rules and targets: {str(e)}"
+                ) from e
+
+            logger.info(
+                f"Successfully scheduled pipeline with rule: {rule_name}\n"
+                f"Schedule type: {schedule_expr}\n"
+                + (
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"({next_execution.astimezone().tzinfo})"
+                    if next_execution
+                    else f"Using cron expression: {deployment.schedule.cron_expression}"
                 )
+                + (
+                    f" (and every {int(minutes)} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
+                )
+            )
+
+            # Yield metadata about the schedule
+            schedule_type = (
+                "cron"
+                if deployment.schedule.cron_expression
+                else "rate"
+                if deployment.schedule.interval_second
+                else "one-time"
+            )
+
+            schedule_metadata = {
+                "rule_name": rule_name,
+                "schedule_type": schedule_type,
+                "schedule_expr": schedule_expr,
+                "pipeline_name": orchestrator_run_name,
+                "next_execution": next_execution,
+            }
+
+            yield from self.compute_metadata(
+                execution=schedule_metadata,
+                settings=settings,
+            )
+        else:
+            # Execute the pipeline immediately if no schedule is specified
+            execution = pipeline.start()
+            logger.warning(
+                "Steps can take 5-15 minutes to start running "
+                "when using the Sagemaker Orchestrator."
+            )
+
+            # Yield metadata based on the generated execution object
+            yield from self.compute_metadata(
+                execution=execution, settings=settings
+            )
+
+            # mainly for testing purposes, we wait for the pipeline to finish
+            if settings.synchronous:
+                logger.info(
+                    "Executing synchronously. Waiting for pipeline to finish... \n"
+                    "At this point you can `Ctrl-C` out without cancelling the "
+                    "execution."
+                )
+                try:
+                    execution.wait(
+                        delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                    )
+                    logger.info("Pipeline completed successfully.")
+                except WaiterError:
+                    raise RuntimeError(
+                        "Timed out while waiting for pipeline execution to "
+                        "finish. For long-running pipelines we recommend "
+                        "configuring your orchestrator for asynchronous execution. "
+                        "The following command does this for you: \n"
+                        f"`zenml orchestrator update {self.name} "
+                        f"--synchronous=False`"
+                    )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -594,7 +787,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
-            execution: The corresponding _PipelineExecution object.
+            execution: The corresponding _PipelineExecution object or schedule metadata dict.
             settings: The Sagemaker orchestrator settings.
 
         Yields:
@@ -603,19 +796,31 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # Metadata
         metadata: Dict[str, MetadataType] = {}
 
-        # Orchestrator Run ID
-        if run_id := self._compute_orchestrator_run_id(execution):
-            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+        # Handle schedule metadata if execution is a dict
+        if isinstance(execution, dict):
+            metadata.update(
+                {
+                    "schedule_rule_name": execution["rule_name"],
+                    "schedule_type": execution["schedule_type"],
+                    "schedule_expression": execution["schedule_expr"],
+                    "pipeline_name": execution["pipeline_name"],
+                }
+            )
 
-        # URL to the Sagemaker's pipeline view
-        if orchestrator_url := self._compute_orchestrator_url(execution):
-            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+            if next_execution := execution.get("next_execution"):
+                metadata["next_execution_time"] = next_execution.isoformat()
+        else:
+            # Handle execution metadata
+            if run_id := self._compute_orchestrator_run_id(execution):
+                metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
-        # URL to the corresponding CloudWatch page
-        if logs_url := self._compute_orchestrator_logs_url(
-            execution, settings
-        ):
-            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+            if orchestrator_url := self._compute_orchestrator_url(execution):
+                metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
+
+            if logs_url := self._compute_orchestrator_logs_url(
+                execution, settings
+            ):
+                metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 

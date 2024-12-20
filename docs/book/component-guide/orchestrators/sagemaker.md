@@ -59,7 +59,7 @@ There are three ways you can authenticate your orchestrator and link it to the I
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator:
+The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator. If you plan to use scheduled pipelines, ensure the credentials used by the service connector have the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -72,7 +72,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% endtab %}
 
 {% tab title="Explicit Authentication" %}
-Instead of creating a service connector, you can also configure your AWS authentication credentials directly in the orchestrator:
+Instead of creating a service connector, you can also configure your AWS authentication credentials directly in the orchestrator. If you plan to use scheduled pipelines, ensure these credentials have the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -88,7 +88,7 @@ See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest
 {% endtab %}
 
 {% tab title="Implicit Authentication" %}
-If you neither connect your orchestrator to a service connector nor configure credentials explicitly, ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+If you neither connect your orchestrator to a service connector nor configure credentials explicitly, ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). If you plan to use scheduled pipelines, ensure this profile has the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -152,10 +152,6 @@ Alternatively, for a more detailed view of log messages during SageMaker pipelin
 * Here, you can find log streams for each step of your SageMaker pipeline executions.
 
 ![SageMaker CloudWatch Logs](../../.gitbook/assets/sagemaker-cloudwatch-logs.png)
-
-### Run pipelines on a schedule
-
-The ZenML Sagemaker orchestrator doesn't currently support running pipelines on a schedule. We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for Sagemaker, please [do let us know](https://zenml.io/slack)!
 
 ### Configuration at pipeline or step level
 
@@ -338,5 +334,107 @@ This approach allows for more granular tagging, giving you flexibility in how yo
 ### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+
+### Scheduling Pipelines
+
+The SageMaker orchestrator supports running pipelines on a schedule using AWS EventBridge. You can configure schedules in three ways:
+
+* Using a cron expression
+* Using a fixed interval
+* Running once at a specific time
+
+```python
+from zenml import pipeline
+from datetime import datetime, timedelta
+
+# Using a cron expression (runs daily at 2 AM UTC)
+@pipeline(schedule=Schedule(cron_expression="0 2 * * *"))
+def my_scheduled_pipeline():
+    # Your pipeline steps here
+    pass
+
+# Using an interval (runs every 2 hours)
+@pipeline(schedule=Schedule(interval_second=timedelta(hours=2)))
+def my_interval_pipeline():
+    # Your pipeline steps here
+    pass
+
+# Running once at a specific time
+@pipeline(schedule=Schedule(run_once_start_time=datetime(2024, 12, 31, 23, 59)))
+def my_one_time_pipeline():
+    # Your pipeline steps here
+    pass
+```
+
+When you deploy a scheduled pipeline, ZenML will:
+1. Create an EventBridge rule with the specified schedule
+2. Configure the necessary IAM permissions
+3. Set up the SageMaker pipeline as the target
+
+#### Required IAM Permissions
+
+When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships. Here's a detailed breakdown of why each permission is needed:
+
+1. **Trust Relationships**
+Your execution role needs to trust both SageMaker and EventBridge services to allow them to assume the role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "sagemaker.amazonaws.com",  // Required for SageMaker execution
+          "events.amazonaws.com"      // Required for EventBridge to trigger pipelines
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+2. **Required IAM Policies**
+In addition to the basic SageMaker permissions, the AWS credentials used by the service connector (or provided directly to the orchestrator) need the following permissions to create and manage scheduled pipelines:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",         // Required to create schedule rules
+        "events:PutTargets",      // Required to set pipeline as target
+        "events:DeleteRule",      // Required for cleanup
+        "events:RemoveTargets",   // Required for cleanup
+        "events:DescribeRule",    // Required to verify rule creation
+        "events:ListTargetsByRule" // Required to verify target setup
+      ],
+      "Resource": "arn:aws:events:*:*:rule/zenml-*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",                  // Required to verify role exists
+        "iam:GetRolePolicy",           // Required to check existing policies
+        "iam:PutRolePolicy",           // Required to add new policies
+        "iam:UpdateAssumeRolePolicy"   // Required to update trust relationships
+      ],
+      "Resource": "arn:aws:iam::*:role/*"
+    }
+  ]
+}
+```
+
+These permissions enable:
+* Creation and management of EventBridge rules for scheduling
+* Setting up trust relationships between services
+* Managing IAM policies required for the scheduled execution
+* Cleanup of resources when schedules are removed
+
+Without these permissions, the scheduling functionality will fail with access denied errors.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
