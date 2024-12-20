@@ -59,7 +59,7 @@ There are three ways you can authenticate your orchestrator and link it to the I
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator:
+The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) and connecting it to your SageMaker orchestrator. If you plan to use scheduled pipelines, ensure the credentials used by the service connector have the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -72,7 +72,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% endtab %}
 
 {% tab title="Explicit Authentication" %}
-Instead of creating a service connector, you can also configure your AWS authentication credentials directly in the orchestrator:
+Instead of creating a service connector, you can also configure your AWS authentication credentials directly in the orchestrator. If you plan to use scheduled pipelines, ensure these credentials have the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -88,7 +88,7 @@ See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest
 {% endtab %}
 
 {% tab title="Implicit Authentication" %}
-If you neither connect your orchestrator to a service connector nor configure credentials explicitly, ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+If you neither connect your orchestrator to a service connector nor configure credentials explicitly, ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). If you plan to use scheduled pipelines, ensure this profile has the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](#required-iam-permissions) section:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
