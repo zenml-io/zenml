@@ -519,23 +519,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
                 next_execution = deployment.schedule.run_once_start_time
 
-            logger.info(
-                f"Creating EventBridge rule with schedule expression: {schedule_expr}\n"
-                f"Note: AWS EventBridge schedules are always executed in UTC timezone.\n"
-                + (
-                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
-                    f"({next_execution.astimezone().tzinfo}) / "
-                    f"{next_execution.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} (UTC)"
-                    if next_execution
-                    else f"Using cron expression: {deployment.schedule.cron_expression}"
-                )
-                + (
-                    f" (and every {int(minutes)} minutes after)"
-                    if deployment.schedule.interval_second
-                    else ""
-                )
-            )
-
             # Create IAM policy for EventBridge
             iam_client = session.boto_session.client("iam")
             role_name = self.config.execution_role.split("/")[
