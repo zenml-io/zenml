@@ -244,8 +244,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
             KeyError: If required fields are missing from schedule_info.
-            ClientError: If there's an AWS API error
-            BotoCoreError: If there's an error in the AWS SDK
+            ClientError: If there's an AWS API error.
+            BotoCoreError: If there's an error in the AWS SDK.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
