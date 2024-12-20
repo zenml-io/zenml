@@ -112,7 +112,7 @@ zenml code-repository register <NAME> --type=gitlab \
 where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token, and \<GITLAB\_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
 
 {% hint style="warning" %}
-Please refer to the section on using secrets for stack configuration in order to securely store your Gitlab 
+Please refer to the section on using secrets for stack configuration in order to securely store your GitLab
 Personal Access Token.
 
 ```shell
