@@ -37,7 +37,12 @@ from zenml.constants import (
     LOGIN,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, ExecutionStatus, OAuthDeviceStatus
+from zenml.enums import (
+    AuthScheme,
+    ExecutionStatus,
+    OAuthDeviceStatus,
+    OnboardingStep,
+)
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
@@ -630,12 +635,15 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
     return AuthContext(user=device_model.user, device=device_model)
 
 
-def authenticate_external_user(external_access_token: str) -> AuthContext:
+def authenticate_external_user(
+    external_access_token: str, request: Request
+) -> AuthContext:
     """Implement external authentication.
 
     Args:
         external_access_token: The access token used to authenticate the user
             to the external authenticator.
+        request: The request object.
 
     Returns:
         The authentication context reflecting the authenticated user.
@@ -760,6 +768,17 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 }
             )
             context.alias(user_id=external_user.id, previous_id=user.id)
+
+    # This is the best spot to update the onboarding state to mark the
+    # "zenml login" step as completed for ZenML Pro servers, because the
+    # user has just successfully logged in. However, we need to differentiate
+    # between web clients (i.e. the dashboard) and CLI clients (i.e. the
+    # zenml CLI).
+    user_agent = request.headers.get("User-Agent", "").lower()
+    if "zenml/" in user_agent:
+        store.update_onboarding_state(
+            completed_steps={OnboardingStep.DEVICE_VERIFIED}
+        )
 
     return AuthContext(user=user)
 

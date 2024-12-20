@@ -4218,6 +4218,11 @@ class RestZenStore(BaseZenStore):
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            self._session.headers.update(
+                {"User-Agent": "zenml/" + zenml.__version__}
+            )
 
         # Note that we return an unauthenticated session here. An API token
         # is only fetched and set in the authorization header when and if it is
