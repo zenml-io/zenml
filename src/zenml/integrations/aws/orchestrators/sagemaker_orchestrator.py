@@ -521,10 +521,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 f"Creating EventBridge rule with schedule expression: {schedule_expr}"
             )
 
-            # Create IAM policy for EventBridge to trigger SageMaker pipeline
+            # Create IAM policy and trust relationship for EventBridge
             iam_client = session.boto_session.client("iam")
+            role_name = self.config.execution_role.split("/")[
+                -1
+            ]  # Extract role name from ARN
 
-            # Create the policy document
+            # Create the policy document (existing)
             policy_document = {
                 "Version": "2012-10-17",
                 "Statement": [
@@ -536,22 +539,41 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ],
             }
 
-            # Create or update the role policy
-            try:
-                role_name = self.config.execution_role.split("/")[
-                    -1
-                ]  # Extract role name from ARN
-                policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
+            # Create the trust relationship document
+            trust_relationship = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"Service": "events.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                ],
+            }
 
+            try:
+                # Update the role policy (existing)
+                policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
                 iam_client.put_role_policy(
                     RoleName=role_name,
                     PolicyName=policy_name,
                     PolicyDocument=json.dumps(policy_document),
                 )
-
                 logger.info(f"Created/Updated IAM policy: {policy_name}")
+
+                # Update the trust relationship
+                iam_client.update_assume_role_policy(
+                    RoleName=role_name,
+                    PolicyDocument=json.dumps(trust_relationship),
+                )
+                logger.info(
+                    f"Updated trust relationship for role: {role_name}"
+                )
+
             except Exception as e:
-                logger.error(f"Failed to create/update IAM policy: {e}")
+                logger.error(
+                    f"Failed to update IAM policy or trust relationship: {e}"
+                )
                 raise
 
             # Create the EventBridge rule
