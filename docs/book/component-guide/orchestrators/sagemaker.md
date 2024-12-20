@@ -373,10 +373,10 @@ When you deploy a scheduled pipeline, ZenML will:
 
 #### Required IAM Permissions
 
-When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships:
+When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships. Here's a detailed breakdown of why each permission is needed:
 
-1. Trust Relationships
-Your execution role needs to trust both SageMaker and EventBridge services. Add this trust relationship to your role:
+1. **Trust Relationships**
+Your execution role needs to trust both SageMaker and EventBridge services to allow them to assume the role:
 
 ```json
 {
@@ -386,8 +386,8 @@ Your execution role needs to trust both SageMaker and EventBridge services. Add 
       "Effect": "Allow",
       "Principal": {
         "Service": [
-          "sagemaker.amazonaws.com",
-          "events.amazonaws.com"
+          "sagemaker.amazonaws.com",  // Required for SageMaker execution
+          "events.amazonaws.com"      // Required for EventBridge to trigger pipelines
         ]
       },
       "Action": "sts:AssumeRole"
@@ -396,8 +396,8 @@ Your execution role needs to trust both SageMaker and EventBridge services. Add 
 }
 ```
 
-2. Required IAM Policies
-In addition to the basic SageMaker permissions, you'll need:
+2. **Required IAM Policies**
+In addition to the basic SageMaker permissions, the AWS credentials used by the service connector (or provided directly to the orchestrator) need the following permissions to create and manage scheduled pipelines:
 
 ```json
 {
@@ -406,27 +406,35 @@ In addition to the basic SageMaker permissions, you'll need:
     {
       "Effect": "Allow",
       "Action": [
-        "events:PutRule",
-        "events:PutTargets",
-        "events:DeleteRule",
-        "events:RemoveTargets",
-        "events:DescribeRule",
-        "events:ListTargetsByRule"
+        "events:PutRule",         // Required to create schedule rules
+        "events:PutTargets",      // Required to set pipeline as target
+        "events:DeleteRule",      // Required for cleanup
+        "events:RemoveTargets",   // Required for cleanup
+        "events:DescribeRule",    // Required to verify rule creation
+        "events:ListTargetsByRule" // Required to verify target setup
       ],
       "Resource": "arn:aws:events:*:*:rule/zenml-*"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "iam:GetRole",
-        "iam:GetRolePolicy",
-        "iam:PutRolePolicy",
-        "iam:UpdateAssumeRolePolicy"
+        "iam:GetRole",                  // Required to verify role exists
+        "iam:GetRolePolicy",           // Required to check existing policies
+        "iam:PutRolePolicy",           // Required to add new policies
+        "iam:UpdateAssumeRolePolicy"   // Required to update trust relationships
       ],
       "Resource": "arn:aws:iam::*:role/*"
     }
   ]
 }
 ```
+
+These permissions enable:
+* Creation and management of EventBridge rules for scheduling
+* Setting up trust relationships between services
+* Managing IAM policies required for the scheduled execution
+* Cleanup of resources when schedules are removed
+
+Without these permissions, the scheduling functionality will fail with access denied errors.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
