@@ -153,10 +153,6 @@ Alternatively, for a more detailed view of log messages during SageMaker pipelin
 
 ![SageMaker CloudWatch Logs](../../.gitbook/assets/sagemaker-cloudwatch-logs.png)
 
-### Run pipelines on a schedule
-
-The ZenML Sagemaker orchestrator doesn't currently support running pipelines on a schedule. We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for Sagemaker, please [do let us know](https://zenml.io/slack)!
-
 ### Configuration at pipeline or step level
 
 When running your ZenML pipeline with the Sagemaker orchestrator, the configuration set when configuring the orchestrator as a ZenML component will be used by default. However, it is possible to provide additional configuration at the pipeline or step level. This allows you to run whole pipelines or individual steps with alternative configurations. For example, this allows you to run the training process with a heavier, GPU-enabled instance type, while running other steps with lighter instances.
@@ -338,5 +334,99 @@ This approach allows for more granular tagging, giving you flexibility in how yo
 ### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+
+### Scheduling Pipelines
+
+The SageMaker orchestrator supports running pipelines on a schedule using AWS EventBridge. You can configure schedules in three ways:
+
+* Using a cron expression
+* Using a fixed interval
+* Running once at a specific time
+
+```python
+from zenml import pipeline
+from datetime import datetime, timedelta
+
+# Using a cron expression (runs daily at 2 AM UTC)
+@pipeline(schedule=Schedule(cron_expression="0 2 * * *"))
+def my_scheduled_pipeline():
+    # Your pipeline steps here
+    pass
+
+# Using an interval (runs every 2 hours)
+@pipeline(schedule=Schedule(interval_second=timedelta(hours=2)))
+def my_interval_pipeline():
+    # Your pipeline steps here
+    pass
+
+# Running once at a specific time
+@pipeline(schedule=Schedule(run_once_start_time=datetime(2024, 12, 31, 23, 59)))
+def my_one_time_pipeline():
+    # Your pipeline steps here
+    pass
+```
+
+When you deploy a scheduled pipeline, ZenML will:
+1. Create an EventBridge rule with the specified schedule
+2. Configure the necessary IAM permissions
+3. Set up the SageMaker pipeline as the target
+
+#### Required IAM Permissions
+
+When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships:
+
+1. Trust Relationships
+Your execution role needs to trust both SageMaker and EventBridge services. Add this trust relationship to your role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "sagemaker.amazonaws.com",
+          "events.amazonaws.com"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+2. Required IAM Policies
+In addition to the basic SageMaker permissions, you'll need:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:PutTargets",
+        "events:DeleteRule",
+        "events:RemoveTargets",
+        "events:DescribeRule",
+        "events:ListTargetsByRule"
+      ],
+      "Resource": "arn:aws:events:*:*:rule/zenml-*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::*:role/*"
+    }
+  ]
+}
+```
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

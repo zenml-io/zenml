@@ -18,7 +18,7 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 | [KubernetesOrchestrator](../../../component-guide/orchestrators/kubernetes.md)      | ✅                 |
 | [LocalOrchestrator](../../../component-guide/orchestrators/local.md)                | ⛔️                 |
 | [LocalDockerOrchestrator](../../../component-guide/orchestrators/local-docker.md)   | ⛔️                 |
-| [SagemakerOrchestrator](../../../component-guide/orchestrators/sagemaker.md)        | ⛔️                 |
+| [SagemakerOrchestrator](../../../component-guide/orchestrators/sagemaker.md)        | ✅                  |
 | [SkypilotAWSOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |
 | [SkypilotAzureOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)  | ⛔️                 |
 | [SkypilotGCPOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |

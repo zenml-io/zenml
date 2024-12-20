@@ -141,7 +141,7 @@ To see a full end-to-end worked example of a custom orchestrator, [see here](htt
 
 There are some additional optional features that your orchestrator can implement:
 
-* **Running pipelines on a schedule**: if your orchestrator supports running pipelines on a schedule, make sure to handle `deployment.schedule` if it exists. If your orchestrator does not support schedules, you should either log a warning and or even raise an exception in case the user tries to schedule a pipeline.
+* **Running pipelines on a schedule**: if your orchestrator supports running pipelines on a schedule, make sure to handle `deployment.schedule` if it exists. If your orchestrator ules, you should either log a warning and or even raise an exception in case the user tries to schedule a pipeline.
 * **Specifying hardware resources**: If your orchestrator supports setting resources like CPUs, GPUs or memory for the pipeline or specific steps, make sure to handle the values defined in `step.config.resource_settings`. See the code sample below for additional helper methods to check whether any resources are required from your orchestrator.
 
 ### Code sample
