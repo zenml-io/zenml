@@ -646,21 +646,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
             # Yield metadata about the schedule
-            yield {
-                "schedule_rule_name": rule_name,
-                "schedule_type": (
-                    "cron"
-                    if deployment.schedule.cron_expression
-                    else "rate"
-                    if deployment.schedule.interval_second
-                    else "one-time"
-                ),
-                "schedule_expression": schedule_expr,
-                "pipeline_name": orchestrator_run_name,
-                "next_execution_time": next_execution.isoformat()
-                if next_execution
-                else None,
-            }
+            schedule_type = (
+                "cron"
+                if deployment.schedule.cron_expression
+                else "rate"
+                if deployment.schedule.interval_second
+                else "one-time"
+            )
+
+            yield self.compute_schedule_metadata(
+                rule_name=rule_name,
+                schedule_expr=schedule_expr,
+                pipeline_name=orchestrator_run_name,
+                next_execution=next_execution,
+                schedule_type=schedule_type,
+            )
         else:
             # Execute the pipeline immediately if no schedule is specified
             execution = pipeline.start()
@@ -896,3 +896,35 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 f"There was an issue while extracting the pipeline run ID: {e}"
             )
             return None
+
+    def compute_schedule_metadata(
+        self,
+        rule_name: str,
+        schedule_expr: str,
+        pipeline_name: str,
+        next_execution: Optional[datetime],
+        schedule_type: str,
+    ) -> Dict[str, MetadataType]:
+        """Generate metadata for scheduled pipeline executions.
+
+        Args:
+            rule_name: The name of the EventBridge rule
+            schedule_expr: The schedule expression (cron or rate)
+            pipeline_name: Name of the SageMaker pipeline
+            next_execution: Next scheduled execution time
+            schedule_type: Type of schedule (cron/rate/one-time)
+
+        Returns:
+            A dictionary of metadata related to the schedule.
+        """
+        metadata: Dict[str, MetadataType] = {
+            "schedule_rule_name": rule_name,
+            "schedule_type": schedule_type,
+            "schedule_expression": schedule_expr,
+            "pipeline_name": pipeline_name,
+        }
+
+        if next_execution:
+            metadata["next_execution_time"] = next_execution.isoformat()
+
+        return metadata
