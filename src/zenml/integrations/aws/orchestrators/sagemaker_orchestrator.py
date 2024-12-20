@@ -15,6 +15,7 @@
 
 import os
 import re
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -245,12 +246,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        if deployment.schedule:
-            logger.warning(
-                "The Sagemaker Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
+        # Get the session and client
+        session = self._get_sagemaker_session()
 
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
@@ -459,7 +456,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             sagemaker_steps.append(sagemaker_step)
 
-        # construct the pipeline from the sagemaker_steps
+        # Create the pipeline
         pipeline = Pipeline(
             name=orchestrator_run_name,
             steps=sagemaker_steps,
@@ -479,38 +476,119 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if settings.pipeline_tags
             else None,
         )
-        execution = pipeline.start()
-        logger.warning(
-            "Steps can take 5-15 minutes to start running "
-            "when using the Sagemaker Orchestrator."
-        )
 
-        # Yield metadata based on the generated execution object
-        yield from self.compute_metadata(
-            execution=execution, settings=settings
-        )
+        # Handle scheduling if specified
+        if deployment.schedule:
+            if settings.synchronous:
+                logger.warning(
+                    "The 'synchronous' setting is ignored for scheduled pipelines since "
+                    "they run independently of the deployment process."
+                )
 
-        # mainly for testing purposes, we wait for the pipeline to finish
-        if settings.synchronous:
-            logger.info(
-                "Executing synchronously. Waiting for pipeline to finish... \n"
-                "At this point you can `Ctrl-C` out without cancelling the "
-                "execution."
+            events_client = session.boto_session.client("events")
+            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
+
+            # Determine first execution time based on schedule type
+            if deployment.schedule.cron_expression:
+                schedule_expr = f"cron({deployment.schedule.cron_expression})"
+                next_execution = (
+                    None  # Exact time calculation would require cron parsing
+                )
+            elif deployment.schedule.interval_second:
+                minutes = (
+                    deployment.schedule.interval_second.total_seconds() / 60
+                )
+                schedule_expr = f"rate({int(minutes)} minutes)"
+                next_execution = (
+                    datetime.utcnow() + deployment.schedule.interval_second
+                )
+            elif deployment.schedule.run_once_start_time:
+                schedule_expr = f"at({deployment.schedule.run_once_start_time.strftime('%Y-%m-%dT%H:%M:%S')})"
+                next_execution = deployment.schedule.run_once_start_time
+
+            events_client.put_rule(
+                Name=rule_name,
+                ScheduleExpression=schedule_expr,
+                State="ENABLED"
             )
-            try:
-                execution.wait(
-                    delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+
+            # Add the SageMaker pipeline as target
+            events_client.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {
+                        "Id": f"zenml-target-{deployment.pipeline_configuration.name}",
+                        "Arn": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
+                        "RoleArn": self.config.execution_role,
+                    }
+                ],
+            )
+
+            logger.info(
+                f"Successfully scheduled pipeline with rule: {rule_name}\n"
+                f"Schedule type: {schedule_expr}\n"
+                + (
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                    if next_execution
+                    else f"Using cron expression: {deployment.schedule.cron_expression}"
                 )
-                logger.info("Pipeline completed successfully.")
-            except WaiterError:
-                raise RuntimeError(
-                    "Timed out while waiting for pipeline execution to "
-                    "finish. For long-running pipelines we recommend "
-                    "configuring your orchestrator for asynchronous execution. "
-                    "The following command does this for you: \n"
-                    f"`zenml orchestrator update {self.name} "
-                    f"--synchronous=False`"
+                + (
+                    f" (and every {int(minutes)} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
                 )
+            )
+
+            # Yield metadata about the schedule
+            yield {
+                "schedule_rule_name": rule_name,
+                "schedule_type": (
+                    "cron"
+                    if deployment.schedule.cron_expression
+                    else "rate"
+                    if deployment.schedule.interval_second
+                    else "one-time"
+                ),
+                "schedule_expression": schedule_expr,
+                "pipeline_name": orchestrator_run_name,
+                "next_execution_time": next_execution.isoformat()
+                if next_execution
+                else None,
+            }
+        else:
+            # Execute the pipeline immediately if no schedule is specified
+            execution = pipeline.start()
+            logger.warning(
+                "Steps can take 5-15 minutes to start running "
+                "when using the Sagemaker Orchestrator."
+            )
+
+            # Yield metadata based on the generated execution object
+            yield from self.compute_metadata(
+                execution=execution, settings=settings
+            )
+
+            # mainly for testing purposes, we wait for the pipeline to finish
+            if settings.synchronous:
+                logger.info(
+                    "Executing synchronously. Waiting for pipeline to finish... \n"
+                    "At this point you can `Ctrl-C` out without cancelling the "
+                    "execution."
+                )
+                try:
+                    execution.wait(
+                        delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                    )
+                    logger.info("Pipeline completed successfully.")
+                except WaiterError:
+                    raise RuntimeError(
+                        "Timed out while waiting for pipeline execution to "
+                        "finish. For long-running pipelines we recommend "
+                        "configuring your orchestrator for asynchronous execution. "
+                        "The following command does this for you: \n"
+                        f"`zenml orchestrator update {self.name} "
+                        f"--synchronous=False`"
+                    )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
