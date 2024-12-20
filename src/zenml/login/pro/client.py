@@ -61,13 +61,12 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     _organization: Optional["OrganizationClient"] = None
 
     def __init__(
-        self, url: Optional[str] = None, api_token: Optional[APIToken] = None
+        self, url: str, api_token: Optional[APIToken] = None
     ) -> None:
         """Initialize the ZenML Pro client.
 
         Args:
-            url: The URL of the ZenML Pro API server. If not provided, the
-                default ZenML Pro API server URL is used.
+            url: The URL of the ZenML Pro API server.
             api_token: The API token to use for authentication. If not provided,
                 the token is fetched from the credentials store.
 
@@ -75,7 +74,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             AuthorizationException: If no API token is provided and no token
                 is found in the credentials store.
         """
-        self._url = url or ZENML_PRO_API_URL
+        self._url = url
         if api_token is None:
             logger.debug(
                 "No ZenML Pro API token provided. Fetching from credentials "

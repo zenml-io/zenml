@@ -53,6 +53,7 @@ from zenml.models import (
     UserFilter,
     UserResponse,
     WorkspaceResponse,
+    ServerDeploymentType,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
@@ -390,7 +391,7 @@ class BaseZenStore(
         secrets_store_type = SecretsStoreType.NONE
         if isinstance(self, SqlZenStore) and self.config.secrets_store:
             secrets_store_type = self.config.secrets_store.type
-        return ServerModel(
+        store_info = ServerModel(
             id=GlobalConfiguration().user_id,
             active=True,
             version=zenml.__version__,
@@ -404,6 +405,23 @@ class BaseZenStore(
             analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
         )
+
+        # Add ZenML Pro specific store information to the server model, if available.
+        if store_info.deployment_type == ServerDeploymentType.CLOUD:
+            from zenml.config.server_config import ServerProConfiguration
+
+            pro_config = ServerProConfiguration.get_server_config()
+
+            store_info.pro_api_url = pro_config.api_url
+            store_info.pro_dashboard_url = pro_config.dashboard_url
+            store_info.pro_organization_id = pro_config.organization_id
+            store_info.pro_tenant_id = pro_config.tenant_id
+            if pro_config.tenant_name:
+                store_info.pro_tenant_name = pro_config.tenant_name
+            if pro_config.organization_name:
+                store_info.pro_organization_name = pro_config.organization_name
+
+        return store_info
 
     def is_local_store(self) -> bool:
         """Check if the store is local or connected to a local ZenML server.

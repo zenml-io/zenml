@@ -124,9 +124,9 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
-    is_zenml_pro_server_url,
 )
 from zenml.models import (
     ActionFilter,
@@ -501,7 +501,7 @@ class RestZenStore(BaseZenStore):
 
         except Exception as e:
             zenml_pro_extra = ""
-            if is_zenml_pro_server_url(self.url):
+            if ".zenml.io" in self.url:
                 zenml_pro_extra = (
                     "\nHINT: " + get_troubleshooting_instructions(self.url)
                 )
@@ -4090,7 +4090,17 @@ class RestZenStore(BaseZenStore):
                 # regular ZenML server access token.
 
                 # Get the ZenML Pro API session token, if cached and valid
-                pro_token = credentials_store.get_pro_token(allow_expired=True)
+
+                # We need to determine the right ZenML Pro API URL to use
+                pro_api_url = self.server_info.pro_api_url
+                if not pro_api_url and credentials and credentials.pro_api_url:
+                    pro_api_url = credentials.pro_api_url
+                if not pro_api_url:
+                    pro_api_url = ZENML_PRO_API_URL
+
+                pro_token = credentials_store.get_pro_token(
+                    pro_api_url, allow_expired=True
+                )
                 if not pro_token:
                     raise CredentialsNotValid(
                         "You need to be logged in to ZenML Pro in order to "

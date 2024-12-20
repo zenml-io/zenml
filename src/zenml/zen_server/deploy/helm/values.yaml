@@ -35,17 +35,26 @@ zenml:
     # `pro` section.
     enabled: false
 
-    # The URL where the ZenML Pro server API is reachable.
+    # The URL where the ZenML Pro server API is reachable
     apiURL: https://cloudapi.zenml.io
 
     # The URL where the ZenML Pro dashboard is reachable.
     dashboardURL: https://cloud.zenml.io
 
+    # Additional origins to allow in the CORS policy.
+    extraCorsOrigins:
+
     # The ID of the ZenML Pro tenant to use.
     tenantID:
 
+    # The name of the ZenML Pro tenant to use.
+    tenantName:
+
     # The ID of the ZenML Pro organization to use.
     organizationID:
+
+    # The name of the ZenML Pro organization to use.
+    organizationName:
 
     # The enrollment key to use for the ZenML Pro tenant.
     enrollmentKey:

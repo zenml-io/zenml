@@ -107,6 +107,42 @@ class ServerModel(BaseModel):
         title="Timestamp of latest user activity traced on the server.",
     )
 
+    pro_dashboard_url: Optional[str] = Field(
+        None,
+        title="The base URL of the ZenML Pro dashboard to which the server "
+        "is connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_api_url: Optional[str] = Field(
+        None,
+        title="The base URL of the ZenML Pro API to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_organization_id: Optional[UUID] = Field(
+        None,
+        title="The ID of the ZenML Pro organization to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_organization_name: Optional[str] = Field(
+        None,
+        title="The name of the ZenML Pro organization to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_tenant_id: Optional[UUID] = Field(
+        None,
+        title="The ID of the ZenML Pro tenant to which the server is connected. "
+        "Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_tenant_name: Optional[str] = Field(
+        None,
+        title="The name of the ZenML Pro tenant to which the server is connected. "
+        "Only set if the server is a ZenML Pro server.",
+    )
+
     def is_local(self) -> bool:
         """Return whether the server is running locally.
 

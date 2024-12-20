@@ -7,7 +7,6 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
-from zenml.exceptions import SubscriptionUpgradeRequiredError
 from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
@@ -22,6 +21,50 @@ class ZenMLCloudConnection:
         self._session: Optional[requests.Session] = None
         self._token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
+
+    def request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a request using the active session.
+
+        Args:
+            method: The HTTP method to use.
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
+
+        Raises:
+            RuntimeError: If the request failed.
+
+        Returns:
+            The response.
+        """
+        url = self._config.api_url + endpoint
+
+        response = self.session.request(
+            method=method, url=url, params=params, json=data, timeout=7
+        )
+        if response.status_code == 401:
+            # Refresh the auth token and try again
+            self._clear_session()
+            response = self.session.request(
+                method=method, url=url, params=params, json=data, timeout=7
+            )
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            raise RuntimeError(
+                f"Failed while trying to contact the central zenml pro "
+                f"service: {e}"
+            )
+
+        return response
 
     def get(
         self, endpoint: str, params: Optional[Dict[str, Any]]
@@ -41,26 +84,7 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
-        url = self._config.api_url + endpoint
-
-        response = self.session.get(url=url, params=params, timeout=7)
-        if response.status_code == 401:
-            # If we get an Unauthorized error from the API serer, we refresh the
-            # auth token and try again
-            self._clear_session()
-            response = self.session.get(url=url, params=params, timeout=7)
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError:
-            if response.status_code == 402:
-                raise SubscriptionUpgradeRequiredError(response.json())
-            else:
-                raise RuntimeError(
-                    f"Failed with the following error {response} {response.text}"
-                )
-
-        return response
+        return self.request(method="GET", endpoint=endpoint, params=params)
 
     def post(
         self,
@@ -82,27 +106,9 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
-        url = self._config.api_url + endpoint
-
-        response = self.session.post(
-            url=url, params=params, json=data, timeout=7
+        return self.request(
+            method="POST", endpoint=endpoint, params=params, data=data
         )
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._clear_session()
-            response = self.session.post(
-                url=url, params=params, json=data, timeout=7
-            )
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact the central zenml pro "
-                f"service: {e}"
-            )
-
-        return response
 
     def patch(
         self,
@@ -124,27 +130,9 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
-        url = self._config.api_url + endpoint
-
-        response = self.session.post(
-            url=url, params=params, json=data, timeout=7
+        return self.request(
+            method="PATCH", endpoint=endpoint, params=params, data=data
         )
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._clear_session()
-            response = self.session.patch(
-                url=url, params=params, json=data, timeout=7
-            )
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact the central zenml pro "
-                f"service: {e}"
-            )
-
-        return response
 
     @property
     def session(self) -> requests.Session:
@@ -267,4 +255,4 @@ def cloud_connection() -> ZenMLCloudConnection:
 
 def send_pro_tenant_status_update() -> None:
     """Send a tenant status update to the Cloud API."""
-    cloud_connection().patch("/tenants/status_updates")
+    cloud_connection().patch("/tenant_status")

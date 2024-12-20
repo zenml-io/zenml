@@ -142,21 +142,24 @@ Returns:
 {{- define "zenml.serverConfigurationAttrs" -}}
 
 {{- if .ZenML.pro.enabled }}
-
-auth_scheme: EXTERNAL
 deployment_type: cloud
-cors_allow_origins: "{{ .ZenML.pro.dashboardURL }},{{ .ZenML.pro.serverURL }}"
-external_login_url: "{{ .ZenML.pro.dashboardURL }}/api/auth/login"
-external_user_info_url: "{{ .ZenML.pro.dashboardURL }}/users/authorize_server"
-external_server_id: {{ .ZenML.pro.tenantID | quote }}
-jwt_token_expire_minutes: "60"
-rbac_implementation_source: "zenml.zen_server.rbac.zenml_cloud_rbac.ZenMLCloudRBAC"
-feature_gate_implementation_source: "zenml.zen_server.feature_gate.zenml_cloud_feature_gate.ZenMLCloudFeatureGateInterface"
-dashboard_url: "{{ .ZenML.pro.dashboardURL }}/organizations/{{ .ZenML.pro.organizationID }}/tenants/{{ .ZenML.pro.tenantID }}"
-metadata: '{"account_id":"{{ .ZenML.pro.organizationID }}","organization_id": "{{ .ZenML.pro.organizationID }}","tenant_id":"{{ .ZenML.pro.tenantID }}"}'
-reportable_resources: '["pipeline","pipeline_run","model"]'
 pro_api_url: "{{ .ZenML.pro.apiURL }}"
+pro_dashboard_url: "{{ .ZenML.pro.dashboardURL }}"
 pro_oauth2_audience: "{{ .ZenML.pro.apiURL }}"
+pro_organization_id: "{{ .ZenML.pro.organizationID }}"
+pro_tenant_id: "{{ .ZenML.pro.tenantID }}"
+{{- if .ZenML.pro.tenantName }}
+pro_tenant_name: "{{ .ZenML.pro.tenantName }}"
+{{- end }}
+{{- if .ZenML.pro.organizationName }}
+pro_organization_name: "{{ .ZenML.pro.organizationName }}"
+{{- end }}
+{{- if .ZenML.pro.extraCorsOrigins }}
+cors_allow_origins: "{{ join "," .ZenML.pro.extraCorsOrigins }}"
+{{- end }}
+{{- if .ZenML.auth.jwtTokenExpireMinutes }}
+jwt_token_expire_minutes: {{ .ZenML.auth.jwtTokenExpireMinutes | quote }}
+{{- end }}
 
 {{- else }}
 

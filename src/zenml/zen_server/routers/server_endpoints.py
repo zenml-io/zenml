@@ -31,6 +31,7 @@ from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ServerActivationRequest,
+    ServerDeploymentType,
     ServerLoadInfo,
     ServerModel,
     ServerSettingsResponse,
