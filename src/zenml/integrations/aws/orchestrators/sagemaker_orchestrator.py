@@ -243,6 +243,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 `boto3.Session` object.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
+            Exception: If there is an error during pipeline preparation or execution.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
