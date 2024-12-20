@@ -17,17 +17,21 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    op.execute("""
+    op.execute(
+        """
         UPDATE step_run_input_artifact
         SET type = 'step_output'
         WHERE type = 'default'
-    """)
+    """
+    )
 
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    op.execute("""
+    op.execute(
+        """
         UPDATE step_run_input_artifact
         SET type = 'default'
         WHERE type = 'step_output'
-    """)
+    """
+    )

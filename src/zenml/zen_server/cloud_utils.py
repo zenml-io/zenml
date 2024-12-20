@@ -1,71 +1,23 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import requests
-from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
+from zenml.config.server_config import ServerProConfiguration
 from zenml.exceptions import SubscriptionUpgradeRequiredError
-from zenml.zen_server.utils import server_config
-
-ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
+from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
-
-
-class ZenMLCloudConfiguration(BaseModel):
-    """ZenML Pro RBAC configuration."""
-
-    api_url: str
-    oauth2_client_id: str
-    oauth2_client_secret: str
-    oauth2_audience: str
-
-    @field_validator("api_url")
-    @classmethod
-    def _strip_trailing_slashes_url(cls, url: str) -> str:
-        """Strip any trailing slashes on the API URL.
-
-        Args:
-            url: The API URL.
-
-        Returns:
-            The API URL with potential trailing slashes removed.
-        """
-        return url.rstrip("/")
-
-    @classmethod
-    def from_environment(cls) -> "ZenMLCloudConfiguration":
-        """Get the RBAC configuration from environment variables.
-
-        Returns:
-            The RBAC configuration.
-        """
-        env_config: Dict[str, Any] = {}
-        for k, v in os.environ.items():
-            if v == "":
-                continue
-            if k.startswith(ZENML_CLOUD_RBAC_ENV_PREFIX):
-                env_config[k[len(ZENML_CLOUD_RBAC_ENV_PREFIX) :].lower()] = v
-
-        return ZenMLCloudConfiguration(**env_config)
-
-    model_config = ConfigDict(
-        # Allow extra attributes from configs of previous ZenML versions to
-        # permit downgrading
-        extra="allow"
-    )
-
 
 class ZenMLCloudConnection:
     """Class to use for communication between server and control plane."""
 
     def __init__(self) -> None:
         """Initialize the RBAC component."""
-        self._config = ZenMLCloudConfiguration.from_environment()
+        self._config = ServerProConfiguration.get_server_config()
         self._session: Optional[requests.Session] = None
         self._token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
@@ -169,6 +121,8 @@ class ZenMLCloudConnection:
             self._session = requests.Session()
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
+            # Add the ZenML specific headers
+            self._session.headers.update(get_zenml_headers())
 
             retries = Retry(
                 total=5, backoff_factor=0.1, status_forcelist=[502, 504]
@@ -213,8 +167,11 @@ class ZenMLCloudConnection:
         # Get an auth token from the Cloud API
         login_url = f"{self._config.api_url}/auth/login"
         headers = {"content-type": "application/x-www-form-urlencoded"}
+        # Add zenml specific headers to the request
+        headers.update(get_zenml_headers())
         payload = {
-            "client_id": self._config.oauth2_client_id,
+            # The client ID is the external server ID
+            "client_id": str(server_config().get_external_server_id()),
             "client_secret": self._config.oauth2_client_secret,
             "audience": self._config.oauth2_audience,
             "grant_type": "client_credentials",

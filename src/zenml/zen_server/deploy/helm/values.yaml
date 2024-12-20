@@ -27,8 +27,33 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
+  # ZenML Pro related options.
+  pro:
+    # Set `enabled` to true to enable ZenML Pro servers. If set, some of the
+    # configuration options in the `zenml` section will be overridden with
+    # values specific to ZenML Pro servers computed from the values set in the
+    # `pro` section.
+    enabled: false
+
+    # The URL where the ZenML Pro server API is reachable.
+    apiURL: https://cloudapi.zenml.io
+
+    # The URL where the ZenML Pro dashboard is reachable.
+    dashboardURL: https://cloud.zenml.io
+
+    # The ID of the ZenML Pro tenant to use.
+    tenantID:
+
+    # The ID of the ZenML Pro organization to use.
+    organizationID:
+
+    # The enrollment key to use for the ZenML Pro tenant.
+    enrollmentKey:
+
   # The URL where the ZenML server API is reachable. If not specified, the
   # clients will use the same URL used to connect them to the ZenML server.
+  #
+  # IMPORTANT: this value must be set for ZenML Pro servers.
   serverURL:
 
   # The URL where the ZenML dashboard is reachable.
@@ -39,6 +64,8 @@ zenml:
   # This is value is used to compute the dashboard URLs during the web login
   # authentication workflow, to print dashboard URLs in log messages when
   # running a pipeline and for other similar tasks.
+  #
+  # This value is overridden if the `zenml.pro.enabled` value is set.
   dashboardURL:
 
   debug: true
@@ -48,6 +75,8 @@ zenml:
 
   # ZenML server deployment type. This field is used for telemetry purposes.
   # Example values are "local", "kubernetes", "aws", "gcp", "azure".
+  #
+  # This value is overridden if the `zenml.pro.enabled` value is set.
   deploymentType:
 
   # Authentication settings that control how the ZenML server authenticates
@@ -60,6 +89,8 @@ zenml:
     # HTTP_BASIC - HTTP Basic authentication
     # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer
     # EXTERNAL - External authentication (e.g. via a remote authenticator)
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     authType: OAUTH2_PASSWORD_BEARER
 
     # The secret key used to sign JWT tokens. This should be set to
@@ -91,7 +122,6 @@ zenml:
     # ZenML Server ID.
     jwtTokenIssuer:
 
-
     # The audience of the JWT tokens. If not specified, the audience is set to
     # the ZenML Server ID.
     jwtTokenAudience:
@@ -102,6 +132,8 @@ zenml:
 
     # The expiration time of JWT tokens in minutes. If not specified, generated
     # JWT tokens will not be set to expire.
+    #
+    # This value is automatically set if the `zenml.pro.enabled` value is set.
     jwtTokenExpireMinutes: 
 
     # The name of the http-only cookie used to store the JWT tokens used to
@@ -117,20 +149,31 @@ zenml:
     # The origins allowed to make cross-origin requests to the ZenML server. If
     # not specified, all origins are allowed. Set this when the ZenML dashboard
     # is hosted on a different domain than the ZenML server.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     corsAllowOrigins:
       - "*"
 
     # The maximum number of failed authentication attempts allowed for an OAuth
     # 2.0 device before the device is locked.
+    #
+    # This value is ignored if the `zenml.auth.authType` is set to `EXTERNAL` or
+    # `NO_AUTH`.
     maxFailedDeviceAuthAttempts: 3
 
     # The timeout in seconds after which a pending OAuth 2.0 device
     # authorization request expires.
+    #
+    # This value is ignored if the `zenml.auth.authType` is set to `EXTERNAL` or
+    # `NO_AUTH`.
     deviceAuthTimeout: 300
 
     # The polling interval in seconds used by clients to poll the OAuth 2.0
     # device authorization endpoint for the status of a pending device
     # authorization request.
+    #
+    # This value is ignored if the `zenml.auth.authType` is set to `EXTERNAL` or
+    # `NO_AUTH`.
     deviceAuthPollingInterval: 5
 
     # The time in minutes that an OAuth 2.0 device is allowed to be used to
@@ -139,6 +182,9 @@ zenml:
     # be used indefinitely. This controls the expiration time of the JWT tokens
     # issued to clients after they have authenticated with the ZenML server
     # using an OAuth 2.0 device.
+    #
+    # This value is ignored if the `zenml.auth.authType` is set to `EXTERNAL` or
+    # `NO_AUTH`.
     deviceExpirationMinutes:
 
     # The time in minutes that a trusted OAuth 2.0 device is allowed to be used
@@ -147,27 +193,45 @@ zenml:
     # be used indefinitely. This controls the expiration time of the JWT tokens
     # issued to clients after they have authenticated with the ZenML server
     # using an OAuth 2.0 device that was previously trusted by the user.
+    #
+    # This value is ignored if the `zenml.auth.authType` is set to `EXTERNAL` or
+    # `NO_AUTH`.
     trustedDeviceExpirationMinutes:
 
     # The login URL of an external authenticator service to use with the
     # `EXTERNAL` authentication scheme. Only relevant if `zenml.auth.authType`
     # is set to `EXTERNAL`.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     externalLoginURL:
 
     # The user info URL of an external authenticator service to use with the
     # `EXTERNAL` authentication scheme. Only relevant if `zenml.auth.authType`
     # is set to `EXTERNAL`.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     externalUserInfoURL:
 
     # The UUID of the ZenML server to use with the `EXTERNAL` authentication
     # scheme. If not specified, the regular ZenML server ID (deployment ID) is
     # used.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     externalServerID:
 
     # Source pointing to a class implementing the RBAC interface defined by
-    # `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
+    # `zenml.zen_server.rbac.rbac_interface.RBACInterface`. If not specified,
     # RBAC will not be enabled for this server.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
     rbacImplementationSource:
+
+    # Source pointing to a class implementing the feature gate interface defined
+    # by `zenml.zen_server.feature_gate.feature_gate_interface.FeatureGateInterface`.
+    # If not specified, feature gating will not be enabled for this server.
+    #
+    # This value is overridden if the `zenml.pro.enabled` value is set.
+    featureGateImplementationSource:
 
   # The root URL path to use when behind a proxy. This is useful when the
   # `rewrite-target` annotation is used in the ingress controller, e.g.:

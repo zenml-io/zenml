@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to support ZenML GlobalConfiguration."""
+"""Functionality to support ZenML Server Configuration."""
 
 import json
 import os
@@ -19,7 +19,14 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    model_validator,
+    field_validator,
+)
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
@@ -44,6 +51,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
+    ENV_ZENML_SERVER_PRO_PREFIX,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -539,12 +547,71 @@ class ServerConfiguration(BaseModel):
         for k, v in os.environ.items():
             if v == "":
                 continue
+            if k.startswith(ENV_ZENML_SERVER_PRO_PREFIX):
+                # Skip Pro configuration
+                continue
             if k.startswith(ENV_ZENML_SERVER_PREFIX):
                 env_server_config[
                     k[len(ENV_ZENML_SERVER_PREFIX) :].lower()
                 ] = v
 
         return ServerConfiguration(**env_server_config)
+
+    model_config = ConfigDict(
+        # Allow extra attributes from configs of previous ZenML versions to
+        # permit downgrading
+        extra="allow",
+    )
+
+
+class ServerProConfiguration(BaseModel):
+    """ZenML Server Pro configuration attributes.
+
+    All these attributes can be set through the environment with the
+    `ZENML_SERVER_PRO_`-Prefix. E.g. the value of the `ZENML_SERVER_PRO_API_URL`
+    environment variable will be extracted to api_url.
+
+    Attributes:
+        api_url: The ZenML Pro API URL.
+        oauth2_client_secret: The ZenML Pro OAuth2 client secret used to
+            authenticate the ZenML server with the ZenML Pro API.
+        oauth2_audience: The OAuth2 audience.
+    """
+
+    api_url: str
+    oauth2_client_secret: str
+    oauth2_audience: str
+
+    @field_validator("api_url")
+    @classmethod
+    def _strip_trailing_slashes_url(cls, url: str) -> str:
+        """Strip any trailing slashes on the API URL.
+
+        Args:
+            url: The API URL.
+
+        Returns:
+            The API URL with potential trailing slashes removed.
+        """
+        return url.rstrip("/")
+
+    @classmethod
+    def get_server_config(cls) -> "ServerProConfiguration":
+        """Get the server Pro configuration.
+
+        Returns:
+            The server Pro configuration.
+        """
+        env_server_config: Dict[str, Any] = {}
+        for k, v in os.environ.items():
+            if v == "":
+                continue
+            if k.startswith(ENV_ZENML_SERVER_PRO_PREFIX):
+                env_server_config[
+                    k[len(ENV_ZENML_SERVER_PRO_PREFIX) :].lower()
+                ] = v
+
+        return ServerProConfiguration(**env_server_config)
 
     model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to

@@ -67,6 +67,7 @@ from zenml.zen_server.csrf import CSRFToken
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import (
+    get_zenml_headers,
     is_same_or_subdomain,
     server_config,
     zen_store,
@@ -307,6 +308,14 @@ def authenticate_credentials(
 
         device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
+            if server_config().auth_scheme in [
+                AuthScheme.NO_AUTH,
+                AuthScheme.EXTERNAL,
+            ]:
+                error = "Authentication error: device authorization is not supported."
+                logger.error(error)
+                raise CredentialsNotValid(error)
+
             # Access tokens that have been issued for a device are only valid
             # for that device, so we need to check if the device ID matches any
             # of the valid devices in the database.
@@ -685,6 +694,7 @@ def authenticate_external_user(
     # Get the user information from the external authenticator
     user_info_url = config.external_user_info_url
     headers = {"Authorization": "Bearer " + external_access_token}
+    headers.update(get_zenml_headers())
     query_params = dict(server_id=str(config.get_external_server_id()))
 
     try:

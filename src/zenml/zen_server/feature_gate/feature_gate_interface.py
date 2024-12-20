@@ -20,7 +20,7 @@ from zenml.zen_server.rbac.models import ResourceType
 
 
 class FeatureGateInterface(ABC):
-    """RBAC interface definition."""
+    """Feature gate interface definition."""
 
     @abstractmethod
     def check_entitlement(self, resource: ResourceType) -> None:

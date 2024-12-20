@@ -20,6 +20,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Dict,
     List,
     Optional,
     Tuple,
@@ -31,6 +32,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError
 
+from zenml import __version__ as zenml_version
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
@@ -616,3 +618,20 @@ def is_same_or_subdomain(source_domain: str, target_domain: str) -> bool:
         return True  # Subdomain of subdomain
 
     return False
+
+
+def get_zenml_headers() -> Dict[str, str]:
+    """Get the ZenML specific headers to be included in requests made by the server.
+
+    Returns:
+        The ZenML specific headers.
+    """
+    config = server_config()
+    headers = {
+        "zenml-server-id": str(config.get_external_server_id()),
+        "zenml-server-version": zenml_version,
+    }
+    if config.server_url:
+        headers["zenml-server-url"] = config.server_url
+
+    return headers

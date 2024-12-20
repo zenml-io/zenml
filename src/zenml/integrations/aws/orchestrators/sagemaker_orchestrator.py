@@ -632,9 +632,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
              the URL to the dashboard view in SageMaker.
         """
         try:
-            region_name, pipeline_name, execution_id = (
-                dissect_pipeline_execution_arn(pipeline_execution.arn)
-            )
+            (
+                region_name,
+                pipeline_name,
+                execution_id,
+            ) = dissect_pipeline_execution_arn(pipeline_execution.arn)
 
             # Get the Sagemaker session
             session = pipeline_execution.sagemaker_session

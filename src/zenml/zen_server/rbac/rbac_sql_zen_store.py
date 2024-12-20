@@ -152,8 +152,11 @@ class RBACSqlZenStore(SqlZenStore):
             error = e
 
         if allow_creation:
-            created, model_version_response = (
-                super()._get_or_create_model_version(model_version_request, producer_run_id=producer_run_id)
+            (
+                created,
+                model_version_response,
+            ) = super()._get_or_create_model_version(
+                model_version_request, producer_run_id=producer_run_id
             )
         else:
             try:

@@ -175,6 +175,12 @@ class OAuthLoginRequestForm:
             self.username = username
             self.password = password or ""
         elif self.grant_type == OAuthGrantTypes.OAUTH_DEVICE_CODE:
+            if config.auth_scheme in [AuthScheme.NO_AUTH, AuthScheme.EXTERNAL]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Device authorization is not supported.",
+                )
+
             if not device_code or not client_id:
                 logger.info("Request with missing device code or client ID")
                 raise HTTPException(
@@ -356,6 +362,13 @@ def device_authorization(
         The device authorization response.
     """
     config = server_config()
+
+    if config.auth_scheme in [AuthScheme.NO_AUTH, AuthScheme.EXTERNAL]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Device authorization is not supported.",
+        )
+
     store = zen_store()
 
     try:
