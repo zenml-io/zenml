@@ -143,7 +143,7 @@ Returns:
 
 {{- if .ZenML.pro.enabled }}
 
-auth_scheme: "external"
+auth_scheme: EXTERNAL
 deployment_type: cloud
 cors_allow_origins: "{{ .ZenML.pro.dashboardURL }},{{ .ZenML.pro.serverURL }}"
 external_login_url: "{{ .ZenML.pro.dashboardURL }}/api/auth/login"

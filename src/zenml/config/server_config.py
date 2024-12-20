@@ -24,8 +24,8 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
-    model_validator,
     field_validator,
+    model_validator,
 )
 
 from zenml.constants import (

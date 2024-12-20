@@ -54,6 +54,7 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
+from zenml.zen_server.cloud_utils import send_pro_tenant_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     actions_endpoints,
@@ -389,6 +390,10 @@ def initialize() -> None:
     initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
+    if cfg.deployment_type == ServerDeploymentType.CLOUD:
+        # Send a tenant status update to the Cloud API to indicate that the
+        # ZenML server is running or to update the version and server URL.
+        send_pro_tenant_status_update()
 
 
 DASHBOARD_REDIRECT_URL = None

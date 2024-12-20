@@ -12,6 +12,7 @@ from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
 
+
 class ZenMLCloudConnection:
     """Class to use for communication between server and control plane."""
 
@@ -90,6 +91,48 @@ class ZenMLCloudConnection:
             # Refresh the auth token and try again
             self._clear_session()
             response = self.session.post(
+                url=url, params=params, json=data, timeout=7
+            )
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            raise RuntimeError(
+                f"Failed while trying to contact the central zenml pro "
+                f"service: {e}"
+            )
+
+        return response
+
+    def patch(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a PATCH request using the active session.
+
+        Args:
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
+
+        Raises:
+            RuntimeError: If the request failed.
+
+        Returns:
+            The response.
+        """
+        url = self._config.api_url + endpoint
+
+        response = self.session.post(
+            url=url, params=params, json=data, timeout=7
+        )
+        if response.status_code == 401:
+            # Refresh the auth token and try again
+            self._clear_session()
+            response = self.session.patch(
                 url=url, params=params, json=data, timeout=7
             )
 
@@ -220,3 +263,8 @@ def cloud_connection() -> ZenMLCloudConnection:
         _cloud_connection = ZenMLCloudConnection()
 
     return _cloud_connection
+
+
+def send_pro_tenant_status_update() -> None:
+    """Send a tenant status update to the Cloud API."""
+    cloud_connection().patch("/tenants/status_updates")
