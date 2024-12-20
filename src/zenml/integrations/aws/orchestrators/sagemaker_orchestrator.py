@@ -16,7 +16,7 @@
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -512,14 +512,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     datetime.utcnow() + deployment.schedule.interval_second
                 )
             elif deployment.schedule.run_once_start_time:
-                # Format for specific date/time: cron(Minutes Hours Day-of-month Month ? Year)
-                # Example: cron(0 12 1 1 ? 2024)
-                dt = deployment.schedule.run_once_start_time
+                # Convert local time to UTC for EventBridge
+                dt = deployment.schedule.run_once_start_time.astimezone(
+                    timezone.utc
+                )
                 schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
                 next_execution = deployment.schedule.run_once_start_time
 
             logger.info(
-                f"Creating EventBridge rule with schedule expression: {schedule_expr}"
+                f"Creating EventBridge rule with schedule expression: {schedule_expr}\n"
+                f"Note: AWS EventBridge schedules are always executed in UTC timezone.\n"
+                + (
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"({next_execution.astimezone().tzinfo}) / "
+                    f"{next_execution.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} (UTC)"
+                    if next_execution
+                    else f"Using cron expression: {deployment.schedule.cron_expression}"
+                )
+                + (
+                    f" (and every {int(minutes)} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
+                )
             )
 
             # Create IAM policy for EventBridge
@@ -582,14 +596,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     datetime.utcnow() + deployment.schedule.interval_second
                 )
             elif deployment.schedule.run_once_start_time:
-                # Format for specific date/time: cron(Minutes Hours Day-of-month Month ? Year)
-                # Example: cron(0 12 1 1 ? 2024)
-                dt = deployment.schedule.run_once_start_time
+                # Convert local time to UTC for EventBridge
+                dt = deployment.schedule.run_once_start_time.astimezone(
+                    timezone.utc
+                )
                 schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
                 next_execution = deployment.schedule.run_once_start_time
 
             logger.info(
-                f"Creating EventBridge rule with schedule expression: {schedule_expr}"
+                f"Creating EventBridge rule with schedule expression: {schedule_expr}\n"
+                f"Note: AWS EventBridge schedules are always executed in UTC timezone.\n"
+                + (
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"({next_execution.astimezone().tzinfo}) / "
+                    f"{next_execution.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} (UTC)"
+                    if next_execution
+                    else f"Using cron expression: {deployment.schedule.cron_expression}"
+                )
+                + (
+                    f" (and every {int(minutes)} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
+                )
             )
 
             events_client.put_rule(

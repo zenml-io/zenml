@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from zenml.constants import (
@@ -55,8 +55,8 @@ def test_compute_schedule_metadata():
     )
     settings = SagemakerOrchestratorSettings()
 
-    # Mock schedule info
-    next_execution = datetime.utcnow() + timedelta(hours=1)
+    # Mock schedule info with timezone-aware datetime in UTC
+    next_execution = datetime.now(timezone.utc) + timedelta(hours=1)
     schedule_info = {
         "rule_name": "test-rule",
         "schedule_type": "rate",
@@ -90,6 +90,9 @@ def test_compute_schedule_metadata():
     assert metadata["schedule_expression"] == "rate(1 hour)"
     assert metadata["pipeline_name"] == "test-pipeline"
     assert metadata["next_execution_time"] == next_execution.isoformat()
+
+    # Verify that boto3 Session was created with correct region
+    mock_session.assert_called_once_with(region_name="us-west-2")
 
     # Verify orchestrator metadata
     assert metadata[METADATA_ORCHESTRATOR_URL] == (
