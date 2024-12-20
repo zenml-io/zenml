@@ -809,15 +809,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             if next_execution := execution.get("next_execution"):
                 metadata["next_execution_time"] = next_execution.isoformat()
-
-            # Add orchestrator metadata using the same pattern as execution metadata
-            if orchestrator_url := self._compute_schedule_url(execution):
-                metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
-
-            if logs_url := self._compute_schedule_logs_url(
-                execution, settings
-            ):
-                metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
         else:
             # Handle execution metadata
             if run_id := self._compute_orchestrator_run_id(execution):
@@ -924,67 +915,5 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         except Exception as e:
             logger.warning(
                 f"There was an issue while extracting the pipeline run ID: {e}"
-            )
-            return None
-
-    @staticmethod
-    def _compute_schedule_url(schedule_info: Dict[str, Any]) -> Optional[str]:
-        """Generate the SageMaker Console URL for a scheduled pipeline.
-
-        Args:
-            schedule_info: Dictionary containing schedule information.
-
-        Returns:
-            The URL to the pipeline in the SageMaker console.
-        """
-        try:
-            # Get the Sagemaker session
-            session = boto3.Session(region_name=schedule_info["region"])
-            sagemaker_client = session.client("sagemaker")
-
-            # List the Studio domains and get the Studio Domain ID
-            domains_response = sagemaker_client.list_domains()
-            studio_domain_id = domains_response["Domains"][0]["DomainId"]
-
-            return (
-                f"https://studio-{studio_domain_id}.studio.{schedule_info['region']}."
-                f"sagemaker.aws/pipelines/view/{schedule_info['pipeline_name']}"
-            )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the pipeline url: {e}"
-            )
-            return None
-
-    @staticmethod
-    def _compute_schedule_logs_url(
-        schedule_info: Dict[str, Any],
-        settings: SagemakerOrchestratorSettings,
-    ) -> Optional[str]:
-        """Generate the CloudWatch URL for a scheduled pipeline.
-
-        Args:
-            schedule_info: Dictionary containing schedule information.
-            settings: The Sagemaker orchestrator settings.
-
-        Returns:
-            The URL to query the pipeline logs in CloudWatch.
-        """
-        try:
-            use_training_jobs = True
-            if settings.use_training_step is not None:
-                use_training_jobs = settings.use_training_step
-
-            job_type = "Training" if use_training_jobs else "Processing"
-
-            return (
-                f"https://{schedule_info['region']}.console.aws.amazon.com/"
-                f"cloudwatch/home?region={schedule_info['region']}#logsV2:"
-                f"log-groups/log-group/$252Faws$252Fsagemaker$252F{job_type}Jobs"
-                f"$3FlogStreamNameFilter$3Dpipelines-"
-            )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the logs url: {e}"
             )
             return None

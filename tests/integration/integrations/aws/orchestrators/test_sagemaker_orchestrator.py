@@ -16,11 +16,6 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-from zenml.constants import (
-    METADATA_ORCHESTRATOR_LOGS_URL,
-    METADATA_ORCHESTRATOR_RUN_ID,
-    METADATA_ORCHESTRATOR_URL,
-)
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors import SagemakerOrchestratorFlavor
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -91,17 +86,6 @@ def test_compute_schedule_metadata():
     assert metadata["pipeline_name"] == "test-pipeline"
     assert metadata["next_execution_time"] == next_execution.isoformat()
 
-    # Verify that boto3 Session was created with correct region
-    mock_session.assert_called_once_with(region_name="us-west-2")
-
-    # Verify orchestrator metadata
-    assert metadata[METADATA_ORCHESTRATOR_URL] == (
-        "https://studio-d-test123.studio.us-west-2.sagemaker.aws/pipelines/view/test-pipeline"
-    )
-    assert metadata[METADATA_ORCHESTRATOR_LOGS_URL].startswith(
-        "https://us-west-2.console.aws.amazon.com/cloudwatch/home"
-    )
-
 
 def test_compute_schedule_metadata_error_handling():
     """Tests error handling in schedule metadata computation."""
@@ -142,8 +126,3 @@ def test_compute_schedule_metadata_error_handling():
         assert metadata["schedule_type"] == "rate"
         assert metadata["schedule_expression"] == "rate(1 hour)"
         assert metadata["pipeline_name"] == "test-pipeline"
-
-        # URLs should be None due to error
-        assert METADATA_ORCHESTRATOR_RUN_ID not in metadata
-        assert METADATA_ORCHESTRATOR_URL not in metadata
-        assert METADATA_ORCHESTRATOR_LOGS_URL not in metadata
