@@ -633,7 +633,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 else "one-time"
             )
 
-            yield self.compute_schedule_metadata(
+            yield from self.compute_schedule_metadata(
                 rule_name=rule_name,
                 schedule_expr=schedule_expr,
                 pipeline_name=orchestrator_run_name,
