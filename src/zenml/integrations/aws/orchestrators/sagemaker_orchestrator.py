@@ -31,7 +31,7 @@ from uuid import UUID
 
 import boto3
 import sagemaker
-from botocore.exceptions import WaiterError
+from botocore.exceptions import BotoCoreError, ClientError, WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -243,7 +243,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 `boto3.Session` object.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
-            Exception: If there is an error during pipeline preparation or execution.
+            KeyError: If required fields are missing from schedule_info.
+            ClientError: If there's an AWS API error
+            BotoCoreError: If there's an error in the AWS SDK
 
         Yields:
             A dictionary of metadata related to the pipeline run.
@@ -564,9 +566,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
                 logger.info(f"Created/Updated IAM policy: {policy_name}")
 
-            except Exception as e:
+            except (ClientError, BotoCoreError) as e:
                 logger.error(
-                    f"Failed to update IAM policy or trust relationship: {e}"
+                    f"Failed to update IAM policy: {e}. "
+                    f"Please ensure you have sufficient IAM permissions."
+                )
+                raise
+            except KeyError as e:
+                logger.error(
+                    f"Missing required field for IAM policy creation: {e}"
                 )
                 raise
 
