@@ -614,7 +614,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 f"Successfully scheduled pipeline with rule: {rule_name}\n"
                 f"Schedule type: {schedule_expr}\n"
                 + (
-                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"({next_execution.astimezone().tzinfo})"
                     if next_execution
                     else f"Using cron expression: {deployment.schedule.cron_expression}"
                 )
