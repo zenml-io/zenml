@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
+import json
 import os
 import re
 from datetime import datetime
@@ -492,13 +493,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if deployment.schedule.cron_expression:
                 # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
                 # Strip any "cron(" prefix if it exists
-                cron_exp = deployment.schedule.cron_expression.replace("cron(", "").replace(")", "")
+                cron_exp = deployment.schedule.cron_expression.replace(
+                    "cron(", ""
+                ).replace(")", "")
                 schedule_expr = f"cron({cron_exp})"
                 next_execution = None
             elif deployment.schedule.interval_second:
-                minutes = max(1, int(deployment.schedule.interval_second.total_seconds() / 60))
+                minutes = max(
+                    1,
+                    int(
+                        deployment.schedule.interval_second.total_seconds()
+                        / 60
+                    ),
+                )
                 schedule_expr = f"rate({minutes} minutes)"
-                next_execution = datetime.utcnow() + deployment.schedule.interval_second
+                next_execution = (
+                    datetime.utcnow() + deployment.schedule.interval_second
+                )
             elif deployment.schedule.run_once_start_time:
                 # Format for specific date/time: cron(Minutes Hours Day-of-month Month ? Year)
                 # Example: cron(0 12 1 1 ? 2024)
@@ -506,15 +517,86 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
                 next_execution = deployment.schedule.run_once_start_time
 
-            logger.info(f"Creating EventBridge rule with schedule expression: {schedule_expr}")
+            logger.info(
+                f"Creating EventBridge rule with schedule expression: {schedule_expr}"
+            )
+
+            # Create IAM policy for EventBridge to trigger SageMaker pipeline
+            iam_client = session.boto_session.client("iam")
+
+            # Create the policy document
+            policy_document = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": ["sagemaker:StartPipelineExecution"],
+                        "Resource": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
+                    }
+                ],
+            }
+
+            # Create or update the role policy
+            try:
+                role_name = self.config.execution_role.split("/")[
+                    -1
+                ]  # Extract role name from ARN
+                policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
+
+                iam_client.put_role_policy(
+                    RoleName=role_name,
+                    PolicyName=policy_name,
+                    PolicyDocument=json.dumps(policy_document),
+                )
+
+                logger.info(f"Created/Updated IAM policy: {policy_name}")
+            except Exception as e:
+                logger.error(f"Failed to create/update IAM policy: {e}")
+                raise
+
+            # Create the EventBridge rule
+            events_client = session.boto_session.client("events")
+            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
+
+            # Determine first execution time based on schedule type
+            if deployment.schedule.cron_expression:
+                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
+                # Strip any "cron(" prefix if it exists
+                cron_exp = deployment.schedule.cron_expression.replace(
+                    "cron(", ""
+                ).replace(")", "")
+                schedule_expr = f"cron({cron_exp})"
+                next_execution = None
+            elif deployment.schedule.interval_second:
+                minutes = max(
+                    1,
+                    int(
+                        deployment.schedule.interval_second.total_seconds()
+                        / 60
+                    ),
+                )
+                schedule_expr = f"rate({minutes} minutes)"
+                next_execution = (
+                    datetime.utcnow() + deployment.schedule.interval_second
+                )
+            elif deployment.schedule.run_once_start_time:
+                # Format for specific date/time: cron(Minutes Hours Day-of-month Month ? Year)
+                # Example: cron(0 12 1 1 ? 2024)
+                dt = deployment.schedule.run_once_start_time
+                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
+                next_execution = deployment.schedule.run_once_start_time
+
+            logger.info(
+                f"Creating EventBridge rule with schedule expression: {schedule_expr}"
+            )
 
             events_client.put_rule(
                 Name=rule_name,
                 ScheduleExpression=schedule_expr,
-                State="ENABLED"
+                State="ENABLED",
             )
 
-            # Add the SageMaker pipeline as target
+            # Add the SageMaker pipeline as target with the role
             events_client.put_targets(
                 Rule=rule_name,
                 Targets=[
