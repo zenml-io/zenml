@@ -371,6 +371,10 @@ When you deploy a scheduled pipeline, ZenML will:
 2. Configure the necessary IAM permissions
 3. Set up the SageMaker pipeline as the target
 
+{% hint style="info" %}
+If you run the same pipeline with a schedule multiple times, the existing schedule will be updated with the new settings rather than creating a new schedule. This allows you to modify schedules by simply running the pipeline again with new schedule parameters.
+{% endhint %}
+
 #### Required IAM Permissions
 
 When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships. Here's a detailed breakdown of why each permission is needed:
