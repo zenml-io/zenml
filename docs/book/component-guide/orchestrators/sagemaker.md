@@ -418,14 +418,23 @@ In addition to the basic SageMaker permissions, the AWS credentials used by the 
         "events:ListTargetsByRule" // Required to verify target setup
       ],
       "Resource": "arn:aws:events:*:*:rule/zenml-*"
-    },
+    }
+  ]
+}
+```
+
+The following IAM permissions are optional but recommended to allow automatic policy updates for the execution role:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
       "Effect": "Allow",
       "Action": [
-        "iam:GetRole",                  // Required to verify role exists
-        "iam:GetRolePolicy",           // Required to check existing policies
-        "iam:PutRolePolicy",           // Required to add new policies
-        "iam:UpdateAssumeRolePolicy"   // Required to update trust relationships
+        "iam:GetRole",                  // For verifying role exists
+        "iam:GetRolePolicy",           // For checking existing policies
+        "iam:PutRolePolicy",           // For adding new policies
+        "iam:UpdateAssumeRolePolicy"   // For updating trust relationships
       ],
       "Resource": "arn:aws:iam::*:role/*"
     }
@@ -439,6 +448,6 @@ These permissions enable:
 * Managing IAM policies required for the scheduled execution
 * Cleanup of resources when schedules are removed
 
-Without these permissions, the scheduling functionality will fail with access denied errors.
+Without the EventBridge permissions, the scheduling functionality will fail. Without the IAM permissions, you'll need to manually ensure your execution role has the necessary permissions to start pipeline executions.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
