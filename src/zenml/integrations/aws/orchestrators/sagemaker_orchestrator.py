@@ -248,9 +248,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        # Get the session and client
-        session = self._get_sagemaker_session()
-
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
