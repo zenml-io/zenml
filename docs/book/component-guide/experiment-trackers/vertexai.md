@@ -206,10 +206,12 @@ def train_model(
 
     ...
 
-    experiment_name = ...
-    experiment_run_name = ...
+    # get current experiment and run names
+    experiment_tracker = Client().active_stack.experiment_tracker
+    experiment_name = experiment_tracker.experiment_name
+    experiment_run_name = experiment_tracker.run_name
 
-    # define a TensorBoard callback, logs are written to gcs_path.
+    # define a TensorBoard callback, logs are written to gcs_path
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=gcs_path,
         histogram_freq=1
@@ -236,7 +238,6 @@ def train_model(
     aiplatform.log_metrics(...)
     aiplatform.log_params(...)
 ```
-
 
 {% hint style="info" %}
 Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
