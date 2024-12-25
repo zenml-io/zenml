@@ -113,7 +113,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["ColumnElement[bool]"]:
+    ) -> "ColumnElement[bool]":
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -291,11 +291,19 @@ class UUIDFilter(StrFilter):
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
+        from zenml.utils import uuid_utils
+
         # For equality checks, compare the UUID directly
         if self.operation == GenericFilterOps.EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return False
+
             return column == self.value
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
+            if not uuid_utils.is_valid_uuid(self.value):
+                return True
+
             return column != self.value
 
         # For all other operations, cast and handle the column as string
@@ -436,7 +444,6 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-
     id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Id for this resource",
@@ -491,13 +498,13 @@ class BaseFilter(BaseModel):
                 )
                 value = column
 
-        if column in cls.FILTER_EXCLUDE_FIELDS:
+        if column in cls.CUSTOM_SORTING_OPTIONS:
+            return value
+        elif column in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
                 f"This resource can not be sorted by this field: '{value}'"
             )
-        elif column in cls.model_fields:
-            return value
-        elif column in cls.CUSTOM_SORTING_OPTIONS:
+        if column in cls.model_fields:
             return value
         else:
             raise ValueError(
@@ -703,16 +710,10 @@ class BaseFilter(BaseModel):
 
         conditions = []
 
-        try:
-            filter_ = FilterGenerator(table).define_filter(
-                column="id", value=value, operator=operator
-            )
-            conditions.append(filter_.generate_query_conditions(table=table))
-        except ValueError:
-            # UUID filter with equal operators and no full UUID fail with
-            # a ValueError. In this case, we already know that the filter
-            # will not produce any result and can simply ignore it.
-            pass
+        filter_ = FilterGenerator(table).define_filter(
+            column="id", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
 
         filter_ = FilterGenerator(table).define_filter(
             column="name", value=value, operator=operator
@@ -759,7 +760,7 @@ class BaseFilter(BaseModel):
         return self.size * (self.page - 1)
 
     def generate_filter(
-        self, table: Type[SQLModel]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
@@ -779,7 +780,7 @@ class BaseFilter(BaseModel):
             filters.append(
                 column_filter.generate_query_conditions(table=table)
             )
-        for custom_filter in self.get_custom_filters():
+        for custom_filter in self.get_custom_filters(table):
             filters.append(custom_filter)
         if self.logical_operator == LogicalOperators.OR:
             return or_(False, *filters)
@@ -788,11 +789,16 @@ class BaseFilter(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are
         not based on the columns of the underlying table.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
@@ -1101,18 +1107,8 @@ class FilterGenerator:
             A Filter object.
 
         Raises:
-            ValueError: If the value is not a valid UUID.
+            ValueError: If the value for a oneof filter is not a list.
         """
-        # For equality checks, ensure that the value is a valid UUID.
-        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
-            try:
-                UUID(value)
-            except ValueError as e:
-                raise ValueError(
-                    "Invalid value passed as UUID query parameter."
-                ) from e
-
-        # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
             raise ValueError(ONEOF_ERROR)
 

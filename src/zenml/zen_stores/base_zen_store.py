@@ -36,6 +36,7 @@ from zenml.constants import (
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_SERVER,
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
@@ -155,9 +156,16 @@ class BaseZenStore(
             TypeError: If the store type is unsupported.
         """
         if store_type == StoreType.SQL:
-            from zenml.zen_stores.sql_zen_store import SqlZenStore
+            if os.environ.get(ENV_ZENML_SERVER):
+                from zenml.zen_server.rbac.rbac_sql_zen_store import (
+                    RBACSqlZenStore,
+                )
 
-            return SqlZenStore
+                return RBACSqlZenStore
+            else:
+                from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+                return SqlZenStore
         elif store_type == StoreType.REST:
             from zenml.zen_stores.rest_zen_store import RestZenStore
 

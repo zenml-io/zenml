@@ -15,19 +15,20 @@
 
 from datetime import datetime
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.sql.elements import ColumnElement
-from sqlmodel import SQLModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
@@ -37,10 +38,14 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Request Model ------------------
 
@@ -376,16 +381,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the service",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the service",
-        union_mode="left_to_right",
-    )
     type: Optional[str] = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
@@ -457,9 +452,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         "config",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "user_id",
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "flavor",
         "type",
         "pipeline_step_name",
@@ -468,7 +461,7 @@ class ServiceFilter(WorkspaceScopedFilter):
     ]
 
     def generate_filter(
-        self, table: Type["SQLModel"]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
