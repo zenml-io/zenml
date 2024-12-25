@@ -69,6 +69,8 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
             info: Info about the step that will be executed.
         """
         self._initialize_vertex(info=info)
+        self.experiment_name = self._get_experiment_name(info=info)
+        self.run_name = self._get_run_name(info=info)
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
