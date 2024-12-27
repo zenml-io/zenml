@@ -47,13 +47,13 @@ from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     StackFilter,
     StackResponse,
     UserFilter,
     UserResponse,
     WorkspaceResponse,
-    ServerDeploymentType,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface

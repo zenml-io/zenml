@@ -360,6 +360,9 @@ def device_authorization(
 
     Returns:
         The device authorization response.
+
+    Raises:
+        HTTPException: If the device authorization is not supported.
     """
     config = server_config()
 

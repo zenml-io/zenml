@@ -33,7 +33,6 @@ from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
-from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.models import BaseRestAPIModel
 from zenml.utils.singleton import SingletonMetaClass
 from zenml.zen_server.exceptions import exception_from_response
@@ -60,9 +59,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     _tenant: Optional["TenantClient"] = None
     _organization: Optional["OrganizationClient"] = None
 
-    def __init__(
-        self, url: str, api_token: Optional[APIToken] = None
-    ) -> None:
+    def __init__(self, url: str, api_token: Optional[APIToken] = None) -> None:
         """Initialize the ZenML Pro client.
 
         Args:

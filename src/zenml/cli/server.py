@@ -574,8 +574,8 @@ def server_list(
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
-    from zenml.login.pro.tenant.models import TenantRead, TenantStatus
     from zenml.login.pro.constants import ZENML_PRO_API_URL
+    from zenml.login.pro.tenant.models import TenantRead, TenantStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
 

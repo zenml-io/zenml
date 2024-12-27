@@ -7,6 +7,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
+from zenml.exceptions import SubscriptionUpgradeRequiredError
 from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
@@ -39,6 +40,8 @@ class ZenMLCloudConnection:
             data: Data to include in the request.
 
         Raises:
+            SubscriptionUpgradeRequiredError: If the current subscription tier
+                is insufficient for the attempted operation.
             RuntimeError: If the request failed.
 
         Returns:
@@ -59,10 +62,13 @@ class ZenMLCloudConnection:
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact the central zenml pro "
-                f"service: {e}"
-            )
+            if response.status_code == 402:
+                raise SubscriptionUpgradeRequiredError(response.json())
+            else:
+                raise RuntimeError(
+                    f"Failed while trying to contact the central zenml pro "
+                    f"service: {e}"
+                )
 
         return response
 
@@ -75,11 +81,6 @@ class ZenMLCloudConnection:
             endpoint: The endpoint to send the request to. This will be appended
                 to the base URL.
             params: Parameters to include in the request.
-
-        Raises:
-            RuntimeError: If the request failed.
-            SubscriptionUpgradeRequiredError: In case the current subscription
-                tier is insufficient for the attempted operation.
 
         Returns:
             The response.
@@ -99,9 +100,6 @@ class ZenMLCloudConnection:
                 to the base URL.
             params: Parameters to include in the request.
             data: Data to include in the request.
-
-        Raises:
-            RuntimeError: If the request failed.
 
         Returns:
             The response.
@@ -123,9 +121,6 @@ class ZenMLCloudConnection:
                 to the base URL.
             params: Parameters to include in the request.
             data: Data to include in the request.
-
-        Raises:
-            RuntimeError: If the request failed.
 
         Returns:
             The response.

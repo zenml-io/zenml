@@ -25,7 +25,6 @@ from zenml.constants import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken, ServerCredentials, ServerType
-from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.tenant.models import TenantRead
 from zenml.models import OAuthTokenResponse, ServerModel
 from zenml.utils import yaml_utils
@@ -361,7 +360,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
                 if server.api_key:
                     continue
                 self.clear_token(server_url)
-                credentials_to_clear.append(server_url)
+                credentials_to_clear.append(server)
         return credentials_to_clear
 
     def has_valid_authentication(self, url: str) -> bool:
