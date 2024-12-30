@@ -518,7 +518,9 @@ def test_local_repo_verification(
     assert isinstance(code_repo, StubCodeRepository)
 
 
-def test_finding_existing_build(mocker, sample_deployment_response_model):
+def test_finding_existing_build(
+    mocker, sample_deployment_response_model, remote_container_registry
+):
     """Tests finding an existing build."""
     mock_list_builds = mocker.patch(
         "zenml.client.Client.list_builds",
@@ -551,14 +553,30 @@ def test_finding_existing_build(mocker, sample_deployment_response_model):
         ],
     )
 
+    build_utils.find_existing_build(
+        deployment=sample_deployment_response_model,
+        code_repository=StubCodeRepository(),
+    )
+    # No container registry -> no non-local build to pull
+    mock_list_builds.assert_not_called()
+
+    mocker.patch.object(
+        Stack,
+        "container_registry",
+        new_callable=mocker.PropertyMock,
+        return_value=remote_container_registry,
+    )
+
     build = build_utils.find_existing_build(
         deployment=sample_deployment_response_model,
         code_repository=StubCodeRepository(),
     )
+
     mock_list_builds.assert_called_once_with(
         sort_by="desc:created",
         size=1,
         stack_id=Client().active_stack.id,
+        container_registry_id=remote_container_registry.id,
         is_local=False,
         contains_code=False,
         zenml_version=zenml.__version__,

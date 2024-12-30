@@ -298,7 +298,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
 
         if self.deployment is not None:
-            deployment = self.deployment.to_model()
+            deployment = self.deployment.to_model(include_metadata=True)
 
             config = deployment.pipeline_configuration
             new_substitutions = config._get_full_substitutions(self.start_time)
@@ -365,12 +365,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
-            steps = {step.name: step.to_model() for step in self.step_runs}
-
-            step_substitutions = {
-                step_name: step.config.substitutions
-                for step_name, step in steps.items()
+            steps = {
+                step.name: step.to_model(include_metadata=True)
+                for step in self.step_runs
             }
+
+            step_substitutions = {}
+            for step_name, step in steps.items():
+                step_substitutions[step_name] = step.config.substitutions
+                # We fetch the steps hydrated before, but want them unhydrated
+                # in the response -> We need to reset the metadata here
+                step.metadata = None
+
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=self.fetch_metadata(),

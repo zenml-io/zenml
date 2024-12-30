@@ -1,7 +1,7 @@
 # Environment configuration
 settings:
   docker:
-    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.70.0-py3.11-azure"
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.71.0-py3.11-azure"
     skip_build: True
     requirements: requirements.txt
     environment:

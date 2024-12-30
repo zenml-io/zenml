@@ -421,6 +421,8 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     """
     from fastapi import Query
 
+    from zenml.zen_server.exceptions import error_detail
+
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         from fastapi import HTTPException
 
@@ -428,9 +430,8 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             inspect.signature(init_cls_and_handle_errors).bind(*args, **kwargs)
             return cls(*args, **kwargs)
         except ValidationError as e:
-            for error in e.errors():
-                error["loc"] = tuple(["query"] + list(error["loc"]))
-            raise HTTPException(422, detail=e.errors())
+            detail = error_detail(e, exception_type=ValueError)
+            raise HTTPException(422, detail=detail)
 
     params = {v.name: v for v in inspect.signature(cls).parameters.values()}
     query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])

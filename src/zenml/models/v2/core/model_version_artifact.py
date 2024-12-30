@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -32,6 +32,9 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
@@ -164,13 +167,18 @@ class ModelVersionArtifactFilter(BaseFilter):
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())
 
-    def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_, col
 

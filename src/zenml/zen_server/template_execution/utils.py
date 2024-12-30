@@ -122,13 +122,15 @@ def run_template(
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
 
-    # We create an API token scoped to the pipeline run
+    # We create an API token scoped to the pipeline run that never expires
     api_token = generate_access_token(
         user_id=auth_context.user.id,
         pipeline_run_id=placeholder_run.id,
         # Keep the original API key or device scopes, if any
         api_key=auth_context.api_key,
         device=auth_context.device,
+        # Never expire the token
+        expires_in=0,
     ).access_token
 
     environment = {

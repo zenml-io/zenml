@@ -33,7 +33,6 @@ from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
-    from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineDeploymentBase
 
