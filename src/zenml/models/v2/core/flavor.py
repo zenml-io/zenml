@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing flavors."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -427,14 +427,4 @@ class FlavorFilter(WorkspaceScopedFilter):
     integration: Optional[str] = Field(
         default=None,
         description="Integration associated with the flavor",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the stack",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the stack",
-        union_mode="left_to_right",
     )

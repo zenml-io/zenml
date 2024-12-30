@@ -37,7 +37,7 @@ You need to configure the following credentials for authentication to Neptune:
 
 {% tabs %}
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../how-to/interact-with-secrets.md) to store the Neptune tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) to store the Neptune tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -61,7 +61,7 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../how-to/interact-with-secrets.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../how-to/project-setup-and-management/interact-with-secrets.md) in the ZenML documentation.
 {% endhint %}
 
 {% endtab %}
