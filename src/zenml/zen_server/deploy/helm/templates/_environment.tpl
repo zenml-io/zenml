@@ -241,33 +241,6 @@ secure_headers_{{ $key }}: {{ $value | quote }}
 
 
 {{/*
-ZenML server configuration options (secret values).
-
-This template constructs a dictionary that is similar to the python values that
-can be configured in the zenml.config.server_config.ServerConfiguration
-class. Only secret values are included in this dictionary.
-
-The dictionary is then converted into deployment environment variables by other
-templates and inserted where it is needed.
-
-The input is taken from a .ZenML dict that is passed to the template and
-contains the values configured in the values.yaml file for the ZenML server.
-
-Args:
-  .ZenML: A dictionary with the ZenML configuration values configured for the
-  ZenML server.
-Returns:
-  A dictionary with the secret values configured for the ZenML server.
-*/}}
-{{- define "zenml.serverSecretConfigurationAttrs" -}}
-
-{{- if .ZenML.pro.enabled }}
-pro_oauth2_client_secret: {{ .ZenML.pro.enrollmentKey | quote }}
-{{- end }}
-{{- end }}
-
-
-{{/*
 Server configuration environment variables (non-secret values).
 
 Passes the .Values.zenml dict as input to the `zenml.serverConfigurationAttrs`
@@ -283,27 +256,6 @@ Returns:
 {{- define "zenml.serverEnvVariables" -}}
 {{ $zenml := dict "ZenML" .Values.zenml }}
 {{- range $k, $v := include "zenml.serverConfigurationAttrs" $zenml | fromYaml }}
-ZENML_SERVER_{{ $k | upper }}: {{ $v | quote }}
-{{- end }}
-{{- end }}
-
-
-{{/*
-Server configuration environment variables (secret values).
-
-Passes the .Values.zenml dict as input to the `zenml.serverSecretConfigurationAttrs`
-template and converts the output into a dictionary of environment variables that
-need to be configured for the server.
-
-Args:
-  .Values: The values.yaml file for the ZenML deployment.
-Returns:
-  A dictionary with the secret environment variables that are configured for
-  the server (i.e. keys starting with `ZENML_SERVER_`).
-*/}}
-{{- define "zenml.serverSecretEnvVariables" -}}
-{{ $zenml := dict "ZenML" .Values.zenml }}
-{{- range $k, $v := include "zenml.serverSecretConfigurationAttrs" $zenml | fromYaml }}
 ZENML_SERVER_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
 {{- end }}

@@ -56,7 +56,8 @@ zenml:
     # The name of the ZenML Pro organization to use.
     organizationName:
 
-    # The enrollment key to use for the ZenML Pro tenant.
+    # The enrollment key to use for the ZenML Pro tenant. If not specified,
+    # an enrollment key will be auto-generated.
     enrollmentKey:
 
   # The URL where the ZenML server API is reachable. If not specified, the
