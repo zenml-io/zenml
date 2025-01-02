@@ -22,10 +22,8 @@ import pandas as pd
 from typing_extensions import Annotated
 
 from zenml import get_step_context, step
-from zenml.integrations.mlflow.services.mlflow_deployment import (
-    MLFlowDeploymentService,
-)
 from zenml.logger import get_logger
+from zenml.services.service import BaseDeploymentService
 
 logger = get_logger(__name__)
 
@@ -56,12 +54,15 @@ def inference_predict(
     model = get_step_context().model
 
     # get predictor
-    predictor_service: Optional[MLFlowDeploymentService] = model.load_artifact(
+    predictor_service: Optional[BaseDeploymentService] = model.load_artifact(
         "mlflow_deployment"
     )
     if predictor_service is not None:
         # run prediction from service
-        predictions = predictor_service.predict(request=dataset_inf)
+
+        # For MLFLow:
+        # predictions = predictor_service.predict(request=dataset_inf)
+        predictions = predictor_service.predict(instances=dataset_inf.to_dict("records"))
     else:
         logger.warning(
             "Predicting from loaded model instead of deployment service "
