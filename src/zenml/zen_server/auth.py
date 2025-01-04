@@ -775,7 +775,6 @@ def authenticate_external_user(
     # between web clients (i.e. the dashboard) and CLI clients (i.e. the
     # zenml CLI).
     user_agent = request.headers.get("User-Agent", "").lower()
-    logger.info(f"User agent: {user_agent}")
     if "zenml/" in user_agent:
         store.update_onboarding_state(
             completed_steps={OnboardingStep.DEVICE_VERIFIED}
