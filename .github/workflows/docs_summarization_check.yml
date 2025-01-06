@@ -70,9 +70,9 @@ jobs:
           # Upload OpenAI summary
           api.upload_file(
               token="${{ secrets.HF_TOKEN }}",
-              repo_id="zenml/docs-summaries",
+              repo_id="zenml/llms.txt",
               repo_type="dataset",
-              path_in_repo="zenml_docs.txt",
+              path_in_repo="how-to-guides.txt",
               path_or_fileobj="zenml_docs.txt",
           )
           
@@ -80,7 +80,7 @@ jobs:
           for filename in ["component-guide.txt", "basics.txt"]:
               api.upload_file(
                   token="${{ secrets.HF_TOKEN }}",
-                  repo_id="zenml/docs-summaries",
+                  repo_id="zenml/llms.txt",
                   repo_type="dataset",
                   path_in_repo=filename,
                   path_or_fileobj=f"repomix-outputs/{filename}",
