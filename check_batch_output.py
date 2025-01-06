@@ -1,14 +1,20 @@
 # from openai import OpenAI
 # client = OpenAI()
 
-# batch = client.batches.retrieve("batch_6776944efb888190965eb1cd25ce7603")
+# batch = client.batches.retrieve("batch_677773eefd3881909a3cf0273088fc57")
 # print(batch)
+
+
+# from openai import OpenAI
+# client = OpenAI()
+
+# print(client.batches.list(limit=10))
 
 import json
 from openai import OpenAI
 client = OpenAI()
 
-file_response = client.files.content("file-48YK4SQkxKuq8noEqYfqsH")
+file_response = client.files.content("file-UMv9ZpCwa8WpjXLV1rayki")
 
 text = file_response.text
 
@@ -22,5 +28,11 @@ text = file_response.text
 with open("zenml_docs.txt", "w") as f:
     for line in text.splitlines():
         json_line = json.loads(line)
+        
+        # Extract and format the file path from custom_id, handling any file number
+        file_path = "-".join(json_line["custom_id"].split("-")[2:]).replace("_", "/")
+        
+        # Write the file path and content
+        f.write(f"File: {file_path}\n\n")
         f.write(json_line["response"]["body"]["choices"][0]["message"]["content"])
         f.write("\n\n" + "="*80 + "\n\n")

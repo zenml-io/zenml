@@ -27,17 +27,19 @@ def extract_content_blocks(md_content: str) -> str:
 def prepare_batch_requests(md_files: List[Path]) -> List[Dict]:
     """Prepares batch requests for each markdown file."""
     batch_requests = []
-    
+
     for i, file_path in enumerate(md_files):
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             processed_content = extract_content_blocks(content)
+
+            file_path_str_with_no_slashes = str(file_path).replace("/", "_")
             
             # Prepare the request for this file
             request = {
-                "custom_id": f"file-{i}-{file_path.name}",
+                "custom_id": f"file-{i}-{file_path_str_with_no_slashes}",
                 "method": "POST",
                 "url": "/v1/chat/completions",
                 "body": {
@@ -45,14 +47,14 @@ def prepare_batch_requests(md_files: List[Path]) -> List[Dict]:
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are a technical documentation summarizer optimizing content for LLM comprehension."
+                            "content": "You are a technical documentation summarizer."
                         },
                         {
                             "role": "user",
-                            "content": f"""Please summarize the following documentation text. 
-                            Keep all important technical information and key points while removing redundancy and verbose explanations.
-                            Make it concise but ensure no critical information is lost
-                            Make the code shorter where possible too keeping only the most important parts while preserving syntax and accuracy:
+                            "content": f"""Please summarize the following documentation text for another LLM to be able to answer questions about it with enough detail. 
+                            Keep all important technical information and key points while removing redundancy and verbose explanations. 
+                            Make it concise but ensure NO critical information is lost and some details that you think are important are kept.
+                            Make the code shorter where possible keeping only the most important parts while preserving syntax and accuracy:
 
                             {processed_content}"""
                         }
@@ -132,23 +134,20 @@ def process_batch_results(batch_id: str, output_file: str):
 
 def main():
     docs_dir = "docs/book/how-to"
-    output_file = "docs.txt"
     
     # Get markdown files
     exclude_files = ["toc.md"]
     md_files = list(Path(docs_dir).rglob("*.md"))
     md_files = [file for file in md_files if file.name not in exclude_files]
     
+    # only do it for this file
+    # md_files = [Path('docs/book/how-to/infrastructure-deployment/auth-management/aws-service-connector.md')]
+
     # Prepare and submit batch job
     batch_requests = prepare_batch_requests(md_files)
     batch_id = submit_batch_job(batch_requests)
     
     print(f"Batch job submitted with ID: {batch_id}")
-    print("Waiting for results...")
-    
-    # Process results
-    # process_batch_results(batch_id, output_file)
-    print("Processing complete!")
 
 if __name__ == "__main__":
     main() 
