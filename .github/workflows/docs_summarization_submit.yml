@@ -1,0 +1,66 @@
+name: Submit Docs Summarization
+
+on:
+  workflow_run:
+    workflows: ["release-prepare"]
+    types:
+      - completed
+
+jobs:
+  submit-batch:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      id-token: write
+      actions: write
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai pathlib repomix
+          
+      - name: Generate repomix outputs
+        run: |
+          # Component guide
+          repomix --include "docs/book/component-guide/**/*.md" > component-guide.txt
+          
+          # Basics (user guide + getting started)
+          repomix --include "docs/book/user-guide/**/*.md" > user-guide.txt
+          repomix --include "docs/book/getting-started/**/*.md" > getting-started.txt
+          cat user-guide.txt getting-started.txt > basics.txt
+          rm user-guide.txt getting-started.txt
+          
+          # Store all files for later upload
+          mkdir -p repomix-outputs
+          mv component-guide.txt basics.txt repomix-outputs/
+          
+      - name: Upload repomix outputs
+        uses: actions/upload-artifact@v3
+        with:
+          name: repomix-outputs
+          path: repomix-outputs
+          retention-days: 5
+          
+      - name: Submit batch job
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        id: submit
+        run: |
+          python scripts/summarize_docs.py
+          echo "batch_id=$(cat batch_id.txt)" >> $GITHUB_OUTPUT
+          
+      - name: Upload batch ID
+        uses: actions/upload-artifact@v3
+        with:
+          name: batch-id-${{ steps.submit.outputs.batch_id }}
+          path: batch_id.txt
+          retention-days: 5 
