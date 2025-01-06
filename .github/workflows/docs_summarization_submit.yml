@@ -33,6 +33,10 @@ jobs:
           # Create directory for outputs
           mkdir -p repomix-outputs
           
+          # Full docs
+          repomix --include "docs/book/**/*.md"
+          mv repomix-output.txt repomix-outputs/llms-full.txt
+          
           # Component guide
           repomix --include "docs/book/component-guide/**/*.md"
           mv repomix-output.txt repomix-outputs/component-guide.txt

@@ -57,6 +57,7 @@ jobs:
       - name: Process batch results and upload to HuggingFace
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           # Process OpenAI batch results
           python scripts/check_batch_output.py
@@ -64,12 +65,13 @@ jobs:
           # Upload all files to HuggingFace
           python -c '
           from huggingface_hub import HfApi
+          import os
           
           api = HfApi()
           
           # Upload OpenAI summary
           api.upload_file(
-              token="${{ secrets.HF_TOKEN }}",
+              token=os.environ["HF_TOKEN"],
               repo_id="zenml/llms.txt",
               repo_type="dataset",
               path_in_repo="how-to-guides.txt",
@@ -77,9 +79,9 @@ jobs:
           )
           
           # Upload repomix outputs
-          for filename in ["component-guide.txt", "basics.txt"]:
+          for filename in ["component-guide.txt", "basics.txt", "llms-full.txt"]:
               api.upload_file(
-                  token="${{ secrets.HF_TOKEN }}",
+                  token=os.environ["HF_TOKEN"],
                   repo_id="zenml/llms.txt",
                   repo_type="dataset",
                   path_in_repo=filename,
