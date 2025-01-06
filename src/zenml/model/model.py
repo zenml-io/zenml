@@ -509,22 +509,6 @@ class Model(BaseModel):
             raise ValueError(
                 "`model_version_id` field is for internal use only"
             )
-
-        version = data.get("version", None)
-
-        if (
-            version in [stage.value for stage in ModelStages]
-            and not suppress_class_validation_warnings
-        ):
-            logger.info(
-                f"Version `{version}` matches one of the possible "
-                "`ModelStages` and will be fetched using stage."
-            )
-        if str(version).isnumeric() and not suppress_class_validation_warnings:
-            logger.info(
-                f"`version` `{version}` is numeric and will be fetched "
-                "using version number."
-            )
         data["suppress_class_validation_warnings"] = True
         return data
 
@@ -603,6 +587,18 @@ class Model(BaseModel):
                 hydrate=hydrate,
             )
         else:
+            if self.version in ModelStages.values():
+                logger.info(
+                    f"Version `{self.version}` for model {self.name} matches "
+                    "one of the possible `ModelStages` and will be fetched "
+                    "using stage."
+                )
+            if str(self.version).isnumeric():
+                logger.info(
+                    f"Version `{self.version}` for model {self.name} is "
+                    "numeric and will be fetched using version number."
+                )
+
             mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_number_or_id=self.version,

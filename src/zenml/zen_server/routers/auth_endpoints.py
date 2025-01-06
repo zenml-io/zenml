@@ -41,7 +41,6 @@ from zenml.constants import (
 from zenml.enums import (
     APITokenType,
     AuthScheme,
-    ExecutionStatus,
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
@@ -589,10 +588,7 @@ def api_token(
                 "security reasons."
             )
 
-        if pipeline_run.status in [
-            ExecutionStatus.FAILED,
-            ExecutionStatus.COMPLETED,
-        ]:
+        if pipeline_run.status.is_finished:
             raise ValueError(
                 f"The execution of pipeline run {pipeline_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "
@@ -609,10 +605,7 @@ def api_token(
                 "be generated for non-existent step runs for security reasons."
             )
 
-        if step_run.status in [
-            ExecutionStatus.FAILED,
-            ExecutionStatus.COMPLETED,
-        ]:
+        if step_run.status.is_finished:
             raise ValueError(
                 f"The execution of step run {step_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "

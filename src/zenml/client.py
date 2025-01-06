@@ -109,7 +109,6 @@ from zenml.models import (
     EventSourceResponse,
     EventSourceUpdate,
     FlavorFilter,
-    FlavorRequest,
     FlavorResponse,
     ModelFilter,
     ModelRequest,
@@ -1702,6 +1701,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         type: Optional[str] = None,
         flavor: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -1727,6 +1727,7 @@ class Client(metaclass=ClientMetaClass):
             flavor: Use the service flavor for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             running: Use the running status for filtering
@@ -1753,6 +1754,7 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             running=running,
             name=service_name,
             pipeline_name=pipeline_name,
@@ -2198,17 +2200,8 @@ class Client(metaclass=ClientMetaClass):
                 "configuration class' docstring."
             )
 
-        create_flavor_request = FlavorRequest(
-            source=source,
-            type=flavor.type,
-            name=flavor.name,
-            config_schema=flavor.config_schema,
-            integration="custom",
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
-        )
-
-        return self.zen_store.create_flavor(flavor=create_flavor_request)
+        flavor_request = flavor.to_model(integration="custom", is_custom=True)
+        return self.zen_store.create_flavor(flavor=flavor_request)
 
     def get_flavor(
         self,
@@ -2249,6 +2242,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
@@ -2262,6 +2256,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
@@ -2277,6 +2272,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             user_id=user_id,
+            user=user,
             name=name,
             type=type,
             integration=integration,
@@ -2661,13 +2657,16 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        container_registry_id: Optional[Union[UUID, str]] = None,
         is_local: Optional[bool] = None,
         contains_code: Optional[bool] = None,
         zenml_version: Optional[str] = None,
         python_version: Optional[str] = None,
         checksum: Optional[str] = None,
+        stack_checksum: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -2682,13 +2681,17 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            container_registry_id: The id of the container registry to
+                filter by.
             is_local: Use to filter local builds.
             contains_code: Use to filter builds that contain code.
             zenml_version: The version of ZenML to filter by.
             python_version: The Python version to filter by.
             checksum: The build checksum to filter by.
+            stack_checksum: The stack checksum to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2705,13 +2708,16 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            container_registry_id=container_registry_id,
             is_local=is_local,
             contains_code=contains_code,
             zenml_version=zenml_version,
             python_version=python_version,
             checksum=checksum,
+            stack_checksum=stack_checksum,
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
@@ -2771,7 +2777,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> EventSourceResponse:
-        """Get a event source by name, ID or prefix.
+        """Get an event source by name, ID or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the stack.
@@ -2804,6 +2810,7 @@ class Client(metaclass=ClientMetaClass):
         event_source_type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[EventSourceResponse]:
         """Lists all event_sources.
@@ -2818,6 +2825,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             name: The name of the event_source to filter by.
             flavor: The flavor of the event_source to filter by.
             event_source_type: The subtype of the event_source to filter by.
@@ -2834,6 +2842,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             name=name,
             flavor=flavor,
             plugin_subtype=event_source_type,
@@ -3001,6 +3010,7 @@ class Client(metaclass=ClientMetaClass):
         action_type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ActionResponse]:
         """List actions.
@@ -3015,6 +3025,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            user: Filter by user name/ID.
             name: The name of the action to filter by.
             flavor: The flavor of the action to filter by.
             action_type: The type of the action to filter by.
@@ -3031,6 +3042,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             name=name,
             id=id,
             flavor=flavor,
@@ -3179,6 +3191,7 @@ class Client(metaclass=ClientMetaClass):
         action_subtype: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[TriggerResponse]:
         """Lists all triggers.
@@ -3193,6 +3206,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             name: The name of the trigger to filter by.
             event_source_id: The event source associated with the trigger.
             action_id: The action associated with the trigger.
@@ -3215,6 +3229,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             name=name,
             event_source_id=event_source_id,
             action_id=action_id,
@@ -3365,6 +3380,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3383,6 +3399,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
@@ -3403,6 +3420,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
@@ -3488,6 +3506,7 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
+        id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         tag: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -3510,6 +3529,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or].
             created: Filter by the creation date.
             updated: Filter by the last updated date.
+            id: Filter by run template ID.
             name: Filter by run template name.
             tag: Filter by run template tags.
             workspace_id: Filter by workspace ID.
@@ -3534,6 +3554,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
+            id=id,
             name=name,
             tag=tag,
             workspace_id=workspace_id,
@@ -3650,6 +3671,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         orchestrator_id: Optional[Union[str, UUID]] = None,
         active: Optional[Union[str, bool]] = None,
@@ -3674,6 +3696,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             orchestrator_id: The id of the orchestrator to filter by.
             active: Use to filter by active status.
@@ -3700,6 +3723,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             pipeline_id=pipeline_id,
             orchestrator_id=orchestrator_id,
             active=active,
@@ -3940,6 +3964,7 @@ class Client(metaclass=ClientMetaClass):
         original_step_run_id: Optional[Union[str, UUID]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
@@ -3958,6 +3983,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: Use to filter by the time when the step finished running
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             pipeline_run_id: The id of the pipeline run to filter by.
             deployment_id: The id of the deployment to filter by.
             original_step_run_id: The id of the original step run to filter by.
@@ -3992,6 +4018,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
             model_version_id=model_version_id,
             model=model,
         )
@@ -4664,6 +4691,7 @@ class Client(metaclass=ClientMetaClass):
         scope: Optional[SecretScope] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
         """Fetches all the secret models.
@@ -4683,6 +4711,7 @@ class Client(metaclass=ClientMetaClass):
             scope: The scope of the secret to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4699,6 +4728,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             user_id=user_id,
+            user=user,
             workspace_id=workspace_id,
             name=name,
             scope=scope,
@@ -5013,6 +5043,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
@@ -5028,6 +5059,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the code repository to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5045,6 +5077,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
+            user=user,
         )
         filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_code_repositories(
@@ -5405,6 +5438,7 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         secret_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -5427,6 +5461,7 @@ class Client(metaclass=ClientMetaClass):
                 they can give access to.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            user: Filter by user name/ID.
             name: The name of the service connector to filter by.
             labels: The labels of the service connector to filter by.
             secret_id: Filter by the id of the secret that is referenced by the
@@ -5444,6 +5479,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
+            user=user,
             name=name,
             connector_type=connector_type,
             auth_method=auth_method,
@@ -6596,6 +6632,7 @@ class Client(metaclass=ClientMetaClass):
         client_id: Union[UUID, str, None] = None,
         status: Union[OAuthDeviceStatus, str, None] = None,
         trusted_device: Union[bool, str, None] = None,
+        user: Optional[Union[UUID, str]] = None,
         failed_auth_attempts: Union[int, str, None] = None,
         last_login: Optional[Union[datetime, str, None]] = None,
         hydrate: bool = False,
@@ -6613,6 +6650,7 @@ class Client(metaclass=ClientMetaClass):
             expires: Use the expiration date for filtering.
             client_id: Use the client id for filtering.
             status: Use the status for filtering.
+            user: Filter by user name/ID.
             trusted_device: Use the trusted device flag for filtering.
             failed_auth_attempts: Use the failed auth attempts for filtering.
             last_login: Use the last login date for filtering.
@@ -6632,6 +6670,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             expires=expires,
             client_id=client_id,
+            user=user,
             status=status,
             trusted_device=trusted_device,
             failed_auth_attempts=failed_auth_attempts,
@@ -6730,7 +6769,7 @@ class Client(metaclass=ClientMetaClass):
         trigger_execution_id: UUID,
         hydrate: bool = True,
     ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
+        """Get a trigger execution by ID.
 
         Args:
             trigger_execution_id: The ID of the trigger execution to get.
@@ -6751,6 +6790,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         trigger_id: Optional[UUID] = None,
+        user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[TriggerExecutionResponse]:
         """List all trigger executions matching the given filter criteria.
@@ -6761,6 +6801,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
             trigger_id: ID of the trigger to filter by.
+            user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6772,6 +6813,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             page=page,
             size=size,
+            user=user,
             logical_operator=logical_operator,
         )
         filter_model.set_scope_workspace(self.active_workspace.id)
