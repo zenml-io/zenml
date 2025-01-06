@@ -30,18 +30,24 @@ jobs:
           
       - name: Generate repomix outputs
         run: |
-          # Component guide
-          repomix --include "docs/book/component-guide/**/*.md" > component-guide.txt
-          
-          # Basics (user guide + getting started)
-          repomix --include "docs/book/user-guide/**/*.md" > user-guide.txt
-          repomix --include "docs/book/getting-started/**/*.md" > getting-started.txt
-          cat user-guide.txt getting-started.txt > basics.txt
-          rm user-guide.txt getting-started.txt
-          
-          # Store all files for later upload
+          # Create directory for outputs
           mkdir -p repomix-outputs
-          mv component-guide.txt basics.txt repomix-outputs/
+          
+          # Component guide
+          repomix --include "docs/book/component-guide/**/*.md"
+          mv repomix-output.txt repomix-outputs/component-guide.txt
+          
+          # User guide
+          repomix --include "docs/book/user-guide/**/*.md"
+          mv repomix-output.txt user-guide.txt
+          
+          # Getting started
+          repomix --include "docs/book/getting-started/**/*.md"
+          mv repomix-output.txt getting-started.txt
+          
+          # Merge user guide and getting started into basics
+          cat user-guide.txt getting-started.txt > repomix-outputs/basics.txt
+          rm user-guide.txt getting-started.txt
           
       - name: Upload repomix outputs
         uses: actions/upload-artifact@v3
