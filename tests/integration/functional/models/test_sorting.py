@@ -48,12 +48,15 @@ def second_pipeline():
 def test_sorting_entities(clean_client):
     """Testing different sorting functionalities."""
     first_pipeline_first_run = first_pipeline.with_options(
+        tags=["tag_1", "a", "z"],
         model=Model(name="Model2"),
     )()
-    _ = first_pipeline.with_options(
+    first_pipeline_second_run = first_pipeline.with_options(
+        tags=["tag_2", "z"],
         model=Model(name="Model1", version="second"),
     )()
-    _ = first_pipeline.with_options(
+    first_pipeline_third_run = first_pipeline.with_options(
+        tags=["tag_3", "a", "ab"],
         model=Model(name="Model1", version="first"),
     )()
     second_pipeline_first_run = second_pipeline()
@@ -67,6 +70,13 @@ def test_sorting_entities(clean_client):
     clean_client.list_pipeline_runs(sort_by="workspace")
     clean_client.list_pipeline_runs(sort_by="asc:workspace")
     clean_client.list_pipeline_runs(sort_by="desc:workspace")
+
+    # Sorting any taggable entity by tags
+    results = clean_client.list_pipeline_runs(sort_by="asc:tags")
+    assert results[0].id == second_pipeline_first_run.id
+    assert results[1].id == first_pipeline_third_run.id
+    assert results[-1].id == first_pipeline_second_run.id
+    clean_client.list_pipeline_runs(sort_by="desc:tags")
 
     # Sorting pipelines by latest run
     results = clean_client.list_pipelines(

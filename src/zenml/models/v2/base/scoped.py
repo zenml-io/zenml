@@ -466,14 +466,18 @@ class WorkspaceScopedFilter(UserScopedFilter):
 class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and tagging."""
 
+    tag: Optional[str] = Field(
+        description="Tag to apply to the filter query.", default=None
+    )
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
     ]
-
-    tag: Optional[str] = Field(
-        description="Tag to apply to the filter query.", default=None
-    )
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        "tags",
+    ]
 
     def apply_filter(
         self,
@@ -523,3 +527,80 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
             )
 
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "tags":
+            from sqlmodel import asc, desc, func, select
+
+            from zenml.enums import SorterOps, TaggableResourceTypes
+            from zenml.zen_stores.schemas import (
+                ArtifactSchema,
+                ArtifactVersionSchema,
+                ModelSchema,
+                ModelVersionSchema,
+                PipelineRunSchema,
+                PipelineSchema,
+                RunTemplateSchema,
+                TagResourceSchema,
+                TagSchema,
+            )
+
+            resource_type_mapping = {
+                ArtifactSchema: TaggableResourceTypes.ARTIFACT,
+                ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
+                ModelSchema: TaggableResourceTypes.MODEL,
+                ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
+                PipelineSchema: TaggableResourceTypes.PIPELINE,
+                PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
+                RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+            }
+
+            sorted_tags = (
+                select(TagResourceSchema.resource_id, TagSchema.name)
+                .join(TagSchema, TagResourceSchema.tag_id == TagSchema.id)  # type: ignore[arg-type]
+                .filter(
+                    TagResourceSchema.resource_type  # type: ignore[arg-type]
+                    == resource_type_mapping[table]
+                )
+                .order_by(
+                    asc(TagResourceSchema.resource_id), asc(TagSchema.name)
+                )
+            ).alias("sorted_tags")
+
+            tags_subquery = (
+                select(
+                    sorted_tags.c.resource_id,
+                    func.group_concat(sorted_tags.c.name, ", ").label(
+                        "tags_list"
+                    ),
+                ).group_by(sorted_tags.c.resource_id)
+            ).alias("tags_subquery")
+
+            query = query.add_columns(tags_subquery.c.tags_list).outerjoin(
+                tags_subquery, table.id == tags_subquery.c.resource_id
+            )
+
+            # Apply ordering based on the tags list
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(asc("tags_list"))
+            else:
+                query = query.order_by(desc("tags_list"))
+
+            return query
+
+        return super().apply_sorting(query=query, table=table)
