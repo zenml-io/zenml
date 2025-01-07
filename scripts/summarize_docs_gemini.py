@@ -63,7 +63,6 @@ def main():
             md_files = md_files[i:]
             break
 
-    breakpoint()
     
     # Process each file
     with open(output_file, 'a', encoding='utf-8') as out_f:
