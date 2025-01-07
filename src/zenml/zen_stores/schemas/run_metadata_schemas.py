@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import TEXT, VARCHAR, Column, Index
+from sqlalchemy import TEXT, VARCHAR, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -82,13 +82,6 @@ class RunMetadataResourceSchema(SQLModel, table=True):
     """Table for linking resources to run metadata entries."""
 
     __tablename__ = "run_metadata_resource"
-    __table_args__ = (
-        Index(
-            "run_metadata_resource_index",
-            "resource_id",
-            "resource_type",
-        ),
-    )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     resource_id: UUID
