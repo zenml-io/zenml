@@ -75,7 +75,7 @@ def get_page_from_list(
 class RunMetadataInterface:
     """The interface for entities with run metadata."""
 
-    run_metadata_resources = Relationship()
+    run_metadata = Relationship()
 
     def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the entity.
