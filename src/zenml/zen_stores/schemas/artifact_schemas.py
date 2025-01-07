@@ -249,7 +249,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
-            viewonly=True,
+            overlaps="run_metadata",
         ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(

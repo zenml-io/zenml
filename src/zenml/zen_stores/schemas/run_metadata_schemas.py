@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline run metadata tables."""
 
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import TEXT, VARCHAR, Column, Index
@@ -32,11 +32,6 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    # Relationship to link to resources
-    resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="run_metadata",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -106,6 +101,3 @@ class RunMetadataResourceSchema(SQLModel, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-
-    # Relationship back to the base metadata table
-    run_metadata: RunMetadataSchema = Relationship(back_populates="resources")
