@@ -4053,7 +4053,12 @@ class RestZenStore(BaseZenStore):
                 )
 
             data: Optional[Dict[str, str]] = None
-            headers: Dict[str, str] = {}
+
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            headers: Dict[str, str] = {
+                "User-Agent": "zenml/" + zenml.__version__,
+            }
 
             # Check if an API key is configured
             api_key = credentials_store.get_api_key(self.url)
@@ -4218,6 +4223,11 @@ class RestZenStore(BaseZenStore):
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            self._session.headers.update(
+                {"User-Agent": "zenml/" + zenml.__version__}
+            )
 
         # Note that we return an unauthenticated session here. An API token
         # is only fetched and set in the authorization header when and if it is

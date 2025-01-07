@@ -287,7 +287,8 @@ def token(
             return OAuthRedirectResponse(authorization_url=authorization_url)
 
         auth_context = authenticate_external_user(
-            external_access_token=external_access_token
+            external_access_token=external_access_token,
+            request=request,
         )
 
     else:
