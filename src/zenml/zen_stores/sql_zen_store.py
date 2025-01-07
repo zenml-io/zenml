@@ -64,6 +64,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
+
 # Important to note: The select function of SQLModel works slightly differently
 # from the select function of sqlalchemy. If you input only one entity on the
 # select function of SQLModel, it automatically maps it to a SelectOfScalar.
@@ -1054,7 +1055,7 @@ class SqlZenStore(BaseZenStore):
             item_schemas = custom_fetch_result
             # select the items in the current page
             item_schemas = item_schemas[
-                filter_model.offset: filter_model.offset + filter_model.size
+                filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
             item_schemas = session.exec(
