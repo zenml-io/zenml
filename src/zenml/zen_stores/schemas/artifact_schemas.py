@@ -86,7 +86,7 @@ class ArtifactSchema(NamedSchema, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
-            viewonly=True,
+            overlaps="tags",
         ),
     )
 
@@ -197,7 +197,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
-            viewonly=True,
+            overlaps="tags",
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))

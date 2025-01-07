@@ -42,7 +42,7 @@ class TagSchema(NamedSchema, table=True):
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
     )
 
     @classmethod
@@ -120,7 +120,9 @@ class TagResourceSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    tag: "TagSchema" = Relationship(back_populates="links")
+    tag: "TagSchema" = Relationship(
+        back_populates="links", sa_relationship_kwargs={"overlaps": "tags"}
+    )
     resource_id: UUID
     resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
 

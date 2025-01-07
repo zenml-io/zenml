@@ -118,7 +118,7 @@ class ModelSchema(NamedSchema, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
-            viewonly=True,
+            overlaps="tags",
         ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
@@ -304,7 +304,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
-            viewonly=True,
+            overlaps="tags",
         ),
     )
 
