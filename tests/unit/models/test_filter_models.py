@@ -235,21 +235,11 @@ def test_uuid_filter_model():
     )
 
 
-def test_uuid_filter_model_fails_for_invalid_uuids_on_equality():
-    """Test filtering for equality with invalid UUID fails."""
-    with pytest.raises(ValueError):
-        uuid_value = "a92k34"
-        SomeFilterModel(uuid_field=f"{GenericFilterOps.EQUALS}:{uuid_value}")
-
-
 def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     """Test filtering with other UUID operations is possible with non-UUIDs."""
     filter_value = "a92k34"
     for filter_op in UUIDFilter.ALLOWED_OPS:
-        if (
-            filter_op == GenericFilterOps.EQUALS
-            or filter_op == GenericFilterOps.ONEOF
-        ):
+        if filter_op == GenericFilterOps.ONEOF:
             continue
         filter_model = SomeFilterModel(
             uuid_field=f"{filter_op}:{filter_value}"
