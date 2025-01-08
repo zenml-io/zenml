@@ -490,15 +490,14 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from zenml.zen_stores.schemas import TagResourceSchema
+        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
         if self.tag:
-            query = (
-                query.join(getattr(table, "tags"))
-                .join(TagResourceSchema.tag)
-                .distinct()
-            )
+            query = query.join(
+                TagResourceSchema,
+                TagResourceSchema.resource_id == getattr(table, "id"),
+            ).join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
 
         return query
 
