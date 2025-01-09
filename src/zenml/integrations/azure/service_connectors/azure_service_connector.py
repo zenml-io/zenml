@@ -1909,7 +1909,9 @@ class _ACRTokenExchangeClient:
                 )
 
             acr_refresh_token_response = json.loads(response.content)
-            acr_refresh_token: str = acr_refresh_token_response["refresh_token"]
+            acr_refresh_token: str = acr_refresh_token_response[
+                "refresh_token"
+            ]
             return acr_refresh_token
 
         except (AzureError, requests.exceptions.RequestException) as e:
