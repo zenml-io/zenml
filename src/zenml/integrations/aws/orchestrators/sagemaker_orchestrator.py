@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
-import json
 import os
 import re
 from datetime import datetime, timezone
@@ -31,12 +30,13 @@ from uuid import UUID
 
 import boto3
 import sagemaker
-from botocore.exceptions import BotoCoreError, ClientError, WaiterError
+from botocore.exceptions import WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.triggers import PipelineSchedule
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
@@ -239,11 +239,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If a connector is used that does not return a
-                `boto3.Session` object, or if there are insufficient permissions
-                to create EventBridge rules.
+            RuntimeError: If there is an error creating or scheduling the pipeline.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
+            ValueError: If the schedule is not valid.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
@@ -484,18 +483,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "they run independently of the deployment process."
                 )
 
-            events_client = session.boto_session.client("events")
-            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
+            schedule_name = f"zenml-{deployment.pipeline_configuration.name}"
+            next_execution = None
 
-            # Determine first execution time based on schedule type
+            # Create PipelineSchedule based on schedule type
             if deployment.schedule.cron_expression:
-                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
                 # Strip any "cron(" prefix if it exists
                 cron_exp = deployment.schedule.cron_expression.replace(
                     "cron(", ""
                 ).replace(")", "")
-                schedule_expr = f"cron({cron_exp})"
-                next_execution = None
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    cron=cron_exp,
+                    start_date=deployment.schedule.start_time,
+                    enabled=True,
+                )
             elif deployment.schedule.interval_second:
                 minutes = max(
                     1,
@@ -504,169 +506,91 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         / 60
                     ),
                 )
-                schedule_expr = f"rate({minutes} minutes)"
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    rate=(minutes, "minutes"),
+                    start_date=deployment.schedule.start_time,
+                    enabled=True,
+                )
                 next_execution = (
-                    datetime.utcnow() + deployment.schedule.interval_second
+                    deployment.schedule.start_time or datetime.utcnow()
+                ) + deployment.schedule.interval_second
+            else:
+                # One-time schedule
+                execution_time = (
+                    deployment.schedule.run_once_start_time
+                    or deployment.schedule.start_time
                 )
-            elif deployment.schedule.run_once_start_time:
-                # Convert local time to UTC for EventBridge
-                dt = deployment.schedule.run_once_start_time.astimezone(
-                    timezone.utc
+                if not execution_time:
+                    raise ValueError(
+                        "A start time must be specified for one-time schedule execution"
+                    )
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    at=execution_time.astimezone(timezone.utc),
+                    enabled=True,
                 )
-                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
-                next_execution = deployment.schedule.run_once_start_time
+                next_execution = execution_time
 
-            # Create IAM policy for EventBridge
-            iam_client = session.boto_session.client("iam")
-            role_name = self.config.execution_role.split("/")[
-                -1
-            ]  # Extract role name from ARN
+            # Get the current role ARN if not explicitly configured
+            if self.config.scheduler_role is None:
+                logger.info(
+                    "No scheduler_role configured. Using service connector role to schedule pipeline."
+                )
+                sts = session.boto_session.client("sts")
+                try:
+                    service_connector_role_arn = sts.get_caller_identity()[
+                        "Arn"
+                    ]
+                    # If this is a user ARN, try to get the role ARN
+                    if ":user/" in service_connector_role_arn:
+                        logger.warning(
+                            f"Using IAM user credentials ({service_connector_role_arn}). For production "
+                            "environments, it's recommended to use IAM roles instead."
+                        )
+                    # If this is an assumed role, extract the role ARN
+                    elif ":assumed-role/" in service_connector_role_arn:
+                        # Convert assumed-role ARN format to role ARN format
+                        # From: arn:aws:sts::123456789012:assumed-role/role-name/session-name
+                        # To:   arn:aws:iam::123456789012:role/role-name
+                        service_connector_role_arn = re.sub(
+                            r"arn:aws:sts::(\d+):assumed-role/([^/]+)/.*",
+                            r"arn:aws:iam::\1:role/\2",
+                            service_connector_role_arn,
+                        )
+                except Exception:
+                    raise RuntimeError(
+                        "Failed to get current role ARN from service connector. This means "
+                        "the service connector is not configured correctly to schedule sagemaker "
+                        "pipelines. You can either fix the service connector or configure "
+                        "`scheduler_role` explicitly in your orchestrator config."
+                    )
+            else:
+                service_connector_role_arn = self.config.scheduler_role
 
-            # Create the policy document (existing)
-            policy_document = {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": ["sagemaker:StartPipelineExecution"],
-                        "Resource": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
-                    }
-                ],
-            }
-
-            try:
-                # Update the role policy (existing)
-                policy_name = f"zenml-eventbridge-{orchestrator_run_name}"
-                iam_client.put_role_policy(
-                    RoleName=role_name,
-                    PolicyName=policy_name,
-                    PolicyDocument=json.dumps(policy_document),
-                )
-                logger.info(f"Created/Updated IAM policy: {policy_name}")
-
-            except (ClientError, BotoCoreError) as e:
-                logger.warning(
-                    f"Failed to update IAM policy: {e}. "
-                    f"Please ensure your execution role has sufficient permissions "
-                    f"to start pipeline executions."
-                )
-            except KeyError as e:
-                logger.warning(
-                    f"Missing required field for IAM policy creation: {e}. "
-                    f"Please ensure your execution role has sufficient permissions "
-                    f"to start pipeline executions."
-                )
-
-            # Create the EventBridge rule
-            events_client = session.boto_session.client("events")
-            rule_name = f"zenml-{deployment.pipeline_configuration.name}"
-
-            # Determine first execution time based on schedule type
-            if deployment.schedule.cron_expression:
-                # AWS EventBridge requires cron expressions in format: cron(0 12 * * ? *)
-                # Strip any "cron(" prefix if it exists
-                cron_exp = deployment.schedule.cron_expression.replace(
-                    "cron(", ""
-                ).replace(")", "")
-                schedule_expr = f"cron({cron_exp})"
-                next_execution = None
-            elif deployment.schedule.interval_second:
-                minutes = max(
-                    1,
-                    int(
-                        deployment.schedule.interval_second.total_seconds()
-                        / 60
-                    ),
-                )
-                schedule_expr = f"rate({minutes} minutes)"
-                next_execution = (
-                    datetime.utcnow() + deployment.schedule.interval_second
-                )
-            elif deployment.schedule.run_once_start_time:
-                # Convert local time to UTC for EventBridge
-                dt = deployment.schedule.run_once_start_time.astimezone(
-                    timezone.utc
-                )
-                schedule_expr = f"cron({dt.minute} {dt.hour} {dt.day} {dt.month} ? {dt.year})"
-                next_execution = deployment.schedule.run_once_start_time
+            # Attach schedule to pipeline
+            triggers = pipeline.put_triggers(
+                triggers=[schedule], role_arn=service_connector_role_arn
+            )
+            logger.info(f"The schedule ARN is: {triggers[0]}")
 
             logger.info(
-                f"Creating EventBridge rule with schedule expression: {schedule_expr}\n"
-                f"Note: AWS EventBridge schedules are always executed in UTC timezone.\n"
+                f"Successfully scheduled pipeline with name: {schedule_name}\n"
                 + (
-                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
-                    f"({next_execution.astimezone().tzinfo}) / "
-                    f"{next_execution.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} (UTC)"
+                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
                     if next_execution
                     else f"Using cron expression: {deployment.schedule.cron_expression}"
                 )
                 + (
-                    f" (and every {int(minutes)} minutes after)"
+                    f" (and every {minutes} minutes after)"
                     if deployment.schedule.interval_second
                     else ""
                 )
             )
-
-            try:
-                events_client.put_rule(
-                    Name=rule_name,
-                    ScheduleExpression=schedule_expr,
-                    State="ENABLED",
-                )
-                # Add the SageMaker pipeline as target with the role
-                events_client.put_targets(
-                    Rule=rule_name,
-                    Targets=[
-                        {
-                            "Id": f"zenml-target-{deployment.pipeline_configuration.name}",
-                            "Arn": f"arn:aws:sagemaker:{session.boto_region_name}:{session.boto_session.client('sts').get_caller_identity()['Account']}:pipeline/{orchestrator_run_name}",
-                            "RoleArn": self.config.execution_role,
-                        }
-                    ],
-                )
-            except (ClientError, BotoCoreError) as e:
-                raise RuntimeError(
-                    f"Failed to create EventBridge rule or target. Please ensure you have "
-                    f"sufficient permissions to create and manage EventBridge rules and targets: {str(e)}"
-                ) from e
-
             logger.info(
-                f"Successfully scheduled pipeline with rule: {rule_name}\n"
-                f"Schedule type: {schedule_expr}\n"
-                + (
-                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S')} "
-                    f"({next_execution.astimezone().tzinfo})"
-                    if next_execution
-                    else f"Using cron expression: {deployment.schedule.cron_expression}"
-                )
-                + (
-                    f" (and every {int(minutes)} minutes after)"
-                    if deployment.schedule.interval_second
-                    else ""
-                )
+                "\n\nIn order to cancel the schedule, you can use execute the following command:\n"
             )
-
-            # Yield metadata about the schedule
-            schedule_type = (
-                "cron"
-                if deployment.schedule.cron_expression
-                else "rate"
-                if deployment.schedule.interval_second
-                else "one-time"
-            )
-
-            schedule_metadata = {
-                "rule_name": rule_name,
-                "schedule_type": schedule_type,
-                "schedule_expr": schedule_expr,
-                "pipeline_name": orchestrator_run_name,
-                "next_execution": next_execution,
-            }
-
-            yield from self.compute_metadata(
-                execution=schedule_metadata,
-                settings=settings,
-            )
+            logger.info(f"`aws events disable-rule --name {schedule_name}`")
         else:
             # Execute the pipeline immediately if no schedule is specified
             execution = pipeline.start()

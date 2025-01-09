@@ -193,6 +193,7 @@ class SagemakerOrchestratorConfig(
 
     Attributes:
         execution_role: The IAM role ARN to use for the pipeline.
+        scheduler_role: The IAM role ARN to use for the scheduler.
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
         aws_secret_access_key: The AWS secret access key to use to authenticate
@@ -212,6 +213,7 @@ class SagemakerOrchestratorConfig(
     """
 
     execution_role: str
+    scheduler_role: Optional[str] = None
     aws_access_key_id: Optional[str] = SecretField(default=None)
     aws_secret_access_key: Optional[str] = SecretField(default=None)
     aws_profile: Optional[str] = None
