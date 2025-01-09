@@ -429,6 +429,7 @@ PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
 )
 FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 SORT_PIPELINES_BY_LATEST_RUN_KEY = "latest_run"
+SORT_BY_LATEST_VERSION_KEY = "latest_version"
 
 # Metadata constants
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"

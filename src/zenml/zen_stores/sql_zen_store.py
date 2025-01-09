@@ -64,6 +64,13 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
+
+# Important to note: The select function of SQLModel works slightly differently
+# from the select function of sqlalchemy. If you input only one entity on the
+# select function of SQLModel, it automatically maps it to a SelectOfScalar.
+# As a result, it will not return a tuple as a result, but the first entity in
+# the tuple. While this is convenient in most cases, in unique cases like using
+# the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
     Session,
     SQLModel,
