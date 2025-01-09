@@ -2,3 +2,4 @@ torchvision
 gradio
 zenml[server]>=0.56.3
 datasets>=2.12.0,<3.0.0
+scikit-learn<1.6.0
