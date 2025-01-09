@@ -372,7 +372,7 @@ When you deploy a scheduled pipeline, ZenML will:
 3. Enable automatic execution based on the schedule
 
 {% hint style="info" %}
-If you run the same pipeline with a schedule multiple times, the existing schedule will **not** be updated with the new settings. Rather, ZenML will create a new sagemaker pipeline and attach a new schedule to it. The user must manually delete the old pipeline and their attached schedule using the AWS CLI or API. See details here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
+If you run the same pipeline with a schedule multiple times, the existing schedule will **not** be updated with the new settings. Rather, ZenML will create a new sagemaker pipeline and attach a new schedule to it. The user must manually delete the old pipeline and their attached schedule using the AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
 {% endhint %}
 
 #### Required IAM Permissions

@@ -488,10 +488,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Create PipelineSchedule based on schedule type
             if deployment.schedule.cron_expression:
-                # Strip any "cron(" prefix if it exists
-                cron_exp = deployment.schedule.cron_expression.replace(
-                    "cron(", ""
-                ).replace(")", "")
+                cron_exp = self._validate_cron_expression(
+                    deployment.schedule.cron_expression
+                )
                 schedule = PipelineSchedule(
                     name=schedule_name,
                     cron=cron_exp,
@@ -594,7 +593,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 "\n\nIn order to cancel the schedule, you can use execute the following command:\n"
             )
-            logger.info(f"`aws events disable-rule --name {schedule_name}`")
+            logger.info(
+                f"`aws scheduler delete-schedule --name {schedule_name}`"
+            )
         else:
             # Execute the pipeline immediately if no schedule is specified
             execution = pipeline.start()
@@ -842,3 +843,29 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 f"There was an issue while extracting the pipeline run ID: {e}"
             )
             return None
+
+    def _validate_cron_expression(self, cron_expression: str) -> str:
+        """Validates and formats a cron expression for SageMaker Pipeline Schedule.
+
+        Args:
+            cron_expression: The cron expression to validate
+
+        Returns:
+            The formatted cron expression
+
+        Raises:
+            ValueError: If the cron expression is invalid
+        """
+        # Strip any "cron(" prefix if it exists
+        cron_exp = cron_expression.replace("cron(", "").replace(")", "")
+
+        # Split into components
+        parts = cron_exp.split()
+        if len(parts) not in [6, 7]:  # AWS cron requires 6 or 7 fields
+            raise ValueError(
+                f"Invalid cron expression: {cron_expression}. AWS cron expressions must "
+                "have 6 or 7 fields: minute hour day-of-month month day-of-week year(optional). "
+                "Example: '15 10 ? * 6L 2022-2023'"
+            )
+
+        return cron_exp
