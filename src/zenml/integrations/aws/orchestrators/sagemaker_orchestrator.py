@@ -516,7 +516,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     enabled=True,
                 )
                 next_execution = (
-                    deployment.schedule.start_time or datetime.utcnow()
+                    deployment.schedule.start_time
+                    or datetime.now(timezone.utc)
                 ) + deployment.schedule.interval_second
             else:
                 # One-time schedule
