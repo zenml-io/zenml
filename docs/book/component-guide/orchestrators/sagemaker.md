@@ -337,7 +337,7 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 ### Scheduling Pipelines
 
-The SageMaker orchestrator supports running pipelines on a schedule using AWS EventBridge. You can configure schedules in three ways:
+The SageMaker orchestrator supports running pipelines on a schedule using SageMaker's native scheduling capabilities. You can configure schedules in three ways:
 
 * Using a cron expression
 * Using a fixed interval
@@ -367,20 +367,20 @@ def my_one_time_pipeline():
 ```
 
 When you deploy a scheduled pipeline, ZenML will:
-1. Create an EventBridge rule with the specified schedule
-2. Configure the necessary IAM permissions
-3. Set up the SageMaker pipeline as the target
+1. Create a SageMaker Pipeline Schedule with the specified configuration
+2. Configure the pipeline as the target for the schedule
+3. Enable automatic execution based on the schedule
 
 {% hint style="info" %}
-If you run the same pipeline with a schedule multiple times, the existing schedule will be updated with the new settings rather than creating a new schedule. This allows you to modify schedules by simply running the pipeline again with new schedule parameters.
+If you run the same pipeline with a schedule multiple times, the existing schedule will **not** be updated with the new settings. Rather, ZenML will create a new sagemaker pipeline and attach a new schedule to it. The user must manually delete the old pipeline and their attached schedule using the AWS CLI or API. See details here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
 {% endhint %}
 
 #### Required IAM Permissions
 
-When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships. Here's a detailed breakdown of why each permission is needed:
+When using scheduled pipelines, you need to ensure your IAM role (either the service connector role or the configured `scheduler_role`) has the correct permissions and trust relationships:
 
 1. **Trust Relationships**
-Your execution role needs to trust both SageMaker and EventBridge services to allow them to assume the role:
+Your service connector role needs to trust both SageMaker and EventBridge Scheduler services:
 
 ```json
 {
@@ -389,9 +389,11 @@ Your execution role needs to trust both SageMaker and EventBridge services to al
     {
       "Effect": "Allow",
       "Principal": {
+        "AWS": "<SERVICE_CONNECTOR_USER_ARN>", ## This is the ARN of the user that is configured in the service connector
+        # This is the list of services that the service connector role needs to schedule pipelines
         "Service": [
-          "sagemaker.amazonaws.com",  // Required for SageMaker execution
-          "events.amazonaws.com"      // Required for EventBridge to trigger pipelines
+          "sagemaker.amazonaws.com",
+          "scheduler.amazonaws.com"
         ]
       },
       "Action": "sts:AssumeRole"
@@ -401,7 +403,8 @@ Your execution role needs to trust both SageMaker and EventBridge services to al
 ```
 
 2. **Required IAM Policies**
-In addition to the basic SageMaker permissions, the AWS credentials used by the service connector (or provided directly to the orchestrator) need the following permissions to create and manage scheduled pipelines:
+
+The scheduler role (see below) needs the following permissions to manage scheduled pipelines:
 
 ```json
 {
@@ -410,44 +413,60 @@ In addition to the basic SageMaker permissions, the AWS credentials used by the 
     {
       "Effect": "Allow",
       "Action": [
-        "events:PutRule",         // Required to create schedule rules
-        "events:PutTargets",      // Required to set pipeline as target
-        "events:DeleteRule",      // Required for cleanup
-        "events:RemoveTargets",   // Required for cleanup
-        "events:DescribeRule",    // Required to verify rule creation
-        "events:ListTargetsByRule" // Required to verify target setup
+        "scheduler:ListSchedules",
+        "scheduler:GetSchedule",
+        "scheduler:CreateSchedule",
+        "scheduler:UpdateSchedule",
+        "scheduler:DeleteSchedule"
       ],
-      "Resource": "arn:aws:events:*:*:rule/zenml-*"
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::*:role/*",
+      "Condition": {
+        "StringLike": {
+          "iam:PassedToService": "scheduler.amazonaws.com"
+        }
+      }
     }
   ]
 }
 ```
 
-The following IAM permissions are optional but recommended to allow automatic policy updates for the execution role:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "iam:GetRole",                  // For verifying role exists
-        "iam:GetRolePolicy",           // For checking existing policies
-        "iam:PutRolePolicy",           // For adding new policies
-        "iam:UpdateAssumeRolePolicy"   // For updating trust relationships
-      ],
-      "Resource": "arn:aws:iam::*:role/*"
-    }
-  ]
-}
-```
+Or you can use the `AmazonEventBridgeSchedulerFullAccess` managed policy.
 
 These permissions enable:
-* Creation and management of EventBridge rules for scheduling
+* Creation and management of Pipeline Schedules
 * Setting up trust relationships between services
 * Managing IAM policies required for the scheduled execution
 * Cleanup of resources when schedules are removed
 
-Without the EventBridge permissions, the scheduling functionality will fail. Without the IAM permissions, you'll need to manually ensure your execution role has the necessary permissions to start pipeline executions.
+Without these permissions, the scheduling functionality will fail. Make sure to configure them before attempting to use scheduled pipelines.
+
+By default, the SageMaker orchestrator will use the attached [service connector role](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to schedule pipelines. However, you can specify a different role to be used for scheduling by configuring the `scheduler_role` parameter:
+
+```python
+# When registering the orchestrator
+zenml orchestrator register sagemaker-orchestrator \
+    --flavor=sagemaker \
+    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
+
+# Or updating an existing orchestrator
+zenml orchestrator update sagemaker-orchestrator \
+    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
+```
+
+This is particularly useful when:
+* You want to use different roles for creating pipelines and scheduling them
+* Your organization's security policies require separate roles for different operations
+* You need to grant specific permissions only to the scheduling operations
+
+If no `scheduler_role` is configured, the orchestrator will:
+1. Use the service connector's role
+2. Log an informative message about using the service connector role
+3. Handle both user credentials and assumed role scenarios appropriately
+
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
