@@ -197,6 +197,11 @@ class ZenMLCloudStackDeployment(BaseModel):
         # that was registered after this deployment was created.
 
         # Get all stacks created after the start date
+
+        if date_start and date_start.tzinfo:
+            date_start = date_start.astimezone(datetime.timezone.utc).replace(
+                tzinfo=None
+            )
         stacks = client.list_stacks(
             created=f"gt:{str(date_start.replace(microsecond=0))}"
             if date_start
