@@ -1,19 +1,16 @@
-name: Submit Docs Summarization
+name: Summarize and Upload Docs
 
 on:
-  workflow_run:
-    workflows: ["release-prepare"]
-    types:
-      - completed
+  push:
+    branches:
+      - release/**
 
 jobs:
-  submit-batch:
+  summarize-and-upload:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       id-token: write
-      actions: write
     
     steps:
       - uses: actions/checkout@v3
@@ -26,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openai pathlib repomix
+          pip install openai pathlib huggingface_hub
+          npm install -g repomix
           
       - name: Generate repomix outputs
         run: |
@@ -54,23 +52,16 @@ jobs:
           rm user-guide.txt getting-started.txt
           
       - name: Upload repomix outputs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: repomix-outputs
           path: repomix-outputs
           retention-days: 5
           
-      - name: Submit batch job
+      - name: Summarize and upload to HuggingFace
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        id: submit
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python scripts/summarize_docs.py
-          echo "batch_id=$(cat batch_id.txt)" >> $GITHUB_OUTPUT
-          
-      - name: Upload batch ID
-        uses: actions/upload-artifact@v3
-        with:
-          name: batch-id-${{ steps.submit.outputs.batch_id }}
-          path: batch_id.txt
-          retention-days: 5 
+          python scripts/upload_to_huggingface.py 
