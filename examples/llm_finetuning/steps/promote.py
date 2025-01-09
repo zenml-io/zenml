@@ -54,11 +54,11 @@ def promote(
 
     msg = (
         f"`{metric}` values to compare:\n"
-        f"base={base_metrics[metric]*100:.2f}%\n"
-        f"finetuned={ft_metrics[metric]*100:.2f}%"
+        f"base={base_metrics[metric] * 100:.2f}%\n"
+        f"finetuned={ft_metrics[metric] * 100:.2f}%"
     )
     if staging_metrics:
-        msg += f"\nstaging={staging_metrics[metric]*100:.2f}%"
+        msg += f"\nstaging={staging_metrics[metric] * 100:.2f}%"
     logger.info(msg)
 
     if base_metrics[metric] <= ft_metrics[metric]:
