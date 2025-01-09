@@ -146,6 +146,11 @@ Here are two examples demonstrating how to use the experiment tracker:
 
 This example demonstrates how to log time-series metrics using `aiplatform.log_time_series_metrics` from within a Keras callback, as well as using `aiplatform.log_metrics` to log specific metrics and `aiplatform.log_params` to log experiment parameters. The logged metrics can then be visualised in the UI of Vertex AI Experiment Tracker and integrated TensorBoard instance.
 
+> **Note:** To use the autologging functionality, ensure that the google-cloud-aiplatform library is installed with the Autologging extension. You can do this by running the following command:
+> ```bash
+> pip install google-cloud-aiplatform[autologging]
+> ```
+
 ```python
 from google.cloud import aiplatform
 
@@ -189,6 +194,11 @@ def train_model(
 
 This example demonstrates how to use an integrated TensorBoard instance to directly upload training logs. This is particularly useful if you're already using TensorBoard in your projects and want to benefit from its detailed visualizations during training. You can initiate the upload using `aiplatform.start_upload_tb_log` and conclude it with `aiplatform.end_upload_tb_log`. Similar to the first example, you can also log specific metrics and parameters directly.
 
+> **Note:** To use TensorBoard logging functionality, ensure you have the `google-cloud-aiplatform` library installed with the TensorBoard extension. You can install it using the following command:
+> ```bash
+> pip install google-cloud-aiplatform[tensorboard]
+> ```
+
 ```python
 from google.cloud import aiplatform
 
@@ -202,10 +212,6 @@ def train_model(
     x_val: np.ndarray,
     y_val: np.ndarray,
 ):
-    aiplatform.autolog()
-
-    ...
-
     # get current experiment and run names
     experiment_tracker = Client().active_stack.experiment_tracker
     experiment_name = experiment_tracker.experiment_name
