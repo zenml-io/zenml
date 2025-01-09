@@ -13,12 +13,21 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -31,6 +40,11 @@ from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 # ------------------ Request Model ------------------
 
@@ -174,3 +188,73 @@ class ArtifactFilter(WorkspaceScopedTaggableFilter):
 
     name: Optional[str] = None
     has_custom_name: Optional[bool] = None
+
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        SORT_BY_LATEST_VERSION_KEY,
+    ]
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query for Artifacts.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, case, col, desc, func, select
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            ArtifactSchema,
+            ArtifactVersionSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == SORT_BY_LATEST_VERSION_KEY:
+            # Subquery to find the latest version per artifact
+            latest_version_subquery = (
+                select(
+                    ArtifactSchema.id,
+                    case(
+                        (
+                            func.max(ArtifactVersionSchema.created).is_(None),
+                            ArtifactSchema.created,
+                        ),
+                        else_=func.max(ArtifactVersionSchema.created),
+                    ).label("latest_version_created"),
+                )
+                .outerjoin(
+                    ArtifactVersionSchema,
+                    ArtifactSchema.id == ArtifactVersionSchema.artifact_id,  # type: ignore[arg-type]
+                )
+                .group_by(col(ArtifactSchema.id))
+                .subquery()
+            )
+
+            query = query.add_columns(
+                latest_version_subquery.c.latest_version_created,
+            ).where(ArtifactSchema.id == latest_version_subquery.c.id)
+
+            # Apply sorting based on the operand
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(
+                    asc(latest_version_subquery.c.latest_version_created),
+                    asc(ArtifactSchema.id),
+                )
+            else:
+                query = query.order_by(
+                    desc(latest_version_subquery.c.latest_version_created),
+                    desc(ArtifactSchema.id),
+                )
+            return query
+
+        # For other sorting cases, delegate to the parent class
+        return super().apply_sorting(query=query, table=table)
