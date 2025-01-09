@@ -43,7 +43,7 @@ def prepare_batch_requests(md_files: List[Path]) -> List[Dict]:
                 "method": "POST",
                 "url": "/v1/chat/completions",
                 "body": {
-                    "model": "gpt-4-turbo-preview",
+                    "model": "gpt-4o-mini",
                     "messages": [
                         {
                             "role": "system",
