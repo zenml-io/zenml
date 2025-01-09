@@ -499,6 +499,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     enabled=True,
                 )
             elif deployment.schedule.interval_second:
+                # This is necessary because SageMaker's PipelineSchedule rate expressions
+                # require minutes as the minimum time unit.
+                # Even if a user specifies an interval of less than 60 seconds,
+                # it will be rounded up to 1 minute.
                 minutes = max(
                     1,
                     int(
