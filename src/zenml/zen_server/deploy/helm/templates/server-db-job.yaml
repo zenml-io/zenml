@@ -104,7 +104,7 @@ spec:
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}-db-migration
-          {{- with .Values.resources }}
+          {{- with .Values.resourcesMigrationPod }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}

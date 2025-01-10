@@ -921,6 +921,10 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+resourcesMigrationPod: {}
+  # This is the resource request for the migration pod. Follows the same
+  # format as the resources section above.
+
 autoscaling:
   enabled: false
   minReplicas: 1
