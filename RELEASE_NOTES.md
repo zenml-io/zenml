@@ -2,6 +2,8 @@
 
 # 0.72.0
 
+The `0.72.0` release contains various bug fixes, performance improvements and improvements to our documentation.
+
 ## What's Changed
 * Fix typo in readme by @schustmi in https://github.com/zenml-io/zenml/pull/3247
 * adding 0.71.0 to migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3250
