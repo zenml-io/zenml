@@ -130,9 +130,7 @@ def _fetch_and_verify_api_key(
     try:
         api_key = zen_store().get_internal_api_key(api_key_id)
     except KeyError:
-        error = (
-            f"Authentication error: error retrieving API key " f"{api_key_id}"
-        )
+        error = f"Authentication error: error retrieving API key {api_key_id}"
         logger.error(error)
         raise CredentialsNotValid(error)
 
@@ -673,8 +671,7 @@ def authenticate_external_user(
         )
     except Exception as e:
         logger.exception(
-            f"Error fetching user information from external authenticator: "
-            f"{e}"
+            f"Error fetching user information from external authenticator: {e}"
         )
         raise AuthorizationException(
             "Error fetching user information from external authenticator."

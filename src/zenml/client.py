@@ -4669,10 +4669,7 @@ class Client(metaclass=ClientMetaClass):
                     hydrate=hydrate,
                 )
 
-        msg = (
-            f"No secret found with name, ID or prefix "
-            f"'{name_id_or_prefix}'"
-        )
+        msg = f"No secret found with name, ID or prefix '{name_id_or_prefix}'"
         if scope is not None:
             msg += f" in scope '{scope}'"
 

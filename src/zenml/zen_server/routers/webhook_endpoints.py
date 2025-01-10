@@ -88,8 +88,7 @@ def webhook(
             f"'{event_source_id}'."
         )
         raise AuthorizationException(  # TODO: Are we sure about this error message?
-            f"No webhook is registered at "
-            f"'{router.prefix}/{event_source_id}'"
+            f"No webhook is registered at '{router.prefix}/{event_source_id}'"
         )
     if not event_source.is_active:
         raise WebhookInactiveError(f"Webhook {event_source_id} is inactive.")

@@ -31,8 +31,7 @@ def split_s3_path(s3_path: str) -> Tuple[str, str]:
     """
     if not s3_path.startswith("s3://"):
         raise ValueError(
-            f"Invalid S3 URI given: {s3_path}. "
-            "It should start with `s3://`."
+            f"Invalid S3 URI given: {s3_path}. It should start with `s3://`."
         )
     path_parts = s3_path.replace("s3://", "").split("/")
     bucket = path_parts.pop(0)

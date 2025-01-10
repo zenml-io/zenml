@@ -415,7 +415,7 @@ class ContainerService(BaseService):
                 # to ensure that the local database can be shared
                 # with the container.
                 logger.debug(
-                    "Setting UID and GID to local user/group " "in container."
+                    "Setting UID and GID to local user/group in container."
                 )
                 uid_args = dict(
                     user=os.getuid(),

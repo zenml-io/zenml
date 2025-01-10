@@ -136,7 +136,7 @@ def set_root_verbosity() -> None:
 
         logging.root.setLevel(level=level.value)
         get_logger(__name__).debug(
-            f"Logging set to level: " f"{logging.getLevelName(level.value)}"
+            f"Logging set to level: {logging.getLevelName(level.value)}"
         )
     else:
         logging.disable(sys.maxsize)
