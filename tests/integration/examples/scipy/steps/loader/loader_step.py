@@ -30,14 +30,12 @@ def clean_text(text: str):
 
 
 @step
-def importer() -> (
-    Tuple[
-        Annotated[np.ndarray, "X_train"],
-        Annotated[np.ndarray, "X_test"],
-        Annotated[np.ndarray, "y_train"],
-        Annotated[np.ndarray, "y_test"],
-    ]
-):
+def importer() -> Tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"],
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"],
+]:
     train = pd.read_csv(TRAIN_PATH)
     test = pd.read_csv(TEST_PATH)
 

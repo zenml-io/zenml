@@ -347,8 +347,7 @@ def update_secret(
             )
 
         declare(
-            "You will now have a chance to update each secret pair "
-            "one by one."
+            "You will now have a chance to update each secret pair one by one."
         )
         secret_args_add_update = {}
         for k, _ in secret.secret_values.items():
