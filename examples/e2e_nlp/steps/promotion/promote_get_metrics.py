@@ -30,12 +30,10 @@ model_registry = Client().active_stack.model_registry
 
 
 @step
-def promote_get_metrics() -> (
-    Tuple[
-        Annotated[Dict[str, Any], "latest_metrics"],
-        Annotated[Dict[str, Any], "current_metrics`"],
-    ]
-):
+def promote_get_metrics() -> Tuple[
+    Annotated[Dict[str, Any], "latest_metrics"],
+    Annotated[Dict[str, Any], "current_metrics`"],
+]:
     """Get metrics for comparison for promoting a model.
 
     This is an example of a metric retrieval step. It is used to retrieve
