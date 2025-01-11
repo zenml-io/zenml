@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,22 +82,22 @@ def model_evaluator(
         dataset_trn.drop(columns=[target]),
         dataset_trn[target],
     )
-    logger.info(f"Train accuracy={trn_acc*100:.2f}%")
+    logger.info(f"Train accuracy={trn_acc * 100:.2f}%")
     tst_acc = model.score(
         dataset_tst.drop(columns=[target]),
         dataset_tst[target],
     )
-    logger.info(f"Test accuracy={tst_acc*100:.2f}%")
+    logger.info(f"Test accuracy={tst_acc * 100:.2f}%")
     mlflow.log_metric("testing_accuracy_score", tst_acc)
 
     messages = []
     if trn_acc < min_train_accuracy:
         messages.append(
-            f"Train accuracy {trn_acc*100:.2f}% is below {min_train_accuracy*100:.2f}% !"
+            f"Train accuracy {trn_acc * 100:.2f}% is below {min_train_accuracy * 100:.2f}% !"
         )
     if tst_acc < min_test_accuracy:
         messages.append(
-            f"Test accuracy {tst_acc*100:.2f}% is below {min_test_accuracy*100:.2f}% !"
+            f"Test accuracy {tst_acc * 100:.2f}% is below {min_test_accuracy * 100:.2f}% !"
         )
     if fail_on_accuracy_quality_gates and messages:
         raise RuntimeError(

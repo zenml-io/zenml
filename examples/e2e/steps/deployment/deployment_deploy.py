@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,12 +34,10 @@ logger = get_logger(__name__)
 
 
 @step
-def deployment_deploy() -> (
-    Annotated[
-        Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
-    ]
-):
+def deployment_deploy() -> Annotated[
+    Optional[MLFlowDeploymentService],
+    ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
+]:
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns

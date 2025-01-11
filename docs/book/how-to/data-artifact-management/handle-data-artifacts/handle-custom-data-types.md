@@ -41,6 +41,9 @@ ZenML automatically detects if your materializer is imported in your source code
 However, it is best practice to explicitly define which materializer to use for a specific step and not rely on the `ASSOCIATED_TYPES` to make that connection:
 
 ```python
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import ArtifactType
+
 class MyObj:
     ...
 
@@ -70,6 +73,9 @@ my_first_step.configure(output_materializers=MyMaterializer)
 When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the `.configure(...)` method:
 
 ```python
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import ArtifactType
+
 class MyObj1:
     ...
 

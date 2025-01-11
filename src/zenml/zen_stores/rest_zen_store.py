@@ -2739,7 +2739,7 @@ class RestZenStore(BaseZenStore):
                 )
             except (ValueError, AuthorizationException) as e:
                 logger.error(
-                    f'Failed to fetch {resource_type or "available"} '
+                    f"Failed to fetch {resource_type or 'available'} "
                     f"resources from service connector {connector.name}/"
                     f"{connector.id}: {e}"
                 )
@@ -4053,7 +4053,12 @@ class RestZenStore(BaseZenStore):
                 )
 
             data: Optional[Dict[str, str]] = None
-            headers: Dict[str, str] = {}
+
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            headers: Dict[str, str] = {
+                "User-Agent": "zenml/" + zenml.__version__,
+            }
 
             # Check if an API key is configured
             api_key = credentials_store.get_api_key(self.url)

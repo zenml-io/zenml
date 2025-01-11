@@ -245,6 +245,8 @@ class UserScopedFilter(BaseFilter):
                 UserSchema, getattr(table, "user_id") == UserSchema.id
             )
 
+            query = query.add_columns(UserSchema.name)
+
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(asc(column))
             else:
@@ -449,6 +451,8 @@ class WorkspaceScopedFilter(UserScopedFilter):
                 getattr(table, "workspace_id") == WorkspaceSchema.id,
             )
 
+            query = query.add_columns(WorkspaceSchema.name)
+
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(asc(column))
             else:
@@ -470,10 +474,9 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
     ]
-
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
-        "tag",
+        "tags",
     ]
 
     def apply_filter(
@@ -490,15 +493,14 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from zenml.zen_stores.schemas import TagResourceSchema
+        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
         if self.tag:
-            query = (
-                query.join(getattr(table, "tags"))
-                .join(TagResourceSchema.tag)
-                .distinct()
-            )
+            query = query.join(
+                TagResourceSchema,
+                TagResourceSchema.resource_id == getattr(table, "id"),
+            ).join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
 
         return query
 
@@ -541,8 +543,8 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         """
         sort_by, operand = self.sorting_params
 
-        if sort_by == "tag":
-            from sqlmodel import and_, asc, desc, func
+        if sort_by == "tags":
+            from sqlmodel import asc, desc, func, select
 
             from zenml.enums import SorterOps, TaggableResourceTypes
             from zenml.zen_stores.schemas import (
@@ -567,35 +569,36 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
                 RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
             }
 
-            query = (
-                query.outerjoin(
-                    TagResourceSchema,
-                    and_(
-                        table.id == TagResourceSchema.resource_id,
-                        TagResourceSchema.resource_type
-                        == resource_type_mapping[table],
-                    ),
+            sorted_tags = (
+                select(TagResourceSchema.resource_id, TagSchema.name)
+                .join(TagSchema, TagResourceSchema.tag_id == TagSchema.id)  # type: ignore[arg-type]
+                .filter(
+                    TagResourceSchema.resource_type  # type: ignore[arg-type]
+                    == resource_type_mapping[table]
                 )
-                .outerjoin(TagSchema, TagResourceSchema.tag_id == TagSchema.id)
-                .group_by(table.id)
+                .order_by(
+                    asc(TagResourceSchema.resource_id), asc(TagSchema.name)
+                )
+            ).alias("sorted_tags")
+
+            tags_subquery = (
+                select(
+                    sorted_tags.c.resource_id,
+                    func.group_concat(sorted_tags.c.name, ", ").label(
+                        "tags_list"
+                    ),
+                ).group_by(sorted_tags.c.resource_id)
+            ).alias("tags_subquery")
+
+            query = query.add_columns(tags_subquery.c.tags_list).outerjoin(
+                tags_subquery, table.id == tags_subquery.c.resource_id
             )
 
+            # Apply ordering based on the tags list
             if operand == SorterOps.ASCENDING:
-                query = query.order_by(
-                    asc(
-                        func.group_concat(TagSchema.name, ",").label(
-                            "tags_list"
-                        )
-                    )
-                )
+                query = query.order_by(asc("tags_list"))
             else:
-                query = query.order_by(
-                    desc(
-                        func.group_concat(TagSchema.name, ",").label(
-                            "tags_list"
-                        )
-                    )
-                )
+                query = query.order_by(desc("tags_list"))
 
             return query
 
