@@ -2,6 +2,11 @@
 description: How to create your own ZenML template.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Create your own ZenML template
 
 Creating your own ZenML template is a great way to standardize and share your ML workflows across different projects or teams. ZenML uses [Copier](https://copier.readthedocs.io/en/stable/) to manage its project templates. Copier is a library that allows you to generate projects from templates. It's simple, versatile, and powerful.

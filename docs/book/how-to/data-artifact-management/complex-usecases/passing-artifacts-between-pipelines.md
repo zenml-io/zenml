@@ -2,6 +2,11 @@
 description: Structuring an MLOps project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Passing artifacts between pipelines
 
 An MLOps project can often be broken down into many different pipelines. For example:
