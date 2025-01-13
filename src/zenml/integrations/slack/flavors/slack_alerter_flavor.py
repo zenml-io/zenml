@@ -33,6 +33,7 @@ class SlackAlerterSettings(BaseSettings):
 
     Attributes:
         slack_channel_id: The ID of the Slack channel to use for communication.
+        timeout: The amount of seconds to wait for the ask method.
     """
 
     slack_channel_id: Optional[str] = None

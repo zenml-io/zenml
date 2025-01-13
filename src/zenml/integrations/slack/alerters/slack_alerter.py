@@ -111,18 +111,44 @@ class SlackAlerter(BaseAlerter):
         ):
             return params.slack_channel_id
 
-        settings = cast(
-            SlackAlerterSettings,
-            self.get_settings(get_step_context().step_run),
-        )
-        if settings.slack_channel_id is not None:
+        try:
+            settings = cast(
+                SlackAlerterSettings,
+                self.get_settings(get_step_context().step_run),
+            )
+        except RuntimeError:
+            settings = None
+
+        if settings is not None and settings.slack_channel_id is not None:
             return settings.slack_channel_id
 
+        if self.config.slack_channel_id is not None:
+            return self.config.slack_channel_id
+
         raise ValueError(
-            "Neither the `slack_channel_id` in the runtime "
-            "configuration, nor the `default_slack_channel_id` in the alerter "
-            "stack component is specified. Please specify at least one."
+            "The `slack_channel_id` is not set either in the runtime settings, "
+            "or the component configuration of the alerter. Please specify at "
+            "least one."
         )
+
+    def _get_timeout_duration(self) -> int:
+        """Gets the timeout duration used by the ask method .
+
+        Returns:
+            number of seconds for the timeout to happen.
+        """
+        try:
+            settings = cast(
+                SlackAlerterSettings,
+                self.get_settings(get_step_context().step_run),
+            )
+        except RuntimeError:
+            settings = None
+
+        if settings is not None:
+            return settings.timeout
+
+        return self.config.timeout
 
     @staticmethod
     def _get_approve_msg_options(
@@ -298,8 +324,8 @@ class SlackAlerter(BaseAlerter):
 
             # Wait for a response
             start_time = time.time()
-            # TODO: Get it from settings
-            while time.time() - start_time < 300:  # Wait for 5 minutes
+
+            while time.time() - start_time < self._get_timeout_duration():
                 history = client.conversations_history(
                     channel=slack_channel_id, oldest=timestamp
                 )
