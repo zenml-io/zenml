@@ -643,6 +643,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
+        # TODO: Here we need to find some relevant metadata to track
+        #  in case of a scheduled pipeline. 
         pipeline_execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
             "pipeline_execution_arn": pipeline_execution_arn,
@@ -714,7 +716,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
-            execution: The corresponding _PipelineExecution object or schedule metadata dict.
+            execution: The corresponding _PipelineExecution object.
             settings: The Sagemaker orchestrator settings.
 
         Yields:
@@ -723,31 +725,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # Metadata
         metadata: Dict[str, MetadataType] = {}
 
-        # Handle schedule metadata if execution is a dict
-        if isinstance(execution, dict):
-            metadata.update(
-                {
-                    "schedule_rule_name": execution["rule_name"],
-                    "schedule_type": execution["schedule_type"],
-                    "schedule_expression": execution["schedule_expr"],
-                    "pipeline_name": execution["pipeline_name"],
-                }
-            )
+        # Orchestrator Run ID
+        if run_id := self._compute_orchestrator_run_id(execution):
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
-            if next_execution := execution.get("next_execution"):
-                metadata["next_execution_time"] = next_execution.isoformat()
-        else:
-            # Handle execution metadata
-            if run_id := self._compute_orchestrator_run_id(execution):
-                metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+        # URL to the Sagemaker's pipeline view
+        if orchestrator_url := self._compute_orchestrator_url(execution):
+            metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
-            if orchestrator_url := self._compute_orchestrator_url(execution):
-                metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
-
-            if logs_url := self._compute_orchestrator_logs_url(
-                execution, settings
-            ):
-                metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
+        # URL to the corresponding CloudWatch page
+        if logs_url := self._compute_orchestrator_logs_url(
+            execution, settings
+        ):
+            metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 
