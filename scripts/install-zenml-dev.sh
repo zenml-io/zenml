@@ -72,7 +72,7 @@ install_integrations() {
     # which causes our server to fail in case both are installed. We
     # need to uninstall this library for now until the changes make it into
     # fastapi and then need to bump the fastapi version to resolve this.
-    uv pip uninstall multipart
+    uv pip uninstall $PIP_ARGS multipart
 }
 
 set -x
