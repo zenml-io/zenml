@@ -110,23 +110,3 @@ jobs:
           GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
           GITBOOK_LEGACY_COLLECTION: ${{secrets.GITBOOK_LEGACY_COLLECTION}}
         run: python scripts/sync-gitbook-release-spaces.py
-  deprecate-docs-gitbook-legacy:
-    needs: order-gitbook-release-spaces
-    runs-on: ubuntu-latest
-    steps:
-      # Configure Git
-      - name: Configure git
-        shell: bash
-        run: |
-          git config --global user.email "info@zenml.io"
-          git config --global user.name "ZenML GmbH"
-      # Check out legacy docs branch
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-        with:
-          ref: docs/legacy-docs-page
-      # Append new version to the legacy docs table
-      - name: Update legacy docs file
-        shell: bash
-        run: |-
-          bash scripts/deprecate-previous-docs-to-legacy.sh ${{ github.event.inputs.latest_version }}

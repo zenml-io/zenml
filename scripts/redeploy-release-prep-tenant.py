@@ -39,7 +39,12 @@ def get_token(client_id: str, client_secret: str) -> str:
         "client_secret": client_secret,
     }
     response = requests.post(url, data=data)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
 
     return response.json()["access_token"]
 
@@ -77,7 +82,12 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
     response = requests.patch(
         url, json=data, headers=headers, params={"force": True}
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
 
 
 def get_tenant_status(token: str, tenant_id: str) -> str:
@@ -99,7 +109,12 @@ def get_tenant_status(token: str, tenant_id: str) -> str:
         "accept": "application/json",
     }
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
 
     return response.json()["status"]
 
