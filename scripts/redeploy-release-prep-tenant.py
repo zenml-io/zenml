@@ -39,9 +39,7 @@ def get_token(client_id: str, client_secret: str) -> str:
         "client_secret": client_secret,
     }
     response = requests.post(url, data=data)
-
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem fetching the token.")
+    response.raise_for_status()
 
     return response.json()["access_token"]
 
@@ -79,8 +77,7 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
     response = requests.patch(
         url, json=data, headers=headers, params={"force": True}
     )
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem updating the tenant.")
+    response.raise_for_status()
 
 
 def get_tenant_status(token: str, tenant_id: str) -> str:
@@ -102,9 +99,7 @@ def get_tenant_status(token: str, tenant_id: str) -> str:
         "accept": "application/json",
     }
     response = requests.get(url, headers=headers)
-
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem fetching the status.")
+    response.raise_for_status()
 
     return response.json()["status"]
 

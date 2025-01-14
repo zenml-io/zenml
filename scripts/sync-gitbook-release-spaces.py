@@ -83,8 +83,7 @@ def duplicate_space(space_id: str, headers: dict) -> str:
     response = requests.post(
         f"{BASE_URL}/spaces/{space_id}/duplicate", headers=headers
     )
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem duplicating the space.")
+    response.raise_for_status()
     return response.json()["id"]
 
 
@@ -102,8 +101,7 @@ def update_space(space_id: str, changes: dict, headers: dict) -> None:
     response = requests.patch(
         f"{BASE_URL}/spaces/{space_id}", headers=headers, json=changes
     )
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem updating the space.")
+    response.raise_for_status()
 
 
 def move_space(
@@ -127,9 +125,7 @@ def move_space(
 
     # Make the POST request to move the space
     response = requests.post(url, headers=headers, json=payload)
-
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem moving the space.")
+    response.raise_for_status()
 
 
 def main() -> None:

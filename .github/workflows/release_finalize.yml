@@ -69,6 +69,13 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: develop
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install ZenML
+        run: |
+          scripts/install-zenml-dev.sh --system --integrations "no"
       # Create the migration test version if necessary
       - name: Create docs update PR
         shell: bash
