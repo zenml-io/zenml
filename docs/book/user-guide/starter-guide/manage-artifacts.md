@@ -169,7 +169,7 @@ def annotation_approach() -> (
 
 ## Comparing metadata across runs (Pro)
 
-The ZenML Pro dashboard includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
+The [ZenML Pro](https://www.zenml.io/pro) dashboard includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
 
 ### Using the comparison views
 
