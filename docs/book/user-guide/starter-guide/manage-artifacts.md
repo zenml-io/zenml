@@ -167,6 +167,57 @@ def annotation_approach() -> (
     return "string"
 ```
 
+## Comparing metadata across runs (Pro)
+
+The ZenML Pro dashboard includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
+
+### Using the comparison views
+
+The tool offers two complementary views for analyzing your metadata:
+
+#### Table View
+The tabular view provides a structured comparison of metadata across runs:
+
+![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+
+This view automatically calculates changes between runs and allows you to:
+
+* Sort and filter metadata values
+* Track changes over time
+* Compare up to 20 runs simultaneously
+
+#### Parallel Coordinates View
+The parallel coordinates visualization helps identify relationships between different metadata parameters:
+
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+
+This view is particularly useful for:
+
+* Discovering correlations between different metrics
+* Identifying patterns across pipeline runs
+* Filtering and focusing on specific parameter ranges
+
+### Accessing the comparison tool
+
+To compare metadata across runs:
+
+1. Navigate to any pipeline in your dashboard
+2. Click the "Compare" button in the top navigation
+3. Select the runs you want to compare
+4. Switch between table and parallel coordinates views using the tabs
+
+{% hint style="info" %}
+The comparison tool works with any numerical metadata (`float` or `int`) that you've logged in your pipelines. Make sure to log meaningful metrics in your steps to make the most of this feature.
+{% endhint %}
+
+### Sharing comparisons
+
+The tool preserves your comparison configuration in the URL, making it easy to share specific views with team members. Simply copy and share the URL to allow others to see the same comparison with identical settings and filters.
+
+{% hint style="warning" %}
+This feature is currently in Alpha Preview. We encourage you to share feedback about your use cases and requirements through our Slack community.
+{% endhint %}
+
 ### Specify a type for your artifacts
 
 Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
