@@ -16,7 +16,7 @@
 import os
 import time
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
@@ -201,7 +201,7 @@ class StepLauncher:
                         f"Failed preparing step `{self._step_name}`."
                     )
                     step_run_request.status = ExecutionStatus.FAILED
-                    step_run_request.end_time = datetime.utcnow()
+                    step_run_request.end_time = datetime.now(timezone.utc)
                     raise
                 finally:
                     step_run = Client().zen_store.create_run_step(
@@ -305,7 +305,7 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         run_name = string_utils.format_name_template(
             name_template=self._deployment.run_name_template,
             substitutions=self._deployment.pipeline_configuration._get_full_substitutions(

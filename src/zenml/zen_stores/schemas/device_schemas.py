@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation for authorized OAuth2 devices."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from secrets import token_hex
 from typing import Any, Optional, Tuple
 from uuid import UUID
@@ -115,7 +115,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         device_code = cls._generate_device_code()
         hashed_user_code = cls._get_hashed_code(user_code)
         hashed_device_code = cls._get_hashed_code(device_code)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return (
             cls(
                 client_id=request.client_id,
@@ -159,7 +159,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         elif device_update.locked is False:
             self.status = OAuthDeviceStatus.ACTIVE.value
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def internal_update(
@@ -174,7 +174,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             The updated `OAuthDeviceSchema` and the new user code and device
             code, if they were generated.
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         user_code: Optional[str] = None
         device_code: Optional[str] = None
 

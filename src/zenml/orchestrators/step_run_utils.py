@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for creating step runs."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
@@ -75,7 +75,7 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             deployment=self.deployment.id,
             status=ExecutionStatus.RUNNING,
-            start_time=datetime.utcnow(),
+            start_time=datetime.now(timezone.utc),
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )

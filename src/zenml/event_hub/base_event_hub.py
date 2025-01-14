@@ -14,7 +14,7 @@
 """Base class for event hub implementations."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml import EventSourceResponse
@@ -134,7 +134,7 @@ class BaseEventHub(ABC):
         )
         expires: Optional[datetime] = None
         if trigger.action.auth_window:
-            expires = datetime.utcnow() + timedelta(
+            expires = datetime.now(timezone.utc) + timedelta(
                 minutes=trigger.action.auth_window
             )
         encoded_token = token.encode(expires=expires)

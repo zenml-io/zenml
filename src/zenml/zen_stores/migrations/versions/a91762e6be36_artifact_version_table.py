@@ -6,7 +6,7 @@ Create Date: 2023-11-25 11:01:09.217299
 
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -62,8 +62,8 @@ def upgrade() -> None:
         conn.execute(
             artifacts.insert().values(
                 id=uuid4().hex,
-                created=datetime.utcnow(),
-                updated=datetime.utcnow(),
+                created=datetime.now(timezone.utc),
+                updated=datetime.now(timezone.utc),
                 name=name,
                 has_custom_name=has_custom_name,
             )
